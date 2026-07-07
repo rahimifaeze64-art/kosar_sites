@@ -1,0 +1,136 @@
+﻿<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Role Switch Test</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <script src="assets/libs/alpine.min.js" defer></script>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 p-8" x-data="roleTestApp()">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h1 class="text-2xl font-bold text-center text-blue-600 mb-6">تست تغییر نقش</h1>
+            
+            <!-- Role Selector -->
+            <div class="mb-6 p-4 bg-blue-50 rounded-lg">
+                <label class="block text-sm font-medium text-gray-700 mb-2">انتخاب نقش:</label>
+                <select x-model="currentUser.role" @change="switchRole()" 
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                    <option value="manager">مدیر</option>
+                    <option value="employee">کارمند</option>
+                    <option value="doctor">عامل</option>
+                    <option value="student">دانشجو</option>
+                    <option value="translator">مترجم</option>
+                </select>
+            </div>
+            
+            <!-- Current User Info -->
+            <div class="mb-6 p-4 bg-green-50 rounded-lg">
+                <h3 class="font-bold mb-2">اطلاعات کاربر فعلی:</h3>
+                <p><strong>نام:</strong> <span x-text="currentUser.name"></span></p>
+                <p><strong>نقش:</strong> <span x-text="currentUser.role"></span></p>
+                <p><strong>ID:</strong> <span x-text="currentUser.id"></span></p>
+            </div>
+            
+            <!-- Dashboard Content -->
+            <div class="mb-6">
+                <h3 class="font-bold mb-4">محتوای داشبورد:</h3>
+                <div class="border rounded-lg p-4 bg-gray-50 max-h-96 overflow-y-auto" 
+                     x-html="getDashboardContent()"></div>
+            </div>
+            
+            <!-- Test Results -->
+            <div class="p-4 bg-yellow-50 rounded-lg">
+                <h3 class="font-bold mb-2">نتایج تست:</h3>
+                <div id="test-results" class="space-y-2 text-sm"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Debug logger
+        function debugLogger(message, type = 'info', data = null) {
+            console.log(`[${type}] ${message}`, data || '');
+            
+            const results = document.getElementById('test-results');
+            if (results) {
+                const div = document.createElement('div');
+                div.className = `p-2 rounded ${
+                    type === 'error' ? 'bg-red-100 text-red-800' : 
+                    type === 'success' ? 'bg-green-100 text-green-800' : 
+                    type === 'warning' ? 'bg-yellow-100 text-yellow-800' : 
+                    'bg-blue-100 text-blue-800'
+                }`;
+                div.innerHTML = `<strong>[${type}]</strong> ${message}`;
+                results.appendChild(div);
+                results.scrollTop = results.scrollHeight;
+            }
+        }
+        
+        function roleTestApp() {
+            return {
+                currentUser: {
+                    id: 'mgr001',
+                    name: 'عامل تقی زاده',
+                    username: 'manager',
+                    role: 'manager',
+                    email: 'manager@edu-system.com',
+                    phone: '+964 770 123 4567'
+                },
+                
+                init() {
+                    debugLogger('Role test app initialized', 'success');
+                },
+                
+                switchRole() {
+                    try {
+                        debugLogger(`Switching to role: ${this.currentUser.role}`, 'info');
+                        
+                        if (typeof DataModule === 'undefined') {
+                            debugLogger('DataModule not available', 'error');
+                            return;
+                        }
+                        
+                        const users = DataModule.getUsers();
+                        const roleUser = users.find(u => u.role === this.currentUser.role);
+                        
+                        if (roleUser) {
+                            this.currentUser = { ...this.currentUser, ...roleUser };
+                            debugLogger('Role switched successfully', 'success');
+                        } else {
+                            debugLogger('Role user not found', 'warning');
+                        }
+                    } catch (error) {
+                        debugLogger(`Error switching role: ${error.message}`, 'error');
+                    }
+                },
+                
+                getDashboardContent() {
+                    try {
+                        if (typeof DashboardModule === 'undefined') {
+                            return '<div class="text-red-500">DashboardModule not available</div>';
+                        }
+                        
+                        const content = DashboardModule.getDashboardContent(this.currentUser.role);
+                        debugLogger('Dashboard content generated', 'success');
+                        return content;
+                    } catch (error) {
+                        debugLogger(`Error getting dashboard content: ${error.message}`, 'error');
+                        return `<div class="text-red-500">Error: ${error.message}</div>`;
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Load modules -->
+    <script src="js/config.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

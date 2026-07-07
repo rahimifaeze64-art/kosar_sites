@@ -1,0 +1,344 @@
+﻿<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست اتصال فرانت به بک‌اند</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+    <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
+    <style>
+        body { font-family: Vazirmatn, sans-serif; }
+        .test-success { background-color: #10b981; color: white; }
+        .test-error { background-color: #ef4444; color: white; }
+        .test-pending { background-color: #f59e0b; color: white; }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-6xl mx-auto">
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-flask text-blue-600 ml-2"></i>
+                تست اتصال فرانت به بک‌اند
+            </h1>
+            <p class="text-gray-600 mb-4">
+                این صفحه تمام قابلیت‌های اتصال فرانت به بک‌اند را تست می‌کند
+            </p>
+            
+            <!-- Backend Status -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="font-bold text-blue-800">وضعیت سرور Django</h3>
+                        <p class="text-sm text-blue-600" id="backend-status">در حال بررسی...</p>
+                    </div>
+                    <button onclick="checkBackendStatus()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-sync ml-2"></i>بررسی مجدد
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Results -->
+        <div class="grid grid-cols-1 gap-4" id="test-results">
+            <!-- Tests will be added here -->
+        </div>
+
+        <!-- Run All Tests Button -->
+        <div class="mt-6 text-center">
+            <button onclick="runAllTests()" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg text-lg font-bold">
+                <i class="fas fa-play ml-2"></i>
+                اجرای تمام تست‌ها
+            </button>
+        </div>
+
+        <!-- Detailed Logs -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mt-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-terminal text-gray-600 ml-2"></i>
+                لاگ‌های تفصیلی
+            </h2>
+            <div id="detailed-logs" class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm h-96 overflow-y-auto">
+                <p>آماده برای تست...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api-orders.js"></script>
+    <script>
+        const tests = [
+            {
+                id: 'test-login',
+                name: 'تست احراز هویت (Login)',
+                description: 'ورود با نام کاربری manager و رمز 123456',
+                run: async () => {
+                    const response = await fetch('http://127.0.0.1:8000/api/auth/login/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ username: 'manager', password: '123456' })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        return { success: true, message: `ورود موفق: ${data.user.first_name} ${data.user.last_name}` };
+                    }
+                    throw new Error(data.error || 'خطا در ورود');
+                }
+            },
+            {
+                id: 'test-get-orders',
+                name: 'تست دریافت لیست سفارشات',
+                description: 'دریافت تمام سفارشات از API',
+                run: async () => {
+                    const orders = await APIOrdersModule.getOrders();
+                    if (orders && Array.isArray(orders)) {
+                        return { success: true, message: `${orders.length} سفارش دریافت شد` };
+                    }
+                    throw new Error('خطا در دریافت سفارشات');
+                }
+            },
+            {
+                id: 'test-create-order',
+                name: 'تست ایجاد سفارش جدید',
+                description: 'ایجاد یک سفارش تستی در دیتابیس',
+                run: async () => {
+                    const orderData = {
+                        university: 'دانشگاه تست',
+                        field: 'رشته تست',
+                        degree: 'ارشد',
+                        type: 'نوشتن رساله',
+                        deadline: '2026-12-31',
+                        total_amount: 5000000,
+                        description: 'سفارش تستی از صفحه تست اتصال',
+                        student: 1 // Assuming student with ID 1 exists
+                    };
+                    
+                    const result = await APIOrdersModule.createOrder(orderData);
+                    if (result && result.id) {
+                        window.testOrderId = result.id;
+                        return { success: true, message: `سفارش با ID ${result.id} ایجاد شد` };
+                    }
+                    throw new Error('خطا در ایجاد سفارش');
+                }
+            },
+            {
+                id: 'test-get-tasks',
+                name: 'تست دریافت وظایف',
+                description: 'دریافت لیست وظایف از API',
+                run: async () => {
+                    const tasks = await APIOrdersModule.getTasks();
+                    if (tasks && Array.isArray(tasks)) {
+                        return { success: true, message: `${tasks.length} وظیفه دریافت شد` };
+                    }
+                    throw new Error('خطا در دریافت وظایف');
+                }
+            },
+            {
+                id: 'test-create-task',
+                name: 'تست ایجاد وظیفه جدید',
+                description: 'ایجاد یک وظیفه تستی برای عامل',
+                run: async () => {
+                    const taskData = {
+                        title: 'وظیفه تستی',
+                        description: 'این یک وظیفه تستی است',
+                        status: 'pending',
+                        assigned_to: 'employee',
+                        assigned_user: 1, // Assuming user with ID 1 exists
+                        due_date: '2026-12-31',
+                        order: window.testOrderId || null
+                    };
+                    
+                    const result = await APIOrdersModule.createTask(taskData);
+                    if (result && result.id) {
+                        window.testTaskId = result.id;
+                        return { success: true, message: `وظیفه با ID ${result.id} ایجاد شد` };
+                    }
+                    throw new Error('خطا در ایجاد وظیفه');
+                }
+            },
+            {
+                id: 'test-update-task-status',
+                name: 'تست به‌روزرسانی وضعیت وظیفه',
+                description: 'تغییر وضعیت وظیفه به in_progress',
+                run: async () => {
+                    if (!window.testTaskId) {
+                        throw new Error('ابتدا باید وظیفه ایجاد شود');
+                    }
+                    
+                    const result = await APIOrdersModule.updateTaskStatus(window.testTaskId, 'in_progress');
+                    if (result && result.status === 'in_progress') {
+                        return { success: true, message: 'وضعیت وظیفه به‌روزرسانی شد' };
+                    }
+                    throw new Error('خطا در به‌روزرسانی وضعیت');
+                }
+            },
+            {
+                id: 'test-approve-order',
+                name: 'تست تایید سفارش',
+                description: 'تایید سفارش توسط مدیر',
+                run: async () => {
+                    if (!window.testOrderId) {
+                        throw new Error('ابتدا باید سفارش ایجاد شود');
+                    }
+                    
+                    const result = await APIOrdersModule.approveOrder(window.testOrderId);
+                    if (result && result.status === 'approved') {
+                        return { success: true, message: 'سفارش تایید شد' };
+                    }
+                    throw new Error('خطا در تایید سفارش');
+                }
+            },
+            {
+                id: 'test-get-notifications',
+                name: 'تست دریافت اعلان‌ها',
+                description: 'دریافت لیست اعلان‌های کاربر',
+                run: async () => {
+                    const notifications = await APIOrdersModule.getNotifications();
+                    if (notifications && Array.isArray(notifications)) {
+                        return { success: true, message: `${notifications.length} اعلان دریافت شد` };
+                    }
+                    throw new Error('خطا در دریافت اعلان‌ها');
+                }
+            }
+        ];
+
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('detailed-logs');
+            const timestamp = new Date().toLocaleTimeString('fa-IR');
+            const colors = {
+                info: 'text-blue-400',
+                success: 'text-green-400',
+                error: 'text-red-400',
+                warning: 'text-yellow-400'
+            };
+            
+            const logEntry = document.createElement('p');
+            logEntry.className = colors[type] || 'text-gray-400';
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logsDiv.appendChild(logEntry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        async function checkBackendStatus() {
+            const statusEl = document.getElementById('backend-status');
+            statusEl.textContent = 'در حال بررسی...';
+            
+            try {
+                const response = await fetch('http://127.0.0.1:8000/api/auth/current-user/', {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    statusEl.textContent = '✅ سرور Django در حال اجرا است';
+                    statusEl.className = 'text-sm text-green-600 font-bold';
+                    log('سرور Django در دسترس است', 'success');
+                    return true;
+                } else {
+                    throw new Error('سرور پاسخ نداد');
+                }
+            } catch (error) {
+                statusEl.textContent = '❌ سرور Django در دسترس نیست - لطفاً سرور را اجرا کنید';
+                statusEl.className = 'text-sm text-red-600 font-bold';
+                log('خطا: سرور Django در دسترس نیست', 'error');
+                return false;
+            }
+        }
+
+        async function runTest(test) {
+            const testEl = document.getElementById(test.id);
+            const statusEl = testEl.querySelector('.test-status');
+            const resultEl = testEl.querySelector('.test-result');
+            
+            statusEl.textContent = 'در حال اجرا...';
+            statusEl.className = 'test-status px-3 py-1 rounded-full text-sm test-pending';
+            resultEl.textContent = '';
+            
+            log(`شروع تست: ${test.name}`, 'info');
+            
+            try {
+                const result = await test.run();
+                statusEl.textContent = '✅ موفق';
+                statusEl.className = 'test-status px-3 py-1 rounded-full text-sm test-success';
+                resultEl.textContent = result.message;
+                resultEl.className = 'test-result text-sm text-green-600 mt-2';
+                log(`✅ ${test.name}: ${result.message}`, 'success');
+                return true;
+            } catch (error) {
+                statusEl.textContent = '❌ خطا';
+                statusEl.className = 'test-status px-3 py-1 rounded-full text-sm test-error';
+                resultEl.textContent = error.message;
+                resultEl.className = 'test-result text-sm text-red-600 mt-2';
+                log(`❌ ${test.name}: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function runAllTests() {
+            log('=== شروع اجرای تمام تست‌ها ===', 'info');
+            
+            // Check backend first
+            const backendAvailable = await checkBackendStatus();
+            if (!backendAvailable) {
+                alert('لطفاً ابتدا سرور Django را با دستور زیر اجرا کنید:\ncd backend\npython manage.py runserver 8000');
+                return;
+            }
+            
+            let passed = 0;
+            let failed = 0;
+            
+            for (const test of tests) {
+                const success = await runTest(test);
+                if (success) passed++;
+                else failed++;
+                
+                // Wait a bit between tests
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            log(`=== نتیجه کلی: ${passed} موفق، ${failed} ناموفق ===`, passed === tests.length ? 'success' : 'warning');
+            
+            if (passed === tests.length) {
+                alert(`🎉 تبریک! تمام ${passed} تست با موفقیت انجام شد.\n\n✅ اتصال فرانت به بک‌اند کامل است`);
+            } else {
+                alert(`⚠️ ${passed} تست موفق و ${failed} تست ناموفق\n\nلطفاً لاگ‌ها را بررسی کنید`);
+            }
+        }
+
+        // Initialize tests display
+        function initTests() {
+            const container = document.getElementById('test-results');
+            
+            tests.forEach(test => {
+                const testCard = document.createElement('div');
+                testCard.id = test.id;
+                testCard.className = 'bg-white rounded-lg shadow-md p-4';
+                testCard.innerHTML = `
+                    <div class="flex items-start justify-between mb-2">
+                        <div class="flex-1">
+                            <h3 class="font-bold text-gray-800">${test.name}</h3>
+                            <p class="text-sm text-gray-600">${test.description}</p>
+                        </div>
+                        <span class="test-status px-3 py-1 rounded-full text-sm bg-gray-200 text-gray-600">
+                            آماده
+                        </span>
+                    </div>
+                    <div class="test-result"></div>
+                    <button onclick="runTest(tests.find(t => t.id === '${test.id}'))" 
+                            class="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
+                        <i class="fas fa-play ml-1"></i>
+                        اجرای این تست
+                    </button>
+                `;
+                container.appendChild(testCard);
+            });
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            initTests();
+            checkBackendStatus();
+            log('صفحه تست بارگذاری شد', 'success');
+        });
+    </script>
+</body>
+</html>

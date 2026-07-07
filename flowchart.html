@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Flowchart Editor</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+        
+        body {
+            background: #FFFFFF;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 80px);
+            background-color: #FFFFFF;
+            background-image: 
+                linear-gradient(#E5E7EB 1px, transparent 1px),
+                linear-gradient(90deg, #E5E7EB 1px, transparent 1px);
+            background-size: 20px 20px;
+            overflow: hidden;
+            cursor: grab;
+        }
+        
+        .canvas-container.grabbing {
+            cursor: grabbing;
+        }
+        
+        .canvas-inner {
+            position: absolute;
+            min-width: 5000px;
+            min-height: 3000px;
+            transform-origin: 0 0;
+        }
+        
+        #connections-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+        
+        .flow-node {
+            position: absolute;
+            cursor: move;
+            user-select: none;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .flow-node:hover {
+            filter: brightness(1.05);
+        }
+        
+        .flow-node.selected {
+            outline: 3px solid #1F2937;
+            outline-offset: 4px;
+            border-radius: 8px;
+        }
+        
+        /* Rectangle Node */
+        .node-rectangle {
+            width: 160px;
+            height: 100px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border: 3px solid;
+        }
+        
+        .node-rectangle.blue {
+            background: #2563EB;
+            border-color: #1D4ED8;
+        }
+        
+        .node-rectangle.orange {
+            background: #F97316;
+            border-color: #EA580C;
+        }
+        
+        /* Diamond Node */
+        .node-diamond {
+            width: 100px;
+            height: 100px;
+            transform: rotate(45deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border: 3px solid;
+        }
+        
+        .node-diamond.blue {
+            background: #2563EB;
+            border-color: #1D4ED8;
+        }
+        
+        .node-diamond.orange {
+            background: #F97316;
+            border-color: #EA580C;
+        }
+        
+        .node-diamond .node-text {
+            transform: rotate(-45deg);
+        }
+        
+        .toolbar {
+            background: white;
+            border-radius: 16px;
+            padding: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        }
+        
+        .tool-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            border: 2px solid #E5E7EB;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .tool-btn:hover {
+            border-color: #2563EB;
+            background: #EFF6FF;
+        }
+        
+        .tool-btn.active {
+            border-color: #2563EB;
+            background: #DBEAFE;
+            color: #2563EB;
+        }
+        
+        .zoom-controls {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            z-index: 100;
+        }
+        
+        .zoom-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #2563EB, #1D4ED8);
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .zoom-btn:hover {
+            transform: scale(1.08);
+        }
+        
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #10B981;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .connection-line {
+            stroke: #374151;
+            stroke-width: 2;
+            fill: none;
+        }
+        
+        .connection-line-temp {
+            stroke: #2563EB;
+            stroke-width: 2;
+            stroke-dasharray: 5,5;
+            fill: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-lg border-b-4 border-blue-600 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <a href="index.html" class="text-gray-500 hover:text-blue-600">
+                        <i class="fas fa-arrow-left text-xl"></i>
+                    </a>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-800">
+                            <i class="fas fa-project-diagram text-blue-600 ml-2"></i>
+                            Interactive Flowchart Editor
+                        </h1>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <button onclick="saveFlowchart()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium">
+                        <i class="fas fa-save ml-2"></i>
+                        Save
+                    </button>
+                    <button onclick="clearCanvas()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium">
+                        <i class="fas fa-trash ml-2"></i>
+                        Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Toolbar -->
+    <div class="fixed top-24 left-6 z-50">
+        <div class="toolbar flex flex-col gap-2">
+            <button class="tool-btn active" onclick="setTool('select')" id="tool-select" title="Select and Move">
+                <i class="fas fa-mouse-pointer"></i>
+            </button>
+            <button class="tool-btn" onclick="setTool('connect')" id="tool-connect" title="Connect Nodes">
+                <i class="fas fa-link"></i>
+            </button>
+            <hr class="my-2">
+            <button class="tool-btn" onclick="addNode('diamond', 'blue', 'شروع')" title="Add شروع (Blue Diamond)">
+                <i class="fas fa-diamond text-blue-600"></i>
+            </button>
+            <button class="tool-btn" onclick="addNode('rectangle', 'blue', 'شخص')" title="Add Blue Rectangle">
+                <i class="fas fa-square text-blue-600"></i>
+            </button>
+            <button class="tool-btn" onclick="addNode('rectangle', 'orange', 'شخص')" title="Add Orange Rectangle">
+                <i class="fas fa-square text-orange-600"></i>
+            </button>
+            <button class="tool-btn" onclick="addNode('diamond', 'orange', 'تصمیم')" title="Add Orange Diamond">
+                <i class="fas fa-diamond text-orange-600"></i>
+            </button>
+            <hr class="my-2">
+            <button class="tool-btn" onclick="deleteSelected()" title="Delete Selected Node">
+                <i class="fas fa-trash text-red-600"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Canvas -->
+    <div class="canvas-container" id="canvas-container">
+        <svg id="connections-svg">
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#374151" />
+                </marker>
+            </defs>
+        </svg>
+        <div class="canvas-inner" id="canvas-inner">
+            <!-- Nodes will be added here -->
+        </div>
+    </div>
+    
+    <!-- Zoom Controls -->
+    <div class="zoom-controls toolbar">
+        <div class="flex flex-col gap-2">
+            <button class="zoom-btn" onclick="zoomIn()">
+                <i class="fas fa-plus"></i>
+            </button>
+            <div class="text-center text-sm font-bold text-gray-700" id="zoom-level">100%</div>
+            <button class="zoom-btn" onclick="zoomOut()">
+                <i class="fas fa-minus"></i>
+            </button>
+            <button class="zoom-btn" onclick="resetView()" style="background: linear-gradient(135deg, #6B7280, #4B5563);">
+                <i class="fas fa-compress-arrows-alt"></i>
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        // State
+        let nodes = [];
+        let connections = [];
+        let selectedNode = null;
+        let currentTool = 'select';
+        let nodeIdCounter = 0;
+        let zoom = 1;
+        let panX = 0, panY = 0;
+        let isDragging = false;
+        let isPanning = false;
+        let dragStartX, dragStartY;
+        let nodeStartX, nodeStartY;
+        let connectionStart = null;
+        let tempLine = null;
+        let pendingConnection = null;
+        
+        // Show notification
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            if (type === 'error') {
+                notification.style.background = '#EF4444';
+            }
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeCanvas();
+            loadSavedFlowchart();
+        });
+        
+        function initializeCanvas() {
+            const container = document.getElementById('canvas-container');
+            const inner = document.getElementById('canvas-inner');
+            
+            container.addEventListener('dragstart', (e) => e.preventDefault());
+            
+            // Pan with mouse on canvas background
+            container.addEventListener('mousedown', (e) => {
+                if (e.target === container || e.target.id === 'canvas-inner' || e.target.id === 'connections-svg') {
+                    if (currentTool === 'select') {
+                        isPanning = true;
+                        dragStartX = e.clientX;
+                        dragStartY = e.clientY;
+                        container.classList.add('grabbing');
+                    }
+                }
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                // Handle panning
+                if (isPanning) {
+                    panX += e.clientX - dragStartX;
+                    panY += e.clientY - dragStartY;
+                    dragStartX = e.clientX;
+                    dragStartY = e.clientY;
+                    updateTransform();
+                }
+                
+                // Handle node dragging
+                if (isDragging && selectedNode) {
+                    const containerRect = container.getBoundingClientRect();
+                    const newX = (e.clientX - containerRect.left - panX) / zoom - nodeStartX;
+                    const newY = (e.clientY - containerRect.top - panY) / zoom - nodeStartY;
+                    
+                    selectedNode.x = Math.max(0, newX);
+                    selectedNode.y = Math.max(0, newY);
+                    
+                    const nodeEl = document.getElementById(selectedNode.id);
+                    nodeEl.style.left = `${selectedNode.x}px`;
+                    nodeEl.style.top = `${selectedNode.y}px`;
+                    
+                    updateConnections();
+                }
+                
+                // Handle temporary connection line
+                if (connectionStart && tempLine) {
+                    const containerRect = container.getBoundingClientRect();
+                    const mouseX = (e.clientX - containerRect.left - panX) / zoom;
+                    const mouseY = (e.clientY - containerRect.top - panY) / zoom;
+                    
+                    tempLine.setAttribute('x2', mouseX);
+                    tempLine.setAttribute('y2', mouseY);
+                }
+            });
+            
+            document.addEventListener('mouseup', (e) => {
+                if (isPanning) {
+                    isPanning = false;
+                    container.classList.remove('grabbing');
+                }
+                
+                if (isDragging) {
+                    isDragging = false;
+                }
+                
+                // Handle connection end
+                if (connectionStart) {
+                    const target = e.target.closest('.flow-node');
+                    if (target && target.id !== connectionStart.id) {
+                        const targetNode = nodes.find(n => n.id === target.id);
+                        if (targetNode) {
+                            connectNodes(connectionStart.id, targetNode.id);
+                        }
+                    }
+                    
+                    if (tempLine) {
+                        tempLine.remove();
+                        tempLine = null;
+                    }
+                    connectionStart = null;
+                }
+            });
+            
+            // Zoom with wheel
+            container.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                zoom = Math.max(0.3, Math.min(2, zoom + delta));
+                updateTransform();
+            });
+        }
+        
+        function updateTransform() {
+            const inner = document.getElementById('canvas-inner');
+            const svg = document.getElementById('connections-svg');
+            inner.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+            svg.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+            document.getElementById('zoom-level').textContent = `${Math.round(zoom * 100)}%`;
+        }
+        
+        function loadSavedFlowchart() {
+            const saved = localStorage.getItem('flowchart-data');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    nodes = data.nodes || [];
+                    connections = data.connections || [];
+                    nodeIdCounter = data.nodeIdCounter || nodes.length;
+                    
+                    nodes.forEach(node => renderNode(node));
+                    updateConnections();
+                    showNotification('Flowchart loaded');
+                } catch (e) {
+                    console.error('Error loading flowchart:', e);
+                    loadDefaultFlowchart();
+                }
+            } else {
+                loadDefaultFlowchart();
+            }
+        }
+        
+        function loadDefaultFlowchart() {
+            // Create the 6-shape horizontal flowchart
+            const startY = 250;
+            const startX = 150;
+            const gap = 180;
+            
+            // 1. Blue Diamond (Start)
+            addNode('diamond', 'blue', 'شروع', startX, startY);
+            
+            // 2. Orange Rectangle
+            addNode('rectangle', 'orange', 'شخص اول ', startX + gap, startY);
+            
+            // 3. Blue Rectangle
+            addNode('rectangle', 'blue', 'شخص دوم', startX + gap * 2, startY);
+            
+            // 4. Orange Diamond
+            addNode('diamond', 'orange', 'تصمیم', startX + gap * 3, startY);
+            
+            // 5. Blue Rectangle
+            addNode('rectangle', 'blue', 'شخص سوم', startX + gap * 4, startY);
+            
+            // 6. Blue Diamond (End)
+            addNode('diamond', 'blue', 'پایان', startX + gap * 5, startY);
+            
+            // Create connections
+            setTimeout(() => {
+                for (let i = 0; i < nodes.length - 1; i++) {
+                    connectNodes(nodes[i].id, nodes[i + 1].id);
+                }
+            }, 100);
+        }
+        
+        function setTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tool-${tool}`).classList.add('active');
+            connectionStart = null;
+            
+            if (tool === 'connect') {
+                showNotification('Click on a node to start connection');
+            }
+        }
+        
+        function addNode(shape, color, text, x, y) {
+            const id = `node-${nodeIdCounter++}`;
+            const node = { id, shape, color, text, x, y };
+            nodes.push(node);
+            renderNode(node);
+            return node;
+        }
+        
+        function renderNode(node) {
+            const inner = document.getElementById('canvas-inner');
+            
+            const nodeEl = document.createElement('div');
+            nodeEl.className = 'flow-node';
+            nodeEl.id = node.id;
+            nodeEl.style.left = `${node.x}px`;
+            nodeEl.style.top = `${node.y}px`;
+            
+            let contentClass = '';
+            if (node.shape === 'rectangle') {
+                contentClass = `node-rectangle ${node.color}`;
+            } else if (node.shape === 'diamond') {
+                contentClass = `node-diamond ${node.color}`;
+            }
+            
+            const innerContent = node.shape === 'diamond' 
+                ? `<div class="node-text">${node.text}</div>` 
+                : node.text;
+            
+            nodeEl.innerHTML = `
+                <div class="${contentClass}">
+                    ${innerContent}
+                </div>
+            `;
+            
+            // Click handler
+            nodeEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                
+                if (currentTool === 'connect') {
+                    startConnection(node, e);
+                } else if (currentTool === 'select') {
+                    selectNode(node);
+                }
+            });
+            
+            // Drag handler
+            nodeEl.addEventListener('mousedown', (e) => {
+                if (currentTool !== 'select') return;
+                
+                e.stopPropagation();
+                isDragging = true;
+                selectNode(node);
+                
+                const nodeEl = document.getElementById(node.id);
+                const rect = nodeEl.getBoundingClientRect();
+                nodeStartX = (e.clientX - rect.left) / zoom;
+                nodeStartY = (e.clientY - rect.top) / zoom;
+            });
+            
+            inner.appendChild(nodeEl);
+        }
+        
+        function startConnection(node, e) {
+            connectionStart = node;
+            
+            const svg = document.getElementById('connections-svg');
+            const center = getNodeCenter(node);
+            
+            tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            tempLine.setAttribute('class', 'connection-line-temp');
+            tempLine.setAttribute('x1', center.x);
+            tempLine.setAttribute('y1', center.y);
+            tempLine.setAttribute('x2', center.x);
+            tempLine.setAttribute('y2', center.y);
+            svg.appendChild(tempLine);
+            
+            showNotification('Click on target node to connect');
+        }
+        
+        function connectNodes(fromId, toId) {
+            // Check if connection already exists
+            const exists = connections.find(c => c.from === fromId && c.to === toId);
+            if (exists) return;
+            
+            const connection = { from: fromId, to: toId };
+            connections.push(connection);
+            updateConnections();
+        }
+        
+        function getNodeCenter(node) {
+            let width, height;
+            if (node.shape === 'rectangle') {
+                width = 160;
+                height = 100;
+            } else {
+                width = 100;
+                height = 100;
+            }
+            return {
+                x: node.x + width / 2,
+                y: node.y + height / 2
+            };
+        }
+        
+        function updateConnections() {
+            const svg = document.getElementById('connections-svg');
+            
+            // Remove old lines
+            svg.querySelectorAll('line:not(.connection-line-temp)').forEach(el => el.remove());
+            
+            // Render all connections
+            connections.forEach(conn => {
+                const fromNode = nodes.find(n => n.id === conn.from);
+                const toNode = nodes.find(n => n.id === conn.to);
+                if (!fromNode || !toNode) return;
+                
+                const fromCenter = getNodeCenter(fromNode);
+                const toCenter = getNodeCenter(toNode);
+                
+                // Calculate edge points
+                const fromEdge = getEdgePoint(fromNode, toCenter);
+                const toEdge = getEdgePoint(toNode, fromCenter);
+                
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', fromEdge.x);
+                line.setAttribute('y1', fromEdge.y);
+                line.setAttribute('x2', toEdge.x);
+                line.setAttribute('y2', toEdge.y);
+                line.setAttribute('class', 'connection-line');
+                line.setAttribute('marker-end', 'url(#arrowhead)');
+                svg.appendChild(line);
+            });
+        }
+        
+        function getEdgePoint(node, targetPoint) {
+            const center = getNodeCenter(node);
+            let width, height;
+            
+            if (node.shape === 'rectangle') {
+                width = 160;
+                height = 100;
+            } else {
+                width = 100;
+                height = 100;
+            }
+            
+            const dx = targetPoint.x - center.x;
+            const dy = targetPoint.y - center.y;
+            
+            // For diamond, calculate intersection with rotated square
+            if (node.shape === 'diamond') {
+                const halfSize = width / 2;
+                const absX = Math.abs(dx);
+                const absY = Math.abs(dy);
+                
+                if (absX + absY === 0) return center;
+                
+                const scale = halfSize / (absX + absY);
+                return {
+                    x: center.x + dx * scale,
+                    y: center.y + dy * scale
+                };
+            }
+            
+            // For rectangle, calculate intersection with rectangle edges
+            const halfWidth = width / 2;
+            const halfHeight = height / 2;
+            
+            if (dx === 0 && dy === 0) return center;
+            
+            let scaleX = dx !== 0 ? halfWidth / Math.abs(dx) : Infinity;
+            let scaleY = dy !== 0 ? halfHeight / Math.abs(dy) : Infinity;
+            let scale = Math.min(scaleX, scaleY);
+            
+            return {
+                x: center.x + dx * scale,
+                y: center.y + dy * scale
+            };
+        }
+        
+        function selectNode(node) {
+            deselectAll();
+            selectedNode = node;
+            document.getElementById(node.id).classList.add('selected');
+        }
+        
+        function deselectAll() {
+            document.querySelectorAll('.flow-node.selected').forEach(el => el.classList.remove('selected'));
+            selectedNode = null;
+        }
+        
+        function deleteSelected() {
+            if (!selectedNode) {
+                showNotification('Please select a node first', 'error');
+                return;
+            }
+            
+            document.getElementById(selectedNode.id).remove();
+            nodes = nodes.filter(n => n.id !== selectedNode.id);
+            connections = connections.filter(c => c.from !== selectedNode.id && c.to !== selectedNode.id);
+            updateConnections();
+            
+            selectedNode = null;
+            showNotification('Node deleted');
+        }
+        
+        // Zoom functions
+        function zoomIn() {
+            zoom = Math.min(2, zoom + 0.1);
+            updateTransform();
+        }
+        
+        function zoomOut() {
+            zoom = Math.max(0.3, zoom - 0.1);
+            updateTransform();
+        }
+        
+        function resetView() {
+            zoom = 1;
+            panX = 0;
+            panY = 0;
+            updateTransform();
+        }
+        
+        // Save and load
+        function saveFlowchart() {
+            const data = { nodes, connections, nodeIdCounter };
+            localStorage.setItem('flowchart-data', JSON.stringify(data));
+            showNotification('Flowchart saved!');
+        }
+        
+        function clearCanvas() {
+            if (confirm('Are you sure you want to clear everything?')) {
+                nodes = [];
+                connections = [];
+                nodeIdCounter = 0;
+                
+                const inner = document.getElementById('canvas-inner');
+                inner.innerHTML = '';
+                
+                const svg = document.getElementById('connections-svg');
+                svg.querySelectorAll('line').forEach(el => el.remove());
+                
+                localStorage.removeItem('flowchart-data');
+                deselectAll();
+                showNotification('Canvas cleared');
+            }
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Delete' && selectedNode) {
+                deleteSelected();
+            }
+            if (e.key === 'Escape') {
+                deselectAll();
+            }
+        });
+    </script>
+</body>
+</html>

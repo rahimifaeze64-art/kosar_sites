@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دیباگ تایمر سفارش</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link rel="stylesheet" href="assets/libs/fontawesome/css/all.min.css">
+</head>
+<body class="bg-slate-900 text-white p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">
+            <i class="fas fa-bug text-red-400 ml-2"></i>
+            دیباگ تایمر سفارش
+        </h1>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Orders List -->
+            <div class="bg-slate-800 rounded-lg p-6">
+                <h2 class="text-xl font-bold mb-4">سفارشات موجود</h2>
+                <div id="ordersList" class="space-y-2"></div>
+            </div>
+            
+            <!-- Selected Order Details -->
+            <div class="bg-slate-800 rounded-lg p-6">
+                <h2 class="text-xl font-bold mb-4">جزئیات سفارش انتخاب شده</h2>
+                <div id="orderDetails" class="text-sm font-mono"></div>
+            </div>
+        </div>
+        
+        <!-- Timer Test -->
+        <div class="mt-6 bg-slate-800 rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-4">تست تایمر</h2>
+            <div id="timerTest"></div>
+        </div>
+        
+        <!-- Console Logs -->
+        <div class="mt-6 bg-slate-800 rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-4">لاگ‌های کنسول</h2>
+            <div id="logs" class="space-y-1 text-sm font-mono max-h-96 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/debug.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+    
+    <script>
+        // Override console.log to capture logs
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        function addLog(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const time = new Date().toLocaleTimeString('fa-IR');
+            const colors = {
+                'info': 'text-blue-400',
+                'error': 'text-red-400',
+                'warn': 'text-yellow-400',
+                'success': 'text-green-400'
+            };
+            logsDiv.innerHTML = `<div class="${colors[type]}">[${time}] ${message}</div>` + logsDiv.innerHTML;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addLog(args.join(' '), 'info');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addLog(args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addLog(args.join(' '), 'warn');
+        };
+        
+        // Initialize
+        DataModule.initializeData();
+        console.log('Data initialized');
+        
+        // Get current user
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        console.log('Current user:', JSON.stringify(currentUser));
+        
+        // Get all orders
+        const orders = DataModule.getOrders();
+        console.log(`Total orders: ${orders.length}`);
+        
+        // Filter orders for current user
+        const myOrders = orders.filter(o => 
+            o.assignedDoctorId === currentUser.id || 
+            o.assigned_doctor === currentUser.id ||
+            o.assignedDoctor === currentUser.id
+        );
+        console.log(`My orders: ${myOrders.length}`);
+        
+        // Display orders list
+        const ordersListDiv = document.getElementById('ordersList');
+        ordersListDiv.innerHTML = myOrders.map((order, index) => `
+            <div class="bg-slate-700 p-3 rounded cursor-pointer hover:bg-slate-600" 
+                 onclick="showOrderDetails('${order.id}')">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="font-bold">#${index + 1} - ${order.title || order.type}</p>
+                        <p class="text-xs text-gray-400">${order.studentName}</p>
+                    </div>
+                    <div class="text-right">
+                        ${order.deadlineDateTime ? 
+                            '<span class="text-green-400"><i class="fas fa-check"></i> دارد</span>' : 
+                            '<span class="text-red-400"><i class="fas fa-times"></i> ندارد</span>'
+                        }
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        window.showOrderDetails = function(orderId) {
+            const order = myOrders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            console.log('Selected order:', orderId);
+            
+            const detailsDiv = document.getElementById('orderDetails');
+            detailsDiv.innerHTML = `
+                <div class="space-y-2">
+                    <p><strong>ID:</strong> ${order.id}</p>
+                    <p><strong>عنوان:</strong> ${order.title || order.type}</p>
+                    <p><strong>دانشجو:</strong> ${order.studentName}</p>
+                    <p><strong>تاریخ:</strong> ${order.deadline || 'ندارد'}</p>
+                    <p><strong>ساعت:</strong> ${order.deadlineTime || 'ندارد'}</p>
+                    <p><strong>deadlineDateTime:</strong> ${order.deadlineDateTime || 'ندارد'}</p>
+                    ${order.deadlineDateTime ? `
+                        <p><strong>تاریخ پارس شده:</strong> ${new Date(order.deadlineDateTime).toLocaleString('fa-IR')}</p>
+                        <p><strong>معتبر است:</strong> ${!isNaN(new Date(order.deadlineDateTime).getTime()) ? 'بله' : 'خیر'}</p>
+                    ` : ''}
+                </div>
+            `;
+            
+            // Test timer
+            if (order.deadlineDateTime) {
+                testTimer(order);
+            }
+        };
+        
+        function testTimer(order) {
+            const testDiv = document.getElementById('timerTest');
+            testDiv.innerHTML = `
+                <div class="grid grid-cols-2 gap-4 max-w-md">
+                    <div class="bg-slate-700 rounded-lg p-4 text-center">
+                        <div class="text-3xl font-bold text-blue-400" id="test-days">--</div>
+                        <div class="text-sm text-gray-400 mt-2">روز</div>
+                    </div>
+                    <div class="bg-slate-700 rounded-lg p-4 text-center">
+                        <div class="text-3xl font-bold text-green-400" id="test-hours">--</div>
+                        <div class="text-sm text-gray-400 mt-2">ساعت</div>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-400 mt-4">تایمر برای سفارش: ${order.title || order.type}</p>
+            `;
+            
+            // Update timer
+            function updateTestTimer() {
+                const now = new Date();
+                const deadline = new Date(order.deadlineDateTime);
+                const diff = deadline - now;
+                
+                const daysEl = document.getElementById('test-days');
+                const hoursEl = document.getElementById('test-hours');
+                
+                if (!daysEl || !hoursEl) return;
+                
+                if (isNaN(deadline.getTime())) {
+                    daysEl.textContent = '?';
+                    hoursEl.textContent = '?';
+                    console.error('Invalid deadline:', order.deadlineDateTime);
+                    return;
+                }
+                
+                if (diff <= 0) {
+                    daysEl.textContent = '0';
+                    hoursEl.textContent = '0';
+                    return;
+                }
+                
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                
+                daysEl.textContent = days;
+                hoursEl.textContent = hours;
+                
+                console.log(`Timer updated: ${days} days, ${hours} hours`);
+            }
+            
+            updateTestTimer();
+            setInterval(updateTestTimer, 1000);
+        }
+        
+        // Auto-select first order
+        if (myOrders.length > 0) {
+            showOrderDetails(myOrders[0].id);
+        }
+    </script>
+</body>
+</html>

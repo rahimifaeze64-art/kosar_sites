@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اصلاح سفارشات قدیمی</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link rel="stylesheet" href="assets/libs/fontawesome/css/all.min.css">
+</head>
+<body class="bg-slate-900 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">
+            <i class="fas fa-wrench text-yellow-400 ml-2"></i>
+            اصلاح سفارشات قدیمی
+        </h1>
+        
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">سفارشات بدون deadlineDateTime</h2>
+            <div id="ordersWithoutDeadline" class="space-y-2"></div>
+        </div>
+        
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <button onclick="fixAllOrders()" 
+                    class="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold text-lg">
+                <i class="fas fa-magic ml-2"></i>
+                اصلاح خودکار تمام سفارشات
+            </button>
+            <p class="text-sm text-gray-400 mt-2 text-center">
+                این دکمه برای تمام سفارشاتی که deadline دارند اما deadlineDateTime ندارند، یک deadlineDateTime می‌سازد
+            </p>
+        </div>
+        
+        <div class="bg-slate-800 rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-4">لاگ‌ها</h2>
+            <div id="logs" class="space-y-1 text-sm font-mono max-h-96 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/debug.js"></script>
+    <script src="js/data.js"></script>
+    
+    <script>
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const time = new Date().toLocaleTimeString('fa-IR');
+            const colors = {
+                'info': 'text-blue-400',
+                'success': 'text-green-400',
+                'error': 'text-red-400',
+                'warning': 'text-yellow-400'
+            };
+            logsDiv.innerHTML = `<div class="${colors[type]}">[${time}] ${message}</div>` + logsDiv.innerHTML;
+        }
+        
+        // Initialize
+        DataModule.initializeData();
+        log('سیستم مقداردهی شد', 'success');
+        
+        // Get all orders
+        const orders = DataModule.getOrders();
+        log(`تعداد کل سفارشات: ${orders.length}`, 'info');
+        
+        // Find orders without deadlineDateTime
+        const ordersWithoutDeadline = orders.filter(o => 
+            o.deadline && !o.deadlineDateTime
+        );
+        
+        log(`سفارشات بدون deadlineDateTime: ${ordersWithoutDeadline.length}`, 'warning');
+        
+        // Display orders
+        const listDiv = document.getElementById('ordersWithoutDeadline');
+        if (ordersWithoutDeadline.length === 0) {
+            listDiv.innerHTML = '<p class="text-green-400">همه سفارشات deadlineDateTime دارند! ✓</p>';
+        } else {
+            listDiv.innerHTML = ordersWithoutDeadline.map(order => `
+                <div class="bg-slate-700 p-3 rounded">
+                    <p class="font-bold">${order.title || order.type}</p>
+                    <p class="text-sm text-gray-400">دانشجو: ${order.studentName}</p>
+                    <p class="text-sm text-gray-400">تاریخ: ${order.deadline}</p>
+                    <p class="text-sm text-gray-400">ساعت: ${order.deadlineTime || 'ندارد'}</p>
+                </div>
+            `).join('');
+        }
+        
+        function fixAllOrders() {
+            log('شروع اصلاح سفارشات...', 'info');
+            
+            let fixedCount = 0;
+            
+            orders.forEach(order => {
+                if (order.deadline && !order.deadlineDateTime) {
+                    // Try to create deadlineDateTime
+                    let deadlineDateTime = null;
+                    
+                    // Method 1: If we have both date and time
+                    if (order.deadline && order.deadlineTime) {
+                        // Parse date (assume format: YYYY-MM-DD or YYYY/MM/DD)
+                        let dateStr = order.deadline;
+                        if (dateStr.includes('/')) {
+                            const parts = dateStr.split('/');
+                            if (parts.length === 3) {
+                                // Convert to YYYY-MM-DD
+                                dateStr = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                            }
+                        }
+                        
+                        const [year, month, day] = dateStr.split('-').map(Number);
+                        const [hour, minute] = order.deadlineTime.split(':').map(Number);
+                        
+                        const date = new Date(year, month - 1, day, hour, minute, 0);
+                        deadlineDateTime = date.toISOString();
+                        
+                        log(`✓ ${order.id}: ساخته شد از تاریخ و ساعت`, 'success');
+                    }
+                    // Method 2: If we only have date, set time to 23:59
+                    else if (order.deadline) {
+                        let dateStr = order.deadline;
+                        if (dateStr.includes('/')) {
+                            const parts = dateStr.split('/');
+                            if (parts.length === 3) {
+                                dateStr = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                            }
+                        }
+                        
+                        const [year, month, day] = dateStr.split('-').map(Number);
+                        const date = new Date(year, month - 1, day, 23, 59, 0);
+                        deadlineDateTime = date.toISOString();
+                        
+                        // Also set deadlineTime
+                        order.deadlineTime = '23:59';
+                        
+                        log(`✓ ${order.id}: ساخته شد با ساعت پیش‌فرض 23:59`, 'success');
+                    }
+                    
+                    if (deadlineDateTime) {
+                        order.deadlineDateTime = deadlineDateTime;
+                        fixedCount++;
+                    } else {
+                        log(`✗ ${order.id}: نتوانست اصلاح شود`, 'error');
+                    }
+                }
+            });
+            
+            // Save orders
+            DataModule.saveOrders(orders);
+            
+            log(`اصلاح کامل شد! ${fixedCount} سفارش اصلاح شد`, 'success');
+            
+            // Reload page after 2 seconds
+            setTimeout(() => {
+                log('صفحه در حال بارگذاری مجدد...', 'info');
+                location.reload();
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

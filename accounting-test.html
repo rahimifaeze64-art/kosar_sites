@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست سیستم حسابداری</title>
+    
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+    <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
+    <link href="css/accounting.css" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .test-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .test-header {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .test-header h1 {
+            margin: 0 0 10px 0;
+            color: #212529;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .test-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>
+                <i class="fas fa-calculator"></i>
+                تست سیستم حسابداری شخصی
+            </h1>
+            <p style="color: #6c757d; margin: 0 0 15px 0;">
+                این صفحه برای تست عملکرد سیستم حسابداری طراحی شده است
+            </p>
+            
+            <div class="test-actions">
+                <button class="btn btn-success" onclick="addSampleData()">
+                    <i class="fas fa-database"></i>
+                    افزودن داده‌های نمونه
+                </button>
+                <button class="btn btn-danger" onclick="clearAllData()">
+                    <i class="fas fa-trash"></i>
+                    پاک کردن همه داده‌ها
+                </button>
+                <button class="btn btn-info" onclick="refreshView()">
+                    <i class="fas fa-sync"></i>
+                    بارگذاری مجدد
+                </button>
+                <button class="btn btn-dark" onclick="AccountingModule.exportData()">
+                    <i class="fas fa-download"></i>
+                    خروجی JSON
+                </button>
+            </div>
+        </div>
+        
+        <div id="accounting-app"></div>
+    </div>
+    
+    <!-- Debug Logger -->
+    <script>
+        function debugLogger(message, type = 'info', data = null) {
+            console.log(`[${type.toUpperCase()}] ${message}`, data || '');
+        }
+    </script>
+    
+    <script src="js/accounting.js"></script>
+    <script src="js/accounting-ui.js"></script>
+    
+    <script>
+        // Initialize
+        AccountingUI.init();
+        refreshView();
+        
+        function refreshView() {
+            const container = document.getElementById('accounting-app');
+            container.innerHTML = AccountingUI.render();
+        }
+        
+        function addSampleData() {
+            // درآمدها
+            AccountingModule.addTransaction({
+                type: 'income',
+                amount: 50000000,
+                category: 'درآمد شرکت',
+                description: 'فروش خدمات مشاوره',
+                date: new Date('2025-01-15').toISOString()
+            });
+            
+            AccountingModule.addTransaction({
+                type: 'income',
+                amount: 30000000,
+                category: 'سود پروژه',
+                description: 'پروژه دانشگاه تهران',
+                date: new Date('2025-01-20').toISOString()
+            });
+            
+            // هزینه‌ها
+            AccountingModule.addTransaction({
+                type: 'expense',
+                amount: 15000000,
+                category: 'حقوق و دستمزد',
+                description: 'حقوق کارکنان',
+                date: new Date('2025-01-10').toISOString()
+            });
+            
+            AccountingModule.addTransaction({
+                type: 'expense',
+                amount: 5000000,
+                category: 'اجاره و امکانات',
+                description: 'اجاره دفتر',
+                date: new Date('2025-01-05').toISOString()
+            });
+            
+            AccountingModule.addTransaction({
+                type: 'expense',
+                amount: 3000000,
+                category: 'تجهیزات و ابزار',
+                description: 'خرید لپ تاپ',
+                date: new Date('2025-01-12').toISOString()
+            });
+            
+            // بدهی‌ها
+            AccountingModule.addTransaction({
+                type: 'debt',
+                amount: 20000000,
+                category: 'وام و تسهیلات',
+                description: 'وام بانکی',
+                person: 'بانک ملی',
+                date: new Date('2025-01-01').toISOString()
+            });
+            
+            AccountingModule.addTransaction({
+                type: 'debt',
+                amount: 8000000,
+                category: 'بدهی به تامین‌کنندگان',
+                description: 'خرید تجهیزات',
+                person: 'شرکت تکنولوژی پارس',
+                date: new Date('2025-01-08').toISOString()
+            });
+            
+            // بستانکاری‌ها
+            AccountingModule.addTransaction({
+                type: 'credit',
+                amount: 25000000,
+                category: 'طلب از مشتریان',
+                description: 'پروژه در حال انجام',
+                person: 'دانشگاه شریف',
+                date: new Date('2025-01-18').toISOString()
+            });
+            
+            AccountingModule.addTransaction({
+                type: 'credit',
+                amount: 10000000,
+                category: 'پیش پرداخت داده شده',
+                description: 'پیش پرداخت پروژه',
+                person: 'شرکت آریا',
+                date: new Date('2025-01-22').toISOString()
+            });
+            
+            alert('✅ داده‌های نمونه با موفقیت اضافه شد!');
+            refreshView();
+        }
+        
+        function clearAllData() {
+            if (confirm('⚠️ آیا مطمئن هستید که می‌خواهید همه داده‌ها را پاک کنید؟')) {
+                localStorage.removeItem(AccountingModule.STORAGE_KEY);
+                AccountingModule.init();
+                alert('✅ همه داده‌ها پاک شد!');
+                refreshView();
+            }
+        }
+        
+        // Log initial state
+        console.log('📊 Accounting Module initialized');
+        console.log('💰 Current Balance:', AccountingModule.calculateBalance());
+        console.log('📝 Total Transactions:', AccountingModule.getTransactions().length);
+    </script>
+</body>
+</html>

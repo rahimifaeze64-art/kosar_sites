@@ -1,0 +1,18 @@
+{
+  "name": "edu-management-system",
+  "version": "1.0.0",
+  "description": "سیستم مدیریت تحصیلی دانشجویان بین‌المللی",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'Static site - no build needed'"
+  },
+  "keywords": [
+    "education",
+    "management",
+    "students",
+    "persian",
+    "rtl"
+  ],
+  "author": "Kowsar Company",
+  "license": "MIT"
+}

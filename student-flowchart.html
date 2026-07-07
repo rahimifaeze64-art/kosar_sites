@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>گرافیک پیشرفته مسیر تحصیلی</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+        
+        .flowchart-container {
+            position: relative;
+            padding: 2rem;
+        }
+        
+        .flowchart-node {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .flowchart-node:hover {
+            transform: scale(1.05);
+        }
+        
+        .node-connector {
+            position: absolute;
+            width: 2px;
+            background: linear-gradient(to bottom, #6366f1, #8b5cf6);
+        }
+        
+        .node-connector-horizontal {
+            height: 2px;
+            width: auto;
+            background: linear-gradient(to right, #6366f1, #8b5cf6);
+        }
+        
+        .pulse-ring {
+            animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.8);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+        }
+        
+        .flow-line {
+            stroke-dasharray: 5;
+            animation: dash 1s linear infinite;
+        }
+        
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -10;
+            }
+        }
+        
+        .glow-effect {
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+        }
+        
+        .path-selector {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .path-selector:hover {
+            transform: translateY(-2px);
+        }
+        
+        .path-selector.active {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+        
+        /* Animated gradient background */
+        .animated-gradient {
+            background: linear-gradient(-45deg, #1e1b4b, #312e81, #1e1b4b, #4c1d95);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+        
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+    </style>
+</head>
+<body class="animated-gradient min-h-screen text-white">
+    <!-- Header -->
+    <header class="bg-slate-900 bg-opacity-80 backdrop-blur-lg border-b border-slate-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <a href="index.html" class="text-gray-400 hover:text-white transition-colors">
+                        <i class="fas fa-arrow-right text-xl"></i>
+                    </a>
+                    <div>
+                        <h1 class="text-2xl font-bold text-white">
+                            <i class="fas fa-chart-line text-indigo-400 ml-2"></i>
+                            گرافیک پیشرفته مسیر تحصیلی
+                        </h1>
+                        <p class="text-sm text-gray-400">نمایش گرافیکی مراحل تحصیلی دانشجویان</p>
+                    </div>
+                </div>
+                
+                <!-- Student Selector -->
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <select id="student-selector" onchange="updateFlowchart()" 
+                            class="bg-slate-800 text-white border border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">انتخاب دانشجو...</option>
+                    </select>
+                    
+                    <button onclick="exportFlowchart()" 
+                            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-all">
+                        <i class="fas fa-download ml-2"></i>
+                        دانلود
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <!-- Path Type Selector -->
+        <div class="bg-slate-800 bg-opacity-50 backdrop-blur-lg rounded-xl p-6 mb-6 border border-slate-700">
+            <h2 class="text-lg font-bold text-white mb-4">
+                <i class="fas fa-route text-indigo-400 ml-2"></i>
+                انتخاب مسیر تحصیلی
+            </h2>
+            
+            <div class="flex flex-wrap gap-4">
+                <div onclick="selectPathType('educational')" id="path-btn-educational"
+                     class="path-selector active flex-1 min-w-[200px] bg-slate-700 rounded-lg p-4 border-2 border-indigo-500">
+                    <div class="flex items-center justify-center space-x-3 space-x-reverse">
+                        <i class="fas fa-graduation-cap text-3xl"></i>
+                        <div>
+                            <h3 class="font-bold text-lg">مراحل تحصیلی</h3>
+                            <p class="text-sm opacity-80">۲۲ مرحله</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div onclick="selectPathType('defense')" id="path-btn-defense"
+                     class="path-selector flex-1 min-w-[200px] bg-slate-700 rounded-lg p-4 border-2 border-transparent">
+                    <div class="flex items-center justify-center space-x-3 space-x-reverse">
+                        <i class="fas fa-shield-alt text-3xl text-blue-400"></i>
+                        <div>
+                            <h3 class="font-bold text-lg">گردش دفاع</h3>
+                            <p class="text-sm opacity-80">۱۲ مرحله</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div onclick="selectPathType('requirements')" id="path-btn-requirements"
+                     class="path-selector flex-1 min-w-[200px] bg-slate-700 rounded-lg p-4 border-2 border-transparent">
+                    <div class="flex items-center justify-center space-x-3 space-x-reverse">
+                        <i class="fas fa-tasks text-3xl text-emerald-400"></i>
+                        <div>
+                            <h3 class="font-bold text-lg">ملزومات</h3>
+                            <p class="text-sm opacity-80">مراحل تکمیلی</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Progress Overview -->
+        <div id="progress-overview" class="bg-slate-800 bg-opacity-50 backdrop-blur-lg rounded-xl p-6 mb-6 border border-slate-700">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-slate-700 rounded-lg p-4 text-center">
+                    <i class="fas fa-user-graduate text-4xl text-indigo-400 mb-2"></i>
+                    <p class="text-2xl font-bold text-white" id="student-name-display">-</p>
+                    <p class="text-sm text-gray-400">دانشجو</p>
+                </div>
+                <div class="bg-slate-700 rounded-lg p-4 text-center">
+                    <i class="fas fa-check-circle text-4xl text-green-400 mb-2"></i>
+                    <p class="text-2xl font-bold text-white" id="completed-count">0</p>
+                    <p class="text-sm text-gray-400">مراحل تکمیل شده</p>
+                </div>
+                <div class="bg-slate-700 rounded-lg p-4 text-center">
+                    <i class="fas fa-spinner text-4xl text-blue-400 mb-2"></i>
+                    <p class="text-2xl font-bold text-white" id="current-step">-</p>
+                    <p class="text-sm text-gray-400">مرحله فعلی</p>
+                </div>
+                <div class="bg-slate-700 rounded-lg p-4 text-center">
+                    <i class="fas fa-percentage text-4xl text-purple-400 mb-2"></i>
+                    <p class="text-2xl font-bold text-white" id="progress-percent">0%</p>
+                    <p class="text-sm text-gray-400">پیشرفت کلی</p>
+                </div>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="mt-6">
+                <div class="flex justify-between text-sm text-gray-400 mb-2">
+                    <span>شروع</span>
+                    <span>پایان</span>
+                </div>
+                <div class="w-full bg-slate-700 rounded-full h-4">
+                    <div id="main-progress-bar" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Flowchart Container -->
+        <div id="flowchart-wrapper" class="bg-slate-800 bg-opacity-50 backdrop-blur-lg rounded-xl p-6 border border-slate-700 overflow-x-auto">
+            <div id="flowchart-container" class="min-w-[800px]">
+                <!-- SVG for connectors -->
+                <svg id="connectors-svg" class="absolute top-0 left-0 w-full h-full pointer-events-none" style="z-index: 0;"></svg>
+                
+                <!-- Flowchart nodes will be rendered here -->
+                <div id="flowchart-nodes" class="relative">
+                    <!-- Nodes generated by JavaScript -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Legend -->
+        <div class="bg-slate-800 bg-opacity-50 backdrop-blur-lg rounded-xl p-6 mt-6 border border-slate-700">
+            <h3 class="text-lg font-bold text-white mb-4">
+                <i class="fas fa-info-circle text-indigo-400 ml-2"></i>
+                راهنما
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="flex items-center space-x-2 space-x-reverse">
+                    <div class="w-4 h-4 rounded-full bg-green-500"></div>
+                    <span class="text-gray-300">تکمیل شده</span>
+                </div>
+                <div class="flex items-center space-x-2 space-x-reverse">
+                    <div class="w-4 h-4 rounded-full bg-blue-500 animate-pulse"></div>
+                    <span class="text-gray-300">مرحله فعلی</span>
+                </div>
+                <div class="flex items-center space-x-2 space-x-reverse">
+                    <div class="w-4 h-4 rounded-full bg-gray-500"></div>
+                    <span class="text-gray-300">در انتظار</span>
+                </div>
+                <div class="flex items-center space-x-2 space-x-reverse">
+                    <div class="w-4 h-4 rounded-full bg-red-500"></div>
+                    <span class="text-gray-300">تاخیر دارد</span>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Font Awesome -->
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+    
+    <script>
+        // Default steps definitions (same as employee.js)
+        const STEPS = {
+            educational: [
+                { name: 'محضر و اصالت' },
+                { name: 'تنزیل نمره' },
+                { name: 'تعدیل' },
+                { name: 'ایرانداک خطه' },
+                { name: 'ایرانداک رساله' },
+                { name: 'مدرک لغت' },
+                { name: 'ایجاد کردش' },
+                { name: 'حاتمی' },
+                { name: 'بارگزاری لغت' },
+                { name: 'آزفا' },
+                { name: 'ترجمه به اسماعیلی' },
+                { name: 'دادگر' },
+                { name: 'ارسال کد به تهران' },
+                { name: 'وثیقه' },
+                { name: 'تصدیق' },
+                { name: 'تنضید' },
+                { name: 'استلال' },
+                { name: 'تجلید' },
+                { name: 'ختم تجلید' },
+                { name: 'قطعی' },
+                { name: 'مدارک سابقه' },
+                { name: 'ارسال' }
+            ],
+            defense: [
+                { name: 'لوح' },
+                { name: 'دستگاه' },
+                { name: 'بارگزاری' },
+                { name: 'امتیاز' },
+                { name: 'چاپ' },
+                { name: 'دفتر' },
+                { name: 'پیش دفاع' },
+                { name: 'دفاع' },
+                { name: 'داوری' },
+                { name: 'تجدید نظر' },
+                { name: 'اصلاحیه' },
+                { name: 'قطعی' }
+            ],
+            requirements: [
+                { name: 'مدارک هویتی' },
+                { name: 'عکس پرسنلی' },
+                { name: 'کپی پاسپورت' },
+                { name: 'کپی ویزا' },
+                { name: 'کارت دانشجویی' },
+                { name: 'معرفی نامه' },
+                { name: 'کارنامه تحصیلی' },
+                { name: 'رزومه علمی' }
+            ]
+        };
+        
+        let currentPathType = 'educational';
+        let currentStudent = null;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStudents();
+            renderFlowchart();
+        });
+        
+        // Load students from localStorage
+        function loadStudents() {
+            const selector = document.getElementById('student-selector');
+            selector.innerHTML = '<option value="">همه دانشجویان (نمونه)</option>';
+            
+            try {
+                // Try to load from students_data
+                const studentsData = localStorage.getItem('students_data');
+                if (studentsData) {
+                    const students = Object.values(JSON.parse(studentsData));
+                    students.forEach(student => {
+                        const option = document.createElement('option');
+                        option.value = student.id;
+                        option.textContent = student.name;
+                        selector.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.warn('Could not load students:', error);
+            }
+        }
+        
+        // Select path type
+        function selectPathType(type) {
+            currentPathType = type;
+            
+            // Update button styles
+            document.querySelectorAll('.path-selector').forEach(btn => {
+                btn.classList.remove('active');
+                btn.classList.remove('border-indigo-500', 'border-blue-500', 'border-emerald-500');
+                btn.classList.add('border-transparent');
+            });
+            
+            const activeBtn = document.getElementById(`path-btn-${type}`);
+            activeBtn.classList.add('active');
+            
+            const borderColors = {
+                educational: 'border-indigo-500',
+                defense: 'border-blue-500',
+                requirements: 'border-emerald-500'
+            };
+            activeBtn.classList.remove('border-transparent');
+            activeBtn.classList.add(borderColors[type]);
+            
+            renderFlowchart();
+            updateProgress();
+        }
+        
+        // Update flowchart based on selected student
+        function updateFlowchart() {
+            const selector = document.getElementById('student-selector');
+            const studentId = selector.value;
+            
+            if (studentId) {
+                try {
+                    const studentsData = localStorage.getItem('students_data');
+                    if (studentsData) {
+                        const students = JSON.parse(studentsData);
+                        currentStudent = students[studentId];
+                    }
+                } catch (error) {
+                    console.error('Error loading student:', error);
+                }
+            } else {
+                currentStudent = null;
+            }
+            
+            renderFlowchart();
+            updateProgress();
+        }
+        
+        // Get student steps
+        function getStudentSteps() {
+            const stepsKey = {
+                educational: 'educationalSteps',
+                defense: 'defenseSteps',
+                requirements: 'requirementsSteps'
+            };
+            
+            if (!currentStudent) {
+                return STEPS[currentPathType].map(step => ({ ...step, completed: false, date: null }));
+            }
+            
+            const studentSteps = currentStudent[stepsKey[currentPathType]];
+            if (!studentSteps) {
+                return STEPS[currentPathType].map(step => ({ ...step, completed: false, date: null }));
+            }
+            
+            return studentSteps;
+        }
+        
+        // Update progress overview
+        function updateProgress() {
+            const steps = getStudentSteps();
+            const completedCount = steps.filter(s => s.completed).length;
+            const totalCount = steps.length;
+            const progressPercent = Math.round((completedCount / totalCount) * 100);
+            const currentStepIndex = steps.findIndex(s => !s.completed);
+            
+            document.getElementById('student-name-display').textContent = currentStudent ? currentStudent.name : 'نمونه';
+            document.getElementById('completed-count').textContent = `${completedCount} از ${totalCount}`;
+            document.getElementById('current-step').textContent = currentStepIndex >= 0 ? steps[currentStepIndex].name : 'تکمیل شده';
+            document.getElementById('progress-percent').textContent = `${progressPercent}%`;
+            document.getElementById('main-progress-bar').style.width = `${progressPercent}%`;
+        }
+        
+        // Render flowchart
+        function renderFlowchart() {
+            const container = document.getElementById('flowchart-nodes');
+            const steps = getStudentSteps();
+            
+            const colors = {
+                educational: {
+                    completed: 'from-green-500 to-green-600',
+                    current: 'from-blue-500 to-blue-600',
+                    pending: 'from-gray-500 to-gray-600'
+                },
+                defense: {
+                    completed: 'from-green-500 to-green-600',
+                    current: 'from-blue-500 to-blue-600',
+                    pending: 'from-gray-500 to-gray-600'
+                },
+                requirements: {
+                    completed: 'from-green-500 to-green-600',
+                    current: 'from-emerald-500 to-emerald-600',
+                    pending: 'from-gray-500 to-gray-600'
+                }
+            };
+            
+            const iconColors = {
+                educational: 'text-indigo-400',
+                defense: 'text-blue-400',
+                requirements: 'text-emerald-400'
+            };
+            
+            const icons = {
+                educational: 'fa-graduation-cap',
+                defense: 'fa-shield-alt',
+                requirements: 'fa-tasks'
+            };
+            
+            // Find current step index
+            const currentStepIndex = steps.findIndex(s => !s.completed);
+            
+            // Calculate grid layout - arrange steps in multiple columns
+            const nodesPerRow = 3;
+            const totalRows = Math.ceil(steps.length / nodesPerRow);
+            
+            // Build flowchart HTML with grid layout
+            let html = '<div class="grid gap-8" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">';
+            
+            steps.forEach((step, index) => {
+                let status = 'pending';
+                if (step.completed) {
+                    status = 'completed';
+                } else if (index === currentStepIndex) {
+                    status = 'current';
+                }
+                
+                const isCurrent = status === 'current';
+                const isCompleted = status === 'completed';
+                const row = Math.floor(index / nodesPerRow);
+                const col = index % nodesPerRow;
+                const isReversedRow = row % 2 === 1;
+                
+                html += `
+                    <!-- Step ${index + 1} -->
+                    <div class="flowchart-node relative ${isCurrent ? 'z-10' : ''}">
+                        ${isCurrent ? `
+                            <div class="absolute -inset-1 bg-blue-500 rounded-2xl opacity-30 blur-lg"></div>
+                        ` : ''}
+                        
+                        <div class="relative bg-slate-800 rounded-xl overflow-hidden border-2 
+                                    ${isCurrent ? 'border-blue-500 shadow-xl shadow-blue-500/30' : 
+                                      isCompleted ? 'border-green-500/50' : 'border-slate-700'}">
+                            
+                            <!-- Progress indicator at top -->
+                            <div class="h-1 bg-gradient-to-r ${colors[currentPathType][status]}"></div>
+                            
+                            <!-- Card content -->
+                            <div class="p-4">
+                                <!-- Header with step number -->
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center gap-3">
+                                        <!-- Step Number Circle -->
+                                        <div class="relative">
+                                            ${isCurrent ? `
+                                                <div class="absolute inset-0 rounded-full bg-blue-400 pulse-ring"></div>
+                                            ` : ''}
+                                            <div class="w-12 h-12 rounded-full bg-gradient-to-br ${colors[currentPathType][status]} 
+                                                        flex items-center justify-center text-white font-bold text-lg shadow-lg
+                                                        ${isCompleted ? 'ring-2 ring-green-300' : ''}">
+                                                ${isCompleted ? '<i class="fas fa-check text-xl"></i>' : (index + 1)}
+                                            </div>
+                                        </div>
+                                        
+                                        <div>
+                                            <span class="text-xs text-gray-500">مرحله ${index + 1} از ${steps.length}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Status Badge -->
+                                    ${isCompleted ? `
+                                        <span class="bg-green-500/20 text-green-400 text-xs px-3 py-1 rounded-full border border-green-500/30">
+                                            <i class="fas fa-check ml-1"></i>تکمیل
+                                        </span>
+                                    ` : isCurrent ? `
+                                        <span class="bg-blue-500/20 text-blue-400 text-xs px-3 py-1 rounded-full border border-blue-500/30 animate-pulse">
+                                            <i class="fas fa-spinner fa-spin ml-1"></i>فعلی
+                                        </span>
+                                    ` : `
+                                        <span class="bg-slate-700 text-gray-400 text-xs px-3 py-1 rounded-full border border-slate-600">
+                                            <i class="fas fa-clock ml-1"></i>در انتظار
+                                        </span>
+                                    `}
+                                </div>
+                                
+                                <!-- Step Name -->
+                                <div class="flex items-center gap-2 mb-3">
+                                    <i class="fas ${icons[currentPathType]} ${iconColors[currentPathType]} text-xl"></i>
+                                    <h3 class="font-bold text-white text-lg">${step.name}</h3>
+                                </div>
+                                
+                                <!-- Additional Info -->
+                                ${step.date || step.notes ? `
+                                    <div class="pt-3 border-t border-slate-700 space-y-2">
+                                        ${step.date ? `
+                                            <div class="flex items-center text-sm text-gray-400">
+                                                <i class="fas fa-calendar ml-2 text-indigo-400"></i>
+                                                <span>${step.date}</span>
+                                            </div>
+                                        ` : ''}
+                                        ${step.notes ? `
+                                            <div class="flex items-start text-sm text-gray-400">
+                                                <i class="fas fa-sticky-note ml-2 text-yellow-400 mt-0.5"></i>
+                                                <span>${step.notes}</span>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        
+                        <!-- Connector to next (for non-last items) -->
+                        ${index < steps.length - 1 ? `
+                            <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 z-0">
+                                <div class="w-0.5 h-4 bg-gradient-to-b ${isCompleted ? 'from-green-500 to-green-600' : 'from-slate-600 to-slate-700'}"></div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            
+            // Add summary section
+            html += `
+                <div class="mt-8 bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+                    <h3 class="text-lg font-bold text-white mb-4">
+                        <i class="fas fa-chart-pie text-indigo-400 ml-2"></i>
+                        خلاصه وضعیت
+                    </h3>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="text-center p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+                            <p class="text-3xl font-bold text-green-400">${steps.filter(s => s.completed).length}</p>
+                            <p class="text-sm text-gray-400">تکمیل شده</p>
+                        </div>
+                        <div class="text-center p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                            <p class="text-3xl font-bold text-blue-400">${currentStepIndex >= 0 ? 1 : 0}</p>
+                            <p class="text-sm text-gray-400">در حال انجام</p>
+                        </div>
+                        <div class="text-center p-4 bg-slate-700/50 rounded-lg border border-slate-600">
+                            <p class="text-3xl font-bold text-gray-400">${steps.filter(s => !s.completed).length - (currentStepIndex >= 0 ? 1 : 0)}</p>
+                            <p class="text-sm text-gray-400">در انتظار</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+        
+        // Export flowchart as image
+        function exportFlowchart() {
+            alert('برای خروجی گرفتن از فلوچارت، از کلیدهای Print Screen یا ابزار Snipping Tool استفاده کنید.');
+        }
+    </script>
+</body>
+</html>

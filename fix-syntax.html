@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fix Syntax Issues</title>
+</head>
+<body>
+    <h1>Syntax Fix Results</h1>
+    <div id="results"></div>
+    
+    <script>
+        const results = document.getElementById('results');
+        
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.style.color = type === 'error' ? 'red' : type === 'success' ? 'green' : 'blue';
+            div.textContent = message;
+            results.appendChild(div);
+        }
+        
+        // Test each JavaScript file
+        const files = [
+            'js/config.js',
+            'js/data.js',
+            'js/dashboard.js', 
+            'js/orders.js',
+            'js/users.js',
+            'js/profile.js',
+            'js/modals.js',
+            'js/app.js'
+        ];
+        
+        let testCount = 0;
+        
+        files.forEach(file => {
+            const script = document.createElement('script');
+            script.src = file;
+            
+            script.onload = () => {
+                log(`✅ ${file} - Syntax OK`, 'success');
+                testCount++;
+                
+                if (testCount === files.length) {
+                    log('🎉 All files have valid syntax!', 'success');
+                    
+                    // Test modules
+                    setTimeout(() => {
+                        testModules();
+                    }, 100);
+                }
+            };
+            
+            script.onerror = (e) => {
+                log(`❌ ${file} - Syntax Error`, 'error');
+                testCount++;
+            };
+            
+            document.head.appendChild(script);
+        });
+        
+        function testModules() {
+            log('--- Testing Module Functions ---', 'info');
+            
+            try {
+                if (typeof CONFIG !== 'undefined') {
+                    log('✅ CONFIG module loaded', 'success');
+                } else {
+                    log('❌ CONFIG module not found', 'error');
+                }
+                
+                if (typeof DataModule !== 'undefined') {
+                    log('✅ DataModule loaded', 'success');
+                    
+                    // Test DataModule functions
+                    try {
+                        DataModule.initializeData();
+                        log('✅ DataModule.initializeData() works', 'success');
+                        
+                        const users = DataModule.getUsers();
+                        log(`✅ DataModule.getUsers() returned ${users.length} users`, 'success');
+                        
+                        const orders = DataModule.getOrders();
+                        log(`✅ DataModule.getOrders() returned ${orders.length} orders`, 'success');
+                        
+                    } catch (e) {
+                        log(`❌ DataModule function error: ${e.message}`, 'error');
+                    }
+                } else {
+                    log('❌ DataModule not found', 'error');
+                }
+                
+                if (typeof DashboardModule !== 'undefined') {
+                    log('✅ DashboardModule loaded', 'success');
+                    
+                    try {
+                        const content = DashboardModule.getDashboardContent('manager');
+                        if (content && content.includes('داشبورد')) {
+                            log('✅ DashboardModule.getDashboardContent() works', 'success');
+                        } else {
+                            log('❌ DashboardModule.getDashboardContent() returned invalid content', 'error');
+                        }
+                    } catch (e) {
+                        log(`❌ DashboardModule error: ${e.message}`, 'error');
+                    }
+                } else {
+                    log('❌ DashboardModule not found', 'error');
+                }
+                
+            } catch (e) {
+                log(`❌ General error: ${e.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

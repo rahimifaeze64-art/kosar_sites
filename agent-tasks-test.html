@@ -1,0 +1,175 @@
+﻿<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست وظایف عامل</title>
+    <link rel="stylesheet" href="assets/fonts/vazirmatn/vazirmatn.css">
+    <link rel="stylesheet" href="assets/libs/fontawesome/css/all.min.css">
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body class="bg-slate-900 text-white font-vazir">
+    <div class="min-h-screen p-8">
+        <div class="max-w-6xl mx-auto">
+            <h1 class="text-3xl font-bold text-center mb-8">
+                <i class="fas fa-clipboard-check text-blue-400 ml-2"></i>
+                تست سیستم وظایف عامل
+            </h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <!-- employee Panel -->
+                <div class="bg-slate-800 rounded-lg p-6">
+                    <h2 class="text-xl font-bold mb-4 text-indigo-400">
+                        <i class="fas fa-user-cog ml-2"></i>
+                        پنل کارمند
+                    </h2>
+                    <p class="text-gray-400 text-sm mb-4">
+                        به عنوان کارمند وارد شوید و وظیفه برای عامل تعریف کنید
+                    </p>
+                    <select id="employee-select" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white mb-4">
+                        <option value="">-- انتخاب کارمند --</option>
+                        <option value="emp001">ساره</option>
+                        <option value="emp002">زینب</option>
+                        <option value="emp003">فرزاد</option>
+                        <option value="emp004">سلیمان</option>
+                    </select>
+                    <button onclick="loginAsemployee()" 
+                            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg">
+                        <i class="fas fa-sign-in-alt ml-2"></i>
+                        ورود به سیستم
+                    </button>
+                </div>
+                
+                <!-- Agent Panel -->
+                <div class="bg-slate-800 rounded-lg p-6">
+                    <h2 class="text-xl font-bold mb-4 text-blue-400">
+                        <i class="fas fa-user-shield ml-2"></i>
+                        پنل عامل
+                    </h2>
+                    <p class="text-gray-400 text-sm mb-4">
+                        به عنوان عامل وارد شوید و وظایف خود را مشاهده کنید
+                    </p>
+                    <select id="agent-select" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white mb-4">
+                        <option value="">-- انتخاب عامل --</option>
+                        <option value="doc001">عامل معصومی</option>
+                        <option value="doc002">عامل ذوقی</option>
+                        <option value="agent001">رضایی</option>
+                        <option value="agent002">کریمی</option>
+                    </select>
+                    <button onclick="loginAsAgent()" 
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg">
+                        <i class="fas fa-sign-in-alt ml-2"></i>
+                        ورود به سیستم
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Instructions -->
+            <div class="bg-slate-800 rounded-lg p-6">
+                <h3 class="text-lg font-bold mb-4 text-green-400">
+                    <i class="fas fa-info-circle ml-2"></i>
+                    راهنمای تست
+                </h3>
+                <ol class="space-y-3 text-gray-300">
+                    <li class="flex items-start">
+                        <span class="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold ml-3 mt-0.5">1</span>
+                        <div>
+                            <strong class="text-white">ورود به عنوان کارمند:</strong>
+                            <p class="text-sm text-gray-400 mt-1">یک کارمند انتخاب کنید و وارد شوید. سپس به صفحه "وظایف من" بروید.</p>
+                        </div>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold ml-3 mt-0.5">2</span>
+                        <div>
+                            <strong class="text-white">تعریف وظیفه:</strong>
+                            <p class="text-sm text-gray-400 mt-1">روی دکمه "تعریف وظیفه برای عامل" کلیک کنید و فرم را پر کنید.</p>
+                        </div>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold ml-3 mt-0.5">3</span>
+                        <div>
+                            <strong class="text-white">ورود به عنوان عامل:</strong>
+                            <p class="text-sm text-gray-400 mt-1">خارج شوید و به عنوان عامل (همان عاملی که وظیفه به او تخصیص دادید) وارد شوید.</p>
+                        </div>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold ml-3 mt-0.5">4</span>
+                        <div>
+                            <strong class="text-white">مشاهده وظایف:</strong>
+                            <p class="text-sm text-gray-400 mt-1">به صفحه "وظایف من" بروید و وظیفه تخصیص داده شده را مشاهده کنید.</p>
+                        </div>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold ml-3 mt-0.5">5</span>
+                        <div>
+                            <strong class="text-white">تغییر وضعیت:</strong>
+                            <p class="text-sm text-gray-400 mt-1">روی آیکون تیک سبز کلیک کنید تا وضعیت وظیفه تغییر کند.</p>
+                        </div>
+                    </li>
+                </ol>
+            </div>
+            
+            <div class="mt-6 text-center">
+                <a href="index.html" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-arrow-right ml-1"></i>
+                    بازگشت به صفحه اصلی
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/data.js"></script>
+    <script>
+        // Initialize data
+        DataModule.initializeData();
+        
+        function loginAsemployee() {
+            const userId = document.getElementById('employee-select').value;
+            if (!userId) {
+                alert('لطفاً یک کارمند انتخاب کنید');
+                return;
+            }
+            
+            const users = DataModule.getUsers();
+            const user = users.find(u => u.id === userId);
+            
+            if (!user) {
+                alert('کاربر یافت نشد');
+                return;
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('currentUser', JSON.stringify(user));
+            localStorage.setItem(CONFIG.STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+            
+            // Redirect
+            window.location.href = 'index.html';
+        }
+        
+        function loginAsAgent() {
+            const userId = document.getElementById('agent-select').value;
+            if (!userId) {
+                alert('لطفاً یک عامل انتخاب کنید');
+                return;
+            }
+            
+            const users = DataModule.getUsers();
+            const user = users.find(u => u.id === userId);
+            
+            if (!user) {
+                alert('کاربر یافت نشد');
+                return;
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('currentUser', JSON.stringify(user));
+            localStorage.setItem(CONFIG.STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+            
+            // Redirect
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

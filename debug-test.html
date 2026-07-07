@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Test</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <script src="assets/libs/alpine.min.js" defer></script>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-2xl mx-auto">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h1 class="text-2xl font-bold text-center text-blue-600 mb-6">تست دیباگر</h1>
+            
+            <div class="space-y-4">
+                <button onclick="testDebugger()" 
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg">
+                    تست دیباگر
+                </button>
+                
+                <button onclick="testError()" 
+                        class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg">
+                    تست خطا
+                </button>
+                
+                <button onclick="testModules()" 
+                        class="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg">
+                    تست ماژول‌ها
+                </button>
+            </div>
+            
+            <div class="mt-6 p-4 bg-gray-100 rounded-lg">
+                <h3 class="font-bold mb-2">نتایج:</h3>
+                <div id="results" class="text-sm"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Debug System (simplified)
+        function debugLogger(message, type = 'info', data = null) {
+            const timestamp = new Date().toLocaleTimeString('fa-IR');
+            console.log(`[${timestamp}] ${type.toUpperCase()}: ${message}`, data || '');
+            
+            const results = document.getElementById('results');
+            const entry = document.createElement('div');
+            entry.className = `p-2 mb-2 rounded ${type === 'error' ? 'bg-red-100 text-red-800' : 
+                                                  type === 'success' ? 'bg-green-100 text-green-800' : 
+                                                  type === 'warning' ? 'bg-yellow-100 text-yellow-800' : 
+                                                  'bg-blue-100 text-blue-800'}`;
+            entry.innerHTML = `<strong>[${type}]</strong> ${message}`;
+            results.appendChild(entry);
+        }
+        
+        function testDebugger() {
+            debugLogger('تست دیباگر شروع شد', 'info');
+            debugLogger('این یک پیام موفقیت است', 'success');
+            debugLogger('این یک هشدار است', 'warning');
+        }
+        
+        function testError() {
+            try {
+                throw new Error('این یک خطای تست است');
+            } catch (error) {
+                debugLogger('خطای تست رخ داد', 'error', error.message);
+            }
+        }
+        
+        function testModules() {
+            debugLogger('تست ماژول‌ها...', 'info');
+            
+            // Test CONFIG
+            if (typeof CONFIG !== 'undefined') {
+                debugLogger('CONFIG موجود است', 'success');
+            } else {
+                debugLogger('CONFIG موجود نیست', 'error');
+            }
+            
+            // Test DataModule
+            if (typeof DataModule !== 'undefined') {
+                debugLogger('DataModule موجود است', 'success');
+            } else {
+                debugLogger('DataModule موجود نیست', 'error');
+            }
+            
+            // Test DashboardModule
+            if (typeof DashboardModule !== 'undefined') {
+                debugLogger('DashboardModule موجود است', 'success');
+            } else {
+                debugLogger('DashboardModule موجود نیست', 'error');
+            }
+        }
+    </script>
+    
+    <!-- Load modules -->
+    <script src="js/config.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/dashboard.js"></script>
+    
+    <script>
+        // Test after modules loaded
+        setTimeout(() => {
+            debugLogger('صفحه تست بارگذاری شد', 'success');
+            testModules();
+        }, 100);
+    </script>
+</body>
+</html>

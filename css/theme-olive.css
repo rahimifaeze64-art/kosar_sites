@@ -1,0 +1,446 @@
+/* 
+ * Olive Green Theme - تم سبز زیتونی
+ * رنگ‌بندی ملایم و حرفه‌ای با سبز زیتونی
+ * این تم به صورت خودکار روی تمام صفحات اعمال می‌شود
+ */
+
+/* ========== متغیرهای رنگی ========== */
+:root {
+    --olive-primary: #8FBF3F;
+    --olive-primary-light: #A7CF5A;
+    --olive-primary-hover: #9AC24B;
+    --olive-background: #F2F2F2;
+    --olive-surface: #FFFFFF;
+    --olive-border: #E0E0E0;
+    --olive-text-secondary: #9E9E9E;
+    --olive-selected-bg: #EAF4D3;
+    --olive-selected-border: #8FBF3F;
+}
+
+/* ========== تم فعال - اعمال خودکار ========== */
+body[data-theme="olive"],
+html[data-theme="olive"] body {
+    background: var(--olive-background) !important;
+}
+
+/* اگر تم ذخیره شده olive باشد، به صورت خودکار اعمال شود */
+body {
+    background: var(--olive-background);
+}
+
+/* ========== Sidebar ========== */
+body[data-theme="olive"] aside,
+aside {
+    background: linear-gradient(to bottom, #FFFFFF, #F9F9F9, #FFFFFF) !important;
+    border-left: 1px solid var(--olive-border);
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Sidebar Header */
+body[data-theme="olive"] aside .border-b,
+aside .border-b {
+    border-color: var(--olive-border) !important;
+}
+
+/* Sidebar Navigation Buttons */
+body[data-theme="olive"] aside nav button,
+aside nav button {
+    color: #333 !important;
+    transition: all 0.2s ease;
+}
+
+body[data-theme="olive"] aside nav button:hover,
+aside nav button:hover {
+    background-color: #F5F5F5 !important;
+}
+
+body[data-theme="olive"] aside nav button.bg-white,
+aside nav button.bg-white {
+    background-color: var(--olive-selected-bg) !important;
+    border-right: 3px solid var(--olive-primary);
+    color: var(--olive-primary) !important;
+    font-weight: 600;
+}
+
+/* Sidebar Footer */
+body[data-theme="olive"] aside .border-t,
+aside .border-t {
+    border-color: var(--olive-border) !important;
+}
+
+/* ========== دکمه‌ها - همه به سبز زیتونی ========== */
+body[data-theme="olive"] .btn,
+body[data-theme="olive"] button[class*="bg-blue"],
+body[data-theme="olive"] button[class*="bg-green"],
+body[data-theme="olive"] button[class*="bg-purple"],
+body[data-theme="olive"] button[class*="bg-indigo"],
+body[data-theme="olive"] button[class*="bg-emerald"],
+body[data-theme="olive"] button[class*="bg-red"],
+body[data-theme="olive"] button[class*="bg-yellow"],
+.btn,
+button[class*="bg-blue"],
+button[class*="bg-green"],
+button[class*="bg-purple"],
+button[class*="bg-indigo"],
+button[class*="bg-emerald"],
+button[class*="bg-red"]:not([class*="bg-red-50"]):not([class*="bg-red-100"]),
+button[class*="bg-yellow"]:not([class*="bg-yellow-50"]):not([class*="bg-yellow-100"]) {
+    background-color: var(--olive-primary) !important;
+    color: white !important;
+    border: none;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    box-shadow: none;
+}
+
+body[data-theme="olive"] .btn:hover,
+body[data-theme="olive"] button[class*="bg-blue"]:hover,
+body[data-theme="olive"] button[class*="bg-green"]:hover,
+body[data-theme="olive"] button[class*="bg-purple"]:hover,
+body[data-theme="olive"] button[class*="bg-indigo"]:hover,
+body[data-theme="olive"] button[class*="bg-emerald"]:hover,
+body[data-theme="olive"] button[class*="bg-red"]:not([class*="bg-red-50"]):not([class*="bg-red-100"]):hover,
+body[data-theme="olive"] button[class*="bg-yellow"]:not([class*="bg-yellow-50"]):not([class*="bg-yellow-100"]):hover,
+.btn:hover,
+button[class*="bg-blue"]:hover,
+button[class*="bg-green"]:hover,
+button[class*="bg-purple"]:hover,
+button[class*="bg-indigo"]:hover,
+button[class*="bg-emerald"]:hover,
+button[class*="bg-red"]:not([class*="bg-red-50"]):not([class*="bg-red-100"]):hover,
+button[class*="bg-yellow"]:not([class*="bg-yellow-50"]):not([class*="bg-yellow-100"]):hover {
+    background-color: var(--olive-primary-hover) !important;
+}
+
+/* دکمه ثانویه */
+body[data-theme="olive"] button[class*="bg-gray"],
+button[class*="bg-gray"] {
+    background-color: #F5F5F5 !important;
+    color: #333 !important;
+    border: 1px solid var(--olive-border);
+}
+
+body[data-theme="olive"] button[class*="bg-gray"]:hover,
+button[class*="bg-gray"]:hover {
+    background-color: #E8E8E8 !important;
+}
+
+/* دکمه غیرفعال */
+body[data-theme="olive"] button:disabled,
+button:disabled {
+    background-color: var(--olive-border) !important;
+    color: var(--olive-text-secondary) !important;
+    cursor: not-allowed;
+}
+
+/* ========== کارت‌ها و کادرها ========== */
+body[data-theme="olive"] .dashboard-card,
+body[data-theme="olive"] .bg-white,
+.dashboard-card,
+.bg-white {
+    background-color: var(--olive-surface) !important;
+    border: 1px solid var(--olive-border);
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* کارت انتخاب شده */
+body[data-theme="olive"] .dashboard-card.selected,
+body[data-theme="olive"] .selected,
+.dashboard-card.selected,
+.selected {
+    background-color: var(--olive-selected-bg) !important;
+    border-color: var(--olive-selected-border) !important;
+    border-width: 2px;
+}
+
+/* ========== فرم‌ها ========== */
+body[data-theme="olive"] input,
+body[data-theme="olive"] select,
+body[data-theme="olive"] textarea,
+input,
+select,
+textarea {
+    background-color: var(--olive-surface);
+    border: 1px solid var(--olive-border);
+    border-radius: 6px;
+    color: #333;
+    transition: all 0.2s ease;
+}
+
+body[data-theme="olive"] input:focus,
+body[data-theme="olive"] select:focus,
+body[data-theme="olive"] textarea:focus,
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--olive-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(143, 191, 63, 0.1);
+}
+
+/* ========== جداول ========== */
+body[data-theme="olive"] table,
+table {
+    background-color: var(--olive-surface);
+    border: 1px solid var(--olive-border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+body[data-theme="olive"] thead,
+thead {
+    background-color: #F9F9F9;
+}
+
+body[data-theme="olive"] tbody tr,
+tbody tr {
+    border-bottom: 1px solid var(--olive-border);
+}
+
+body[data-theme="olive"] tbody tr:hover,
+tbody tr:hover {
+    background-color: var(--olive-selected-bg);
+}
+
+/* ========== Badge / Tag ========== */
+body[data-theme="olive"] .badge,
+body[data-theme="olive"] span[class*="bg-"],
+.badge,
+span[class*="bg-"] {
+    background-color: var(--olive-primary) !important;
+    color: white !important;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+}
+
+/* ========== Progress Bar ========== */
+body[data-theme="olive"] .progress-bar,
+.progress-bar {
+    background-color: var(--olive-primary) !important;
+}
+
+body[data-theme="olive"] .progress-bar-container,
+.progress-bar-container {
+    background-color: var(--olive-border);
+    border-radius: 4px;
+}
+
+/* ========== متن ========== */
+body[data-theme="olive"] h1,
+body[data-theme="olive"] h2,
+body[data-theme="olive"] h3,
+body[data-theme="olive"] h4,
+body[data-theme="olive"] h5,
+body[data-theme="olive"] h6,
+h1, h2, h3, h4, h5, h6 {
+    color: #333 !important;
+}
+
+body[data-theme="olive"] p,
+body[data-theme="olive"] span,
+body[data-theme="olive"] div,
+p, span, div {
+    color: #333;
+}
+
+body[data-theme="olive"] .text-secondary,
+.text-secondary {
+    color: var(--olive-text-secondary) !important;
+}
+
+/* ========== آیکون‌ها ========== */
+body[data-theme="olive"] i,
+i {
+    color: var(--olive-text-secondary);
+}
+
+body[data-theme="olive"] button i,
+body[data-theme="olive"] a i,
+button i,
+a i {
+    color: inherit;
+}
+
+/* ========== Notification ========== */
+body[data-theme="olive"] .notification,
+.notification {
+    background-color: var(--olive-surface);
+    border: 1px solid var(--olive-border);
+    border-left: 4px solid var(--olive-primary);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ========== Modal ========== */
+body[data-theme="olive"] .modal-content,
+.modal-content {
+    background-color: var(--olive-surface);
+    border: 1px solid var(--olive-border);
+    border-radius: 8px;
+}
+
+body[data-theme="olive"] .modal-header,
+.modal-header {
+    border-bottom: 1px solid var(--olive-border);
+}
+
+body[data-theme="olive"] .modal-footer,
+.modal-footer {
+    border-top: 1px solid var(--olive-border);
+}
+
+/* ========== Dropdown ========== */
+body[data-theme="olive"] .dropdown-menu,
+.dropdown-menu {
+    background-color: var(--olive-surface);
+    border: 1px solid var(--olive-border);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+body[data-theme="olive"] .dropdown-item:hover,
+.dropdown-item:hover {
+    background-color: var(--olive-selected-bg);
+}
+
+/* ========== Scrollbar ========== */
+body[data-theme="olive"] ::-webkit-scrollbar,
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+body[data-theme="olive"] ::-webkit-scrollbar-track,
+::-webkit-scrollbar-track {
+    background: var(--olive-background);
+}
+
+body[data-theme="olive"] ::-webkit-scrollbar-thumb,
+::-webkit-scrollbar-thumb {
+    background: var(--olive-border);
+    border-radius: 4px;
+}
+
+body[data-theme="olive"] ::-webkit-scrollbar-thumb:hover,
+::-webkit-scrollbar-thumb:hover {
+    background: var(--olive-text-secondary);
+}
+
+/* ========== انیمیشن‌ها ========== */
+@keyframes olive-pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(143, 191, 63, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(143, 191, 63, 0);
+    }
+}
+
+body[data-theme="olive"] .pulse,
+.pulse {
+    animation: olive-pulse 2s infinite;
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 768px) {
+    body[data-theme="olive"] aside,
+    aside {
+        box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
+    }
+}
+
+/* ========== Override Dark Backgrounds ========== */
+/* تمام پس‌زمینه‌های تیره را با تم olive جایگزین کن */
+body[data-theme="olive"] .bg-slate-800,
+body[data-theme="olive"] [class*="bg-slate"],
+body[data-theme="olive"] [style*="background: #1e293b"],
+body[data-theme="olive"] [style*="background:#1e293b"],
+.bg-slate-800,
+[class*="bg-slate"],
+[style*="background: #1e293b"],
+[style*="background:#1e293b"] {
+    background: var(--olive-surface) !important;
+    background-color: var(--olive-surface) !important;
+}
+
+/* Override dark borders */
+body[data-theme="olive"] .border-slate-700,
+body[data-theme="olive"] [class*="border-slate"],
+.border-slate-700,
+[class*="border-slate"] {
+    border-color: var(--olive-border) !important;
+}
+
+/* Override dark text colors */
+body[data-theme="olive"] .text-white,
+.text-white {
+    color: #333 !important;
+}
+
+body[data-theme="olive"] .text-gray-300,
+.text-gray-300 {
+    color: #666 !important;
+}
+
+/* ========== Management Chat Specific ========== */
+body[data-theme="olive"] .management-chat-container,
+.management-chat-container {
+    background: var(--olive-surface) !important;
+}
+
+body[data-theme="olive"] #managesChatMessages,
+#managesChatMessages {
+    background: var(--olive-background) !important;
+}
+
+body[data-theme="olive"] #managesChatInput,
+#managesChatInput {
+    background: var(--olive-surface) !important;
+    border-color: var(--olive-border) !important;
+    color: #333 !important;
+}
+
+/* ========== Tasks Page Specific ========== */
+body[data-theme="olive"] .employee-card,
+.employee-card {
+    background: var(--olive-surface) !important;
+    border: 1px solid var(--olive-border) !important;
+}
+
+body[data-theme="olive"] .employee-card:hover,
+.employee-card:hover {
+    background: var(--olive-selected-bg) !important;
+}
+
+/* ========== Modal Overrides ========== */
+body[data-theme="olive"] [id*="modal"] > div,
+[id*="modal"] > div {
+    background: var(--olive-surface) !important;
+}
+
+body[data-theme="olive"] [id*="modal"] input,
+body[data-theme="olive"] [id*="modal"] textarea,
+body[data-theme="olive"] [id*="modal"] select,
+[id*="modal"] input,
+[id*="modal"] textarea,
+[id*="modal"] select {
+    background: var(--olive-surface) !important;
+    border-color: var(--olive-border) !important;
+    color: #333 !important;
+}
+
+/* ========== Stats Cards ========== */
+body[data-theme="olive"] .stat-card,
+.stat-card {
+    background: var(--olive-surface) !important;
+    border: 1px solid var(--olive-border) !important;
+}
+
+/* ========== اعمال خودکار تم olive ========== */
+@media (prefers-color-scheme: light) {
+    body {
+        background: var(--olive-background);
+    }
+}

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست دسترسی عامل - بدون محدودیت</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link rel="stylesheet" href="assets/libs/fontawesome/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white">
+    <div class="container mx-auto p-8">
+        <div class="bg-slate-800 rounded-lg shadow-xl p-6 mb-6">
+            <h1 class="text-3xl font-bold mb-4 text-center">
+                <i class="fas fa-check-circle text-green-400 ml-2"></i>
+                تست دسترسی عامل - محدودیت‌ها برداشته شد
+            </h1>
+            <p class="text-center text-gray-400 mb-6">
+                حالا می‌تونید به عنوان عامل به همه صفحات دسترسی داشته باشید
+            </p>
+            
+            <div class="bg-green-900 bg-opacity-30 border border-green-500 rounded-lg p-4 mb-6">
+                <h3 class="font-bold text-green-400 mb-2">
+                    <i class="fas fa-info-circle ml-2"></i>
+                    تغییرات اعمال شده:
+                </h3>
+                <ul class="list-disc list-inside space-y-1 text-sm text-gray-300">
+                    <li>محدودیت دسترسی از <code>getTasksContent()</code> برداشته شد</li>
+                    <li>محدودیت دسترسی از <code>getUsersContent()</code> برداشته شد</li>
+                    <li>محدودیت دسترسی از <code>getMyTasksContent()</code> برداشته شد</li>
+                    <li>محدودیت دسترسی از <code>getChatWithManagerContent()</code> برداشته شد</li>
+                    <li>محدودیت دسترسی از <code>getManagementChatContent()</code> برداشته شد</li>
+                    <li>محدودیت دسترسی از <code>getAgentChatContent()</code> برداشته شد</li>
+                    <li>محدودیت دسترسی از <code>getMyAgentTasksContent()</code> برداشته شد</li>
+                    <li>محدودیت دسترسی از <code>getMyIncomeContent()</code> برداشته شد</li>
+                    <li>محدودیت دسترسی از <code>getPersonalArchiveContent()</code> برداشته شد</li>
+                </ul>
+            </div>
+            
+            <div class="bg-yellow-900 bg-opacity-30 border border-yellow-500 rounded-lg p-4 mb-6">
+                <h3 class="font-bold text-yellow-400 mb-2">
+                    <i class="fas fa-exclamation-triangle ml-2"></i>
+                    توجه - حالت تست:
+                </h3>
+                <p class="text-sm text-gray-300">
+                    این تغییرات فقط برای مرحله تست هستند. در نسخه نهایی باید محدودیت‌های دسترسی را دوباره فعال کنید.
+                </p>
+            </div>
+            
+            <div class="text-center">
+                <a href="index.html" class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-bold transition-all">
+                    <i class="fas fa-home ml-2"></i>
+                    بازگشت به صفحه اصلی
+                </a>
+            </div>
+        </div>
+        
+        <div class="bg-slate-800 rounded-lg shadow-xl p-6">
+            <h2 class="text-2xl font-bold mb-4">
+                <i class="fas fa-list-check text-blue-400 ml-2"></i>
+                لیست صفحات قابل دسترسی برای عامل:
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="bg-slate-700 rounded-lg p-4 hover:bg-slate-600 transition-all">
+                    <i class="fas fa-tachometer-alt text-2xl text-indigo-400 mb-2"></i>
+                    <h3 class="font-bold mb-1">داشبورد</h3>
+                    <p class="text-sm text-gray-400">نمای کلی سیستم</p>
+                </div>
+                
+                <div class="bg-slate-700 rounded-lg p-4 hover:bg-slate-600 transition-all">
+                    <i class="fas fa-clipboard-list text-2xl text-green-400 mb-2"></i>
+                    <h3 class="font-bold mb-1">وظایف من</h3>
+                    <p class="text-sm text-gray-400">سفارشات تخصیص داده شده</p>
+                </div>
+                
+                <div class="bg-slate-700 rounded-lg p-4 hover:bg-slate-600 transition-all">
+                    <i class="fas fa-money-bill-wave text-2xl text-yellow-400 mb-2"></i>
+                    <h3 class="font-bold mb-1">درآمد من</h3>
+                    <p class="text-sm text-gray-400">گزارش درآمد و پرداخت‌ها</p>
+                </div>
+                
+                <div class="bg-slate-700 rounded-lg p-4 hover:bg-slate-600 transition-all">
+                    <i class="fas fa-shopping-cart text-2xl text-purple-400 mb-2"></i>
+                    <h3 class="font-bold mb-1">سفارشات</h3>
+                    <p class="text-sm text-gray-400">لیست همه سفارشات</p>
+                </div>
+                
+                <div class="bg-slate-700 rounded-lg p-4 hover:bg-slate-600 transition-all">
+                    <i class="fas fa-comments text-2xl text-blue-400 mb-2"></i>
+                    <h3 class="font-bold mb-1">گفتگو با کارمند</h3>
+                    <p class="text-sm text-gray-400">چت با کارمند‌ها</p>
+                </div>
+                
+                <div class="bg-slate-700 rounded-lg p-4 hover:bg-slate-600 transition-all">
+                    <i class="fas fa-archive text-2xl text-orange-400 mb-2"></i>
+                    <h3 class="font-bold mb-1">بایگانی شخصی</h3>
+                    <p class="text-sm text-gray-400">فایل‌های شخصی</p>
+                </div>
+                
+                <div class="bg-slate-700 rounded-lg p-4 hover:bg-slate-600 transition-all">
+                    <i class="fas fa-user text-2xl text-cyan-400 mb-2"></i>
+                    <h3 class="font-bold mb-1">پروفایل</h3>
+                    <p class="text-sm text-gray-400">اطلاعات کاربری</p>
+                </div>
+                
+                <div class="bg-slate-700 rounded-lg p-4 hover:bg-slate-600 transition-all">
+                    <i class="fas fa-users text-2xl text-red-400 mb-2"></i>
+                    <h3 class="font-bold mb-1">مدیریت کاربران</h3>
+                    <p class="text-sm text-gray-400">✅ دسترسی فعال شد</p>
+                </div>
+                
+                <div class="bg-slate-700 rounded-lg p-4 hover:bg-slate-600 transition-all">
+                    <i class="fas fa-comment-dots text-2xl text-pink-400 mb-2"></i>
+                    <h3 class="font-bold mb-1">گفتگو مدیریت</h3>
+                    <p class="text-sm text-gray-400">✅ دسترسی فعال شد</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

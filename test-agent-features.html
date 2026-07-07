@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست قابلیت‌های عامل</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+    <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 p-8" style="font-family: Vazirmatn, sans-serif;">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h1 class="text-2xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-vial text-blue-600 ml-2"></i>
+                تست قابلیت‌های جدید عامل‌ها
+            </h1>
+            <p class="text-gray-600 mb-4">
+                این صفحه برای تست سریع قابلیت‌های جدید اضافه شده برای عامل‌ها طراحی شده است.
+            </p>
+        </div>
+
+        <!-- Test Checklist -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-check-square text-green-600 ml-2"></i>
+                چک‌لیست تست
+            </h2>
+            
+            <div class="space-y-3">
+                <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
+                    <input type="checkbox" id="test1" class="mt-1">
+                    <label for="test1" class="flex-1">
+                        <strong>تست 1:</strong> ورود به عنوان عامل (رضایی یا کریمی) و بررسی عدم نمایش داشبورد
+                    </label>
+                </div>
+                
+                <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
+                    <input type="checkbox" id="test2" class="mt-1">
+                    <label for="test2" class="flex-1">
+                        <strong>تست 2:</strong> بررسی نمایش صفحه "وظایف من" به جای داشبورد
+                    </label>
+                </div>
+                
+                <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
+                    <input type="checkbox" id="test3" class="mt-1">
+                    <label for="test3" class="flex-1">
+                        <strong>تست 3:</strong> بررسی صفحه "درآمد من" و نمایش صحیح درآمدها به تفکیک واحد پول
+                    </label>
+                </div>
+                
+                <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
+                    <input type="checkbox" id="test4" class="mt-1">
+                    <label for="test4" class="flex-1">
+                        <strong>تست 4:</strong> باز کردن جزئیات یک سفارش و بررسی نمایش فقط 4 تب (مشخصات کلی، لیست کارها، پیگیری، مالی)
+                    </label>
+                </div>
+                
+                <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
+                    <input type="checkbox" id="test5" class="mt-1">
+                    <label for="test5" class="flex-1">
+                        <strong>تست 5:</strong> بررسی تب مالی و نمایش فقط درآمد عامل (نه اطلاعات کامل مالی)
+                    </label>
+                </div>
+                
+                <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
+                    <input type="checkbox" id="test6" class="mt-1">
+                    <label for="test6" class="flex-1">
+                        <strong>تست 6:</strong> بررسی بایگانی شخصی و ایجاد پوشه‌های دلخواه
+                    </label>
+                </div>
+                
+                <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
+                    <input type="checkbox" id="test7" class="mt-1">
+                    <label for="test7" class="flex-1">
+                        <strong>تست 7:</strong> آپلود فایل در بایگانی شخصی و قرار دادن در پوشه مشخص
+                    </label>
+                </div>
+                
+                <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
+                    <input type="checkbox" id="test8" class="mt-1">
+                    <label for="test8" class="flex-1">
+                        <strong>تست 8:</strong> ورود به عنوان مدیر و بررسی دسترسی به حسابداری
+                    </label>
+                </div>
+                
+                <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
+                    <input type="checkbox" id="test9" class="mt-1">
+                    <label for="test9" class="flex-1">
+                        <strong>تست 9:</strong> ورود به عنوان عامل و بررسی عدم دسترسی به حسابداری (فقط "درآمد من")
+                    </label>
+                </div>
+                
+                <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
+                    <input type="checkbox" id="test10" class="mt-1">
+                    <label for="test10" class="flex-1">
+                        <strong>تست 10:</strong> بررسی نمایش لیست کارها با قیمت در صفحه "درآمد من"
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Access -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-link text-blue-600 ml-2"></i>
+                دسترسی سریع
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <a href="index.html" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg text-center font-medium">
+                    <i class="fas fa-home ml-2"></i>
+                    صفحه اصلی
+                </a>
+                
+                <button onclick="loginAsAgent()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-medium">
+                    <i class="fas fa-user ml-2"></i>
+                    ورود به عنوان عامل
+                </button>
+                
+                <button onclick="loginAsManager()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-medium">
+                    <i class="fas fa-user-tie ml-2"></i>
+                    ورود به عنوان مدیر
+                </button>
+                
+                <button onclick="clearData()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg font-medium">
+                    <i class="fas fa-trash ml-2"></i>
+                    پاک کردن داده‌ها
+                </button>
+            </div>
+        </div>
+
+        <!-- Test Data -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-database text-yellow-600 ml-2"></i>
+                داده‌های تست
+            </h2>
+            
+            <div class="space-y-3">
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <strong>عامل 1:</strong> رضایی (agent001)
+                </div>
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <strong>عامل 2:</strong> کریمی (agent002)
+                </div>
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <strong>مدیر:</strong> عامل تقی زاده (mgr001)
+                </div>
+            </div>
+            
+            <button onclick="createTestOrder()" class="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium w-full">
+                <i class="fas fa-plus ml-2"></i>
+                ایجاد سفارش تست
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function loginAsAgent() {
+            localStorage.setItem('currentUser', JSON.stringify({
+                id: 'agent001',
+                name: 'رضایی',
+                username: 'rezaei',
+                role: 'agent',
+                email: 'rezaei@edu-system.com'
+            }));
+            alert('وارد شدید به عنوان: رضایی (عامل)');
+            window.location.href = 'index.html';
+        }
+
+        function loginAsManager() {
+            localStorage.setItem('currentUser', JSON.stringify({
+                id: 'mgr001',
+                name: 'عامل تقی زاده',
+                username: 'manager',
+                role: 'manager',
+                email: 'taghizadeh@edu-system.com'
+            }));
+            alert('وارد شدید به عنوان: عامل تقی زاده (مدیر)');
+            window.location.href = 'index.html';
+        }
+
+        function clearData() {
+            if (confirm('آیا مطمئن هستید؟ تمام داده‌های تست پاک خواهند شد.')) {
+                localStorage.clear();
+                alert('داده‌ها پاک شدند');
+                location.reload();
+            }
+        }
+
+        function createTestOrder() {
+            const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+            
+            const testOrder = {
+                id: 'order_test_' + Date.now(),
+                studentName: 'محمد تست',
+                studentId: 'std_test',
+                type: 'نوشتن رساله',
+                university: 'دانشگاه تست',
+                field: 'مهندسی کامپیوتر',
+                degree: 'کارشناسی ارشد',
+                deadline: '1403/12/30',
+                status: 'in_progress',
+                assignedDoctorId: 'agent001',
+                assignedDoctor: 'رضایی',
+                currency: 'دلار',
+                totalAmount: 5000,
+                doctorShare: 3000,
+                workList: ['نوشتن فصل اول', 'نوشتن فصل دوم', 'ترجمه منابع'],
+                workPrices: {
+                    'نوشتن فصل اول': 1000,
+                    'نوشتن فصل دوم': 1200,
+                    'ترجمه منابع': 800
+                },
+                workDetails: {
+                    'نوشتن فصل اول': { deadline: '1403/11/15' },
+                    'نوشتن فصل دوم': { deadline: '1403/12/01' },
+                    'ترجمه منابع': { deadline: '1403/12/15' }
+                },
+                progress: 35,
+                files: [],
+                questions: [],
+                createdAt: new Date().toISOString()
+            };
+            
+            orders.push(testOrder);
+            localStorage.setItem('orders', JSON.stringify(orders));
+            
+            alert('سفارش تست ایجاد شد!\nعامل: رضایی\nدرآمد: 3000 دلار');
+        }
+    </script>
+</body>
+</html>

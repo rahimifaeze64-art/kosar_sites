@@ -1,0 +1,182 @@
+﻿<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست ایجاد سفارش سفارشی با تایمر</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link rel="stylesheet" href="assets/libs/fontawesome/css/all.min.css">
+</head>
+<body class="bg-slate-900 text-white p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">
+            <i class="fas fa-vial text-green-400 ml-2"></i>
+            تست ایجاد سفارش سفارشی با تایمر
+        </h1>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Test Form -->
+            <div class="bg-slate-800 rounded-lg p-6">
+                <h2 class="text-xl font-bold mb-4">ایجاد سفارش تستی</h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-gray-300 mb-2">عنوان</label>
+                        <input type="text" id="testTitle" value="تست تایمر سفارش"
+                               class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-gray-300 mb-2">نام دانشجو</label>
+                        <input type="text" id="testStudent" value="علی محمدی"
+                               class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-gray-300 mb-2">ساعت از الان</label>
+                        <input type="number" id="hoursFromNow" value="25"
+                               class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white">
+                        <p class="text-xs text-gray-400 mt-1">تعداد ساعت تا مهلت تحویل</p>
+                    </div>
+                    
+                    <button onclick="createTestOrder()" 
+                            class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-medium">
+                        <i class="fas fa-plus ml-2"></i>
+                        ایجاد سفارش تستی
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Logs -->
+            <div class="bg-slate-800 rounded-lg p-6">
+                <h2 class="text-xl font-bold mb-4">لاگ‌ها</h2>
+                <div id="logs" class="space-y-2 text-sm font-mono max-h-96 overflow-y-auto"></div>
+            </div>
+        </div>
+        
+        <!-- Orders Display -->
+        <div class="mt-6 bg-slate-800 rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-4">سفارشات ایجاد شده</h2>
+            <div id="orders" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </div>
+    </div>
+
+    <!-- Load scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/debug.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/employee.js"></script>
+    
+    <script>
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const time = new Date().toLocaleTimeString('fa-IR');
+            const colors = {
+                'info': 'text-blue-400',
+                'success': 'text-green-400',
+                'error': 'text-red-400',
+                'warning': 'text-yellow-400'
+            };
+            logsDiv.innerHTML = `<div class="${colors[type]}">[${time}] ${message}</div>` + logsDiv.innerHTML;
+        }
+        
+        // Initialize
+        DataModule.initializeData();
+        log('سیستم مقداردهی شد', 'success');
+        
+        // Set employee as current user
+        const empUser = {
+            id: 'emp001',
+            name: 'زهرا',
+            username: 'zahra',
+            role: 'employee'
+        };
+        localStorage.setItem('currentUser', JSON.stringify(empUser));
+        log('کاربر فعلی: زهرا (کارمند)', 'info');
+        
+        function createTestOrder() {
+            const title = document.getElementById('testTitle').value;
+            const student = document.getElementById('testStudent').value;
+            const hoursFromNow = parseInt(document.getElementById('hoursFromNow').value);
+            
+            log('شروع ایجاد سفارش...', 'info');
+            
+            // Calculate deadline
+            const now = new Date();
+            const deadline = new Date(now.getTime() + (hoursFromNow * 60 * 60 * 1000));
+            
+            const dateStr = deadline.toISOString().split('T')[0]; // YYYY-MM-DD
+            const timeStr = deadline.toTimeString().slice(0, 5); // HH:MM
+            
+            log(`تاریخ: ${dateStr}`, 'info');
+            log(`ساعت: ${timeStr}`, 'info');
+            
+            // Parse using EmployeeModule function
+            const deadlineDateTime = EmployeeModule.parseDeadlineDateTime(dateStr, timeStr);
+            
+            if (!deadlineDateTime) {
+                log('خطا در پارس کردن تاریخ!', 'error');
+                return;
+            }
+            
+            log(`ISO DateTime: ${deadlineDateTime}`, 'success');
+            
+            // Create order
+            const order = {
+                id: 'test_' + Date.now(),
+                title: title,
+                studentName: student,
+                description: 'این یک سفارش تستی است',
+                deadline: deadline.toLocaleDateString('fa-IR'),
+                deadlineTime: timeStr,
+                deadlineDateTime: deadlineDateTime,
+                assignedDoctorId: 'doc001',
+                assignedDoctor: 'عامل معصومی',
+                status: 'in_progress',
+                progress: 0,
+                isCustomOrder: true,
+                createdAt: new Date().toISOString()
+            };
+            
+            log('سفارش ایجاد شد', 'success');
+            log(JSON.stringify(order, null, 2), 'info');
+            
+            // Save to localStorage
+            const orders = DataModule.getOrders();
+            orders.push(order);
+            DataModule.saveOrders(orders);
+            
+            log('سفارش ذخیره شد', 'success');
+            
+            // Display orders
+            displayOrders();
+        }
+        
+        function displayOrders() {
+            const orders = DataModule.getOrders();
+            const myOrders = orders.filter(o => 
+                o.assignedDoctorId === 'doc001' && 
+                o.deadlineDateTime
+            );
+            
+            const ordersDiv = document.getElementById('orders');
+            ordersDiv.innerHTML = myOrders.map((order, index) => 
+                window.getAgentOrderCard(order, index)
+            ).join('');
+            
+            log(`نمایش ${myOrders.length} سفارش`, 'info');
+            
+            // Start timers
+            if (typeof window.startAgentTimers === 'function') {
+                window.startAgentTimers();
+                log('تایمرها شروع شدند', 'success');
+            }
+        }
+        
+        // Initial display
+        displayOrders();
+    </script>
+</body>
+</html>

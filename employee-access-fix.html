@@ -1,0 +1,196 @@
+﻿<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست دسترسی کارمند</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+    <script src="assets/libs/alpine.min.js" defer></script>
+</head>
+<body class="bg-slate-900 text-white p-6">
+    <div x-data="employeeTest()" x-init="init()">
+        <h1 class="text-2xl font-bold mb-6">تست دسترسی کارمند</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Current User Info -->
+            <div class="bg-slate-800 rounded-lg p-4">
+                <h2 class="text-lg font-bold mb-3">اطلاعات کاربر فعلی</h2>
+                <div x-show="currentUser">
+                    <p><strong>نام:</strong> <span x-text="currentUser?.name"></span></p>
+                    <p><strong>نقش:</strong> <span x-text="currentUser?.role"></span></p>
+                    <p><strong>شناسه:</strong> <span x-text="currentUser?.id"></span></p>
+                </div>
+            </div>
+            
+            <!-- Test Results -->
+            <div class="bg-slate-800 rounded-lg p-4">
+                <h2 class="text-lg font-bold mb-3">نتایج تست</h2>
+                <div class="space-y-2">
+                    <div class="flex items-center space-x-2 space-x-reverse">
+                        <i class="fas fa-check text-green-400" x-show="tests.myTasks"></i>
+                        <i class="fas fa-times text-red-400" x-show="!tests.myTasks"></i>
+                        <span>وظایف من</span>
+                    </div>
+                    <div class="flex items-center space-x-2 space-x-reverse">
+                        <i class="fas fa-check text-green-400" x-show="tests.students"></i>
+                        <i class="fas fa-times text-red-400" x-show="!tests.students"></i>
+                        <span>دانشجویان</span>
+                    </div>
+                    <div class="flex items-center space-x-2 space-x-reverse">
+                        <i class="fas fa-check text-green-400" x-show="tests.agentTasks"></i>
+                        <i class="fas fa-times text-red-400" x-show="!tests.agentTasks"></i>
+                        <span>وظایف عامل‌ها</span>
+                    </div>
+                    <div class="flex items-center space-x-2 space-x-reverse">
+                        <i class="fas fa-check text-green-400" x-show="tests.chatWithManager"></i>
+                        <i class="fas fa-times text-red-400" x-show="!tests.chatWithManager"></i>
+                        <span>پیام‌ها</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Test Buttons -->
+        <div class="mt-6 space-x-3 space-x-reverse">
+            <button @click="testFunction('myTasks')" 
+                    class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
+                تست وظایف من
+            </button>
+            <button @click="testFunction('students')" 
+                    class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded">
+                تست دانشجویان
+            </button>
+            <button @click="testFunction('agentTasks')" 
+                    class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded">
+                تست وظایف عامل‌ها
+            </button>
+            <button @click="testFunction('chatWithManager')" 
+                    class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded">
+                تست پیام‌ها
+            </button>
+        </div>
+        
+        <!-- Error Log -->
+        <div class="mt-6 bg-slate-800 rounded-lg p-4" x-show="errors.length > 0">
+            <h2 class="text-lg font-bold mb-3 text-red-400">خطاها</h2>
+            <div class="space-y-2">
+                <template x-for="error in errors">
+                    <div class="bg-red-900 bg-opacity-50 rounded p-2 text-sm">
+                        <p x-text="error.function" class="font-bold"></p>
+                        <p x-text="error.message" class="text-red-300"></p>
+                    </div>
+                </template>
+            </div>
+        </div>
+        
+        <!-- Test Output -->
+        <div class="mt-6 bg-slate-800 rounded-lg p-4" x-show="testOutput">
+            <h2 class="text-lg font-bold mb-3">خروجی تست</h2>
+            <div class="bg-slate-700 rounded p-3 text-sm overflow-auto max-h-96" x-html="testOutput"></div>
+        </div>
+    </div>
+
+    <!-- Include required scripts -->
+    <script src="js/utils.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/employee.js"></script>
+    
+    <script>
+        function employeeTest() {
+            return {
+                currentUser: null,
+                tests: {
+                    myTasks: false,
+                    students: false,
+                    agentTasks: false,
+                    chatWithManager: false
+                },
+                errors: [],
+                testOutput: '',
+                
+                init() {
+                    // Set up employee user
+                    this.currentUser = {
+                        id: 'emp004',
+                        name: 'سلیمان',
+                        username: 'soleiman',
+                        role: 'employee',
+                        email: 'soleiman@edu-system.com'
+                    };
+                    
+                    // Save to localStorage
+                    localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+                    
+                    console.log('Test initialized with employee user:', this.currentUser);
+                },
+                
+                testFunction(functionName) {
+                    this.testOutput = '';
+                    this.errors = this.errors.filter(e => e.function !== functionName);
+                    
+                    try {
+                        let result = '';
+                        
+                        switch(functionName) {
+                            case 'myTasks':
+                                if (typeof EmployeeModule !== 'undefined' && EmployeeModule.getMyTasksContent) {
+                                    result = EmployeeModule.getMyTasksContent(this.currentUser.id);
+                                    this.tests.myTasks = true;
+                                } else {
+                                    throw new Error('EmployeeModule.getMyTasksContent not found');
+                                }
+                                break;
+                                
+                            case 'students':
+                                if (typeof EmployeeModule !== 'undefined' && EmployeeModule.getStudentsContent) {
+                                    result = EmployeeModule.getStudentsContent(this.currentUser.id);
+                                    this.tests.students = true;
+                                } else if (typeof getStudentsContent === 'function') {
+                                    result = getStudentsContent();
+                                    this.tests.students = true;
+                                } else {
+                                    throw new Error('getStudentsContent function not found');
+                                }
+                                break;
+                                
+                            case 'agentTasks':
+                                if (typeof getAgentTasksForemployee === 'function') {
+                                    result = getAgentTasksForemployee();
+                                    this.tests.agentTasks = true;
+                                } else {
+                                    throw new Error('getAgentTasksForemployee function not found');
+                                }
+                                break;
+                                
+                            case 'chatWithManager':
+                                if (typeof EmployeeModule !== 'undefined' && EmployeeModule.getChatWithManagerContent) {
+                                    result = EmployeeModule.getChatWithManagerContent(this.currentUser.id);
+                                    this.tests.chatWithManager = true;
+                                } else if (typeof getChatWithManagerContent === 'function') {
+                                    result = getChatWithManagerContent();
+                                    this.tests.chatWithManager = true;
+                                } else {
+                                    throw new Error('getChatWithManagerContent function not found');
+                                }
+                                break;
+                        }
+                        
+                        this.testOutput = result;
+                        console.log(`${functionName} test passed:`, result.substring(0, 200) + '...');
+                        
+                    } catch (error) {
+                        console.error(`${functionName} test failed:`, error);
+                        this.errors.push({
+                            function: functionName,
+                            message: error.message
+                        });
+                        this.tests[functionName] = false;
+                        this.testOutput = `<div class="text-red-400">خطا: ${error.message}</div>`;
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

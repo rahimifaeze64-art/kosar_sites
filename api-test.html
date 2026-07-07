@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Integration Test</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">تست یکپارچگی API</h1>
+        
+        <!-- Status -->
+        <div id="status" class="mb-6 p-4 rounded-lg bg-blue-100 text-blue-800">
+            <i class="fas fa-spinner fa-spin ml-2"></i>
+            در حال بررسی اتصال...
+        </div>
+        
+        <!-- Test Results -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Backend Status -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">وضعیت بک‌اند</h2>
+                <div id="backend-status" class="space-y-2">
+                    <div class="flex items-center">
+                        <i class="fas fa-circle text-gray-400 ml-2"></i>
+                        <span>Django Server</span>
+                        <span id="django-status" class="mr-auto">در حال بررسی...</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-circle text-gray-400 ml-2"></i>
+                        <span>API Endpoints</span>
+                        <span id="api-status" class="mr-auto">در حال بررسی...</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-circle text-gray-400 ml-2"></i>
+                        <span>Database</span>
+                        <span id="db-status" class="mr-auto">در حال بررسی...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- API Tests -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">تست‌های API</h2>
+                <div class="space-y-3">
+                    <button onclick="testAuth()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded">
+                        تست احراز هویت
+                    </button>
+                    <button onclick="testUsers()" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
+                        تست کاربران
+                    </button>
+                    <button onclick="testOrders()" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded">
+                        تست سفارشات
+                    </button>
+                    <button onclick="testStudents()" class="w-full bg-orange-600 hover:bg-orange-700 text-white py-2 px-4 rounded">
+                        تست دانشجویان
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Test Results Log -->
+        <div class="mt-8 bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">نتایج تست</h2>
+            <div id="test-log" class="bg-gray-50 p-4 rounded border max-h-96 overflow-y-auto">
+                <p class="text-gray-500">آماده برای تست...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Test configuration
+        const API_BASE = 'http://127.0.0.1:8000/api';
+        
+        // Logging function
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('test-log');
+            const timestamp = new Date().toLocaleTimeString('fa-IR');
+            const colors = {
+                info: 'text-blue-600',
+                success: 'text-green-600',
+                error: 'text-red-600',
+                warning: 'text-yellow-600'
+            };
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = `mb-2 ${colors[type] || 'text-gray-600'}`;
+            logEntry.innerHTML = `<span class="text-gray-500">[${timestamp}]</span> ${message}`;
+            
+            
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        // Update status indicator
+        function updateStatus(element, status, text) {
+            const statusElement = document.getElementById(element);
+            const colors = {
+                success: 'text-green-600',
+                error: 'text-red-600',
+                warning: 'text-yellow-600'
+            };
+            
+            statusElement.className = `mr-auto ${colors[status] || 'text-gray-600'}`;
+            statusElement.textContent = text;
+        }
+        
+        // Generic API request
+        async function apiRequest(endpoint, options = {}) {
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                throw error;
+            }
+        }
+        
+        // Test Django server
+        async function testDjangoServer() {
+            try {
+                const response = await fetch('http://127.0.0.1:8000/', { 
+                    method: 'HEAD',
+                    mode: 'no-cors'
+                });
+                updateStatus('django-status', 'success', 'فعال');
+                log('Django server در دسترس است', 'success');
+                return true;
+            } catch (error) {
+                updateStatus('django-status', 'error', 'غیرفعال');
+                log(`Django server در دسترس نیست: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        // Test API endpoints
+        async function testAPIEndpoints() {
+            try {
+                const data = await apiRequest('/auth/user/');
+                updateStatus('api-status', 'success', 'فعال');
+                log('API endpoints در دسترس هستند', 'success');
+                return true;
+            } catch (error) {
+                updateStatus('api-status', 'error', 'خطا');
+                log(`API endpoints خطا: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        // Test database
+        async function testDatabase() {
+            try {
+                const data = await apiRequest('/users/');
+                updateStatus('db-status', 'success', 'متصل');
+                log(`Database متصل است - ${data.length} کاربر یافت شد`, 'success');
+                return true;
+            } catch (error) {
+                updateStatus('db-status', 'error', 'خطا');
+                log(`Database خطا: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        // Test authentication
+        async function testAuth() {
+            log('شروع تست احراز هویت...', 'info');
+            
+            try {
+                // Test login
+                const loginData = await apiRequest('/auth/login/', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        username: 'manager',
+                        password: '123456'
+                    })
+                });
+                
+                log(`ورود موفق: ${loginData.user.first_name} ${loginData.user.last_name}`, 'success');
+                
+                // Test current user
+                const userData = await apiRequest('/auth/user/');
+                log(`کاربر فعلی: ${userData.first_name} ${userData.last_name} (${userData.role})`, 'success');
+                
+                log('تست احراز هویت موفق بود', 'success');
+            } catch (error) {
+                log(`تست احراز هویت ناموفق: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test users API
+        async function testUsers() {
+            log('شروع تست API کاربران...', 'info');
+            
+            try {
+                const users = await apiRequest('/users/');
+                log(`${users.length} کاربر یافت شد`, 'success');
+                
+                users.forEach(user => {
+                    log(`- ${user.first_name} ${user.last_name} (${user.role})`, 'info');
+                });
+                
+                log('تست API کاربران موفق بود', 'success');
+            } catch (error) {
+                log(`تست API کاربران ناموفق: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test orders API
+        async function testOrders() {
+            log('شروع تست API سفارشات...', 'info');
+            
+            try {
+                const orders = await apiRequest('/orders/');
+                log(`${orders.length} سفارش یافت شد`, 'success');
+                
+                orders.forEach(order => {
+                    log(`- ${order.student_name}: ${order.type} (${order.status})`, 'info');
+                });
+                
+                log('تست API سفارشات موفق بود', 'success');
+            } catch (error) {
+                log(`تست API سفارشات ناموفق: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test students API
+        async function testStudents() {
+            log('شروع تست API دانشجویان...', 'info');
+            
+            try {
+                const students = await apiRequest('/students/');
+                log(`${students.length} دانشجو یافت شد`, 'success');
+                
+                students.forEach(student => {
+                    log(`- ${student.user_name}: ${student.university} (${student.field})`, 'info');
+                });
+                
+                log('تست API دانشجویان موفق بود', 'success');
+            } catch (error) {
+                log(`تست API دانشجویان ناموفق: ${error.message}`, 'error');
+            }
+        }
+        
+        // Initialize tests
+        async function initTests() {
+            log('شروع تست‌های اولیه...', 'info');
+            
+            const djangoOk = await testDjangoServer();
+            if (djangoOk) {
+                const apiOk = await testAPIEndpoints();
+                if (apiOk) {
+                    await testDatabase();
+                    
+                    document.getElementById('status').innerHTML = `
+                        <i class="fas fa-check-circle text-green-600 ml-2"></i>
+                        <span class="text-green-800">سیستم آماده است - می‌توانید تست‌ها را اجرا کنید</span>
+                    `;
+                    document.getElementById('status').className = 'mb-6 p-4 rounded-lg bg-green-100';
+                } else {
+                    document.getElementById('status').innerHTML = `
+                        <i class="fas fa-exclamation-triangle text-yellow-600 ml-2"></i>
+                        <span class="text-yellow-800">API در دسترس نیست - بررسی کنید که Django server فعال باشد</span>
+                    `;
+                    document.getElementById('status').className = 'mb-6 p-4 rounded-lg bg-yellow-100';
+                }
+            } else {
+                document.getElementById('status').innerHTML = `
+                    <i class="fas fa-times-circle text-red-600 ml-2"></i>
+                    <span class="text-red-800">Django server در دسترس نیست - لطفاً سرور را راه‌اندازی کنید</span>
+                `;
+                document.getElementById('status').className = 'mb-6 p-4 rounded-lg bg-red-100';
+            }
+        }
+        
+        // Start tests when page loads
+        document.addEventListener('DOMContentLoaded', initTests);
+    </script>
+</body>
+</html>

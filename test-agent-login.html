@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست ورود عامل</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link rel="stylesheet" href="assets/libs/fontawesome/css/all.min.css">
+</head>
+<body class="bg-slate-900 text-white">
+    <div class="container mx-auto p-8">
+        <div class="max-w-2xl mx-auto bg-slate-800 rounded-lg shadow-xl p-6">
+            <h1 class="text-3xl font-bold mb-6 text-center">
+                <i class="fas fa-user-check text-green-400 ml-2"></i>
+                تست ورود به عنوان عامل
+            </h1>
+            
+            <div class="space-y-4 mb-6">
+                <button onclick="loginAsAgent('doc001')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-4 rounded-lg font-bold transition-all text-lg">
+                    <i class="fas fa-user ml-2"></i>
+                    ورود به عنوان عامل معصومی (عامل)
+                </button>
+                
+                <button onclick="loginAsAgent('doc002')" class="w-full bg-purple-600 hover:bg-purple-700 text-white px-6 py-4 rounded-lg font-bold transition-all text-lg">
+                    <i class="fas fa-user ml-2"></i>
+                    ورود به عنوان عامل ذوقی (عامل)
+                </button>
+                
+                <button onclick="loginAsAgent('agent001')" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-lg font-bold transition-all text-lg">
+                    <i class="fas fa-user ml-2"></i>
+                    ورود به عنوان رضایی (عامل)
+                </button>
+                
+                <button onclick="loginAsAgent('agent002')" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-4 rounded-lg font-bold transition-all text-lg">
+                    <i class="fas fa-user ml-2"></i>
+                    ورود به عنوان کریمی (عامل)
+                </button>
+            </div>
+            
+            <div class="bg-slate-700 rounded-lg p-4 mb-4">
+                <h3 class="font-bold mb-2">
+                    <i class="fas fa-info-circle text-blue-400 ml-2"></i>
+                    وضعیت فعلی:
+                </h3>
+                <div id="status" class="text-sm text-gray-300">
+                    در حال بررسی...
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <a href="index.html" class="inline-block bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg transition-all">
+                    <i class="fas fa-home ml-2"></i>
+                    بازگشت به صفحه اصلی
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/data.js"></script>
+    
+    <script>
+        // Check current status
+        function checkStatus() {
+            const currentUser = localStorage.getItem('currentUser');
+            const statusDiv = document.getElementById('status');
+            
+            if (currentUser) {
+                try {
+                    const user = JSON.parse(currentUser);
+                    statusDiv.innerHTML = `
+                        <p class="text-green-400 font-bold mb-2">✅ شما وارد شده‌اید</p>
+                        <p><strong>نام:</strong> ${user.name}</p>
+                        <p><strong>نقش:</strong> ${user.role}</p>
+                        <p><strong>ID:</strong> ${user.id}</p>
+                    `;
+                } catch (e) {
+                    statusDiv.innerHTML = '<p class="text-red-400">❌ خطا در خواندن اطلاعات کاربر</p>';
+                }
+            } else {
+                statusDiv.innerHTML = '<p class="text-yellow-400">⚠️ هیچ کاربری وارد نشده است</p>';
+            }
+        }
+        
+        // Login as agent
+        function loginAsAgent(agentId) {
+            // Initialize data
+            DataModule.initializeData();
+            
+            // Get users
+            const users = DataModule.getUsers();
+            const agent = users.find(u => u.id === agentId);
+            
+            if (agent) {
+                // Save to localStorage
+                localStorage.setItem('currentUser', JSON.stringify(agent));
+                
+                // Show success message
+                alert(`✅ با موفقیت وارد شدید به عنوان: ${agent.name}\n\nحالا به صفحه اصلی منتقل می‌شوید.`);
+                
+                // Update status
+                checkStatus();
+                
+                // Redirect to main page after 1 second
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+            } else {
+                alert('❌ خطا: کاربر یافت نشد');
+            }
+        }
+        
+        // Check status on load
+        checkStatus();
+        
+        // Update status every 2 seconds
+        setInterval(checkStatus, 2000);
+    </script>
+</body>
+</html>

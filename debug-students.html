@@ -1,0 +1,179 @@
+﻿<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دیباگ دانشجویان</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white p-6">
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">🔍 دیباگ دانشجویان</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <button onclick="checkDataModule()" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg">
+                بررسی DataModule.getDefaultUsers()
+            </button>
+            <button onclick="checkLocalStorage()" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg">
+                بررسی localStorage
+            </button>
+            <button onclick="checkStudentsData()" class="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-lg">
+                بررسی students_data
+            </button>
+            <button onclick="forceUpdate()" class="bg-red-600 hover:bg-red-700 px-6 py-3 rounded-lg">
+                به‌روزرسانی اجباری
+            </button>
+        </div>
+        
+        <div id="output" class="bg-gray-800 rounded-lg p-6 font-mono text-sm overflow-auto max-h-[600px]">
+            <p class="text-gray-400">منتظر دستور...</p>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/employee.js"></script>
+    <script src="js/init-students-data.js"></script>
+    <script src="js/force-update-students.js"></script>
+    
+    <script>
+        function log(msg, color = 'white') {
+            const output = document.getElementById('output');
+            output.innerHTML += `<div class="text-${color}-400 mb-1">${msg}</div>`;
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function clear() {
+            document.getElementById('output').innerHTML = '';
+        }
+        
+        function checkDataModule() {
+            clear();
+            log('=== بررسی DataModule.getDefaultUsers() ===', 'blue');
+            
+            const users = DataModule.getDefaultUsers();
+            const students = users.filter(u => u.role === 'student');
+            
+            log(`✅ تعداد کل کاربران: ${users.length}`, 'green');
+            log(`👥 تعداد دانشجویان: ${students.length}`, 'green');
+            log('');
+            
+            log('📋 لیست دانشجویان:', 'yellow');
+            students.forEach((s, i) => {
+                log(`${i + 1}. ${s.id} - ${s.name} (${s.username})`, 'white');
+            });
+            
+            log('');
+            log('🔍 بررسی فیلدهای دانشجوی اول:', 'yellow');
+            const first = students[0];
+            log(JSON.stringify(first, null, 2), 'gray');
+        }
+        
+        function checkLocalStorage() {
+            clear();
+            log('=== بررسی localStorage ===', 'blue');
+            
+            const stored = localStorage.getItem(CONFIG.STORAGE_KEYS.USERS);
+            if (!stored) {
+                log('❌ localStorage خالی است!', 'red');
+                return;
+            }
+            
+            const users = JSON.parse(stored);
+            const students = users.filter(u => u.role === 'student');
+            
+            log(`✅ تعداد کل کاربران در localStorage: ${users.length}`, 'green');
+            log(`👥 تعداد دانشجویان در localStorage: ${students.length}`, 'green');
+            log('');
+            
+            log('📋 لیست دانشجویان:', 'yellow');
+            students.forEach((s, i) => {
+                log(`${i + 1}. ${s.id} - ${s.name} (${s.username})`, 'white');
+            });
+        }
+        
+        function checkStudentsData() {
+            clear();
+            log('=== بررسی students_data ===', 'blue');
+            
+            const stored = localStorage.getItem('students_data');
+            if (!stored) {
+                log('❌ students_data خالی است!', 'red');
+                log('💡 برای مقداردهی اولیه، دکمه "به‌روزرسانی اجباری" را کلیک کنید', 'yellow');
+                return;
+            }
+            
+            const studentsData = JSON.parse(stored);
+            const studentIds = Object.keys(studentsData);
+            
+            log(`✅ تعداد دانشجویان در students_data: ${studentIds.length}`, 'green');
+            log('');
+            
+            log('📋 لیست دانشجویان:', 'yellow');
+            studentIds.forEach((id, i) => {
+                const s = studentsData[id];
+                const hasSteps = s.educationalSteps ? '✅' : '❌';
+                log(`${i + 1}. ${id} - ${s.name} ${hasSteps}`, 'white');
+            });
+            
+            log('');
+            log('🔍 بررسی دانشجوی اول:', 'yellow');
+            const first = studentsData[studentIds[0]];
+            log(`نام: ${first.name}`, 'white');
+            log(`educationalSteps: ${first.educationalSteps ? 'موجود (' + first.educationalSteps.length + ' مرحله)' : 'ندارد'}`, first.educationalSteps ? 'green' : 'red');
+            log(`defenseSteps: ${first.defenseSteps ? 'موجود (' + first.defenseSteps.length + ' مرحله)' : 'ندارد'}`, first.defenseSteps ? 'green' : 'red');
+        }
+        
+        function forceUpdate() {
+            clear();
+            log('=== به‌روزرسانی اجباری ===', 'blue');
+            log('🔄 در حال به‌روزرسانی...', 'yellow');
+            
+            try {
+                // Get all default users
+                const allUsers = DataModule.getDefaultUsers();
+                const students = allUsers.filter(u => u.role === 'student');
+                
+                log(`📊 ${students.length} دانشجو از DataModule دریافت شد`, 'green');
+                
+                // Save to localStorage
+                localStorage.setItem(CONFIG.STORAGE_KEYS.USERS, JSON.stringify(allUsers));
+                log('✅ ذخیره در localStorage انجام شد', 'green');
+                
+                // Initialize students_data
+                const studentsData = {};
+                students.forEach((student, i) => {
+                    studentsData[student.id] = {
+                        ...student,
+                        educationalSteps: EmployeeModule.getDefaultEducationalSteps(),
+                        defenseSteps: EmployeeModule.getDefaultDefenseSteps2(),
+                        graduationWorkflow: EmployeeModule.getDefaultGraduationSteps(),
+                        defenseWorkflow: [],
+                        createdAt: student.createdAt || new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    };
+                    log(`  ${i + 1}. ${student.name} ✅`, 'white');
+                });
+                
+                localStorage.setItem('students_data', JSON.stringify(studentsData));
+                log('✅ ذخیره students_data انجام شد', 'green');
+                
+                log('');
+                log('🎉 به‌روزرسانی با موفقیت انجام شد!', 'green');
+                log('💡 حالا به صفحه اصلی بروید و صفحه را رفرش کنید', 'yellow');
+                
+            } catch (error) {
+                log(`❌ خطا: ${error.message}`, 'red');
+                console.error(error);
+            }
+        }
+        
+        // Auto check on load
+        setTimeout(() => {
+            checkLocalStorage();
+        }, 500);
+    </script>
+</body>
+</html>

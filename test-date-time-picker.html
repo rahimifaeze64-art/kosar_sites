@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست Date و Time Picker</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link rel="stylesheet" href="assets/libs/fontawesome/css/all.min.css">
+</head>
+<body class="bg-slate-900 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">
+            <i class="fas fa-calendar-alt text-blue-400 ml-2"></i>
+            تست Date و Time Picker
+        </h1>
+        
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">فرم تست</h2>
+            
+            <div class="space-y-4">
+                <!-- Date Picker -->
+                <div>
+                    <label class="block text-gray-300 mb-2 font-medium">
+                        <i class="fas fa-calendar ml-1"></i>
+                        تاریخ تحویل
+                    </label>
+                    <input type="date" id="testDate" 
+                           class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white cursor-pointer"
+                           style="color-scheme: dark;">
+                    <p class="text-sm text-gray-400 mt-1">
+                        با کلیک روی این فیلد، تقویم باز می‌شود
+                    </p>
+                </div>
+                
+                <!-- Time Picker -->
+                <div>
+                    <label class="block text-gray-300 mb-2 font-medium">
+                        <i class="fas fa-clock ml-1"></i>
+                        ساعت تحویل
+                    </label>
+                    <input type="time" id="testTime" 
+                           class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white cursor-pointer"
+                           style="color-scheme: dark;">
+                    <p class="text-sm text-gray-400 mt-1">
+                        با کلیک روی این فیلد، انتخابگر ساعت باز می‌شود
+                    </p>
+                </div>
+                
+                <!-- DateTime Local (Combined) -->
+                <div>
+                    <label class="block text-gray-300 mb-2 font-medium">
+                        <i class="fas fa-calendar-check ml-1"></i>
+                        تاریخ و ساعت (ترکیبی)
+                    </label>
+                    <input type="datetime-local" id="testDateTime" 
+                           class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white cursor-pointer"
+                           style="color-scheme: dark;">
+                    <p class="text-sm text-gray-400 mt-1">
+                        این فیلد هم تاریخ و هم ساعت را با هم نمایش می‌دهد
+                    </p>
+                </div>
+                
+                <!-- Test Button -->
+                <button onclick="showValues()" 
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium">
+                    <i class="fas fa-check ml-2"></i>
+                    نمایش مقادیر انتخاب شده
+                </button>
+            </div>
+        </div>
+        
+        <div class="bg-slate-800 rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-4">مقادیر انتخاب شده</h2>
+            <div id="output" class="space-y-2 text-sm font-mono"></div>
+        </div>
+        
+        <div class="bg-slate-800 rounded-lg p-6 mt-6">
+            <h2 class="text-xl font-bold mb-4">راهنما</h2>
+            <ul class="space-y-2 text-gray-300">
+                <li><i class="fas fa-check text-green-400 ml-2"></i> فیلد تاریخ: با کلیک یک تقویم گرافیکی باز می‌شود</li>
+                <li><i class="fas fa-check text-green-400 ml-2"></i> فیلد ساعت: با کلیک یک انتخابگر ساعت باز می‌شود</li>
+                <li><i class="fas fa-check text-green-400 ml-2"></i> هر دو فیلد به صورت خودکار اعتبارسنجی می‌شوند</li>
+                <li><i class="fas fa-info-circle text-blue-400 ml-2"></i> در مرورگرهای مختلف ممکن است ظاهر متفاوتی داشته باشند</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Set today as default for date
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        document.getElementById('testDate').value = todayStr;
+        document.getElementById('testDate').min = todayStr;
+        
+        // Set current time as default
+        const now = new Date();
+        const timeStr = now.toTimeString().slice(0, 5);
+        document.getElementById('testTime').value = timeStr;
+        
+        // Set current datetime
+        const datetimeStr = today.toISOString().slice(0, 16);
+        document.getElementById('testDateTime').value = datetimeStr;
+        document.getElementById('testDateTime').min = datetimeStr;
+        
+        function showValues() {
+            const date = document.getElementById('testDate').value;
+            const time = document.getElementById('testTime').value;
+            const datetime = document.getElementById('testDateTime').value;
+            
+            const output = document.getElementById('output');
+            output.innerHTML = `
+                <div class="bg-slate-700 p-3 rounded">
+                    <p class="text-green-400"><strong>تاریخ:</strong> ${date || 'انتخاب نشده'}</p>
+                </div>
+                <div class="bg-slate-700 p-3 rounded">
+                    <p class="text-blue-400"><strong>ساعت:</strong> ${time || 'انتخاب نشده'}</p>
+                </div>
+                <div class="bg-slate-700 p-3 rounded">
+                    <p class="text-purple-400"><strong>تاریخ و ساعت:</strong> ${datetime || 'انتخاب نشده'}</p>
+                </div>
+                <div class="bg-slate-700 p-3 rounded">
+                    <p class="text-yellow-400"><strong>ترکیب شده:</strong> ${date && time ? `${date} ${time}` : 'هر دو فیلد را پر کنید'}</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>گفتگو عاملها - سیستم مدیریت آموزشی</title>
+    <link rel="stylesheet" href="css/tailwind.min.css">
+    <link rel="stylesheet" href="assets/libs/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <link href="css/theme-olive.css" rel="stylesheet">
+    <style>
+        .doctor-chat-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 200px);
+            background: #1e293b;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            padding: 20px;
+            color: white;
+        }
+
+        .participants-bar {
+            background: #334155;
+            padding: 12px 20px;
+            border-bottom: 1px solid #475569;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            overflow-x: auto;
+        }
+
+        .participant-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #475569;
+            padding: 6px 12px;
+            border-radius: 20px;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+
+        .participant-badge.online::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+        }
+
+        .participant-badge.manager {
+            background: #7c3aed;
+        }
+
+        .participant-badge.doctor {
+            background: #10b981;
+        }
+
+        #doctorChatMessages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .chat-message {
+            display: flex;
+            flex-direction: column;
+            max-width: 70%;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chat-message.own-message {
+            align-self: flex-end;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+
+        .sender-name {
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .role-badge {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .role-badge.manager {
+            background: #7c3aed;
+            color: white;
+        }
+
+        .role-badge.doctor {
+            background: #10b981;
+            color: white;
+        }
+
+        .message-time {
+            color: #94a3b8;
+            margin-right: auto;
+        }
+
+        .message-body {
+            background: #334155;
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: #f1f5f9;
+            word-wrap: break-word;
+        }
+
+        .own-message .message-body {
+            background: #10b981;
+        }
+
+        .mention {
+            background: #fbbf24;
+            color: #1e293b;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .voice-message {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .voice-message audio {
+            width: 100%;
+            height: 32px;
+        }
+
+        .file-message {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px;
+            background: #475569;
+            border-radius: 8px;
+        }
+
+        .file-message i {
+            font-size: 24px;
+            color: #60a5fa;
+        }
+
+        .file-message a {
+            color: #93c5fd;
+            text-decoration: none;
+        }
+
+        .file-message a:hover {
+            text-decoration: underline;
+        }
+
+        .related-task {
+            margin-top: 8px;
+            padding: 6px 10px;
+            background: #475569;
+            border-radius: 6px;
+            font-size: 11px;
+            color: #cbd5e1;
+        }
+
+        .chat-input-area {
+            background: #334155;
+            padding: 16px 20px;
+            border-top: 1px solid #475569;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        #doctorChatInput {
+            flex: 1;
+            background: #1e293b;
+            border: 1px solid #475569;
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: white;
+            resize: none;
+            min-height: 44px;
+            max-height: 120px;
+            font-family: inherit;
+        }
+
+        #doctorChatInput:focus {
+            outline: none;
+            border-color: #10b981;
+        }
+
+        .input-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .input-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-size: 18px;
+        }
+
+        .input-btn:hover {
+            transform: scale(1.05);
+        }
+
+        #mentionBtn {
+            background: #fbbf24;
+            color: #1e293b;
+        }
+
+        #attachFileBtn {
+            background: #8b5cf6;
+            color: white;
+        }
+
+        #recordVoiceBtn {
+            background: #ef4444;
+            color: white;
+        }
+
+        #recordVoiceBtn.recording {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        #sendDoctorChatBtn {
+            background: #10b981;
+            color: white;
+        }
+
+        .mention-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .mention-content {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .mention-content h3 {
+            color: white;
+            margin-bottom: 16px;
+            font-size: 20px;
+        }
+
+        .mention-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .mention-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #334155;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mention-item:hover {
+            background: #475569;
+            transform: translateX(-4px);
+        }
+
+        .mention-item i {
+            color: #10b981;
+        }
+
+        .mention-item span {
+            color: #e2e8f0;
+        }
+
+        .btn-close {
+            margin-top: 16px;
+            width: 100%;
+            padding: 10px;
+            background: #475569;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .btn-close:hover {
+            background: #64748b;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 12px;
+            background: #334155;
+            border-radius: 12px;
+            width: fit-content;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #94a3b8;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-900">
+    <div class="container mx-auto p-6">
+        <!-- Back Button -->
+        <div class="mb-4">
+            <button onclick="window.history.back()" class="text-gray-400 hover:text-white flex items-center gap-2">
+                <i class="fas fa-arrow-right"></i>
+                بازگشت
+            </button>
+        </div>
+
+        <!-- Doctor Chat Container -->
+        <div class="doctor-chat-container">
+            <!-- Header -->
+            <div class="chat-header">
+                <h2 class="text-2xl font-bold mb-2">
+                    <i class="fas fa-user-md ml-2"></i>
+                    گفتگو عاملها
+                </h2>
+                <p class="text-emerald-200 text-sm">
+                    چت مشترک مدیر و عاملها برای هماهنگی پروژه‌ها و مشاوره
+                </p>
+            </div>
+
+            <!-- Participants Bar -->
+            <div class="participants-bar">
+                <span class="text-gray-400 text-sm">شرکت‌کنندگان:</span>
+                <div class="participant-badge manager online">
+                    <i class="fas fa-crown"></i>
+                    <span>مدیر</span>
+                </div>
+                <div class="participant-badge doctor online">
+                    <i class="fas fa-user-md"></i>
+                    <span>عامل احمدی</span>
+                </div>
+                <div class="participant-badge doctor online">
+                    <i class="fas fa-user-md"></i>
+                    <span>عامل محمدی</span>
+                </div>
+                <div class="participant-badge doctor">
+                    <i class="fas fa-user-md"></i>
+                    <span>عامل رضایی</span>
+                </div>
+                <div class="participant-badge doctor online">
+                    <i class="fas fa-user-md"></i>
+                    <span>عامل کریمی</span>
+                </div>
+            </div>
+
+            <!-- Messages Area -->
+            <div id="doctorChatMessages">
+                <!-- Messages will be rendered here by JS -->
+            </div>
+
+            <!-- Input Area -->
+            <div class="chat-input-area">
+                <div class="input-wrapper">
+                    <textarea 
+                        id="doctorChatInput" 
+                        placeholder="پیام خود را بنویسید... (از @ برای منشن استفاده کنید)"
+                        rows="1"></textarea>
+                    
+                    <div class="input-actions">
+                        <button id="mentionBtn" class="input-btn" title="منشن کردن">
+                            <i class="fas fa-at"></i>
+                        </button>
+                        <button id="attachFileBtn" class="input-btn" title="پیوست فایل">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                        <button id="recordVoiceBtn" class="input-btn" title="ضبط صوت">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                        <button id="sendDoctorChatBtn" class="input-btn" title="ارسال">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/doctor-chat.js"></script>
+    <script>
+        // Auto-resize textarea
+        const textarea = document.getElementById('doctorChatInput');
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+    </script>
+</body>
+</html>

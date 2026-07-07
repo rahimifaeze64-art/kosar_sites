@@ -1,0 +1,211 @@
+﻿<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست صفحه پیام‌ها - کارمند</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+    <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 p-8" style="font-family: Vazirmatn, sans-serif;">
+    <div class="max-w-6xl mx-auto">
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h1 class="text-2xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-comments text-blue-600 ml-2"></i>
+                تست صفحه پیام‌ها برای کارمند
+            </h1>
+            <p class="text-gray-600 mb-4">
+                این صفحه برای تست قابلیت‌های جدید صفحه پیام‌ها طراحی شده است.
+            </p>
+        </div>
+        
+        <!-- Test Checklist -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-check-square text-green-600 ml-2"></i>
+                چک‌لیست تست
+            </h2>
+            
+            <div class="space-y-3">
+                <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
+                    <input type="checkbox" id="test1" class="mt-1">
+                    <label for="test1" class="flex-1">
+                        <strong>تست 1:</strong> ورود به عنوان کارمند (زهرا یا زینب)
+                    </label>
+                </div>
+                
+                <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
+                    <input type="checkbox" id="test2" class="mt-1">
+                    <label for="test2" class="flex-1">
+                        <strong>تست 2:</strong> باز کردن صفحه "پیام‌ها" و مشاهده لیست افراد
+                    </label>
+                </div>
+                
+                <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
+                    <input type="checkbox" id="test3" class="mt-1">
+                    <label for="test3" class="flex-1">
+                        <strong>تست 3:</strong> انتخاب یک عامل (رضایی یا کریمی) از لیست
+                    </label>
+                </div>
+                
+                <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
+                    <input type="checkbox" id="test4" class="mt-1">
+                    <label for="test4" class="flex-1">
+                        <strong>تست 4:</strong> ارسال پیام به عامل انتخاب شده
+                    </label>
+                </div>
+                
+                <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
+                    <input type="checkbox" id="test5" class="mt-1">
+                    <label for="test5" class="flex-1">
+                        <strong>تست 5:</strong> انتخاب مدیر و ارسال پیام
+                    </label>
+                </div>
+                
+                <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
+                    <input type="checkbox" id="test6" class="mt-1">
+                    <label for="test6" class="flex-1">
+                        <strong>تست 6:</strong> کلیک روی دکمه "ایجاد سفارش "
+                    </label>
+                </div>
+                
+                <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
+                    <input type="checkbox" id="test7" class="mt-1">
+                    <label for="test7" class="flex-1">
+                        <strong>تست 7:</strong> پر کردن فرم سفارش سفارشی (عنوان، دانشجو، قیمت، واحد پول)
+                    </label>
+                </div>
+                
+                <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
+                    <input type="checkbox" id="test8" class="mt-1">
+                    <label for="test8" class="flex-1">
+                        <strong>تست 8:</strong> ثبت سفارش و بررسی پیام موفقیت
+                    </label>
+                </div>
+                
+                <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
+                    <input type="checkbox" id="test9" class="mt-1">
+                    <label for="test9" class="flex-1">
+                        <strong>تست 9:</strong> ورود به عنوان عامل و بررسی نمایش سفارش در "وظایف من"
+                    </label>
+                </div>
+                
+                <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
+                    <input type="checkbox" id="test10" class="mt-1">
+                    <label for="test10" class="flex-1">
+                        <strong>تست 10:</strong> بررسی نمایش درآمد سفارش در "درآمد من" عامل
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Access -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-link text-blue-600 ml-2"></i>
+                دسترسی سریع
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <a href="index.html" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg text-center font-medium">
+                    <i class="fas fa-home ml-2"></i>
+                    صفحه اصلی
+                </a>
+                
+                <button onclick="loginAsemployee()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-medium">
+                    <i class="fas fa-user ml-2"></i>
+                    ورود به عنوان کارمند
+                </button>
+                
+                <button onclick="loginAsAgent()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-medium">
+                    <i class="fas fa-user-tie ml-2"></i>
+                    ورود به عنوان عامل
+                </button>
+                
+                <button onclick="clearChatData()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg font-medium">
+                    <i class="fas fa-trash ml-2"></i>
+                    پاک کردن پیام‌ها
+                </button>
+            </div>
+        </div>
+
+        <!-- Test Data -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-database text-yellow-600 ml-2"></i>
+                داده‌های تست
+            </h2>
+            
+            <div class="space-y-3">
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <strong>کارمند 1:</strong> زهرا (emp001)
+                </div>
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <strong>کارمند 2:</strong> زینب (emp002)
+                </div>
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <strong>عامل 1:</strong> رضایی (agent001)
+                </div>
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <strong>عامل 2:</strong> کریمی (agent002)
+                </div>
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <strong>مدیر:</strong> عامل تقی زاده (mgr001)
+                </div>
+            </div>
+            
+            <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h3 class="font-bold text-blue-800 mb-2">نمونه سفارش :</h3>
+                <ul class="text-sm text-blue-700 space-y-1">
+                    <li>• عنوان: تنظیم رساله</li>
+                    <li>• دانشجو: علی محمد علی علی</li>
+                    <li>• قیمت: 5000</li>
+                    <li>• واحد پول: دلار</li>
+                    <li>• توضیحات: تنظیم و فرمت‌بندی رساله عاملی</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function loginAsemployee() {
+            localStorage.setItem('currentUser', JSON.stringify({
+                id: 'emp001',
+                name: 'زهرا',
+                username: 'zahra',
+                role: 'employee',
+                email: 'zahra@edu-system.com'
+            }));
+            alert('وارد شدید به عنوان: زهرا (کارمند)');
+            window.location.href = 'index.html';
+        }
+
+        function loginAsAgent() {
+            localStorage.setItem('currentUser', JSON.stringify({
+                id: 'agent001',
+                name: 'رضایی',
+                username: 'rezaei',
+                role: 'agent',
+                email: 'rezaei@edu-system.com'
+            }));
+            alert('وارد شدید به عنوان: رضایی (عامل)');
+            window.location.href = 'index.html';
+        }
+
+        function clearChatData() {
+            if (confirm('آیا مطمئن هستید؟ تمام پیام‌ها و سفارشات سفارشی پاک خواهند شد.')) {
+                localStorage.removeItem('private_messages');
+                
+                // Remove custom orders
+                const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+                const filteredOrders = orders.filter(o => !o.isCustomOrder);
+                localStorage.setItem('orders', JSON.stringify(filteredOrders));
+                
+                alert('پیام‌ها و سفارشات سفارشی پاک شدند');
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>

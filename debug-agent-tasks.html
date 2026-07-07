@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دیباگ وظایف عامل</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+    <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-800 min-h-screen p-6">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold text-white mb-6">
+            <i class="fas fa-bug text-red-400 ml-2"></i>
+            دیباگ وظایف عامل - عامل معصومی
+        </h1>
+        
+        <!-- Switch to Agent -->
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-white mb-4">تغییر کاربر</h2>
+            <button onclick="switchToAgent()" 
+                    class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg">
+                <i class="fas fa-user-md ml-2"></i>
+                ورود به عنوان عامل معصومی (عامل)
+            </button>
+        </div>
+        
+        <!-- Current User Info -->
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-white mb-4">کاربر فعلی</h2>
+            <div id="currentUserInfo" class="text-white"></div>
+        </div>
+        
+        <!-- Orders Debug -->
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-white mb-4">بررسی سفارشات</h2>
+            <div id="ordersDebug" class="text-white space-y-4"></div>
+        </div>
+        
+        <!-- Agent Tasks Content -->
+        <div class="bg-slate-800 rounded-lg p-6">
+            <h2 class="text-xl font-bold text-white mb-4">محتوای وظایف عامل</h2>
+            <div id="agentTasksContent"></div>
+        </div>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/debug.js"></script>
+    <script src="js/app.js"></script>
+    
+    <script>
+        // Switch to agent user
+        function switchToAgent() {
+            const agentUser = {
+                id: 'doc001',
+                name: 'عامل معصومی',
+                username: 'masoumi',
+                role: 'agent',
+                email: 'masoumi@edu-system.com',
+                phone: '+98 915 456 7890'
+            };
+            
+            localStorage.setItem('currentUser', JSON.stringify(agentUser));
+            displayCurrentUser();
+            debugOrders();
+            loadAgentTasks();
+        }
+        
+        // Display current user
+        function displayCurrentUser() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const info = document.getElementById('currentUserInfo');
+            
+            if (currentUser.id) {
+                info.innerHTML = `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p><strong>نام:</strong> ${currentUser.name}</p>
+                            <p><strong>شناسه:</strong> ${currentUser.id}</p>
+                            <p><strong>نقش:</strong> ${currentUser.role}</p>
+                        </div>
+                        <div>
+                            <p><strong>نام کاربری:</strong> ${currentUser.username}</p>
+                            <p><strong>ایمیل:</strong> ${currentUser.email || 'ندارد'}</p>
+                            <p><strong>تلفن:</strong> ${currentUser.phone || 'ندارد'}</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                info.innerHTML = '<p class="text-yellow-400">هیچ کاربری وارد نشده است</p>';
+            }
+        }
+        
+        // Debug orders
+        function debugOrders() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const orders = DataModule.getOrders();
+            const debug = document.getElementById('ordersDebug');
+            
+            const myOrders = orders.filter(o => {
+                const isAssigned = 
+                    o.assignedDoctorId === currentUser.id || 
+                    o.assigned_doctor === currentUser.id ||
+                    o.assignedDoctor === currentUser.id ||
+                    o.doctorId === currentUser.id ||
+                    o.doctor_id === currentUser.id;
+                return isAssigned;
+            });
+            
+            debug.innerHTML = `
+                <div class="space-y-4">
+                    <div class="bg-slate-700 rounded-lg p-4">
+                        <h3 class="font-bold mb-2">آمار کلی</h3>
+                        <p>تعداد کل سفارشات: ${orders.length}</p>
+                        <p>سفارشات تخصیص یافته به من: ${myOrders.length}</p>
+                        <p>کاربر فعلی ID: ${currentUser.id}</p>
+                    </div>
+                    
+                    <div class="bg-slate-700 rounded-lg p-4">
+                        <h3 class="font-bold mb-2">همه سفارشات (فیلدهای تخصیص)</h3>
+                        <div class="space-y-2 max-h-60 overflow-y-auto">
+                            ${orders.map((order, index) => `
+                                <div class="text-xs bg-slate-600 p-2 rounded ${myOrders.includes(order) ? 'border-2 border-green-400' : ''}">
+                                    <p><strong>#${index + 1} - ${order.studentName}</strong></p>
+                                    <p>assignedDoctorId: ${order.assignedDoctorId || 'ندارد'}</p>
+                                    <p>assigned_doctor: ${order.assigned_doctor || 'ندارد'}</p>
+                                    <p>assignedDoctor: ${order.assignedDoctor || 'ندارد'}</p>
+                                    <p>doctorId: ${order.doctorId || 'ندارد'}</p>
+                                    <p>doctor_id: ${order.doctor_id || 'ندارد'}</p>
+                                    ${myOrders.includes(order) ? '<p class="text-green-400 font-bold">✓ تخصیص یافته به من</p>' : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="bg-slate-700 rounded-lg p-4">
+                        <h3 class="font-bold mb-2">سفارشات من</h3>
+                        ${myOrders.length === 0 ? 
+                            '<p class="text-yellow-400">هیچ سفارشی یافت نشد!</p>' :
+                            `<div class="space-y-2">
+                                ${myOrders.map(order => `
+                                    <div class="text-sm bg-green-900 bg-opacity-30 p-2 rounded">
+                                        <p><strong>${order.studentName}</strong> - ${order.type}</p>
+                                        <p>وضعیت: ${order.status}</p>
+                                        <p>پیشرفت: ${order.progress}%</p>
+                                    </div>
+                                `).join('')}
+                            </div>`
+                        }
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Load agent tasks
+        function loadAgentTasks() {
+            const content = document.getElementById('agentTasksContent');
+            
+            try {
+                if (typeof window.getMyAgentTasksContent === 'function') {
+                    content.innerHTML = window.getMyAgentTasksContent();
+                } else {
+                    content.innerHTML = '<p class="text-red-400">تابع getMyAgentTasksContent یافت نشد!</p>';
+                }
+            } catch (error) {
+                content.innerHTML = `<p class="text-red-400">خطا: ${error.message}</p>`;
+            }
+        }
+        
+        // Initialize
+        displayCurrentUser();
+        debugOrders();
+        loadAgentTasks();
+    </script>
+</body>
+</html>

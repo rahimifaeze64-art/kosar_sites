@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست فیلتر دانشجویان</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="assets/libs/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="assets/fonts/vazirmatn/vazirmatn.css">
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-8">
+    <div class="max-w-7xl mx-auto">
+        <div class="bg-slate-900 rounded-2xl shadow-2xl p-8">
+            <h1 class="text-3xl font-bold text-white mb-8 text-center">
+                <i class="fas fa-filter text-indigo-400 ml-2"></i>
+                تست فیلتر دانشجویان بر اساس مرحله
+            </h1>
+            
+            <div id="students-content"></div>
+        </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/sample-students.js"></script>
+    <script src="js/employee.js"></script>
+    
+    <script>
+        // Initialize test data
+        document.addEventListener('DOMContentLoaded', function() {
+            // Create sample students with different progress
+            const sampleStudents = [
+                {
+                    id: 'student001',
+                    name: 'حسن یاسر کرار',
+                    studentId: 'ST001',
+                    university: 'دانشگاه قم',
+                    field: 'حقوق',
+                    degree: 'کارشناسی ارشد',
+                    phone: '+964 770 123 4567',
+                    active: true,
+                    educationalSteps: EmployeeModule.getDefaultEducationalSteps().map((s, i) => ({
+                        ...s,
+                        completed: i < 5 // First 5 steps completed - currently on step 6
+                    })),
+                    defenseSteps: EmployeeModule.getDefaultDefenseSteps2().map((s, i) => ({
+                        ...s,
+                        completed: i < 2 // First 2 steps completed - currently on step 3
+                    }))
+                },
+                {
+                    id: 'student002',
+                    name: 'قاسم محمود حسن',
+                    studentId: 'ST002',
+                    university: 'جامعه المصطفی',
+                    field: 'حقوق بین‌الملل',
+                    degree: 'عاملا',
+                    phone: '+964 771 234 5678',
+                    active: true,
+                    educationalSteps: EmployeeModule.getDefaultEducationalSteps().map((s, i) => ({
+                        ...s,
+                        completed: i < 10 // First 10 steps completed - currently on step 11
+                    })),
+                    defenseSteps: EmployeeModule.getDefaultDefenseSteps2().map((s, i) => ({
+                        ...s,
+                        completed: i < 5 // First 5 steps completed - currently on step 6
+                    }))
+                },
+                {
+                    id: 'student003',
+                    name: 'علی رضا احمدی',
+                    studentId: 'ST003',
+                    university: 'دانشگاه تهران',
+                    field: 'مهندسی کامپیوتر',
+                    degree: 'کارشناسی',
+                    phone: '+98 912 345 6789',
+                    active: true,
+                    educationalSteps: EmployeeModule.getDefaultEducationalSteps().map(s => ({
+                        ...s,
+                        completed: true // All completed
+                    })),
+                    defenseSteps: EmployeeModule.getDefaultDefenseSteps2().map(s => ({
+                        ...s,
+                        completed: true // All completed
+                    }))
+                },
+                {
+                    id: 'student004',
+                    name: 'زینب زهرا محمدی',
+                    studentId: 'ST004',
+                    university: 'دانشگاه شهید بهشتی',
+                    field: 'روانشناسی',
+                    degree: 'کارشناسی ارشد',
+                    phone: '+98 913 456 7890',
+                    active: true,
+                    educationalSteps: EmployeeModule.getDefaultEducationalSteps().map((s, i) => ({
+                        ...s,
+                        completed: i < 5 // First 5 steps completed - same as student001
+                    })),
+                    defenseSteps: EmployeeModule.getDefaultDefenseSteps2().map((s, i) => ({
+                        ...s,
+                        completed: i < 0 // No steps completed - on step 1
+                    }))
+                }
+            ];
+            
+            // Override getAllStudents to return sample data
+            EmployeeModule.getAllStudents = function() {
+                return sampleStudents;
+            };
+            
+            // Render content
+            const content = EmployeeModule.getStudentsContent('employee001');
+            document.getElementById('students-content').innerHTML = content;
+            
+            console.log('Test initialized with sample students:', sampleStudents);
+            console.log('Student 1 - Educational step 6, Defense step 3');
+            console.log('Student 2 - Educational step 11, Defense step 6');
+            console.log('Student 3 - All completed');
+            console.log('Student 4 - Educational step 6, Defense step 1');
+        });
+    </script>
+</body>
+</html>

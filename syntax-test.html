@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syntax Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>تست Syntax فایل‌ها</h1>
+    <div id="results"></div>
+
+    <script>
+        const results = document.getElementById('results');
+        
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = message;
+            results.appendChild(div);
+        }
+        
+        // Test each file
+        const files = [
+            'js/config.js',
+            'js/data.js', 
+            'js/dashboard.js',
+            'js/orders.js',
+            'js/users.js',
+            'js/profile.js',
+            'js/modals.js',
+            'js/app.js'
+        ];
+        
+        let loadedCount = 0;
+        
+        files.forEach(file => {
+            const script = document.createElement('script');
+            script.src = file;
+            script.onload = () => {
+                addResult(`✅ ${file} loaded successfully`, 'success');
+                loadedCount++;
+                if (loadedCount === files.length) {
+                    addResult('🎉 All files loaded successfully!', 'success');
+                    testModules();
+                }
+            };
+            script.onerror = () => {
+                addResult(`❌ ${file} failed to load`, 'error');
+            };
+            document.head.appendChild(script);
+        });
+        
+        function testModules() {
+            addResult('--- Testing Modules ---', 'info');
+            
+            if (typeof CONFIG !== 'undefined') {
+                addResult('✅ CONFIG module available', 'success');
+            } else {
+                addResult('❌ CONFIG module missing', 'error');
+            }
+            
+            if (typeof DataModule !== 'undefined') {
+                addResult('✅ DataModule available', 'success');
+                try {
+                    DataModule.initializeData();
+                    addResult('✅ DataModule.initializeData() works', 'success');
+                } catch (e) {
+                    addResult(`❌ DataModule.initializeData() error: ${e.message}`, 'error');
+                }
+            } else {
+                addResult('❌ DataModule missing', 'error');
+            }
+            
+            if (typeof DashboardModule !== 'undefined') {
+                addResult('✅ DashboardModule available', 'success');
+                try {
+                    const content = DashboardModule.getDashboardContent('manager');
+                    if (content && content.length > 0) {
+                        addResult('✅ DashboardModule.getDashboardContent() works', 'success');
+                    } else {
+                        addResult('❌ DashboardModule.getDashboardContent() returned empty', 'error');
+                    }
+                } catch (e) {
+                    addResult(`❌ DashboardModule.getDashboardContent() error: ${e.message}`, 'error');
+                }
+            } else {
+                addResult('❌ DashboardModule missing', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

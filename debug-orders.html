@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دیباگ سفارشات</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link rel="stylesheet" href="assets/libs/fontawesome/css/all.min.css">
+    <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-800 min-h-screen p-6">
+    <!-- Debug Panel -->
+    <div id="debug-panel" class="fixed top-4 left-4 bg-slate-800 bg-opacity-95 text-white p-4 rounded-lg z-50 max-w-md text-xs border border-slate-600"
+          style="display: none; max-height: 80vh; overflow-y: auto;">
+        <div class="flex justify-between items-center mb-2 sticky top-0 bg-slate-800 pb-2">
+            <h4 class="font-bold text-emerald-400">🐛 Debug Panel</h4>
+            <button onclick="toggleDebug()" class="text-red-400 hover:text-red-300">✕</button>
+        </div>
+        <div id="debug-content" class="space-y-2"></div>
+        <div class="mt-2 pt-2 border-t border-slate-600 sticky bottom-0 bg-slate-800">
+            <button onclick="clearDebugLog()" class="bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-xs">
+                Clear Log
+            </button>
+            <button onclick="exportDebugLog()" class="bg-indigo-600 hover:bg-indigo-700 px-2 py-1 rounded text-xs ml-2">
+                Export
+            </button>
+        </div>
+    </div>
+
+    <!-- Debug Toggle Button -->
+    <button id="debug-toggle" onclick="toggleDebug()"
+            class="fixed top-4 left-4 bg-red-600 hover:bg-red-700 text-white p-2 rounded-full z-40 shadow-lg border-2 border-red-500">
+        🐛
+    </button>
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold text-white mb-6">
+            <i class="fas fa-bug text-red-400 ml-2"></i>
+            دیباگ سفارشات - عامل معصومی
+        </h1>
+        
+        <!-- Current User -->
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-white mb-4">کاربر فعلی</h2>
+            <div id="currentUser" class="text-white font-mono text-sm"></div>
+        </div>
+        
+        <!-- All Orders -->
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-white mb-4">همه سفارشات (از localStorage)</h2>
+            <div id="allOrders" class="text-white font-mono text-sm max-h-96 overflow-y-auto"></div>
+        </div>
+        
+        <!-- Filtered Orders -->
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-white mb-4">سفارشات فیلتر شده برای doc001</h2>
+            <div id="filteredOrders" class="text-white font-mono text-sm"></div>
+        </div>
+        
+        <!-- Field Check -->
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-white mb-4">بررسی فیلدهای assignedDoctor</h2>
+            <div id="fieldCheck" class="text-white font-mono text-sm"></div>
+        </div>
+        
+        <!-- Custom Orders Debug -->
+        <div class="bg-purple-900 bg-opacity-30 rounded-lg p-6 mb-6 border-2 border-purple-500">
+            <h2 class="text-xl font-bold text-white mb-4">
+                <i class="fas fa-star text-purple-400 ml-2"></i>
+                دیباگ سفارشات سفارشی
+            </h2>
+            
+            <!-- Custom Orders Only -->
+            <div class="bg-slate-800 rounded-lg p-4 mb-4">
+                <h3 class="text-lg font-bold text-purple-300 mb-3">سفارشات سفارشی (isCustomOrder: true)</h3>
+                <div id="customOrdersOnly" class="text-white font-mono text-sm"></div>
+            </div>
+            
+            <!-- All Agents -->
+            <div class="bg-slate-800 rounded-lg p-4 mb-4">
+                <h3 class="text-lg font-bold text-purple-300 mb-3">لیست عامل‌ها</h3>
+                <div id="allAgents" class="text-white font-mono text-sm"></div>
+            </div>
+            
+            <!-- Orders by Agent -->
+            <div class="bg-slate-800 rounded-lg p-4">
+                <h3 class="text-lg font-bold text-purple-300 mb-3">سفارشات گروه‌بندی شده بر اساس عامل</h3>
+                <div id="ordersByAgent" class="space-y-3"></div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="bg-green-900 bg-opacity-30 rounded-lg p-6">
+            <h2 class="text-xl font-bold text-white mb-4">اقدامات سریع</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="createTestOrder()" 
+                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg">
+                    <i class="fas fa-plus ml-2"></i>
+                    ایجاد سفارش تست برای doc001
+                </button>
+                <button onclick="location.reload()" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg">
+                    <i class="fas fa-sync ml-2"></i>
+                    بارگذاری مجدد
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/data.js"></script>
+    <script>
+        // Debug System
+        let debugLog = [];
+        let debugVisible = false;
+        
+        function debugLogger(message, type = 'info', data = null) {
+            try {
+                const timestamp = new Date().toLocaleTimeString('fa-IR');
+                const logEntry = {
+                    timestamp,
+                    message,
+                    type,
+                    data: data ? JSON.stringify(data, null, 2) : null
+                };
+                
+                debugLog.push(logEntry);
+                
+                console.log(`[${timestamp}] ${type.toUpperCase()}: ${message}`, data || '');
+                
+                if (debugVisible) {
+                    updateDebugPanel();
+                }
+                
+                if (debugLog.length > 100) {
+                    debugLog = debugLog.slice(-100);
+                }
+            } catch (error) {
+                console.error('Debug logger error:', error);
+            }
+        }
+        
+        function updateDebugPanel() {
+            const content = document.getElementById('debug-content');
+            if (!content) return;
+            
+            content.innerHTML = debugLog.slice(-20).reverse().map(entry => {
+                const typeColors = {
+                    info: 'text-blue-400',
+                    success: 'text-green-400',
+                    warning: 'text-yellow-400',
+                    error: 'text-red-400'
+                };
+                
+                return `
+                    <div class="border-b border-gray-700 pb-1 mb-1">
+                        <div class="flex justify-between">
+                            <span class="${typeColors[entry.type] || 'text-gray-400'}">[${entry.type}]</span>
+                            <span class="text-gray-500">${entry.timestamp}</span>
+                        </div>
+                        <div class="text-white">${entry.message}</div>
+                        ${entry.data ? `<pre class="text-gray-300 text-xs mt-1 bg-gray-800 p-1 rounded overflow-x-auto">${entry.data}</pre>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function toggleDebug() {
+            const panel = document.getElementById('debug-panel');
+            debugVisible = !debugVisible;
+            panel.style.display = debugVisible ? 'block' : 'none';
+            
+            if (debugVisible) {
+                updateDebugPanel();
+            }
+        }
+        
+        function clearDebugLog() {
+            debugLog = [];
+            updateDebugPanel();
+            debugLogger('Debug log cleared', 'info');
+        }
+        
+        function exportDebugLog() {
+            const dataStr = JSON.stringify(debugLog, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `debug-log-${new Date().toISOString().slice(0,19)}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // Override console methods
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            debugLogger(args.join(' '), 'info');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            debugLogger(args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            debugLogger(args.join(' '), 'warning');
+        };
+        
+        // Create test order
+        function createTestOrder() {
+            const now = new Date();
+            const deadline = new Date(now.getTime() + (2 * 60 * 60 * 1000));
+            
+            const order = {
+                id: 'custom_order_' + Date.now(),
+                type: 'سفارش سفارشی',
+                title: 'تنظیم مقاله تست',
+                studentName: 'علی محمدی',
+                description: 'این یک سفارش تستی است',
+                deadline: deadline.toLocaleDateString('fa-IR'),
+                deadlineTime: deadline.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
+                deadlineDateTime: deadline.toISOString(),
+                assignedDoctorId: 'doc001',
+                assignedDoctor: 'عامل معصومی',
+                status: 'in_progress',
+                progress: 0,
+                createdBy: 'emp001',
+                createdByName: 'زهرا',
+                createdAt: new Date().toISOString(),
+                isCustomOrder: true
+            };
+            
+            const orders = DataModule.getOrders();
+            orders.push(order);
+            DataModule.saveOrders(orders);
+            
+            alert('سفارش تست ایجاد شد!');
+            location.reload();
+        }
+        // Display current user
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        document.getElementById('currentUser').innerHTML = `<pre>${JSON.stringify(currentUser, null, 2)}</pre>`;
+        
+        // Get all orders
+        const orders = DataModule.getOrders();
+        document.getElementById('allOrders').innerHTML = `
+            <p class="mb-2"><strong>تعداد کل سفارشات:</strong> ${orders.length}</p>
+            <pre>${JSON.stringify(orders, null, 2)}</pre>
+        `;
+        
+        // Filter orders for doc001
+        const doc001Orders = orders.filter(o => {
+            const match = 
+                o.assignedDoctorId === 'doc001' || 
+                o.assigned_doctor === 'doc001' ||
+                o.assignedDoctor === 'عامل معصومی' ||
+                o.doctorId === 'doc001' ||
+                o.doctor_id === 'doc001';
+            
+            return match;
+        });
+        
+        document.getElementById('filteredOrders').innerHTML = `
+            <p class="mb-2"><strong>تعداد سفارشات فیلتر شده:</strong> ${doc001Orders.length}</p>
+            ${doc001Orders.length > 0 ? `<pre>${JSON.stringify(doc001Orders, null, 2)}</pre>` : '<p class="text-red-400">هیچ سفارشی یافت نشد!</p>'}
+        `;
+        
+        // Check fields
+        let fieldCheckHTML = '<table class="w-full text-left border-collapse">';
+        fieldCheckHTML += '<thead><tr class="border-b border-gray-600"><th class="p-2">شماره</th><th class="p-2">عنوان</th><th class="p-2">assignedDoctorId</th><th class="p-2">assigned_doctor</th><th class="p-2">assignedDoctor</th><th class="p-2">مطابقت</th></tr></thead><tbody>';
+        
+        orders.forEach((order, index) => {
+            const match = 
+                order.assignedDoctorId === 'doc001' || 
+                order.assigned_doctor === 'doc001' ||
+                order.assignedDoctor === 'عامل معصومی';
+            
+            fieldCheckHTML += `
+                <tr class="border-b border-gray-700 ${match ? 'bg-green-900 bg-opacity-30' : ''}">
+                    <td class="p-2">${index + 1}</td>
+                    <td class="p-2">${order.title || order.type || 'بدون عنوان'}</td>
+                    <td class="p-2">${order.assignedDoctorId || '-'}</td>
+                    <td class="p-2">${order.assigned_doctor || '-'}</td>
+                    <td class="p-2">${order.assignedDoctor || '-'}</td>
+                    <td class="p-2">${match ? '<span class="text-green-400">✓</span>' : '<span class="text-red-400">✗</span>'}</td>
+                </tr>
+            `;
+        });
+        
+        fieldCheckHTML += '</tbody></table>';
+        document.getElementById('fieldCheck').innerHTML = fieldCheckHTML;
+        
+        // === Custom Orders Debug ===
+        
+        // Display custom orders only
+        const customOrders = orders.filter(o => o.isCustomOrder === true);
+        document.getElementById('customOrdersOnly').innerHTML = `
+            <p class="mb-2"><strong>تعداد سفارشات سفارشی:</strong> ${customOrders.length}</p>
+            ${customOrders.length > 0 ? `<pre class="max-h-64 overflow-y-auto">${JSON.stringify(customOrders, null, 2)}</pre>` : '<p class="text-yellow-400">هیچ سفارش سفارشی یافت نشد!</p>'}
+        `;
+        
+        // Display all agents
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        const agents = users.filter(u => u.role === 'agent');
+        document.getElementById('allAgents').innerHTML = `
+            <p class="mb-2"><strong>تعداد عامل‌ها:</strong> ${agents.length}</p>
+            <pre class="max-h-48 overflow-y-auto">${JSON.stringify(agents, null, 2)}</pre>
+        `;
+        
+        // Group orders by agent
+        const ordersByAgent = {};
+        agents.forEach(agent => {
+            ordersByAgent[agent.id] = orders.filter(o => 
+                o.assignedDoctorId === agent.id || 
+                o.assigned_doctor === agent.id ||
+                o.assignedDoctor === agent.id ||
+                o.doctorId === agent.id ||
+                o.doctor_id === agent.id
+            );
+        });
+        
+        const ordersByAgentContainer = document.getElementById('ordersByAgent');
+        if (agents.length === 0) {
+            ordersByAgentContainer.innerHTML = '<p class="text-yellow-400">هیچ عاملی در سیستم یافت نشد!</p>';
+        } else {
+            agents.forEach(agent => {
+                const agentOrders = ordersByAgent[agent.id] || [];
+                const customCount = agentOrders.filter(o => o.isCustomOrder).length;
+                
+                const div = document.createElement('div');
+                div.className = 'bg-slate-900 p-4 rounded-lg border border-slate-700';
+                div.innerHTML = `
+                    <div class="flex justify-between items-center mb-3">
+                        <div>
+                            <h4 class="font-bold text-lg text-white">${agent.name} <span class="text-gray-400 text-sm">(${agent.id})</span></h4>
+                            <p class="text-sm text-gray-400">@${agent.username}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-2xl font-bold text-white">${agentOrders.length}</p>
+                            <p class="text-xs text-gray-400">کل سفارشات</p>
+                            ${customCount > 0 ? `<p class="text-xs text-purple-400 mt-1"><i class="fas fa-star"></i> ${customCount} سفارشی</p>` : ''}
+                        </div>
+                    </div>
+                    ${agentOrders.length > 0 ? `
+                        <div class="space-y-2">
+                            ${agentOrders.map((order, idx) => `
+                                <div class="bg-slate-800 p-2 rounded text-xs ${order.isCustomOrder ? 'border-l-4 border-purple-500' : ''}">
+                                    <div class="flex justify-between items-start">
+                                        <div class="flex-1">
+                                            <p class="text-white font-medium">${idx + 1}. ${order.title || order.type}</p>
+                                            <p class="text-gray-400">دانشجو: ${order.studentName}</p>
+                                            <p class="text-gray-400">وضعیت: ${order.status}</p>
+                                        </div>
+                                        ${order.isCustomOrder ? '<span class="text-purple-400 text-xs"><i class="fas fa-star"></i> سفارشی</span>' : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : '<p class="text-gray-500 text-sm">هیچ سفارشی به این عامل تخصیص داده نشده</p>'}
+                `;
+                ordersByAgentContainer.appendChild(div);
+            });
+        }
+        
+        // Log to debug panel
+        debugLogger('Custom Orders Debug loaded', 'success', {
+            totalOrders: orders.length,
+            customOrders: customOrders.length,
+            agents: agents.length,
+            ordersByAgent: Object.keys(ordersByAgent).map(agentId => ({
+                agentId,
+                count: ordersByAgent[agentId].length
+            }))
+        });
+    </script>
+</body>
+</html>

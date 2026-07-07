@@ -1,0 +1,85 @@
+﻿<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست Timeline مراحل تحصیلی</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link rel="stylesheet" href="assets/libs/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="assets/fonts/vazirmatn/vazirmatn.css">
+    <style>
+        body {
+            font-family: Vazirmatn, sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8 text-center">
+            <i class="fas fa-graduation-cap text-indigo-400 ml-2"></i>
+            تست Timeline مراحل تحصیلی
+        </h1>
+        
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">دانشجو نمونه: علی احمدی</h2>
+            <button onclick="openEditModal()" class="bg-indigo-600 hover:bg-indigo-700 px-6 py-3 rounded-lg font-bold">
+                <i class="fas fa-edit ml-2"></i>
+                ویرایش پروفایل و مشاهده Timeline
+            </button>
+        </div>
+        
+        <div class="bg-slate-800 rounded-lg p-6">
+            <h3 class="text-lg font-bold mb-4">راهنما:</h3>
+            <ul class="space-y-2 text-gray-300">
+                <li><i class="fas fa-check text-green-400 ml-2"></i> روی هر مرحله کلیک کنید تا تیک بخورد</li>
+                <li><i class="fas fa-undo text-yellow-400 ml-2"></i> دوباره کلیک کنید تا تیک برداشته شود</li>
+                <li><i class="fas fa-chart-line text-blue-400 ml-2"></i> نوار پیشرفت به صورت خودکار به‌روز می‌شود</li>
+                <li><i class="fas fa-calendar text-purple-400 ml-2"></i> تاریخ تکمیل هر مرحله ذخیره می‌شود</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/utils.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/employee.js"></script>
+    
+    <script>
+        // Sample student data
+        const sampleStudent = {
+            id: 'test-student-1',
+            name: 'علی احمدی',
+            studentId: '401234567',
+            passportNumber: 'A12345678',
+            birthDate: '1998-05-15',
+            gender: 'مرد',
+            phone: '09123456789',
+            university: 'دانشگاه تهران',
+            field: 'مهندسی کامپیوتر',
+            degree: 'کارشناسی ارشد',
+            email: 'ali.ahmadi@example.com',
+            active: true
+        };
+        
+        // Save sample student to localStorage
+        const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
+        studentsData[sampleStudent.id] = sampleStudent;
+        localStorage.setItem('students_data', JSON.stringify(studentsData));
+        
+        function openEditModal() {
+            if (typeof EmployeeModule !== 'undefined') {
+                EmployeeModule.editStudentProfile(sampleStudent.id);
+            } else {
+                alert('ماژول employee بارگذاری نشده است!');
+            }
+        }
+        
+        // Show success message
+        setTimeout(() => {
+            if (typeof UTILS !== 'undefined') {
+                UTILS.showNotification('صفحه تست آماده است! روی دکمه کلیک کنید', 'success');
+            }
+        }, 500);
+    </script>
+</body>
+</html>

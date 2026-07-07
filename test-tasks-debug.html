@@ -1,0 +1,316 @@
+﻿<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست دیباگ وظایف</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+    <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-800 min-h-screen p-6">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold text-white mb-6">
+            <i class="fas fa-bug text-red-400 ml-2"></i>
+            تست دیباگ وظایف
+        </h1>
+        
+        <!-- Role Selector -->
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-white mb-4">انتخاب نقش</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="switchRole('employee')" 
+                        class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-3 rounded-lg">
+                    <i class="fas fa-user-tie ml-2"></i>
+                    کارمند (زهرا)
+                </button>
+                <button onclick="switchRole('agent')" 
+                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg">
+                    <i class="fas fa-user-md ml-2"></i>
+                    عامل (عامل معصومی)
+                </button>
+            </div>
+        </div>
+        
+        <!-- Current User Info -->
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-white mb-4">کاربر فعلی</h2>
+            <div id="currentUserInfo" class="text-white"></div>
+        </div>
+        
+        <!-- Test Buttons -->
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-white mb-4">تست توابع</h2>
+            <div class="space-y-3">
+                <button onclick="testGetMyTasksContent()" 
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg text-left">
+                    <i class="fas fa-play ml-2"></i>
+                    تست getMyTasksContent() - کارمند
+                </button>
+                <button onclick="testGetMyAgentTasksContent()" 
+                        class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg text-left">
+                    <i class="fas fa-play ml-2"></i>
+                    تست getMyAgentTasksContent() - عامل
+                </button>
+                <button onclick="testEmployeeModule()" 
+                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-lg text-left">
+                    <i class="fas fa-cog ml-2"></i>
+                    بررسی EmployeeModule
+                </button>
+                <button onclick="testDataModule()" 
+                        class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-lg text-left">
+                    <i class="fas fa-database ml-2"></i>
+                    بررسی DataModule
+                </button>
+            </div>
+        </div>
+        
+        <!-- Console Output -->
+        <div class="bg-slate-900 rounded-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-white">خروجی کنسول</h2>
+                <button onclick="clearConsole()" 
+                        class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">
+                    <i class="fas fa-trash ml-1"></i>
+                    پاک کردن
+                </button>
+            </div>
+            <div id="consoleOutput" class="bg-black rounded p-4 text-green-400 font-mono text-sm max-h-96 overflow-y-auto">
+                <div class="text-gray-500">آماده برای تست...</div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/employee.js"></script>
+    <script src="js/app.js"></script>
+    
+    <script>
+        // Console logger
+        function log(message, type = 'info') {
+            const output = document.getElementById('consoleOutput');
+            const colors = {
+                info: 'text-blue-400',
+                success: 'text-green-400',
+                error: 'text-red-400',
+                warning: 'text-yellow-400'
+            };
+            
+            const time = new Date().toLocaleTimeString('fa-IR');
+            const div = document.createElement('div');
+            div.className = colors[type] || 'text-gray-400';
+            div.innerHTML = `[${time}] ${message}`;
+            output.appendChild(div);
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function clearConsole() {
+            document.getElementById('consoleOutput').innerHTML = '<div class="text-gray-500">کنسول پاک شد...</div>';
+        }
+        
+        // Switch role
+        function switchRole(role) {
+            const users = {
+                employee: {
+                    id: 'emp001',
+                    name: 'زهرا',
+                    username: 'zahra',
+                    role: 'employee',
+                    email: 'zahra@edu-system.com'
+                },
+                agent: {
+                    id: 'doc001',
+                    name: 'عامل معصومی',
+                    username: 'masoumi',
+                    role: 'agent',
+                    email: 'masoumi@edu-system.com'
+                }
+            };
+            
+            const user = users[role];
+            localStorage.setItem('currentUser', JSON.stringify(user));
+            
+            log(`نقش تغییر کرد به: ${user.name} (${user.role})`, 'success');
+            displayCurrentUser();
+        }
+        
+        // Display current user
+        function displayCurrentUser() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const info = document.getElementById('currentUserInfo');
+            
+            if (currentUser.id) {
+                info.innerHTML = `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-gray-400 text-sm">نام:</p>
+                            <p class="font-bold">${currentUser.name}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 text-sm">شناسه:</p>
+                            <p class="font-bold">${currentUser.id}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 text-sm">نقش:</p>
+                            <p class="font-bold">${currentUser.role}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 text-sm">ایمیل:</p>
+                            <p class="font-bold">${currentUser.email || 'ندارد'}</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                info.innerHTML = '<p class="text-yellow-400">هیچ کاربری وارد نشده است. لطفا یک نقش انتخاب کنید.</p>';
+            }
+        }
+        
+        // Test getMyTasksContent
+        function testGetMyTasksContent() {
+            log('=== شروع تست getMyTasksContent ===', 'info');
+            
+            try {
+                // Check if function exists
+                if (typeof window.getMyTasksContent !== 'function') {
+                    log('❌ تابع getMyTasksContent وجود ندارد!', 'error');
+                    return;
+                }
+                log('✅ تابع getMyTasksContent یافت شد', 'success');
+                
+                // Call function
+                const result = window.getMyTasksContent();
+                
+                if (result) {
+                    log('✅ تابع با موفقیت اجرا شد', 'success');
+                    log(`طول خروجی: ${result.length} کاراکتر`, 'info');
+                    
+                    if (result.includes('خطا')) {
+                        log('⚠️ خروجی شامل پیام خطا است', 'warning');
+                        log(result.substring(0, 200), 'error');
+                    } else {
+                        log('✅ خروجی HTML معتبر است', 'success');
+                    }
+                } else {
+                    log('❌ تابع null یا undefined برگرداند', 'error');
+                }
+            } catch (error) {
+                log(`❌ خطا: ${error.message}`, 'error');
+                log(`Stack: ${error.stack}`, 'error');
+            }
+            
+            log('=== پایان تست ===', 'info');
+        }
+        
+        // Test getMyAgentTasksContent
+        function testGetMyAgentTasksContent() {
+            log('=== شروع تست getMyAgentTasksContent ===', 'info');
+            
+            try {
+                // Check if function exists
+                if (typeof window.getMyAgentTasksContent !== 'function') {
+                    log('❌ تابع getMyAgentTasksContent وجود ندارد!', 'error');
+                    return;
+                }
+                log('✅ تابع getMyAgentTasksContent یافت شد', 'success');
+                
+                // Call function
+                const result = window.getMyAgentTasksContent();
+                
+                if (result) {
+                    log('✅ تابع با موفقیت اجرا شد', 'success');
+                    log(`طول خروجی: ${result.length} کاراکتر`, 'info');
+                    
+                    if (result.includes('خطا')) {
+                        log('⚠️ خروجی شامل پیام خطا است', 'warning');
+                        log(result.substring(0, 200), 'error');
+                    } else if (result.includes('دسترسی محدود')) {
+                        log('⚠️ دسترسی محدود - نقش صحیح نیست', 'warning');
+                    } else {
+                        log('✅ خروجی HTML معتبر است', 'success');
+                    }
+                } else {
+                    log('❌ تابع null یا undefined برگرداند', 'error');
+                }
+            } catch (error) {
+                log(`❌ خطا: ${error.message}`, 'error');
+                log(`Stack: ${error.stack}`, 'error');
+            }
+            
+            log('=== پایان تست ===', 'info');
+        }
+        
+        // Test EmployeeModule
+        function testEmployeeModule() {
+            log('=== بررسی EmployeeModule ===', 'info');
+            
+            if (typeof EmployeeModule === 'undefined') {
+                log('❌ EmployeeModule تعریف نشده است!', 'error');
+                return;
+            }
+            log('✅ EmployeeModule یافت شد', 'success');
+            
+            // Check methods
+            const methods = ['getMyTasksContent', 'getMyTasks', 'getMyCustomOrders', 'getCurrentUserSafe'];
+            methods.forEach(method => {
+                if (typeof EmployeeModule[method] === 'function') {
+                    log(`✅ متد ${method} موجود است`, 'success');
+                } else {
+                    log(`❌ متد ${method} موجود نیست`, 'error');
+                }
+            });
+            
+            log('=== پایان بررسی ===', 'info');
+        }
+        
+        // Test DataModule
+        function testDataModule() {
+            log('=== بررسی DataModule ===', 'info');
+            
+            if (typeof DataModule === 'undefined') {
+                log('❌ DataModule تعریف نشده است!', 'error');
+                return;
+            }
+            log('✅ DataModule یافت شد', 'success');
+            
+            try {
+                const orders = DataModule.getOrders();
+                log(`✅ تعداد سفارشات: ${orders.length}`, 'success');
+                
+                if (orders.length > 0) {
+                    log('نمونه سفارش اول:', 'info');
+                    log(JSON.stringify(orders[0], null, 2), 'info');
+                }
+            } catch (error) {
+                log(`❌ خطا در دریافت سفارشات: ${error.message}`, 'error');
+            }
+            
+            log('=== پایان بررسی ===', 'info');
+        }
+        
+        // Override console methods
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            log(args.join(' '), 'info');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            log(args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            log(args.join(' '), 'warning');
+        };
+        
+        // Initialize
+        displayCurrentUser();
+        log('صفحه تست آماده است', 'success');
+    </script>
+</body>
+</html>

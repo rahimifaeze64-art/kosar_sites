@@ -1,0 +1,293 @@
+﻿<!-- New Order Modal (Manager) -->
+<div x-show="showModal === 'newOrder'" class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div class="p-6 border-b">
+        <h3 class="text-lg font-bold text-gray-800">سفارش جدید</h3>
+    </div>
+    <div class="p-6 space-y-4" x-data="{ newOrder: {} }">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">نام دانشجو</label>
+                <input type="text" x-model="newOrder.studentName" 
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">شماره دانشجویی</label>
+                <input type="text" x-model="newOrder.studentId" 
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">نام دانشگاه</label>
+                <input type="text" x-model="newOrder.university" 
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">رشته تحصیلی</label>
+                <input type="text" x-model="newOrder.field" 
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">مقطع</label>
+                <select x-model="newOrder.degree" 
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                    <option value="">انتخاب کنید</option>
+                    <option value="ارشد">ارشد</option>
+                    <option value="عاملا">عاملا</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">نوع سفارش</label>
+                <select x-model="newOrder.type" 
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                    <option value="">انتخاب کنید</option>
+                    <option value="نوشتن رساله">نوشتن رساله</option>
+                    <option value="نوشتن مقاله">نوشتن مقاله</option>
+                    <option value="ترجمه رساله">ترجمه رساله</option>
+                    <option value="تلخیص">تلخیص</option>
+                    <option value="آماده‌سازی ارائه">آماده‌سازی ارائه</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">مهلت تحویل</label>
+                <input type="date" x-model="newOrder.deadline" 
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">شماره پاسپورت</label>
+                <input type="text" x-model="newOrder.passportNumber" 
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+            </div>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">توضیحات اضافی</label>
+            <textarea x-model="newOrder.description" rows="3"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"></textarea>
+        </div>
+        <div class="flex justify-end space-x-3 space-x-reverse pt-4">
+            <button @click="showModal = null" 
+                    class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                انصراف
+            </button>
+            <button @click="addNewOrder(newOrder)" 
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                ثبت سفارش
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- View Order Modal -->
+<div x-show="showModal === 'viewOrder'" class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div class="p-6 border-b">
+        <h3 class="text-lg font-bold text-gray-800">جزئیات سفارش</h3>
+    </div>
+    <div class="p-6" x-show="selectedOrder">
+        <!-- Order Info -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="font-semibold text-gray-700 mb-2">اطلاعات دانشجو</h4>
+                <p><span class="font-medium">نام:</span> <span x-text="selectedOrder?.studentName"></span></p>
+                <p><span class="font-medium">شماره دانشجویی:</span> <span x-text="selectedOrder?.studentId"></span></p>
+                <p><span class="font-medium">دانشگاه:</span> <span x-text="selectedOrder?.university"></span></p>
+                <p><span class="font-medium">رشته:</span> <span x-text="selectedOrder?.field"></span></p>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="font-semibold text-gray-700 mb-2">اطلاعات سفارش</h4>
+                <p><span class="font-medium">نوع:</span> <span x-text="selectedOrder?.type"></span></p>
+                <p><span class="font-medium">مقطع:</span> <span x-text="selectedOrder?.degree"></span></p>
+                <p><span class="font-medium">مهلت:</span> <span x-text="selectedOrder?.deadline"></span></p>
+                <p><span class="font-medium">عامل مسئول:</span> <span x-text="selectedOrder?.assignedDoctor || 'تخصیص نیافته'"></span></p>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="font-semibold text-gray-700 mb-2">وضعیت</h4>
+                <p><span class="font-medium">مرحله فعلی:</span> <span x-text="selectedOrder?.stage"></span></p>
+                <div class="mt-2">
+                    <div class="flex justify-between text-sm mb-1">
+                        <span>پیشرفت</span>
+                        <span x-text="selectedOrder?.progress + '%'"></span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-blue-600 h-2 rounded-full" 
+                             :style="`width: ${selectedOrder?.progress}%`"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tasks Timeline -->
+        <div class="mb-6">
+            <h4 class="font-semibold text-gray-700 mb-4">وظایف و مراحل</h4>
+            <div class="space-y-3">
+                <template x-for="task in selectedOrder?.tasks" :key="task.id">
+                    <div class="flex items-center p-3 border rounded-lg" 
+                         :class="task.status === 'completed' ? 'bg-green-50 border-green-200' : 
+                                task.status === 'rejected' ? 'bg-red-50 border-red-200' : 
+                                'bg-yellow-50 border-yellow-200'">
+                        <div class="flex-1">
+                            <p class="font-medium" x-text="task.title"></p>
+                            <p class="text-sm text-gray-600">
+                                مسئول: <span x-text="task.assignedTo"></span> | 
+                                مهلت: <span x-text="task.dueDate"></span>
+                            </p>
+                        </div>
+                        <div>
+                            <span class="px-2 py-1 rounded-full text-xs font-medium"
+                                  :class="getStatusClass(task.status)"
+                                  x-text="getStatusText(task.status)"></span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Rejection History -->
+        <div x-show="selectedOrder?.rejectionHistory?.length > 0" class="mb-6">
+            <h4 class="font-semibold text-gray-700 mb-4">تاریخچه رد</h4>
+            <div class="space-y-2">
+                <template x-for="rejection in selectedOrder?.rejectionHistory" :key="rejection.date">
+                    <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <p class="text-sm">
+                            <span class="font-medium">تاریخ:</span> <span x-text="rejection.date"></span> |
+                            <span class="font-medium">توسط:</span> <span x-text="rejection.rejectedBy"></span>
+                        </p>
+                        <p class="text-sm mt-1"><span class="font-medium">دلیل:</span> <span x-text="rejection.reason"></span></p>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Actions based on role -->
+        <div class="flex justify-between items-center pt-4 border-t">
+            <div class="space-x-2 space-x-reverse">
+                <template x-if="currentRole === 'employee'">
+                    <div class="space-x-2 space-x-reverse">
+                        <button @click="approveTask(selectedOrder.id)" 
+                                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                            تایید
+                        </button>
+                        <button @click="showModal = 'rejectTask'" 
+                                class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                            رد
+                        </button>
+                    </div>
+                </template>
+            </div>
+            <button @click="showModal = null" 
+                    class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                بستن
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Assign Task Modal (employee) -->
+<div x-show="showModal === 'assignTask'" class="bg-white rounded-lg max-w-lg w-full">
+    <div class="p-6 border-b">
+        <h3 class="text-lg font-bold text-gray-800">تخصیص وظیفه</h3>
+    </div>
+    <div class="p-6 space-y-4" x-data="{ assignment: {} }">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">انتخاب سفارش</label>
+            <select x-model="assignment.orderId" 
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                <option value="">انتخاب کنید</option>
+                <template x-for="order in orders.filter(o => o.status === 'pending')" :key="order.id">
+                    <option :value="order.id" x-text="`${order.id} - ${order.studentName} (${order.type})`"></option>
+                </template>
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">انتخاب عامل</label>
+            <select x-model="assignment.doctorId" 
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                <option value="">انتخاب کنید</option>
+                <template x-for="doctor in users.filter(u => u.role === 'doctor' && u.active)" :key="doctor.id">
+                    <option :value="doctor.id" x-text="`${doctor.name} (${doctor.specialization})`"></option>
+                </template>
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">شرح وظیفه</label>
+            <textarea x-model="assignment.description" rows="3"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                      placeholder="توضیح دقیق وظیفه مورد نظر..."></textarea>
+        </div>
+        <div class="flex justify-end space-x-3 space-x-reverse pt-4">
+            <button @click="showModal = null" 
+                    class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                انصراف
+            </button>
+            <button @click="assignTaskToDoctor(assignment.orderId, assignment.doctorId, assignment.description); showModal = null" 
+                    class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                تخصیص وظیفه
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Task Modal -->
+<div x-show="showModal === 'rejectTask'" class="bg-white rounded-lg max-w-lg w-full">
+    <div class="p-6 border-b">
+        <h3 class="text-lg font-bold text-gray-800">رد وظیفه</h3>
+    </div>
+    <div class="p-6 space-y-4" x-data="{ rejectionReason: '' }">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">دلیل رد</label>
+            <textarea x-model="rejectionReason" rows="4"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                      placeholder="لطفاً دلیل دقیق رد را بنویسید..."></textarea>
+        </div>
+        <div class="flex justify-end space-x-3 space-x-reverse pt-4">
+            <button @click="showModal = 'viewOrder'" 
+                    class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                انصراف
+            </button>
+            <button @click="rejectTask(selectedOrder.id, rejectionReason); showModal = 'viewOrder'" 
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                رد کردن
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Student Order Tracking -->
+<div x-show="showModal === 'trackOrder'" class="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+    <div class="p-6 border-b">
+        <h3 class="text-lg font-bold text-gray-800">پیگیری سفارش</h3>
+    </div>
+    <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <template x-for="order in orders" :key="order.id">
+                <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <h4 class="font-semibold text-lg" x-text="order.type"></h4>
+                        <span class="px-2 py-1 rounded-full text-xs font-medium"
+                              :class="getStatusClass(order.status)"
+                              x-text="getStatusText(order.status)"></span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">مرحله فعلی: <span x-text="order.stage"></span></p>
+                    <div class="mb-3">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span>پیشرفت</span>
+                            <span x-text="order.progress + '%'"></span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full" 
+                                 :style="`width: ${order.progress}%`"></div>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-600">مهلت: <span x-text="order.deadline"></span></p>
+                    <button @click="viewOrder(order)" 
+                            class="mt-3 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
+                        مشاهده جزئیات
+                    </button>
+                </div>
+            </template>
+        </div>
+        <div class="flex justify-end pt-4">
+            <button @click="showModal = null" 
+                    class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                بستن
+            </button>
+        </div>
+    </div>
+</div>

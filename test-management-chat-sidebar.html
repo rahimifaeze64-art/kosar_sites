@@ -1,0 +1,132 @@
+﻿<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست گفتگو مدیریت - ساید بار</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+    <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background: #0f172a;
+            color: white;
+        }
+    </style>
+</head>
+<body class="p-6">
+    <div class="max-w-6xl mx-auto">
+        <div class="mb-6 bg-slate-800 p-4 rounded-lg">
+            <h1 class="text-2xl font-bold mb-4">
+                <i class="fas fa-vial text-yellow-400 ml-2"></i>
+                تست گفتگو مدیریت در ساید بار
+            </h1>
+            
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm mb-2">انتخاب کاربر:</label>
+                    <select id="userSelect" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2">
+                        <option value="mgr001">مدیر سیستم (manager)</option>
+                        <option value="emp001">زهرا (employee)</option>
+                        <option value="emp002">زینب (employee)</option>
+                        <option value="emp003">فرزاد (employee)</option>
+                        <option value="emp004">سلیمان (employee)</option>
+                    </select>
+                </div>
+                <div class="flex items-end gap-2">
+                    <button onclick="switchUser()" class="flex-1 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg">
+                        <i class="fas fa-user-check ml-2"></i>
+                        تغییر کاربر
+                    </button>
+                    <button onclick="clearMessages()" class="flex-1 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg">
+                        <i class="fas fa-trash ml-2"></i>
+                        پاک کردن پیام‌ها
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-slate-700 p-3 rounded-lg">
+                <p class="text-sm">
+                    <i class="fas fa-info-circle text-blue-400 ml-2"></i>
+                    <strong>کاربر فعلی:</strong> <span id="currentUserDisplay"></span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Management Chat Content -->
+        <div id="chatContainer"></div>
+
+        <div class="mt-6 bg-slate-800 p-4 rounded-lg">
+            <h3 class="font-bold mb-2">
+                <i class="fas fa-check-circle text-green-400 ml-2"></i>
+                چک لیست تست:
+            </h3>
+            <ul class="space-y-2 text-sm">
+                <li>✅ ارسال پیام متنی</li>
+                <li>✅ منشن کردن کاربران با @</li>
+                <li>✅ پیوست فایل</li>
+                <li>✅ ضبط صوت (نیاز به اجازه میکروفون)</li>
+                <li>✅ حذف پیام‌های خودم</li>
+                <li>✅ حفظ تاریخچه چت بعد از تغییر کاربر</li>
+                <li>✅ نمایش نقش کاربران (مدیر/کارمند)</li>
+                <li>✅ اسکرول خودکار به آخرین پیام</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="js/manages-chat.js"></script>
+    <script src="js/management-chat-module.js"></script>
+    <script>
+        // Initialize users
+        const users = [
+            { id: 'mgr001', name: 'مدیر سیستم', username: 'manager', role: 'manager' },
+            { id: 'emp001', name: 'زهرا', username: 'zahra', role: 'employee' },
+            { id: 'emp002', name: 'زینب', username: 'fatemeh', role: 'employee' },
+            { id: 'emp003', name: 'فرزاد', username: 'farzad', role: 'employee' },
+            { id: 'emp004', name: 'سلیمان', username: 'soleiman', role: 'employee' }
+        ];
+
+        // Set default user if not exists
+        if (!localStorage.getItem('currentUser')) {
+            localStorage.setItem('currentUser', JSON.stringify(users[0]));
+        }
+
+        function updateCurrentUserDisplay() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            document.getElementById('currentUserDisplay').textContent = 
+                `${currentUser.name} (${currentUser.role === 'manager' ? 'مدیر' : 'کارمند'})`;
+            document.getElementById('userSelect').value = currentUser.id;
+        }
+
+        function switchUser() {
+            const userId = document.getElementById('userSelect').value;
+            const user = users.find(u => u.id === userId);
+            if (user) {
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                updateCurrentUserDisplay();
+                loadChat();
+                alert(`کاربر به ${user.name} تغییر کرد`);
+            }
+        }
+
+        function clearMessages() {
+            if (confirm('آیا مطمئن هستید که می‌خواهید تمام پیام‌ها را پاک کنید؟')) {
+                localStorage.removeItem('managesChat_messages');
+                loadChat();
+                alert('تمام پیام‌ها پاک شدند');
+            }
+        }
+
+        function loadChat() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const chatContainer = document.getElementById('chatContainer');
+            chatContainer.innerHTML = ManagementChatModule.getManagementChatContent(currentUser);
+        }
+
+        // Initial load
+        updateCurrentUserDisplay();
+        loadChat();
+    </script>
+</body>
+</html>

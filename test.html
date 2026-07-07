@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست سیستم مدیریت تحصیلی</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-lg shadow-lg p-8">
+            <h1 class="text-3xl font-bold text-center text-blue-600 mb-8">
+                <i class="fas fa-graduation-cap ml-2"></i>
+                تست سیستم مدیریت تحصیلی
+            </h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-blue-50 p-6 rounded-lg">
+                    <h2 class="text-xl font-bold text-blue-800 mb-4">اطلاعات پروژه</h2>
+                    <ul class="space-y-2 text-sm">
+                        <li><strong>نام:</strong> سیستم مدیریت تحصیلی دانشجویان بین‌المللی</li>
+                        <li><strong>نوع:</strong> Progressive Web App (PWA)</li>
+                        <li><strong>معماری:</strong> ماژولار و قابل تبدیل به Flutter</li>
+                        <li><strong>زبان:</strong> فارسی/عربی (RTL)</li>
+                        <li><strong>فریمورک:</strong> Alpine.js + Tailwind CSS</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-green-50 p-6 rounded-lg">
+                    <h2 class="text-xl font-bold text-green-800 mb-4">نحوه تست</h2>
+                    <div class="space-y-3 text-sm">
+                        <div class="bg-white p-3 rounded border">
+                            <strong>شروع:</strong> سیستم با نقش مدیر شروع می‌شود
+                        </div>
+                        <div class="bg-white p-3 rounded border">
+                            <strong>تغییر نقش:</strong> از منوی بالای صفحه نقش را تغییر دهید
+                        </div>
+                        <div class="bg-white p-3 rounded border">
+                            <strong>تست:</strong> هر نقش را جداگانه تست کنید
+                        </div>
+                        <div class="bg-white p-3 rounded border">
+                            <strong>PWA:</strong> از فوتر نویگیشن استفاده کنید
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-yellow-50 p-6 rounded-lg mb-6">
+                <h2 class="text-xl font-bold text-yellow-800 mb-4">مراحل تست</h2>
+                <ol class="list-decimal list-inside space-y-2 text-sm">
+                    <li>سیستم با نقش مدیر شروع می‌شود</li>
+                    <li>از منوی بالای صفحه نقش را تغییر دهید</li>
+                    <li>هر نقش را جداگانه تست کنید و قابلیت‌هایش را بررسی کنید</li>
+                    <li>از فوتر نویگیشن (PWA) برای جابه‌جایی استفاده کنید</li>
+                    <li>سفارش جدید ایجاد کنید و فرآیند کامل را تست کنید</li>
+                </ol>
+            </div>
+            
+            <div class="text-center">
+                <a href="index.html" 
+                   class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium inline-flex items-center">
+                    <i class="fas fa-play ml-2"></i>
+                    شروع تست سیستم
+                </a>
+            </div>
+            
+            <div class="mt-8 p-4 bg-gray-100 rounded-lg">
+                <h3 class="font-bold mb-2">نکات مهم:</h3>
+                <ul class="text-sm space-y-1">
+                    <li>• سیستم بدون لاگین شروع می‌شود</li>
+                    <li>• تمام داده‌ها در localStorage ذخیره می‌شود</li>
+                    <li>• سیستم PWA است و قابل نصب روی موبایل</li>
+                    <li>• برای تست کامل، نقش‌های مختلف را امتحان کنید</li>
+                    <li>• این یک پروتوتایپ است و برای استفاده واقعی نیاز به backend دارد</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

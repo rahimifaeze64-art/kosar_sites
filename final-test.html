@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final Test - Educational System</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <script src="assets/libs/alpine.min.js" defer></script>
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h1 class="text-3xl font-bold text-center text-blue-600 mb-8">
+                <i class="fas fa-graduation-cap ml-2"></i>
+                تست نهایی سیستم مدیریت تحصیلی
+            </h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-blue-50 p-6 rounded-lg">
+                    <h2 class="text-xl font-bold text-blue-800 mb-4">وضعیت فایل‌ها</h2>
+                    <div id="file-status" class="space-y-2 text-sm"></div>
+                </div>
+                
+                <div class="bg-green-50 p-6 rounded-lg">
+                    <h2 class="text-xl font-bold text-green-800 mb-4">وضعیت ماژول‌ها</h2>
+                    <div id="module-status" class="space-y-2 text-sm"></div>
+                </div>
+            </div>
+            
+            <div class="bg-yellow-50 p-6 rounded-lg mb-6">
+                <h2 class="text-xl font-bold text-yellow-800 mb-4">تست عملکرد</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button onclick="testDataModule()" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg">
+                        تست داده‌ها
+                    </button>
+                    <button onclick="testDashboard()" 
+                            class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg">
+                        تست داشبورد
+                    </button>
+                    <button onclick="openMainApp()" 
+                            class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg">
+                        باز کردن اپ اصلی
+                    </button>
+                </div>
+            </div>
+            
+            <div class="bg-gray-100 p-6 rounded-lg">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">نتایج تست</h2>
+                <div id="test-results" class="space-y-2 text-sm max-h-64 overflow-y-auto"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple logging
+        function log(message, type = 'info') {
+            const results = document.getElementById('test-results');
+            const div = document.createElement('div');
+            div.className = `p-2 rounded ${
+                type === 'error' ? 'bg-red-100 text-red-800' : 
+                type === 'success' ? 'bg-green-100 text-green-800' : 
+                type === 'warning' ? 'bg-yellow-100 text-yellow-800' : 
+                'bg-blue-100 text-blue-800'
+            }`;
+            div.innerHTML = `<strong>[${type}]</strong> ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+        
+        function updateFileStatus(file, status) {
+            const container = document.getElementById('file-status');
+            const div = document.createElement('div');
+            div.className = status === 'success' ? 'text-green-600' : 'text-red-600';
+            div.innerHTML = `${status === 'success' ? '✅' : '❌'} ${file}`;
+            container.appendChild(div);
+        }
+        
+        function updateModuleStatus(module, status) {
+            const container = document.getElementById('module-status');
+            const div = document.createElement('div');
+            div.className = status === 'success' ? 'text-green-600' : 'text-red-600';
+            div.innerHTML = `${status === 'success' ? '✅' : '❌'} ${module}`;
+            container.appendChild(div);
+        }
+        
+        // Load and test files
+        const files = [
+            'js/config.js',
+            'js/data.js',
+            'js/dashboard.js',
+            'js/orders.js',
+            'js/users.js',
+            'js/profile.js',
+            'js/modals.js',
+            'js/app.js'
+        ];
+        
+        let loadedFiles = 0;
+        
+        files.forEach(file => {
+            const script = document.createElement('script');
+            script.src = file;
+            
+            script.onload = () => {
+                updateFileStatus(file, 'success');
+                loadedFiles++;
+                
+                if (loadedFiles === files.length) {
+                    setTimeout(testModules, 100);
+                }
+            };
+            
+            script.onerror = () => {
+                updateFileStatus(file, 'error');
+                loadedFiles++;
+            };
+            
+            document.head.appendChild(script);
+        });
+        
+        function testModules() {
+            log('شروع تست ماژول‌ها...', 'info');
+            
+            // Test CONFIG
+            if (typeof CONFIG !== 'undefined') {
+                updateModuleStatus('CONFIG', 'success');
+                log('CONFIG module loaded successfully', 'success');
+            } else {
+                updateModuleStatus('CONFIG', 'error');
+                log('CONFIG module not found', 'error');
+            }
+            
+            // Test DataModule
+            if (typeof DataModule !== 'undefined') {
+                updateModuleStatus('DataModule', 'success');
+                log('DataModule loaded successfully', 'success');
+            } else {
+                updateModuleStatus('DataModule', 'error');
+                log('DataModule not found', 'error');
+            }
+            
+            // Test DashboardModule
+            if (typeof DashboardModule !== 'undefined') {
+                updateModuleStatus('DashboardModule', 'success');
+                log('DashboardModule loaded successfully', 'success');
+            } else {
+                updateModuleStatus('DashboardModule', 'error');
+                log('DashboardModule not found', 'error');
+            }
+            
+            // Test other modules
+            ['OrdersModule', 'UsersModule', 'ProfileModule', 'ModalsModule'].forEach(moduleName => {
+                if (typeof window[moduleName] !== 'undefined') {
+                    updateModuleStatus(moduleName, 'success');
+                } else {
+                    updateModuleStatus(moduleName, 'error');
+                }
+            });
+        }
+        
+        function testDataModule() {
+            try {
+                log('Testing DataModule...', 'info');
+                
+                if (typeof DataModule === 'undefined') {
+                    log('DataModule not available', 'error');
+                    return;
+                }
+                
+                DataModule.initializeData();
+                log('DataModule.initializeData() executed', 'success');
+                
+                const users = DataModule.getUsers();
+                log(`Retrieved ${users.length} users`, 'success');
+                
+                const orders = DataModule.getOrders();
+                log(`Retrieved ${orders.length} orders`, 'success');
+                
+            } catch (error) {
+                log(`DataModule test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function testDashboard() {
+            try {
+                log('Testing DashboardModule...', 'info');
+                
+                if (typeof DashboardModule === 'undefined') {
+                    log('DashboardModule not available', 'error');
+                    return;
+                }
+                
+                const content = DashboardModule.getDashboardContent('manager');
+                if (content && content.length > 100) {
+                    log('Dashboard content generated successfully', 'success');
+                } else {
+                    log('Dashboard content seems invalid', 'warning');
+                }
+                
+            } catch (error) {
+                log(`Dashboard test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function openMainApp() {
+            window.open('index.html', '_blank');
+        }
+        
+        // Initial message
+        log('Final test started...', 'info');
+    </script>
+</body>
+</html>

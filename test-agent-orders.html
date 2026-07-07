@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست سفارشات عامل</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+    <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-800 min-h-screen p-6">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-white mb-6">
+            <i class="fas fa-vial text-yellow-400 ml-2"></i>
+            تست سفارشات عامل
+        </h1>
+        
+        <!-- Current User Info -->
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-white mb-4">کاربر فعلی</h2>
+            <div id="currentUserInfo" class="text-white"></div>
+        </div>
+        
+        <!-- Test Controls -->
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-white mb-4">ایجاد سفارش تست</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-white mb-2">انتخاب عامل:</label>
+                    <select id="agentSelect" class="w-full bg-slate-700 text-white rounded-lg px-4 py-2">
+                        <option value="doc001">عامل معصومی (doc001)</option>
+                        <option value="doc002">عامل ذوقی (doc002)</option>
+                        <option value="agent001">رضایی (agent001)</option>
+                        <option value="agent002">کریمی (agent002)</option>
+                    </select>
+                </div>
+                
+                <button onclick="createTestOrder()" 
+                        class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg">
+                    <i class="fas fa-plus ml-2"></i>
+                    ایجاد سفارش تست برای عامل انتخاب شده
+                </button>
+                
+                <button onclick="createCustomOrder()" 
+                        class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg">
+                    <i class="fas fa-star ml-2"></i>
+                    ایجاد سفارش سفارشی با تایمر
+                </button>
+            </div>
+        </div>
+        
+        <!-- All Orders -->
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-white">همه سفارشات</h2>
+                <button onclick="loadOrders()" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
+                    <i class="fas fa-sync ml-2"></i>
+                    بارگذاری مجدد
+                </button>
+            </div>
+            <div id="ordersDisplay" class="space-y-2"></div>
+        </div>
+        
+        <!-- Clear Data -->
+        <div class="bg-red-900 bg-opacity-30 rounded-lg p-6">
+            <h2 class="text-xl font-bold text-white mb-4">پاکسازی</h2>
+            <button onclick="clearTestOrders()" 
+                    class="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg">
+                <i class="fas fa-trash ml-2"></i>
+                پاک کردن همه سفارشات تست
+            </button>
+        </div>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/data.js"></script>
+    <script>
+        // Display current user
+        function displayCurrentUser() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const info = document.getElementById('currentUserInfo');
+            
+            if (currentUser.id) {
+                info.innerHTML = `
+                    <div class="space-y-2">
+                        <p><strong>نام:</strong> ${currentUser.name}</p>
+                        <p><strong>شناسه:</strong> ${currentUser.id}</p>
+                        <p><strong>نقش:</strong> ${currentUser.role}</p>
+                        <p><strong>ایمیل:</strong> ${currentUser.email || 'ندارد'}</p>
+                    </div>
+                `;
+            } else {
+                info.innerHTML = '<p class="text-yellow-400">هیچ کاربری وارد نشده است</p>';
+            }
+        }
+        
+        // Create test order
+        function createTestOrder() {
+            const agentId = document.getElementById('agentSelect').value;
+            const agentNames = {
+                'doc001': 'عامل معصومی',
+                'doc002': 'عامل ذوقی',
+                'agent001': 'رضایی',
+                'agent002': 'کریمی'
+            };
+            
+            const order = {
+                id: 'test_order_' + Date.now(),
+                type: 'رساله',
+                studentName: 'علی محمدی (تست)',
+                university: 'دانشگاه قم',
+                field: 'حقوق',
+                degree: 'کارشناسی ارشد',
+                assignedDoctorId: agentId,
+                assigned_doctor: agentId,
+                assignedDoctor: agentNames[agentId],
+                status: 'in_progress',
+                progress: 30,
+                price: 5000000,
+                currency: 'تومان',
+                doctorShare: 3000000,
+                deadline: '1403/12/30',
+                createdAt: new Date().toISOString(),
+                workList: ['نوشتن رساله', 'ویرایش'],
+                workPrices: { 'نوشتن رساله': 4000000, 'ویرایش': 1000000 }
+            };
+            
+            const orders = DataModule.getOrders();
+            orders.push(order);
+            DataModule.saveOrders(orders);
+            
+            alert(`سفارش تست برای ${agentNames[agentId]} ایجاد شد!`);
+            loadOrders();
+        }
+        
+        // Create custom order with timer
+        function createCustomOrder() {
+            const agentId = document.getElementById('agentSelect').value;
+            const agentNames = {
+                'doc001': 'عامل معصومی',
+                'doc002': 'عامل ذوقی',
+                'agent001': 'رضایی',
+                'agent002': 'کریمی'
+            };
+            
+            const now = new Date();
+            const deadline = new Date(now.getTime() + (2 * 60 * 60 * 1000)); // 2 hours from now
+            
+            const order = {
+                id: 'custom_order_' + Date.now(),
+                type: 'سفارش سفارشی',
+                title: 'تنظیم مقاله فوری',
+                studentName: 'حسن رضایی (تست)',
+                description: 'این یک سفارش سفارشی تستی است با تایمر 2 ساعته',
+                deadline: deadline.toLocaleDateString('fa-IR'),
+                deadlineTime: deadline.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
+                deadlineDateTime: deadline.toISOString(),
+                assignedDoctorId: agentId,
+                assigned_doctor: agentId,
+                assignedDoctor: agentNames[agentId],
+                status: 'in_progress',
+                progress: 0,
+                createdBy: 'emp001',
+                createdByName: 'زهرا',
+                createdAt: new Date().toISOString(),
+                isCustomOrder: true
+            };
+            
+            const orders = DataModule.getOrders();
+            orders.push(order);
+            DataModule.saveOrders(orders);
+            
+            alert(`سفارش سفارشی برای ${agentNames[agentId]} ایجاد شد!\nمهلت: ${order.deadline} ساعت ${order.deadlineTime}`);
+            loadOrders();
+        }
+        
+        // Load and display orders
+        function loadOrders() {
+            const orders = DataModule.getOrders();
+            const display = document.getElementById('ordersDisplay');
+            
+            if (orders.length === 0) {
+                display.innerHTML = '<p class="text-gray-400">هیچ سفارشی وجود ندارد</p>';
+                return;
+            }
+            
+            display.innerHTML = orders.map((order, index) => `
+                <div class="bg-slate-700 rounded-lg p-4">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2 space-x-reverse mb-2">
+                                <span class="bg-indigo-600 text-white px-2 py-1 rounded text-xs">
+                                    #${index + 1}
+                                </span>
+                                ${order.isCustomOrder ? `
+                                    <span class="bg-purple-600 text-white px-2 py-1 rounded text-xs">
+                                        سفارش سفارشی
+                                    </span>
+                                ` : ''}
+                            </div>
+                            <h4 class="text-white font-bold">${order.title || order.type}</h4>
+                            <p class="text-gray-400 text-sm">دانشجو: ${order.studentName}</p>
+                            <div class="mt-2 space-y-1 text-xs">
+                                <p class="text-gray-400">
+                                    <strong>assignedDoctorId:</strong> ${order.assignedDoctorId || 'ندارد'}
+                                </p>
+                                <p class="text-gray-400">
+                                    <strong>assigned_doctor:</strong> ${order.assigned_doctor || 'ندارد'}
+                                </p>
+                                <p class="text-gray-400">
+                                    <strong>assignedDoctor:</strong> ${order.assignedDoctor || 'ندارد'}
+                                </p>
+                                ${order.deadlineDateTime ? `
+                                    <p class="text-green-400">
+                                        <strong>مهلت:</strong> ${order.deadline} ${order.deadlineTime || ''}
+                                    </p>
+                                ` : ''}
+                            </div>
+                        </div>
+                        <button onclick="deleteOrder('${order.id}')" 
+                                class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Delete order
+        function deleteOrder(orderId) {
+            if (!confirm('حذف شود؟')) return;
+            
+            const orders = DataModule.getOrders();
+            const filtered = orders.filter(o => o.id !== orderId);
+            DataModule.saveOrders(filtered);
+            loadOrders();
+        }
+        
+        // Clear test orders
+        function clearTestOrders() {
+            if (!confirm('همه سفارشات تست پاک شوند؟')) return;
+            
+            const orders = DataModule.getOrders();
+            const filtered = orders.filter(o => 
+                !o.id.startsWith('test_order_') && 
+                !o.id.startsWith('custom_order_')
+            );
+            DataModule.saveOrders(filtered);
+            loadOrders();
+            alert('سفارشات تست پاک شدند');
+        }
+        
+        // Initialize
+        displayCurrentUser();
+        loadOrders();
+    </script>
+</body>
+</html>

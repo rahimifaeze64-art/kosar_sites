@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست سیستم پیشرفت کار رساله</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="assets/libs/fontawesome/css/all.min.css">
+    
+    <!-- فونت فارسی -->
+    <link rel="stylesheet" href="assets/fonts/vazirmatn/vazirmatn.css">
+    
+    <!-- استایل سیستم پیشرفت کار -->
+    <link rel="stylesheet" href="css/thesis-workflow.css">
+    
+    <style>
+        * {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+        
+        body {
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .page-header {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .page-header h1 {
+            margin: 0;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .test-controls {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .test-controls h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+        }
+        
+        .btn-group-custom {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- هدر صفحه -->
+        <div class="page-header">
+            <h1>
+                <i class="fas fa-graduation-cap"></i>
+                تست سیستم پیشرفت کار رساله دانشگاهی
+            </h1>
+        </div>
+        
+        <!-- کنترل‌های تست -->
+        <div class="test-controls">
+            <h3><i class="fas fa-tools"></i> کنترل‌های تست</h3>
+            <div class="btn-group-custom">
+                <button class="btn btn-success" onclick="testCompleteCurrentStep()">
+                    <i class="fas fa-check"></i> تکمیل مرحله فعلی
+                </button>
+                <button class="btn btn-primary" onclick="testEditStep()">
+                    <i class="fas fa-edit"></i> ویرایش مرحله
+                </button>
+                <button class="btn btn-warning" onclick="testRejectStep()">
+                    <i class="fas fa-times"></i> رد مرحله
+                </button>
+                <button class="btn btn-info" onclick="testToggleRequirement()">
+                    <i class="fas fa-tasks"></i> تغییر نیازمندی
+                </button>
+                <button class="btn btn-danger" onclick="testReset()">
+                    <i class="fas fa-redo"></i> بازنشانی
+                </button>
+                <button class="btn btn-secondary" onclick="testExport()">
+                    <i class="fas fa-download"></i> صادرات گزارش
+                </button>
+            </div>
+        </div>
+        
+        <!-- کانتینر اصلی سیستم پیشرفت کار -->
+        <div id="thesis-workflow-container"></div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- سیستم پیشرفت کار -->
+    <script src="js/thesis-workflow.js"></script>
+    
+    <!-- اسکریپت‌های تست -->
+    <script>
+        // توابع تست
+        function testCompleteCurrentStep() {
+            if (thesisWorkflow && thesisWorkflow.currentStep < thesisWorkflow.steps.length) {
+                thesisWorkflow.completeStep(thesisWorkflow.currentStep);
+            } else {
+                alert('تمام مراحل تکمیل شده است!');
+            }
+        }
+        
+        function testEditStep() {
+            if (thesisWorkflow) {
+                thesisWorkflow.showStepEditor();
+            }
+        }
+        
+        function testRejectStep() {
+            if (thesisWorkflow && thesisWorkflow.currentStep < thesisWorkflow.steps.length) {
+                const currentStep = thesisWorkflow.steps[thesisWorkflow.currentStep];
+                if (currentStep.canReject) {
+                    thesisWorkflow.rejectStep(thesisWorkflow.currentStep);
+                } else {
+                    alert('این مرحله قابلیت رد شدن ندارد');
+                }
+            }
+        }
+        
+        function testToggleRequirement() {
+            if (thesisWorkflow) {
+                const reqIds = Object.keys(thesisWorkflow.requirements);
+                if (reqIds.length > 0) {
+                    thesisWorkflow.toggleRequirement(reqIds[0]);
+                }
+            }
+        }
+        
+        function testReset() {
+            if (thesisWorkflow) {
+                thesisWorkflow.resetWorkflow();
+            }
+        }
+        
+        function testExport() {
+            if (thesisWorkflow) {
+                thesisWorkflow.exportReport();
+            }
+        }
+        
+        // نمایش اطلاعات در کنسول
+        console.log('سیستم پیشرفت کار رساله آماده است');
+        console.log('برای تست از دکمه‌های بالای صفحه استفاده کنید');
+    </script>
+</body>
+</html>

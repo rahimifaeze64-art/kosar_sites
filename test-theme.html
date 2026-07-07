@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست سیستم تم‌بندی</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-800 min-h-screen p-8">
+    
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-xl p-6 mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">
+                <i class="fas fa-palette text-purple-600 ml-2"></i>
+                تست سیستم تم‌بندی
+            </h1>
+            <p class="text-gray-600">تم رنگی مورد علاقه خود را انتخاب کنید و تغییرات را مشاهده نمایید</p>
+        </div>
+
+        <!-- Theme Selector -->
+        <div class="bg-white rounded-lg shadow-xl p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">انتخاب تم</h2>
+            <div id="theme-options" class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Preview Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Sidebar Preview -->
+            <div class="bg-white rounded-lg shadow-xl p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">پیش‌نمایش سایدبار</h3>
+                <div class="bg-gradient-to-b from-blue-600 via-blue-700 to-blue-800 rounded-lg p-4 text-white">
+                    <div class="flex items-center space-x-3 space-x-reverse mb-4">
+                        <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-building text-xl"></i>
+                        </div>
+                        <h4 class="font-bold text-lg">شرکت کوثر</h4>
+                    </div>
+                    <div class="space-y-2">
+                        <button class="w-full bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg text-right">
+                            <i class="fas fa-home ml-2"></i>
+                            داشبورد
+                        </button>
+                        <button class="w-full text-blue-100 hover:bg-white hover:bg-opacity-10 px-4 py-2 rounded-lg text-right">
+                            <i class="fas fa-tasks ml-2"></i>
+                            وظایف
+                        </button>
+                        <button class="w-full text-blue-100 hover:bg-white hover:bg-opacity-10 px-4 py-2 rounded-lg text-right">
+                            <i class="fas fa-users ml-2"></i>
+                            کاربران
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Buttons Preview -->
+            <div class="bg-white rounded-lg shadow-xl p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">پیش‌نمایش دکمه‌ها</h3>
+                <div class="space-y-3">
+                    <button class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-all">
+                        <i class="fas fa-save ml-2"></i>
+                        دکمه اصلی
+                    </button>
+                    <button class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-lg font-medium transition-all">
+                        <i class="fas fa-edit ml-2"></i>
+                        دکمه ثانویه
+                    </button>
+                    <button class="w-full border-2 border-blue-600 text-blue-600 hover:bg-blue-50 px-4 py-3 rounded-lg font-medium transition-all">
+                        <i class="fas fa-times ml-2"></i>
+                        دکمه خطی
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+            <div class="bg-white rounded-lg shadow-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="font-bold text-gray-800">کل سفارشات</h4>
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-shopping-cart text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+                <p class="text-3xl font-bold text-blue-600">۱۲۴</p>
+                <p class="text-sm text-gray-500 mt-2">افزایش ۱۲٪ نسبت به ماه قبل</p>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="font-bold text-gray-800">کاربران فعال</h4>
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-users text-green-600 text-xl"></i>
+                    </div>
+                </div>
+                <p class="text-3xl font-bold text-green-600">۴۸</p>
+                <p class="text-sm text-gray-500 mt-2">افزایش ۸٪ نسبت به ماه قبل</p>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="font-bold text-gray-800">درآمد کل</h4>
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-dollar-sign text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+                <p class="text-3xl font-bold text-purple-600">۲۵۰M</p>
+                <p class="text-sm text-gray-500 mt-2">افزایش ۱۵٪ نسبت به ماه قبل</p>
+            </div>
+        </div>
+
+        <!-- Current Theme Info -->
+        <div class="bg-white rounded-lg shadow-xl p-6 mt-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">اطلاعات تم فعلی</h3>
+            <div id="current-theme-info" class="text-gray-600">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug Logger Mock -->
+    <script>
+        function debugLogger(message, type, data) {
+            console.log(`[${type}] ${message}`, data || '');
+        }
+    </script>
+
+    <!-- Theme Manager -->
+    <script src="js/theme-manager.js"></script>
+
+    <!-- Test Script -->
+    <script>
+        // Populate theme options
+        function populateThemeOptions() {
+            const container = document.getElementById('theme-options');
+            const themes = ThemeManager.getThemesList();
+            const currentTheme = ThemeManager.getCurrentTheme();
+
+            container.innerHTML = themes.map(theme => `
+                <button onclick="selectTheme('${theme.id}')" 
+                        class="relative group p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
+                            currentTheme === theme.id 
+                                ? 'border-blue-600 bg-blue-50 shadow-lg' 
+                                : 'border-gray-300 bg-white hover:border-gray-400'
+                        }">
+                    <div class="text-center">
+                        <div class="text-4xl mb-2">${theme.icon}</div>
+                        <p class="font-semibold text-gray-800 text-sm">${theme.name}</p>
+                        ${currentTheme === theme.id ? `
+                            <div class="absolute top-2 left-2 bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center">
+                                <i class="fas fa-check text-xs"></i>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="mt-3 flex justify-center space-x-1 space-x-reverse">
+                        <div class="w-6 h-6 rounded-full border border-gray-300" style="background: ${theme.colors.primary}"></div>
+                        <div class="w-6 h-6 rounded-full border border-gray-300" style="background: ${theme.colors.secondary}"></div>
+                        <div class="w-6 h-6 rounded-full border border-gray-300" style="background: ${theme.colors.accent}"></div>
+                    </div>
+                </button>
+            `).join('');
+
+            updateCurrentThemeInfo();
+        }
+
+        // Select theme
+        function selectTheme(themeId) {
+            ThemeManager.applyTheme(themeId);
+            populateThemeOptions();
+        }
+
+        // Update current theme info
+        function updateCurrentThemeInfo() {
+            const currentTheme = ThemeManager.getCurrentTheme();
+            const theme = ThemeManager.themes[currentTheme];
+            const info = document.getElementById('current-theme-info');
+
+            info.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="font-semibold text-gray-800 mb-2">نام تم:</p>
+                        <p class="text-gray-600">${theme.name} ${theme.icon}</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-800 mb-2">شناسه تم:</p>
+                        <p class="text-gray-600 font-mono">${currentTheme}</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-800 mb-2">رنگ اصلی:</p>
+                        <div class="flex items-center space-x-2 space-x-reverse">
+                            <div class="w-8 h-8 rounded border border-gray-300" style="background: ${theme.colors.primary}"></div>
+                            <span class="text-gray-600 font-mono text-sm">${theme.colors.primary}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-800 mb-2">رنگ ثانویه:</p>
+                        <div class="flex items-center space-x-2 space-x-reverse">
+                            <div class="w-8 h-8 rounded border border-gray-300" style="background: ${theme.colors.secondary}"></div>
+                            <span class="text-gray-600 font-mono text-sm">${theme.colors.secondary}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                populateThemeOptions();
+            }, 100);
+        });
+    </script>
+</body>
+</html>

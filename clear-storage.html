@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پاک کردن حافظه</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full text-center">
+        <h1 class="text-2xl font-bold text-gray-800 mb-4">پاک کردن حافظه موقت</h1>
+        <p class="text-gray-600 mb-6">با کلیک روی دکمه زیر، تمام داده‌های ذخیره شده در مرورگر پاک می‌شود و سیستم با داده‌های پیش‌فرض شروع می‌کند.</p>
+        
+        <button onclick="clearStorage()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium mb-4 w-full">
+            پاک کردن حافظه
+        </button>
+        
+        <a href="index.html" class="block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium">
+            بازگشت به صفحه اصلی
+        </a>
+        
+        <div id="message" class="mt-4 p-3 rounded hidden"></div>
+    </div>
+    
+    <script>
+        function clearStorage() {
+            try {
+                localStorage.clear();
+                const messageDiv = document.getElementById('message');
+                messageDiv.className = 'mt-4 p-3 rounded bg-green-100 text-green-800';
+                messageDiv.textContent = 'حافظه با موفقیت پاک شد! صفحه را رفرش کنید.';
+                messageDiv.classList.remove('hidden');
+                
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 2000);
+            } catch (error) {
+                const messageDiv = document.getElementById('message');
+                messageDiv.className = 'mt-4 p-3 rounded bg-red-100 text-red-800';
+                messageDiv.textContent = 'خطا در پاک کردن حافظه: ' + error.message;
+                messageDiv.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

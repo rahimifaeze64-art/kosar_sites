@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست ایجاد سفارش - یکپارچگی API</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <script src="assets/libs/alpine.min.js" defer></script>
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 p-8" x-data="orderTestController()">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">
+            <i class="fas fa-plus-circle text-blue-600 ml-2"></i>
+            تست ایجاد سفارش جدید
+        </h1>
+        
+        <!-- Status -->
+        <div id="status" class="mb-6 p-4 rounded-lg" :class="statusClass">
+            <i :class="statusIcon" class="ml-2"></i>
+            <span x-text="statusMessage"></span>
+        </div>
+        
+        <!-- Order Form -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">فرم ایجاد سفارش</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">نام دانشجو *</label>
+                    <input type="text" x-model="orderData.studentName" 
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2" 
+                           placeholder="نام کامل دانشجو">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">دانشگاه *</label>
+                    <select x-model="orderData.university" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        <option value="">انتخاب کنید</option>
+                        <option value="دانشگاه قم">دانشگاه قم</option>
+                        <option value="جامعه المصطفی">جامعه المصطفی</option>
+                        <option value="دانشگاه تهران">دانشگاه تهران</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">رشته تحصیلی *</label>
+                    <select x-model="orderData.field" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        <option value="">انتخاب کنید</option>
+                        <option value="حقوق محض">حقوق محض</option>
+                        <option value="حقوق عمومی">حقوق عمومی</option>
+                        <option value="حقوق خصوصی">حقوق خصوصی</option>
+                        <option value="حقوق بین‌الملل">حقوق بین‌الملل</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">مقطع تحصیلی *</label>
+                    <select x-model="orderData.degree" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        <option value="">انتخاب کنید</option>
+                        <option value="ارشد">کارشناسی ارشد</option>
+                        <option value="عاملا">عاملا</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">نوع سفارش *</label>
+                    <select x-model="orderData.type" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        <option value="">انتخاب کنید</option>
+                        <option value="نوشتن رساله">نوشتن رساله</option>
+                        <option value="نوشتن مقاله">نوشتن مقاله</option>
+                        <option value="ترجمه رساله">ترجمه رساله</option>
+                        <option value="تلخیص">تلخیص</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">مهلت تحویل *</label>
+                    <input type="date" x-model="orderData.deadline" 
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">توضیحات</label>
+                    <textarea x-model="orderData.description" rows="3" 
+                              class="w-full border border-gray-300 rounded-lg px-3 py-2"
+                              placeholder="توضیحات اضافی در مورد سفارش..."></textarea>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex justify-end space-x-3 space-x-reverse">
+                <button @click="resetForm()" 
+                        class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    پاک کردن فرم
+                </button>
+                <button @click="submitOrder()" 
+                        :disabled="isSubmitting"
+                        :class="isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
+                        class="px-6 py-2 text-white rounded-lg">
+                    <i :class="isSubmitting ? 'fas fa-spinner fa-spin' : 'fas fa-plus'" class="ml-2"></i>
+                    <span x-text="isSubmitting ? 'در حال ثبت...' : 'ثبت سفارش'"></span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Test Results -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">نتایج تست</h2>
+            <div id="test-log" class="bg-gray-50 p-4 rounded border max-h-96 overflow-y-auto">
+                <p class="text-gray-500">آماده برای تست...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include required scripts -->
+    <script>
+        // Debug logger
+        function debugLogger(message, type = 'info', data = null) {
+            const logDiv = document.getElementById('test-log');
+            const timestamp = new Date().toLocaleTimeString('fa-IR');
+            const colors = {
+                info: 'text-blue-600',
+                success: 'text-green-600',
+                error: 'text-red-600',
+                warning: 'text-yellow-600'
+            };
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = `mb-2 ${colors[type] || 'text-gray-600'}`;
+            logEntry.innerHTML = `
+                <span class="text-gray-500">[${timestamp}]</span> 
+                <strong>${type.toUpperCase()}:</strong> ${message}
+                ${data ? `<pre class="text-xs mt-1 bg-gray-100 p-2 rounded overflow-x-auto">${JSON.stringify(data, null, 2)}</pre>` : ''}
+            `;
+            
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            
+            console.log(`[${timestamp}] ${type.toUpperCase()}: ${message}`, data || '');
+        }
+        
+        // Order test controller
+        function orderTestController() {
+            return {
+                orderData: {
+                    studentName: '',
+                    university: '',
+                    field: '',
+                    degree: '',
+                    type: '',
+                    deadline: '',
+                    description: ''
+                },
+                isSubmitting: false,
+                statusMessage: 'آماده برای تست',
+                statusClass: 'bg-blue-100 text-blue-800',
+                statusIcon: 'fas fa-info-circle',
+                
+                init() {
+                    debugLogger('Order creation test initialized', 'info');
+                    this.checkAPIConnection();
+                },
+                
+                async checkAPIConnection() {
+                    try {
+                        const response = await fetch('http://127.0.0.1:8000/api/auth/user/', {
+                            credentials: 'include'
+                        });
+                        
+                        if (response.ok) {
+                            this.statusMessage = 'اتصال به API برقرار است - آماده برای تست';
+                            this.statusClass = 'bg-green-100 text-green-800';
+                            this.statusIcon = 'fas fa-check-circle';
+                            debugLogger('API connection successful', 'success');
+                        } else {
+                            throw new Error('API not responding');
+                        }
+                    } catch (error) {
+                        this.statusMessage = 'اتصال به API برقرار نیست - تست در حالت localStorage';
+                        this.statusClass = 'bg-yellow-100 text-yellow-800';
+                        this.statusIcon = 'fas fa-exclamation-triangle';
+                        debugLogger('API connection failed, will use localStorage mode', 'warning', error);
+                    }
+                },
+                
+                async submitOrder() {
+                    if (this.isSubmitting) return;
+                    
+                    // Validation
+                    const required = ['studentName', 'university', 'field', 'degree', 'type', 'deadline'];
+                    const missing = required.filter(field => !this.orderData[field]);
+                    
+                    if (missing.length > 0) {
+                        debugLogger(`Validation failed: missing fields: ${missing.join(', ')}`, 'error');
+                        alert('لطفاً تمام فیلدهای الزامی را پر کنید');
+                        return;
+                    }
+                    
+                    this.isSubmitting = true;
+                    debugLogger('Starting order submission...', 'info', this.orderData);
+                    
+                    try {
+                        // Try API first
+                        await this.submitViaAPI();
+                    } catch (apiError) {
+                        debugLogger('API submission failed, trying localStorage', 'warning', apiError);
+                        await this.submitViaLocalStorage();
+                    }
+                    
+                    this.isSubmitting = false;
+                },
+                
+                async submitViaAPI() {
+                    debugLogger('Attempting API submission...', 'info');
+                    
+                    // First create student
+                    const studentData = {
+                        user: {
+                            first_name: this.orderData.studentName.split(' ')[0] || this.orderData.studentName,
+                            last_name: this.orderData.studentName.split(' ').slice(1).join(' ') || '',
+                            email: `${this.orderData.studentName.replace(/\s+/g, '').toLowerCase()}@student.edu`
+                        },
+                        university: this.orderData.university,
+                        student_id: `STD${Date.now()}`,
+                        field: this.orderData.field,
+                        degree: this.orderData.degree
+                    };
+                    
+                    debugLogger('Creating student profile...', 'info', studentData);
+                    
+                    const studentResponse = await fetch('http://127.0.0.1:8000/api/students/', {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this.getCSRFToken()
+                        },
+                        body: JSON.stringify(studentData)
+                    });
+                    
+                    if (!studentResponse.ok) {
+                        const errorData = await studentResponse.json();
+                        throw new Error(`Student creation failed: ${JSON.stringify(errorData)}`);
+                    }
+                    
+                    const student = await studentResponse.json();
+                    debugLogger('Student created successfully', 'success', student);
+                    
+                    // Now create order
+                    const orderData = {
+                        student: student.id,
+                        university: this.orderData.university,
+                        field: this.orderData.field,
+                        degree: this.orderData.degree,
+                        type: this.orderData.type,
+                        deadline: this.orderData.deadline,
+                        description: this.orderData.description || '',
+                        total_amount: this.calculatePrice()
+                    };
+                    
+                    debugLogger('Creating order...', 'info', orderData);
+                    
+                    const orderResponse = await fetch('http://127.0.0.1:8000/api/orders/', {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this.getCSRFToken()
+                        },
+                        body: JSON.stringify(orderData)
+                    });
+                    
+                    if (!orderResponse.ok) {
+                        const errorData = await orderResponse.json();
+                        throw new Error(`Order creation failed: ${JSON.stringify(errorData)}`);
+                    }
+                    
+                    const order = await orderResponse.json();
+                    debugLogger('Order created successfully via API!', 'success', order);
+                    
+                    this.statusMessage = 'سفارش با موفقیت در دیتابیس Django ثبت شد!';
+                    this.statusClass = 'bg-green-100 text-green-800';
+                    this.statusIcon = 'fas fa-check-circle';
+                    
+                    alert('✅ سفارش با موفقیت در دیتابیس ثبت شد!');
+                    this.resetForm();
+                },
+                
+                async submitViaLocalStorage() {
+                    debugLogger('Using localStorage fallback...', 'info');
+                    
+                    const order = {
+                        id: Date.now().toString(),
+                        studentName: this.orderData.studentName,
+                        university: this.orderData.university,
+                        field: this.orderData.field,
+                        degree: this.orderData.degree,
+                        type: this.orderData.type,
+                        deadline: this.orderData.deadline,
+                        description: this.orderData.description,
+                        status: 'pending',
+                        totalAmount: this.calculatePrice(),
+                        createdAt: new Date().toISOString()
+                    };
+                    
+                    // Save to localStorage
+                    const orders = JSON.parse(localStorage.getItem('edu_system_orders') || '[]');
+                    orders.push(order);
+                    localStorage.setItem('edu_system_orders', JSON.stringify(orders));
+                    
+                    debugLogger('Order saved to localStorage', 'success', order);
+                    
+                    this.statusMessage = 'سفارش در localStorage ذخیره شد (حالت آفلاین)';
+                    this.statusClass = 'bg-blue-100 text-blue-800';
+                    this.statusIcon = 'fas fa-save';
+                    
+                    alert('💾 سفارش در حالت آفلاین ذخیره شد');
+                    this.resetForm();
+                },
+                
+                calculatePrice() {
+                    const pricing = {
+                        'نوشتن رساله': { ارشد: 800, عاملا: 1200 },
+                        'نوشتن مقاله': { price: 300 },
+                        'ترجمه رساله': { price: 200 },
+                        'تلخیص': { price: 150 }
+                    };
+                    
+                    const typePrice = pricing[this.orderData.type];
+                    if (!typePrice) return 300;
+                    
+                    if (typePrice[this.orderData.degree]) {
+                        return typePrice[this.orderData.degree];
+                    }
+                    
+                    return typePrice.price || 300;
+                },
+                
+                getCSRFToken() {
+                    const cookies = document.cookie.split(';');
+                    for (let cookie of cookies) {
+                        const [name, value] = cookie.trim().split('=');
+                        if (name === 'csrftoken') {
+                            return value;
+                        }
+                    }
+                    return '';
+                },
+                
+                resetForm() {
+                    this.orderData = {
+                        studentName: '',
+                        university: '',
+                        field: '',
+                        degree: '',
+                        type: '',
+                        deadline: '',
+                        description: ''
+                    };
+                    debugLogger('Form reset', 'info');
+                }
+            }
+        }
+    </script>
+</body>
+</html>

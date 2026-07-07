@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست وظایف عامل - ساده</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link rel="stylesheet" href="assets/libs/fontawesome/css/all.min.css">
+    <link href="css/agent-tasks.css" rel="stylesheet">
+</head>
+<body class="bg-slate-900 text-white p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">
+            <i class="fas fa-clipboard-list text-indigo-400 ml-2"></i>
+            تست وظایف عامل
+        </h1>
+        
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">اطلاعات کاربر فعلی</h2>
+            <div id="user-info" class="text-sm text-gray-300"></div>
+        </div>
+        
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">لاگ‌ها</h2>
+            <div id="logs" class="space-y-2 text-sm font-mono"></div>
+        </div>
+        
+        <div class="bg-slate-800 rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-4">محتوای صفحه وظایف</h2>
+            <div id="content"></div>
+        </div>
+    </div>
+
+    <!-- Load all required scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/debug.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+    
+    <script>
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const time = new Date().toLocaleTimeString('fa-IR');
+            const colors = {
+                'info': 'text-blue-400',
+                'success': 'text-green-400',
+                'error': 'text-red-400',
+                'warning': 'text-yellow-400'
+            };
+            logsDiv.innerHTML += `<div class="${colors[type]}">[${time}] ${message}</div>`;
+        }
+        
+        // Initialize data
+        log('شروع تست...', 'info');
+        DataModule.initializeData();
+        log('داده‌ها مقداردهی شدند', 'success');
+        
+        // Set current user to agent (عامل معصومی)
+        const agentUser = {
+            id: 'doc001',
+            name: 'عامل معصومی',
+            username: 'masoumi',
+            role: 'agent',
+            email: 'masoumi@edu-system.com'
+        };
+        localStorage.setItem('currentUser', JSON.stringify(agentUser));
+        log('کاربر فعلی تنظیم شد: ' + agentUser.name, 'success');
+        
+        // Display user info
+        document.getElementById('user-info').innerHTML = `
+            <p><strong>نام:</strong> ${agentUser.name}</p>
+            <p><strong>نقش:</strong> ${agentUser.role}</p>
+            <p><strong>ID:</strong> ${agentUser.id}</p>
+        `;
+        
+        // Check if function exists
+        if (typeof window.getMyAgentTasksContent === 'function') {
+            log('تابع getMyAgentTasksContent یافت شد', 'success');
+            
+            try {
+                const content = window.getMyAgentTasksContent();
+                log('محتوا بارگذاری شد', 'success');
+                document.getElementById('content').innerHTML = content;
+                
+                // Start timers if function exists
+                if (typeof window.startAgentTimers === 'function') {
+                    log('شروع تایمرها...', 'info');
+                    window.startAgentTimers();
+                    log('تایمرها راه‌اندازی شدند', 'success');
+                } else {
+                    log('تابع startAgentTimers یافت نشد', 'warning');
+                }
+            } catch (error) {
+                log('خطا در بارگذاری محتوا: ' + error.message, 'error');
+                console.error(error);
+            }
+        } else {
+            log('تابع getMyAgentTasksContent یافت نشد!', 'error');
+        }
+        
+        // Check orders
+        const orders = DataModule.getOrders();
+        log(`تعداد کل سفارشات: ${orders.length}`, 'info');
+        
+        const myOrders = orders.filter(o => 
+            o.assignedDoctorId === agentUser.id || 
+            o.assigned_doctor === agentUser.id ||
+            o.assignedDoctor === agentUser.id
+        );
+        log(`سفارشات من: ${myOrders.length}`, myOrders.length > 0 ? 'success' : 'warning');
+        
+        if (myOrders.length > 0) {
+            myOrders.forEach(order => {
+                log(`- ${order.studentName}: ${order.type} (${order.status})`, 'info');
+            });
+        }
+    </script>
+</body>
+</html>

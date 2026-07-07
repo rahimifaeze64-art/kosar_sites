@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست Grid وظایف عامل</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link rel="stylesheet" href="assets/libs/fontawesome/css/all.min.css">
+    <link href="css/agent-tasks.css" rel="stylesheet">
+</head>
+<body class="bg-slate-900 text-white p-8">
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">
+            <i class="fas fa-clipboard-list text-indigo-400 ml-2"></i>
+            تست Grid وظایف عامل با تایمر عددی
+        </h1>
+        
+        <div id="content"></div>
+    </div>
+
+    <!-- Load all required scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/debug.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+    
+    <script>
+        // Initialize data
+        DataModule.initializeData();
+        
+        // Set current user to agent
+        const agentUser = {
+            id: 'doc001',
+            name: 'عامل معصومی',
+            username: 'masoumi',
+            role: 'agent',
+            email: 'masoumi@edu-system.com'
+        };
+        localStorage.setItem('currentUser', JSON.stringify(agentUser));
+        
+        // Create test orders with different deadlines
+        const orders = DataModule.getOrders();
+        
+        // Add test orders with various deadlines
+        const testOrders = [
+            {
+                id: 'test001',
+                title: 'تنظیم رساله عاملی',
+                studentName: 'علی محمدی',
+                description: 'تنظیم و ویرایش رساله عاملی رشته حقوق',
+                deadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString('fa-IR'),
+                deadlineTime: '14:00',
+                deadlineDateTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+                assignedDoctorId: 'doc001',
+                status: 'in_progress',
+                progress: 45,
+                isCustomOrder: true
+            },
+            {
+                id: 'test002',
+                title: 'ترجمه مقاله',
+                studentName: 'حسن رضایی',
+                description: 'ترجمه مقاله از انگلیسی به فارسی',
+                deadline: new Date(Date.now() + 5 * 60 * 60 * 1000).toLocaleDateString('fa-IR'),
+                deadlineTime: '18:30',
+                deadlineDateTime: new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString(),
+                assignedDoctorId: 'doc001',
+                status: 'in_progress',
+                progress: 70
+            },
+            {
+                id: 'test003',
+                title: 'تلخیص کتاب',
+                studentName: 'زینب احمدی',
+                description: 'تلخیص کتاب روش تحقیق',
+                deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('fa-IR'),
+                deadlineTime: '12:00',
+                deadlineDateTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                assignedDoctorId: 'doc001',
+                status: 'in_progress',
+                progress: 20
+            },
+            {
+                id: 'test004',
+                title: 'نوشتن مقاله ISI',
+                studentName: 'محمد کریمی',
+                description: 'نوشتن مقاله برای مجله ISI',
+                deadline: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toLocaleDateString('fa-IR'),
+                deadlineTime: '09:00',
+                deadlineDateTime: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
+                assignedDoctorId: 'doc001',
+                status: 'in_progress',
+                progress: 85
+            },
+            {
+                id: 'test005',
+                title: 'ویرایش پایان‌نامه',
+                studentName: 'زهرا موسوی',
+                description: 'ویرایش نهایی پایان‌نامه کارشناسی ارشد',
+                deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toLocaleDateString('fa-IR'),
+                deadlineTime: '16:00',
+                deadlineDateTime: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+                assignedDoctorId: 'doc001',
+                status: 'in_progress',
+                progress: 30
+            },
+            {
+                id: 'test006',
+                title: 'تحقیق بازار',
+                studentName: 'امیر حسینی',
+                description: 'انجام تحقیق بازار برای پروژه کارآفرینی',
+                deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('fa-IR'),
+                deadlineTime: '20:00',
+                deadlineDateTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+                assignedDoctorId: 'doc001',
+                status: 'in_progress',
+                progress: 55
+            }
+        ];
+        
+        // Add test orders to existing orders
+        testOrders.forEach(order => {
+            if (!orders.find(o => o.id === order.id)) {
+                orders.push(order);
+            }
+        });
+        
+        DataModule.saveOrders(orders);
+        
+        // Load content
+        if (typeof window.getMyAgentTasksContent === 'function') {
+            document.getElementById('content').innerHTML = window.getMyAgentTasksContent();
+            
+            // Start timers
+            if (typeof window.startAgentTimers === 'function') {
+                window.startAgentTimers();
+            }
+        } else {
+            document.getElementById('content').innerHTML = '<p class="text-red-400">تابع getMyAgentTasksContent یافت نشد!</p>';
+        }
+    </script>
+</body>
+</html>

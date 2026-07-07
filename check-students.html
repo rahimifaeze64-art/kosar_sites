@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بررسی دانشجویان</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-800 min-h-screen p-6">
+    <div class="max-w-6xl mx-auto">
+        <div class="bg-white rounded-lg shadow-2xl p-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">
+                <i class="fas fa-user-graduate text-blue-600 ml-2"></i>
+                بررسی و به‌روزرسانی دانشجویان
+            </h1>
+            
+            <!-- Action Buttons -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <button onclick="checkStudents()" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-all">
+                    <i class="fas fa-search ml-2"></i>
+                    بررسی وضعیت
+                </button>
+                
+                <button onclick="forceUpdate()" 
+                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-all">
+                    <i class="fas fa-sync-alt ml-2"></i>
+                    به‌روزرسانی به 20 دانشجو
+                </button>
+                
+                <button onclick="clearAll()" 
+                        class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-all">
+                    <i class="fas fa-trash ml-2"></i>
+                    پاک کردن همه
+                </button>
+            </div>
+            
+            <!-- Status Display -->
+            <div id="status" class="bg-gray-50 rounded-lg p-6 mb-6 min-h-[300px] max-h-[500px] overflow-y-auto">
+                <p class="text-gray-600">برای شروع، یکی از دکمه‌های بالا را کلیک کنید...</p>
+            </div>
+            
+            <!-- Students List -->
+            <div id="students-list" class="bg-gray-50 rounded-lg p-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">لیست دانشجویان</h3>
+                <div id="students-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Students will be displayed here -->
+                </div>
+            </div>
+            
+            <div class="mt-6 text-center">
+                <a href="index.html" class="text-blue-600 hover:text-blue-700 font-medium">
+                    <i class="fas fa-arrow-right ml-1"></i>
+                    بازگشت به صفحه اصلی
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/init-students-data.js"></script>
+    <script src="js/force-update-students.js"></script>
+    
+    <script>
+        function log(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            const colors = {
+                info: 'text-blue-600',
+                success: 'text-green-600',
+                error: 'text-red-600',
+                warning: 'text-yellow-600'
+            };
+            
+            const icons = {
+                info: 'fa-info-circle',
+                success: 'fa-check-circle',
+                error: 'fa-times-circle',
+                warning: 'fa-exclamation-triangle'
+            };
+            
+            const timestamp = new Date().toLocaleTimeString('fa-IR');
+            statusDiv.innerHTML += `
+                <div class="mb-2 flex items-start ${colors[type]}">
+                    <i class="fas ${icons[type]} ml-2 mt-1"></i>
+                    <div>
+                        <span class="text-xs text-gray-500">[${timestamp}]</span>
+                        <span class="mr-2">${message}</span>
+                    </div>
+                </div>
+            `;
+            statusDiv.scrollTop = statusDiv.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('status').innerHTML = '';
+        }
+        
+        function displayStudents(students) {
+            const cardsDiv = document.getElementById('students-cards');
+            
+            if (!students || students.length === 0) {
+                cardsDiv.innerHTML = '<p class="text-gray-500 col-span-full text-center">هیچ دانشجویی یافت نشد</p>';
+                return;
+            }
+            
+            cardsDiv.innerHTML = students.map(student => `
+                <div class="bg-white rounded-lg p-4 shadow border border-gray-200">
+                    <div class="flex items-center mb-3">
+                        <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold ml-3">
+                            ${student.name ? student.name.charAt(0) : 'د'}
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-bold text-gray-800 text-sm">${student.name}</h4>
+                            <p class="text-xs text-gray-500">${student.studentId || student.id}</p>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-600 space-y-1">
+                        <div><i class="fas fa-university text-blue-500 w-4 ml-1"></i>${student.university || 'نامشخص'}</div>
+                        <div><i class="fas fa-graduation-cap text-blue-500 w-4 ml-1"></i>${student.degree || 'نامشخص'}</div>
+                        <div><i class="fas fa-book text-blue-500 w-4 ml-1"></i>${student.field || 'نامشخص'}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function checkStudents() {
+            clearLog();
+            log('🔍 شروع بررسی وضعیت...', 'info');
+            
+            try {
+                // Check localStorage
+                const storedUsers = localStorage.getItem(CONFIG.STORAGE_KEYS.USERS);
+                
+                if (!storedUsers) {
+                    log('⚠️ localStorage خالی است!', 'warning');
+                    log('💡 برای اضافه کردن 20 دانشجو، دکمه "به‌روزرسانی" را کلیک کنید', 'info');
+                    displayStudents([]);
+                    return;
+                }
+                
+                const users = JSON.parse(storedUsers);
+                const students = users.filter(u => u.role === 'student');
+                
+                log(`📊 تعداد کل کاربران: ${users.length}`, 'info');
+                log(`👥 تعداد دانشجویان: ${students.length}`, students.length === 20 ? 'success' : 'warning');
+                
+                // Count by role
+                const roleCount = users.reduce((acc, u) => {
+                    acc[u.role] = (acc[u.role] || 0) + 1;
+                    return acc;
+                }, {});
+                
+                log('📈 تفکیک بر اساس نقش:', 'info');
+                Object.entries(roleCount).forEach(([role, count]) => {
+                    log(`  • ${role}: ${count}`, 'info');
+                });
+                
+                if (students.length < 20) {
+                    log(`⚠️ فقط ${students.length} دانشجو موجود است. باید 20 دانشجو باشد!`, 'warning');
+                    log('💡 برای به‌روزرسانی، دکمه "به‌روزرسانی به 20 دانشجو" را کلیک کنید', 'info');
+                } else if (students.length === 20) {
+                    log('✅ تعداد دانشجویان صحیح است!', 'success');
+                } else {
+                    log(`⚠️ تعداد دانشجویان بیش از حد است: ${students.length}`, 'warning');
+                }
+                
+                // Display students
+                displayStudents(students);
+                
+            } catch (error) {
+                log(`❌ خطا: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+        
+        function forceUpdate() {
+            clearLog();
+            log('🔄 شروع به‌روزرسانی به 20 دانشجو...', 'info');
+            
+            try {
+                // Get current users
+                let users = [];
+                const storedUsers = localStorage.getItem(CONFIG.STORAGE_KEYS.USERS);
+                
+                if (storedUsers) {
+                    users = JSON.parse(storedUsers);
+                    const oldStudentCount = users.filter(u => u.role === 'student').length;
+                    log(`📊 ${oldStudentCount} دانشجوی قدیمی یافت شد`, 'info');
+                    
+                    // Remove old students
+                    users = users.filter(u => u.role !== 'student');
+                    log(`🗑️ دانشجویان قدیمی حذف شدند`, 'warning');
+                }
+                
+                // Get new students from DataModule
+                const allDefaultUsers = DataModule.getDefaultUsers();
+                const newStudents = allDefaultUsers.filter(u => u.role === 'student');
+                
+                log(`✅ ${newStudents.length} دانشجوی جدید آماده است`, 'info');
+                
+                // Merge
+                users = users.concat(newStudents);
+                
+                // Save
+                localStorage.setItem(CONFIG.STORAGE_KEYS.USERS, JSON.stringify(users));
+                
+                log(`✅ موفق! ${newStudents.length} دانشجو به localStorage اضافه شد`, 'success');
+                log(`📊 مجموع کاربران: ${users.length}`, 'info');
+                
+                // Display updated students
+                displayStudents(newStudents);
+                
+                log('🎉 به‌روزرسانی با موفقیت انجام شد!', 'success');
+                log('💡 حالا می‌توانید به صفحه اصلی بروید', 'info');
+                
+            } catch (error) {
+                log(`❌ خطا: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+        
+        function clearAll() {
+            if (!confirm('آیا مطمئن هستید که می‌خواهید همه داده‌ها را پاک کنید؟')) {
+                return;
+            }
+            
+            clearLog();
+            log('🗑️ پاک کردن localStorage...', 'warning');
+            
+            localStorage.clear();
+            
+            log('✅ localStorage پاک شد', 'success');
+            log('💡 برای اضافه کردن دانشجویان، دکمه "به‌روزرسانی" را کلیک کنید', 'info');
+            
+            displayStudents([]);
+        }
+        
+        // Auto-check on load
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(checkStudents, 500);
+        });
+    </script>
+</body>
+</html>

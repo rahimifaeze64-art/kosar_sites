@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست Modal</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <script src="assets/libs/alpine.min.js" defer></script>
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; }
+        .form-control {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8" x-data="modalTestController()">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">تست Modal ایجاد سفارش</h1>
+        
+        <!-- Status -->
+        <div class="mb-6 p-4 rounded-lg bg-blue-100 text-blue-800">
+            <p><strong>وضعیت showModal:</strong> <span x-text="showModal || 'null'"></span></p>
+            <p><strong>Alpine.js آماده:</strong> <span x-text="alpineReady ? 'بله' : 'خیر'"></span></p>
+        </div>
+        
+        <!-- Test Buttons -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">دکمه‌های تست</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <button @click="showModal = 'newOrder'" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg text-center">
+                    <i class="fas fa-plus text-2xl mb-2"></i>
+                    <p class="text-sm">سفارش جدید</p>
+                </button>
+                
+                <button @click="showModal = 'createProject'" 
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-lg text-center">
+                    <i class="fas fa-project-diagram text-2xl mb-2"></i>
+                    <p class="text-sm">پروژه جدید</p>
+                </button>
+                
+                <button onclick="testModalDirect()" 
+                        class="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg text-center">
+                    <i class="fas fa-cog text-2xl mb-2"></i>
+                    <p class="text-sm">تست مستقیم</p>
+                </button>
+                
+                <button @click="showModal = null" 
+                        class="bg-red-600 hover:bg-red-700 text-white p-4 rounded-lg text-center">
+                    <i class="fas fa-times text-2xl mb-2"></i>
+                    <p class="text-sm">بستن Modal</p>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Debug Info -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">اطلاعات Debug</h2>
+            <div id="debug-info" class="bg-gray-50 p-4 rounded">
+                <p>در حال بارگذاری...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals Container -->
+    <div id="modals-container"></div>
+    
+    <!-- Test Modal (Simple) -->
+    <div x-show="showModal === 'test'" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" 
+         @click.self="showModal = null">
+        <div class="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 class="text-lg font-bold mb-4">تست Modal</h3>
+            <p class="mb-4">این یک modal تست است!</p>
+            <button @click="showModal = null" class="bg-blue-600 text-white px-4 py-2 rounded">بستن</button>
+        </div>
+    </div>
+
+    <!-- Include Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/modals.js"></script>
+    
+    <script>
+        // Test controller
+        function modalTestController() {
+            return {
+                showModal: null,
+                alpineReady: false,
+                
+                init() {
+                    this.alpineReady = true;
+                    this.updateDebugInfo();
+                    
+                    // Test modals module
+                    setTimeout(() => {
+                        this.checkModalsModule();
+                    }, 1000);
+                },
+                
+                updateDebugInfo() {
+                    const debugDiv = document.getElementById('debug-info');
+                    debugDiv.innerHTML = `
+                        <p><strong>ModalsModule exists:</strong> ${typeof ModalsModule !== 'undefined' ? 'بله' : 'خیر'}</p>
+                        <p><strong>Modals container:</strong> ${document.getElementById('modals-container') ? 'موجود' : 'ناموجود'}</p>
+                        <p><strong>CONFIG exists:</strong> ${typeof CONFIG !== 'undefined' ? 'بله' : 'خیر'}</p>
+                        <p><strong>DataModule exists:</strong> ${typeof DataModule !== 'undefined' ? 'بله' : 'خیر'}</p>
+                        <p><strong>Current showModal:</strong> ${this.showModal || 'null'}</p>
+                    `;
+                },
+                
+                checkModalsModule() {
+                    if (typeof ModalsModule !== 'undefined') {
+                        console.log('ModalsModule found, checking container...');
+                        const container = document.getElementById('modals-container');
+                        if (container) {
+                            console.log('Container found, content:', container.innerHTML.length > 0 ? 'Has content' : 'Empty');
+                        }
+                    }
+                    this.updateDebugInfo();
+                }
+            }
+        }
+        
+        // Direct test function
+        function testModalDirect() {
+            console.log('Testing modal direct...');
+            const appData = document.querySelector('[x-data]').__x.$data;
+            if (appData) {
+                appData.showModal = 'test';
+                console.log('Modal set to test');
+            } else {
+                console.log('Alpine data not found');
+            }
+        }
+        
+        // Debug Alpine
+        document.addEventListener('alpine:init', () => {
+            console.log('Alpine.js initialized');
+        });
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded');
+            setTimeout(() => {
+                console.log('Checking Alpine after delay...');
+                const appData = document.querySelector('[x-data]');
+                if (appData && appData.__x) {
+                    console.log('Alpine data found:', appData.__x.$data);
+                } else {
+                    console.log('Alpine data not found');
+                }
+            }, 2000);
+        });
+    </script>
+</body>
+</html>

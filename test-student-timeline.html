@@ -1,0 +1,148 @@
+﻿<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست Timeline مراحل تحصیلی دانشجو</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link rel="stylesheet" href="assets/libs/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="assets/fonts/vazirmatn/vazirmatn.css">
+    <style>
+        body {
+            font-family: Vazirmatn, sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white p-8">
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8 text-center">
+            <i class="fas fa-graduation-cap text-indigo-400 ml-2"></i>
+            تست Timeline مراحل تحصیلی - صفحه ویرایش دانشجو
+        </h1>
+        
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">دانشجویان نمونه:</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="students-list">
+                <!-- Students will be loaded here -->
+            </div>
+        </div>
+        
+        <div class="bg-slate-800 rounded-lg p-6">
+            <h3 class="text-lg font-bold mb-4">راهنما:</h3>
+            <ul class="space-y-2 text-gray-300">
+                <li><i class="fas fa-mouse-pointer text-blue-400 ml-2"></i> روی دکمه "ویرایش پروفایل" کلیک کنید</li>
+                <li><i class="fas fa-route text-indigo-400 ml-2"></i> Timeline مراحل تحصیلی در بالای صفحه نمایش داده می‌شود</li>
+                <li><i class="fas fa-check text-green-400 ml-2"></i> روی هر مرحله کلیک کنید تا تیک بخورد</li>
+                <li><i class="fas fa-undo text-yellow-400 ml-2"></i> دوباره کلیک کنید تا تیک برداشته شود</li>
+                <li><i class="fas fa-chart-line text-purple-400 ml-2"></i> نوار پیشرفت به صورت خودکار به‌روز می‌شود</li>
+                <li><i class="fas fa-save text-emerald-400 ml-2"></i> تغییرات به صورت خودکار ذخیره می‌شوند</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/utils.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/employee.js"></script>
+    <script src="js/employee-student-edit.js"></script>
+    
+    <script>
+        // Sample students data
+        const sampleStudents = [
+            {
+                id: 'student001',
+                name: 'حسن یاسر کرار حسینی',
+                studentId: 'ST001',
+                email: 'hassan@student.edu',
+                phone: '+964 770 123 4567',
+                university: 'دانشگاه قم',
+                field: 'حقوق محض',
+                degree: 'کارشناسی ارشد',
+                passportNumber: 'G1234567',
+                birthDate: '1995-05-15',
+                gender: 'مرد',
+                active: true
+            },
+            {
+                id: 'student002',
+                name: 'قاسم محمود حسن بغدادی',
+                studentId: 'ST002',
+                email: 'qasim@student.edu',
+                phone: '+964 771 234 5678',
+                university: 'جامعه المصطفی',
+                field: 'حقوق بین‌الملل',
+                degree: 'عاملا',
+                passportNumber: 'G2345678',
+                birthDate: '1993-08-22',
+                gender: 'مرد',
+                active: true
+            }
+        ];
+        
+        // Save sample students to localStorage
+        const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
+        sampleStudents.forEach(student => {
+            if (!studentsData[student.id]) {
+                studentsData[student.id] = student;
+            }
+        });
+        localStorage.setItem('students_data', JSON.stringify(studentsData));
+        
+        // Display students
+        function displayStudents() {
+            const container = document.getElementById('students-list');
+            container.innerHTML = sampleStudents.map(student => `
+                <div class="bg-slate-700 rounded-lg p-4 hover:bg-slate-600 transition-all">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-lg ml-3">
+                                ${student.name.charAt(0)}
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white">${student.name}</h4>
+                                <p class="text-sm text-gray-400">${student.studentId}</p>
+                            </div>
+                        </div>
+                        <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                    </div>
+                    
+                    <div class="space-y-2 text-sm text-gray-300 mb-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-university text-indigo-400 w-5 ml-2"></i>
+                            <span>${student.university}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-graduation-cap text-indigo-400 w-5 ml-2"></i>
+                            <span>${student.degree} - ${student.field}</span>
+                        </div>
+                    </div>
+                    
+                    <button onclick="openEditModal('${student.id}')" 
+                            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                        <i class="fas fa-edit ml-2"></i>
+                        ویرایش پروفایل
+                    </button>
+                </div>
+            `).join('');
+        }
+        
+        function openEditModal(studentId) {
+            if (typeof EmployeeModule !== 'undefined' && EmployeeModule.editStudentProfile) {
+                EmployeeModule.editStudentProfile(studentId);
+            } else {
+                alert('ماژول employee بارگذاری نشده است!');
+            }
+        }
+        
+        // Initialize
+        displayStudents();
+        
+        // Show success message
+        setTimeout(() => {
+            if (typeof UTILS !== 'undefined') {
+                UTILS.showNotification('صفحه تست آماده است! روی دکمه ویرایش کلیک کنید', 'success');
+            }
+        }, 500);
+    </script>
+</body>
+</html>

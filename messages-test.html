@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست صفحه پیام‌ها</title>
+    <link rel="stylesheet" href="assets/fonts/vazirmatn/vazirmatn.css">
+    <link rel="stylesheet" href="assets/libs/fontawesome/css/all.min.css">
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body class="bg-slate-900 text-white font-vazir">
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-slate-800 rounded-lg p-8 max-w-md w-full">
+            <h1 class="text-2xl font-bold text-center mb-6">
+                <i class="fas fa-comments text-indigo-400 ml-2"></i>
+                ورود به صفحه پیام‌ها
+            </h1>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-300 mb-2">انتخاب کاربر:</label>
+                    <select id="user-select" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white">
+                        <option value="">-- انتخاب کنید --</option>
+                        <option value="mgr001">عامل تقی زاده (مدیر)</option>
+                        <option value="emp001">زهرا (کارمند)</option>
+                        <option value="emp002">زینب (کارمند)</option>
+                        <option value="emp003">فرزاد (کارمند)</option>
+                        <option value="emp004">سلیمان (کارمند)</option>
+                        <option value="doc001">عامل معصومی (عامل)</option>
+                        <option value="doc002">عامل ذوقی (عامل)</option>
+                        <option value="agent001">رضایی (عامل)</option>
+                        <option value="agent002">کریمی (عامل)</option>
+                    </select>
+                </div>
+                
+                <button onclick="loginAndRedirect()" 
+                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition-all">
+                    <i class="fas fa-sign-in-alt ml-2"></i>
+                    ورود و مشاهده پیام‌ها
+                </button>
+                
+                <a href="index.html" 
+                   class="block text-center text-gray-400 hover:text-white text-sm">
+                    <i class="fas fa-arrow-right ml-1"></i>
+                    بازگشت به صفحه اصلی
+                </a>
+            </div>
+            
+            <div class="mt-6 p-4 bg-slate-700 rounded-lg">
+                <h3 class="text-sm font-bold text-indigo-400 mb-2">
+                    <i class="fas fa-info-circle ml-1"></i>
+                    راهنما:
+                </h3>
+                <ul class="text-xs text-gray-300 space-y-1">
+                    <li>• کارمند ها می‌توانند با مدیر، سایر کارمند ها و عامل‌ها چت کنند</li>
+                    <li>• مدیر می‌تواند با همه چت کند</li>
+                    <li>• عامل‌ها می‌توانند با مدیر و کارمند ها چت کنند</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/data.js"></script>
+    <script>
+        // Initialize data
+        DataModule.initializeData();
+        
+        function loginAndRedirect() {
+            const userId = document.getElementById('user-select').value;
+            if (!userId) {
+                alert('لطفاً یک کاربر انتخاب کنید');
+                return;
+            }
+            
+            const users = DataModule.getUsers();
+            const user = users.find(u => u.id === userId);
+            
+            if (!user) {
+                alert('کاربر یافت نشد');
+                return;
+            }
+            
+            // Save to all possible storage keys
+            localStorage.setItem('currentUser', JSON.stringify(user));
+            localStorage.setItem(CONFIG.STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+            localStorage.setItem('edu_system_current_user', JSON.stringify(user));
+            
+            // Redirect to messages page
+            window.location.href = 'messages.html';
+        }
+    </script>
+</body>
+</html>

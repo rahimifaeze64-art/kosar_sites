@@ -1,0 +1,128 @@
+﻿<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دیباگ کاربر فعلی</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link rel="stylesheet" href="assets/libs/fontawesome/css/all.min.css">
+</head>
+<body class="bg-slate-900 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">
+            <i class="fas fa-bug text-red-400 ml-2"></i>
+            دیباگ کاربر فعلی
+        </h1>
+        
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">کاربر در localStorage</h2>
+            <pre id="localStorage-user" class="bg-slate-900 p-4 rounded text-sm overflow-auto"></pre>
+        </div>
+        
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">تمام کاربران</h2>
+            <div id="all-users" class="space-y-2"></div>
+        </div>
+        
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">تغییر کاربر</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="setUser('doc001', 'عامل معصومی', 'agent')" 
+                        class="bg-indigo-600 hover:bg-indigo-700 px-4 py-3 rounded-lg">
+                    <i class="fas fa-user ml-2"></i>
+                    عامل معصومی (عامل)
+                </button>
+                <button onclick="setUser('emp001', 'زهرا', 'employee')" 
+                        class="bg-purple-600 hover:bg-purple-700 px-4 py-3 rounded-lg">
+                    <i class="fas fa-user ml-2"></i>
+                    زهرا (کارمند)
+                </button>
+                <button onclick="setUser('mgr001', 'عامل تقی زاده', 'manager')" 
+                        class="bg-blue-600 hover:bg-blue-700 px-4 py-3 rounded-lg">
+                    <i class="fas fa-user ml-2"></i>
+                    عامل تقی زاده (مدیر)
+                </button>
+                <button onclick="clearUser()" 
+                        class="bg-red-600 hover:bg-red-700 px-4 py-3 rounded-lg">
+                    <i class="fas fa-trash ml-2"></i>
+                    پاک کردن کاربر
+                </button>
+            </div>
+        </div>
+        
+        <div class="bg-slate-800 rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-4">بازگشت به صفحه اصلی</h2>
+            <a href="index.html" class="inline-block bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg">
+                <i class="fas fa-home ml-2"></i>
+                بازگشت به صفحه اصلی
+            </a>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/debug.js"></script>
+    <script src="js/data.js"></script>
+    
+    <script>
+        function displayCurrentUser() {
+            const currentUser = localStorage.getItem('currentUser');
+            const userDiv = document.getElementById('localStorage-user');
+            
+            if (currentUser) {
+                try {
+                    const user = JSON.parse(currentUser);
+                    userDiv.textContent = JSON.stringify(user, null, 2);
+                } catch (e) {
+                    userDiv.textContent = 'خطا در پارس کردن: ' + currentUser;
+                }
+            } else {
+                userDiv.textContent = 'هیچ کاربری در localStorage ذخیره نشده است';
+            }
+        }
+        
+        function displayAllUsers() {
+            DataModule.initializeData();
+            const users = DataModule.getUsers();
+            const usersDiv = document.getElementById('all-users');
+            
+            usersDiv.innerHTML = users.map(user => `
+                <div class="bg-slate-700 p-3 rounded flex justify-between items-center">
+                    <div>
+                        <p class="font-bold">${user.name}</p>
+                        <p class="text-sm text-gray-400">نقش: ${user.role} | ID: ${user.id}</p>
+                    </div>
+                    <button onclick="setUser('${user.id}', '${user.name}', '${user.role}')" 
+                            class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm">
+                        انتخاب
+                    </button>
+                </div>
+            `).join('');
+        }
+        
+        function setUser(id, name, role) {
+            const user = {
+                id: id,
+                name: name,
+                role: role,
+                username: id.replace(/\d+/, ''),
+                email: `${id}@edu-system.com`
+            };
+            
+            localStorage.setItem('currentUser', JSON.stringify(user));
+            alert(`کاربر تنظیم شد: ${name} (${role})`);
+            displayCurrentUser();
+        }
+        
+        function clearUser() {
+            localStorage.removeItem('currentUser');
+            alert('کاربر پاک شد');
+            displayCurrentUser();
+        }
+        
+        // Initialize
+        displayCurrentUser();
+        displayAllUsers();
+    </script>
+</body>
+</html>

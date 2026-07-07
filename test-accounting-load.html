@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تست بارگذاری ماژول‌های حسابداری</title>
+</head>
+<body>
+    <h1>تست بارگذاری ماژول‌های حسابداری</h1>
+    <div id="result"></div>
+    
+    <script>
+        function debugLogger(msg, type, data) {
+            console.log(`[${type}] ${msg}`, data || '');
+        }
+    </script>
+    
+    <script src="js/accounting.js"></script>
+    <script src="js/accounting-ui.js"></script>
+    
+    <script>
+        const result = document.getElementById('result');
+        let html = '<ul>';
+        
+        // Check AccountingModule
+        if (typeof AccountingModule !== 'undefined') {
+            html += '<li style="color: green;">✓ AccountingModule loaded successfully</li>';
+            html += '<li>Methods: ' + Object.keys(AccountingModule).join(', ') + '</li>';
+        } else {
+            html += '<li style="color: red;">✗ AccountingModule NOT loaded</li>';
+        }
+        
+        // Check AccountingUI
+        if (typeof AccountingUI !== 'undefined') {
+            html += '<li style="color: green;">✓ AccountingUI loaded successfully</li>';
+            html += '<li>Methods: ' + Object.keys(AccountingUI).join(', ') + '</li>';
+        } else {
+            html += '<li style="color: red;">✗ AccountingUI NOT loaded</li>';
+        }
+        
+        html += '</ul>';
+        
+        // Try to initialize
+        try {
+            AccountingUI.init();
+            html += '<p style="color: green;">✓ AccountingUI.init() executed successfully</p>';
+        } catch (e) {
+            html += '<p style="color: red;">✗ AccountingUI.init() failed: ' + e.message + '</p>';
+        }
+        
+        // Try to render
+        try {
+            const content = AccountingUI.render();
+            html += '<p style="color: green;">✓ AccountingUI.render() executed successfully</p>';
+            html += '<p>Content length: ' + content.length + ' characters</p>';
+        } catch (e) {
+            html += '<p style="color: red;">✗ AccountingUI.render() failed: ' + e.message + '</p>';
+        }
+        
+        result.innerHTML = html;
+    </script>
+</body>
+</html>
