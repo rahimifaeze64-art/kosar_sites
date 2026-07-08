@@ -4,9 +4,23 @@ console.log('🔵 orders.js loaded successfully');
 const OrdersModule = {
     // Get orders content based on user role
     async getOrdersContent(userRole, userId) {
-        const orders = await this.getFilteredOrders(userRole, userId);
+        console.log('🔵 getOrdersContent called with:', { userRole, userId });
+        console.log('🔵 CONFIG exists:', typeof CONFIG !== 'undefined');
+        console.log('🔵 DataModule exists:', typeof DataModule !== 'undefined');
         
-        return `
+        if (typeof debugLogger !== 'undefined') {
+            debugLogger('OrdersModule.getOrdersContent called', 'info', { userRole, userId });
+        }
+        
+        try {
+            const orders = await this.getFilteredOrders(userRole, userId);
+            console.log('🔵 getFilteredOrders returned:', orders?.length, 'orders');
+            
+            if (typeof debugLogger !== 'undefined') {
+                debugLogger('Orders loaded successfully', 'success', { count: orders?.length });
+            }
+            
+            return `
             <div class="space-y-6">
                 <!-- Orders Header -->
                 <div class="flex justify-between items-center">
@@ -121,15 +135,32 @@ const OrdersModule = {
                 </div>
             </div>
         `;
+        } catch (error) {
+            console.error('❌ Error in getOrdersContent:', error);
+            if (typeof debugLogger !== 'undefined') {
+                debugLogger('Error in getOrdersContent', 'error', { message: error.message });
+            }
+            return `<div class="text-center text-red-500 py-8">
+                <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
+                <p class="mb-4">خطا در بارگذاری سفارشات: ${error.message}</p>
+                <button onclick="location.reload()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                    تلاش مجدد
+                </button>
+            </div>`;
+        }
     },
     
     // Get filtered orders based on user role
     async getFilteredOrders(userRole, userId) {
+        console.log('🔵 getFilteredOrders called:', { userRole, userId });
+        
         // Try to fetch from backend first
         if (window.APIOrdersModule) {
+            console.log('🔵 Trying APIOrdersModule...');
             try {
                 const backendOrders = await APIOrdersModule.getOrders();
                 if (backendOrders && Array.isArray(backendOrders)) {
+                    console.log('🔵 Got backend orders:', backendOrders.length);
                     // Convert backend format to frontend format
                     const orders = backendOrders.map(order => this.convertBackendOrder(order));
                     // Save to localStorage as cache
@@ -138,27 +169,67 @@ const OrdersModule = {
                 }
             } catch (error) {
                 console.warn('Backend not available, using localStorage:', error);
+                if (typeof debugLogger !== 'undefined') {
+                    debugLogger('Backend not available, using localStorage', 'warning', error);
+                }
             }
         }
         
         // Fallback to localStorage
+        console.log('🔵 Using localStorage fallback...');
+        console.log('🔵 DataModule exists:', typeof DataModule !== 'undefined');
+        
+        if (typeof DataModule === 'undefined') {
+            console.error('❌ DataModule is undefined!');
+            return [];
+        }
+        
         let orders = DataModule.getOrders();
+        console.log('🔵 DataModule.getOrders() returned:', orders?.length, 'orders');
+        
+        if (!Array.isArray(orders)) {
+            console.error('❌ Orders is not an array:', typeof orders);
+            orders = [];
+        }
         
         // Sort by created_at descending (newest first)
         orders = orders.sort((a, b) => new Date(b.createdAt || b.created_at) - new Date(a.createdAt || a.created_at));
         
+        console.log('🔵 Filtering for role:', userRole);
+        console.log('🔵 CONFIG.ROLES:', CONFIG?.ROLES);
+        
+        let filteredOrders;
         switch(userRole) {
+            case CONFIG.ROLES.MANAGER:
+                // مدیر همه سفارشات را می‌بیند
+                console.log('🔵 Manager - showing all orders');
+                filteredOrders = orders;
+                break;
             case CONFIG.ROLES.STUDENT:
-                return orders.filter(o => o.studentId === userId);
+                filteredOrders = orders.filter(o => o.studentId === userId);
+                break;
             case CONFIG.ROLES.DOCTOR:
-                return orders.filter(o => o.assignedDoctorId === userId);
+            case CONFIG.ROLES.AGENT:
+                filteredOrders = orders.filter(o => o.assignedDoctorId === userId);
+                break;
             case CONFIG.ROLES.employee:
-                return orders.filter(o => [CONFIG.ORDER_STATUS.PENDING, CONFIG.ORDER_STATUS.IN_PROGRESS].includes(o.status));
+                filteredOrders = orders.filter(o => [CONFIG.ORDER_STATUS.PENDING, CONFIG.ORDER_STATUS.IN_PROGRESS].includes(o.status));
+                break;
             case CONFIG.ROLES.TRANSLATOR:
-                return orders.filter(o => o.type === CONFIG.ORDER_TYPES.TRANSLATION && o.assignedDoctorId === userId);
+                filteredOrders = orders.filter(o => o.type === CONFIG.ORDER_TYPES.TRANSLATION && o.assignedDoctorId === userId);
+                break;
             default:
-                return orders;
+                // برای نقش‌های نامشخص هم همه سفارشات را نشان بده
+                console.log('🔵 Unknown role, showing all orders');
+                filteredOrders = orders;
         }
+        
+        console.log('🔵 Filtered orders:', filteredOrders?.length);
+        if (typeof debugLogger !== 'undefined') {
+            debugLogger('Orders filtered', 'info', { role: userRole, count: filteredOrders?.length });
+        }
+        
+        return filteredOrders;
     },
     
     // Convert backend order format to frontend format
@@ -622,6 +693,8 @@ const OrdersModule = {
 
 // Global functions for window scope
 window.OrdersModule = OrdersModule;
+window.OrdersModuleReady = true;
+console.log('✅ OrdersModule is ready');
 
 window.approveOrder = async function(orderId) {
     if (confirm('آیا از تایید این سفارش اطمینان دارید؟')) {
@@ -650,9 +723,3 @@ window.showAssignmentModal = function(orderId) {
     // TODO: Implement assignment modal
     UTILS.showNotification('تخصیص سفارش در حال توسعه است', 'info');
 };
-
-// Mark module as ready
-window.OrdersModule = OrdersModule;
-window.OrdersModuleReady = true;
-console.log('✅ OrdersModule ready');
-

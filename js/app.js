@@ -169,6 +169,8 @@ function appController() {
         myIncome: "درآمد من",
         orders: "سفارشات",
         accounting: "حسابداری",
+        employeeAccounting: "حسابداری کارمندان",
+        workHours: "ساعات کاری",
         chatWithManager: "گفتگو با مدیر",
         managementChat: "گفتگو مدیریت",
         personalArchive: "بایگانی شخصی",
@@ -346,23 +348,18 @@ function appController() {
             },
           );
 
-          // Wait for module to be ready
-          if (!window.OrdersModuleReady) {
-            console.log("⏳ Waiting for OrdersModule to be ready...");
-            await new Promise((resolve) => {
-              const checkReady = () => {
-                if (window.OrdersModuleReady) {
-                  resolve();
-                } else {
-                  setTimeout(checkReady, 50);
-                }
-              };
-              checkReady();
-            });
+          // Get the module - check multiple sources
+          let OrdersMod = null;
+          
+          // Try window.OrdersModule first
+          if (typeof window.OrdersModule !== "undefined" && window.OrdersModule) {
+            OrdersMod = window.OrdersModule;
           }
-
-          // Get the module
-          const OrdersMod = window.OrdersModule || OrdersModule;
+          // Try global OrdersModule
+          else if (typeof OrdersModule !== "undefined" && OrdersModule) {
+            OrdersMod = OrdersModule;
+          }
+          
           if (!OrdersMod) {
             throw new Error("OrdersModule not available");
           }
@@ -410,27 +407,26 @@ function appController() {
     },
 
     // Load orders page with retry mechanism (حرفه‌ای)
-    async loadOrdersPageWithRetry(maxRetries = 5) {
+    async loadOrdersPageWithRetry(maxRetries = 10) {
       this.ordersContent =
         '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i><p class="mt-4 text-white">در حال بارگذاری...</p></div>';
 
       console.log("🔍 Checking OrdersModule availability:");
-      console.log("  - typeof OrdersModule:", typeof OrdersModule);
-      console.log("  - window.OrdersModule:", window.OrdersModule);
-      console.log(
-        "  - OrdersModule exists?",
-        typeof window.OrdersModule !== "undefined",
-      );
+      console.log("  - typeof window.OrdersModule:", typeof window.OrdersModule);
+      console.log("  - window.OrdersModuleReady:", window.OrdersModuleReady);
 
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
           console.log(`🔄 Attempt ${attempt}/${maxRetries} to load orders...`);
 
-          // Check if OrdersModule is available
-          if (
-            typeof window.OrdersModule !== "undefined" &&
-            window.OrdersModule
-          ) {
+          // Check if OrdersModule is available (multiple checks)
+          const moduleAvailable = typeof window.OrdersModule !== "undefined" && 
+                                   window.OrdersModule !== null &&
+                                   typeof window.OrdersModule.getOrdersContent === "function";
+          
+          const readyFlag = window.OrdersModuleReady === true;
+
+          if (moduleAvailable || readyFlag) {
             console.log("✅ OrdersModule found! Loading content...");
             this.ordersContent = await this.getOrdersContent();
             console.log("✅ Orders loaded successfully");
@@ -438,28 +434,29 @@ function appController() {
           }
 
           // Wait before retry (exponential backoff)
-          const delay = Math.min(100 * Math.pow(2, attempt - 1), 1000);
+          const delay = Math.min(100 * Math.pow(2, attempt - 1), 500);
           console.log(`⏳ OrdersModule not ready, waiting ${delay}ms...`);
           await new Promise((resolve) => setTimeout(resolve, delay));
         } catch (error) {
           console.error(`❌ Attempt ${attempt} failed:`, error);
           if (attempt === maxRetries) {
             this.ordersContent =
-              '<div class="text-center text-red-500 py-8"><i class="fas fa-exclamation-triangle text-4xl mb-4"></i><p>خطا در بارگذاری سفارشات</p><button onclick="location.reload()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">تلاش مجدد</button></div>';
+              '<div class="text-center text-red-500 py-8"><i class="fas fa-exclamation-triangle text-4xl mb-4"></i><p>خطا در بارگذاری سفارشات</p><p class="text-sm mt-2">' + error.message + '</p><button onclick="location.reload()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">تلاش مجدد</button></div>';
             return;
           }
           await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
         }
       }
 
-      // If we get here, all retries failed
-      console.error(
-        "❌ Failed to load OrdersModule after",
-        maxRetries,
-        "attempts",
-      );
-      this.ordersContent =
-        '<div class="text-center text-red-500 py-8"><i class="fas fa-exclamation-triangle text-4xl mb-4"></i><p>خطا در بارگذاری سفارشات</p><p class="text-sm mt-2">OrdersModule یافت نشد</p><button onclick="location.reload()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">تلاش مجدد</button></div>';
+      // If we get here, all retries failed - try direct fallback
+      console.warn("⚠️ OrdersModule not loaded after retries, trying direct fallback...");
+      try {
+        this.ordersContent = await this.getOrdersContent();
+      } catch (error) {
+        console.error("❌ Final fallback failed:", error);
+        this.ordersContent =
+          '<div class="text-center text-red-500 py-8"><i class="fas fa-exclamation-triangle text-4xl mb-4"></i><p>خطا در بارگذاری سفارشات</p><p class="text-sm mt-2">OrdersModule یافت نشد</p><button onclick="location.reload()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">تلاش مجدد</button></div>';
+      }
     },
 
     // Get accounting content
@@ -467,7 +464,16 @@ function appController() {
       try {
         debugLogger("Loading accounting content...", "info");
 
-        // Check if modules exist
+        // برای کارمند: صفحه حسابداری شخصی
+        if (this.currentUser.role === "employee") {
+          if (typeof EmployeeAccountingUI === "undefined") {
+            return '<div class="text-red-500">خطا: ماژول EmployeeAccountingUI یافت نشد</div>';
+          }
+          EmployeeAccountingUI.init();
+          return EmployeeAccountingUI.getEmployeeContent();
+        }
+
+        // برای مدیر: صفحه حسابداری شخصی (پیش‌فرض)
         if (typeof AccountingModule === "undefined") {
           debugLogger("AccountingModule not found", "error");
           return '<div class="text-red-500">خطا: ماژول AccountingModule یافت نشد</div>';
@@ -486,6 +492,27 @@ function appController() {
       } catch (error) {
         debugLogger("Error loading accounting content", "error", error);
         return `<div class="text-red-500">خطا در بارگذاری حسابداری: ${error.message}</div>`;
+      }
+    },
+
+    // Get employee management accounting content (manager only)
+    getEmployeeAccountingContent() {
+      try {
+        debugLogger("Loading employee accounting content...", "info");
+
+        if (this.currentUser.role !== "manager") {
+          return '<div class="text-yellow-500">دسترسی محدود: فقط مدیر</div>';
+        }
+
+        if (typeof EmployeeAccountingUI === "undefined") {
+          return '<div class="text-red-500">خطا: ماژول EmployeeAccountingUI یافت نشد</div>';
+        }
+
+        EmployeeAccountingUI.init();
+        return EmployeeAccountingUI.getManagerEmployeesContent();
+      } catch (error) {
+        debugLogger("Error loading employee accounting content", "error", error);
+        return `<div class="text-red-500">خطا: ${error.message}</div>`;
       }
     },
 

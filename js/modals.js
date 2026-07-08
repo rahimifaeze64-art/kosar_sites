@@ -204,12 +204,18 @@ const ModalsModule = {
 
   // Quick Order Modal
   getQuickOrderModal() {
-    return OrderWizardModule.getQuickOrderModal();
+    if (typeof OrderWizardModule !== 'undefined' && OrderWizardModule.getQuickOrderModal) {
+      return OrderWizardModule.getQuickOrderModal();
+    }
+    return this.getNewOrderModalOld();
   },
 
   // New Order Modal - استفاده از ماژول Wizard
   getNewOrderModal() {
-    return OrderWizardModule.getWizardModal();
+    if (typeof OrderWizardModule !== 'undefined' && OrderWizardModule.getWizardModal) {
+      return OrderWizardModule.getWizardModal();
+    }
+    return this.getNewOrderModalOld();
   },
 
   // Old single-page modal (backup)
@@ -2122,6 +2128,9 @@ const ModalsModule = {
 // Initialize modals when both DOM and Alpine are ready
 document.addEventListener("DOMContentLoaded", function () {
   console.log("📄 DOM loaded, waiting for Alpine...");
+  console.log("🔍 OrderWizardModule available?", typeof OrderWizardModule !== 'undefined');
+  console.log("🔍 OrdersModule available?", typeof OrdersModule !== 'undefined');
+  console.log("🔍 DataModule available?", typeof DataModule !== 'undefined');
 
   // Wait for Alpine to be ready
   const initModals = () => {
