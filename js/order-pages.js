@@ -13,10 +13,9 @@ const OrderPagesModule = {
                 return;
             }
             
-            // Store current order ID
             window.currentDetailOrderId = orderId;
+            window.currentOrderData = order;
             
-            // Create and show order page modal
             this.createOrderPageModal();
             this.loadOrderPage(order);
             this.showOrderPageModal();
@@ -44,13 +43,18 @@ const OrderPagesModule = {
         const modalHTML = `
             <div id="order-page-modal" x-show="showModal === 'orderDetail'" 
                  class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" 
-                 @click.self="showModal = null">
+                 @click.self="showModal = null" style="display:none;"
+                 onclick="if(event.target===this){this.style.display='none';if(typeof ModalsModule!=='undefined')ModalsModule.closeModal();}">
                 <div class="bg-white rounded-lg max-w-7xl w-full max-h-[90vh] overflow-hidden">
-                    <div class="p-6 border-b">
+                    <div class="p-6 border-b flex justify-between items-center">
                         <h3 class="text-lg font-bold text-gray-800">
                             <i class="fas fa-clipboard-list text-blue-600 ml-2"></i>
                             جزئیات سفارش
                         </h3>
+                        <button type="button" onclick="document.getElementById('order-page-modal').style.display='none';if(typeof ModalsModule!=='undefined')ModalsModule.closeModal();"
+                                class="text-gray-500 hover:text-gray-700 text-xl leading-none" title="بستن">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
                     <div class="flex h-[80vh]" x-data="{ activeTab: 'overview', currentUser: getCurrentUser() }">
                         <!-- Sidebar Tabs -->
@@ -148,33 +152,37 @@ const OrderPagesModule = {
     loadTabContent(tab, order) {
         const contentArea = document.getElementById('order-page-content');
         if (!contentArea) return;
+
+        const fresh = DataModule.getOrders().find(o => o.id === order.id);
+        const activeOrder = fresh || order;
+        window.currentOrderData = activeOrder;
         
         const currentUser = getCurrentUser();
         
         switch(tab) {
             case 'overview':
-                contentArea.innerHTML = OrderTabsModule.getOverviewTab(order, currentUser);
+                contentArea.innerHTML = OrderTabsModule.getOverviewTab(activeOrder, currentUser);
                 break;
             case 'worklist':
-                contentArea.innerHTML = OrderTabsModule.getWorkListTab(order, currentUser);
+                contentArea.innerHTML = OrderTabsModule.getWorkListTab(activeOrder, currentUser);
                 break;
             case 'assignment':
-                contentArea.innerHTML = AssignmentManagerModule.getAssignmentTab(order, currentUser);
+                contentArea.innerHTML = AssignmentManagerModule.getAssignmentTab(activeOrder, currentUser);
                 break;
             case 'followup':
-                contentArea.innerHTML = OrderTabsModule.getFollowUpTab(order, currentUser);
+                contentArea.innerHTML = OrderTabsModule.getFollowUpTab(activeOrder, currentUser);
                 break;
             case 'files':
-                contentArea.innerHTML = OrderTabsModule.getFilesTab(order, currentUser);
+                contentArea.innerHTML = OrderTabsModule.getFilesTab(activeOrder, currentUser);
                 break;
             case 'chat':
-                contentArea.innerHTML = OrderTabsModule.getChatTab(order, currentUser);
+                contentArea.innerHTML = OrderTabsModule.getChatTab(activeOrder, currentUser);
                 break;
             case 'financial':
-                contentArea.innerHTML = OrderTabsModule.getFinancialTab(order, currentUser);
+                contentArea.innerHTML = OrderTabsModule.getFinancialTab(activeOrder, currentUser);
                 break;
             case 'progress':
-                contentArea.innerHTML = OrderTabsModule.getProgressTab(order, currentUser);
+                contentArea.innerHTML = OrderTabsModule.getProgressTab(activeOrder, currentUser);
                 
                 // راه‌اندازی سیستم پیشرفت کار
                 setTimeout(() => {
@@ -191,7 +199,7 @@ const OrderPagesModule = {
                 }, 100);
                 break;
             case 'history':
-                contentArea.innerHTML = OrderTabsModule.getHistoryTab(order, currentUser);
+                contentArea.innerHTML = OrderTabsModule.getHistoryTab(activeOrder, currentUser);
                 break;
             default:
                 contentArea.innerHTML = '<p class="text-center text-gray-500">تب انتخاب شده یافت نشد</p>';
@@ -202,13 +210,21 @@ const OrderPagesModule = {
     
     // Show order page modal
     showOrderPageModal() {
-        const alpineData = ModalsModule.getAlpineData();
+        const modal = document.getElementById('order-page-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+            debugLogger('Order page modal shown via DOM', 'success');
+            return;
+        }
+
+        const alpineData = typeof ModalsModule !== 'undefined' ? ModalsModule.getAlpineData() : null;
         if (alpineData) {
             alpineData.showModal = 'orderDetail';
-            debugLogger('Order page modal shown', 'success');
-        } else {
-            debugLogger('Could not show order page modal - Alpine data not found', 'error');
-            UTILS.showNotification('خطا در نمایش صفحه سفارش', 'error');
+            debugLogger('Order page modal shown via Alpine', 'success');
+            return;
         }
+
+        debugLogger('Could not show order page modal', 'error');
+        UTILS.showNotification('خطا در نمایش صفحه سفارش', 'error');
     }
 };

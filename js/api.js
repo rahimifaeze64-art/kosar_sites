@@ -9,9 +9,10 @@ const APIModule = {
     // Initialize API module
     async init() {
         try {
-            debugLogger('Initializing API module...', 'info');
-            await this.getCSRFToken();
-            debugLogger('API module initialized successfully', 'success');
+            debugLogger('API module disabled - using localStorage mode', 'info');
+            // Skip CSRF token fetch - backend not available
+            // await this.getCSRFToken();
+            debugLogger('API module initialized in offline mode', 'success');
         } catch (error) {
             debugLogger('Error initializing API module', 'error', error);
         }
@@ -20,9 +21,16 @@ const APIModule = {
     // Get CSRF token for Django
     async getCSRFToken() {
         try {
+            // Check if backend is available first (timeout after 2 seconds)
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000);
+            
             const response = await fetch(`${this.baseURL}/auth/user/`, {
-                credentials: 'include'
+                credentials: 'include',
+                signal: controller.signal
             });
+            
+            clearTimeout(timeoutId);
             
             // Extract CSRF token from cookies
             const cookies = document.cookie.split(';');
@@ -44,7 +52,8 @@ const APIModule = {
             
             debugLogger('CSRF token obtained', 'info', { token: this.csrfToken ? 'present' : 'missing' });
         } catch (error) {
-            debugLogger('Error getting CSRF token', 'error', error);
+            // Silently fail - backend not available
+            debugLogger('Backend not available, using localStorage mode', 'info');
         }
     },
     
@@ -545,7 +554,8 @@ const APIDataModule = {
 document.addEventListener('DOMContentLoaded', async function() {
     try {
         // Check if API should be enabled (can be controlled via config or environment)
-        const enableAPI = true; // Set to false to disable API and use localStorage only
+        //_disabled because backend server is not running on port 8000
+        const enableAPI = false; // Set to false to disable API and use localStorage only
         
         if (!enableAPI) {
             debugLogger('API integration disabled, using localStorage only', 'info');

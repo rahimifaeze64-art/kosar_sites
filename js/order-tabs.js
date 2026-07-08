@@ -13,8 +13,8 @@ const OrderTabsModule = {
                             <p class="text-sm text-gray-500">${order.university} - ${order.field} - ${order.degree}</p>
                         </div>
                         <div class="text-left">
-                            <span class="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                                ${order.status}
+                            <span class="px-3 py-1 rounded-full text-sm font-medium ${typeof OrdersModule !== 'undefined' ? OrdersModule.getStatusClass(order.status) : 'bg-blue-100 text-blue-800'}">
+                                ${typeof OrdersModule !== 'undefined' ? OrdersModule.getStatusText(order.status) : order.status}
                             </span>
                             <p class="text-lg font-bold text-green-600 mt-2">${order.totalAmount} تومان</p>
                         </div>
@@ -924,7 +924,7 @@ const OrderTabsModule = {
             
             // Refresh the order detail page
             if (typeof OrderPagesModule !== 'undefined') {
-                OrderPagesModule.showOrderDetail(orderId);
+                OrderPagesModule.showOrderPage(orderId);
             }
         } else {
             UTILS.showNotification('خطا در آپلود فایل', 'error');

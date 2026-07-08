@@ -1,239 +1,143 @@
-﻿// Orders Management Module
-console.log('🔵 orders.js loaded successfully');
+﻿/**
+ * مدیریت سفارشات — localStorage
+ */
+const OrdersModule = (function () {
+    'use strict';
 
-const OrdersModule = {
-    // Get orders content based on user role
-    async getOrdersContent(userRole, userId) {
-        console.log('🔵 getOrdersContent called with:', { userRole, userId });
-        console.log('🔵 CONFIG exists:', typeof CONFIG !== 'undefined');
-        console.log('🔵 DataModule exists:', typeof DataModule !== 'undefined');
-        
-        if (typeof debugLogger !== 'undefined') {
-            debugLogger('OrdersModule.getOrdersContent called', 'info', { userRole, userId });
+    const ORDER_STATUS = {
+        PENDING: 'pending',
+        APPROVED: 'approved',
+        IN_PROGRESS: 'in_progress',
+        COMPLETED: 'completed',
+        REJECTED: 'rejected'
+    };
+
+    const STATUS_LABELS = {
+        pending: 'در انتظار',
+        approved: 'تایید شده',
+        in_progress: 'در حال انجام',
+        completed: 'تکمیل شده',
+        rejected: 'رد شده'
+    };
+
+    const STATUS_CLASSES = {
+        pending: 'bg-yellow-100 text-yellow-800',
+        approved: 'bg-indigo-100 text-indigo-800',
+        in_progress: 'bg-blue-100 text-blue-800',
+        completed: 'bg-green-100 text-green-800',
+        rejected: 'bg-red-100 text-red-800'
+    };
+
+    const WORK_TYPES = [
+        'عناوین رساله ارشد', 'عناوین رساله عاملی', 'عناوین مقاله',
+        'پروپوزال رساله ارشد', 'پروپوزال رساله عاملی', 'پروپوزال مقاله',
+        'رساله ارشد', 'رساله عاملی', 'تعدیل', 'تنضید', 'ترجمه',
+        'استلال عراقی', 'استلال ایرانی', 'علاج استلال ایرانی', 'علاج استلال عراقی',
+        'ترجمه و تصدیق مباشره', 'ترجمه و تصدیق قبول نهایی', 'ترجمه و تصدیق دانشنامه',
+        'ترجمه مدرک', 'تجلید', 'همانند جویی',
+        'ایران داک عنوان', 'ایران داک پروپوزال', 'ایران داک پایان نامه',
+        'سائورگ', 'تلخیص متن', 'ساخت پاور پوینت',
+        'تعقیب اجراعات قبل مباشره', 'تعقیب اجراعات بعد مباشره', 'تصدیق مجلدات',
+        'تعقیب استماره 1', 'تعقیب پروپوزال', 'گرفتن امر اداری', 'تعقیب رساله',
+        'تعقیب اجراعات روز مناقشه', 'سفارش سفارشی', 'سایر',
+        'نوشتن رساله', 'نوشتن مقاله', 'ترجمه رساله', 'تلخیص', 'آماده‌سازی ارائه', 'تحقیق و بررسی'
+    ];
+
+    function log(msg, type, extra) {
+        if (typeof debugLogger === 'function') debugLogger(msg, type, extra);
+    }
+
+    function notify(msg, type) {
+        if (typeof UTILS !== 'undefined' && UTILS.showNotification) {
+            UTILS.showNotification(msg, type);
+        } else {
+            alert(msg);
         }
-        
-        try {
-            const orders = await this.getFilteredOrders(userRole, userId);
-            console.log('🔵 getFilteredOrders returned:', orders?.length, 'orders');
-            
-            if (typeof debugLogger !== 'undefined') {
-                debugLogger('Orders loaded successfully', 'success', { count: orders?.length });
-            }
-            
-            return `
-            <div class="space-y-6">
-                <!-- Orders Header -->
-                <div class="flex justify-between items-center">
-                    <h2 class="text-2xl font-bold text-gray-800">مدیریت سفارشات</h2>
-                    <div class="flex space-x-3 space-x-reverse">
-                        ${userRole === CONFIG.ROLES.MANAGER ? 
-                            `<button onclick="window.showModal = 'quickOrder'" 
-                                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium btn">
-                                <i class="fas fa-bolt ml-2"></i>
-                                سفارش سریع
-                            </button>
-                            <button onclick="window.showModal = 'createProject'" 
-                                    class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium btn">
-                                <i class="fas fa-plus-circle ml-2"></i>
-                                ایجاد سفارش جدید
-                            </button>` : 
-                            ''
-                        }
-                        ${userRole === CONFIG.ROLES.STUDENT ? 
-                            `<button onclick="window.showModal = 'quickOrder'" 
-                                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium btn">
-                                <i class="fas fa-bolt ml-2"></i>
-                                سفارش سریع
-                            </button>
-                            <button onclick="window.showModal = 'createProject'" 
-                                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium btn">
-                                <i class="fas fa-plus ml-2"></i>
-                                ایجاد سفارش جدید
-                            </button>` : 
-                            ''
-                        }
-                    </div>
-                </div>
-                
-                <!-- Filters -->
-                <div class="bg-white rounded-lg shadow-md p-4">
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <select class="form-control" id="status-filter" onchange="OrdersModule.filterOrders().catch(console.error)">
-                            <option value="">همه وضعیت‌ها</option>
-                            <option value="pending">در انتظار</option>
-                            <option value="in_progress">در حال انجام</option>
-                            <option value="completed">تکمیل شده</option>
-                        </select>
-                        <select class="form-control" id="type-filter" onchange="OrdersModule.filterOrders().catch(console.error)">
-                            <option value="">همه انواع کارها</option>
-                            <option value="عناوین رساله ارشد">عناوین رساله ارشد</option>
-                            <option value="عناوین رساله عاملی">عناوین رساله عاملی</option>
-                            <option value="عناوین مقاله">عناوین مقاله</option>
-                            <option value="پروپوزال رساله ارشد">پروپوزال رساله ارشد</option>
-                            <option value="پروپوزال رساله عاملی">پروپوزال رساله عاملی</option>
-                            <option value="پروپوزال مقاله">پروپوزال مقاله</option>
-                            <option value="رساله ارشد">رساله ارشد</option>
-                            <option value="رساله عاملی">رساله عاملی</option>
-                            <option value="تعدیل">تعدیل</option>
-                            <option value="تنضید">تنضید</option>
-                            <option value="ترجمه">ترجمه</option>
-                            <option value="استلال عراقی">استلال عراقی</option>
-                            <option value="استلال ایرانی">استلال ایرانی</option>
-                            <option value="علاج استلال ایرانی">علاج استلال ایرانی</option>
-                            <option value="علاج استلال عراقی">علاج استلال عراقی</option>
-                            <option value="ترجمه و تصدیق مباشره">ترجمه و تصدیق مباشره</option>
-                            <option value="ترجمه و تصدیق قبول نهایی">ترجمه و تصدیق قبول نهایی</option>
-                            <option value="ترجمه و تصدیق دانشنامه">ترجمه و تصدیق دانشنامه</option>
-                            <option value="ترجمه مدرک">ترجمه مدرک</option>
-                            <option value="تجلید">تجلید</option>
-                            <option value="همانند جویی">همانند جویی</option>
-                            <option value="ایران داک عنوان">ایران داک عنوان</option>
-                            <option value="ایران داک پروپوزال">ایران داک پروپوزال</option>
-                            <option value="ایران داک پایان نامه">ایران داک پایان نامه</option>
-                            <option value="سائورگ">سائورگ</option>
-                            <option value="تلخیص متن">تلخیص متن</option>
-                            <option value="ساخت پاور پوینت">ساخت پاور پوینت</option>
-                            <option value="تعقیب اجراعات قبل مباشره">تعقیب اجراعات قبل مباشره</option>
-                            <option value="تعقیب اجراعات بعد مباشره">تعقیب اجراعات بعد مباشره</option>
-                            <option value="تصدیق مجلدات">تصدیق مجلدات</option>
-                            <option value="تعقیب استماره 1">تعقیب استماره 1</option>
-                            <option value="تعقیب پروپوزال">تعقیب پروپوزال</option>
-                            <option value="گرفتن امر اداری">گرفتن امر اداری</option>
-                            <option value="تعقیب رساله">تعقیب رساله</option>
-                            <option value="تعقیب اجراعات روز مناقشه">تعقیب اجراعات روز مناقشه</option>
-                            <option value="سایر">سایر</option>
-                        </select>
-                        <input type="text" class="form-control" id="student-filter" placeholder="جستجو در نام دانشجو..." 
-                               onkeyup="OrdersModule.filterOrders().catch(console.error)">
-                        <button class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium btn"
-                                onclick="OrdersModule.clearFilters().catch(console.error)">>
-                            <i class="fas fa-times ml-2"></i>پاک کردن فیلتر
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Orders Table -->
-                <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">شماره</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">دانشجو</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">نوع سفارش</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">وضعیت</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">پیشرفت</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">مبلغ</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">عملیات</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200" id="orders-table-body">
-                                ${this.getOrdersTableRows(orders, userRole)}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        `;
-        } catch (error) {
-            console.error('❌ Error in getOrdersContent:', error);
-            if (typeof debugLogger !== 'undefined') {
-                debugLogger('Error in getOrdersContent', 'error', { message: error.message });
-            }
-            return `<div class="text-center text-red-500 py-8">
-                <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
-                <p class="mb-4">خطا در بارگذاری سفارشات: ${error.message}</p>
-                <button onclick="location.reload()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-                    تلاش مجدد
-                </button>
-            </div>`;
+    }
+
+    function escapeHtml(str) {
+        if (str == null) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function getCurrentUserSafe() {
+        if (typeof getCurrentUser === 'function') return getCurrentUser();
+        if (typeof ModalsModule !== 'undefined' && ModalsModule.getCurrentUser) {
+            return ModalsModule.getCurrentUser();
         }
-    },
-    
-    // Get filtered orders based on user role
-    async getFilteredOrders(userRole, userId) {
-        console.log('🔵 getFilteredOrders called:', { userRole, userId });
-        
-        // Try to fetch from backend first
-        if (window.APIOrdersModule) {
-            console.log('🔵 Trying APIOrdersModule...');
-            try {
-                const backendOrders = await APIOrdersModule.getOrders();
-                if (backendOrders && Array.isArray(backendOrders)) {
-                    console.log('🔵 Got backend orders:', backendOrders.length);
-                    // Convert backend format to frontend format
-                    const orders = backendOrders.map(order => this.convertBackendOrder(order));
-                    // Save to localStorage as cache
-                    DataModule.saveOrders(orders);
-                    return orders.sort((a, b) => new Date(b.createdAt || b.created_at) - new Date(a.createdAt || a.created_at));
-                }
-            } catch (error) {
-                console.warn('Backend not available, using localStorage:', error);
-                if (typeof debugLogger !== 'undefined') {
-                    debugLogger('Backend not available, using localStorage', 'warning', error);
-                }
-            }
-        }
-        
-        // Fallback to localStorage
-        console.log('🔵 Using localStorage fallback...');
-        console.log('🔵 DataModule exists:', typeof DataModule !== 'undefined');
-        
-        if (typeof DataModule === 'undefined') {
-            console.error('❌ DataModule is undefined!');
-            return [];
-        }
-        
-        let orders = DataModule.getOrders();
-        console.log('🔵 DataModule.getOrders() returned:', orders?.length, 'orders');
-        
-        if (!Array.isArray(orders)) {
-            console.error('❌ Orders is not an array:', typeof orders);
-            orders = [];
-        }
-        
-        // Sort by created_at descending (newest first)
-        orders = orders.sort((a, b) => new Date(b.createdAt || b.created_at) - new Date(a.createdAt || a.created_at));
-        
-        console.log('🔵 Filtering for role:', userRole);
-        console.log('🔵 CONFIG.ROLES:', CONFIG?.ROLES);
-        
-        let filteredOrders;
-        switch(userRole) {
-            case CONFIG.ROLES.MANAGER:
-                // مدیر همه سفارشات را می‌بیند
-                console.log('🔵 Manager - showing all orders');
-                filteredOrders = orders;
-                break;
-            case CONFIG.ROLES.STUDENT:
-                filteredOrders = orders.filter(o => o.studentId === userId);
-                break;
-            case CONFIG.ROLES.DOCTOR:
-            case CONFIG.ROLES.AGENT:
-                filteredOrders = orders.filter(o => o.assignedDoctorId === userId);
-                break;
-            case CONFIG.ROLES.employee:
-                filteredOrders = orders.filter(o => [CONFIG.ORDER_STATUS.PENDING, CONFIG.ORDER_STATUS.IN_PROGRESS].includes(o.status));
-                break;
-            case CONFIG.ROLES.TRANSLATOR:
-                filteredOrders = orders.filter(o => o.type === CONFIG.ORDER_TYPES.TRANSLATION && o.assignedDoctorId === userId);
-                break;
-            default:
-                // برای نقش‌های نامشخص هم همه سفارشات را نشان بده
-                console.log('🔵 Unknown role, showing all orders');
-                filteredOrders = orders;
-        }
-        
-        console.log('🔵 Filtered orders:', filteredOrders?.length);
-        if (typeof debugLogger !== 'undefined') {
-            debugLogger('Orders filtered', 'info', { role: userRole, count: filteredOrders?.length });
-        }
-        
-        return filteredOrders;
-    },
-    
-    // Convert backend order format to frontend format
-    convertBackendOrder(backendOrder) {
+        return null;
+    }
+
+    function loadOrders() {
+        if (typeof DataModule === 'undefined') return [];
+        const orders = DataModule.getOrders();
+        return Array.isArray(orders) ? orders : [];
+    }
+
+    function saveOrders(orders) {
+        if (typeof DataModule === 'undefined') return false;
+        return DataModule.saveOrders(orders);
+    }
+
+    function normalizeOrder(raw) {
+        if (!raw || typeof raw !== 'object') return null;
+        return {
+            id: raw.id || ('ord_' + Date.now()),
+            studentId: raw.studentId || null,
+            studentName: raw.studentName || 'نامشخص',
+            university: raw.university || 'نامشخص',
+            field: raw.field || '',
+            degree: raw.degree || '',
+            type: raw.type || 'سایر',
+            status: raw.status || ORDER_STATUS.PENDING,
+            stage: raw.stage || '',
+            progress: parseInt(raw.progress, 10) || 0,
+            assignedDoctorId: raw.assignedDoctorId || null,
+            assignedDoctor: raw.assignedDoctor || null,
+            deadline: raw.deadline || '',
+            deadlineTime: raw.deadlineTime || '',
+            deadlineDateTime: raw.deadlineDateTime || null,
+            totalAmount: parseFloat(raw.totalAmount) || 0,
+            paidAmount: parseFloat(raw.paidAmount) || 0,
+            doctorShare: parseFloat(raw.doctorShare) || 0,
+            managerShare: parseFloat(raw.managerShare) || 0,
+            paymentStatus: raw.paymentStatus || 'pending',
+            description: raw.description || '',
+            title: raw.title || '',
+            isCustomOrder: !!raw.isCustomOrder,
+            createdAt: raw.createdAt || new Date().toISOString(),
+            updatedAt: raw.updatedAt || raw.createdAt || new Date().toISOString(),
+            approvedAt: raw.approvedAt || null,
+            assignedAt: raw.assignedAt || null,
+            completedAt: raw.completedAt || null,
+            rejectionReason: raw.rejectionReason || '',
+            rejectionHistory: Array.isArray(raw.rejectionHistory) ? raw.rejectionHistory : [],
+            tasks: Array.isArray(raw.tasks) ? raw.tasks : [],
+            workList: Array.isArray(raw.workList) ? raw.workList : [],
+            workLog: Array.isArray(raw.workLog) ? raw.workLog : [],
+            files: Array.isArray(raw.files) ? raw.files : [],
+            passportNumber: raw.passportNumber || '',
+            phone: raw.phone || ''
+        };
+    }
+
+    function sortOrders(orders) {
+        return [...orders].sort(
+            (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+        );
+    }
+
+    async function fetchOrdersFromStorage() {
+        // Always use localStorage - API disabled for offline mode
+        log('Using localStorage for orders (offline mode)', 'info');
+        return sortOrders(loadOrders().map(normalizeOrder).filter(Boolean));
+    }
+
+    function convertBackendOrder(backendOrder) {
         return {
             id: backendOrder.id,
             studentId: backendOrder.student,
@@ -246,480 +150,759 @@ const OrdersModule = {
             stage: backendOrder.stage || '',
             progress: backendOrder.progress || 0,
             assignedDoctorId: backendOrder.assigned_doctor,
-            assignedDoctorName: backendOrder.assigned_doctor_name,
+            assignedDoctor: backendOrder.assigned_doctor_name,
             deadline: backendOrder.deadline,
-            estimatedDays: backendOrder.estimated_days || 0,
             totalAmount: backendOrder.total_amount || 0,
             doctorShare: backendOrder.doctor_share || 0,
             managerShare: backendOrder.manager_share || 0,
             paymentStatus: backendOrder.payment_status || 'pending',
             paidAmount: backendOrder.paid_amount || 0,
             description: backendOrder.description || '',
-            passportNumber: backendOrder.passport_number || '',
             createdAt: backendOrder.created_at,
             updatedAt: backendOrder.updated_at,
-            approvedAt: backendOrder.approved_at,
-            assignedAt: backendOrder.assigned_at,
-            completedAt: backendOrder.completed_at,
-            tasks: backendOrder.tasks || [],
-            isOverdue: backendOrder.is_overdue || false,
-            daysRemaining: backendOrder.days_remaining || 0,
+            tasks: backendOrder.tasks || []
         };
-    },
-    
-    // Filter orders based on current filter values - حل مشکل دوم
-    async filterOrders() {
-        try {
-            const statusFilter = document.getElementById('status-filter')?.value || '';
-            const typeFilter = document.getElementById('type-filter')?.value || '';
-            const studentFilter = document.getElementById('student-filter')?.value || '';
-            
-            debugLogger('Filtering orders', 'info', { statusFilter, typeFilter, studentFilter });
-            
-            // Get current user info
-            const currentUser = getCurrentUser();
-            let orders = await this.getFilteredOrders(currentUser.role, currentUser.id);
-            
-            // Apply filters
-            if (statusFilter) {
-                orders = orders.filter(order => order.status === statusFilter);
-            }
-            
-            if (typeFilter) {
-                orders = orders.filter(order => order.type === typeFilter);
-            }
-            
-            if (studentFilter) {
-                orders = orders.filter(order => 
-                    order.studentName.toLowerCase().includes(studentFilter.toLowerCase()) ||
-                    order.university.toLowerCase().includes(studentFilter.toLowerCase())
+    }
+
+    function filterByRole(orders, userRole, userId) {
+        const R = CONFIG?.ROLES || {};
+        switch (userRole) {
+            case R.MANAGER:
+                return orders;
+            case R.STUDENT:
+                return orders.filter(o => o.studentId === userId);
+            case R.DOCTOR:
+            case R.AGENT:
+                return orders.filter(o => o.assignedDoctorId === userId);
+            case R.employee:
+                return orders.filter(o =>
+                    [ORDER_STATUS.PENDING, ORDER_STATUS.APPROVED, ORDER_STATUS.IN_PROGRESS].includes(o.status)
                 );
-            }
-            
-            // Update table body
-            const tableBody = document.getElementById('orders-table-body');
-            if (tableBody) {
-                tableBody.innerHTML = this.getOrdersTableRows(orders, currentUser.role);
-                debugLogger('Orders table updated', 'success', { filteredCount: orders.length });
-            }
-            
-        } catch (error) {
-            debugLogger('Error filtering orders', 'error', error);
-            UTILS.showNotification('خطا در فیلتر کردن سفارشات', 'error');
+            case R.TRANSLATOR:
+                return orders.filter(o =>
+                    o.type === (CONFIG?.ORDER_TYPES?.TRANSLATION || 'ترجمه رساله') &&
+                    o.assignedDoctorId === userId
+                );
+            default:
+                return orders;
         }
-    },
-    
-    // Clear all filters
-    async clearFilters() {
-        try {
-            document.getElementById('status-filter').value = '';
-            document.getElementById('type-filter').value = '';
-            document.getElementById('student-filter').value = '';
-            await this.filterOrders();
-            UTILS.showNotification('فیلترها پاک شدند', 'success');
-        } catch (error) {
-            debugLogger('Error clearing filters', 'error', error);
+    }
+
+    async function getFilteredOrders(userRole, userId) {
+        const orders = await fetchOrdersFromStorage();
+        return filterByRole(orders, userRole, userId);
+    }
+
+    function getOrderById(orderId) {
+        return loadOrders().find(o => o.id === orderId) || null;
+    }
+
+    function updateOrder(orderId, updates) {
+        const orders = loadOrders();
+        const index = orders.findIndex(o => o.id === orderId);
+        if (index === -1) return null;
+
+        orders[index] = {
+            ...orders[index],
+            ...updates,
+            updatedAt: new Date().toISOString()
+        };
+        saveOrders(orders);
+        return orders[index];
+    }
+
+    function formatAmount(amount) {
+        if (typeof UTILS !== 'undefined' && UTILS.formatCurrency) {
+            return UTILS.formatCurrency(amount || 0);
         }
-    },
-    
-    // Generate table rows for orders
-    getOrdersTableRows(orders, userRole) {
-        if (orders.length === 0) {
+        return (amount || 0).toLocaleString('fa-IR') + ' تومان';
+    }
+
+    function getStatusText(status) {
+        return STATUS_LABELS[status] || status || 'نامشخص';
+    }
+
+    function getStatusClass(status) {
+        return STATUS_CLASSES[status] || 'bg-gray-100 text-gray-800';
+    }
+
+    function canManageOrders(role) {
+        const R = CONFIG?.ROLES || {};
+        return role === R.MANAGER || role === R.employee;
+    }
+
+    function renderFilterOptions() {
+        const statusOptions = Object.entries(STATUS_LABELS)
+            .map(([val, label]) => `<option value="${val}">${label}</option>`)
+            .join('');
+        const typeOptions = WORK_TYPES
+            .map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`)
+            .join('');
+        return { statusOptions, typeOptions };
+    }
+
+    function openModal(name) {
+        if (typeof ModalsModule !== 'undefined' && ModalsModule.getAlpineData) {
+            const app = ModalsModule.getAlpineData();
+            if (app) {
+                app.showModal = name;
+                return;
+            }
+        }
+        const appEl = document.querySelector('[x-data]');
+        if (appEl && typeof Alpine !== 'undefined' && Alpine.$data) {
+            Alpine.$data(appEl).showModal = name;
+        }
+    }
+
+    function renderCreateButtons(userRole) {
+        const R = CONFIG?.ROLES || {};
+        if (userRole === R.MANAGER) {
+            return `
+                <button type="button" onclick="OrdersModule.openModal('quickOrder')"
+                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium btn">
+                    <i class="fas fa-bolt ml-2"></i> سفارش سریع
+                </button>
+                <button type="button" onclick="OrdersModule.openModal('createProject')"
+                        class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium btn">
+                    <i class="fas fa-plus-circle ml-2"></i> ایجاد سفارش جدید
+                </button>`;
+        }
+        if (userRole === R.STUDENT) {
+            return `
+                <button type="button" onclick="OrdersModule.openModal('quickOrder')"
+                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium btn">
+                    <i class="fas fa-bolt ml-2"></i> سفارش سریع
+                </button>
+                <button type="button" onclick="OrdersModule.openModal('createProject')"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium btn">
+                    <i class="fas fa-plus ml-2"></i> ایجاد سفارش جدید
+                </button>`;
+        }
+        return '';
+    }
+
+    function renderActionButtons(order, userRole) {
+        const safeId = escapeHtml(order.id);
+        let html = `
+            <button type="button" onclick="OrdersModule.viewDetails('${safeId}')"
+                    class="text-blue-600 hover:text-blue-900" title="مشاهده جزئیات">
+                <i class="fas fa-eye"></i>
+            </button>`;
+
+        if (!canManageOrders(userRole)) return html;
+
+        html += `
+            <button type="button" onclick="OrdersModule.editOrder('${safeId}')"
+                    class="text-green-600 hover:text-green-900" title="ویرایش">
+                <i class="fas fa-edit"></i>
+            </button>`;
+
+        if (order.status === ORDER_STATUS.PENDING) {
+            html += `
+                <button type="button" onclick="OrdersModule.approveOrder('${safeId}')"
+                        class="text-green-600 hover:text-green-900" title="تایید">
+                    <i class="fas fa-check"></i>
+                </button>
+                <button type="button" onclick="OrdersModule.openRejectModal('${safeId}')"
+                        class="text-red-600 hover:text-red-900" title="رد">
+                    <i class="fas fa-times"></i>
+                </button>`;
+        }
+
+        if (order.status === ORDER_STATUS.APPROVED && !order.assignedDoctorId) {
+            html += `
+                <button type="button" onclick="OrdersModule.openAssignment('${safeId}')"
+                        class="text-purple-600 hover:text-purple-900" title="تخصیص">
+                    <i class="fas fa-user-plus"></i>
+                </button>`;
+        }
+
+        if (order.status === ORDER_STATUS.IN_PROGRESS) {
+            html += `
+                <button type="button" onclick="OrdersModule.completeOrder('${safeId}')"
+                        class="text-green-600 hover:text-green-900" title="تکمیل">
+                    <i class="fas fa-check-double"></i>
+                </button>`;
+        }
+
+        return html;
+    }
+
+    function getOrdersTableRows(orders, userRole) {
+        if (!orders.length) {
             return `
                 <tr>
-                    <td colspan="7" class="px-6 py-4 text-center text-gray-500">
-                        <i class="fas fa-inbox text-4xl mb-2"></i>
+                    <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                        <i class="fas fa-inbox text-4xl mb-2 block opacity-40"></i>
                         <p>سفارشی موجود نیست</p>
                     </td>
-                </tr>
-            `;
+                </tr>`;
         }
-        
-        return orders.map(order => `
+
+        return orders.map(order => {
+            const displayType = order.isCustomOrder ? (order.title || order.type) : order.type;
+            const safeId = escapeHtml(order.id);
+            return `
             <tr class="hover:bg-gray-50">
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    ${order.id.slice(-6)}
+                    ${safeId.slice(-8)}
+                    ${order.isCustomOrder ? '<span class="mr-1 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">سفارشی</span>' : ''}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">${order.studentName}</div>
-                    <div class="text-sm text-gray-500">${order.university}</div>
+                    <div class="text-sm font-medium text-gray-900">${escapeHtml(order.studentName)}</div>
+                    <div class="text-sm text-gray-500">${escapeHtml(order.university)}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">${order.type}</div>
-                    <div class="text-sm text-gray-500">${order.degree}</div>
+                    <div class="text-sm text-gray-900">${escapeHtml(displayType)}</div>
+                    <div class="text-sm text-gray-500">${escapeHtml(order.degree || '')}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${this.getStatusClass(order.status)}">
-                        ${this.getStatusText(order.status)}
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(order.status)}">
+                        ${getStatusText(order.status)}
                     </span>
+                    ${order.assignedDoctor ? `<div class="text-xs text-gray-500 mt-1">${escapeHtml(order.assignedDoctor)}</div>` : ''}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
-                        <div class="flex-1 bg-gray-200 rounded-full h-2 ml-2">
-                            <div class="bg-blue-600 h-2 rounded-full progress-bar" style="width: ${order.progress}%"></div>
+                        <div class="flex-1 bg-gray-200 rounded-full h-2 ml-2 min-w-[60px]">
+                            <div class="bg-blue-600 h-2 rounded-full" style="width:${Math.min(100, order.progress)}%"></div>
                         </div>
                         <span class="text-sm text-gray-900">${order.progress}%</span>
                     </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">${UTILS.formatCurrency(order.totalAmount)}</div>
-                    <div class="text-sm text-gray-500">پرداخت: ${UTILS.formatCurrency(order.paidAmount || 0)}</div>
+                    <div class="text-sm text-gray-900">${formatAmount(order.totalAmount)}</div>
+                    <div class="text-sm text-gray-500">پرداخت: ${formatAmount(order.paidAmount)}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div class="flex space-x-2 space-x-reverse">
-                        <button onclick="viewOrderDetails('${order.id}')" 
-                                class="text-blue-600 hover:text-blue-900" title="مشاهده جزئیات">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        ${this.getActionButtons(order, userRole)}
+                        ${renderActionButtons(order, userRole)}
                     </div>
                 </td>
-            </tr>
-        `).join('');
-    },
-    
-    // Get action buttons based on user role and order status
-    getActionButtons(order, userRole) {
-        let buttons = '';
-        
-        // Manager actions
-        if (userRole === CONFIG.ROLES.MANAGER) {
-            buttons += `
-                <button onclick="window.editOrder('${order.id}')" 
-                        class="text-green-600 hover:text-green-900" title="ویرایش">
-                    <i class="fas fa-edit"></i>
-                </button>
-            `;
-            
-            // Approve/Reject for pending orders
-            if (order.status === CONFIG.ORDER_STATUS.PENDING) {
-                buttons += `
-                    <button onclick="window.approveOrder('${order.id}')" 
-                            class="text-green-600 hover:text-green-900" title="تایید">
-                        <i class="fas fa-check"></i>
-                    </button>
-                    <button onclick="window.rejectOrder('${order.id}')" 
-                            class="text-red-600 hover:text-red-900" title="رد">
-                        <i class="fas fa-times"></i>
-                    </button>
-                `;
-            }
-            
-            // Assign for approved orders
-            if (order.status === CONFIG.ORDER_STATUS.APPROVED && !order.assignedDoctorId) {
-                buttons += `
-                    <button onclick="showAssignmentModal('${order.id}')" 
-                            class="text-purple-600 hover:text-purple-900" title="تخصیص">
-                        <i class="fas fa-arrow-right"></i>
-                    </button>
-                `;
-            }
-        }
-        
-        // employee actions
-        if (userRole === CONFIG.ROLES.employee) {
-            // Approve/Reject for pending orders
-            if (order.status === CONFIG.ORDER_STATUS.PENDING) {
-                buttons += `
-                    <button onclick="window.approveOrder('${order.id}')" 
-                            class="text-green-600 hover:text-green-900" title="تایید">
-                        <i class="fas fa-check"></i>
-                    </button>
-                    <button onclick="window.rejectOrder('${order.id}')" 
-                            class="text-red-600 hover:text-red-900" title="رد">
-                        <i class="fas fa-times"></i>
-                    </button>
-                `;
-            }
-            
-            // Assign for approved orders
-            if (order.status === CONFIG.ORDER_STATUS.APPROVED && !order.assignedDoctorId) {
-                buttons += `
-                    <button onclick="showAssignmentModal('${order.id}')" 
-                            class="text-purple-600 hover:text-purple-900" title="تخصیص به عامل">
-                        <i class="fas fa-arrow-right"></i>
-                    </button>
-                `;
-            }
-            
-            // Review in-progress orders
-            if (order.status === CONFIG.ORDER_STATUS.IN_PROGRESS) {
-                buttons += `
-                    <button onclick="window.approveOrder('${order.id}')" 
-                            class="text-green-600 hover:text-green-900" title="تایید کار">
-                        <i class="fas fa-check-double"></i>
-                    </button>
-                    <button onclick="window.rejectOrder('${order.id}')" 
-                            class="text-red-600 hover:text-red-900" title="رد و بازگشت">
-                        <i class="fas fa-undo"></i>
-                    </button>
-                `;
-            }
-        }
-        
-        return buttons;
-    },
-    
-    // Helper methods
-    getStatusClass(status) {
-        const classes = {
-            [CONFIG.ORDER_STATUS.PENDING]: 'bg-yellow-100 text-yellow-800',
-            [CONFIG.ORDER_STATUS.IN_PROGRESS]: 'bg-blue-100 text-blue-800',
-            [CONFIG.ORDER_STATUS.COMPLETED]: 'bg-green-100 text-green-800'
-        };
-        return classes[status] || 'bg-gray-100 text-gray-800';
-    },
-    
-    getStatusText(status) {
-        const texts = {
-            [CONFIG.ORDER_STATUS.PENDING]: 'در انتظار',
-            [CONFIG.ORDER_STATUS.IN_PROGRESS]: 'در حال انجام',
-            [CONFIG.ORDER_STATUS.COMPLETED]: 'تکمیل شده'
-        };
-        return texts[status] || status;
-    },
+            </tr>`;
+        }).join('');
+    }
 
-    // ==================== ORDER MANAGEMENT FUNCTIONS ====================
-    
-    // Create new order
-    async createOrder(orderData) {
+    function renderStatsBar(orders) {
+        const counts = { pending: 0, approved: 0, in_progress: 0, completed: 0, rejected: 0 };
+        orders.forEach(o => {
+            if (counts[o.status] !== undefined) counts[o.status]++;
+        });
+        const items = [
+            { key: 'pending', label: 'در انتظار', cls: 'border-yellow-400' },
+            { key: 'approved', label: 'تایید شده', cls: 'border-indigo-400' },
+            { key: 'in_progress', label: 'در حال انجام', cls: 'border-blue-400' },
+            { key: 'completed', label: 'تکمیل', cls: 'border-green-400' },
+            { key: 'rejected', label: 'رد شده', cls: 'border-red-400' }
+        ];
+        return `
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                ${items.map(({ key, label, cls }) => `
+                    <div class="bg-white rounded-lg shadow p-3 text-center border-r-4 ${cls}">
+                        <div class="text-2xl font-bold text-gray-800">${counts[key]}</div>
+                        <div class="text-xs text-gray-500">${label}</div>
+                    </div>`).join('')}
+            </div>`;
+    }
+
+    async function getOrdersContent(userRole, userId) {
         try {
-            // Try backend first
-            if (window.APIOrdersModule) {
-                try {
-                    const backendOrder = await APIOrdersModule.createOrder(orderData);
-                    if (backendOrder) {
-                        UTILS.showNotification('سفارش با موفقیت در سیستم ثبت شد', 'success');
-                        // Refresh orders list
-                        this.refreshOrders();
-                        return backendOrder;
-                    }
-                } catch (error) {
-                    console.warn('Backend create failed, using localStorage:', error);
-                }
-            }
-            
-            // Fallback to localStorage
-            const orders = DataModule.getOrders();
-            const newOrder = {
-                id: 'ord_' + Date.now(),
-                ...orderData,
-                status: 'pending',
-                progress: 0,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-            };
-            
-            orders.push(newOrder);
-            DataModule.saveOrders(orders);
-            UTILS.showNotification('سفارش در حافظه محلی ذخیره شد', 'success');
-            this.refreshOrders();
-            return newOrder;
-            
+            const orders = await getFilteredOrders(userRole, userId);
+            const { statusOptions, typeOptions } = renderFilterOptions();
+
+            return `
+            <div class="space-y-6">
+                <div class="flex justify-between items-center flex-wrap gap-3">
+                    <h2 class="text-2xl font-bold text-gray-800">مدیریت سفارشات</h2>
+                    <div class="flex space-x-3 space-x-reverse flex-wrap">
+                        ${renderCreateButtons(userRole)}
+                    </div>
+                </div>
+
+                ${renderStatsBar(orders)}
+
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <select class="form-control" id="status-filter"
+                                onchange="OrdersModule.filterOrders()">
+                            <option value="">همه وضعیت‌ها</option>
+                            ${statusOptions}
+                        </select>
+                        <select class="form-control" id="type-filter"
+                                onchange="OrdersModule.filterOrders()">
+                            <option value="">همه انواع کارها</option>
+                            ${typeOptions}
+                        </select>
+                        <input type="text" class="form-control" id="student-filter"
+                               placeholder="جستجو در نام دانشجو..."
+                               onkeyup="OrdersModule.filterOrders()">
+                        <button type="button"
+                                class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium btn"
+                                onclick="OrdersModule.clearFilters()">
+                            <i class="fas fa-times ml-2"></i> پاک کردن فیلتر
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">شماره</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">دانشجو</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">نوع سفارش</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">وضعیت</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">پیشرفت</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">مبلغ</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">عملیات</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200" id="orders-table-body">
+                                ${getOrdersTableRows(orders, userRole)}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>`;
         } catch (error) {
-            console.error('Failed to create order:', error);
-            UTILS.showNotification('خطا در ایجاد سفارش', 'error');
-            throw error;
-        }
-    },
-    
-    // Approve order
-    async approveOrder(orderId) {
-        try {
-            // Try backend first
-            if (window.APIOrdersModule) {
-                try {
-                    const result = await APIOrdersModule.approveOrder(orderId);
-                    if (result) {
-                        UTILS.showNotification('سفارش تایید شد', 'success');
-                        this.refreshOrders();
-                        return result;
-                    }
-                } catch (error) {
-                    console.warn('Backend approve failed, using localStorage:', error);
-                }
-            }
-            
-            // Fallback to localStorage
-            const orders = DataModule.getOrders();
-            const orderIndex = orders.findIndex(o => o.id === orderId);
-            
-            if (orderIndex === -1) {
-                throw new Error('سفارش یافت نشد');
-            }
-            
-            orders[orderIndex].status = 'in_progress';
-            orders[orderIndex].approvedAt = new Date().toISOString();
-            orders[orderIndex].updatedAt = new Date().toISOString();
-            
-            DataModule.saveOrders(orders);
-            UTILS.showNotification('سفارش تایید شد', 'success');
-            this.refreshOrders();
-            
-        } catch (error) {
-            console.error('Failed to approve order:', error);
-            UTILS.showNotification('خطا در تایید سفارش', 'error');
-        }
-    },
-    
-    // Reject order
-    async rejectOrder(orderId, reason = '') {
-        try {
-            // Try backend first
-            if (window.APIOrdersModule) {
-                try {
-                    const result = await APIOrdersModule.rejectOrder(orderId, reason);
-                    if (result) {
-                        UTILS.showNotification('سفارش رد شد', 'success');
-                        this.refreshOrders();
-                        return result;
-                    }
-                } catch (error) {
-                    console.warn('Backend reject failed, using localStorage:', error);
-                }
-            }
-            
-            // Fallback to localStorage
-            const orders = DataModule.getOrders();
-            const orderIndex = orders.findIndex(o => o.id === orderId);
-            
-            if (orderIndex === -1) {
-                throw new Error('سفارش یافت نشد');
-            }
-            
-            orders[orderIndex].status = 'rejected';
-            orders[orderIndex].rejectionReason = reason;
-            orders[orderIndex].updatedAt = new Date().toISOString();
-            
-            DataModule.saveOrders(orders);
-            UTILS.showNotification('سفارش رد شد', 'success');
-            this.refreshOrders();
-            
-        } catch (error) {
-            console.error('Failed to reject order:', error);
-            UTILS.showNotification('خطا در رد سفارش', 'error');
-        }
-    },
-    
-    // Assign order to agent
-    async assignOrder(orderId, agentId) {
-        try {
-            // Try backend first
-            if (window.APIOrdersModule) {
-                try {
-                    const result = await APIOrdersModule.assignOrder(orderId, agentId);
-                    if (result) {
-                        UTILS.showNotification('سفارش به عامل تخصیص داده شد', 'success');
-                        // Create task for agent
-                        this.createTaskForAgent(orderId, agentId);
-                        this.refreshOrders();
-                        return result;
-                    }
-                } catch (error) {
-                    console.warn('Backend assign failed, using localStorage:', error);
-                }
-            }
-            
-            // Fallback to localStorage
-            const orders = DataModule.getOrders();
-            const orderIndex = orders.findIndex(o => o.id === orderId);
-            
-            if (orderIndex === -1) {
-                throw new Error('سفارش یافت نشد');
-            }
-            
-            orders[orderIndex].assignedDoctorId = agentId;
-            orders[orderIndex].assignedAt = new Date().toISOString();
-            orders[orderIndex].updatedAt = new Date().toISOString();
-            
-            DataModule.saveOrders(orders);
-            UTILS.showNotification('سفارش به عامل تخصیص داده شد', 'success');
-            
-            // Create task for agent
-            this.createTaskForAgent(orderId, agentId);
-            this.refreshOrders();
-            
-        } catch (error) {
-            console.error('Failed to assign order:', error);
-            UTILS.showNotification('خطا در تخصیص سفارش', 'error');
-        }
-    },
-    
-    // Create task for agent when order is assigned
-    createTaskForAgent(orderId, agentId) {
-        try {
-            const orders = DataModule.getOrders();
-            const order = orders.find(o => o.id === orderId);
-            
-            if (!order) {
-                console.error('Order not found for task creation');
-                return;
-            }
-            
-            // Get agent info
-            const users = DataModule.getUsers();
-            const agent = users.find(u => u.id === agentId);
-            
-            if (!agent) {
-                console.error('Agent not found');
-                return;
-            }
-            
-            // Create task in TasksModule
-            if (window.TasksModule && typeof TasksModule.createTaskFromOrder === 'function') {
-                TasksModule.createTaskFromOrder(order, agent);
-                debugLogger(`Task created for agent ${agent.name} from order ${orderId}`, 'success');
-            } else {
-                console.warn('TasksModule not available');
-            }
-            
-        } catch (error) {
-            console.error('Error creating task for agent:', error);
-        }
-    },
-    
-    // Refresh orders list
-    async refreshOrders() {
-        const currentUser = getCurrentUser();
-        if (currentUser) {
-            const content = await this.getOrdersContent(currentUser.role, currentUser.id);
-            const ordersContainer = document.querySelector('[x-show="currentPage === \'orders\'"]');
-            if (ordersContainer) {
-                ordersContainer.innerHTML = content;
-            }
+            log('Error in getOrdersContent', 'error', error);
+            return `
+                <div class="text-center text-red-500 py-8">
+                    <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
+                    <p class="mb-4">خطا در بارگذاری سفارشات: ${escapeHtml(error.message)}</p>
+                    <button type="button" onclick="OrdersModule.refreshOrders()"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                        تلاش مجدد
+                    </button>
+                </div>`;
         }
     }
-};
 
-// Global functions for window scope
+    async function filterOrders() {
+        try {
+            const statusFilter = document.getElementById('status-filter')?.value || '';
+            const typeFilter = document.getElementById('type-filter')?.value || '';
+            const studentFilter = (document.getElementById('student-filter')?.value || '').trim().toLowerCase();
+
+            const currentUser = getCurrentUserSafe();
+            if (!currentUser) return;
+
+            let orders = await getFilteredOrders(currentUser.role, currentUser.id);
+
+            if (statusFilter) orders = orders.filter(o => o.status === statusFilter);
+            if (typeFilter) {
+                orders = orders.filter(o =>
+                    o.type === typeFilter ||
+                    (o.isCustomOrder && (o.title === typeFilter || o.type === typeFilter))
+                );
+            }
+            if (studentFilter) {
+                orders = orders.filter(o =>
+                    (o.studentName || '').toLowerCase().includes(studentFilter) ||
+                    (o.university || '').toLowerCase().includes(studentFilter) ||
+                    (o.title || '').toLowerCase().includes(studentFilter)
+                );
+            }
+
+            const tableBody = document.getElementById('orders-table-body');
+            if (tableBody) {
+                tableBody.innerHTML = getOrdersTableRows(orders, currentUser.role);
+            }
+        } catch (error) {
+            log('Error filtering orders', 'error', error);
+            notify('خطا در فیلتر کردن سفارشات', 'error');
+        }
+    }
+
+    async function clearFilters() {
+        const statusEl = document.getElementById('status-filter');
+        const typeEl = document.getElementById('type-filter');
+        const studentEl = document.getElementById('student-filter');
+        if (statusEl) statusEl.value = '';
+        if (typeEl) typeEl.value = '';
+        if (studentEl) studentEl.value = '';
+        await filterOrders();
+        notify('فیلترها پاک شدند', 'success');
+    }
+
+    async function refreshOrders() {
+        const currentUser = getCurrentUserSafe();
+        if (!currentUser) return;
+
+        const content = await getOrdersContent(currentUser.role, currentUser.id);
+
+        const appEl = document.querySelector('[x-data]');
+        if (appEl && typeof Alpine !== 'undefined' && Alpine.$data) {
+            const app = Alpine.$data(appEl);
+            if (app) {
+                app.ordersContent = content;
+                return;
+            }
+        }
+
+        const container = document.querySelector('[x-show="currentPage === \'orders\'"]');
+        if (container) container.innerHTML = content;
+    }
+
+    function viewDetails(orderId) {
+        if (typeof OrderPagesModule !== 'undefined') {
+            OrderPagesModule.showOrderPage(orderId);
+            return;
+        }
+        if (typeof window.viewOrderDetails === 'function') {
+            window.viewOrderDetails(orderId);
+            return;
+        }
+        notify('ماژول جزئیات سفارش در دسترس نیست', 'error');
+    }
+
+    function openAssignment(orderId) {
+        if (typeof AssignmentModule !== 'undefined') {
+            AssignmentModule.showModal(orderId);
+            return;
+        }
+        if (typeof window.showAssignmentModal === 'function') {
+            window.showAssignmentModal(orderId);
+            return;
+        }
+        notify('ماژول تخصیص در دسترس نیست', 'error');
+    }
+
+    async function createOrder(orderData) {
+        const order = normalizeOrder({
+            id: 'ord_' + Date.now(),
+            ...orderData,
+            status: ORDER_STATUS.PENDING,
+            progress: 0,
+            createdAt: new Date().toISOString()
+        });
+
+        const orders = loadOrders();
+        orders.push(order);
+        saveOrders(orders);
+        notify('سفارش ثبت شد', 'success');
+        await refreshOrders();
+        return order;
+    }
+
+    async function approveOrder(orderId) {
+        if (!confirm('آیا از تایید این سفارش اطمینان دارید؟')) return;
+
+        const updated = updateOrder(orderId, {
+            status: ORDER_STATUS.APPROVED,
+            stage: 'تایید شده — آماده تخصیص',
+            approvedAt: new Date().toISOString(),
+            progress: Math.max(5, getOrderById(orderId)?.progress || 0)
+        });
+
+        if (!updated) {
+            notify('سفارش یافت نشد', 'error');
+            return;
+        }
+
+        notify('سفارش تایید شد', 'success');
+        await refreshOrders();
+    }
+
+    async function rejectOrder(orderId) {
+        const reason = prompt('دلیل رد سفارش را وارد کنید:');
+        if (reason === null) return;
+        if (!reason.trim()) {
+            notify('دلیل رد الزامی است', 'error');
+            return;
+        }
+
+        const order = getOrderById(orderId);
+        const currentUser = getCurrentUserSafe() || { id: 'unknown', name: 'کاربر', role: 'manager' };
+        const history = [...(order?.rejectionHistory || []), {
+            date: new Date().toISOString(),
+            reason: reason.trim(),
+            rejectedBy: currentUser.role,
+            rejectedById: currentUser.id,
+            rejectedByName: currentUser.name
+        }];
+
+        const updated = updateOrder(orderId, {
+            status: ORDER_STATUS.REJECTED,
+            stage: 'رد شده',
+            rejectionReason: reason.trim(),
+            rejectionHistory: history
+        });
+
+        if (!updated) {
+            notify('سفارش یافت نشد', 'error');
+            return;
+        }
+
+        notify('سفارش رد شد', 'warning');
+        await refreshOrders();
+    }
+
+    async function completeOrder(orderId) {
+        if (!confirm('آیا این سفارش تکمیل شده است؟')) return;
+
+        const updated = updateOrder(orderId, {
+            status: ORDER_STATUS.COMPLETED,
+            stage: 'تکمیل شده',
+            progress: 100,
+            completedAt: new Date().toISOString()
+        });
+
+        if (!updated) {
+            notify('سفارش یافت نشد', 'error');
+            return;
+        }
+
+        notify('سفارش تکمیل شد', 'success');
+        await refreshOrders();
+    }
+
+    async function assignOrder(orderId, agentId, notes) {
+        const users = typeof DataModule !== 'undefined' ? DataModule.getUsers() : [];
+        const agent = users.find(u => u.id === agentId);
+        if (!agent) {
+            notify('عامل یافت نشد', 'error');
+            return null;
+        }
+
+        const order = getOrderById(orderId);
+        if (!order) {
+            notify('سفارش یافت نشد', 'error');
+            return null;
+        }
+
+        const workLog = [...(order.workLog || []), {
+            id: (typeof UTILS !== 'undefined' && UTILS.generateId) ? UTILS.generateId() : Date.now().toString(),
+            type: 'assignment',
+            message: `سفارش به ${agent.name} تخصیص یافت`,
+            notes: notes || '',
+            timestamp: new Date().toISOString()
+        }];
+
+        const updated = updateOrder(orderId, {
+            assignedDoctorId: agentId,
+            assignedDoctor: agent.name,
+            status: ORDER_STATUS.IN_PROGRESS,
+            stage: 'تخصیص یافته — در حال انجام',
+            assignedAt: new Date().toISOString(),
+            assignmentNotes: notes || '',
+            progress: Math.max(order.progress || 0, 5),
+            workLog,
+            files: order.files || [],
+            questions: order.questions || []
+        });
+
+        if (window.TasksModule && typeof TasksModule.createTaskFromOrder === 'function') {
+            TasksModule.createTaskFromOrder(updated, agent);
+        }
+
+        notify(`سفارش به ${agent.name} تخصیص یافت`, 'success');
+        await refreshOrders();
+        return updated;
+    }
+
+    function closeEditModal() {
+        document.getElementById('order-edit-modal')?.remove();
+    }
+
+    function editOrder(orderId) {
+        const order = getOrderById(orderId);
+        if (!order) {
+            notify('سفارش یافت نشد', 'error');
+            return;
+        }
+
+        closeEditModal();
+
+        const modal = document.createElement('div');
+        modal.id = 'order-edit-modal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4';
+        modal.innerHTML = `
+            <div class="bg-white rounded-lg max-w-lg w-full p-6" onclick="event.stopPropagation()">
+                <h3 class="text-lg font-bold mb-4">ویرایش سفارش</h3>
+                <input type="hidden" id="edit-order-id" value="${escapeHtml(order.id)}">
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">نام دانشجو</label>
+                        <input id="edit-student-name" class="form-control w-full" value="${escapeHtml(order.studentName)}">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">نوع سفارش</label>
+                        <input id="edit-order-type" class="form-control w-full" value="${escapeHtml(order.type)}">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">دانشگاه</label>
+                        <input id="edit-university" class="form-control w-full" value="${escapeHtml(order.university)}">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">مهلت</label>
+                        <input id="edit-deadline" class="form-control w-full" value="${escapeHtml(order.deadline || '')}">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">مبلغ (تومان)</label>
+                        <input id="edit-amount" type="number" min="0" class="form-control w-full" value="${order.totalAmount || 0}">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">توضیحات</label>
+                        <textarea id="edit-description" class="form-control w-full" rows="3">${escapeHtml(order.description || '')}</textarea>
+                    </div>
+                </div>
+                <div class="flex gap-2 mt-6">
+                    <button type="button" onclick="OrdersModule.saveEditOrder()"
+                            class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                        ذخیره
+                    </button>
+                    <button type="button" onclick="OrdersModule.closeEditModal()"
+                            class="flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
+                        انصراف
+                    </button>
+                </div>
+            </div>`;
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) closeEditModal();
+        });
+        document.body.appendChild(modal);
+    }
+
+    function openRejectModal(orderId) {
+        window.currentOrderId = orderId;
+        const order = getOrderById(orderId);
+        if (order) {
+            setTimeout(function () {
+                const infoDiv = document.getElementById('reject-order-info');
+                if (infoDiv) {
+                    infoDiv.innerHTML = `
+                        <p class="font-medium text-red-800">${escapeHtml(order.studentName)}</p>
+                        <p class="text-sm text-red-600">${escapeHtml(order.type)} - ${escapeHtml(order.university)}</p>`;
+                }
+            }, 100);
+        }
+        const alpineData = typeof ModalsModule !== 'undefined' && ModalsModule.getAlpineData
+            ? ModalsModule.getAlpineData() : null;
+        if (alpineData) {
+            alpineData.showModal = 'rejectOrder';
+        }
+    }
+
+    async function submitRejectOrder(orderId, reason) {
+        if (!reason || !reason.trim()) {
+            notify('لطفاً دلیل رد را وارد کنید', 'error');
+            return;
+        }
+        const order = getOrderById(orderId);
+        const currentUser = getCurrentUserSafe() || { id: 'unknown', name: 'کاربر', role: 'manager' };
+        const history = [...(order?.rejectionHistory || []), {
+            date: new Date().toISOString(),
+            reason: reason.trim(),
+            rejectedBy: currentUser.role,
+            rejectedById: currentUser.id,
+            rejectedByName: currentUser.name
+        }];
+        const updated = updateOrder(orderId, {
+            status: ORDER_STATUS.REJECTED,
+            stage: 'رد شده — نیاز به اصلاح',
+            rejectionReason: reason.trim(),
+            rejectionHistory: history
+        });
+        if (!updated) {
+            notify('سفارش یافت نشد', 'error');
+            return;
+        }
+        notify('سفارش رد شد', 'warning');
+        if (typeof ModalsModule !== 'undefined' && ModalsModule.closeModal) {
+            ModalsModule.closeModal();
+        }
+        await refreshOrders();
+    }
+
+    async function saveEditOrder() {
+        const orderId = document.getElementById('edit-order-id')?.value;
+        if (!orderId) return;
+
+        const updated = updateOrder(orderId, {
+            studentName: document.getElementById('edit-student-name')?.value.trim(),
+            type: document.getElementById('edit-order-type')?.value.trim(),
+            university: document.getElementById('edit-university')?.value.trim(),
+            deadline: document.getElementById('edit-deadline')?.value.trim(),
+            totalAmount: parseFloat(document.getElementById('edit-amount')?.value) || 0,
+            description: document.getElementById('edit-description')?.value.trim()
+        });
+
+        if (!updated) {
+            notify('خطا در ذخیره', 'error');
+            return;
+        }
+
+        closeEditModal();
+        notify('سفارش ویرایش شد', 'success');
+        await refreshOrders();
+    }
+
+    function bindGlobals() {
+        window.approveOrder = function (orderId) {
+            OrdersModule.approveOrder(orderId);
+        };
+        window.rejectOrder = function (orderId) {
+            OrdersModule.openRejectModal(orderId);
+        };
+        window.submitRejectOrder = function (reason) {
+            const orderId = window.currentOrderId;
+            if (!orderId) {
+                notify('سفارش انتخاب نشده', 'error');
+                return;
+            }
+            OrdersModule.submitRejectOrder(orderId, reason);
+        };
+        window.viewOrderDetails = function (orderId) {
+            OrdersModule.viewDetails(orderId);
+        };
+        window.showAssignmentModal = function (orderId) {
+            OrdersModule.openAssignment(orderId);
+        };
+        window.editOrder = function (orderId) {
+            OrdersModule.editOrder(orderId);
+        };
+    }
+
+    return {
+        ORDER_STATUS,
+        getOrdersContent,
+        getFilteredOrders,
+        getOrderById,
+        getOrdersTableRows,
+        filterOrders,
+        clearFilters,
+        refreshOrders,
+        createOrder,
+        approveOrder,
+        rejectOrder,
+        submitRejectOrder,
+        openRejectModal,
+        completeOrder,
+        assignOrder,
+        updateOrder,
+        viewDetails,
+        openAssignment,
+        openModal,
+        editOrder,
+        saveEditOrder,
+        closeEditModal,
+        getStatusText,
+        getStatusClass,
+        bindGlobals
+    };
+})();
+
 window.OrdersModule = OrdersModule;
 window.OrdersModuleReady = true;
-console.log('✅ OrdersModule is ready');
+OrdersModule.bindGlobals();
 
-window.approveOrder = async function(orderId) {
-    if (confirm('آیا از تایید این سفارش اطمینان دارید؟')) {
-        await OrdersModule.approveOrder(orderId);
-    }
-};
+document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(function () { OrdersModule.bindGlobals(); }, 800);
+});
 
-window.rejectOrder = async function(orderId) {
-    const reason = prompt('لطفاً دلیل رد سفارش را وارد کنید:');
-    if (reason) {
-        await OrdersModule.rejectOrder(orderId, reason);
-    }
-};
-
-window.editOrder = function(orderId) {
-    // TODO: Implement edit order modal
-    UTILS.showNotification('ویرایش سفارش در حال توسعه است', 'info');
-};
-
-window.viewOrderDetails = function(orderId) {
-    // TODO: Implement order details modal
-    UTILS.showNotification('جزئیات سفارش در حال توسعه است', 'info');
-};
-
-window.showAssignmentModal = function(orderId) {
-    // TODO: Implement assignment modal
-    UTILS.showNotification('تخصیص سفارش در حال توسعه است', 'info');
-};
+window.addEventListener('load', function () {
+    OrdersModule.bindGlobals();
+});

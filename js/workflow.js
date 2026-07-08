@@ -8,12 +8,15 @@ const WorkflowModule = {
     
     // Bind global events
     bindEvents() {
-        // Assignment functions
-        window.showAssignmentModal = (orderId) => AssignmentModule.showModal(orderId);
+        window.showAssignmentModal = (orderId) => {
+            if (typeof OrdersModule !== 'undefined') OrdersModule.openAssignment(orderId);
+            else if (typeof AssignmentModule !== 'undefined') AssignmentModule.showModal(orderId);
+        };
         window.submitAssignment = (doctorId, notes) => AssignmentModule.submit(doctorId, notes);
-        
-        // Order detail functions
-        window.viewOrderDetails = (orderId) => OrderPagesModule.showOrderPage(orderId);
+        window.viewOrderDetails = (orderId) => {
+            if (typeof OrdersModule !== 'undefined') OrdersModule.viewDetails(orderId);
+            else if (typeof OrderPagesModule !== 'undefined') OrderPagesModule.showOrderPage(orderId);
+        };
         
         // Chat functions
         window.sendMessage = (orderId) => ChatModule.sendMessage(orderId);

@@ -3,7 +3,6 @@ const ModalsModule = {
   // Safe Alpine.js data access helper
   getAlpineData() {
     try {
-      // Method 1: Standard Alpine.js access
       const appElement = document.querySelector("[x-data]");
       if (appElement && appElement.__x && appElement.__x.$data) {
         return appElement.__x.$data;
@@ -92,6 +91,16 @@ const ModalsModule = {
       debugLogger("Error closing modal", "warning", error);
       return false;
     }
+  },
+
+  // Open modal by name (Alpine showModal)
+  openModal(name) {
+    const alpine = this.getAlpineData();
+    if (alpine) {
+      alpine.showModal = name;
+      return true;
+    }
+    return false;
   },
 
   // Safe current user getter
@@ -974,8 +983,10 @@ const ModalsModule = {
 
   // Create Project Modal
   getCreateProjectModal() {
-    // Use the Order Wizard instead of old project modal
-    return OrderWizardModule.getWizardModal();
+    if (typeof OrderWizardModule !== 'undefined' && OrderWizardModule.getWizardModal) {
+      return OrderWizardModule.getWizardModal();
+    }
+    return this.getCreateProjectModalOld();
   },
 
   // Old Create Project Modal (kept for reference)
@@ -1577,13 +1588,14 @@ const ModalsModule = {
         }
       }
 
-      // Close modal
+      // Close modal and refresh orders list
       this.closeModal();
 
-      // Refresh page to show new order
-      setTimeout(() => {
-        location.reload();
-      }, 1500);
+      if (typeof OrdersModule !== 'undefined' && OrdersModule.refreshOrders) {
+        await OrdersModule.refreshOrders();
+      } else {
+        setTimeout(() => location.reload(), 1000);
+      }
     } catch (error) {
       debugLogger("Error submitting new order", "error", {
         message: error.message,
@@ -1707,6 +1719,10 @@ const ModalsModule = {
 
   // Approve order (by manager or employee)
   approveOrder(orderId) {
+    if (typeof OrdersModule !== 'undefined' && OrdersModule.approveOrder) {
+      OrdersModule.approveOrder(orderId);
+      return;
+    }
     try {
       debugLogger("Approving order...", "info", { orderId });
 
@@ -1736,6 +1752,10 @@ const ModalsModule = {
 
   // Open reject modal
   rejectOrder(orderId) {
+    if (typeof OrdersModule !== 'undefined' && OrdersModule.openRejectModal) {
+      OrdersModule.openRejectModal(orderId);
+      return;
+    }
     window.currentOrderId = orderId;
     const orders = DataModule.getOrders();
     const order = orders.find((o) => o.id === orderId);
@@ -1757,6 +1777,10 @@ const ModalsModule = {
 
   // Submit rejection
   submitRejectOrder(reason) {
+    if (typeof OrdersModule !== 'undefined' && OrdersModule.submitRejectOrder) {
+      OrdersModule.submitRejectOrder(window.currentOrderId, reason);
+      return;
+    }
     try {
       if (!reason || reason.trim() === "") {
         UTILS.showNotification("لطفاً دلیل رد را وارد کنید", "error");
@@ -1779,6 +1803,7 @@ const ModalsModule = {
 
       orders[orderIndex].status = CONFIG.ORDER_STATUS.REJECTED;
       orders[orderIndex].stage = "رد شده - نیاز به اصلاح";
+      if (!orders[orderIndex].rejectionHistory) orders[orderIndex].rejectionHistory = [];
       orders[orderIndex].rejectionHistory.push({
         date: new Date().toISOString(),
         reason: reason,

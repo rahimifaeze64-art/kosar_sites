@@ -4,7 +4,9 @@ const APIOrdersModule = {
     
     // Check if API is enabled
     isAPIEnabled() {
-        return typeof CONFIG !== 'undefined' && CONFIG.API_ENABLED === true;
+        // Always return false - use localStorage only
+        return false;
+        // return typeof CONFIG !== 'undefined' && CONFIG.API_ENABLED === true;
     },
     
     // Get CSRF token from cookie

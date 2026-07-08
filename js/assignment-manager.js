@@ -18,7 +18,7 @@ const AssignmentManagerModule = {
         const workList = order.workList || [];
         const workAssignments = order.workAssignments || {};
         const users = DataModule.getUsers();
-        const doctors = users.filter(u => u.role === 'doctor');
+        const doctors = users.filter(u => u.role === 'agent' || u.role === CONFIG.ROLES.DOCTOR || u.role === CONFIG.ROLES.AGENT);
         
         return `
             <div class="space-y-6">

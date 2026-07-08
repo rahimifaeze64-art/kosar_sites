@@ -1,439 +1,385 @@
-// Personal Accounting System - سیستم حسابداری شخصی
-const AccountingModule = {
-    // Storage key for accounting data
-    STORAGE_KEY: 'personal_accounting_data',
-    
-    // Supported currencies
-    CURRENCIES: {
+/**
+ * سیستم حسابداری شخصی — localStorage
+ */
+const AccountingModule = (function() {
+    'use strict';
+
+    const STORAGE_KEY = 'personal_accounting_data';
+
+    const DEFAULT_CATEGORIES = {
+        INCOME: ['درآمد شرکت', 'فروش خدمات', 'سود پروژه', 'سایر درآمدها'],
+        EXPENSE: ['هزینه‌های عملیاتی', 'حقوق و دستمزد', 'اجاره و امکانات', 'تجهیزات و ابزار', 'سایر هزینه‌ها'],
+        DEBT: ['بدهی به شرکا', 'وام و تسهیلات', 'بدهی به تامین‌کنندگان', 'سایر بدهی‌ها'],
+        CREDIT: ['طلب از مشتریان', 'پیش پرداخت داده شده', 'سپرده‌های پرداختی', 'سایر بستانکاری‌ها']
+    };
+
+    const CURRENCIES = {
         TOMAN: { code: 'تومان', symbol: 'تومان', name: 'تومان' },
         RIAL: { code: 'ریال', symbol: 'ریال', name: 'ریال' },
         DOLLAR: { code: 'دلار', symbol: '$', name: 'دلار آمریکا' },
         DINAR: { code: 'دینار', symbol: 'د.ع', name: 'دینار عراق' }
-    },
-    
-    // Exchange rates (relative to Toman)
-    EXCHANGE_RATES: {
+    };
+
+    const DEFAULT_EXCHANGE_RATES = {
         'تومان': 1,
         'ریال': 0.1,
         'دلار': 170000,
         'دینار': 130
-    },
-    
-    // Transaction types
-    TRANSACTION_TYPES: {
-        INCOME: 'income',      // درآمد
-        EXPENSE: 'expense',    // هزینه
-        DEBT: 'debt',          // بدهی
-        CREDIT: 'credit'       // بستانکاری
-    },
-    
-    // Categories for transactions
-    CATEGORIES: {
-        INCOME: [
-            'درآمد شرکت',
-            'فروش خدمات',
-            'سود پروژه',
-            'سایر درآمدها'
-        ],
-        EXPENSE: [
-            'هزینه‌های عملیاتی',
-            'حقوق و دستمزد',
-            'اجاره و امکانات',
-            'تجهیزات و ابزار',
-            'سایر هزینه‌ها'
-        ],
-        DEBT: [
-            'بدهی به شرکا',
-            'وام و تسهیلات',
-            'بدهی به تامین‌کنندگان',
-            'سایر بدهی‌ها'
-        ],
-        CREDIT: [
-            'طلب از مشتریان',
-            'پیش پرداخت داده شده',
-            'سپرده‌های پرداختی',
-            'سایر بستانکاری‌ها'
-        ]
-    },
-    
-    // Initialize accounting module
-    init() {
-        try {
-            debugLogger('Initializing Accounting Module...', 'info');
-            this.loadData();
-            debugLogger('Accounting Module initialized successfully', 'success');
-        } catch (error) {
-            debugLogger('Error initializing Accounting Module', 'error', error);
-        }
-    },
-    
-    // Load data from localStorage
-    loadData() {
-        const savedData = localStorage.getItem(this.STORAGE_KEY);
-        if (savedData) {
-            this.data = JSON.parse(savedData);
-            // Ensure persons array exists
-            if (!this.data.persons) {
-                this.data.persons = [];
-            }
-            // Load custom categories if they exist
-            if (this.data.customCategories) {
-                // Merge custom categories with default ones
-                Object.keys(this.data.customCategories).forEach(type => {
-                    if (this.CATEGORIES[type.toUpperCase()]) {
-                        this.data.customCategories[type].forEach(cat => {
-                            if (!this.CATEGORIES[type.toUpperCase()].includes(cat)) {
-                                this.CATEGORIES[type.toUpperCase()].push(cat);
-                            }
-                        });
-                    }
+    };
+
+    const TRANSACTION_TYPES = {
+        INCOME: 'income',
+        EXPENSE: 'expense',
+        DEBT: 'debt',
+        CREDIT: 'credit'
+    };
+
+    let data = null;
+    let exchangeRates = { ...DEFAULT_EXCHANGE_RATES };
+    let initialized = false;
+
+    function log(msg, type, extra) {
+        if (typeof debugLogger === 'function') debugLogger(msg, type, extra);
+    }
+
+    function cloneCategories() {
+        return {
+            income: [...DEFAULT_CATEGORIES.INCOME],
+            expense: [...DEFAULT_CATEGORIES.EXPENSE],
+            debt: [...DEFAULT_CATEGORIES.DEBT],
+            credit: [...DEFAULT_CATEGORIES.CREDIT]
+        };
+    }
+
+    function normalizeData(raw) {
+        const base = {
+            transactions: [],
+            persons: [],
+            customCategories: cloneCategories(),
+            settings: { currency: 'تومان', dateFormat: 'persian' }
+        };
+
+        if (!raw || typeof raw !== 'object') return base;
+
+        return {
+            transactions: Array.isArray(raw.transactions) ? raw.transactions : [],
+            persons: Array.isArray(raw.persons) ? raw.persons : [],
+            customCategories: mergeCustomCategories(raw.customCategories),
+            settings: { ...base.settings, ...(raw.settings || {}) }
+        };
+    }
+
+    function mergeCustomCategories(custom) {
+        const merged = cloneCategories();
+        if (!custom || typeof custom !== 'object') return merged;
+
+        ['income', 'expense', 'debt', 'credit'].forEach(type => {
+            if (Array.isArray(custom[type])) {
+                custom[type].forEach(cat => {
+                    if (cat && !merged[type].includes(cat)) merged[type].push(cat);
                 });
             }
-        } else {
-            this.data = {
-                transactions: [],
-                persons: [],
-                accounts: [],
-                customCategories: {
-                    income: [],
-                    expense: [],
-                    debt: [],
-                    credit: []
-                },
-                settings: {
-                    currency: 'تومان',
-                    dateFormat: 'persian'
+        });
+        return merged;
+    }
+
+    function getCategories(type) {
+        const key = (type || 'income').toLowerCase();
+        return data?.customCategories?.[key] ? [...data.customCategories[key]] : [];
+    }
+
+    function init() {
+        loadData();
+        initialized = true;
+    }
+
+    function loadData() {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            data = saved ? normalizeData(JSON.parse(saved)) : normalizeData(null);
+
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (parsed.exchangeRates && typeof parsed.exchangeRates === 'object') {
+                    exchangeRates = { ...DEFAULT_EXCHANGE_RATES, ...parsed.exchangeRates };
                 }
-            };
-            this.saveData();
+            }
+
+            if (!saved) saveData();
+            log('Accounting data loaded', 'info');
+        } catch (error) {
+            log('Error loading accounting data', 'error', error);
+            data = normalizeData(null);
+            exchangeRates = { ...DEFAULT_EXCHANGE_RATES };
         }
-    },
-    
-    // Save data to localStorage
-    saveData() {
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.data));
-        debugLogger('Accounting data saved', 'info');
-    },
-    
-    // Add new transaction
-    addTransaction(transactionData) {
+    }
+
+    function saveData() {
+        const payload = { ...data, exchangeRates };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        log('Accounting data saved', 'info');
+    }
+
+    function generateId() {
+        return 'acc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+    }
+
+    function convertAmount(amount, fromCurrency, toCurrency) {
+        const fromRate = exchangeRates[fromCurrency] || 1;
+        const toRate = exchangeRates[toCurrency] || 1;
+        return (parseFloat(amount) * fromRate) / toRate;
+    }
+
+    function addTransaction(transactionData) {
+        const amount = parseFloat(transactionData.amount);
+        if (isNaN(amount) || amount <= 0) return null;
+
         const transaction = {
-            id: this.generateId(),
+            id: generateId(),
             type: transactionData.type,
-            amount: parseFloat(transactionData.amount),
+            amount,
             currency: transactionData.currency || 'تومان',
             category: transactionData.category,
-            description: transactionData.description || '',
+            description: (transactionData.description || '').trim(),
             personId: transactionData.personId || null,
             date: transactionData.date || new Date().toISOString(),
             createdAt: new Date().toISOString()
         };
-        
-        this.data.transactions.push(transaction);
-        this.saveData();
-        
-        debugLogger('Transaction added', 'success', transaction);
+
+        data.transactions.push(transaction);
+        saveData();
+        log('Transaction added', 'success', transaction);
         return transaction;
-    },
-    
-    // Update transaction
-    updateTransaction(id, updates) {
-        const index = this.data.transactions.findIndex(t => t.id === id);
-        if (index !== -1) {
-            this.data.transactions[index] = { ...this.data.transactions[index], ...updates };
-            this.saveData();
-            debugLogger('Transaction updated', 'success', this.data.transactions[index]);
-            return this.data.transactions[index];
-        }
-        return null;
-    },
-    
-    // Delete transaction
-    deleteTransaction(id) {
-        const index = this.data.transactions.findIndex(t => t.id === id);
-        if (index !== -1) {
-            const deleted = this.data.transactions.splice(index, 1)[0];
-            this.saveData();
-            debugLogger('Transaction deleted', 'success', deleted);
-            return deleted;
-        }
-        return null;
-    },
-    
-    // Get all transactions
-    getTransactions(filters = {}) {
-        let transactions = [...this.data.transactions];
-        
-        // Apply filters
-        if (filters.type) {
-            transactions = transactions.filter(t => t.type === filters.type);
-        }
-        
-        if (filters.category) {
-            transactions = transactions.filter(t => t.category === filters.category);
-        }
-        
-        if (filters.personId) {
-            transactions = transactions.filter(t => t.personId === filters.personId);
-        }
-        
+    }
+
+    function updateTransaction(id, updates) {
+        const index = data.transactions.findIndex(t => t.id === id);
+        if (index === -1) return null;
+
+        const next = { ...data.transactions[index], ...updates, updatedAt: new Date().toISOString() };
+        if (updates.amount !== undefined) next.amount = parseFloat(updates.amount);
+        data.transactions[index] = next;
+        saveData();
+        return next;
+    }
+
+    function deleteTransaction(id) {
+        const index = data.transactions.findIndex(t => t.id === id);
+        if (index === -1) return null;
+        const deleted = data.transactions.splice(index, 1)[0];
+        saveData();
+        return deleted;
+    }
+
+    function getTransactions(filters = {}) {
+        let transactions = [...data.transactions];
+
+        if (filters.type) transactions = transactions.filter(t => t.type === filters.type);
+        if (filters.category) transactions = transactions.filter(t => t.category === filters.category);
+        if (filters.personId) transactions = transactions.filter(t => t.personId === filters.personId);
+
         if (filters.dateFrom) {
-            transactions = transactions.filter(t => new Date(t.date) >= new Date(filters.dateFrom));
+            const from = new Date(filters.dateFrom);
+            transactions = transactions.filter(t => new Date(t.date) >= from);
         }
-        
         if (filters.dateTo) {
-            transactions = transactions.filter(t => new Date(t.date) <= new Date(filters.dateTo));
+            const to = new Date(filters.dateTo);
+            to.setHours(23, 59, 59, 999);
+            transactions = transactions.filter(t => new Date(t.date) <= to);
         }
-        
-        // Sort by date (newest first)
+
         transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
-        
         return transactions;
-    },
-    
-    // Calculate balance
-    calculateBalance(personId = 'all', targetCurrency = 'تومان') {
-        let transactions = this.data.transactions;
-        
-        // Filter by person if specified
-        if (personId !== 'all') {
+    }
+
+    function calculateBalance(personId = 'all', targetCurrency = 'تومان') {
+        let transactions = data.transactions;
+        if (personId && personId !== 'all') {
             transactions = transactions.filter(t => t.personId === personId);
         }
-        
-        // Convert all amounts to target currency
-        const convertAmount = (amount, fromCurrency) => {
-            const fromRate = this.EXCHANGE_RATES[fromCurrency] || 1;
-            const toRate = this.EXCHANGE_RATES[targetCurrency] || 1;
-            return (amount * fromRate) / toRate;
-        };
-        
-        const income = transactions
-            .filter(t => t.type === this.TRANSACTION_TYPES.INCOME)
-            .reduce((sum, t) => sum + convertAmount(t.amount, t.currency || 'تومان'), 0);
-            
-        const expense = transactions
-            .filter(t => t.type === this.TRANSACTION_TYPES.EXPENSE)
-            .reduce((sum, t) => sum + convertAmount(t.amount, t.currency || 'تومان'), 0);
-            
-        const debt = transactions
-            .filter(t => t.type === this.TRANSACTION_TYPES.DEBT)
-            .reduce((sum, t) => sum + convertAmount(t.amount, t.currency || 'تومان'), 0);
-            
-        const credit = transactions
-            .filter(t => t.type === this.TRANSACTION_TYPES.CREDIT)
-            .reduce((sum, t) => sum + convertAmount(t.amount, t.currency || 'تومان'), 0);
-        
+
+        const sumByType = (type) => transactions
+            .filter(t => t.type === type)
+            .reduce((sum, t) => sum + convertAmount(t.amount, t.currency || 'تومان', targetCurrency), 0);
+
+        const totalIncome = sumByType(TRANSACTION_TYPES.INCOME);
+        const totalExpense = sumByType(TRANSACTION_TYPES.EXPENSE);
+        const totalDebt = sumByType(TRANSACTION_TYPES.DEBT);
+        const totalCredit = sumByType(TRANSACTION_TYPES.CREDIT);
+
         return {
-            totalIncome: income,
-            totalExpense: expense,
-            totalDebt: debt,
-            totalCredit: credit,
-            netBalance: income - expense,
-            netWorth: income - expense + credit - debt,
+            totalIncome,
+            totalExpense,
+            totalDebt,
+            totalCredit,
+            netBalance: totalIncome - totalExpense,
+            netWorth: totalIncome - totalExpense + totalCredit - totalDebt,
             currency: targetCurrency
         };
-    },
-    
-    // Get statistics by category
-    getStatsByCategory(type) {
-        const transactions = this.data.transactions.filter(t => t.type === type);
+    }
+
+    function getStatsByCategory(type, targetCurrency = 'تومان') {
         const stats = {};
-        
-        transactions.forEach(t => {
-            if (!stats[t.category]) {
-                stats[t.category] = {
-                    amount: 0,
-                    count: 0
-                };
-            }
-            stats[t.category].amount += t.amount;
+        data.transactions.filter(t => t.type === type).forEach(t => {
+            if (!stats[t.category]) stats[t.category] = { amount: 0, count: 0 };
+            stats[t.category].amount += convertAmount(t.amount, t.currency || 'تومان', targetCurrency);
             stats[t.category].count += 1;
         });
-        
         return stats;
-    },
-    
-    // Get monthly summary
-    getMonthlySummary(year, month) {
+    }
+
+    function getMonthlySummary(year, month, targetCurrency = 'تومان') {
         const startDate = new Date(year, month - 1, 1);
-        const endDate = new Date(year, month, 0);
-        
-        const monthlyTransactions = this.data.transactions.filter(t => {
-            const transactionDate = new Date(t.date);
-            return transactionDate >= startDate && transactionDate <= endDate;
+        const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
+        const monthly = data.transactions.filter(t => {
+            const d = new Date(t.date);
+            return d >= startDate && d <= endDate;
         });
-        
-        const income = monthlyTransactions
-            .filter(t => t.type === this.TRANSACTION_TYPES.INCOME)
-            .reduce((sum, t) => sum + t.amount, 0);
-            
-        const expense = monthlyTransactions
-            .filter(t => t.type === this.TRANSACTION_TYPES.EXPENSE)
-            .reduce((sum, t) => sum + t.amount, 0);
-        
-        return {
-            income,
-            expense,
-            balance: income - expense,
-            transactions: monthlyTransactions
-        };
-    },
-    
-    // Generate unique ID
-    generateId() {
-        return 'acc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    },
-    
-    // Person Management Methods
-    
-    // Add new person
-    addPerson(personData) {
+
+        const income = monthly
+            .filter(t => t.type === TRANSACTION_TYPES.INCOME)
+            .reduce((s, t) => s + convertAmount(t.amount, t.currency || 'تومان', targetCurrency), 0);
+
+        const expense = monthly
+            .filter(t => t.type === TRANSACTION_TYPES.EXPENSE)
+            .reduce((s, t) => s + convertAmount(t.amount, t.currency || 'تومان', targetCurrency), 0);
+
+        return { income, expense, balance: income - expense, transactions: monthly };
+    }
+
+    function addPerson(personData) {
+        const name = (personData.name || '').trim();
+        if (!name) return null;
+
         const person = {
-            id: this.generateId(),
-            name: personData.name,
-            type: personData.type || 'other', // دانشجو، نویسنده، آزاد، سایر
-            phone: personData.phone || '',
-            notes: personData.notes || '',
+            id: generateId(),
+            name,
+            type: personData.type || 'other',
+            phone: (personData.phone || '').trim(),
+            notes: (personData.notes || '').trim(),
             createdAt: new Date().toISOString()
         };
-        
-        this.data.persons.push(person);
-        this.saveData();
-        
-        debugLogger('Person added', 'success', person);
+        data.persons.push(person);
+        saveData();
         return person;
-    },
-    
-    // Get all persons
-    getPersons() {
-        return this.data.persons || [];
-    },
-    
-    // Get person by ID
-    getPerson(id) {
-        return this.data.persons.find(p => p.id === id);
-    },
-    
-    // Get person name by ID
-    getPersonName(id) {
-        const person = this.getPerson(id);
+    }
+
+    function getPersons() {
+        return [...(data.persons || [])];
+    }
+
+    function getPerson(id) {
+        return data.persons.find(p => p.id === id) || null;
+    }
+
+    function getPersonName(id) {
+        const person = getPerson(id);
         return person ? person.name : 'نامشخص';
-    },
-    
-    // Update person
-    updatePerson(id, updates) {
-        const index = this.data.persons.findIndex(p => p.id === id);
-        if (index !== -1) {
-            this.data.persons[index] = { ...this.data.persons[index], ...updates };
-            this.saveData();
-            debugLogger('Person updated', 'success', this.data.persons[index]);
-            return this.data.persons[index];
-        }
-        return null;
-    },
-    
-    // Delete person
-    deletePerson(id) {
-        const index = this.data.persons.findIndex(p => p.id === id);
-        if (index !== -1) {
-            const deleted = this.data.persons.splice(index, 1)[0];
-            this.saveData();
-            debugLogger('Person deleted', 'success', deleted);
-            return deleted;
-        }
-        return null;
-    },
-    
-    // Format currency
-    formatCurrency(amount, currency = null) {
-        const curr = currency || this.data.settings.currency || 'تومان';
-        const formatted = new Intl.NumberFormat('fa-IR').format(Math.round(amount));
+    }
+
+    function updatePerson(id, updates) {
+        const index = data.persons.findIndex(p => p.id === id);
+        if (index === -1) return null;
+        data.persons[index] = { ...data.persons[index], ...updates };
+        saveData();
+        return data.persons[index];
+    }
+
+    function deletePerson(id) {
+        const index = data.persons.findIndex(p => p.id === id);
+        if (index === -1) return null;
+        const deleted = data.persons.splice(index, 1)[0];
+        saveData();
+        return deleted;
+    }
+
+    function formatCurrency(amount, currency) {
+        const curr = currency || data.settings.currency || 'تومان';
+        const formatted = new Intl.NumberFormat('fa-IR').format(Math.round(parseFloat(amount) || 0));
         return `${formatted} ${curr}`;
-    },
-    
-    // Convert currency
-    convertCurrency(amount, fromCurrency, toCurrency) {
-        const fromRate = this.EXCHANGE_RATES[fromCurrency] || 1;
-        const toRate = this.EXCHANGE_RATES[toCurrency] || 1;
-        return (amount * fromRate) / toRate;
-    },
-    
-    // Update exchange rate
-    updateExchangeRate(currency, rate) {
-        this.EXCHANGE_RATES[currency] = rate;
-        debugLogger('Exchange rate updated', 'info', { currency, rate });
-    },
-    
-    // Get all currencies
-    getCurrencies() {
-        return Object.values(this.CURRENCIES);
-    },
-    
-    // Add custom category
-    addCustomCategory(type, categoryName) {
-        const typeUpper = type.toUpperCase();
-        
-        if (!this.CATEGORIES[typeUpper]) {
-            debugLogger('Invalid transaction type', 'error', { type });
-            return false;
+    }
+
+    function getCurrencies() {
+        return Object.values(CURRENCIES);
+    }
+
+    function addCustomCategory(type, categoryName) {
+        const key = (type || '').toLowerCase();
+        const name = (categoryName || '').trim();
+        if (!name || !data.customCategories[key]) return false;
+        if (!data.customCategories[key].includes(name)) {
+            data.customCategories[key].push(name);
+            saveData();
         }
-        
-        // Check if category already exists
-        if (this.CATEGORIES[typeUpper].includes(categoryName)) {
-            return true;
-        }
-        
-        // Add to categories
-        this.CATEGORIES[typeUpper].push(categoryName);
-        
-        // Save to custom categories in data
-        if (!this.data.customCategories) {
-            this.data.customCategories = {
-                income: [],
-                expense: [],
-                debt: [],
-                credit: []
-            };
-        }
-        
-        if (!this.data.customCategories[type]) {
-            this.data.customCategories[type] = [];
-        }
-        
-        if (!this.data.customCategories[type].includes(categoryName)) {
-            this.data.customCategories[type].push(categoryName);
-            this.saveData();
-            debugLogger('Custom category added', 'success', { type, categoryName });
-        }
-        
         return true;
-    },
-    
-    // Export data
-    exportData() {
-        const dataStr = JSON.stringify(this.data, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(dataBlob);
+    }
+
+    function updateExchangeRate(currency, rate) {
+        exchangeRates[currency] = parseFloat(rate) || 1;
+        saveData();
+    }
+
+    function getExchangeRates() {
+        return { ...exchangeRates };
+    }
+
+    function exportData() {
+        const payload = { ...data, exchangeRates };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
         link.download = `accounting-data-${new Date().toISOString().slice(0, 10)}.json`;
         link.click();
         URL.revokeObjectURL(url);
-    },
-    
-    // Import data
-    importData(jsonData) {
-        try {
-            const importedData = JSON.parse(jsonData);
-            if (importedData.transactions && Array.isArray(importedData.transactions)) {
-                this.data = importedData;
-                this.saveData();
-                debugLogger('Data imported successfully', 'success');
-                return true;
-            }
-        } catch (error) {
-            debugLogger('Error importing data', 'error', error);
-        }
-        return false;
     }
-};
+
+    function importData(jsonData) {
+        try {
+            const imported = JSON.parse(jsonData);
+            if (!imported.transactions || !Array.isArray(imported.transactions)) return false;
+            data = normalizeData(imported);
+            if (imported.exchangeRates) {
+                exchangeRates = { ...DEFAULT_EXCHANGE_RATES, ...imported.exchangeRates };
+            }
+            saveData();
+            return true;
+        } catch (error) {
+            log('Error importing data', 'error', error);
+            return false;
+        }
+    }
+
+    return {
+        STORAGE_KEY,
+        TRANSACTION_TYPES,
+        CATEGORIES: DEFAULT_CATEGORIES,
+        init,
+        loadData,
+        saveData,
+        getCategories,
+        addTransaction,
+        updateTransaction,
+        deleteTransaction,
+        getTransactions,
+        calculateBalance,
+        getStatsByCategory,
+        getMonthlySummary,
+        addPerson,
+        getPersons,
+        getPerson,
+        getPersonName,
+        updatePerson,
+        deletePerson,
+        formatCurrency,
+        convertCurrency: convertAmount,
+        convertAmount,
+        getCurrencies,
+        addCustomCategory,
+        updateExchangeRate,
+        getExchangeRates,
+        exportData,
+        importData
+    };
+})();

@@ -1074,3 +1074,136 @@
 .transaction-amount.credit {
     color: #4299e1;
 }
+
+/* ── Accounting UI enhancements ── */
+
+.person-filter-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.active-person-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: #e7f3ff;
+    border: 1px solid #b6d4fe;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #084298;
+}
+
+.person-chip-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.person-chip-wrap.active .person-chip {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.person-chip-detail {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #495057;
+    transition: all 0.2s ease;
+}
+
+.person-chip-detail:hover {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.net-balance-card .card-icon {
+    background: linear-gradient(135deg, #17a2b8, #138496);
+}
+
+.transaction-type-label {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: #e9ecef;
+    color: #495057;
+}
+
+.transaction-item {
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+}
+
+.transaction-main {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.transaction-meta {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.transaction-actions {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+}
+
+.transaction-actions button:first-child {
+    color: #007bff;
+}
+
+.transaction-actions button:first-child:hover {
+    background: #007bff;
+    color: white;
+}
+
+.empty-text {
+    color: #6c757d;
+    padding: 20px;
+}
+
+.text-green { color: #28a745; }
+.text-red { color: #dc3545; }
+.text-orange { color: #fd7e14; }
+.text-blue { color: #007bff; }
+.text-sm { font-size: 0.875rem; }
+.text-center { text-align: center; }
+
+.person-list-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+[data-theme="dark"] .active-person-banner {
+    background: #1a3a52;
+    border-color: #007bff;
+    color: #cce5ff;
+}
+
+[data-theme="dark"] .person-chip-detail {
+    background: #2d2d2d;
+    border-color: #444;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .transaction-type-label {
+    background: #444;
+    color: #e0e0e0;
+}

@@ -17,11 +17,13 @@ const CONFIG = {
     STUDENT: "student",
   },
 
-  // Order Status - فقط 3 حالت
+  // Order Status
   ORDER_STATUS: {
-    PENDING: "pending", // در انتظار
-    IN_PROGRESS: "in_progress", // در حال انجام
-    COMPLETED: "completed", // تکمیل شده
+    PENDING: "pending",
+    APPROVED: "approved",
+    IN_PROGRESS: "in_progress",
+    COMPLETED: "completed",
+    REJECTED: "rejected",
   },
 
   // Order Types

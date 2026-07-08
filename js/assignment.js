@@ -278,105 +278,23 @@ const AssignmentModule = {
                 useAPI = false;
             }
             
-            // Fallback to localStorage
+            // Fallback to localStorage via OrdersModule
             if (!useAPI) {
-                const orders = DataModule.getOrders();
-                const orderIndex = orders.findIndex(o => o.id === orderId);
-                
-                if (orderIndex === -1) {
-                    UTILS.showNotification('سفارش یافت نشد', 'error');
-                    return;
-                }
-                
-                const users = DataModule.getUsers();
-                const doctor = users.find(u => u.id === doctorId);
-                
-                if (!doctor) {
-                    UTILS.showNotification('عامل یافت نشد', 'error');
-                    return;
-                }
-                
-                // Update order
-                orders[orderIndex].assignedDoctorId = doctorId;
-                orders[orderIndex].assignedDoctor = doctor.name;
-                orders[orderIndex].status = CONFIG.ORDER_STATUS.IN_PROGRESS;
-                orders[orderIndex].stage = 'تخصیص یافته - در حال انجام';
-                orders[orderIndex].assignedAt = new Date().toISOString();
-                orders[orderIndex].assignmentNotes = notes;
-                orders[orderIndex].progress = 5; // Initial progress
-                
-                debugLogger('Order updated with assignment data', 'info', {
-                    orderId: orders[orderIndex].id,
-                    assignedDoctorId: orders[orderIndex].assignedDoctorId,
-                    assignedDoctor: orders[orderIndex].assignedDoctor,
-                    status: orders[orderIndex].status
-                });
-                
-                // Initialize workflow data
-                if (!orders[orderIndex].files) orders[orderIndex].files = [];
-                if (!orders[orderIndex].questions) orders[orderIndex].questions = [];
-                if (!orders[orderIndex].workLog) orders[orderIndex].workLog = [];
-                
-                // Add assignment log
-                orders[orderIndex].workLog.push({
-                    id: UTILS.generateId(),
-                    type: 'assignment',
-                    message: `سفارش به ${doctor.name} تخصیص یافت`,
-                    notes: notes,
-                    timestamp: new Date().toISOString(),
-                    userId: getCurrentUserId()
-                });
-                
-                DataModule.saveOrders(orders);
-                debugLogger('Assignment completed via localStorage', 'success', {
-                    orderId: orderId,
-                    doctorId: doctorId,
-                    doctorName: doctor.name,
-                    totalOrders: orders.length
-                });
-                
-                // ایجاد وظیفه برای عامل در صفحه وظایف من
-                if (window.TasksModule && typeof TasksModule.createTaskFromOrder === 'function') {
-                    TasksModule.createTaskFromOrder(orders[orderIndex], doctor);
-                    debugLogger(`Task created for agent ${doctor.name} from order ${orderId}`, 'success');
+                if (typeof OrdersModule !== 'undefined' && OrdersModule.assignOrder) {
+                    await OrdersModule.assignOrder(orderId, doctorId, notes);
                 } else {
-                    debugLogger('TasksModule.createTaskFromOrder not available', 'warning');
+                    UTILS.showNotification('ماژول سفارشات در دسترس نیست', 'error');
+                    return;
                 }
+            } else if (typeof OrdersModule !== 'undefined' && OrdersModule.refreshOrders) {
+                await OrdersModule.refreshOrders();
             }
             
             UTILS.showNotification('سفارش با موفقیت تخصیص یافت', 'success');
             
-            // Close modal first
             const modal = document.getElementById('assignment-modal');
-            if (modal) {
-                modal.style.display = 'none';
-            }
-            ModalsModule.closeModal();
-            
-            // Add a longer delay and force refresh to ensure data is saved
-            debugLogger('Assignment completed, refreshing page...', 'info');
-            
-            // Verify assignment was saved before refreshing
-            setTimeout(() => {
-                const savedOrders = DataModule.getOrders();
-                const assignedOrder = savedOrders.find(o => o.id === orderId);
-                if (assignedOrder && assignedOrder.assignedDoctorId === doctorId) {
-                    debugLogger('Assignment verification successful', 'success', {
-                        orderId: assignedOrder.id,
-                        assignedTo: assignedOrder.assignedDoctor,
-                        status: assignedOrder.status
-                    });
-                } else {
-                    debugLogger('Assignment verification failed', 'error', {
-                        orderId: orderId,
-                        expectedDoctorId: doctorId,
-                        actualAssignment: assignedOrder ? assignedOrder.assignedDoctorId : 'not found'
-                    });
-                }
-                
-                // Force reload to ensure fresh data
-                window.location.reload(true);
-            }, 1500);
+            if (modal) modal.style.display = 'none';
+            if (typeof ModalsModule !== 'undefined') ModalsModule.closeModal();
             
         } catch (error) {
             debugLogger('Error submitting assignment', 'error', error);

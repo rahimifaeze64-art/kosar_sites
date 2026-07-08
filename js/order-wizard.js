@@ -924,8 +924,9 @@ const OrderWizardModule = {
                     // Reload page to show new order
                     setTimeout(() => location.reload(), 500);
                 }
-            }">
-                <!-- Header -->
+            `;
+            
+            // Append modal to body
                 <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50 relative">
                     <button @click="$dispatch('close-modal')" 
                             class="absolute left-4 top-4 text-gray-600 hover:text-gray-800 text-2xl"

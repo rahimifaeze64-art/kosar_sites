@@ -31,8 +31,10 @@ function appController() {
         // Set sidebar state based on screen size
         this.sidebarOpen = window.innerWidth >= 1024;
 
-        // Subscribe to real-time events for automatic UI updates
-        this.subscribeToRealtimeEvents();
+        // Subscribe to real-time events for automatic UI updates (optional - no-op if not available)
+        if (typeof this.subscribeToRealtimeEvents === 'function') {
+            this.subscribeToRealtimeEvents();
+        }
 
         // Watch for page changes to load content
         this.$watch("currentPage", async (newPage) => {
@@ -973,6 +975,10 @@ window.submitAssignOrder = function (doctorId) {
 };
 
 window.approveOrder = function (orderId) {
+  if (typeof OrdersModule !== 'undefined' && OrdersModule.approveOrder) {
+    OrdersModule.approveOrder(orderId);
+    return;
+  }
   try {
     debugLogger("Approving order...", "info", { orderId });
 
@@ -1003,6 +1009,10 @@ window.approveOrder = function (orderId) {
 };
 
 window.rejectOrder = function (orderId) {
+  if (typeof OrdersModule !== 'undefined' && OrdersModule.openRejectModal) {
+    OrdersModule.openRejectModal(orderId);
+    return;
+  }
   window.currentOrderId = orderId;
   const orders = DataModule.getOrders();
   const order = orders.find((o) => o.id === orderId);
