@@ -1024,9 +1024,9 @@ window.approveOrder = function (orderId) {
       return;
     }
 
-    orders[orderIndex].status = CONFIG.ORDER_STATUS.APPROVED;
+    orders[orderIndex].status = CONFIG.ORDER_STATUS.IN_PROGRESS;
     orders[orderIndex].stage =
-      "مدیر پروژه را تایید کرد - هماهنگی در حال انجام است";
+      "در حال انجام";
     orders[orderIndex].approvedAt = new Date().toISOString();
     orders[orderIndex].progress = 5;
 
@@ -1092,8 +1092,8 @@ window.submitRejectOrder = function (reason) {
       ? ModalsModule.getCurrentUser()
       : { id: "mgr001", name: "مدیر", role: "manager" };
 
-    orders[orderIndex].status = CONFIG.ORDER_STATUS.REJECTED;
-    orders[orderIndex].stage = "رد شده - نیاز به اصلاح";
+    orders[orderIndex].status = CONFIG.ORDER_STATUS.PENDING;
+    orders[orderIndex].stage = "در انتظار";
     orders[orderIndex].rejectionHistory.push({
       date: new Date().toISOString(),
       reason: reason,
@@ -1986,9 +1986,9 @@ window.getMyIncomeContent = function () {
                 </div>
 
                 <!-- Detailed Orders List -->
-                <div class="bg-slate-800 rounded-lg shadow-md p-4">
-                    <h3 class="text-lg font-bold text-white mb-4">
-                        <i class="fas fa-list-ul text-indigo-400 ml-2"></i>
+                <div class="bg-white rounded-lg shadow-md p-4 border border-gray-200">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">
+                        <i class="fas fa-list-ul text-indigo-500 ml-2"></i>
                         جزئیات سفارشات و درآمد
                     </h3>
 
@@ -1996,24 +1996,24 @@ window.getMyIncomeContent = function () {
                       myOrders.length === 0
                         ? `
                         <div class="text-center py-8">
-                            <i class="fas fa-clipboard-list text-4xl text-gray-500 mb-4"></i>
-                            <p class="text-gray-400">هنوز سفارشی به شما تخصیص داده نشده است</p>
+                            <i class="fas fa-clipboard-list text-4xl text-gray-300 mb-4"></i>
+                            <p class="text-gray-500">هنوز سفارشی به شما تخصیص داده نشده است</p>
                         </div>
                     `
                         : `
                         <div class="overflow-x-auto">
                             <table class="w-full">
-                                <thead class="bg-slate-700">
+                                <thead class="bg-indigo-50 border-b-2 border-indigo-100">
                                     <tr>
-                                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-300">دانشجو</th>
-                                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-300">نوع سفارش</th>
-                                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-300">لیست کارها</th>
-                                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-300">قیمت هر کار</th>
-                                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-300">درآمد من</th>
-                                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-300">وضعیت</th>
+                                        <th class="px-4 py-3 text-right text-sm font-semibold text-indigo-700">دانشجو</th>
+                                        <th class="px-4 py-3 text-right text-sm font-semibold text-indigo-700">نوع سفارش</th>
+                                        <th class="px-4 py-3 text-right text-sm font-semibold text-indigo-700">لیست کارها</th>
+                                        <th class="px-4 py-3 text-right text-sm font-semibold text-indigo-700">قیمت هر کار</th>
+                                        <th class="px-4 py-3 text-right text-sm font-semibold text-indigo-700">درآمد من</th>
+                                        <th class="px-4 py-3 text-right text-sm font-semibold text-indigo-700">وضعیت</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-slate-700">
+                                <tbody class="divide-y divide-gray-100">
                                     ${myOrders
                                       .map((order) => {
                                         const workList = order.workList || [];
@@ -2023,51 +2023,47 @@ window.getMyIncomeContent = function () {
                                           order.currency || "تومان";
 
                                         return `
-                                            <tr class="hover:bg-slate-700">
-                                                <td class="px-4 py-3 text-sm text-white">${order.studentName}</td>
-                                                <td class="px-4 py-3 text-sm text-gray-300">${order.type}</td>
-                                                <td class="px-4 py-3 text-sm text-gray-300">
+                                            <tr class="hover:bg-indigo-50 transition-colors">
+                                                <td class="px-4 py-3 text-sm font-medium text-gray-800">${order.studentName}</td>
+                                                <td class="px-4 py-3 text-sm text-gray-600">${order.type}</td>
+                                                <td class="px-4 py-3 text-sm text-gray-600">
                                                     ${
                                                       workList.length === 0
-                                                        ? '<span class="text-gray-500">تعیین نشده</span>'
+                                                        ? '<span class="text-gray-400">تعیین نشده</span>'
                                                         : `<ul class="list-disc list-inside space-y-1">
-                                                            ${workList.map((work) => `<li>${work}</li>`).join("")}
+                                                            ${workList.map((work) => `<li class="text-gray-700">${work}</li>`).join("")}
                                                         </ul>`
                                                     }
                                                 </td>
-                                                <td class="px-4 py-3 text-sm text-gray-300">
+                                                <td class="px-4 py-3 text-sm text-gray-600">
                                                     ${
                                                       workList.length === 0
-                                                        ? '<span class="text-gray-500">-</span>'
+                                                        ? '<span class="text-gray-400">-</span>'
                                                         : `<ul class="space-y-1">
                                                             ${workList
                                                               .map(
                                                                 (work) =>
-                                                                  `<li class="text-yellow-400">${(workPrices[work] || 0).toLocaleString()} ${currency}</li>`,
+                                                                  `<li class="text-amber-600 font-medium">${(workPrices[work] || 0).toLocaleString()} ${currency}</li>`,
                                                               )
                                                               .join("")}
                                                         </ul>`
                                                     }
                                                 </td>
-                                                <td class="px-4 py-3 text-sm font-bold text-green-400">
+                                                <td class="px-4 py-3 text-sm font-bold text-emerald-600">
                                                     ${(order.doctorShare || 0).toLocaleString()} ${currency}
                                                 </td>
                                                 <td class="px-4 py-3 text-sm">
-                                                    <span class="px-2 py-1 rounded-full text-xs ${
-                                                      order.status ===
-                                                      "completed"
-                                                        ? "bg-green-100 text-green-800"
-                                                        : order.status ===
-                                                            "in_progress"
-                                                          ? "bg-blue-100 text-blue-800"
-                                                          : "bg-yellow-100 text-yellow-800"
+                                                    <span class="px-2 py-1 rounded-full text-xs font-medium ${
+                                                      order.status === "completed"
+                                                        ? "bg-green-100 text-green-700 border border-green-200"
+                                                        : order.status === "in_progress"
+                                                          ? "bg-blue-100 text-blue-700 border border-blue-200"
+                                                          : "bg-amber-100 text-amber-700 border border-amber-200"
                                                     }">
                                                         ${
-                                                          order.status ===
-                                                          "completed"
+                                                          order.status === "completed"
                                                             ? "تکمیل شده"
-                                                            : order.status ===
-                                                                "in_progress"
+                                                            : order.status === "in_progress"
                                                               ? "در حال انجام"
                                                               : "در انتظار"
                                                         }

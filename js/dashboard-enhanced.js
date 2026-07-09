@@ -138,124 +138,162 @@ const EnhancedDashboardModule = {
     async getManagerDashboard() {
         try {
             debugLogger('Loading manager dashboard...', 'info');
-            
-            const stats = await this.getDashboardStats();
+
+            const stats        = await this.getDashboardStats();
             const recentOrders = await this.getRecentOrders(5);
-            
+            const users        = DataModule.getUsers() || [];
+
+            // ── پیام‌های خوانده‌نشده ─────────────────────────
+            let unreadMessages = 0;
+            try {
+                const cu = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                if (cu.id) {
+                    users.forEach(u => {
+                        if (u.id === cu.id) return;
+                        const key  = `personalChat_${cu.id}_${u.id}`;
+                        const msgs = JSON.parse(localStorage.getItem(key) || '[]');
+                        unreadMessages += msgs.filter(m => !m.read && m.senderId !== cu.id).length;
+                    });
+                    const mMsgs = JSON.parse(localStorage.getItem('managesChat_messages') || '[]');
+                    unreadMessages += mMsgs.filter(m => m.mentions && Array.isArray(m.mentions)
+                        && m.mentions.includes(cu.id) && !(m.readBy || []).includes(cu.id)).length;
+                }
+            } catch(e) {}
+
+            // ── ساعات کاری این هفته ───────────────────────────
+            let weeklyHours = 0;
+            try {
+                const today = new Date(); today.setHours(0,0,0,0);
+                const weekStart = new Date(today); weekStart.setDate(today.getDate() - today.getDay());
+                const whData = JSON.parse(localStorage.getItem('work_hours_data') || '[]');
+                whData.filter(e => e.type !== 'expense').forEach(e => {
+                    if (new Date(e.date) >= weekStart) weeklyHours += parseFloat(e.totalHours || 0);
+                });
+            } catch(e) {}
+
+            const activeStudents = users.filter(u => u.role === 'student').length;
+            const totalOrders    = stats.total_orders || 0;
+            const completedPct   = totalOrders > 0
+                ? Math.round(((stats.completed_orders || 0) / totalOrders) * 100) : 0;
+
             return `
                 <div class="space-y-6">
-                    <!-- Statistics Cards -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-6 text-white">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-blue-100">کل سفارشات</p>
-                                    <p class="text-3xl font-bold">${stats.total_orders}</p>
-                                </div>
-                                <i class="fas fa-clipboard-list text-4xl text-blue-200"></i>
+                    <!-- Row 1: 4 کارت اصلی -->
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+                        <div class="bg-white rounded-xl shadow p-5 border-r-4 border-blue-500 flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">سفارشات فعال</p>
+                                <p class="text-3xl font-bold text-blue-600">${stats.in_progress_orders || 0}</p>
+                                <p class="text-xs text-gray-400 mt-1">${stats.pending_orders || 0} در انتظار</p>
                             </div>
+                            <div class="bg-blue-50 rounded-full p-3"><i class="fas fa-tasks text-blue-500 text-2xl"></i></div>
                         </div>
-                        
-                        <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg p-6 text-white cursor-pointer hover:from-yellow-600 hover:to-yellow-700 transition-all duration-200" onclick="openWeeklyCalendar()">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-yellow-100">لیست هفته</p>
-                                    <p class="text-3xl font-bold">${stats.pending_orders}</p>
-                                </div>
-                                <i class="fas fa-calendar-week text-4xl text-yellow-200"></i>
+
+                        <div class="bg-white rounded-xl shadow p-5 border-r-4 border-green-500 flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">تکمیل شده</p>
+                                <p class="text-3xl font-bold text-green-600">${stats.completed_orders || 0}</p>
+                                <p class="text-xs text-gray-400 mt-1">از ${totalOrders} سفارش</p>
                             </div>
+                            <div class="bg-green-50 rounded-full p-3"><i class="fas fa-check-circle text-green-500 text-2xl"></i></div>
                         </div>
-                        
-                        <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-6 text-white">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-green-100">در حال انجام</p>
-                                    <p class="text-3xl font-bold">${stats.in_progress_orders}</p>
-                                </div>
-                                <i class="fas fa-spinner text-4xl text-green-200"></i>
+
+                        <div class="bg-white rounded-xl shadow p-5 border-r-4 border-red-400 flex items-center justify-between ${unreadMessages > 0 ? 'ring-2 ring-red-300' : ''}">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">پیام‌های جدید</p>
+                                <p class="text-3xl font-bold ${unreadMessages > 0 ? 'text-red-500' : 'text-gray-400'}">${unreadMessages}</p>
+                                <p class="text-xs text-gray-400 mt-1">${unreadMessages > 0 ? 'خوانده‌نشده' : 'همه خوانده شده'}</p>
                             </div>
+                            <div class="bg-red-50 rounded-full p-3"><i class="fas fa-comments text-red-400 text-2xl"></i></div>
                         </div>
-                        
-                        <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-purple-100">درآمد کل</p>
-                                    <p class="text-2xl font-bold">${this.formatCurrency(stats.total_revenue)}</p>
-                                </div>
-                                <i class="fas fa-dollar-sign text-4xl text-purple-200"></i>
+
+                        <div class="bg-white rounded-xl shadow p-5 border-r-4 border-purple-500 flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">دانشجویان</p>
+                                <p class="text-3xl font-bold text-purple-600">${activeStudents}</p>
+                                <p class="text-xs text-gray-400 mt-1">از ${users.length} کاربر کل</p>
                             </div>
+                            <div class="bg-purple-50 rounded-full p-3"><i class="fas fa-user-graduate text-purple-500 text-2xl"></i></div>
                         </div>
                     </div>
-                    
-                    <!-- Quick Actions -->
-                    <div class="bg-slate-800 rounded-lg p-6">
-                        <h3 class="text-lg font-semibold text-white mb-4">عملیات سریع</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <button @click="showModal = 'quickOrder'" 
-                                    class="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg text-center">
-                                <i class="fas fa-bolt text-2xl mb-2"></i>
-                                <p class="text-sm">سفارش سریع</p>
+
+                    <!-- Row 2: 3 کارت آمار -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+                        <div class="bg-white rounded-xl shadow p-5 border-r-4 border-amber-400 flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">ساعات کاری این هفته</p>
+                                <p class="text-3xl font-bold text-amber-500">${weeklyHours.toFixed(1)}</p>
+                                <p class="text-xs text-gray-400 mt-1">ساعت ثبت‌شده کارمندان</p>
+                            </div>
+                            <div class="bg-amber-50 rounded-full p-3"><i class="fas fa-clock text-amber-400 text-2xl"></i></div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow p-5 border-r-4 border-indigo-400 flex items-center justify-between cursor-pointer hover:shadow-md" onclick="openWeeklyCalendar()">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">نرخ تکمیل سفارشات</p>
+                                <p class="text-3xl font-bold text-indigo-600">${completedPct}%</p>
+                                <p class="text-xs text-gray-400 mt-1">${stats.completed_orders || 0} از ${totalOrders} سفارش</p>
+                            </div>
+                            <div class="bg-indigo-50 rounded-full p-3"><i class="fas fa-chart-pie text-indigo-400 text-2xl"></i></div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow p-5 border-r-4 border-teal-400 flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">وظایف دیرکرد</p>
+                                <p class="text-3xl font-bold ${this.getDelayedTasksCount() > 0 ? 'text-red-500' : 'text-teal-600'}">${this.getDelayedTasksCount()}</p>
+                                <p class="text-xs text-gray-400 mt-1">${this.getDelayedTasksCount() > 0 ? 'نیاز به پیگیری' : 'همه در موعد'}</p>
+                            </div>
+                            <div class="bg-teal-50 rounded-full p-3"><i class="fas fa-exclamation-triangle text-teal-400 text-2xl"></i></div>
+                        </div>
+                    </div>
+
+                    <!-- عملیات سریع -->
+                    <div class="bg-white rounded-xl shadow p-5">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">عملیات سریع</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <button @click="showModal = 'quickOrder'"
+                                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2">
+                                <i class="fas fa-bolt"></i> سفارش سریع
                             </button>
-                            <button @click="showModal = 'createProject'" 
-                                    class="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg text-center">
-                                <i class="fas fa-plus-circle text-2xl mb-2"></i>
-                                <p class="text-sm">سفارش جدید</p>
+                            <button @click="showModal = 'createProject'"
+                                    class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2">
+                                <i class="fas fa-plus-circle"></i> سفارش جدید
                             </button>
-                            <button @click="currentPage = 'orders'" 
-                                    class="bg-gray-600 hover:bg-gray-700 text-white p-4 rounded-lg text-center">
-                                <i class="fas fa-list text-2xl mb-2"></i>
-                                <p class="text-sm">مشاهده سفارشات</p>
+                            <button @click="currentPage = 'orders'"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2">
+                                <i class="fas fa-list"></i> سفارشات
                             </button>
-                            <button onclick="openAddUserModal()" 
-                                    class="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg text-center">
-                                <i class="fas fa-user-plus text-2xl mb-2"></i>
-                                <p class="text-sm">کاربر جدید</p>
+                            <button onclick="openAddUserModal()"
+                                    class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2">
+                                <i class="fas fa-user-plus"></i> کاربر جدید
                             </button>
                         </div>
                     </div>
-                    
-                    <!-- Recent Orders -->
-                    <div class="bg-slate-800 rounded-lg p-6">
-                        <h3 class="text-lg font-semibold text-white mb-4">آخرین سفارشات</h3>
+
+                    <!-- آخرین سفارشات -->
+                    <div class="bg-white rounded-xl shadow p-5">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">آخرین سفارشات</h3>
                         <div class="space-y-3">
                             ${recentOrders.length > 0 ? recentOrders.map(order => `
-                                <div class="bg-slate-700 rounded-lg p-4 flex justify-between items-center">
+                                <div class="flex justify-between items-center p-3 border rounded-xl hover:bg-gray-50 transition-colors">
                                     <div>
-                                        <p class="font-medium text-white">${order.studentName || order.student_name}</p>
-                                        <p class="text-sm text-gray-300">${order.type} - ${order.university}</p>
+                                        <p class="font-medium text-gray-800">${order.studentName || order.student_name || '-'}</p>
+                                        <p class="text-sm text-gray-500">${order.type} — ${order.university || ''}</p>
                                         <p class="text-xs text-gray-400">${UTILS.formatDate(order.createdAt || order.created_at)}</p>
                                     </div>
-                                    <div class="text-left">
-                                        <span class="px-3 py-1 rounded-full text-xs font-medium ${
-                                            order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                            order.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                                            order.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                            'bg-gray-100 text-gray-800'
-                                        }">
-                                            ${order.status === 'pending' ? 'در انتظار' :
-                                              order.status === 'in_progress' ? 'در حال انجام' :
-                                              order.status === 'completed' ? 'تکمیل شده' : order.status}
-                                        </span>
-                                        <p class="text-sm text-gray-300 mt-1">${this.formatCurrency(order.totalAmount || order.total_amount)}</p>
-                                    </div>
+                                    <span class="px-3 py-1 rounded-full text-xs font-medium ${
+                                        order.status === 'pending'     ? 'bg-yellow-100 text-yellow-800' :
+                                        order.status === 'in_progress' ? 'bg-blue-100   text-blue-800'   :
+                                        order.status === 'completed'   ? 'bg-green-100  text-green-800'  :
+                                        'bg-gray-100 text-gray-800'}">
+                                        ${order.status === 'pending'     ? 'در انتظار'    :
+                                          order.status === 'in_progress' ? 'در حال انجام' :
+                                          order.status === 'completed'   ? 'تکمیل شده'   : order.status}
+                                    </span>
                                 </div>
                             `).join('') : '<p class="text-gray-400 text-center py-4">سفارشی موجود نیست</p>'}
-                        </div>
-                    </div>
-                    
-                    <!-- Delayed Tasks Section -->
-                    <div class="bg-red-900 bg-opacity-30 border border-red-500 rounded-lg p-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-semibold text-red-400">
-                                <i class="fas fa-exclamation-triangle ml-2"></i>
-                                وظایف دیرکرد
-                            </h3>
-                            <span class="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold">
-                                ${this.getDelayedTasksCount()}
-                            </span>
-                        </div>
-                        <div class="space-y-3">
-                            ${this.getDelayedTasksHTML()}
                         </div>
                     </div>
                 </div>
@@ -270,97 +308,147 @@ const EnhancedDashboardModule = {
     async getemployeeDashboard() {
         try {
             debugLogger('Loading employee dashboard...', 'info');
-            
-            const stats = await this.getDashboardStats();
+
+            const stats        = await this.getDashboardStats();
             const recentOrders = await this.getRecentOrders(5);
-            
+            const users        = DataModule.getUsers() || [];
+
+            // ── پیام‌های خوانده‌نشده ─────────────────────────
+            let unreadMessages = 0;
+            try {
+                const cu = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                if (cu.id) {
+                    users.forEach(u => {
+                        if (u.id === cu.id) return;
+                        const key  = `personalChat_${cu.id}_${u.id}`;
+                        const msgs = JSON.parse(localStorage.getItem(key) || '[]');
+                        unreadMessages += msgs.filter(m => !m.read && m.senderId !== cu.id).length;
+                    });
+                    const mMsgs = JSON.parse(localStorage.getItem('managesChat_messages') || '[]');
+                    unreadMessages += mMsgs.filter(m => m.mentions && Array.isArray(m.mentions)
+                        && m.mentions.includes(cu.id) && !(m.readBy || []).includes(cu.id)).length;
+                }
+            } catch(e) {}
+
+            // ── ساعات کاری امروز و این هفته ──────────────────
+            let todayHours = 0, weeklyHours = 0;
+            try {
+                const cu      = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                const whData  = JSON.parse(localStorage.getItem('work_hours_data') || '[]');
+                const todayStr = new Date().toISOString().split('T')[0];
+                const today   = new Date(); today.setHours(0,0,0,0);
+                const weekStart = new Date(today); weekStart.setDate(today.getDate() - today.getDay());
+                whData.filter(e => e.type !== 'expense' && e.employeeId === cu.id).forEach(e => {
+                    const h = parseFloat(e.totalHours || 0);
+                    if (e.date === todayStr) todayHours += h;
+                    if (new Date(e.date) >= weekStart) weeklyHours += h;
+                });
+            } catch(e) {}
+
+            const students = users.filter(u => u.role === 'student').length;
+
             return `
                 <div class="space-y-6">
-                    <div class="flex justify-between items-center">
-                        <h2 class="text-2xl font-bold text-white">داشبورد هماهنگی</h2>
-                        <button onclick="location.reload()" 
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">
-                            <i class="fas fa-sync-alt ml-2"></i>
-                            به‌روزرسانی
-                        </button>
-                    </div>
-                    
-                    <!-- Statistics -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg p-6 text-white">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-yellow-100">نیاز به بررسی</p>
-                                    <p class="text-3xl font-bold">${stats.pending_orders}</p>
-                                </div>
-                                <i class="fas fa-exclamation-triangle text-4xl text-yellow-200"></i>
+                    <div class="bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl p-6">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 class="text-2xl font-bold mb-1">پنل کارمند</h2>
+                                <p class="text-purple-100 text-sm">مدیریت و هماهنگی سفارشات</p>
                             </div>
-                        </div>
-                        
-                        <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-blue-100">در حال انجام</p>
-                                    <p class="text-3xl font-bold">${stats.in_progress_orders}</p>
-                                </div>
-                                <i class="fas fa-cogs text-4xl text-blue-200"></i>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-6 text-white">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-green-100">تکمیل شده</p>
-                                    <p class="text-3xl font-bold">${stats.completed_orders}</p>
-                                </div>
-                                <i class="fas fa-check-circle text-4xl text-green-200"></i>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Quick Actions -->
-                    <div class="bg-slate-800 rounded-lg p-6">
-                        <h3 class="text-lg font-semibold text-white mb-4">عملیات سریع</h3>
-                        <div class="grid grid-cols-1 gap-4">
-                            <button onclick="openAddUserModal()" 
-                                    class="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg text-center">
-                                <i class="fas fa-user-graduate text-2xl mb-2"></i>
-                                <p class="text-sm">دانشجوی جدید</p>
+                            <button onclick="location.reload()"
+                                    class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                                <i class="fas fa-sync-alt ml-1"></i> به‌روزرسانی
                             </button>
                         </div>
                     </div>
-                    
-                    <!-- Recent Orders -->
-                    <div class="bg-slate-800 rounded-lg p-6">
-                        <h3 class="text-lg font-semibold text-white mb-4">سفارشات اخیر</h3>
+
+                    <!-- ردیف ۱: سفارشات + پیام -->
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white rounded-xl shadow p-4 border-r-4 border-yellow-400 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-gray-500">در انتظار</p>
+                                <p class="text-3xl font-bold text-yellow-500">${stats.pending_orders || 0}</p>
+                                <p class="text-xs text-gray-400 mt-1">سفارش</p>
+                            </div>
+                            <div class="bg-yellow-50 rounded-full p-2"><i class="fas fa-clock text-yellow-400 text-xl"></i></div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow p-4 border-r-4 border-blue-500 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-gray-500">در حال انجام</p>
+                                <p class="text-3xl font-bold text-blue-600">${stats.in_progress_orders || 0}</p>
+                                <p class="text-xs text-gray-400 mt-1">سفارش</p>
+                            </div>
+                            <div class="bg-blue-50 rounded-full p-2"><i class="fas fa-tasks text-blue-400 text-xl"></i></div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow p-4 border-r-4 border-green-500 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-gray-500">تکمیل شده</p>
+                                <p class="text-3xl font-bold text-green-600">${stats.completed_orders || 0}</p>
+                                <p class="text-xs text-gray-400 mt-1">سفارش</p>
+                            </div>
+                            <div class="bg-green-50 rounded-full p-2"><i class="fas fa-check-circle text-green-400 text-xl"></i></div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow p-4 border-r-4 border-red-400 flex items-center justify-between ${unreadMessages > 0 ? 'ring-2 ring-red-300' : ''}">
+                            <div>
+                                <p class="text-xs text-gray-500">پیام‌های جدید</p>
+                                <p class="text-3xl font-bold ${unreadMessages > 0 ? 'text-red-500' : 'text-gray-400'}">${unreadMessages}</p>
+                                <p class="text-xs text-gray-400 mt-1">${unreadMessages > 0 ? 'خوانده‌نشده' : 'همه خوانده شده'}</p>
+                            </div>
+                            <div class="bg-red-50 rounded-full p-2"><i class="fas fa-envelope text-red-400 text-xl"></i></div>
+                        </div>
+                    </div>
+
+                    <!-- ردیف ۲: ساعات کاری + دانشجویان -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        <div class="bg-white rounded-xl shadow p-4 border-r-4 border-amber-400 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-gray-500">ساعات کاری امروز</p>
+                                <p class="text-3xl font-bold text-amber-500">${todayHours.toFixed(1)}</p>
+                                <p class="text-xs text-gray-400 mt-1">ساعت ثبت‌شده</p>
+                            </div>
+                            <div class="bg-amber-50 rounded-full p-2"><i class="fas fa-stopwatch text-amber-400 text-xl"></i></div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow p-4 border-r-4 border-orange-400 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-gray-500">ساعات این هفته</p>
+                                <p class="text-3xl font-bold text-orange-500">${weeklyHours.toFixed(1)}</p>
+                                <p class="text-xs text-gray-400 mt-1">ساعت کاری</p>
+                            </div>
+                            <div class="bg-orange-50 rounded-full p-2"><i class="fas fa-calendar-week text-orange-400 text-xl"></i></div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow p-4 border-r-4 border-purple-500 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-gray-500">دانشجویان</p>
+                                <p class="text-3xl font-bold text-purple-600">${students}</p>
+                                <p class="text-xs text-gray-400 mt-1">تعداد کل</p>
+                            </div>
+                            <div class="bg-purple-50 rounded-full p-2"><i class="fas fa-user-graduate text-purple-400 text-xl"></i></div>
+                        </div>
+                    </div>
+
+                    <!-- سفارشات نیازمند توجه -->
+                    <div class="bg-white rounded-xl shadow p-5">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">سفارشات نیازمند توجه</h3>
                         <div class="space-y-3">
-                            ${recentOrders.length > 0 ? recentOrders.map(order => `
-                                <div class="bg-slate-700 rounded-lg p-4">
-                                    <div class="flex justify-between items-start">
+                            ${recentOrders.filter(o => o.status === 'pending').length === 0
+                                ? '<p class="text-gray-400 text-center py-4">سفارش در انتظاری وجود ندارد</p>'
+                                : recentOrders.filter(o => o.status === 'pending').map(order => `
+                                    <div class="flex items-center justify-between p-3 border rounded-xl hover:bg-gray-50 transition-colors">
                                         <div>
-                                            <p class="font-medium text-white">${order.studentName || order.student_name}</p>
-                                            <p class="text-sm text-gray-300">${order.type} - ${order.university}</p>
+                                            <p class="font-medium text-gray-800">${order.studentName || order.student_name || '-'}</p>
+                                            <p class="text-sm text-gray-500">${order.type} — ${order.university || ''}</p>
                                         </div>
-                                        <div class="flex space-x-2 space-x-reverse">
-                                            ${order.status === 'pending' ? `
-                                                <button onclick="approveOrder('${order.id}')" 
-                                                        class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs">
-                                                    تایید
-                                                </button>
-                                                <button onclick="rejectOrder('${order.id}')" 
-                                                        class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs">
-                                                    رد
-                                                </button>
-                                            ` : order.status === 'approved' ? `
-                                                <button onclick="assignOrder('${order.id}')" 
-                                                        class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-xs">
-                                                    تخصیص
-                                                </button>
-                                            ` : ''}
-                                        </div>
+                                        <button onclick="window.assignOrder('${order.id}')"
+                                                class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">
+                                            تخصیص
+                                        </button>
                                     </div>
-                                </div>
-                            `).join('') : '<p class="text-gray-400 text-center py-4">سفارشی موجود نیست</p>'}
+                                `).join('')}
                         </div>
                     </div>
                 </div>
@@ -535,16 +623,14 @@ const EnhancedDashboardModule = {
                                         </div>
                                         <div class="text-left">
                                             <span class="px-3 py-1 rounded-full text-xs font-medium ${
-                                                order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                order.status === 'approved' ? 'bg-blue-100 text-blue-800' :
-                                                order.status === 'in_progress' ? 'bg-green-100 text-green-800' :
-                                                order.status === 'completed' ? 'bg-purple-100 text-purple-800' :
+                                                order.status === 'pending'     ? 'bg-yellow-100 text-yellow-800' :
+                                                order.status === 'in_progress' ? 'bg-blue-100   text-blue-800'   :
+                                                order.status === 'completed'   ? 'bg-green-100  text-green-800'  :
                                                 'bg-gray-100 text-gray-800'
                                             }">
-                                                ${order.status === 'pending' ? 'در انتظار' :
-                                                  order.status === 'approved' ? 'تایید شده' :
+                                                ${order.status === 'pending'     ? 'در انتظار'    :
                                                   order.status === 'in_progress' ? 'در حال انجام' :
-                                                  order.status === 'completed' ? 'تکمیل شده' : order.status}
+                                                  order.status === 'completed'   ? 'تکمیل شده'   : order.status}
                                             </span>
                                             <p class="text-sm text-gray-300 mt-2">${this.formatCurrency(order.totalAmount || order.total_amount)}</p>
                                             <button onclick="viewOrder('${order.id}')" 

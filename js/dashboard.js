@@ -49,105 +49,183 @@ const DashboardModule = {
         try {
             debugLogger('Loading manager dashboard...', 'info');
             const orders = DataModule.getOrders();
-            const users = DataModule.getUsers();
-            
+            const users  = DataModule.getUsers();
+
             if (!orders || !users) {
-                debugLogger('Orders or users data missing', 'error', { orders: !!orders, users: !!users });
                 return '<div class="text-red-500">خطا: داده‌ها یافت نشد</div>';
             }
-            
-            const stats = {
-                totalOrders: orders.length,
-                pendingOrders: orders.filter(o => o.status === CONFIG.ORDER_STATUS.PENDING).length,
-                completedOrders: orders.filter(o => o.status === CONFIG.ORDER_STATUS.COMPLETED).length,
-                totalRevenue: orders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
-                totalUsers: users.length,
-                activeStudents: users.filter(u => u.role === CONFIG.ROLES.STUDENT && u.active).length
-            };
-            
-            debugLogger('Manager dashboard stats calculated', 'success', stats);
-        
-        return `
+
+            // ── آمار سفارشات ──────────────────────────────────
+            const totalOrders     = orders.length;
+            const pendingOrders   = orders.filter(o => o.status === CONFIG.ORDER_STATUS.PENDING).length;
+            const inProgress      = orders.filter(o => o.status === CONFIG.ORDER_STATUS.IN_PROGRESS).length;
+            const completedOrders = orders.filter(o => o.status === CONFIG.ORDER_STATUS.COMPLETED).length;
+
+            // ── پیام‌های خوانده‌نشده (personal chat) ───────────
+            let unreadMessages = 0;
+            try {
+                const cu = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                if (cu.id) {
+                    const allUsers2 = DataModule.getUsers() || [];
+                    allUsers2.forEach(u => {
+                        if (u.id === cu.id) return;
+                        const key = `personalChat_${cu.id}_${u.id}`;
+                        const msgs = JSON.parse(localStorage.getItem(key) || '[]');
+                        unreadMessages += msgs.filter(m => !m.read && m.senderId !== cu.id).length;
+                    });
+                    // management chat
+                    const mChatMsgs = JSON.parse(localStorage.getItem('managesChat_messages') || '[]');
+                    unreadMessages += mChatMsgs.filter(m => m.mentions && Array.isArray(m.mentions) && m.mentions.includes(cu.id) && !m.readBy?.includes(cu.id)).length;
+                }
+            } catch(e) {}
+
+            // ── ساعات کاری (این هفته) ─────────────────────────
+            let weeklyHours = 0;
+            try {
+                const whData = JSON.parse(localStorage.getItem('work_hours_data') || '[]');
+                const today = new Date();
+                const dayOfWeek = today.getDay();
+                const weekStart = new Date(today);
+                weekStart.setDate(today.getDate() - dayOfWeek);
+                weekStart.setHours(0,0,0,0);
+                whData.filter(e => e.type !== 'expense' && e.status !== 'rejected').forEach(e => {
+                    const d = new Date(e.date);
+                    if (d >= weekStart) weeklyHours += parseFloat(e.totalHours || 0);
+                });
+            } catch(e) {}
+
+            // ── تعداد دانشجویان فعال ──────────────────────────
+            const activeStudents = users.filter(u => u.role === 'student').length;
+
+            // ── آخرین ورود / فعالیت ───────────────────────────
+            const lastLoginStr = (() => {
+                try {
+                    const cu = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                    return cu.lastLogin ? new Date(cu.lastLogin).toLocaleString('fa-IR') : 'همین الان';
+                } catch(e) { return '-'; }
+            })();
+
+            return `
             <div class="space-y-6">
                 <!-- Stats Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div class="dashboard-card blue">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-700">کل سفارشات</h3>
-                                <p class="text-3xl font-bold text-blue-600">${stats.totalOrders}</p>
-                            </div>
-                            <i class="fas fa-clipboard-list text-blue-500 text-3xl"></i>
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+                    <div class="bg-white rounded-xl shadow p-5 border-r-4 border-blue-500 flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">سفارشات فعال</p>
+                            <p class="text-3xl font-bold text-blue-600">${inProgress}</p>
+                            <p class="text-xs text-gray-400 mt-1">${pendingOrders} در انتظار</p>
+                        </div>
+                        <div class="bg-blue-50 rounded-full p-3">
+                            <i class="fas fa-tasks text-blue-500 text-2xl"></i>
                         </div>
                     </div>
-                    
-                    <div class="dashboard-card yellow">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-700">در انتظار</h3>
-                                <p class="text-3xl font-bold text-yellow-600">${stats.pendingOrders}</p>
-                            </div>
-                            <i class="fas fa-clock text-yellow-500 text-3xl"></i>
+
+                    <div class="bg-white rounded-xl shadow p-5 border-r-4 border-green-500 flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">تکمیل شده</p>
+                            <p class="text-3xl font-bold text-green-600">${completedOrders}</p>
+                            <p class="text-xs text-gray-400 mt-1">از ${totalOrders} کل سفارش</p>
+                        </div>
+                        <div class="bg-green-50 rounded-full p-3">
+                            <i class="fas fa-check-circle text-green-500 text-2xl"></i>
                         </div>
                     </div>
-                    
-                    <div class="dashboard-card green">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-700">تکمیل شده</h3>
-                                <p class="text-3xl font-bold text-green-600">${stats.completedOrders}</p>
-                            </div>
-                            <i class="fas fa-check-circle text-green-500 text-3xl"></i>
+
+                    <div class="bg-white rounded-xl shadow p-5 border-r-4 border-red-400 flex items-center justify-between ${unreadMessages > 0 ? 'ring-2 ring-red-300' : ''}">
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">پیام‌های خوانده‌نشده</p>
+                            <p class="text-3xl font-bold ${unreadMessages > 0 ? 'text-red-500' : 'text-gray-400'}">${unreadMessages}</p>
+                            <p class="text-xs text-gray-400 mt-1">${unreadMessages > 0 ? 'نیاز به پاسخ دارد' : 'همه خوانده شده'}</p>
+                        </div>
+                        <div class="bg-red-50 rounded-full p-3">
+                            <i class="fas fa-comments text-red-400 text-2xl"></i>
                         </div>
                     </div>
-                    
-                    <div class="dashboard-card purple">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-700">درآمد کل</h3>
-                                <p class="text-2xl font-bold text-purple-600">${UTILS.formatCurrency(stats.totalRevenue)}</p>
-                            </div>
-                            <i class="fas fa-dollar-sign text-purple-500 text-3xl"></i>
+
+                    <div class="bg-white rounded-xl shadow p-5 border-r-4 border-purple-500 flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">دانشجویان</p>
+                            <p class="text-3xl font-bold text-purple-600">${activeStudents}</p>
+                            <p class="text-xs text-gray-400 mt-1">از ${users.length} کاربر کل</p>
+                        </div>
+                        <div class="bg-purple-50 rounded-full p-3">
+                            <i class="fas fa-user-graduate text-purple-500 text-2xl"></i>
                         </div>
                     </div>
+
                 </div>
-                
+
+                <!-- Row 2 -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+                    <div class="bg-white rounded-xl shadow p-5 border-r-4 border-amber-400 flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">ساعات کاری این هفته</p>
+                            <p class="text-3xl font-bold text-amber-500">${weeklyHours.toFixed(1)}</p>
+                            <p class="text-xs text-gray-400 mt-1">ساعت ثبت‌شده کارمندان</p>
+                        </div>
+                        <div class="bg-amber-50 rounded-full p-3">
+                            <i class="fas fa-clock text-amber-400 text-2xl"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow p-5 border-r-4 border-indigo-400 flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">نرخ تکمیل سفارشات</p>
+                            <p class="text-3xl font-bold text-indigo-600">${totalOrders > 0 ? Math.round((completedOrders/totalOrders)*100) : 0}%</p>
+                            <p class="text-xs text-gray-400 mt-1">${completedOrders} از ${totalOrders} سفارش</p>
+                        </div>
+                        <div class="bg-indigo-50 rounded-full p-3">
+                            <i class="fas fa-chart-pie text-indigo-400 text-2xl"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow p-5 border-r-4 border-teal-400 flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">آخرین ورود</p>
+                            <p class="text-lg font-bold text-teal-600">${lastLoginStr}</p>
+                            <p class="text-xs text-gray-400 mt-1">زمان آخرین فعالیت</p>
+                        </div>
+                        <div class="bg-teal-50 rounded-full p-3">
+                            <i class="fas fa-sign-in-alt text-teal-400 text-2xl"></i>
+                        </div>
+                    </div>
+
+                </div>
+
                 <!-- Quick Actions -->
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <h2 class="text-xl font-bold mb-4 text-gray-800">عملیات سریع</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <button @click="showModal = 'quickOrder'" 
-                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-medium btn">
-                            <i class="fas fa-bolt ml-2"></i>
-                            سفارش سریع
+                <div class="bg-white rounded-xl shadow p-5">
+                    <h2 class="text-lg font-bold mb-4 text-gray-800">عملیات سریع</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <button @click="showModal = 'quickOrder'"
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-bolt"></i> سفارش سریع
                         </button>
-                        <button @click="showModal = 'createProject'" 
-                                class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-medium btn">
-                            <i class="fas fa-plus-circle ml-2"></i>
-                            سفارش جدید
+                        <button @click="showModal = 'createProject'"
+                                class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-plus-circle"></i> سفارش جدید
                         </button>
-                        <button @click="currentPage = 'orders'" 
-                                class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-lg font-medium btn">
-                            <i class="fas fa-list ml-2"></i>
-                            مشاهده سفارشات
+                        <button @click="currentPage = 'orders'"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-list"></i> مشاهده سفارشات
                         </button>
-                        <button onclick="openAddUserModal()" 
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium btn">
-                            <i class="fas fa-user-plus ml-2"></i>
-                            کاربر جدید
+                        <button onclick="openAddUserModal()"
+                                class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-user-plus"></i> کاربر جدید
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- Recent Orders -->
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <h2 class="text-xl font-bold mb-4 text-gray-800">سفارشات اخیر</h2>
+                <div class="bg-white rounded-xl shadow p-5">
+                    <h2 class="text-lg font-bold mb-4 text-gray-800">سفارشات اخیر</h2>
                     <div class="space-y-3">
                         ${this.getRecentOrdersHtml(orders.slice(-5))}
                     </div>
                 </div>
             </div>
-        `;
+            `;
         } catch (error) {
             debugLogger('Error in getManagerDashboard', 'error', error);
             return '<div class="text-red-500">خطا در بارگذاری داشبورد مدیر</div>';
@@ -311,29 +389,19 @@ const DashboardModule = {
             
             switch(order.status) {
                 case CONFIG.ORDER_STATUS.PENDING:
-                    statusMessage = 'در انتظار تایید مدیر';
+                    statusMessage = 'در انتظار شروع کار';
                     statusIcon = 'fa-clock';
                     statusColor = 'text-yellow-600';
-                    break;
-                case CONFIG.ORDER_STATUS.APPROVED:
-                    statusMessage = 'مدیر پروژه را تایید کرد - هماهنگی در حال انجام است';
-                    statusIcon = 'fa-check';
-                    statusColor = 'text-green-600';
                     break;
                 case CONFIG.ORDER_STATUS.IN_PROGRESS:
                     statusMessage = `عامل در حال نوشتن ${order.type === 'نوشتن رساله' ? 'رساله' : order.type === 'نوشتن مقاله' ? 'مقاله' : 'سفارش'} شما است`;
                     statusIcon = 'fa-pen';
                     statusColor = 'text-blue-600';
                     break;
-                case CONFIG.ORDER_STATUS.REJECTED:
-                    statusMessage = 'سفارش نیاز به اصلاح دارد';
-                    statusIcon = 'fa-exclamation-triangle';
-                    statusColor = 'text-red-600';
-                    break;
                 case CONFIG.ORDER_STATUS.COMPLETED:
                     statusMessage = 'سفارش تکمیل شده است';
                     statusIcon = 'fa-check-circle';
-                    statusColor = 'text-purple-600';
+                    statusColor = 'text-green-600';
                     break;
                 default:
                     statusMessage = order.stage || 'در حال بررسی';
@@ -386,18 +454,18 @@ const DashboardModule = {
     
     getStatusClass(status) {
         const classes = {
-            [CONFIG.ORDER_STATUS.PENDING]: 'bg-yellow-100 text-yellow-800',
+            [CONFIG.ORDER_STATUS.PENDING]:     'bg-yellow-100 text-yellow-800',
             [CONFIG.ORDER_STATUS.IN_PROGRESS]: 'bg-blue-100 text-blue-800',
-            [CONFIG.ORDER_STATUS.COMPLETED]: 'bg-green-100 text-green-800'
+            [CONFIG.ORDER_STATUS.COMPLETED]:   'bg-green-100 text-green-800'
         };
         return classes[status] || 'bg-gray-100 text-gray-800';
     },
     
     getStatusText(status) {
         const texts = {
-            [CONFIG.ORDER_STATUS.PENDING]: 'در انتظار',
+            [CONFIG.ORDER_STATUS.PENDING]:     'در انتظار',
             [CONFIG.ORDER_STATUS.IN_PROGRESS]: 'در حال انجام',
-            [CONFIG.ORDER_STATUS.COMPLETED]: 'تکمیل شده'
+            [CONFIG.ORDER_STATUS.COMPLETED]:   'تکمیل شده'
         };
         return texts[status] || status;
     },
@@ -407,52 +475,153 @@ const DashboardModule = {
         try {
             debugLogger('Loading employee dashboard...', 'info');
             const orders = DataModule.getOrders();
-            const pendingOrders = orders.filter(o => o.status === CONFIG.ORDER_STATUS.PENDING);
+            const pendingOrders    = orders.filter(o => o.status === CONFIG.ORDER_STATUS.PENDING);
             const inProgressOrders = orders.filter(o => o.status === CONFIG.ORDER_STATUS.IN_PROGRESS);
-            
+            const completedOrders  = orders.filter(o => o.status === CONFIG.ORDER_STATUS.COMPLETED);
+
+            // ── پیام‌های خوانده‌نشده ─────────────────────────
+            let unreadMessages = 0;
+            try {
+                const cu = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                if (cu.id) {
+                    const allUsers2 = DataModule.getUsers() || [];
+                    allUsers2.forEach(u => {
+                        if (u.id === cu.id) return;
+                        const key = `personalChat_${cu.id}_${u.id}`;
+                        const msgs = JSON.parse(localStorage.getItem(key) || '[]');
+                        unreadMessages += msgs.filter(m => !m.read && m.senderId !== cu.id).length;
+                    });
+                    const mChatMsgs = JSON.parse(localStorage.getItem('managesChat_messages') || '[]');
+                    unreadMessages += mChatMsgs.filter(m => m.mentions && Array.isArray(m.mentions) && m.mentions.includes(cu.id) && !m.readBy?.includes(cu.id)).length;
+                }
+            } catch(e) {}
+
+            // ── ساعات کاری امروز ──────────────────────────────
+            let todayHours = 0, weeklyHours = 0;
+            try {
+                const cu = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                const whData = JSON.parse(localStorage.getItem('work_hours_data') || '[]');
+                const todayStr = new Date().toISOString().split('T')[0];
+                const today = new Date(); today.setHours(0,0,0,0);
+                const weekStart = new Date(today); weekStart.setDate(today.getDate() - today.getDay());
+                whData.filter(e => e.type !== 'expense' && e.employeeId === cu.id).forEach(e => {
+                    const h = parseFloat(e.totalHours || 0);
+                    if (e.date === todayStr) todayHours += h;
+                    if (new Date(e.date) >= weekStart) weeklyHours += h;
+                });
+            } catch(e) {}
+
+            // ── تعداد دانشجویان ───────────────────────────────
+            const students = (DataModule.getUsers() || []).filter(u => u.role === 'student').length;
+
             return `
                 <div class="space-y-6">
-                    <div class="bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-lg p-6">
-                        <h2 class="text-2xl font-bold mb-2">پنل کارمند</h2>
-                        <p class="text-purple-100">مدیریت و هماهنگی سفارشات</p>
+                    <div class="bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl p-6">
+                        <h2 class="text-2xl font-bold mb-1">پنل کارمند</h2>
+                        <p class="text-purple-100 text-sm">مدیریت و هماهنگی سفارشات</p>
                     </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="dashboard-card yellow">
-                            <div class="text-center">
-                                <h3 class="text-lg font-semibold text-gray-700">در انتظار تخصیص</h3>
-                                <p class="text-3xl font-bold text-yellow-600">${pendingOrders.length}</p>
+
+                    <!-- Row 1: سفارشات -->
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white rounded-xl shadow p-4 border-r-4 border-yellow-400 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-gray-500">در انتظار</p>
+                                <p class="text-3xl font-bold text-yellow-500">${pendingOrders.length}</p>
+                                <p class="text-xs text-gray-400 mt-1">سفارش</p>
+                            </div>
+                            <div class="bg-yellow-50 rounded-full p-2">
+                                <i class="fas fa-clock text-yellow-400 text-xl"></i>
                             </div>
                         </div>
-                        <div class="dashboard-card blue">
-                            <div class="text-center">
-                                <h3 class="text-lg font-semibold text-gray-700">در حال انجام</h3>
+
+                        <div class="bg-white rounded-xl shadow p-4 border-r-4 border-blue-500 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-gray-500">در حال انجام</p>
                                 <p class="text-3xl font-bold text-blue-600">${inProgressOrders.length}</p>
+                                <p class="text-xs text-gray-400 mt-1">سفارش</p>
+                            </div>
+                            <div class="bg-blue-50 rounded-full p-2">
+                                <i class="fas fa-tasks text-blue-400 text-xl"></i>
                             </div>
                         </div>
-                        <div class="dashboard-card green">
-                            <div class="text-center">
-                                <h3 class="text-lg font-semibold text-gray-700">کل سفارشات</h3>
-                                <p class="text-3xl font-bold text-green-600">${orders.length}</p>
+
+                        <div class="bg-white rounded-xl shadow p-4 border-r-4 border-green-500 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-gray-500">تکمیل شده</p>
+                                <p class="text-3xl font-bold text-green-600">${completedOrders.length}</p>
+                                <p class="text-xs text-gray-400 mt-1">سفارش</p>
+                            </div>
+                            <div class="bg-green-50 rounded-full p-2">
+                                <i class="fas fa-check-circle text-green-400 text-xl"></i>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow p-4 border-r-4 border-red-400 flex items-center justify-between ${unreadMessages > 0 ? 'ring-2 ring-red-300' : ''}">
+                            <div>
+                                <p class="text-xs text-gray-500">پیام‌های جدید</p>
+                                <p class="text-3xl font-bold ${unreadMessages > 0 ? 'text-red-500' : 'text-gray-400'}">${unreadMessages}</p>
+                                <p class="text-xs text-gray-400 mt-1">${unreadMessages > 0 ? 'خوانده‌نشده' : 'همه خوانده شده'}</p>
+                            </div>
+                            <div class="bg-red-50 rounded-full p-2">
+                                <i class="fas fa-envelope text-red-400 text-xl"></i>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="bg-white rounded-lg shadow-md p-6">
-                        <h2 class="text-xl font-bold mb-4 text-gray-800">سفارشات نیازمند توجه</h2>
+
+                    <!-- Row 2: ساعات کاری + دانشجویان -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        <div class="bg-white rounded-xl shadow p-4 border-r-4 border-amber-400 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-gray-500">ساعات کاری امروز</p>
+                                <p class="text-3xl font-bold text-amber-500">${todayHours.toFixed(1)}</p>
+                                <p class="text-xs text-gray-400 mt-1">ساعت ثبت‌شده</p>
+                            </div>
+                            <div class="bg-amber-50 rounded-full p-2">
+                                <i class="fas fa-stopwatch text-amber-400 text-xl"></i>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow p-4 border-r-4 border-orange-400 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-gray-500">ساعات این هفته</p>
+                                <p class="text-3xl font-bold text-orange-500">${weeklyHours.toFixed(1)}</p>
+                                <p class="text-xs text-gray-400 mt-1">ساعت کاری</p>
+                            </div>
+                            <div class="bg-orange-50 rounded-full p-2">
+                                <i class="fas fa-calendar-week text-orange-400 text-xl"></i>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow p-4 border-r-4 border-purple-500 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-gray-500">دانشجویان</p>
+                                <p class="text-3xl font-bold text-purple-600">${students}</p>
+                                <p class="text-xs text-gray-400 mt-1">تعداد کل</p>
+                            </div>
+                            <div class="bg-purple-50 rounded-full p-2">
+                                <i class="fas fa-user-graduate text-purple-400 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- سفارشات در انتظار -->
+                    <div class="bg-white rounded-xl shadow p-5">
+                        <h2 class="text-lg font-bold mb-4 text-gray-800">سفارشات نیازمند توجه</h2>
                         <div class="space-y-3">
-                            ${pendingOrders.slice(0, 5).map(order => `
-                                <div class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
-                                    <div>
-                                        <h4 class="font-medium">${order.studentName}</h4>
-                                        <p class="text-sm text-gray-600">${order.type}</p>
+                            ${pendingOrders.length === 0
+                                ? '<p class="text-gray-400 text-center py-4">سفارش در انتظاری وجود ندارد</p>'
+                                : pendingOrders.slice(0, 5).map(order => `
+                                    <div class="flex items-center justify-between p-3 border rounded-xl hover:bg-gray-50 transition-colors">
+                                        <div>
+                                            <h4 class="font-medium text-gray-800">${order.studentName}</h4>
+                                            <p class="text-sm text-gray-500">${order.type}</p>
+                                        </div>
+                                        <button onclick="window.assignOrder('${order.id}')"
+                                                class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">
+                                            تخصیص
+                                        </button>
                                     </div>
-                                    <button onclick="window.assignOrder('${order.id}')" 
-                                            class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm">
-                                        تخصیص
-                                    </button>
-                                </div>
-                            `).join('')}
+                                `).join('')}
                         </div>
                     </div>
                 </div>
@@ -478,7 +647,6 @@ const DashboardModule = {
             } catch (e) {}
             
             const myOrders = orders.filter(o => o.assignedDoctorId === currentUser.id);
-            const rejectedOrders = myOrders.filter(o => o.status === CONFIG.ORDER_STATUS.REJECTED);
             
             return `
                 <div class="space-y-6">
@@ -487,7 +655,7 @@ const DashboardModule = {
                         <p class="text-indigo-100">وظایف محول شده</p>
                     </div>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div class="dashboard-card blue">
                             <div class="text-center">
                                 <h3 class="text-lg font-semibold text-gray-700">وظایف من</h3>
@@ -500,12 +668,6 @@ const DashboardModule = {
                                 <p class="text-3xl font-bold text-yellow-600">${myOrders.filter(o => o.status === CONFIG.ORDER_STATUS.IN_PROGRESS).length}</p>
                             </div>
                         </div>
-                        <div class="dashboard-card red">
-                            <div class="text-center">
-                                <h3 class="text-lg font-semibold text-gray-700">رد شده</h3>
-                                <p class="text-3xl font-bold text-red-600">${rejectedOrders.length}</p>
-                            </div>
-                        </div>
                         <div class="dashboard-card purple">
                             <div class="text-center">
                                 <h3 class="text-lg font-semibold text-gray-700">درآمد</h3>
@@ -513,54 +675,6 @@ const DashboardModule = {
                             </div>
                         </div>
                     </div>
-                    
-                    ${rejectedOrders.length > 0 ? `
-                    <!-- Rejected Orders - Need Attention -->
-                    <div class="bg-red-50 border border-red-200 rounded-lg shadow-md p-6">
-                        <h2 class="text-xl font-bold mb-4 text-red-800">
-                            <i class="fas fa-exclamation-triangle ml-2"></i>
-                            سفارشات رد شده - نیاز به اصلاح
-                        </h2>
-                        <div class="space-y-4">
-                            ${rejectedOrders.map(order => `
-                                <div class="bg-white border border-red-300 rounded-lg p-4">
-                                    <div class="flex justify-between items-start mb-3">
-                                        <div>
-                                            <h4 class="font-medium text-lg">${order.studentName}</h4>
-                                            <p class="text-sm text-gray-600">${order.type} - ${order.university}</p>
-                                        </div>
-                                        <span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">
-                                            رد شده
-                                        </span>
-                                    </div>
-                                    ${order.rejectionHistory && order.rejectionHistory.length > 0 ? `
-                                        <div class="bg-red-50 border-r-4 border-red-500 p-3 rounded">
-                                            <p class="text-sm font-medium text-red-800 mb-1">
-                                                <i class="fas fa-comment-alt ml-1"></i>
-                                                دلیل رد:
-                                            </p>
-                                            <p class="text-sm text-red-700">${order.rejectionHistory[order.rejectionHistory.length - 1].reason}</p>
-                                            <p class="text-xs text-red-500 mt-2">
-                                                توسط: ${order.rejectionHistory[order.rejectionHistory.length - 1].rejectedByName || 'کارمند'} - 
-                                                ${UTILS.formatDate(order.rejectionHistory[order.rejectionHistory.length - 1].date)}
-                                            </p>
-                                        </div>
-                                    ` : ''}
-                                    <div class="mt-3 flex justify-end">
-                                        <button onclick="window.viewOrder('${order.id}')" 
-                                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
-                                            <i class="fas fa-edit ml-1"></i>
-                                            اصلاح و ارسال مجدد
-                                        </button>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    ` : ''}
-                    
-                    <div class="bg-white rounded-lg shadow-md p-6">
-                        <h2 class="text-xl font-bold mb-4 text-gray-800">وظایف فعلی</h2>
                         <div class="space-y-3">
                             ${myOrders.filter(o => o.status === CONFIG.ORDER_STATUS.IN_PROGRESS).length > 0 ? 
                                 myOrders.filter(o => o.status === CONFIG.ORDER_STATUS.IN_PROGRESS).map(order => `
@@ -613,7 +727,7 @@ const DashboardModule = {
                 return isAssigned;
             });
             
-            const rejectedOrders = myOrders.filter(o => o.status === CONFIG.ORDER_STATUS.REJECTED);
+            const rejectedOrders_unused = []; // removed – only 3 statuses now
             
             return `
                 <div class="space-y-6">
@@ -622,7 +736,7 @@ const DashboardModule = {
                         <p class="text-indigo-100">وظایف محول شده</p>
                     </div>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div class="dashboard-card blue">
                             <div class="text-center">
                                 <h3 class="text-lg font-semibold text-gray-700">وظایف من</h3>
@@ -635,12 +749,6 @@ const DashboardModule = {
                                 <p class="text-3xl font-bold text-yellow-600">${myOrders.filter(o => o.status === CONFIG.ORDER_STATUS.IN_PROGRESS).length}</p>
                             </div>
                         </div>
-                        <div class="dashboard-card red">
-                            <div class="text-center">
-                                <h3 class="text-lg font-semibold text-gray-700">رد شده</h3>
-                                <p class="text-3xl font-bold text-red-600">${rejectedOrders.length}</p>
-                            </div>
-                        </div>
                         <div class="dashboard-card purple">
                             <div class="text-center">
                                 <h3 class="text-lg font-semibold text-gray-700">درآمد</h3>
@@ -648,52 +756,6 @@ const DashboardModule = {
                             </div>
                         </div>
                     </div>
-                    
-                    ${rejectedOrders.length > 0 ? `
-                    <!-- Rejected Orders - Need Attention -->
-                    <div class="bg-red-50 border border-red-200 rounded-lg shadow-md p-6">
-                        <h2 class="text-xl font-bold mb-4 text-red-800">
-                            <i class="fas fa-exclamation-triangle ml-2"></i>
-                            سفارشات رد شده - نیاز به اصلاح
-                        </h2>
-                        <div class="space-y-4">
-                            ${rejectedOrders.map(order => `
-                                <div class="bg-white border border-red-300 rounded-lg p-4">
-                                    <div class="flex justify-between items-start mb-3">
-                                        <div>
-                                            <h4 class="font-medium text-lg">${order.studentName}</h4>
-                                            <p class="text-sm text-gray-600">${order.type} - ${order.university}</p>
-                                        </div>
-                                        <span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">
-                                            رد شده
-                                        </span>
-                                    </div>
-                                    ${order.rejectionHistory && order.rejectionHistory.length > 0 ? `
-                                        <div class="bg-red-50 border-r-4 border-red-500 p-3 rounded">
-                                            <p class="text-sm font-medium text-red-800 mb-1">
-                                                <i class="fas fa-comment-alt ml-1"></i>
-                                                دلیل رد:
-                                            </p>
-                                            <p class="text-sm text-red-700">${order.rejectionHistory[order.rejectionHistory.length - 1].reason}</p>
-                                            <p class="text-xs text-red-500 mt-2">
-                                                توسط: ${order.rejectionHistory[order.rejectionHistory.length - 1].rejectedByName || 'کارمند'} - 
-                                                ${UTILS.formatDate(order.rejectionHistory[order.rejectionHistory.length - 1].date)}
-                                            </p>
-                                        </div>
-                                    ` : ''}
-                                    <div class="mt-3 flex justify-end">
-                                        <button onclick="window.viewOrder('${order.id}')" 
-                                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
-                                            <i class="fas fa-edit ml-1"></i>
-                                            اصلاح و ارسال مجدد
-                                        </button>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    ` : ''}
-                    
                     <div class="bg-white rounded-lg shadow-md p-6">
                         <h2 class="text-xl font-bold mb-4 text-gray-800">وظایف فعلی</h2>
                         <div class="space-y-3">

@@ -20,10 +20,8 @@ const CONFIG = {
   // Order Status
   ORDER_STATUS: {
     PENDING: "pending",
-    APPROVED: "approved",
     IN_PROGRESS: "in_progress",
     COMPLETED: "completed",
-    REJECTED: "rejected",
   },
 
   // Order Types

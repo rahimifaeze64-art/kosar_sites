@@ -167,36 +167,8 @@ const ProfileModule = {
                     
                     <!-- Order & Progress -->
                     <div class="border-b pb-4 mb-4">
-                        <h4 class="font-semibold text-gray-700 mb-3"><i class="fas fa-tasks ml-1 text-green-500"></i> وضعیت سفارش</h4>
+                        <h4 class="font-semibold text-gray-700 mb-3"><i class="fas fa-tasks ml-1 text-green-500"></i> اطلاعات تکمیلی</h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">نوع سفارش</label>
-                                <select class="form-control" id="profile-orderType">
-                                    <option value="">انتخاب کنید</option>
-                                    <option value="نوشتن رساله" ${user.orderType === 'نوشتن رساله' ? 'selected' : ''}>نوشتن رساله</option>
-                                    <option value="نوشتن مقاله" ${user.orderType === 'نوشتن مقاله' ? 'selected' : ''}>نوشتن مقاله</option>
-                                    <option value="ترجمه رساله" ${user.orderType === 'ترجمه رساله' ? 'selected' : ''}>ترجمه رساله</option>
-                                    <option value="تلخیص" ${user.orderType === 'تلخیص' ? 'selected' : ''}>تلخیص</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">وضعیت لجنه</label>
-                                <select class="form-control" id="profile-committeeStatus">
-                                    <option value="">انتخاب کنید</option>
-                                    <option value="در انتظار" ${user.committeeStatus === 'در انتظار' ? 'selected' : ''}>در انتظار</option>
-                                    <option value="تایید شده" ${user.committeeStatus === 'تایید شده' ? 'selected' : ''}>تایید شده</option>
-                                    <option value="نیاز به اصلاح" ${user.committeeStatus === 'نیاز به اصلاح' ? 'selected' : ''}>نیاز به اصلاح</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">وضعیت ایران‌داک</label>
-                                <select class="form-control" id="profile-irandocStatus">
-                                    <option value="">انتخاب کنید</option>
-                                    <option value="ثبت نشده" ${user.irandocStatus === 'ثبت نشده' ? 'selected' : ''}>ثبت نشده</option>
-                                    <option value="در حال بررسی" ${user.irandocStatus === 'در حال بررسی' ? 'selected' : ''}>در حال بررسی</option>
-                                    <option value="تایید شده" ${user.irandocStatus === 'تایید شده' ? 'selected' : ''}>تایید شده</option>
-                                </select>
-                            </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">استاد راهنما</label>
                                 <input type="text" value="${user.supervisor || ''}" class="form-control" id="profile-supervisor" placeholder="نام استاد راهنما">
@@ -208,69 +180,6 @@ const ProfileModule = {
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">تاریخ تحویل</label>
                                 <input type="date" value="${user.deliveryDate || ''}" class="form-control" id="profile-deliveryDate">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Additional Services -->
-                    <div>
-                        <h4 class="font-semibold text-gray-700 mb-3"><i class="fas fa-cogs ml-1 text-yellow-500"></i> خدمات اضافی</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">وضعیت امورداری</label>
-                                <select class="form-control" id="profile-adminStatus">
-                                    <option value="">انتخاب کنید</option>
-                                    <option value="انجام نشده" ${user.adminStatus === 'انجام نشده' ? 'selected' : ''}>انجام نشده</option>
-                                    <option value="در حال انجام" ${user.adminStatus === 'در حال انجام' ? 'selected' : ''}>در حال انجام</option>
-                                    <option value="تکمیل شده" ${user.adminStatus === 'تکمیل شده' ? 'selected' : ''}>تکمیل شده</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">وضعیت تنضید</label>
-                                <select class="form-control" id="profile-typingStatus">
-                                    <option value="">انتخاب کنید</option>
-                                    <option value="انجام نشده" ${user.typingStatus === 'انجام نشده' ? 'selected' : ''}>انجام نشده</option>
-                                    <option value="در حال انجام" ${user.typingStatus === 'در حال انجام' ? 'selected' : ''}>در حال انجام</option>
-                                    <option value="تکمیل شده" ${user.typingStatus === 'تکمیل شده' ? 'selected' : ''}>تکمیل شده</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">وضعیت تلخیص</label>
-                                <select class="form-control" id="profile-summaryStatus">
-                                    <option value="">انتخاب کنید</option>
-                                    <option value="انجام نشده" ${user.summaryStatus === 'انجام نشده' ? 'selected' : ''}>انجام نشده</option>
-                                    <option value="در حال انجام" ${user.summaryStatus === 'در حال انجام' ? 'selected' : ''}>در حال انجام</option>
-                                    <option value="تکمیل شده" ${user.summaryStatus === 'تکمیل شده' ? 'selected' : ''}>تکمیل شده</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">وضعیت همانند </label>
-                                <select class="form-control" id="profile-peerReviewStatus">
-                                    <option value="">انتخاب کنید</option>
-                                    <option value="انجام نشده" ${user.peerReviewStatus === 'انجام نشده' ? 'selected' : ''}>انجام نشده</option>
-                                    <option value="در حال انجام" ${user.peerReviewStatus === 'در حال انجام' ? 'selected' : ''}>در حال انجام</option>
-                                    <option value="تکمیل شده" ${user.peerReviewStatus === 'تکمیل شده' ? 'selected' : ''}>تکمیل شده</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">وضعیت مقاله ۱</label>
-                                <select class="form-control" id="profile-article1Status">
-                                    <option value="">انتخاب کنید</option>
-                                    <option value="شروع نشده" ${user.article1Status === 'شروع نشده' ? 'selected' : ''}>شروع نشده</option>
-                                    <option value="در حال نوشتن" ${user.article1Status === 'در حال نوشتن' ? 'selected' : ''}>در حال نوشتن</option>
-                                    <option value="ارسال شده" ${user.article1Status === 'ارسال شده' ? 'selected' : ''}>ارسال شده</option>
-                                    <option value="پذیرش شده" ${user.article1Status === 'پذیرش شده' ? 'selected' : ''}>پذیرش شده</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">وضعیت مقاله ۲</label>
-                                <select class="form-control" id="profile-article2Status">
-                                    <option value="">انتخاب کنید</option>
-                                    <option value="شروع نشده" ${user.article2Status === 'شروع نشده' ? 'selected' : ''}>شروع نشده</option>
-                                    <option value="در حال نوشتن" ${user.article2Status === 'در حال نوشتن' ? 'selected' : ''}>در حال نوشتن</option>
-                                    <option value="ارسال شده" ${user.article2Status === 'ارسال شده' ? 'selected' : ''}>ارسال شده</option>
-                                    <option value="پذیرش شده" ${user.article2Status === 'پذیرش شده' ? 'selected' : ''}>پذیرش شده</option>
-                                </select>
                             </div>
                         </div>
                     </div>

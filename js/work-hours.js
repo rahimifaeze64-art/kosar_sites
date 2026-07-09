@@ -464,6 +464,12 @@ const WorkHoursUI = (function() {
                             </div>
                         </div>
                         
+                        <div class="md:col-span-2 lg:col-span-4">
+                            <label class="block text-blue-200 text-sm mb-2">شرح کار</label>
+                            <textarea id="workDescription" rows="2" placeholder="توضیحاتی درباره کار انجام‌شده بنویسید..."
+                                   class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300/50 focus:outline-none focus:border-blue-400 resize-none"></textarea>
+                        </div>
+                        
                         <div class="md:col-span-2 lg:col-span-4 flex justify-end gap-3">
                             <button type="button" onclick="WorkHoursUI.resetForm()"
                                     class="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all">
@@ -1033,6 +1039,7 @@ const WorkHoursUI = (function() {
         const date = document.getElementById('workDate').value;
         const startTime = document.getElementById('startTime').value;
         const endTime = document.getElementById('endTime').value;
+        const description = (document.getElementById('workDescription')?.value || '').trim();
         
         if (!date || !startTime || !endTime) {
             showNotification('لطفاً تمام فیلدها را پر کنید', 'error');
@@ -1050,7 +1057,7 @@ const WorkHoursUI = (function() {
             date,
             startTime,
             endTime,
-            description: ''
+            description
         };
         
         const result = WorkHoursModule.addWorkHour(entry);

@@ -6,26 +6,20 @@ const OrdersModule = (function () {
 
     const ORDER_STATUS = {
         PENDING: 'pending',
-        APPROVED: 'approved',
         IN_PROGRESS: 'in_progress',
-        COMPLETED: 'completed',
-        REJECTED: 'rejected'
+        COMPLETED: 'completed'
     };
 
     const STATUS_LABELS = {
         pending: 'در انتظار',
-        approved: 'تایید شده',
         in_progress: 'در حال انجام',
-        completed: 'تکمیل شده',
-        rejected: 'رد شده'
+        completed: 'تکمیل شده'
     };
 
     const STATUS_CLASSES = {
         pending: 'bg-yellow-100 text-yellow-800',
-        approved: 'bg-indigo-100 text-indigo-800',
         in_progress: 'bg-blue-100 text-blue-800',
-        completed: 'bg-green-100 text-green-800',
-        rejected: 'bg-red-100 text-red-800'
+        completed: 'bg-green-100 text-green-800'
     };
 
     const WORK_TYPES = [
@@ -176,7 +170,7 @@ const OrdersModule = (function () {
                 return orders.filter(o => o.assignedDoctorId === userId);
             case R.employee:
                 return orders.filter(o =>
-                    [ORDER_STATUS.PENDING, ORDER_STATUS.APPROVED, ORDER_STATUS.IN_PROGRESS].includes(o.status)
+                    [ORDER_STATUS.PENDING, ORDER_STATUS.IN_PROGRESS, ORDER_STATUS.COMPLETED].includes(o.status)
                 );
             case R.TRANSLATOR:
                 return orders.filter(o =>
@@ -366,16 +360,16 @@ const OrdersModule = (function () {
     }
 
     function renderStatsBar(orders) {
-        const counts = { pending: 0, approved: 0, in_progress: 0, completed: 0, rejected: 0 };
+        const counts = { pending: 0, in_progress: 0, completed: 0 };
         orders.forEach(o => {
-            if (counts[o.status] !== undefined) counts[o.status]++;
+            const s = (o.status === 'approved') ? 'in_progress' :
+                      (o.status === 'rejected') ? 'pending' : o.status;
+            if (counts[s] !== undefined) counts[s]++;
         });
         const items = [
-            { key: 'pending', label: 'در انتظار', cls: 'border-yellow-400' },
-            { key: 'approved', label: 'تایید شده', cls: 'border-indigo-400' },
+            { key: 'pending',     label: 'در انتظار',    cls: 'border-yellow-400' },
             { key: 'in_progress', label: 'در حال انجام', cls: 'border-blue-400' },
-            { key: 'completed', label: 'تکمیل', cls: 'border-green-400' },
-            { key: 'rejected', label: 'رد شده', cls: 'border-red-400' }
+            { key: 'completed',   label: 'تکمیل',        cls: 'border-green-400' }
         ];
         return `
             <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
