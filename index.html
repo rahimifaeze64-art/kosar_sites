@@ -131,14 +131,15 @@
                 </button>
             </template>
 
-            <!-- پیام‌ها - فقط همکار-->
-            <template x-if="currentUser.role === 'employee'">
-                <a href="messages.html"
-                   class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl text-blue-100 hover:bg-white hover:bg-opacity-10 transition-all duration-200">
-                    <i class="fas fa-comments text-lg"></i>
-                    <span class="font-medium">پیام‌ها</span>
-                </a>
-            </template>
+
+
+            <!-- گفتگو شخصی - همه نقش‌ها -->
+            <button @click="currentPage = 'personalChat'"
+                    :class="currentPage === 'personalChat' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                    class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
+                <i class="fas fa-comments text-lg"></i>
+                <span class="font-medium">گفتگو شخصی</span>
+            </button>
 
             <!-- گفتگو مدیریت - مدیر و کارمند  -->
             <template x-if="currentUser.role === 'manager' || currentUser.role === 'employee'">
@@ -170,6 +171,16 @@
                 </button>
             </template>
 
+            <!-- حسابداری من - فقط عامل -->
+            <template x-if="currentUser.role === 'agent'">
+                <button @click="currentPage = 'agentAccounting'"
+                        :class="currentPage === 'agentAccounting' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                        class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
+                    <i class="fas fa-wallet text-lg"></i>
+                    <span class="font-medium">حسابداری من</span>
+                </button>
+            </template>
+
             <!-- مدیریت کاربران - فقط مدیر -->
             <template x-if="currentUser.role === 'manager'">
                 <button @click="currentPage = 'users'"
@@ -181,49 +192,51 @@
             </template>
 
             <!-- Shortcuts Section -->
-            <div class="pt-4 mt-4 border-t border-white border-opacity-20">
-                <p class="text-blue-200 text-xs font-semibold px-4 mb-2">میانبرها</p>
-                
-                <button @click="currentPage = 'orders'"
-                        :class="currentPage === 'orders' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
-                        class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
-                    <i class="fas fa-clipboard-list text-lg"></i>
-                    <span class="font-medium">سفارشات</span>
-                </button>
-
-                <a href="archive.html"
-                   class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl text-blue-100 hover:bg-white hover:bg-opacity-10 transition-all duration-200">
-                    <i class="fas fa-archive text-lg"></i>
-                    <span class="font-medium">بایگانی فایل‌ها</span>
-                </a>
-
-                <!-- حسابداری - مدیر و کارمند -->
-                <template x-if="currentUser.role === 'manager' || currentUser.role === 'employee'">
-                    <button @click="currentPage = 'accounting'"
-                            :class="currentPage === 'accounting' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+            <template x-if="currentUser.role !== 'agent'">
+                <div class="pt-4 mt-4 border-t border-white border-opacity-20">
+                    <p class="text-blue-200 text-xs font-semibold px-4 mb-2">میانبرها</p>
+                    
+                    <button @click="currentPage = 'orders'"
+                            :class="currentPage === 'orders' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
                             class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
-                        <i class="fas fa-calculator text-lg"></i>
-                        <span class="font-medium" x-text="currentUser.role === 'employee' ? 'حسابداری من' : 'حسابداری'"></span>
+                        <i class="fas fa-clipboard-list text-lg"></i>
+                        <span class="font-medium">سفارشات</span>
                     </button>
-                </template>
 
-                <!-- منوی کارمندان مالی - فقط برای مدیر -->
-                <template x-if="currentUser.role === 'manager'">
-                    <button @click="currentPage = 'employeeAccounting'"
-                            :class="currentPage === 'employeeAccounting' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                    <a href="archive.html"
+                       class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl text-blue-100 hover:bg-white hover:bg-opacity-10 transition-all duration-200">
+                        <i class="fas fa-archive text-lg"></i>
+                        <span class="font-medium">بایگانی فایل‌ها</span>
+                    </a>
+
+                    <!-- حسابداری - مدیر و کارمند -->
+                    <template x-if="currentUser.role === 'manager' || currentUser.role === 'employee'">
+                        <button @click="currentPage = 'accounting'"
+                                :class="currentPage === 'accounting' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                                class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
+                            <i class="fas fa-calculator text-lg"></i>
+                            <span class="font-medium" x-text="currentUser.role === 'employee' ? 'حسابداری من' : 'حسابداری'"></span>
+                        </button>
+                    </template>
+
+                    <!-- منوی کارمندان مالی - فقط برای مدیر -->
+                    <template x-if="currentUser.role === 'manager'">
+                        <button @click="currentPage = 'employeeAccounting'"
+                                :class="currentPage === 'employeeAccounting' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                                class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
+                            <i class="fas fa-users-cog text-lg"></i>
+                            <span class="font-medium">حسابداری کارمندان</span>
+                        </button>
+                    </template>
+
+                    <button @click="currentPage = 'profile'"
+                            :class="currentPage === 'profile' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
                             class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
-                        <i class="fas fa-users-cog text-lg"></i>
-                        <span class="font-medium">حسابداری کارمندان</span>
+                        <i class="fas fa-cog text-lg"></i>
+                        <span class="font-medium">تنظیمات</span>
                     </button>
-                </template>
-
-                <button @click="currentPage = 'profile'"
-                        :class="currentPage === 'profile' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
-                        class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
-                    <i class="fas fa-cog text-lg"></i>
-                    <span class="font-medium">تنظیمات</span>
-                </button>
-            </div>
+                </div>
+            </template>
         </nav>
 
         <!-- Sidebar Footer (User Profile) -->
@@ -333,8 +346,14 @@
             <!-- Agent Tasks Page (Agent Only) -->
             <div x-show="currentPage === 'agentTasks' && currentUser.role === 'agent'" x-html="getAgentTasksContent()"></div>
             
+            <!-- Agent Accounting Page (Agent Only) -->
+            <div x-show="currentPage === 'agentAccounting' && currentUser.role === 'agent'" x-html="getAgentAccountingContent()"></div>
+            
             <!-- Chat with Manager Page (employee Only) -->
             <div x-show="currentPage === 'chatWithManager' && currentUser.role === 'employee'" x-html="getChatWithManagerContent()"></div>
+
+            <!-- Personal Chat Page - برای همه نقش‌ها -->
+            <div x-show="currentPage === 'personalChat'" x-html="getPersonalChatContent()"></div>
 
             <!-- Management Chat Page (Manager and employees) -->
             <div x-show="currentPage === 'managementChat' && (currentUser.role === 'manager' || currentUser.role === 'employee')" x-html="getManagementChatContent()"></div>
@@ -512,8 +531,8 @@
     <script src="js/workflow.js"></script>
     <script src="js/assignment.js"></script>
     <script src="js/assignment-manager.js"></script>
-    <script src="js/order-pages.js"></script>
     <script src="js/order-tabs.js"></script>
+    <script src="js/order-pages.js"></script>
     <script src="js/chat.js"></script>
     <script src="js/file-manager.js"></script>
     <script src="js/progress.js"></script>
@@ -521,6 +540,7 @@
     <script src="js/sample-students.js"></script>
     <script src="js/employee.js"></script>
     <script src="js/agent.js"></script>
+    <script src="js/agent-accounting.js"></script>
     <script src="js/employee-student-edit.js"></script>
     <script src="js/init-students-data.js"></script>
     <script src="js/force-update-students.js"></script>
@@ -535,6 +555,7 @@
     <script src="js/accounting.js?v=1.0"></script>
     <script src="js/accounting-ui.js?v=1.0"></script>
     <script src="js/work-hours.js"></script>
+    <script src="js/personal-chat.js"></script>
     <script src="js/employee-accounting.js?v=1.0"></script>
     <script src="js/app.js"></script>
     

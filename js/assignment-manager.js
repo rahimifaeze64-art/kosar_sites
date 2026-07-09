@@ -179,6 +179,9 @@ const AssignmentManagerModule = {
     }
 };
 
+// Export to window for global access
+window.AssignmentManagerModule = AssignmentManagerModule;
+
 // Global functions for assignment management
 window.updateWorkAssignment = function(orderId, workName, doctorId) {
     try {

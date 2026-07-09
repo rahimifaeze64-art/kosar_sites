@@ -193,14 +193,6 @@ const ModalsModule = {
                 </div>
             </div>
 
-            <!-- Quick Order Modal -->
-            <div x-show="showModal === 'quickOrder'" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 modal-backdrop"
-                 @click.self="showModal = null">
-                <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto modal">
-                    ${this.getQuickOrderModal()}
-                </div>
-            </div>
-
             <!-- Reject Order Modal -->
             <div x-show="showModal === 'rejectOrder'" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 modal-backdrop"
                  @click.self="showModal = null">
@@ -209,14 +201,6 @@ const ModalsModule = {
                 </div>
             </div>
         `;
-  },
-
-  // Quick Order Modal
-  getQuickOrderModal() {
-    if (typeof OrderWizardModule !== 'undefined' && OrderWizardModule.getQuickOrderModal) {
-      return OrderWizardModule.getQuickOrderModal();
-    }
-    return this.getNewOrderModalOld();
   },
 
   // New Order Modal - استفاده از ماژول Wizard

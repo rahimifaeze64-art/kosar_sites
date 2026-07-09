@@ -174,7 +174,9 @@ function appController() {
         employeeAccounting: "حسابداری کارمندان",
         workHours: "ساعات کاری",
         chatWithManager: "گفتگو با مدیر",
+        personalChat: "گفتگو شخصی",
         managementChat: "گفتگو مدیریت",
+        agentAccounting: "حسابداری من",
         personalArchive: "بایگانی شخصی",
         profile: "پروفایل کاربری",
         users: "مدیریت کاربران",
@@ -633,6 +635,25 @@ function appController() {
       }
     },
 
+    // Get personal chat content - برای همه نقش‌ها
+    getPersonalChatContent() {
+      try {
+        debugLogger("Loading personal chat content...", "info", {
+          role: this.currentUser.role,
+        });
+        if (!PersonalChatModule) {
+          debugLogger("PersonalChatModule not found", "error");
+          return '<div class="text-red-500">خطا: ماژول گفتگو شخصی یافت نشد</div>';
+        }
+        const content = PersonalChatModule.getPersonalChatContent();
+        debugLogger("Personal chat content loaded", "success");
+        return content;
+      } catch (error) {
+        debugLogger("Error loading personal chat content", "error", error);
+        return '<div class="text-red-500">خطا در بارگذاری گفتگو شخصی</div>';
+      }
+    },
+
     // Get management chat content (manager and employees) - TEST MODE: Access restrictions temporarily disabled
     getManagementChatContent() {
       try {
@@ -685,6 +706,19 @@ function appController() {
       } catch (error) {
         debugLogger("Error loading work hours content", "error", error);
         return '<div class="text-red-500">خطا در بارگذاری ساعات کاری</div>';
+      }
+    },
+
+    // Get agent accounting content (agent only)
+    getAgentAccountingContent() {
+      try {
+        if (typeof AgentAccountingModule === 'undefined') {
+          return '<div class="text-red-500">خطا: ماژول حسابداری عامل یافت نشد</div>';
+        }
+        return AgentAccountingModule.getContent(this.currentUser.id);
+      } catch (error) {
+        debugLogger("Error loading agent accounting content", "error", error);
+        return '<div class="text-red-500">خطا در بارگذاری حسابداری</div>';
       }
     },
 
@@ -1679,9 +1713,62 @@ window.getAgentOrderCard = function (order, index) {
                     <i class="fas fa-eye ml-1"></i>
                     مشاهده جزئیات
                 </button>
+                
+                <!-- دکمه تایید - فقط برای سفارشات شروع نشده -->
+                ${order.status !== 'in_progress' && order.status !== 'completed' ? `
+                <button onclick="window.agentConfirmOrder('${order.id}')"
+                        class="w-full mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-check ml-1"></i>
+                    تایید و شروع کار
+                </button>
+                ` : ''}
             </div>
         </div>
     `;
+};
+
+// تایید سفارش توسط عامل - تغییر وضعیت به در حال انجام
+window.agentConfirmOrder = function(orderId) {
+    if (!confirm('آیا این سفارش را تایید می‌کنید و شروع به کار می‌کنید؟')) return;
+    
+    try {
+        const storageKey = (typeof CONFIG !== 'undefined' && CONFIG.STORAGE_KEYS && CONFIG.STORAGE_KEYS.ORDERS)
+            ? CONFIG.STORAGE_KEYS.ORDERS
+            : 'edu_system_orders';
+        
+        const orders = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        const index = orders.findIndex(o => o.id === orderId);
+        
+        if (index === -1) {
+            alert('سفارش یافت نشد');
+            return;
+        }
+        
+        orders[index].status = 'in_progress';
+        orders[index].confirmedByAgent = true;
+        orders[index].confirmedAt = new Date().toISOString();
+        orders[index].updatedAt = new Date().toISOString();
+        
+        localStorage.setItem(storageKey, JSON.stringify(orders));
+        
+        alert('✅ سفارش تایید شد. وضعیت به "در حال انجام" تغییر یافت');
+        
+        // Refresh page content
+        const app = document.querySelector('[x-data]')?.__x?.$data;
+        if (app) {
+            if (app.currentPage === 'agentTasks') {
+                app.loadDashboardContent && app.loadDashboardContent();
+                // force re-render
+                const content = document.querySelector('[x-show="currentPage === \'agentTasks\'"]');
+                if (content && typeof window.getMyAgentTasksContent === 'function') {
+                    content.innerHTML = window.getMyAgentTasksContent();
+                }
+            }
+        }
+    } catch(err) {
+        console.error('Error confirming order:', err);
+        alert('خطا در تایید سفارش: ' + err.message);
+    }
 };
 
 // Start timers for all orders

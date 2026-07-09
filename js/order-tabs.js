@@ -2,21 +2,29 @@
 const OrderTabsModule = {
     // Overview Tab - تب مشخصات کلی
     getOverviewTab(order, currentUser) {
+        const costDisplay = order.cost 
+            ? `${order.cost} ${order.currency || 'تومان'}` 
+            : (order.totalAmount ? `${order.totalAmount} تومان` : '---');
+        const degreeDisplay = order.degree || '';
+        const fieldDisplay = order.field || '---';
+        const universityDisplay = order.university || '---';
+        const agentDisplay = order.assignedDoctor || (order.assignedAgent ? order.assignedAgent : null);
+        
         return `
             <div class="space-y-6">
                 <!-- Order Header -->
                 <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg">
                     <div class="flex justify-between items-start">
                         <div>
-                            <h4 class="text-xl font-bold text-gray-800">${order.studentName}</h4>
-                            <p class="text-gray-600">${order.type}</p>
-                            <p class="text-sm text-gray-500">${order.university} - ${order.field} - ${order.degree}</p>
+                            <h4 class="text-xl font-bold text-gray-800">${order.studentName || '---'}</h4>
+                            <p class="text-gray-600">${order.type || '---'}</p>
+                            <p class="text-sm text-gray-500">${universityDisplay} ${degreeDisplay ? '- ' + degreeDisplay : ''} ${fieldDisplay !== '---' ? '- ' + fieldDisplay : ''}</p>
                         </div>
                         <div class="text-left">
                             <span class="px-3 py-1 rounded-full text-sm font-medium ${typeof OrdersModule !== 'undefined' ? OrdersModule.getStatusClass(order.status) : 'bg-blue-100 text-blue-800'}">
                                 ${typeof OrdersModule !== 'undefined' ? OrdersModule.getStatusText(order.status) : order.status}
                             </span>
-                            <p class="text-lg font-bold text-green-600 mt-2">${order.totalAmount} تومان</p>
+                            <p class="text-lg font-bold text-green-600 mt-2">${costDisplay}</p>
                         </div>
                     </div>
                     
@@ -34,14 +42,14 @@ const OrderTabsModule = {
                 </div>
                 
                 <!-- Assignment Info -->
-                ${order.assignedDoctor ? `
+                ${agentDisplay ? `
                     <div class="bg-purple-50 p-4 rounded-lg">
                         <h5 class="font-semibold text-purple-800 mb-2">
                             <i class="fas fa-user-md ml-1"></i>
                             اطلاعات تخصیص
                         </h5>
-                        <p><strong>عامل مسئول:</strong> ${order.assignedDoctor}</p>
-                        <p><strong>تاریخ تخصیص:</strong> ${order.assignedAt}</p>
+                        <p><strong>عامل مسئول:</strong> ${agentDisplay}</p>
+                        ${order.assignedAt ? `<p><strong>تاریخ تخصیص:</strong> ${order.assignedAt}</p>` : ''}
                         ${order.assignmentNotes ? `<p><strong>توضیحات:</strong> ${order.assignmentNotes}</p>` : ''}
                     </div>
                 ` : ''}
@@ -50,15 +58,17 @@ const OrderTabsModule = {
                 <div class="bg-white border rounded-lg p-4">
                     <h5 class="font-semibold text-gray-800 mb-3">
                         <i class="fas fa-user-graduate ml-1"></i>
-                        مشخصات دانشجو
+                        مشخصات سفارش
                     </h5>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div><strong>نام:</strong> ${order.studentName}</div>
-                        <div><strong>دانشگاه:</strong> ${order.university}</div>
-                        <div><strong>رشته:</strong> ${order.field}</div>
-                        <div><strong>مقطع:</strong> ${order.degree}</div>
-                        <div><strong>نوع سفارش:</strong> ${order.type}</div>
-                        <div><strong>مهلت تحویل:</strong> ${order.deadline}</div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div><strong>نام دانشجو:</strong> ${order.studentName || '---'}</div>
+                        <div><strong>نوع کار:</strong> ${order.type || '---'}</div>
+                        <div><strong>دانشگاه:</strong> ${universityDisplay}</div>
+                        <div><strong>رشته:</strong> ${fieldDisplay}</div>
+                        ${degreeDisplay ? `<div><strong>مقطع:</strong> ${degreeDisplay}</div>` : ''}
+                        <div><strong>مهلت تحویل:</strong> ${order.deadline || '---'}</div>
+                        <div><strong>هزینه:</strong> ${costDisplay}</div>
+                        <div><strong>تاریخ ثبت:</strong> ${order.createdAt ? new Date(order.createdAt).toLocaleDateString('fa-IR') : '---'}</div>
                     </div>
                     ${order.description ? `
                         <div class="mt-4">
@@ -66,30 +76,26 @@ const OrderTabsModule = {
                             <p class="text-gray-600 mt-1">${order.description}</p>
                         </div>
                     ` : ''}
-                    
-                    <!-- Additional Student Info -->
-                    ${order.nickname ? `<div><strong>لقب:</strong> ${order.nickname}</div>` : ''}
-                    ${order.birthDate ? `<div><strong>تاریخ تولد:</strong> ${order.birthDate}</div>` : ''}
-                    ${order.passportNumber ? `<div><strong>شماره پاسپورت:</strong> ${order.passportNumber}</div>` : ''}
-                    ${order.gender ? `<div><strong>جنسیت:</strong> ${order.gender}</div>` : ''}
-                    ${order.phone ? `<div><strong>شماره تماس:</strong> ${order.phone}</div>` : ''}
-                    ${order.behestanUsername ? `<div><strong>نام کاربری بهستان:</strong> ${order.behestanUsername}</div>` : ''}
-                    ${order.studentId ? `<div><strong>شماره دانشجویی:</strong> ${order.studentId}</div>` : ''}
-                    
-                    <!-- Custom Fields from Step 1 -->
-                    ${order.customFields1 && order.customFields1.length > 0 ? `
-                        <div class="col-span-2 mt-4 pt-4 border-t">
-                            <strong class="block mb-2">فیلدهای اضافی:</strong>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                ${order.customFields1.map(field => `
-                                    <div class="text-sm">
-                                        <span class="text-gray-600">${field.label}:</span>
-                                        <span class="text-gray-800">${field.value}</span>
-                                    </div>
-                                `).join('')}
-                            </div>
+                    ${order.attachmentName ? `
+                        <div class="mt-4">
+                            <strong>فایل پیوست:</strong>
+                            <span class="mr-2 text-gray-700">
+                                <i class="fas fa-paperclip ml-1 text-indigo-500"></i>${order.attachmentName}
+                            </span>
+                            ${order.hasAttachment ? `
+                                <button onclick="window.downloadOrderFile('${order.id}', '${order.attachmentName}')"
+                                        class="text-blue-600 hover:underline text-sm">
+                                    <i class="fas fa-download ml-1"></i>دانلود
+                                </button>
+                            ` : '<span class="text-xs text-gray-400">(فایل در دسترس نیست)</span>'}
                         </div>
                     ` : ''}
+                    
+                    <!-- Additional Student Info (for old orders) -->
+                    ${order.nickname ? `<div class="mt-2"><strong>لقب:</strong> ${order.nickname}</div>` : ''}
+                    ${order.birthDate ? `<div><strong>تاریخ تولد:</strong> ${order.birthDate}</div>` : ''}
+                    ${order.passportNumber ? `<div><strong>شماره پاسپورت:</strong> ${order.passportNumber}</div>` : ''}
+                    ${order.phone ? `<div><strong>شماره تماس:</strong> ${order.phone}</div>` : ''}
                 </div>
             </div>
         `;
@@ -520,71 +526,12 @@ const OrderTabsModule = {
         `;
     },
     
-    // Financial Tab - تب مالی
+    // Financial Tab - تب مالی (ساده شده)
     getFinancialTab(order, currentUser) {
-        const isManager = currentUser.role === CONFIG.ROLES.MANAGER;
-        const isAgent = currentUser.role === 'agent';
         const currency = order.currency || 'تومان';
+        // سازگاری با هر دو فیلد cost و totalAmount
+        const amount = order.cost || order.totalAmount || 0;
         
-        // برای عامل‌ها فقط درآمدشان را نمایش بده
-        if (isAgent) {
-            return `
-                <div class="space-y-6">
-                    <div class="flex justify-between items-center">
-                        <h4 class="text-xl font-bold text-gray-800">
-                            <i class="fas fa-dollar-sign ml-2"></i>
-                            اطلاعات مالی
-                        </h4>
-                    </div>
-                    
-                    <!-- Currency Display -->
-                    <div class="bg-gray-50 border rounded-lg p-3">
-                        <span class="text-sm text-gray-600">واحد پول:</span>
-                        <span class="font-bold text-gray-800 mr-2">${currency}</span>
-                    </div>
-                    
-                    <!-- Agent Income Only -->
-                    <div class="bg-gradient-to-br from-green-600 to-emerald-700 rounded-lg p-8 text-white shadow-lg text-center">
-                        <i class="fas fa-money-bill-wave text-5xl mb-4 opacity-80"></i>
-                        <h5 class="text-lg font-semibold mb-2 opacity-90">درآمد شما از این سفارش</h5>
-                        <p class="text-4xl font-bold mb-2">
-                            ${(order.doctorShare || 0).toLocaleString()}
-                        </p>
-                        <p class="text-xl opacity-90">${currency}</p>
-                    </div>
-                    
-                    <!-- Work List with Prices -->
-                    ${order.workList && order.workList.length > 0 ? `
-                        <div class="bg-white border rounded-lg p-4">
-                            <h5 class="font-semibold text-gray-800 mb-3">
-                                <i class="fas fa-list-ul ml-2"></i>
-                                لیست کارها و قیمت‌ها
-                            </h5>
-                            <div class="space-y-2">
-                                ${order.workList.map(work => {
-                                    const price = (order.workPrices && order.workPrices[work]) || 0;
-                                    return `
-                                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                                            <span class="font-medium text-gray-700">${work}</span>
-                                            <span class="text-green-600 font-bold">${price.toLocaleString()} ${currency}</span>
-                                        </div>
-                                    `;
-                                }).join('')}
-                            </div>
-                        </div>
-                    ` : ''}
-                    
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <p class="text-blue-800 text-sm">
-                            <i class="fas fa-info-circle ml-2"></i>
-                            این مبلغ درآمد شما از انجام این سفارش است. برای مشاهده کل درآمدهای خود به بخش "درآمد من" مراجعه کنید.
-                        </p>
-                    </div>
-                </div>
-            `;
-        }
-        
-        // برای مدیر اطلاعات کامل مالی
         return `
             <div class="space-y-6">
                 <div class="flex justify-between items-center">
@@ -592,137 +539,22 @@ const OrderTabsModule = {
                         <i class="fas fa-dollar-sign ml-2"></i>
                         اطلاعات مالی
                     </h4>
-                    ${isManager ? `
-                        <button onclick="editFinancialInfo('${order.id}')" 
-                                class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                            <i class="fas fa-edit ml-2"></i>
-                            ویرایش اطلاعات مالی
-                        </button>
-                    ` : ''}
                 </div>
                 
-                <!-- Currency Display -->
-                <div class="bg-gray-50 border rounded-lg p-3">
-                    <span class="text-sm text-gray-600">واحد پول:</span>
-                    <span class="font-bold text-gray-800 mr-2">${currency}</span>
+                <!-- هزینه کار -->
+                <div class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg p-8 text-white shadow-lg text-center">
+                    <i class="fas fa-money-bill-wave text-5xl mb-4 opacity-80"></i>
+                    <h5 class="text-lg font-semibold mb-2 opacity-90">هزینه پروژه</h5>
+                    <p class="text-4xl font-bold mb-2">
+                        ${Number(amount).toLocaleString()}
+                    </p>
+                    <p class="text-xl opacity-90">${currency}</p>
                 </div>
                 
-                <!-- Financial Summary -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                        <h5 class="font-semibold text-green-800 mb-2">مبلغ کل</h5>
-                        <p class="text-2xl font-bold text-green-600">
-                            ${(order.totalAmount || 0).toLocaleString()} ${currency}
-                        </p>
-                    </div>
-                    
-                    <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                        <h5 class="font-semibold text-purple-800 mb-2">سهم واسط</h5>
-                        <p class="text-2xl font-bold text-purple-600">
-                            ${(order.agentShare || 0).toLocaleString()} ${currency}
-                        </p>
-                    </div>
-                    
-                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <h5 class="font-semibold text-red-800 mb-2">تخفیف</h5>
-                        <p class="text-2xl font-bold text-red-600">
-                            ${(order.discount || 0).toLocaleString()} ${currency}
-                        </p>
-                    </div>
-                    
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <h5 class="font-semibold text-blue-800 mb-2">سهم شرکت</h5>
-                        <p class="text-2xl font-bold text-blue-600">
-                            ${(order.companyShare || 0).toLocaleString()} ${currency}
-                        </p>
-                    </div>
-                    
-                    <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                        <h5 class="font-semibold text-indigo-800 mb-2">سهم عامل/عامل</h5>
-                        <p class="text-2xl font-bold text-indigo-600">
-                            ${(order.doctorShare || 0).toLocaleString()} ${currency}
-                        </p>
-                    </div>
-                    
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <h5 class="font-semibold text-yellow-800 mb-2">طلب از دانشجو</h5>
-                        <p class="text-2xl font-bold text-yellow-600">
-                            ${(order.studentDebt || 0).toLocaleString()} ${currency}
-                        </p>
-                    </div>
-                    
-                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                        <h5 class="font-semibold text-orange-800 mb-2">بدهی به عوامل</h5>
-                        <p class="text-2xl font-bold text-orange-600">
-                            ${(order.agentDebt || 0).toLocaleString()} ${currency}
-                        </p>
-                    </div>
-                </div>
-                
-                <!-- Custom Financial Fields -->
-                ${order.customFields3 && order.customFields3.length > 0 ? `
-                    <div class="bg-white border rounded-lg p-4">
-                        <h5 class="font-semibold text-gray-800 mb-3">فیلدهای اضافی مالی</h5>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            ${order.customFields3.map(field => `
-                                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                                    <span class="font-medium text-gray-700">${field.label}:</span>
-                                    <span class="text-gray-900">${field.value}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                ` : ''}
-                
-                <!-- Payment Status -->
-                <div class="bg-white border rounded-lg p-4">
-                    <h5 class="font-semibold text-gray-800 mb-3">وضعیت پرداخت</h5>
-                    <div class="space-y-3">
-                        <div class="flex justify-between items-center">
-                            <span>مبلغ پرداخت شده:</span>
-                            <span class="font-bold text-green-600">
-                                ${(order.paidAmount || 0).toLocaleString()} ${currency}
-                            </span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span>مبلغ باقی‌مانده:</span>
-                            <span class="font-bold text-red-600">
-                                ${((order.totalAmount || 0) - (order.paidAmount || 0)).toLocaleString()} ${currency}
-                            </span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-3">
-                            <div class="bg-green-600 h-3 rounded-full" 
-                                 style="width: ${((order.paidAmount || 0) / (order.totalAmount || 1)) * 100}%"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                ${isManager ? `
-                    <!-- Payment Actions -->
-                    <div class="bg-gray-50 border rounded-lg p-4">
-                        <h5 class="font-semibold text-gray-800 mb-3">عملیات مالی</h5>
-                        <div class="flex flex-wrap gap-3">
-                            <button onclick="recordPayment('${order.id}')" 
-                                    class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
-                                <i class="fas fa-plus ml-2"></i>
-                                ثبت پرداخت
-                            </button>
-                            <button onclick="addStudentDebt('${order.id}')" 
-                                    class="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700">
-                                <i class="fas fa-user-plus ml-2"></i>
-                                ثبت طلب از دانشجو
-                            </button>
-                            <button onclick="addAgentDebt('${order.id}')" 
-                                    class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700">
-                                <i class="fas fa-users ml-2"></i>
-                                ثبت بدهی به عوامل
-                            </button>
-                            <button onclick="generateInvoice('${order.id}')" 
-                                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                                <i class="fas fa-file-invoice ml-2"></i>
-                                صدور فاکتور
-                            </button>
-                        </div>
+                ${amount == 0 ? `
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center text-yellow-700">
+                        <i class="fas fa-info-circle ml-2"></i>
+                        هزینه‌ای برای این سفارش ثبت نشده است
                     </div>
                 ` : ''}
             </div>
@@ -941,4 +773,21 @@ const OrderTabsModule = {
             backdrop.remove();
         }
     }
+};
+
+// Export to window for global access
+window.OrderTabsModule = OrderTabsModule;
+window.OrderTabsModuleReady = true;
+
+// تابع دانلود فایل پیوست سفارش
+window.downloadOrderFile = function(orderId, fileName) {
+    const data = localStorage.getItem(`order_file_${orderId}`);
+    if (!data) {
+        alert('فایل یافت نشد یا حذف شده است');
+        return;
+    }
+    const link = document.createElement('a');
+    link.href = data;
+    link.download = fileName;
+    link.click();
 };

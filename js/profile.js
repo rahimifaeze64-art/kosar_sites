@@ -59,20 +59,6 @@ const ProfileModule = {
                 <!-- Statistics -->
                 ${this.getProfileStats(user)}
                 
-                <!-- Theme Settings -->
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <h3 class="text-lg font-bold mb-4 text-gray-800">
-                        <i class="fas fa-palette ml-2"></i>
-                        تنظیمات ظاهری
-                    </h3>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-3">انتخاب تم رنگی</label>
-                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-                            ${this.getThemeOptions()}
-                        </div>
-                    </div>
-                </div>
-                
                 <!-- Actions -->
                 <div class="bg-white rounded-lg shadow-md p-6">
                     <h3 class="text-lg font-bold mb-4 text-gray-800">عملیات</h3>

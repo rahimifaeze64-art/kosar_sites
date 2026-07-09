@@ -259,10 +259,6 @@ const OrdersModule = (function () {
         const R = CONFIG?.ROLES || {};
         if (userRole === R.MANAGER) {
             return `
-                <button type="button" onclick="OrdersModule.openModal('quickOrder')"
-                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium btn">
-                    <i class="fas fa-bolt ml-2"></i> سفارش سریع
-                </button>
                 <button type="button" onclick="OrdersModule.openModal('createProject')"
                         class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium btn">
                     <i class="fas fa-plus-circle ml-2"></i> ایجاد سفارش جدید
@@ -270,10 +266,6 @@ const OrdersModule = (function () {
         }
         if (userRole === R.STUDENT) {
             return `
-                <button type="button" onclick="OrdersModule.openModal('quickOrder')"
-                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium btn">
-                    <i class="fas fa-bolt ml-2"></i> سفارش سریع
-                </button>
                 <button type="button" onclick="OrdersModule.openModal('createProject')"
                         class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium btn">
                     <i class="fas fa-plus ml-2"></i> ایجاد سفارش جدید
@@ -298,31 +290,20 @@ const OrdersModule = (function () {
                 <i class="fas fa-edit"></i>
             </button>`;
 
-        if (order.status === ORDER_STATUS.PENDING) {
-            html += `
-                <button type="button" onclick="OrdersModule.approveOrder('${safeId}')"
-                        class="text-green-600 hover:text-green-900" title="تایید">
-                    <i class="fas fa-check"></i>
-                </button>
-                <button type="button" onclick="OrdersModule.openRejectModal('${safeId}')"
-                        class="text-red-600 hover:text-red-900" title="رد">
-                    <i class="fas fa-times"></i>
-                </button>`;
-        }
-
-        if (order.status === ORDER_STATUS.APPROVED && !order.assignedDoctorId) {
-            html += `
-                <button type="button" onclick="OrdersModule.openAssignment('${safeId}')"
-                        class="text-purple-600 hover:text-purple-900" title="تخصیص">
-                    <i class="fas fa-user-plus"></i>
-                </button>`;
-        }
-
         if (order.status === ORDER_STATUS.IN_PROGRESS) {
             html += `
                 <button type="button" onclick="OrdersModule.completeOrder('${safeId}')"
                         class="text-green-600 hover:text-green-900" title="تکمیل">
                     <i class="fas fa-check-double"></i>
+                </button>`;
+        }
+        
+        // دکمه حذف - فقط برای مدیر
+        if (userRole === (CONFIG?.ROLES?.MANAGER || 'manager')) {
+            html += `
+                <button type="button" onclick="OrdersModule.deleteOrder('${safeId}')"
+                        class="text-red-500 hover:text-red-800" title="حذف سفارش">
+                    <i class="fas fa-trash"></i>
                 </button>`;
         }
 
@@ -840,6 +821,32 @@ const OrdersModule = (function () {
         await refreshOrders();
     }
 
+    function deleteOrder(orderId) {
+        if (!confirm('آیا مطمئن هستید که می‌خواهید این سفارش را حذف کنید؟\nاین عملیات قابل بازگشت نیست.')) {
+            return;
+        }
+        
+        try {
+            const orders = loadOrders();
+            const index = orders.findIndex(o => o.id === orderId);
+            
+            if (index === -1) {
+                notify('سفارش یافت نشد', 'error');
+                return;
+            }
+            
+            orders.splice(index, 1);
+            saveOrders(orders);
+            
+            notify('سفارش با موفقیت حذف شد', 'success');
+            refreshOrders();
+            
+        } catch (err) {
+            console.error('Error deleting order:', err);
+            notify('خطا در حذف سفارش', 'error');
+        }
+    }
+
     function bindGlobals() {
         window.approveOrder = function (orderId) {
             OrdersModule.approveOrder(orderId);
@@ -864,6 +871,9 @@ const OrdersModule = (function () {
         window.editOrder = function (orderId) {
             OrdersModule.editOrder(orderId);
         };
+        window.deleteOrder = function (orderId) {
+            OrdersModule.deleteOrder(orderId);
+        };
     }
 
     return {
@@ -887,6 +897,7 @@ const OrdersModule = (function () {
         openAssignment,
         openModal,
         editOrder,
+        deleteOrder,
         saveEditOrder,
         closeEditModal,
         getStatusText,

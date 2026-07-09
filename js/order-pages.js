@@ -60,57 +60,18 @@ const OrderPagesModule = {
                         <!-- Sidebar Tabs -->
                         <div class="w-64 bg-gray-50 border-l">
                             <nav class="p-4 space-y-2">
-                                <button @click="activeTab = 'overview'; loadTabContent(activeTab)" 
+                                <button @click="activeTab = 'overview'; window.loadTabContent(activeTab)" 
                                         :class="activeTab === 'overview' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-200'"
                                         class="w-full text-right px-4 py-3 rounded-lg font-medium transition-colors">
                                     <i class="fas fa-info-circle ml-2"></i>
                                     مشخصات کلی
                                 </button>
-                                <button @click="activeTab = 'worklist'; loadTabContent(activeTab)" 
-                                        :class="activeTab === 'worklist' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-200'"
-                                        class="w-full text-right px-4 py-3 rounded-lg font-medium transition-colors">
-                                    <i class="fas fa-tasks ml-2"></i>
-                                    لیست کارها
-                                </button>
-                                <!-- مدیریت تخصیص - فقط برای مدیر و کارمند -->
-                                <template x-if="currentUser.role === 'manager' || currentUser.role === 'employee'">
-                                    <button @click="activeTab = 'assignment'; loadTabContent(activeTab)" 
-                                            :class="activeTab === 'assignment' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-200'"
-                                            class="w-full text-right px-4 py-3 rounded-lg font-medium transition-colors">
-                                        <i class="fas fa-user-cog ml-2"></i>
-                                        مدیریت تخصیص
-                                    </button>
-                                </template>
-                                <button @click="activeTab = 'followup'; loadTabContent(activeTab)" 
-                                        :class="activeTab === 'followup' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-200'"
-                                        class="w-full text-right px-4 py-3 rounded-lg font-medium transition-colors">
-                                    <i class="fas fa-clipboard-check ml-2"></i>
-                                    پیگیری
-                                </button>
-                                <button @click="activeTab = 'financial'; loadTabContent(activeTab)" 
+                                <button @click="activeTab = 'financial'; window.loadTabContent(activeTab)" 
                                         :class="activeTab === 'financial' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-200'"
                                         class="w-full text-right px-4 py-3 rounded-lg font-medium transition-colors">
                                     <i class="fas fa-dollar-sign ml-2"></i>
                                     مالی
                                 </button>
-                                <!-- پیشرفت کار - فقط برای مدیر و کارمند -->
-                                <template x-if="currentUser.role === 'manager' || currentUser.role === 'employee'">
-                                    <button @click="activeTab = 'progress'; loadTabContent(activeTab)" 
-                                            :class="activeTab === 'progress' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-200'"
-                                            class="w-full text-right px-4 py-3 rounded-lg font-medium transition-colors">
-                                        <i class="fas fa-chart-line ml-2"></i>
-                                        پیشرفت کار
-                                    </button>
-                                </template>
-                                <!-- تاریخچه - فقط برای مدیر و کارمند -->
-                                <template x-if="currentUser.role === 'manager' || currentUser.role === 'employee'">
-                                    <button @click="activeTab = 'history'; loadTabContent(activeTab)" 
-                                            :class="activeTab === 'history' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-200'"
-                                            class="w-full text-right px-4 py-3 rounded-lg font-medium transition-colors">
-                                        <i class="fas fa-history ml-2"></i>
-                                        تاریخچه
-                                    </button>
-                                </template>
                             </nav>
                         </div>
                         
@@ -137,15 +98,21 @@ const OrderPagesModule = {
         // Store order data globally for tab switching
         window.currentOrderData = order;
         
-        // Set up tab content loader
+        // Set up tab content loader - define BEFORE modal shows
         window.loadTabContent = (tab) => {
-            this.loadTabContent(tab, order);
+            this.loadTabContent(tab, window.currentOrderData || order);
         };
         
-        // Load initial tab (overview)
-        setTimeout(() => {
-            this.loadTabContent('overview', order);
-        }, 100);
+        // Load initial tab (overview) with retry
+        const tryLoad = (attempts) => {
+            const contentArea = document.getElementById('order-page-content');
+            if (contentArea) {
+                this.loadTabContent('overview', order);
+            } else if (attempts > 0) {
+                setTimeout(() => tryLoad(attempts - 1), 100);
+            }
+        };
+        setTimeout(() => tryLoad(10), 50);
     },
     
     // Load specific tab content
@@ -163,43 +130,11 @@ const OrderPagesModule = {
             case 'overview':
                 contentArea.innerHTML = OrderTabsModule.getOverviewTab(activeOrder, currentUser);
                 break;
-            case 'worklist':
-                contentArea.innerHTML = OrderTabsModule.getWorkListTab(activeOrder, currentUser);
-                break;
             case 'assignment':
                 contentArea.innerHTML = AssignmentManagerModule.getAssignmentTab(activeOrder, currentUser);
                 break;
-            case 'followup':
-                contentArea.innerHTML = OrderTabsModule.getFollowUpTab(activeOrder, currentUser);
-                break;
-            case 'files':
-                contentArea.innerHTML = OrderTabsModule.getFilesTab(activeOrder, currentUser);
-                break;
-            case 'chat':
-                contentArea.innerHTML = OrderTabsModule.getChatTab(activeOrder, currentUser);
-                break;
             case 'financial':
                 contentArea.innerHTML = OrderTabsModule.getFinancialTab(activeOrder, currentUser);
-                break;
-            case 'progress':
-                contentArea.innerHTML = OrderTabsModule.getProgressTab(activeOrder, currentUser);
-                
-                // راه‌اندازی سیستم پیشرفت کار
-                setTimeout(() => {
-                    if (typeof ThesisWorkflow !== 'undefined') {
-                        // پاک کردن نمونه قبلی
-                        if (window.currentThesisWorkflow) {
-                            window.currentThesisWorkflow = null;
-                        }
-                        // ایجاد نمونه جدید
-                        window.currentThesisWorkflow = new ThesisWorkflow();
-                    } else {
-                        console.error('ThesisWorkflow class not found');
-                    }
-                }, 100);
-                break;
-            case 'history':
-                contentArea.innerHTML = OrderTabsModule.getHistoryTab(activeOrder, currentUser);
                 break;
             default:
                 contentArea.innerHTML = '<p class="text-center text-gray-500">تب انتخاب شده یافت نشد</p>';

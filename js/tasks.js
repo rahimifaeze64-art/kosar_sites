@@ -72,18 +72,6 @@ const TasksModule = {
                                         <i class="fas fa-list-check ml-2"></i>
                                         لیست وظایف
                                     </button>
-                                    <button onclick="TasksModule.switchTab('management-chat')" 
-                                            id="tab-management-chat"
-                                            class="px-4 py-2 rounded-md font-medium transition-colors text-gray-300 hover:text-indigo-400">
-                                        <i class="fas fa-users-cog ml-2"></i>
-                                        گفتگوی مدیریت
-                                    </button>
-                                    <button onclick="TasksModule.switchTab('chat')" 
-                                            id="tab-chat"
-                                            class="px-4 py-2 rounded-md font-medium transition-colors text-gray-300 hover:text-indigo-400">
-                                        <i class="fas fa-comments ml-2"></i>
-                                        گفتگوی شخصی
-                                    </button>
                                     <button onclick="TasksModule.switchTab('files')" 
                                             id="tab-files"
                                             class="px-4 py-2 rounded-md font-medium transition-colors text-gray-300 hover:text-indigo-400">
@@ -242,7 +230,7 @@ const TasksModule = {
         this.activeTab = tab;
         
         // Update tab buttons
-        ['tasks', 'management-chat', 'chat', 'files', 'reports'].forEach(t => {
+        ['tasks', 'files', 'reports'].forEach(t => {
             const btn = document.getElementById(`tab-${t}`);
             if (btn) {
                 if (t === tab) {
@@ -259,20 +247,6 @@ const TasksModule = {
             switch(tab) {
                 case 'tasks':
                     content.innerHTML = this.getTasksTabContent();
-                    break;
-                case 'management-chat':
-                    content.innerHTML = this.getManagementChatTabContent();
-                    // Initialize management chat after rendering
-                    setTimeout(() => {
-                        if (typeof managesChatInstance !== 'undefined') {
-                            managesChatInstance.renderMessages();
-                        } else if (typeof ManagesChat !== 'undefined') {
-                            window.managesChatInstance = new ManagesChat();
-                        }
-                    }, 100);
-                    break;
-                case 'chat':
-                    content.innerHTML = this.getChatTabContent();
                     break;
                 case 'files':
                     content.innerHTML = this.getFilesTabContent();
@@ -1763,9 +1737,6 @@ const TasksModule = {
             switch(this.activeTab) {
                 case 'tasks':
                     content.innerHTML = this.getTasksTabContent();
-                    break;
-                case 'chat':
-                    content.innerHTML = this.getChatTabContent();
                     break;
                 case 'files':
                     content.innerHTML = this.getFilesTabContent();
