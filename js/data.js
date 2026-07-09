@@ -1,6 +1,6 @@
 ﻿// Data Management Module
 // نسخه داده - هر بار که لیست دانشجویان تغییر کند این عدد را افزایش دهید
-const DATA_VERSION = '2025.07.09.v3';
+const DATA_VERSION = '2025.07.09.v4';
 
 const DataModule = {
     // Initialize default data
@@ -255,6 +255,18 @@ const DataModule = {
                 email: 'soleiman@edu-system.com',
                 phone: '+98 916 567 8901',
                 department: 'هماهنگی فنی',
+                active: true,
+                createdAt: '2024-01-01T00:00:00.000Z'
+            },
+            {
+                id: 'emp005',
+                name: 'مهدی',
+                username: 'mahdi',
+                password: '123456',
+                role: CONFIG.ROLES.employee,
+                email: 'mahdi@edu-system.com',
+                phone: '+98 917 678 9012',
+                department: 'هماهنگی عمومی',
                 active: true,
                 createdAt: '2024-01-01T00:00:00.000Z'
             },

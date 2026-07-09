@@ -20,7 +20,9 @@ function appController() {
     dashboardContent:
       '<div class="text-center text-gray-500">در حال بارگذاری...</div>',
     ordersContent: "",
-    sidebarOpen: window.innerWidth >= 1024, // Sidebar state - open on desktop by default
+    sidebarOpen: localStorage.getItem('sidebarOpen') !== null
+        ? localStorage.getItem('sidebarOpen') === 'true'
+        : window.innerWidth >= 1024, // پیش‌فرض: دسکتاپ=باز، موبایل=بسته
 
     // Initialize app
     async init() {
@@ -28,8 +30,15 @@ function appController() {
         debugLogger("Initializing application...", "info");
         this.isLoading = true;
 
-        // Set sidebar state based on screen size
-        this.sidebarOpen = window.innerWidth >= 1024;
+        // Set sidebar state based on screen size (only if no saved preference)
+        if (localStorage.getItem('sidebarOpen') === null) {
+            this.sidebarOpen = window.innerWidth >= 1024;
+        }
+
+        // Watch sidebar state and save to localStorage
+        this.$watch('sidebarOpen', (val) => {
+            localStorage.setItem('sidebarOpen', val);
+        });
 
         // Subscribe to real-time events for automatic UI updates (optional - no-op if not available)
         if (typeof this.subscribeToRealtimeEvents === 'function') {
