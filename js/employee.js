@@ -1308,16 +1308,23 @@ const EmployeeModule = {
         
         // Return default steps
         return [
-            { name: 'لوح', completed: false, date: null, notes: '' },
-            { name: 'پوستر', completed: false, date: null, notes: '' },
-            { name: 'نسخ', completed: false, date: null, notes: '' },
             { name: 'ثبت عنوان', completed: false, date: null, notes: '' },
+            { name: 'تنضید', completed: false, date: null, notes: '' },
+            { name: 'ترجمه', completed: false, date: null, notes: '' },
+            { name: 'استلال', completed: false, date: null, notes: '' },
+            { name: 'ملخص', completed: false, date: null, notes: '' },
+            { name: 'مدرک لغت(فیش)', completed: false, date: null, notes: '' },
             { name: 'بارگزاری', completed: false, date: null, notes: '' },
-            { name: 'استاد', completed: false, date: null, notes: '' },
+            { name: 'تایید استاد', completed: false, date: null, notes: '' },
             { name: 'مشابهت', completed: false, date: null, notes: '' },
             { name: 'مدیر گروه', completed: false, date: null, notes: '' },
             { name: 'معاون', completed: false, date: null, notes: '' },
-            { name: 'تحدید مناقشه', completed: false, date: null, notes: '', defenseDate: '', referee1: '', referee2: '' }
+            { name: 'سفارش', completed: false, date: null, notes: '' },
+            { name: 'ق و م', completed: false, date: null, notes: '' },
+            { name: 'تسویه حساب', completed: false, date: null, notes: '' },
+            { name: 'وکالت', completed: false, date: null, notes: '' },
+            { name: 'ثبت نام ایرانداک', completed: false, date: null, notes: '' },
+            { name: 'زمان پور', completed: false, date: null, notes: '', defenseDate: '', referee1: '', referee2: '' }
         ];
     },
     
@@ -1738,27 +1745,26 @@ const EmployeeModule = {
         
         // Return default steps
         return [
+            { name: 'وکالت', completed: false, date: null, notes: '' },
+            { name: 'تسویه حساب', completed: false, date: null, notes: '' },
+            { name: 'تعدیلات', completed: false, date: null, notes: '' },
+            { name: 'مدرک کارشناسی', completed: false, date: null, notes: '' },
+            { name: 'استلال عراقی', completed: false, date: null, notes: '' },
+            { name: 'ملخص', completed: false, date: null, notes: '' },
             { name: 'محضر و اصالت', completed: false, date: null, notes: '' },
-            { name: 'تنزیل نمره', completed: false, date: null, notes: '' },
-            { name: 'تعدیل', completed: false, date: null, notes: '' },
-            { name: 'ایرانداک خطه', completed: false, date: null, notes: '' },
-            { name: 'ایرانداک رساله', completed: false, date: null, notes: '' },
-            { name: 'مدرک لغت', completed: false, date: null, notes: '' },
-            { name: 'ایجاد کردش', completed: false, date: null, notes: '' },
-            { name: 'حاتمی', completed: false, date: null, notes: '' },
-            { name: 'بارگزاری لغت', completed: false, date: null, notes: '' },
-            { name: 'آزفا', completed: false, date: null, notes: '' },
-            { name: 'ترجمه به اسماعیلی', completed: false, date: null, notes: '' },
-            { name: 'دادگر', completed: false, date: null, notes: '' },
-            { name: 'ارسال کد به تهران', completed: false, date: null, notes: '' },
-            { name: 'وثیقه', completed: false, date: null, notes: '' },
-            { name: 'تصدیق', completed: false, date: null, notes: '' },
-            { name: 'تنضید', completed: false, date: null, notes: '' },
-            { name: 'استلال', completed: false, date: null, notes: '' },
+            { name: 'تنضید ایرانداک', completed: false, date: null, notes: '' },
+            { name: 'تنضید تجلید', completed: false, date: null, notes: '' },
             { name: 'تجلید', completed: false, date: null, notes: '' },
-            { name: 'ختم تجلید', completed: false, date: null, notes: '' },
-            { name: 'قطعی', completed: false, date: null, notes: '' },
-            { name: 'مدارک سابقه', completed: false, date: null, notes: '' },
+            { name: 'بارگزاری ایرانداک', completed: false, date: null, notes: '' },
+            { name: 'ایجاد گردش', completed: false, date: null, notes: '' },
+            { name: 'آزفا', completed: false, date: null, notes: '' },
+            { name: 'اسماعیلی', completed: false, date: null, notes: '' },
+            { name: 'کتابخانه', completed: false, date: null, notes: '' },
+            { name: 'کد', completed: false, date: null, notes: '' },
+            { name: 'خروج قطعی', completed: false, date: null, notes: '' },
+            { name: 'دریافت مدرک', completed: false, date: null, notes: '' },
+            { name: 'تصدیق', completed: false, date: null, notes: '' },
+            { name: 'تسویه حساب نهایی', completed: false, date: null, notes: '' },
             { name: 'ارسال', completed: false, date: null, notes: '' }
         ];
     },
@@ -3909,17 +3915,24 @@ EmployeeModule.showStepsManagementModal = function() {
                     </div>
                 </div>
                 
-                <div class="p-6 border-t border-slate-700 flex justify-end space-x-3 space-x-reverse">
-                    <button onclick="employeeModule.closeModal('steps-management-modal')" 
-                            class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded-lg font-medium">
-                        <i class="fas fa-times ml-2"></i>
-                        بستن
+                <div class="p-6 border-t border-slate-700 flex justify-between items-center space-x-3 space-x-reverse">
+                    <button onclick="employeeModule.resetAllStepsToDefault()" 
+                            class="bg-red-700 hover:bg-red-600 text-white px-5 py-2 rounded-lg font-medium text-sm">
+                        <i class="fas fa-undo ml-2"></i>
+                        بازنشانی به پیش‌فرض
                     </button>
-                    <button onclick="employeeModule.saveStepsChanges()" 
-                            class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium">
-                        <i class="fas fa-save ml-2"></i>
-                        ذخیره تغییرات
-                    </button>
+                    <div class="flex space-x-3 space-x-reverse">
+                        <button onclick="employeeModule.closeModal('steps-management-modal')" 
+                                class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded-lg font-medium">
+                            <i class="fas fa-times ml-2"></i>
+                            بستن
+                        </button>
+                        <button onclick="employeeModule.saveStepsChanges()" 
+                                class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium">
+                            <i class="fas fa-save ml-2"></i>
+                            ذخیره تغییرات
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -3951,6 +3964,18 @@ EmployeeModule.switchStepsTab = function(tabName) {
             tabContent.style.display = 'none';
         }
     });
+};
+
+// Reset all steps to default (clears localStorage custom steps)
+EmployeeModule.resetAllStepsToDefault = function() {
+    if (!confirm('آیا مطمئن هستید؟ تمام مراحل سفارشی پاک شده و مراحل پیش‌فرض جدید اعمال می‌شوند.')) return;
+    localStorage.removeItem('custom_educational_steps');
+    localStorage.removeItem('custom_defense_steps');
+    localStorage.removeItem('custom_requirements_steps');
+    // Notify storage listeners
+    localStorage.setItem('steps_last_updated', Date.now().toString());
+    this.closeModal('steps-management-modal');
+    UTILS.showNotification('✅ مراحل با موفقیت به پیش‌فرض بازنشانی شدند', 'success');
 };
 
 // Add custom educational step

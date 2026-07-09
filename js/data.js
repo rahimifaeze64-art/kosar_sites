@@ -1,10 +1,23 @@
 ﻿// Data Management Module
+// نسخه داده - هر بار که لیست دانشجویان تغییر کند این عدد را افزایش دهید
+const DATA_VERSION = '2025.07.09.v3';
+
 const DataModule = {
     // Initialize default data
     initializeData() {
         try {
             if (typeof debugLogger !== 'undefined') {
                 debugLogger('Initializing data module...', 'info');
+            }
+
+            // اگر نسخه داده تغییر کرده، localStorage را پاک و با داده جدید جایگزین کن
+            const storedVersion = localStorage.getItem('data_version');
+            if (storedVersion !== DATA_VERSION) {
+                console.log(`🔄 نسخه داده تغییر کرده (${storedVersion} → ${DATA_VERSION}). بازنشانی داده‌ها...`);
+                localStorage.removeItem(CONFIG.STORAGE_KEYS.USERS);
+                localStorage.removeItem(CONFIG.STORAGE_KEYS.ORDERS);
+                localStorage.removeItem('students_data');
+                localStorage.setItem('data_version', DATA_VERSION);
             }
             
             if (!localStorage.getItem(CONFIG.STORAGE_KEYS.USERS)) {
@@ -17,17 +30,10 @@ const DataModule = {
                     debugLogger('Users found in localStorage', 'info');
                 }
             }
-            
-            if (!localStorage.getItem(CONFIG.STORAGE_KEYS.ORDERS)) {
-                if (typeof debugLogger !== 'undefined') {
-                    debugLogger('No orders found, creating default orders', 'info');
-                }
-                this.saveOrders(this.getDefaultOrders());
-            } else {
-                if (typeof debugLogger !== 'undefined') {
-                    debugLogger('Orders found in localStorage', 'info');
-                }
-            }
+
+            // مقداردهی پیشرفت دانشجویان فارغ‌التحصیل (grad001-grad056)
+            // گردش دفاع و ملزومات = کاملاً تکمیل | فارغ‌التحصیلی = مرحله اول در حال انجام
+            this._initGradStudentsProgress();
             
             if (typeof debugLogger !== 'undefined') {
                 debugLogger('Data module initialized successfully', 'success');
@@ -83,19 +89,13 @@ const DataModule = {
             const ordersStr = localStorage.getItem(CONFIG.STORAGE_KEYS.ORDERS);
             
             if (!ordersStr) {
-                if (typeof debugLogger !== 'undefined') {
-                    debugLogger('No orders in localStorage, returning defaults', 'info');
-                }
-                return this.getDefaultOrders();
+                return [];
             }
             
             const orders = JSON.parse(ordersStr);
             
             if (!Array.isArray(orders)) {
-                if (typeof debugLogger !== 'undefined') {
-                    debugLogger('Invalid orders data in localStorage, returning defaults', 'warning');
-                }
-                return this.getDefaultOrders();
+                return [];
             }
             
             if (typeof debugLogger !== 'undefined') {
@@ -107,7 +107,7 @@ const DataModule = {
                 debugLogger('Error getting orders', 'error', error);
             }
             console.error('Error getting orders:', error);
-            return this.getDefaultOrders();
+            return [];
         }
     },
     
@@ -142,13 +142,64 @@ const DataModule = {
         }
     },
 
+    // مقداردهی پیشرفت دانشجویان فارغ‌التحصیل در localStorage
+    _initGradStudentsProgress() {
+        const gradIds = [
+            'grad001','grad002','grad003','grad004','grad005','grad006','grad007',
+            'grad008','grad009','grad010','grad011','grad012','grad013','grad014',
+            'grad015','grad016','grad017','grad018','grad019','grad020','grad021',
+            'grad022','grad023','grad024','grad025','grad026','grad027','grad028',
+            'grad029','grad030','grad031','grad032','grad033','grad034','grad035',
+            'grad036','grad037','grad038','grad039','grad040','grad041','grad042',
+            'grad043','grad044','grad045','grad046','grad047','grad048','grad049',
+            'grad050','grad051','grad052','grad053','grad054','grad055','grad056'
+        ];
+
+        // تعداد مراحل هر مسیر از localStorage یا پیش‌فرض
+        const getStepCount = (key, defaultCount) => {
+            try {
+                const raw = localStorage.getItem(key);
+                if (raw) return JSON.parse(raw).length;
+            } catch(e) {}
+            return defaultCount;
+        };
+
+        const defenseCount      = getStepCount('custom_defense_steps', 17);
+        const requirementsCount = getStepCount('custom_requirements_steps', 11);
+        const educationalCount  = getStepCount('custom_educational_steps', 21);
+
+        const STATUS_COMPLETED = 2;
+        const STATUS_CURRENT   = 1;
+        const STATUS_INCOMPLETE = 0;
+
+        gradIds.forEach(id => {
+            // گردش دفاع - همه تکمیل
+            if (!localStorage.getItem(`prog_${id}_defense`)) {
+                const prog = Array(defenseCount).fill(null).map(() => ({ status: STATUS_COMPLETED }));
+                localStorage.setItem(`prog_${id}_defense`, JSON.stringify(prog));
+            }
+            // ملزومات - همه تکمیل
+            if (!localStorage.getItem(`prog_${id}_requirements`)) {
+                const prog = Array(requirementsCount).fill(null).map(() => ({ status: STATUS_COMPLETED }));
+                localStorage.setItem(`prog_${id}_requirements`, JSON.stringify(prog));
+            }
+            // فارغ‌التحصیلی - مرحله اول در حال انجام، بقیه تکمیل نشده
+            if (!localStorage.getItem(`prog_${id}_educational`)) {
+                const prog = Array(educationalCount).fill(null).map((_, i) => ({
+                    status: i === 0 ? STATUS_CURRENT : STATUS_INCOMPLETE
+                }));
+                localStorage.setItem(`prog_${id}_educational`, JSON.stringify(prog));
+            }
+        });
+    },
+
     // Default users data
     getDefaultUsers() {
         return [
             // Manager - مدیر
             {
                 id: 'mgr001',
-                name: 'عامل تقی زاده',
+                name: 'دکتر تقی زاده',
                 username: 'manager',
                 password: '123456',
                 role: CONFIG.ROLES.MANAGER,
@@ -265,449 +316,385 @@ const DataModule = {
             // Students - دانشجویان
             {
                 id: 'std001',
-                name: 'قاسم محمود حسن بغدادی',
-                username: 'qasim',
+                name: 'طیف حیدر نعومي',
+                username: 'tayf.haider',
                 password: '123456',
                 role: CONFIG.ROLES.STUDENT,
-                email: 'qasim.baghdadi@gmail.com',
-                phone: '+964 775 678 9012',
-                university: 'دانشگاه قم',
-                studentId: 'QOM2024001',
-                field: 'حقوق محض',
+                email: 'tayf.haider@gmail.com',
+                phone: '+964 770 001 0001',
+                university: 'جامعه المصطفی',
+                studentId: 'STD2024001',
+                field: 'حقوق',
                 bachelorField: 'حقوق',
                 degree: CONFIG.DEGREES.MASTERS,
-                passportNumber: 'A12345678',
+                passportNumber: '',
                 active: true,
                 createdAt: '2024-01-15T00:00:00.000Z'
             },
             {
                 id: 'std002',
-                name: 'حسن یاسر کرار حسینی',
-                username: 'hassan',
+                name: 'حیدر احسان عبد علي هيكل',
+                username: 'haider.ihsan',
                 password: '123456',
                 role: CONFIG.ROLES.STUDENT,
-                email: 'hassan.hosseini@gmail.com',
-                phone: '+964 776 789 0123',
+                email: 'haider.ihsan@gmail.com',
+                phone: '+964 770 001 0002',
                 university: 'جامعه المصطفی',
-                studentId: 'MOS2024002',
-                field: 'حقوق عمومی',
-                bachelorField: 'علوم سیاسی',
-                degree: CONFIG.DEGREES.PHD,
-                passportNumber: 'B23456789',
+                studentId: 'STD2024002',
+                field: 'حقوق',
+                bachelorField: 'حقوق',
+                degree: CONFIG.DEGREES.MASTERS,
+                passportNumber: '',
                 active: true,
-                createdAt: '2024-01-20T00:00:00.000Z'
+                createdAt: '2024-01-16T00:00:00.000Z'
             },
             {
                 id: 'std003',
-                name: 'علی عبدالله صالح نجفی',
-                username: 'ali.abdullah',
+                name: 'اسماء حسن کاطع',
+                username: 'asmaa.hasan',
                 password: '123456',
                 role: CONFIG.ROLES.STUDENT,
-                email: 'ali.abdullah@gmail.com',
-                phone: '+964 772 345 6789',
-                university: 'دانشگاه کربلا',
-                studentId: 'KRB2024003',
-                field: 'حقوق خصوصی',
+                email: 'asmaa.hasan@gmail.com',
+                phone: '+964 770 001 0003',
+                university: 'جامعه المصطفی',
+                studentId: 'STD2024003',
+                field: 'حقوق',
                 bachelorField: 'حقوق',
-                degree: CONFIG.DEGREES.BACHELORS,
-                passportNumber: 'G3456789',
+                degree: CONFIG.DEGREES.MASTERS,
+                passportNumber: '',
                 active: true,
-                createdAt: '2024-02-01T00:00:00.000Z'
+                createdAt: '2024-01-17T00:00:00.000Z'
             },
             {
                 id: 'std004',
-                name: 'زینب حسین جاسم موسوی',
-                username: 'fatima.hussein',
+                name: 'فرهاد حسین علی ارکوازي',
+                username: 'farhad.hussein',
                 password: '123456',
                 role: CONFIG.ROLES.STUDENT,
-                email: 'fatima.hussein@gmail.com',
-                phone: '+964 773 456 7890',
+                email: 'farhad.hussein@gmail.com',
+                phone: '+964 770 001 0004',
                 university: 'جامعه المصطفی',
-                studentId: 'MOS2024004',
-                field: 'حقوق جنایی',
+                studentId: 'STD2024004',
+                field: 'حقوق',
                 bachelorField: 'حقوق',
                 degree: CONFIG.DEGREES.MASTERS,
-                passportNumber: 'G4567890',
-                active: true,
-                createdAt: '2024-02-10T00:00:00.000Z'
-            },
-            {
-                id: 'std005',
-                name: 'محمد جواد کاظم عبدالرضا',
-                username: 'mohammad.javad',
-                password: '123456',
-                role: CONFIG.ROLES.STUDENT,
-                email: 'mohammad.javad@gmail.com',
-                phone: '+964 774 567 8901',
-                university: 'دانشگاه بغداد',
-                studentId: 'BGD2024005',
-                field: 'حقوق عمومی',
-                bachelorField: 'حقوق',
-                degree: CONFIG.DEGREES.PHD,
-                passportNumber: 'G5678901',
-                active: true,
-                createdAt: '2024-01-20T00:00:00.000Z'
-            },
-            {
-                id: 'std006',
-                name: 'زینب حسین عبدالله سجادی',
-                username: 'zainab.hussein',
-                password: '123456',
-                role: CONFIG.ROLES.STUDENT,
-                email: 'zainab.hussein@gmail.com',
-                phone: '+964 775 678 9012',
-                university: 'دانشگاه قم',
-                studentId: 'QOM2024006',
-                field: 'حقوق بین‌الملل',
-                bachelorField: 'حقوق',
-                degree: CONFIG.DEGREES.MASTERS,
-                passportNumber: 'G6789012',
-                active: true,
-                createdAt: '2024-02-15T00:00:00.000Z'
-            },
-            {
-                id: 'std007',
-                name: 'احمد صالح موسی الزبیدی',
-                username: 'ahmad.saleh',
-                password: '123456',
-                role: CONFIG.ROLES.STUDENT,
-                email: 'ahmad.saleh@gmail.com',
-                phone: '+964 776 789 0123',
-                university: 'دانشگاه نجف',
-                studentId: 'NJF2024007',
-                field: 'حقوق خصوصی',
-                bachelorField: 'حقوق',
-                degree: CONFIG.DEGREES.BACHELORS,
-                passportNumber: 'G7890123',
-                active: true,
-                createdAt: '2024-03-01T00:00:00.000Z'
-            },
-            {
-                id: 'std008',
-                name: 'مریم سعید جعفر البصری',
-                username: 'maryam.saeed',
-                password: '123456',
-                role: CONFIG.ROLES.STUDENT,
-                email: 'maryam.saeed@gmail.com',
-                phone: '+964 777 890 1234',
-                university: 'جامعه المصطفی',
-                studentId: 'MOS2024008',
-                field: 'حقوق جنایی',
-                bachelorField: 'حقوق',
-                degree: CONFIG.DEGREES.MASTERS,
-                passportNumber: 'G8901234',
-                active: true,
-                createdAt: '2024-01-25T00:00:00.000Z'
-            },
-            {
-                id: 'std009',
-                name: 'حسین علی محمد الکربلائی',
-                username: 'hussein.ali',
-                password: '123456',
-                role: CONFIG.ROLES.STUDENT,
-                email: 'hussein.ali@gmail.com',
-                phone: '+964 778 901 2345',
-                university: 'دانشگاه کربلا',
-                studentId: 'KRB2024009',
-                field: 'حقوق بین‌الملل',
-                bachelorField: 'حقوق',
-                degree: CONFIG.DEGREES.PHD,
-                passportNumber: 'G9012345',
-                active: true,
-                createdAt: '2024-01-05T00:00:00.000Z'
-            },
-            {
-                id: 'std010',
-                name: 'سارا محمود رضا الموصلی',
-                username: 'sara.mahmoud',
-                password: '123456',
-                role: CONFIG.ROLES.STUDENT,
-                email: 'sara.mahmoud@gmail.com',
-                phone: '+964 779 012 3456',
-                university: 'دانشگاه بغداد',
-                studentId: 'BGD2024010',
-                field: 'حقوق عمومی',
-                bachelorField: 'حقوق',
-                degree: CONFIG.DEGREES.BACHELORS,
-                passportNumber: 'G0123456',
-                active: true,
-                createdAt: '2024-03-10T00:00:00.000Z'
-            },
-            {
-                id: 'std011',
-                name: 'عمر فاضل کریم التکریتی',
-                username: 'omar.fadel',
-                password: '123456',
-                role: CONFIG.ROLES.STUDENT,
-                email: 'omar.fadel@gmail.com',
-                phone: '+964 780 123 4567',
-                university: 'دانشگاه قم',
-                studentId: 'QOM2024011',
-                field: 'حقوق خصوصی',
-                bachelorField: 'حقوق',
-                degree: CONFIG.DEGREES.MASTERS,
-                passportNumber: 'G1234567',
-                active: true,
-                createdAt: '2024-03-15T00:00:00.000Z'
-            },
-            {
-                id: 'std012',
-                name: 'نور الهدی سعید احمد الأنباری',
-                username: 'noor.saeed',
-                password: '123456',
-                role: CONFIG.ROLES.STUDENT,
-                email: 'noor.saeed@gmail.com',
-                phone: '+964 781 234 5678',
-                university: 'جامعه المصطفی',
-                studentId: 'MOS2024012',
-                field: 'حقوق جنایی',
-                bachelorField: 'حقوق',
-                degree: CONFIG.DEGREES.PHD,
-                passportNumber: 'G2345678',
+                passportNumber: '',
                 active: true,
                 createdAt: '2024-01-18T00:00:00.000Z'
             },
             {
-                id: 'std013',
-                name: 'یوسف جمال عبدالکریم الدیوانی',
-                username: 'youssef.jamal',
+                id: 'std005',
+                name: 'عارف حسیب محمد محمد',
+                username: 'aref.hasib',
                 password: '123456',
                 role: CONFIG.ROLES.STUDENT,
-                email: 'youssef.jamal@gmail.com',
-                phone: '+964 782 345 6789',
-                university: 'دانشگاه کربلا',
-                studentId: 'KRB2024013',
-                field: 'حقوق بین‌الملل',
-                bachelorField: 'حقوق',
-                degree: CONFIG.DEGREES.BACHELORS,
-                passportNumber: 'G3456789',
-                active: true,
-                createdAt: '2024-02-20T00:00:00.000Z'
-            },
-            {
-                id: 'std014',
-                name: 'هدی رشید طارق السامرائی',
-                username: 'huda.rashid',
-                password: '123456',
-                role: CONFIG.ROLES.STUDENT,
-                email: 'huda.rashid@gmail.com',
-                phone: '+964 783 456 7890',
-                university: 'دانشگاه نجف',
-                studentId: 'NJF2024014',
-                field: 'حقوق عمومی',
-                bachelorField: 'حقوق',
-                degree: CONFIG.DEGREES.MASTERS,
-                passportNumber: 'G4567890',
-                active: true,
-                createdAt: '2024-02-25T00:00:00.000Z'
-            },
-            {
-                id: 'std015',
-                name: 'کریم عادل وهاب الحلی',
-                username: 'karim.adel',
-                password: '123456',
-                role: CONFIG.ROLES.STUDENT,
-                email: 'karim.adel@gmail.com',
-                phone: '+964 784 567 8901',
-                university: 'دانشگاه بغداد',
-                studentId: 'BGD2024015',
-                field: 'حقوق خصوصی',
-                bachelorField: 'حقوق',
-                degree: CONFIG.DEGREES.PHD,
-                passportNumber: 'G5678901',
-                active: true,
-                createdAt: '2024-01-12T00:00:00.000Z'
-            },
-            {
-                id: 'std016',
-                name: 'رقیه حمید جاسم الرمادی',
-                username: 'ruqayya.hamid',
-                password: '123456',
-                role: CONFIG.ROLES.STUDENT,
-                email: 'ruqayya.hamid@gmail.com',
-                phone: '+964 785 678 9012',
+                email: 'aref.hasib@gmail.com',
+                phone: '+964 770 001 0005',
                 university: 'جامعه المصطفی',
-                studentId: 'MOS2024016',
-                field: 'حقوق جنایی',
-                bachelorField: 'حقوق',
-                degree: CONFIG.DEGREES.BACHELORS,
-                passportNumber: 'G6789012',
-                active: true,
-                createdAt: '2024-03-05T00:00:00.000Z'
-            },
-            {
-                id: 'std017',
-                name: 'طارق نبیل فؤاد الفلوجی',
-                username: 'tariq.nabil',
-                password: '123456',
-                role: CONFIG.ROLES.STUDENT,
-                email: 'tariq.nabil@gmail.com',
-                phone: '+964 786 789 0123',
-                university: 'دانشگاه قم',
-                studentId: 'QOM2024017',
-                field: 'حقوق بین‌الملل',
+                studentId: 'STD2024005',
+                field: 'حقوق',
                 bachelorField: 'حقوق',
                 degree: CONFIG.DEGREES.MASTERS,
-                passportNumber: 'G7890123',
+                passportNumber: '',
                 active: true,
-                createdAt: '2024-02-05T00:00:00.000Z'
+                createdAt: '2024-01-19T00:00:00.000Z'
             },
             {
-                id: 'std018',
-                name: 'سمیه عباس ناصر الحیدری',
-                username: 'sumayya.abbas',
+                id: 'std006',
+                name: 'علي محمود عبد عبد',
+                username: 'ali.mahmoud',
                 password: '123456',
                 role: CONFIG.ROLES.STUDENT,
-                email: 'sumayya.abbas@gmail.com',
-                phone: '+964 787 890 1234',
-                university: 'دانشگاه کربلا',
-                studentId: 'KRB2024018',
-                field: 'حقوق عمومی',
+                email: 'ali.mahmoud@gmail.com',
+                phone: '+964 770 001 0006',
+                university: 'جامعه المصطفی',
+                studentId: 'STD2024006',
+                field: 'حقوق',
                 bachelorField: 'حقوق',
-                degree: CONFIG.DEGREES.PHD,
-                passportNumber: 'G8901234',
+                degree: CONFIG.DEGREES.MASTERS,
+                passportNumber: '',
+                active: true,
+                createdAt: '2024-01-20T00:00:00.000Z'
+            },
+            {
+                id: 'std007',
+                name: 'مهدي جاسم محمد الساعدي',
+                username: 'mahdi.jasim',
+                password: '123456',
+                role: CONFIG.ROLES.STUDENT,
+                email: 'mahdi.jasim@gmail.com',
+                phone: '+964 770 001 0007',
+                university: 'جامعه المصطفی',
+                studentId: 'STD2024007',
+                field: 'حقوق',
+                bachelorField: 'حقوق',
+                degree: CONFIG.DEGREES.MASTERS,
+                passportNumber: '',
+                active: true,
+                createdAt: '2024-01-21T00:00:00.000Z'
+            },
+            {
+                id: 'std008',
+                name: 'مالک جبار فشاخ',
+                username: 'malik.jabbar',
+                password: '123456',
+                role: CONFIG.ROLES.STUDENT,
+                email: 'malik.jabbar@gmail.com',
+                phone: '+964 770 001 0008',
+                university: 'جامعه المصطفی',
+                studentId: 'STD2024008',
+                field: 'حقوق',
+                bachelorField: 'حقوق',
+                degree: CONFIG.DEGREES.MASTERS,
+                passportNumber: '',
                 active: true,
                 createdAt: '2024-01-22T00:00:00.000Z'
             },
             {
-                id: 'std019',
-                name: 'بلال صادق منصور الدجیلی',
-                username: 'bilal.sadiq',
+                id: 'std009',
+                name: 'احمد حرز سکوت',
+                username: 'ahmad.hirz',
                 password: '123456',
                 role: CONFIG.ROLES.STUDENT,
-                email: 'bilal.sadiq@gmail.com',
-                phone: '+964 788 901 2345',
-                university: 'دانشگاه نجف',
-                studentId: 'NJF2024019',
-                field: 'حقوق خصوصی',
-                bachelorField: 'حقوق',
-                degree: CONFIG.DEGREES.BACHELORS,
-                passportNumber: 'G9012345',
-                active: true,
-                createdAt: '2024-03-12T00:00:00.000Z'
-            },
-            {
-                id: 'std020',
-                name: 'لیلی ماجد رحیم البعقوبی',
-                username: 'layla.majed',
-                password: '123456',
-                role: CONFIG.ROLES.STUDENT,
-                email: 'layla.majed@gmail.com',
-                phone: '+964 789 012 3456',
-                university: 'دانشگاه بغداد',
-                studentId: 'BGD2024020',
-                field: 'حقوق جنایی',
-                bachelorField: 'حقوق',
-                degree: CONFIG.DEGREES.MASTERS,
-                passportNumber: 'G0123456',
-                active: true,
-                createdAt: '2024-02-28T00:00:00.000Z'
-            }
-        ];
-    },
-
-    // Default orders data
-    getDefaultOrders() {
-        return [
-            {
-                id: 'ord001',
-                studentId: 'std001',
-                studentName: 'قاسم محمود حسن بغدادی',
-                university: 'دانشگاه قم',
-                field: 'حقوق محض',
-                degree: CONFIG.DEGREES.MASTERS,
-                type: CONFIG.ORDER_TYPES.THESIS,
-                status: CONFIG.ORDER_STATUS.IN_PROGRESS,
-                stage: 'عامل در حال نوشتن رساله شما است',
-                estimatedDays: 45,
-                deadline: '2025-06-15',
-                assignedDoctor: 'عامل معصومی',
-                assignedDoctorId: 'doc001',
-                progress: 45,
-                totalAmount: 800,
-                doctorShare: 480,
-                managerShare: 320,
-                paymentStatus: 'partial',
-                paidAmount: 400,
-                createdAt: '2025-01-15T00:00:00.000Z',
-                tasks: [
-                    {
-                        id: 'task001',
-                        title: 'انتخاب عنوان رساله',
-                        status: CONFIG.ORDER_STATUS.COMPLETED,
-                        assignedTo: 'doctor',
-                        assignedUserId: 'doc001',
-                        dueDate: '2025-02-01',
-                        completedAt: '2025-01-28T00:00:00.000Z'
-                    },
-                    {
-                        id: 'task002',
-                        title: 'تایید عنوان توسط لجنه',
-                        status: CONFIG.ORDER_STATUS.COMPLETED,
-                        assignedTo: 'employee',
-                        assignedUserId: 'emp001',
-                        dueDate: '2025-02-10',
-                        completedAt: '2025-02-08T00:00:00.000Z'
-                    },
-                    {
-                        id: 'task003',
-                        title: 'نوشتن فصل اول رساله',
-                        status: CONFIG.ORDER_STATUS.IN_PROGRESS,
-                        assignedTo: 'doctor',
-                        assignedUserId: 'doc001',
-                        dueDate: '2025-04-15'
-                    }
-                ],
-                rejectionHistory: []
-            },
-            {
-                id: 'ord002',
-                studentId: 'std002',
-                studentName: 'حسن یاسر کرار حسینی',
+                email: 'ahmad.hirz@gmail.com',
+                phone: '+964 770 001 0009',
                 university: 'جامعه المصطفی',
-                field: 'حقوق عمومی',
-                degree: CONFIG.DEGREES.PHD,
-                type: CONFIG.ORDER_TYPES.ARTICLE,
-                status: CONFIG.ORDER_STATUS.PENDING,
-                stage: 'در انتظار تایید مدیر',
-                estimatedDays: 0,
-                deadline: '2025-05-20',
-                assignedDoctor: null,
-                assignedDoctorId: null,
-                progress: 0,
-                totalAmount: 600,
-                doctorShare: 420,
-                managerShare: 180,
-                paymentStatus: 'pending',
-                paidAmount: 0,
-                createdAt: '2025-01-20T00:00:00.000Z',
-                tasks: [],
-                rejectionHistory: []
+                studentId: 'STD2024009',
+                field: 'حقوق',
+                bachelorField: 'حقوق',
+                degree: CONFIG.DEGREES.MASTERS,
+                passportNumber: '',
+                active: true,
+                createdAt: '2024-01-23T00:00:00.000Z'
             },
             {
-                id: 'ord003',
-                studentId: 'std001',
-                studentName: 'قاسم محمود حسن بغدادی',
-                university: 'دانشگاه قم',
-                field: 'حقوق محض',
+                id: 'std010',
+                name: 'محمد عبیس لعیبي النائلي',
+                username: 'mohammad.ubais',
+                password: '123456',
+                role: CONFIG.ROLES.STUDENT,
+                email: 'mohammad.ubais@gmail.com',
+                phone: '+964 770 001 0010',
+                university: 'جامعه المصطفی',
+                studentId: 'STD2024010',
+                field: 'حقوق',
+                bachelorField: 'حقوق',
                 degree: CONFIG.DEGREES.MASTERS,
-                type: CONFIG.ORDER_TYPES.ARTICLE,
-                status: CONFIG.ORDER_STATUS.APPROVED,
-                stage: 'مدیر پروژه را تایید کرد - هماهنگی در حال انجام است',
-                estimatedDays: 30,
-                deadline: '2025-07-01',
-                assignedDoctor: null,
-                assignedDoctorId: null,
-                progress: 10,
-                totalAmount: 300,
-                doctorShare: 210,
-                managerShare: 90,
-                paymentStatus: 'pending',
-                paidAmount: 0,
-                createdAt: '2025-01-25T00:00:00.000Z',
-                tasks: [],
-                rejectionHistory: []
-            }
+                passportNumber: '',
+                active: true,
+                createdAt: '2024-01-24T00:00:00.000Z'
+            },
+            {
+                id: 'std011',
+                name: 'ذوالفقار ناصر غافل الفحام',
+                username: 'dhulfiqar.nasir',
+                password: '123456',
+                role: CONFIG.ROLES.STUDENT,
+                email: 'dhulfiqar.nasir@gmail.com',
+                phone: '+964 770 001 0011',
+                university: 'جامعه المصطفی',
+                studentId: 'STD2024011',
+                field: 'حقوق',
+                bachelorField: 'حقوق',
+                degree: CONFIG.DEGREES.MASTERS,
+                passportNumber: '',
+                active: true,
+                createdAt: '2024-01-25T00:00:00.000Z'
+            },
+            {
+                id: 'std012',
+                name: 'غزوان فیصل هادي العوادي',
+                username: 'ghazwan.faisal',
+                password: '123456',
+                role: CONFIG.ROLES.STUDENT,
+                email: 'ghazwan.faisal@gmail.com',
+                phone: '+964 770 001 0012',
+                university: 'جامعه المصطفی',
+                studentId: 'STD2024012',
+                field: 'حقوق',
+                bachelorField: 'حقوق',
+                degree: CONFIG.DEGREES.MASTERS,
+                passportNumber: '',
+                active: true,
+                createdAt: '2024-01-26T00:00:00.000Z'
+            },
+            {
+                id: 'std013',
+                name: 'سیف علي اسود الحسین',
+                username: 'saif.ali',
+                password: '123456',
+                role: CONFIG.ROLES.STUDENT,
+                email: 'saif.ali@gmail.com',
+                phone: '+964 770 001 0013',
+                university: 'جامعه المصطفی',
+                studentId: 'STD2024013',
+                field: 'حقوق',
+                bachelorField: 'حقوق',
+                degree: CONFIG.DEGREES.MASTERS,
+                passportNumber: '',
+                active: true,
+                createdAt: '2024-01-27T00:00:00.000Z'
+            },
+            {
+                id: 'std014',
+                name: 'علي اتیلا اسماعیل الرفاعي',
+                username: 'ali.atila',
+                password: '123456',
+                role: CONFIG.ROLES.STUDENT,
+                email: 'ali.atila@gmail.com',
+                phone: '+964 770 001 0014',
+                university: 'جامعه المصطفی',
+                studentId: 'STD2024014',
+                field: 'حقوق',
+                bachelorField: 'حقوق',
+                degree: CONFIG.DEGREES.MASTERS,
+                passportNumber: '',
+                active: true,
+                createdAt: '2024-01-28T00:00:00.000Z'
+            },
+            {
+                id: 'std015',
+                name: 'رسول محمد کاظم کاظم',
+                username: 'rasool.mohammad',
+                password: '123456',
+                role: CONFIG.ROLES.STUDENT,
+                email: 'rasool.mohammad@gmail.com',
+                phone: '+964 770 001 0015',
+                university: 'جامعه المصطفی',
+                studentId: 'STD2024015',
+                field: 'حقوق',
+                bachelorField: 'حقوق',
+                degree: CONFIG.DEGREES.MASTERS,
+                passportNumber: '',
+                active: true,
+                createdAt: '2024-01-29T00:00:00.000Z'
+            },
+            {
+                id: 'std016',
+                name: 'محمد حسین حسن الجعباوي',
+                username: 'mohammad.hussein',
+                password: '123456',
+                role: CONFIG.ROLES.STUDENT,
+                email: 'mohammad.hussein@gmail.com',
+                phone: '+964 770 001 0016',
+                university: 'جامعه المصطفی',
+                studentId: 'STD2024016',
+                field: 'حقوق',
+                bachelorField: 'حقوق',
+                degree: CONFIG.DEGREES.MASTERS,
+                passportNumber: '',
+                active: true,
+                createdAt: '2024-01-30T00:00:00.000Z'
+            },
+            {
+                id: 'std017',
+                name: 'مرتضی غسان مجید محسن',
+                username: 'mortadha.ghassan',
+                password: '123456',
+                role: CONFIG.ROLES.STUDENT,
+                email: 'mortadha.ghassan@gmail.com',
+                phone: '+964 770 001 0017',
+                university: 'جامعه المصطفی',
+                studentId: 'STD2024017',
+                field: 'حقوق',
+                bachelorField: 'حقوق',
+                degree: CONFIG.DEGREES.MASTERS,
+                passportNumber: '',
+                active: true,
+                createdAt: '2024-01-31T00:00:00.000Z'
+            },
+            {
+                id: 'std018',
+                name: 'حسنین صبري شکر الجبوري',
+                username: 'husanain.sabri',
+                password: '123456',
+                role: CONFIG.ROLES.STUDENT,
+                email: 'husanain.sabri@gmail.com',
+                phone: '+964 770 001 0018',
+                university: 'جامعه المصطفی',
+                studentId: 'STD2024018',
+                field: 'حقوق',
+                bachelorField: 'حقوق',
+                degree: CONFIG.DEGREES.MASTERS,
+                passportNumber: '',
+                active: true,
+                createdAt: '2024-02-01T00:00:00.000Z'
+            },
+            {
+                id: 'std019',
+                name: 'محمد طارق اسماعیل اسماعیل',
+                username: 'mohammad.tariq',
+                password: '123456',
+                role: CONFIG.ROLES.STUDENT,
+                email: 'mohammad.tariq@gmail.com',
+                phone: '+964 770 001 0019',
+                university: 'جامعه المصطفی',
+                studentId: 'STD2024019',
+                field: 'حقوق',
+                bachelorField: 'حقوق',
+                degree: CONFIG.DEGREES.MASTERS,
+                passportNumber: '',
+                active: true,
+                createdAt: '2024-02-02T00:00:00.000Z'
+            },
+            // دانشجویان فارغ‌التحصیلی (گردش دفاع و ملزومات کامل)
+            { id:'grad001', name:'زمان فاضل احمد الشروفي',   username:'zaman.fadhel',    password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD001', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad002', name:'سماح کریم نجم بهادلی',      username:'samah.karim',      password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD002', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad003', name:'زینب جبار وذاح البهادلی',   username:'zainab.jabbar',    password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD003', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad004', name:'رائد فیصل عبیس الجبوری',    username:'raed.faisal',      password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD004', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad005', name:'کرار عمار حمید حمید',        username:'karar.ammar',      password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD005', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad006', name:'حسین علي حسین الفطن',        username:'hussein.ali.fatan', password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD006', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad007', name:'الحسن زید عبود الغریري',     username:'alhassan.zaid',    password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD007', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad008', name:'علي فالح رشید ال صبر',       username:'ali.falih',        password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD008', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad009', name:'جعفر داخل عبد العارضي',      username:'jafar.dakhil',     password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD009', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad010', name:'محمد فاضل عباس عباس',        username:'mohammad.fadhel',  password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD010', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad011', name:'مهدي صالح مهدي الجنابي',      username:'mahdi.salih',      password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD011', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad012', name:'اسراء صباح البدیري',           username:'israa.sabah',      password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD012', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad013', name:'حسام ابراهیم محمود الکیشوان',  username:'husam.ibrahim',    password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD013', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad014', name:'لیث محمد عبدالیمه العبودي',    username:'laith.mohammad',   password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD014', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad015', name:'علي صالح ناصر ناصر',           username:'ali.salih.nasir',  password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD015', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad016', name:'علي صکبان علي الجاسم',         username:'ali.sakban',       password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD016', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad017', name:'مهند ناهی کبر کبر',            username:'mohanad.nahi',     password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD017', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad018', name:'ابتهاج عبدالستار عبدالرحیم عبدالرحیم', username:'ibtihaj.abd', password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD018', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad019', name:'هات محمد صبري صبري',           username:'hat.mohammad',     password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD019', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad020', name:'مصطفی نجم العبادة',             username:'mustafa.najm',     password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD020', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad021', name:'سلطان علي یاسر الصافي',        username:'sultan.ali',       password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD021', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad022', name:'علي احمد مهدي مهدي',           username:'ali.ahmad.mahdi',  password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD022', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad023', name:'واثق غني عبد الصالحی',         username:'wathiq.ghani',     password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD023', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad024', name:'ابراهیم عواد کاظم الجعباوي',   username:'ibrahim.awad',     password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD024', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad025', name:'یاسر خضیر عباس التمیمي',       username:'yaser.khudhair',   password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD025', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad026', name:'رامي صادق کریم الربیعي',       username:'rami.sadiq',       password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD026', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad027', name:'لیث حیدر هاشم الخیاط',         username:'laith.haider',     password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD027', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad028', name:'مصطفی جاسم محمد الیاسري',      username:'mustafa.jasim',    password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD028', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad029', name:'سجاد مصطفی محمد محمد',         username:'sajjad.mustafa',   password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD029', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad030', name:'عمار جبار کشاش الشرماني',      username:'ammar.jabbar',     password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD030', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad031', name:'محمد رائد محمود محمود',         username:'mohammad.raed',    password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD031', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad032', name:'علی منیر حمزه الجوراني',        username:'ali.munir',        password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD032', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad033', name:'عبدالله عبدالمنعم عاجل العمري', username:'abdullah.abd',     password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD033', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad034', name:'محمد صبار سعید العباسي',        username:'mohammad.sabbar',  password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD034', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad035', name:'احمد علی فلاح التمیمي',         username:'ahmad.ali.falah',  password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD035', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad036', name:'عبدالله صلاح عبید الرماحي',     username:'abdullah.salah',   password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD036', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad037', name:'نور حیدر خیرالله خیرالله',       username:'noor.haider',      password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD037', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad038', name:'فلاح مجیل محمد محمد',           username:'falah.majeel',     password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD038', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad039', name:'علي غني حبیب الغزي',            username:'ali.ghani',        password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD039', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad040', name:'احمد غیث جبار ابوناصریه',       username:'ahmad.ghaith',     password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD040', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad041', name:'غدیر عیسی خلیل خلیل',           username:'ghadir.isa',       password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD041', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad042', name:'عباس صلال صاحب الشکري',         username:'abbas.salal',      password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD042', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad043', name:'محمد جواد کاظم الشویل',         username:'mohammad.jawad2',  password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD043', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad044', name:'نور الدین فلاح حسین العود',      username:'nuruddin.falah',   password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD044', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad045', name:'قسور بریر هاشم الوردی',         username:'qasur.brarir',     password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD045', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad046', name:'یعقوب محمد یعقوب یعقوب',        username:'yaqoob.mohammad',  password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD046', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad047', name:'مصطفی منعم صالح صالح',          username:'mustafa.munem',    password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD047', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad048', name:'جعفر کریم سلمان سلمان',          username:'jafar.karim',      password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD048', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad049', name:'احمد صائب زید الجنابي',          username:'ahmad.saib',       password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD049', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad050', name:'علي حمزه جواد العجیلي',          username:'ali.hamza',        password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD050', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad051', name:'مصطفی احمد محسن الکبیسي',        username:'mustafa.ahmad2',   password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD051', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad052', name:'حسین عباس فاضل المحمد',          username:'hussein.abbas',    password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD052', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad053', name:'سجاد علي ثامر الخفاجي',          username:'sajjad.ali',       password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD053', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad054', name:'جبار حمید حسین بیرماني',         username:'jabbar.hamid',     password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD054', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad055', name:'اخلاص عبدالامیر سوادي الغالب',   username:'ikhlас.abd',       password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD055', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad056', name:'حیدر مکي محمدرضا الحضیري',       username:'haider.maki',      password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD056', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' }
         ];
     }
+
 };

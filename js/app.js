@@ -5,7 +5,7 @@ function appController() {
     selectedUserId: "mgr001",
     currentUser: {
       id: "mgr001",
-      name: "عامل تقی زاده",
+      name: "دکتر تقی زاده",
       username: "manager",
       role: "manager",
       email: "taghizadeh@edu-system.com",

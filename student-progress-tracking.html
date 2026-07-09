@@ -292,6 +292,18 @@
     
     <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
     
+    <!-- لود data.js برای دسترسی به داده‌های پیش‌فرض دانشجویان -->
+    <script src="js/config.js"></script>
+    <script src="js/realtime-events.js"></script>
+    <script src="js/data.js"></script>
+    
+    <script>
+        // مقداردهی اولیه data.js تا دانشجویان پیش‌فرض در localStorage نوشته شوند
+        if (typeof DataModule !== 'undefined') {
+            DataModule.initializeData();
+        }
+    </script>
+    
     <script>
         // ── مراحل پیش‌فرض (اگر مدیر هیچ تغییری نداده باشد) ─────────────────
         const DEFAULT_STEPS = {
@@ -373,32 +385,45 @@
         });
         
         function loadStudents() {
-            const sample = [
-                { id: 'std001', name: 'قاسم محمود حسن بغدادی', major: 'حقوق محض', avatar: 'ق' },
-                { id: 'std002', name: 'حسن یاسر کرار حسینی', major: 'حقوق عمومی', avatar: 'ح' },
-                { id: 'std003', name: 'علی عبدالله صالح نجفی', major: 'حقوق خصوصی', avatar: 'ع' },
-                { id: 'std004', name: 'زینب حسین جاسم موسوی', major: 'حقوق بین‌الملل', avatar: 'ز' },
-                { id: 'std005', name: 'محمد جواد کاظم عبدالرضا', major: 'حقوق محض', avatar: 'م' },
-                { id: 'std006', name: 'سارا محمود رضا الموصلی', major: 'حقوق عمومی', avatar: 'س' }
-            ];
-            
+            let rawList = [];
+
+            // ۱. ابتدا از edu_system_users (منبع اصلی) بخوان
+            try {
+                const usersRaw = localStorage.getItem('edu_system_users');
+                if (usersRaw) {
+                    JSON.parse(usersRaw).forEach(u => {
+                        if (u.role === 'student') {
+                            rawList.push({ id: u.id, name: u.name, major: u.field || '-', avatar: u.name?.charAt(0) || 'د' });
+                        }
+                    });
+                }
+            } catch (e) {}
+
+            // ۲. اگر students_data مکمل‌تری داره (مثلاً فیلد‌های ویرایش‌شده) ادغام کن
             try {
                 const stored = localStorage.getItem('students_data');
                 if (stored) {
                     Object.values(JSON.parse(stored)).forEach(s => {
                         if (s.role === 'student') {
-                            sample.push({ id: s.id, name: s.name, major: s.field || '-', avatar: s.name?.charAt(0) || 'د' });
+                            const existing = rawList.find(r => r.id === s.id);
+                            if (existing) {
+                                existing.name  = s.name  || existing.name;
+                                existing.major = s.field || existing.major;
+                                existing.avatar = (s.name || existing.name)?.charAt(0) || 'د';
+                            } else {
+                                rawList.push({ id: s.id, name: s.name, major: s.field || '-', avatar: s.name?.charAt(0) || 'د' });
+                            }
                         }
                     });
                 }
             } catch (e) {}
-            
-            students = sample.map(s => ({
+
+            students = rawList.map(s => ({
                 ...s,
                 progress: {
                     educational: loadProgress(s.id, 'educational'),
-                    defense: loadProgress(s.id, 'defense'),
-                    requirements: loadProgress(s.id, 'requirements')
+                    defense:     loadProgress(s.id, 'defense'),
+                    requirements:loadProgress(s.id, 'requirements')
                 }
             }));
         }
