@@ -22,64 +22,20 @@ EmployeeModule.editStudentProfile = function(studentId) {
         <div id="edit-student-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div class="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg max-w-6xl w-full max-h-[95vh] overflow-y-auto">
                 <div class="p-6 border-b border-blue-200 sticky top-0 bg-gradient-to-r from-blue-100 to-indigo-100 z-10">
-                    <h3 class="text-xl font-bold text-blue-900">
-                        <i class="fas fa-user-edit text-indigo-600 ml-2"></i>
-                        ویرایش پروفایل دانشجو - ${student.name}
-                    </h3>
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xl font-bold text-blue-900">
+                            <i class="fas fa-user-edit text-indigo-600 ml-2"></i>
+                            ویرایش پروفایل دانشجو - ${student.name}
+                        </h3>
+                        <button onclick="employeeModule.finishStudentWork('${studentId}')" 
+                                class="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg font-medium transition-all text-sm">
+                            <i class="fas fa-flag-checkered ml-2"></i>
+                            اتمام کار
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="p-6 space-y-6">
-                    <!-- کارت مسیر تحصیلی -->
-                    <div class="bg-white rounded-lg p-6 shadow-sm border border-blue-200">
-                        <div class="flex items-center justify-between mb-4">
-                            <h4 class="text-xl font-bold text-gray-800">
-                                <i class="fas fa-route text-indigo-600 ml-2"></i>
-                                مسیر تحصیلی
-                            </h4>
-                            <button onclick="employeeModule.finishStudentWork('${studentId}')" 
-                                    class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-all">
-                                <i class="fas fa-flag-checkered ml-2"></i>
-                                اتمام کار
-                            </button>
-                        </div>
-                        
-                        <!-- Tabs Navigation -->
-                        <div class="flex space-x-2 space-x-reverse mb-6 border-b border-gray-300">
-                            <button onclick="employeeModule.switchPathTab('educational', '${studentId}')" 
-                                    id="path-tab-educational"
-                                    class="px-6 py-3 font-medium border-b-2 border-indigo-500 text-indigo-600 transition-all">
-                                <i class="fas fa-graduation-cap ml-1"></i>
-                                مراحل تحصیلی
-                            </button>
-                            <button onclick="employeeModule.switchPathTab('defense', '${studentId}')" 
-                                    id="path-tab-defense"
-                                    class="px-6 py-3 font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-800 transition-all">
-                                <i class="fas fa-shield-alt ml-1"></i>
-                                گردش دفاع
-                            </button>
-                            <button onclick="employeeModule.switchPathTab('requirements', '${studentId}')" 
-                                    id="path-tab-requirements"
-                                    class="px-6 py-3 font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-800 transition-all">
-                                <i class="fas fa-tasks ml-1"></i>
-                                ملزومات
-                            </button>
-                        </div>
-                        
-                        <!-- Tab Content: مراحل تحصیلی -->
-                        <div id="path-content-educational">
-                            ${this.getEducationalStepsTimeline(student)}
-                        </div>
-                        
-                        <!-- Tab Content: گردش دفاع -->
-                        <div id="path-content-defense" style="display: none;">
-                            ${this.getDefenseStepsTimeline(student)}
-                        </div>
-                        
-                        <!-- Tab Content: ملزومات -->
-                        <div id="path-content-requirements" style="display: none;">
-                            ${this.getRequirementsStepsTimeline(student)}
-                        </div>
-                    </div>
                     
                     <!-- اطلاعات شخصی -->
                     <div class="bg-white rounded-lg p-5 shadow-sm border border-blue-200">

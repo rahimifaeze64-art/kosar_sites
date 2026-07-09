@@ -570,38 +570,10 @@ const ModalsModule = {
                     </div>
                 </div>
 
-                <!-- Order & Progress Fields (Student) -->
+                <!-- Additional Info (Student) -->
                 <div x-show="showStudentFields" class="bg-yellow-50 p-4 rounded-lg">
-                    <h4 class="font-semibold text-yellow-800 mb-3"><i class="fas fa-tasks ml-1"></i> وضعیت سفارش و پیشرفت</h4>
+                    <h4 class="font-semibold text-yellow-800 mb-3"><i class="fas fa-tasks ml-1"></i> اطلاعات تکمیلی</h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">نوع سفارش</label>
-                            <select x-model="newUser.orderType" class="form-control">
-                                <option value="">انتخاب کنید</option>
-                                <option value="نوشتن رساله">نوشتن رساله</option>
-                                <option value="نوشتن مقاله">نوشتن مقاله</option>
-                                <option value="ترجمه رساله">ترجمه رساله</option>
-                                <option value="تلخیص">تلخیص</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">وضعیت لجنه</label>
-                            <select x-model="newUser.committeeStatus" class="form-control">
-                                <option value="">انتخاب کنید</option>
-                                <option value="در انتظار">در انتظار</option>
-                                <option value="تایید شده">تایید شده</option>
-                                <option value="نیاز به اصلاح">نیاز به اصلاح</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">وضعیت ایران‌داک</label>
-                            <select x-model="newUser.irandocStatus" class="form-control">
-                                <option value="">انتخاب کنید</option>
-                                <option value="ثبت نشده">ثبت نشده</option>
-                                <option value="در حال بررسی">در حال بررسی</option>
-                                <option value="تایید شده">تایید شده</option>
-                            </select>
-                        </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">استاد راهنما</label>
                             <input type="text" x-model="newUser.supervisor" class="form-control" placeholder="نام استاد راهنما">
@@ -613,69 +585,6 @@ const ModalsModule = {
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">تاریخ تحویل</label>
                             <input type="date" x-model="newUser.deliveryDate" class="form-control">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Additional Services (Student) -->
-                <div x-show="showStudentFields" class="bg-purple-50 p-4 rounded-lg">
-                    <h4 class="font-semibold text-purple-800 mb-3"><i class="fas fa-cogs ml-1"></i> خدمات اضافی</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">وضعیت امورداری</label>
-                            <select x-model="newUser.adminStatus" class="form-control">
-                                <option value="">انتخاب کنید</option>
-                                <option value="انجام نشده">انجام نشده</option>
-                                <option value="در حال انجام">در حال انجام</option>
-                                <option value="تکمیل شده">تکمیل شده</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">وضعیت تنضید</label>
-                            <select x-model="newUser.typingStatus" class="form-control">
-                                <option value="">انتخاب کنید</option>
-                                <option value="انجام نشده">انجام نشده</option>
-                                <option value="در حال انجام">در حال انجام</option>
-                                <option value="تکمیل شده">تکمیل شده</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">وضعیت تلخیص</label>
-                            <select x-model="newUser.summaryStatus" class="form-control">
-                                <option value="">انتخاب کنید</option>
-                                <option value="انجام نشده">انجام نشده</option>
-                                <option value="در حال انجام">در حال انجام</option>
-                                <option value="تکمیل شده">تکمیل شده</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">وضعیت همانند</label>
-                            <select x-model="newUser.peerReviewStatus" class="form-control">
-                                <option value="">انتخاب کنید</option>
-                                <option value="انجام نشده">انجام نشده</option>
-                                <option value="در حال انجام">در حال انجام</option>
-                                <option value="تکمیل شده">تکمیل شده</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">وضعیت مقاله ۱</label>
-                            <select x-model="newUser.article1Status" class="form-control">
-                                <option value="">انتخاب کنید</option>
-                                <option value="شروع نشده">شروع نشده</option>
-                                <option value="در حال نوشتن">در حال نوشتن</option>
-                                <option value="ارسال شده">ارسال شده</option>
-                                <option value="پذیرش شده">پذیرش شده</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">وضعیت مقاله ۲</label>
-                            <select x-model="newUser.article2Status" class="form-control">
-                                <option value="">انتخاب کنید</option>
-                                <option value="شروع نشده">شروع نشده</option>
-                                <option value="در حال نوشتن">در حال نوشتن</option>
-                                <option value="ارسال شده">ارسال شده</option>
-                                <option value="پذیرش شده">پذیرش شده</option>
-                            </select>
                         </div>
                     </div>
                 </div>

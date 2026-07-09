@@ -262,60 +262,92 @@
     <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
     
     <script>
-        // Default steps definitions (same as employee.js)
-        const STEPS = {
-            educational: [
-                { name: 'محضر و اصالت' },
-                { name: 'تنزیل نمره' },
-                { name: 'تعدیل' },
-                { name: 'ایرانداک خطه' },
-                { name: 'ایرانداک رساله' },
-                { name: 'مدرک لغت' },
-                { name: 'ایجاد کردش' },
-                { name: 'حاتمی' },
-                { name: 'بارگزاری لغت' },
-                { name: 'آزفا' },
-                { name: 'ترجمه به اسماعیلی' },
-                { name: 'دادگر' },
-                { name: 'ارسال کد به تهران' },
-                { name: 'وثیقه' },
-                { name: 'تصدیق' },
-                { name: 'تنضید' },
-                { name: 'استلال' },
-                { name: 'تجلید' },
-                { name: 'ختم تجلید' },
-                { name: 'قطعی' },
-                { name: 'مدارک سابقه' },
-                { name: 'ارسال' }
-            ],
-            defense: [
-                { name: 'لوح' },
-                { name: 'دستگاه' },
-                { name: 'بارگزاری' },
-                { name: 'امتیاز' },
-                { name: 'چاپ' },
-                { name: 'دفتر' },
-                { name: 'پیش دفاع' },
-                { name: 'دفاع' },
-                { name: 'داوری' },
-                { name: 'تجدید نظر' },
-                { name: 'اصلاحیه' },
-                { name: 'قطعی' }
-            ],
-            requirements: [
-                { name: 'مدارک هویتی' },
-                { name: 'عکس پرسنلی' },
-                { name: 'کپی پاسپورت' },
-                { name: 'کپی ویزا' },
-                { name: 'کارت دانشجویی' },
-                { name: 'معرفی نامه' },
-                { name: 'کارنامه تحصیلی' },
-                { name: 'رزومه علمی' }
-            ]
-        };
+        // Load steps from localStorage (custom steps have priority)
+        function loadManagedSteps() {
+            const loadStepsFromStorage = (key, defaultSteps) => {
+                try {
+                    const stored = localStorage.getItem(key);
+                    if (stored) {
+                        return JSON.parse(stored).map(s => typeof s === 'string' ? { name: s } : s);
+                    }
+                } catch (e) {
+                    console.error(`Error loading ${key}:`, e);
+                }
+                return defaultSteps;
+            };
+
+            return {
+                educational: loadStepsFromStorage('custom_educational_steps', [
+                    { name: 'محضر و اصالت' },
+                    { name: 'تنزیل نمره' },
+                    { name: 'تعدیل' },
+                    { name: 'ایرانداک خطه' },
+                    { name: 'ایرانداک رساله' },
+                    { name: 'مدرک لغت' },
+                    { name: 'ایجاد کردش' },
+                    { name: 'حاتمی' },
+                    { name: 'بارگزاری لغت' },
+                    { name: 'آزفا' },
+                    { name: 'ترجمه به اسماعیلی' },
+                    { name: 'دادگر' },
+                    { name: 'ارسال کد به تهران' },
+                    { name: 'وثیقه' },
+                    { name: 'تصدیق' },
+                    { name: 'تنضید' },
+                    { name: 'استلال' },
+                    { name: 'تجلید' },
+                    { name: 'ختم تجلید' },
+                    { name: 'قطعی' },
+                    { name: 'مدارک سابقه' },
+                    { name: 'ارسال' }
+                ]),
+                defense: loadStepsFromStorage('custom_defense_steps', [
+                    { name: 'لوح' },
+                    { name: 'دستگاه' },
+                    { name: 'بارگزاری' },
+                    { name: 'امتیاز' },
+                    { name: 'چاپ' },
+                    { name: 'دفتر' },
+                    { name: 'پیش دفاع' },
+                    { name: 'دفاع' },
+                    { name: 'داوری' },
+                    { name: 'تجدید نظر' },
+                    { name: 'اصلاحیه' },
+                    { name: 'قطعی' }
+                ]),
+                requirements: loadStepsFromStorage('custom_requirements_steps', [
+                    { name: 'مدارک هویتی' },
+                    { name: 'عکس پرسنلی' },
+                    { name: 'کپی پاسپورت' },
+                    { name: 'کپی ویزا' },
+                    { name: 'کارت دانشجویی' },
+                    { name: 'معرفی نامه' },
+                    { name: 'کارنامه تحصیلی' },
+                    { name: 'رزومه علمی' }
+                ])
+            };
+        }
+
+        let STEPS = loadManagedSteps();
         
         let currentPathType = 'educational';
         let currentStudent = null;
+        
+        // Listen for storage changes
+        window.addEventListener('storage', e => {
+            const watched = ['custom_defense_steps', 'custom_requirements_steps', 'custom_educational_steps', 'steps_last_updated'];
+            if (watched.includes(e.key)) {
+                // Reload steps and refresh flowchart
+                STEPS = loadManagedSteps();
+                updateFlowchart();
+            }
+        });
+
+        window.addEventListener('focus', () => {
+            // Reload steps on focus (in case changed in another tab)
+            STEPS = loadManagedSteps();
+            updateFlowchart();
+        });
         
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {

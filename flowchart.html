@@ -984,15 +984,18 @@ function populateStudentSel() {
 
 window.addEventListener('resize', () => resizeCanvas());
 window.addEventListener('focus', () => {
-    // reload managed steps & rebuild if needed
+    // reload managed steps & rebuild from scratch on focus (in case steps changed)
+    graphs[currentPath] = null;
     getOrBuildGraph(currentPath);
     draw();
 });
 window.addEventListener('storage', e => {
     const watched = ['custom_defense_steps','custom_requirements_steps','custom_educational_steps'];
-    if (watched.includes(e.key) || (e.key && e.key.startsWith('prog_'))) {
-        // reload
-        graphs[currentPath] = null;
+    if (watched.includes(e.key) || (e.key && e.key.startsWith('prog_')) || e.key === 'steps_last_updated') {
+        // rebuild all paths since any path might have changed
+        graphs.defense = null;
+        graphs.requirements = null;
+        graphs.educational = null;
         getOrBuildGraph(currentPath);
         draw();
     }

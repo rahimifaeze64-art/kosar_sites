@@ -270,7 +270,7 @@ const EmployeeModule = {
                             <select id="filter-type" onchange="employeeModule.updateFilterStepOptions()" 
                                     class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 <option value="all">همه</option>
-                                <option value="educational">مراحل تحصیلی</option>
+                                <option value="educational">فارغ التحصیلی</option>
                                 <option value="defense">گردش دفاع</option>
                                 <option value="requirements">ملزومات</option>
                             </select>
@@ -279,7 +279,7 @@ const EmployeeModule = {
                         <!-- Filter Step -->
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">مرحله</label>
-                            <select id="filter-step" onchange="employeeModule.applyStudentFilter()" 
+                            <select id="filter-step" 
                                     class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 <option value="all">همه مراحل</option>
                             </select>
@@ -288,7 +288,7 @@ const EmployeeModule = {
                         <!-- Filter by Empty Fields -->
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">فیلتر فیلدهای خالی</label>
-                            <select id="filter-empty-field" onchange="employeeModule.applyStudentFilter()" 
+                            <select id="filter-empty-field" 
                                     class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 <option value="all">همه</option>
                                 <option value="passportImage">تصویر پاسپورت</option>
@@ -309,11 +309,18 @@ const EmployeeModule = {
                         <p class="text-sm text-gray-400">
                             <span id="filter-count">${students.length}</span> دانشجو یافت شد
                         </p>
-                        <button onclick="employeeModule.clearStudentFilter()" 
-                                class="text-sm text-indigo-400 hover:text-indigo-300">
-                            <i class="fas fa-times ml-1"></i>
-                            پاک کردن فیلتر
-                        </button>
+                        <div class="flex items-center gap-3">
+                            <button onclick="employeeModule.applyStudentFilter()" 
+                                    class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-2 rounded-lg transition-all">
+                                <i class="fas fa-filter ml-1"></i>
+                                فیلتر
+                            </button>
+                            <button onclick="employeeModule.clearStudentFilter()" 
+                                    class="text-sm text-indigo-400 hover:text-indigo-300">
+                                <i class="fas fa-times ml-1"></i>
+                                پاک کردن فیلتر
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
@@ -476,7 +483,7 @@ const EmployeeModule = {
                         <div class="flex items-center justify-between mb-1">
                             <span class="text-xs text-gray-400">
                                 <i class="fas fa-book ml-1"></i>
-                                مراحل تحصیلی
+                                فارغ التحصیلی
                             </span>
                             <span class="text-xs font-bold text-green-400">${Math.round(educationalProgress)}%</span>
                         </div>
@@ -654,10 +661,12 @@ const EmployeeModule = {
         
         const filterType = filterTypeElement.value;
         const filterStep = filterStepElement.value;
+        const filterEmptyFieldElement = document.getElementById('filter-empty-field');
+        const filterEmptyField = filterEmptyFieldElement ? filterEmptyFieldElement.value : 'all';
         
         const students = this.getAllStudents();
         
-        console.log(`🔍 Filtering ${students.length} students by type: ${filterType}, step: ${filterStep}`);
+        console.log(`🔍 Filtering ${students.length} students by type: ${filterType}, step: ${filterStep}, emptyField: ${filterEmptyField}`);
         
         let filteredStudents = students;
         
@@ -739,37 +748,74 @@ const EmployeeModule = {
         
         console.log(`📊 Filtered result: ${filteredStudents.length} students`);
         
-        // Update the display
-        const container = document.getElementById('students-list-container');
-        const countSpan = document.getElementById('filter-count');
+        // Apply empty field filter on top of path filter
+        if (filterEmptyField !== 'all') {
+            filteredStudents = filteredStudents.filter(s => {
+                const val = s[filterEmptyField];
+                return !val || val === '' || val === null || val === undefined;
+            });
+            console.log(`📊 After empty-field filter (${filterEmptyField}): ${filteredStudents.length} students`);
+        }
         
+        // Update the display - support both old single container and new active/inactive containers
+        const countSpan = document.getElementById('filter-count');
         if (countSpan) {
             countSpan.textContent = filteredStudents.length;
         }
         
-        if (container) {
-            if (filteredStudents.length === 0) {
-                container.innerHTML = `
+        const containerActive = document.getElementById('students-list-container-active');
+        const containerInactive = document.getElementById('students-list-container-inactive');
+        const containerOld = document.getElementById('students-list-container');
+
+        const emptyHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-user-graduate text-4xl text-gray-500 mb-4"></i>
+                <p class="text-gray-400">دانشجویی با این فیلتر یافت نشد</p>
+            </div>
+        `;
+
+        if (containerActive || containerInactive) {
+            // New layout: split active/inactive
+            const activeStudents = filteredStudents.filter(s => s.active);
+            const inactiveStudents = filteredStudents.filter(s => !s.active);
+
+            if (containerActive) {
+                containerActive.innerHTML = activeStudents.length === 0 ? emptyHTML : `
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${activeStudents.map(student => this.getStudentCardWithProgress(student)).join('')}
+                    </div>
+                `;
+            }
+            if (containerInactive) {
+                containerInactive.innerHTML = inactiveStudents.length === 0 ? emptyHTML : `
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${inactiveStudents.map(student => this.getStudentCardWithProgress(student)).join('')}
+                    </div>
+                `;
+            }
+        } else if (containerOld) {
+            containerOld.innerHTML = filteredStudents.length === 0 ? `
                     <div class="text-center py-8">
                         <i class="fas fa-user-graduate text-4xl text-gray-500 mb-4"></i>
                         <p class="text-gray-400">دانشجویی با این فیلتر یافت نشد</p>
                         <p class="text-sm text-gray-500 mt-2">نوع: ${filterType}, مرحله: ${filterStep}</p>
                     </div>
-                `;
-            } else {
-                container.innerHTML = `
+                ` : `
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         ${filteredStudents.map(student => this.getStudentCardWithProgress(student)).join('')}
                     </div>
                 `;
-            }
         }
     },
     
     // Clear student filter
     clearStudentFilter() {
-        document.getElementById('filter-type').value = 'all';
-        document.getElementById('filter-step').value = 'all';
+        const filterType = document.getElementById('filter-type');
+        const filterStep = document.getElementById('filter-step');
+        const filterEmptyField = document.getElementById('filter-empty-field');
+        if (filterType) filterType.value = 'all';
+        if (filterEmptyField) filterEmptyField.value = 'all';
+        this.updateFilterStepOptions();
         this.applyStudentFilter();
     },
     
@@ -978,108 +1024,7 @@ const EmployeeModule = {
     
     // Get student info tab content
     getStudentInfoTabContent(student) {
-        const educationalSteps = student.educationalSteps || this.getDefaultEducationalSteps();
-        const defenseSteps = student.defenseSteps || this.getDefaultDefenseSteps2();
-        const requirementsSteps = student.requirementsSteps || this.getDefaultRequirementsSteps();
-        
-        const educationalCompleted = educationalSteps.filter(s => s.completed).length;
-        const educationalPercent = (educationalCompleted / educationalSteps.length) * 100;
-        const defenseCompleted = defenseSteps.filter(s => s.completed).length;
-        const defensePercent = (defenseCompleted / defenseSteps.length) * 100;
-        const requirementsCompleted = requirementsSteps.filter(s => s.completed).length;
-        const requirementsPercent = (requirementsCompleted / requirementsSteps.length) * 100;
-        
         return `
-            <!-- کارت مسیر تحصیلی -->
-            <div class="bg-slate-700 rounded-lg p-6 mb-4">
-                <h4 class="font-bold text-white text-xl mb-4">
-                    <i class="fas fa-route text-indigo-400 ml-2"></i>
-                    مسیر تحصیلی
-                </h4>
-                
-                <!-- Tabs Navigation -->
-                <div class="flex space-x-2 space-x-reverse mb-6 border-b border-slate-600">
-                    <button onclick="employeeModule.switchPathTab('educational', '${student.id}')" 
-                            id="path-tab-educational"
-                            class="px-6 py-3 font-medium border-b-2 border-indigo-500 text-indigo-400 transition-all">
-                        <i class="fas fa-graduation-cap ml-1"></i>
-                        مراحل تحصیلی
-                        <span class="mr-2 px-2 py-0.5 bg-indigo-600 text-white text-xs rounded-full">${educationalCompleted}/${educationalSteps.length}</span>
-                    </button>
-                    <button onclick="employeeModule.switchPathTab('defense', '${student.id}')" 
-                            id="path-tab-defense"
-                            class="px-6 py-3 font-medium border-b-2 border-transparent text-gray-400 hover:text-white transition-all">
-                        <i class="fas fa-shield-alt ml-1"></i>
-                        گردش دفاع
-                        <span class="mr-2 px-2 py-0.5 bg-slate-600 text-white text-xs rounded-full">${defenseCompleted}/${defenseSteps.length}</span>
-                    </button>
-                    <button onclick="employeeModule.switchPathTab('requirements', '${student.id}')" 
-                            id="path-tab-requirements"
-                            class="px-6 py-3 font-medium border-b-2 border-transparent text-gray-400 hover:text-white transition-all">
-                        <i class="fas fa-tasks ml-1"></i>
-                        ملزومات
-                        <span class="mr-2 px-2 py-0.5 bg-slate-600 text-white text-xs rounded-full">${requirementsCompleted}/${requirementsSteps.length}</span>
-                    </button>
-                </div>
-                
-                <!-- Tab Content: مراحل تحصیلی -->
-                <div id="path-content-educational">
-                    <div class="mb-6">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm text-gray-400">پیشرفت کلی:</span>
-                            <span class="text-lg font-bold text-indigo-400">${Math.round(educationalPercent)}%</span>
-                        </div>
-                        <div class="w-full bg-slate-600 rounded-full h-2">
-                            <div class="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-500" 
-                                 style="width: ${educationalPercent}%"></div>
-                        </div>
-                    </div>
-                    ${this.getEducationalStepsTimeline(student)}
-                </div>
-                
-                <!-- Tab Content: گردش دفاع -->
-                <div id="path-content-defense" style="display: none;">
-                    <div class="mb-6">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm text-gray-400">پیشرفت کلی:</span>
-                            <span class="text-lg font-bold text-blue-400">${Math.round(defensePercent)}%</span>
-                        </div>
-                        <div class="w-full bg-slate-600 rounded-full h-2">
-                            <div class="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full transition-all duration-500" 
-                                 style="width: ${defensePercent}%"></div>
-                        </div>
-                    </div>
-                    ${this.getDefenseStepsTimeline(student)}
-                </div>
-                
-                <!-- Tab Content: ملزومات -->
-                <div id="path-content-requirements" style="display: none;">
-                    <div class="mb-6">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm text-gray-400">پیشرفت کلی:</span>
-                            <span class="text-lg font-bold text-purple-400">${Math.round(requirementsPercent)}%</span>
-                        </div>
-                        <div class="w-full bg-slate-600 rounded-full h-2">
-                            <div class="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-500" 
-                                 style="width: ${requirementsPercent}%"></div>
-                        </div>
-                    </div>
-                    ${this.getRequirementsStepsTimeline(student)}
-                </div>
-                
-                <!-- Legend -->
-                <div class="flex items-center justify-center space-x-6 space-x-reverse mt-6 pt-4 border-t border-slate-600">
-                    <div class="flex items-center">
-                        <i class="fas fa-mouse-pointer text-indigo-400 ml-2 text-sm"></i>
-                        <span class="text-xs text-gray-400">کلیک روی دایره: تیک زدن</span>
-                    </div>
-                    <div class="flex items-center">
-                        <i class="fas fa-sticky-note text-purple-400 ml-2 text-sm"></i>
-                        <span class="text-xs text-gray-400">کلیک روی عنوان: یادداشت</span>
-                    </div>
-                </div>
-            </div>
-            
             <!-- اطلاعات شخصی -->
             <div class="bg-slate-700 rounded-lg p-4">
                 <h4 class="font-bold text-white mb-3">
@@ -4255,7 +4200,15 @@ EmployeeModule.applyStepsToAllStudents = function(type, newSteps) {
     // Save back
     localStorage.setItem('students_data', JSON.stringify(studentsData));
 
-    // اطلاع به نمای شیت (اگر در تب دیگری باز باشد)
+    // پاک کردن cache گراف فلوچارت تا از مراحل جدید rebuild بشه
+    ['defense', 'educational', 'requirements'].forEach(path => {
+        localStorage.removeItem(`fc_graph_${path}`);
+    });
+
+    // timestamp برای trigger کردن storage event در flowchart.html (cross-tab)
+    localStorage.setItem('steps_last_updated', Date.now().toString());
+
+    // اطلاع به نمای شیت و فلوچارت (اگر در تب دیگری باز باشد)
     const storageKey = type === 'educational' ? 'custom_educational_steps'
                      : type === 'defense'      ? 'custom_defense_steps'
                                                : 'custom_requirements_steps';
