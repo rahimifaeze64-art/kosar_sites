@@ -43,8 +43,8 @@ def create_users():
     employees_data = [
         {'username': 'zahra', 'first_name': 'زهرا', 'last_name': 'محمدی', 'email': 'zahra@edu-system.com', 'phone': '+98 913 234 5678', 'department': 'هماهنگی عمومی'},
         {'username': 'fatemeh', 'first_name': 'زینب', 'last_name': 'احمدی', 'email': 'fatemeh@edu-system.com', 'phone': '+98 914 345 6789', 'department': 'هماهنگی پروژه‌ها'},
-        {'username': 'farzad', 'first_name': 'فرزاد', 'last_name': 'رضایی', 'email': 'farzad@edu-system.com', 'phone': '+98 915 456 7890', 'department': 'هماهنگی مالی'},
-        {'username': 'soleiman', 'first_name': 'سلیمان', 'last_name': 'کریمی', 'email': 'soleiman@edu-system.com', 'phone': '+98 916 567 8901', 'department': 'هماهنگی فنی'},
+        {'username': 'farzad', 'first_name': 'فرزاد', 'last_name': 'فتحی', 'email': 'farzad@edu-system.com', 'phone': '+98 915 456 7890', 'department': 'هماهنگی مالی'},
+        {'username': 'soleiman', 'first_name': 'حسینی م', 'last_name': 'سجادی', 'email': 'soleiman@edu-system.com', 'phone': '+98 916 567 8901', 'department': 'هماهنگی فنی'},
     ]
     
     for data in employees_data:
@@ -69,8 +69,8 @@ def create_users():
     agents_data = [
         {'username': 'masoumi', 'first_name': 'عامل', 'last_name': 'معصومی', 'email': 'masoumi@edu-system.com', 'phone': '+98 915 456 7890', 'specialization': 'نوشتن رساله'},
         {'username': 'zoghi', 'first_name': 'عامل', 'last_name': 'ذوقی', 'email': 'zoghi@edu-system.com', 'phone': '+98 916 567 8901', 'specialization': 'نوشتن مقاله'},
-        {'username': 'rezaei', 'first_name': 'رضایی', 'last_name': '', 'email': 'rezaei@edu-system.com', 'phone': '+98 917 678 9012', 'specialization': 'ترجمه'},
-        {'username': 'karimi', 'first_name': 'کریمی', 'last_name': '', 'email': 'karimi@edu-system.com', 'phone': '+98 918 789 0123', 'specialization': 'تلخیص'},
+        {'username': 'rezaei', 'first_name': 'فتحی', 'last_name': '', 'email': 'rezaei@edu-system.com', 'phone': '+98 917 678 9012', 'specialization': 'ترجمه'},
+        {'username': 'karimi', 'first_name': 'سجادی', 'last_name': '', 'email': 'karimi@edu-system.com', 'phone': '+98 918 789 0123', 'specialization': 'تلخیص'},
     ]
     
     for data in agents_data:

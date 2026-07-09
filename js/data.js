@@ -197,7 +197,7 @@ const DataModule = {
             },
             {
                 id: 'emp004',
-                name: 'سلیمان',
+                name: 'حسینی م',
                 username: 'soleiman',
                 password: '123456',
                 role: CONFIG.ROLES.employee,
@@ -237,7 +237,7 @@ const DataModule = {
             },
             {
                 id: 'agent001',
-                name: 'رضایی',
+                name: 'فتحی',
                 username: 'rezaei',
                 password: '123456',
                 role: 'agent',
@@ -250,7 +250,7 @@ const DataModule = {
             },
             {
                 id: 'agent002',
-                name: 'کریمی',
+                name: 'سجادی',
                 username: 'karimi',
                 password: '123456',
                 role: 'agent',
@@ -350,7 +350,7 @@ const DataModule = {
             },
             {
                 id: 'std006',
-                name: 'زینب حسین عبدالله کریمی',
+                name: 'زینب حسین عبدالله سجادی',
                 username: 'zainab.hussein',
                 password: '123456',
                 role: CONFIG.ROLES.STUDENT,

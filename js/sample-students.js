@@ -100,7 +100,7 @@ const SampleStudentsData = {
             },
             {
                 id: 'student006',
-                name: 'زینب حسین عبدالله کریمی',
+                name: 'زینب حسین عبدالله سجادی',
                 studentId: 'ST006',
                 email: 'zainab.hussein@student.edu',
                 phone: '+964 775 678 9012',

@@ -191,10 +191,10 @@ const OrderWizardModule = {
                             <select x-model="newOrder.assignedAgent" 
                                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg">
                                 <option value="">بدون تخصیص</option>
-                                <option value="doc001">عامل معصومی</option>
-                                <option value="doc002">عامل ذوقی</option>
-                                <option value="agent001">رضایی</option>
-                                <option value="agent002">کریمی</option>
+                                <option value="doc001">دکتر معصومی</option>
+                                <option value="doc002">دکتر ذوقی</option>
+                                <option value="agent001">دکتر فتحی</option>
+                                <option value="agent002">دکتر سجادی</option>
                             </select>
                         </div>
                         

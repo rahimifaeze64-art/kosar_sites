@@ -31,8 +31,8 @@
                     <select id="agentSelect" class="w-full bg-slate-700 text-white rounded-lg px-4 py-2">
                         <option value="doc001">عامل معصومی (doc001)</option>
                         <option value="doc002">عامل ذوقی (doc002)</option>
-                        <option value="agent001">رضایی (agent001)</option>
-                        <option value="agent002">کریمی (agent002)</option>
+                        <option value="agent001">فتحی (agent001)</option>
+                        <option value="agent002">سجادی (agent002)</option>
                     </select>
                 </div>
                 
@@ -102,8 +102,8 @@
             const agentNames = {
                 'doc001': 'عامل معصومی',
                 'doc002': 'عامل ذوقی',
-                'agent001': 'رضایی',
-                'agent002': 'کریمی'
+                'agent001': 'فتحی',
+                'agent002': 'سجادی'
             };
             
             const order = {
@@ -141,8 +141,8 @@
             const agentNames = {
                 'doc001': 'عامل معصومی',
                 'doc002': 'عامل ذوقی',
-                'agent001': 'رضایی',
-                'agent002': 'کریمی'
+                'agent001': 'فتحی',
+                'agent002': 'سجادی'
             };
             
             const now = new Date();
@@ -152,7 +152,7 @@
                 id: 'custom_order_' + Date.now(),
                 type: 'سفارش سفارشی',
                 title: 'تنظیم مقاله فوری',
-                studentName: 'حسن رضایی (تست)',
+                studentName: 'حسن فتحی (تست)',
                 description: 'این یک سفارش سفارشی تستی است با تایمر 2 ساعته',
                 deadline: deadline.toLocaleDateString('fa-IR'),
                 deadlineTime: deadline.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),

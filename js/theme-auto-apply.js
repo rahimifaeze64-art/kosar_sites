@@ -44,3 +44,26 @@
     
     observer.observe(document.body, { childList: true, subtree: true });
 })();
+
+// تغییر تم کلی برنامه
+window.applyAppTheme = function(themeName) {
+    localStorage.setItem('app-theme', themeName);
+    document.body.setAttribute('data-theme', themeName);
+    
+    if (themeName === 'olive') {
+        document.body.style.background = '#F2F2F2';
+    } else if (themeName === 'dark') {
+        document.body.style.background = '#111827';
+    }
+    
+    // به‌روزرسانی دکمه‌های انتخاب تم
+    ['olive', 'dark'].forEach(t => {
+        const btn = document.getElementById('theme-btn-' + t);
+        if (btn) {
+            btn.style.borderColor = t === themeName ? '#8FBF3F' : '#e5e7eb';
+            btn.style.background = t === themeName ? '#f0f9e0' : '';
+        }
+    });
+    
+    console.log('✅ Theme changed to:', themeName);
+};

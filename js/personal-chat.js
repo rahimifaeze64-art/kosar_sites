@@ -10,7 +10,7 @@ const PersonalChatModule = {
         const currentUser = this.getCurrentUser();
         
         return `
-            <div id="personalChatContainer" class="personal-chat-container" style="display: flex; flex-direction: column; height: calc(100vh - 200px); background: #1e293b; border-radius: 12px; overflow: hidden;">
+            <div id="personalChatContainer" class="personal-chat-container" style="display: flex; flex-direction: column; height: calc(100vh - 200px); background: #f8fafc; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0;">
                 <!-- Header -->
                 <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 20px; color: white;">
                     <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 8px;">
@@ -25,17 +25,17 @@ const PersonalChatModule = {
                 <!-- Users List & Chat Area -->
                 <div style="display: flex; flex: 1; overflow: hidden;">
                     <!-- Users List Sidebar -->
-                    <div style="width: 280px; background: #334155; border-left: 1px solid #475569; display: flex; flex-direction: column;">
-                        <div style="padding: 16px; border-bottom: 1px solid #475569;">
-                            <h3 style="color: white; font-weight: bold; margin-bottom: 12px;">
-                                <i class="fas fa-users" style="margin-left: 8px;"></i>
+                    <div style="width: 280px; background: #56789bff; border-left: 1px solid #e2e8f0; display: flex; flex-direction: column;">
+                        <div style="padding: 16px; border-bottom: 1px solid #e2e8f0;">
+                            <h3 style="color: #1e293b; font-weight: bold; margin-bottom: 12px;">
+                                <i class="fas fa-users" style="margin-left: 8px; color: #059669;"></i>
                                 انتخاب گفتگو
                             </h3>
                             <input type="text" 
                                    id="personalChatSearch" 
                                    placeholder="جستجوی کاربر..."
                                    onkeyup="PersonalChatModule.filterUsers(this.value)"
-                                   style="width: 100%; background: #1e293b; border: 1px solid #475569; border-radius: 8px; padding: 10px 12px; color: white; font-family: inherit;">
+                                   style="width: 100%; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; color: #333; font-family: inherit;">
                         </div>
                         <div id="personalChatUsersList" style="flex: 1; overflow-y: auto; padding: 8px;">
                             ${this.renderUsersList(currentUser)}
@@ -43,7 +43,7 @@ const PersonalChatModule = {
                     </div>
 
                     <!-- Chat Area -->
-                    <div id="personalChatArea" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                    <div id="personalChatArea" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #ffffff;">
                         ${this.selectedUser ? this.getChatAreaHTML(currentUser) : this.getSelectUserPlaceholderHTML()}
                     </div>
                 </div>
@@ -128,11 +128,11 @@ const PersonalChatModule = {
             { id: 'emp001', name: 'ساره', username: 'zahra', role: 'employee' },
             { id: 'emp002', name: 'زینب', username: 'fatemeh', role: 'employee' },
             { id: 'emp003', name: 'فرزاد', username: 'farzad', role: 'employee' },
-            { id: 'emp004', name: 'سلیمان', username: 'soleiman', role: 'employee' },
-            { id: 'doc001', name: 'عامل معصومی', username: 'masoumi', role: 'agent' },
-            { id: 'doc002', name: 'عامل ذوقی', username: 'zoghi', role: 'agent' },
-            { id: 'agent001', name: 'رضایی', username: 'reaei', role: 'agent' },
-            { id: 'agent002', name: 'کریمی', username: 'karimi', role: 'agent' }
+            { id: 'emp004', name: 'حسینی م', username: 'soleiman', role: 'employee' },
+            { id: 'doc001', name: 'دکتر معصومی', username: 'masoumi', role: 'agent' },
+            { id: 'doc002', name: 'دکتر ذوقی', username: 'zoghi', role: 'agent' },
+            { id: 'agent001', name: 'دکتر فتحی', username: 'fathi', role: 'agent' },
+            { id: 'agent002', name: 'دکتر سجادی', username: 'sajadi', role: 'agent' }
         ];
         
         // Filter based on role
@@ -312,13 +312,13 @@ const PersonalChatModule = {
     getChatAreaHTML(currentUser) {
         return `
             <!-- Chat Header -->
-            <div style="padding: 16px 20px; border-bottom: 1px solid #475569; background: #334155; display: flex; align-items: center; gap: 12px;">
+            <div style="padding: 16px 20px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; display: flex; align-items: center; gap: 12px;">
                 <div style="width: 40px; height: 40px; border-radius: 50%; ${this.getRoleClass(this.selectedUser.role)} display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
                     ${this.selectedUser.name.charAt(0)}
                 </div>
                 <div>
-                    <p style="color: white; font-weight: 600;">${this.selectedUser.name}</p>
-                    <p style="color: #94a3b8; font-size: 12px;">${this.getRoleName(this.selectedUser.role)}</p>
+                    <p style="color: #1e293b; font-weight: 600;">${this.selectedUser.name}</p>
+                    <p style="color: #64748b; font-size: 12px;">${this.getRoleName(this.selectedUser.role)}</p>
                 </div>
                 <button onclick="PersonalChatModule.closeChat()" 
                         style="margin-right: auto; background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 18px;">
@@ -327,12 +327,12 @@ const PersonalChatModule = {
             </div>
 
             <!-- Messages Area -->
-            <div id="personalChatMessages" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+            <div id="personalChatMessages" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; background: #f8fafc;">
                 ${this.renderMessages(currentUser)}
             </div>
 
             <!-- Input Area -->
-            <div style="padding: 16px 20px; border-top: 1px solid #475569; background: #334155;">
+            <div style="padding: 16px 20px; border-top: 1px solid #e2e8f0; background: #f1f5f9;">
                 <div style="display: flex; gap: 12px; align-items: flex-end;">
                     <textarea 
                         id="personalChatInput" 
@@ -340,7 +340,7 @@ const PersonalChatModule = {
                         rows="1"
                         onkeypress="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); PersonalChatModule.sendMessage(); }"
                         oninput="this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 120) + 'px';"
-                        style="flex: 1; background: #1e293b; border: 1px solid #475569; border-radius: 12px; padding: 12px 16px; color: white; resize: none; min-height: 44px; max-height: 120px; font-family: inherit;"></textarea>
+                        style="flex: 1; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 16px; color: #333; resize: none; min-height: 44px; max-height: 120px; font-family: inherit;"></textarea>
                     
                     <div style="display: flex; gap: 8px;">
                         <button onclick="PersonalChatModule.attachFile()" 
@@ -390,10 +390,10 @@ const PersonalChatModule = {
                 <div style="display: flex; justify-content: ${isOwn ? 'flex-end' : 'flex-start'}; animation: slideIn 0.3s ease;">
                     <div style="max-width: 70%; display: flex; flex-direction: column; align-items: ${isOwn ? 'flex-end' : 'flex-start'};">
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 12px;">
-                            ${!isOwn ? `<span style="color: #d1d5db; font-weight: 600;">${msg.senderName}</span>` : ''}
-                            <span style="color: #6b7280;">${time}</span>
+                            ${!isOwn ? `<span style="color: #374151; font-weight: 600;">${msg.senderName}</span>` : ''}
+                            <span style="color: #9ca3af;">${time}</span>
                         </div>
-                        <div style="border-radius: 12px; padding: 12px 16px; ${isOwn ? 'background: #059669; color: white;' : 'background: #475569; color: #f1f5f9;'}">
+                        <div style="border-radius: 12px; padding: 12px 16px; ${isOwn ? 'background: #059669; color: white;' : 'background: #e2e8f0; color: #1e293b;'}">
                             ${this.renderMessageContent(msg)}
                         </div>
                     </div>

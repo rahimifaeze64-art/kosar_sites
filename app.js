@@ -37,7 +37,7 @@ function appData() {
                 status: 'approved',
                 stage: 'نوشتن مقاله اول',
                 deadline: '2024-03-01',
-                assignedDoctor: 'عامل رضایی',
+                assignedDoctor: 'عامل فتحی',
                 progress: 60,
                 tasks: [
                     { id: 1, title: 'انتخاب موضوع مقاله', status: 'completed', assignedTo: 'doctor', dueDate: '2024-01-05' },
@@ -68,12 +68,12 @@ function appData() {
         ],
         
         users: [
-            { id: 1, name: 'عامل رضایی', role: 'doctor', specialization: 'مهندسی کامپیوتر', active: true },
+            { id: 1, name: 'عامل فتحی', role: 'doctor', specialization: 'مهندسی کامپیوتر', active: true },
             { id: 2, name: 'عامل احمدی', role: 'doctor', specialization: 'مهندسی مکانیک', active: true },
             { id: 3, name: 'مریم محمدی', role: 'employee', department: 'هماهنگی', active: true },
             { id: 4, name: 'حسن ترجمان', role: 'translator', languages: ['عربی', 'انگلیسی'], active: true },
-            { id: 5, name: 'رضایی', role: 'agent', department: 'عملیات', active: true },
-            { id: 6, name: 'کریمی', role: 'agent', department: 'عملیات', active: true }
+            { id: 5, name: 'فتحی', role: 'agent', department: 'عملیات', active: true },
+            { id: 6, name: 'سجادی', role: 'agent', department: 'عملیات', active: true }
         ],
 
         // Methods

@@ -231,11 +231,6 @@ const EmployeeModule = {
                             <i class="fas fa-th-list ml-2"></i>
                             نمای شیت
                         </a>
-                        <a href="student-flowchart.html" 
-                                class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all inline-flex items-center">
-                            <i class="fas fa-chart-line ml-2"></i>
-                            گرافیک پیشرفته
-                        </a>
                     </div>
                 </div>
                 
@@ -1406,6 +1401,23 @@ const EmployeeModule = {
         // Save to localStorage
         studentsData[studentId] = student;
         localStorage.setItem('students_data', JSON.stringify(studentsData));
+
+        // ---- Auto-transfer: check if ALL defense steps are completed ----
+        const allDefenseDone = student.defenseSteps.every(s => s.completed);
+        if (allDefenseDone) {
+            // Move student to graduation (educational) path
+            student.currentPath = 'educational';
+            // Initialize educational steps if not set
+            if (!student.educationalSteps || student.educationalSteps.length === 0) {
+                student.educationalSteps = this.getDefaultEducationalSteps();
+            }
+            studentsData[studentId] = student;
+            localStorage.setItem('students_data', JSON.stringify(studentsData));
+            setTimeout(() => {
+                UTILS.showNotification('🎓 همه مراحل دفاع تکمیل شد! دانشجو به مسیر فارغ‌التحصیلی منتقل شد.', 'success');
+            }, 400);
+        }
+        // ------------------------------------------------------------------
         
         // Refresh the defense tab content (works in both modal and main view)
         const defenseContentDiv = document.getElementById('path-content-defense');
@@ -2712,7 +2724,7 @@ const EmployeeModule = {
             { id: 'emp001', name: 'ساره', email: 'zahra@edu-system.com' },
             { id: 'emp002', name: 'زینب', email: 'fatemeh@edu-system.com' },
             { id: 'emp003', name: 'فرزاد', email: 'farzad@edu-system.com' },
-            { id: 'emp004', name: 'سلیمان', email: 'soleiman@edu-system.com' }
+            { id: 'emp004', name: 'حسینی م', email: 'soleiman@edu-system.com' }
         ];
         return employees.find(c => c.id === userId) || employees[0];
     },
@@ -3816,7 +3828,48 @@ EmployeeModule.saveNewStudent = function() {
 EmployeeModule.showStepsManagementModal = function() {
     const educationalSteps = this.getDefaultEducationalSteps();
     const defenseSteps = this.getDefaultDefenseSteps2();
+    const requirementsSteps = this.getDefaultRequirementsSteps();
     
+    const renderStepRow = (step, index, total, type, color) => `
+        <div class="bg-slate-700 rounded-lg p-3 hover:bg-slate-600 transition-all step-row" data-index="${index}" data-type="${type}">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center flex-1 min-w-0">
+                    <span class="bg-${color}-600 text-white text-xs font-bold rounded-full w-7 h-7 flex items-center justify-center ml-2 flex-shrink-0">
+                        ${index + 1}
+                    </span>
+                    <div class="min-w-0">
+                        <h5 class="font-medium text-white text-sm truncate">${step.name}</h5>
+                        <p class="text-xs text-gray-400">مرحله ${index + 1} از ${total}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1 flex-shrink-0">
+                    <!-- Move Up -->
+                    <button onclick="employeeModule.moveStep('${type}', ${index}, 'up')" 
+                            class="text-gray-400 hover:text-yellow-300 p-1.5 rounded transition-all ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}" 
+                            title="انتقال به بالا" ${index === 0 ? 'disabled' : ''}>
+                        <i class="fas fa-chevron-up text-xs"></i>
+                    </button>
+                    <!-- Move Down -->
+                    <button onclick="employeeModule.moveStep('${type}', ${index}, 'down')" 
+                            class="text-gray-400 hover:text-yellow-300 p-1.5 rounded transition-all ${index === total - 1 ? 'opacity-30 cursor-not-allowed' : ''}" 
+                            title="انتقال به پایین" ${index === total - 1 ? 'disabled' : ''}>
+                        <i class="fas fa-chevron-down text-xs"></i>
+                    </button>
+                    <!-- Edit -->
+                    <button onclick="employeeModule.editStep('${type}', ${index})" 
+                            class="text-blue-400 hover:text-blue-300 p-1.5 rounded transition-all" title="ویرایش">
+                        <i class="fas fa-edit text-xs"></i>
+                    </button>
+                    <!-- Delete (all steps deletable) -->
+                    <button onclick="employeeModule.deleteStep('${type}', ${index})" 
+                            class="text-red-400 hover:text-red-300 p-1.5 rounded transition-all" title="حذف">
+                        <i class="fas fa-trash text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
     const modalHTML = `
         <div id="steps-management-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div class="bg-slate-800 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
@@ -3835,112 +3888,78 @@ EmployeeModule.showStepsManagementModal = function() {
                 
                 <div class="p-6">
                     <!-- Tabs -->
-                    <div class="flex space-x-2 space-x-reverse mb-6 border-b border-slate-600">
-                        <button onclick="employeeModule.switchStepsTab('educational')" 
-                                id="steps-tab-educational"
-                                class="px-6 py-3 font-medium border-b-2 border-green-500 text-green-400 transition-all">
-                            <i class="fas fa-book ml-1"></i>
-                            مراحل تحصیلی
-                        </button>
+                    <div class="flex space-x-2 space-x-reverse mb-6 border-b border-slate-600 overflow-x-auto">
                         <button onclick="employeeModule.switchStepsTab('defense')" 
                                 id="steps-tab-defense"
-                                class="px-6 py-3 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300 transition-all">
+                                class="px-5 py-3 font-medium border-b-2 border-blue-500 text-blue-400 transition-all whitespace-nowrap">
                             <i class="fas fa-shield-alt ml-1"></i>
                             گردش دفاع
                         </button>
+                        <button onclick="employeeModule.switchStepsTab('requirements')" 
+                                id="steps-tab-requirements"
+                                class="px-5 py-3 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300 transition-all whitespace-nowrap">
+                            <i class="fas fa-clipboard-list ml-1"></i>
+                            ملزومات
+                        </button>
+                        <button onclick="employeeModule.switchStepsTab('educational')" 
+                                id="steps-tab-educational"
+                                class="px-5 py-3 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300 transition-all whitespace-nowrap">
+                            <i class="fas fa-graduation-cap ml-1"></i>
+                            فارغ‌التحصیلی
+                        </button>
                     </div>
                     
-                    <!-- Educational Steps Content -->
-                    <div id="steps-content-educational">
-                        <div class="mb-4">
-                            <div class="flex items-center justify-between mb-4">
-                                <p class="text-gray-300">
-                                    <i class="fas fa-info-circle text-blue-400 ml-1"></i>
-                                    این مراحل برای همه دانشجویان به صورت پیش‌فرض اعمال می‌شود
-                                </p>
-                                <button onclick="employeeModule.addCustomEducationalStep()" 
-                                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                                    <i class="fas fa-plus ml-1"></i>
-                                    افزودن مرحله جدید
-                                </button>
-                            </div>
+                    <!-- Defense Steps Content (default visible) -->
+                    <div id="steps-content-defense">
+                        <div class="mb-4 flex items-center justify-between">
+                            <p class="text-gray-300 text-sm">
+                                <i class="fas fa-info-circle text-blue-400 ml-1"></i>
+                                دانشجو ابتدا در این مسیر قرار می‌گیرد. پس از تکمیل همه مراحل به فارغ‌التحصیلی منتقل می‌شود.
+                            </p>
+                            <button onclick="employeeModule.addCustomDefenseStep()" 
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex-shrink-0 mr-3">
+                                <i class="fas fa-plus ml-1"></i>
+                                افزودن مرحله
+                            </button>
                         </div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            ${educationalSteps.map((step, index) => `
-                                <div class="bg-slate-700 rounded-lg p-4 hover:bg-slate-600 transition-all">
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex items-center flex-1">
-                                            <span class="bg-green-600 text-white text-xs font-bold rounded-full w-7 h-7 flex items-center justify-center ml-3">
-                                                ${index + 1}
-                                            </span>
-                                            <div>
-                                                <h5 class="font-medium text-white">${step.name}</h5>
-                                                <p class="text-xs text-gray-400">مرحله ${index + 1} از ${educationalSteps.length}</p>
-                                            </div>
-                                        </div>
-                                        <div class="flex items-center space-x-2 space-x-reverse">
-                                            <button onclick="employeeModule.editStep('educational', ${index})" 
-                                                    class="text-blue-400 hover:text-blue-300 p-2" title="ویرایش">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            ${step.isCustom ? `
-                                                <button onclick="employeeModule.deleteStep('educational', ${index})" 
-                                                        class="text-red-400 hover:text-red-300 p-2" title="حذف">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            ` : ''}
-                                        </div>
-                                    </div>
-                                </div>
-                            `).join('')}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            ${defenseSteps.map((step, index) => renderStepRow(step, index, defenseSteps.length, 'defense', 'blue')).join('')}
                         </div>
                     </div>
                     
-                    <!-- Defense Steps Content -->
-                    <div id="steps-content-defense" style="display: none;">
-                        <div class="mb-4">
-                            <div class="flex items-center justify-between mb-4">
-                                <p class="text-gray-300">
-                                    <i class="fas fa-info-circle text-blue-400 ml-1"></i>
-                                    این مراحل برای همه دانشجویان به صورت پیش‌فرض اعمال می‌شود
-                                </p>
-                                <button onclick="employeeModule.addCustomDefenseStep()" 
-                                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                                    <i class="fas fa-plus ml-1"></i>
-                                    افزودن مرحله جدید
-                                </button>
-                            </div>
+                    <!-- Requirements Steps Content -->
+                    <div id="steps-content-requirements" style="display: none;">
+                        <div class="mb-4 flex items-center justify-between">
+                            <p class="text-gray-300 text-sm">
+                                <i class="fas fa-info-circle text-emerald-400 ml-1"></i>
+                                این ملزومات موازی با گردش دفاع تکمیل می‌شوند. تیک سبز هر مرحله در پروفایل دانشجو نمایش داده می‌شود.
+                            </p>
+                            <button onclick="employeeModule.addCustomRequirementsStep()" 
+                                    class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex-shrink-0 mr-3">
+                                <i class="fas fa-plus ml-1"></i>
+                                افزودن ملزومه
+                            </button>
                         </div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            ${defenseSteps.map((step, index) => `
-                                <div class="bg-slate-700 rounded-lg p-4 hover:bg-slate-600 transition-all">
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex items-center flex-1">
-                                            <span class="bg-blue-600 text-white text-xs font-bold rounded-full w-7 h-7 flex items-center justify-center ml-3">
-                                                ${index + 1}
-                                            </span>
-                                            <div>
-                                                <h5 class="font-medium text-white">${step.name}</h5>
-                                                <p class="text-xs text-gray-400">مرحله ${index + 1} از ${defenseSteps.length}</p>
-                                            </div>
-                                        </div>
-                                        <div class="flex items-center space-x-2 space-x-reverse">
-                                            <button onclick="employeeModule.editStep('defense', ${index})" 
-                                                    class="text-blue-400 hover:text-blue-300 p-2" title="ویرایش">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            ${step.isCustom ? `
-                                                <button onclick="employeeModule.deleteStep('defense', ${index})" 
-                                                        class="text-red-400 hover:text-red-300 p-2" title="حذف">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            ` : ''}
-                                        </div>
-                                    </div>
-                                </div>
-                            `).join('')}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            ${requirementsSteps.map((step, index) => renderStepRow(step, index, requirementsSteps.length, 'requirements', 'emerald')).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Educational (Graduation) Steps Content -->
+                    <div id="steps-content-educational" style="display: none;">
+                        <div class="mb-4 flex items-center justify-between">
+                            <p class="text-gray-300 text-sm">
+                                <i class="fas fa-info-circle text-green-400 ml-1"></i>
+                                پس از تکمیل تمام مراحل گردش دفاع، دانشجو به این مسیر منتقل می‌شود.
+                            </p>
+                            <button onclick="employeeModule.addCustomEducationalStep()" 
+                                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex-shrink-0 mr-3">
+                                <i class="fas fa-plus ml-1"></i>
+                                افزودن مرحله
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            ${educationalSteps.map((step, index) => renderStepRow(step, index, educationalSteps.length, 'educational', 'green')).join('')}
                         </div>
                     </div>
                 </div>
@@ -3966,19 +3985,24 @@ EmployeeModule.showStepsManagementModal = function() {
 
 // Switch steps tabs
 EmployeeModule.switchStepsTab = function(tabName) {
-    // Update tabs
-    ['educational', 'defense'].forEach(tab => {
+    const tabColors = {
+        'educational': { border: 'border-green-500', text: 'text-green-400' },
+        'defense': { border: 'border-blue-500', text: 'text-blue-400' },
+        'requirements': { border: 'border-emerald-500', text: 'text-emerald-400' }
+    };
+    ['educational', 'defense', 'requirements'].forEach(tab => {
         const tabButton = document.getElementById(`steps-tab-${tab}`);
         const tabContent = document.getElementById(`steps-content-${tab}`);
-        
+        if (!tabButton || !tabContent) return;
         if (tab === tabName) {
-            tabButton.classList.remove('border-transparent', 'text-gray-400');
-            tabButton.classList.add('border-' + (tab === 'educational' ? 'green' : 'blue') + '-500', 
-                                     'text-' + (tab === 'educational' ? 'green' : 'blue') + '-400');
+            tabButton.classList.remove('border-transparent', 'text-gray-400', 'hover:text-gray-300');
+            tabButton.classList.add(tabColors[tab].border, tabColors[tab].text);
             tabContent.style.display = 'block';
         } else {
-            tabButton.classList.add('border-transparent', 'text-gray-400');
-            tabButton.classList.remove('border-green-500', 'border-blue-500', 'text-green-400', 'text-blue-400');
+            tabButton.classList.add('border-transparent', 'text-gray-400', 'hover:text-gray-300');
+            Object.values(tabColors).forEach(c => {
+                tabButton.classList.remove(c.border, c.text);
+            });
             tabContent.style.display = 'none';
         }
     });
@@ -4014,7 +4038,10 @@ EmployeeModule.addCustomEducationalStep = function() {
     
     // Reload modal
     this.closeModal('steps-management-modal');
-    setTimeout(() => this.showStepsManagementModal(), 100);
+    setTimeout(() => {
+        this.showStepsManagementModal();
+        setTimeout(() => this.switchStepsTab('educational'), 50);
+    }, 100);
 };
 
 // Add custom defense step
@@ -4050,11 +4077,68 @@ EmployeeModule.addCustomDefenseStep = function() {
     setTimeout(() => this.showStepsManagementModal(), 100);
 };
 
+// Add custom requirements step
+EmployeeModule.addCustomRequirementsStep = function() {
+    const stepName = prompt('نام ملزومه جدید را وارد کنید:');
+    if (!stepName || stepName.trim() === '') return;
+
+    const customSteps = JSON.parse(localStorage.getItem('custom_requirements_steps') || 'null');
+    const defaultSteps = customSteps || this.getDefaultRequirementsSteps();
+
+    defaultSteps.push({
+        name: stepName.trim(),
+        completed: false,
+        date: null,
+        isCustom: true
+    });
+
+    localStorage.setItem('custom_requirements_steps', JSON.stringify(defaultSteps));
+    this.applyStepsToAllStudents('requirements', defaultSteps);
+    UTILS.showNotification('ملزومه جدید اضافه شد', 'success');
+
+    this.closeModal('steps-management-modal');
+    setTimeout(() => this.showStepsManagementModal(), 100);
+};
+
+// Move step up or down
+EmployeeModule.moveStep = function(type, index, direction) {
+    const storageKey = type === 'educational' ? 'custom_educational_steps'
+                     : type === 'defense'      ? 'custom_defense_steps'
+                                               : 'custom_requirements_steps';
+    const getDefault = type === 'educational' ? () => this.getDefaultEducationalSteps()
+                     : type === 'defense'      ? () => this.getDefaultDefenseSteps2()
+                                               : () => this.getDefaultRequirementsSteps();
+
+    const steps = JSON.parse(localStorage.getItem(storageKey) || 'null') || getDefault();
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+
+    if (targetIndex < 0 || targetIndex >= steps.length) return;
+
+    // Swap
+    [steps[index], steps[targetIndex]] = [steps[targetIndex], steps[index]];
+
+    localStorage.setItem(storageKey, JSON.stringify(steps));
+    this.applyStepsToAllStudents(type, steps);
+    UTILS.showNotification('مرحله جابجا شد', 'success');
+
+    this.closeModal('steps-management-modal');
+    setTimeout(() => {
+        this.showStepsManagementModal();
+        setTimeout(() => this.switchStepsTab(type), 50);
+    }, 100);
+};
+
 // Edit step
 EmployeeModule.editStep = function(type, index) {
-    const storageKey = type === 'educational' ? 'custom_educational_steps' : 'custom_defense_steps';
+    const storageKey = type === 'educational' ? 'custom_educational_steps'
+                     : type === 'defense'      ? 'custom_defense_steps'
+                                               : 'custom_requirements_steps';
+    const getDefault = type === 'educational' ? () => this.getDefaultEducationalSteps()
+                     : type === 'defense'      ? () => this.getDefaultDefenseSteps2()
+                                               : () => this.getDefaultRequirementsSteps();
+
     const customSteps = JSON.parse(localStorage.getItem(storageKey) || 'null');
-    const defaultSteps = customSteps || (type === 'educational' ? this.getDefaultEducationalSteps() : this.getDefaultDefenseSteps2());
+    const defaultSteps = customSteps || getDefault();
     
     if (index < 0 || index >= defaultSteps.length) {
         return;
@@ -4080,7 +4164,10 @@ EmployeeModule.editStep = function(type, index) {
     
     // Reload modal
     this.closeModal('steps-management-modal');
-    setTimeout(() => this.showStepsManagementModal(), 100);
+    setTimeout(() => {
+        this.showStepsManagementModal();
+        setTimeout(() => this.switchStepsTab(type), 50);
+    }, 100);
 };
 
 // Delete step
@@ -4089,9 +4176,15 @@ EmployeeModule.deleteStep = function(type, index) {
         return;
     }
     
-    const storageKey = type === 'educational' ? 'custom_educational_steps' : 'custom_defense_steps';
+    const storageKey = type === 'educational' ? 'custom_educational_steps'
+                     : type === 'defense'      ? 'custom_defense_steps'
+                                               : 'custom_requirements_steps';
+    const getDefault = type === 'educational' ? () => this.getDefaultEducationalSteps()
+                     : type === 'defense'      ? () => this.getDefaultDefenseSteps2()
+                                               : () => this.getDefaultRequirementsSteps();
+
     const customSteps = JSON.parse(localStorage.getItem(storageKey) || 'null');
-    const defaultSteps = customSteps || (type === 'educational' ? this.getDefaultEducationalSteps() : this.getDefaultDefenseSteps2());
+    const defaultSteps = customSteps || getDefault();
     
     if (index < 0 || index >= defaultSteps.length) {
         return;
@@ -4110,7 +4203,10 @@ EmployeeModule.deleteStep = function(type, index) {
     
     // Reload modal
     this.closeModal('steps-management-modal');
-    setTimeout(() => this.showStepsManagementModal(), 100);
+    setTimeout(() => {
+        this.showStepsManagementModal();
+        setTimeout(() => this.switchStepsTab(type), 50);
+    }, 100);
 };
 
 // Save steps changes
@@ -4122,7 +4218,9 @@ EmployeeModule.saveStepsChanges = function() {
 // Apply steps to all students
 EmployeeModule.applyStepsToAllStudents = function(type, newSteps) {
     const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
-    const stepKey = type === 'educational' ? 'educationalSteps' : 'defenseSteps';
+    const stepKey = type === 'educational' ? 'educationalSteps'
+                  : type === 'defense'      ? 'defenseSteps'
+                                            : 'requirementsSteps';
     
     // Update each student
     Object.keys(studentsData).forEach(studentId => {
@@ -4133,10 +4231,8 @@ EmployeeModule.applyStepsToAllStudents = function(type, newSteps) {
         const updatedSteps = newSteps.map((newStep, index) => {
             const existingStep = currentSteps[index];
             if (existingStep && existingStep.name === newStep.name) {
-                // Keep existing step with its completion status
                 return existingStep;
             } else if (existingStep) {
-                // Name changed, keep completion status but update name
                 return {
                     ...newStep,
                     completed: existingStep.completed,
@@ -4144,7 +4240,6 @@ EmployeeModule.applyStepsToAllStudents = function(type, newSteps) {
                     notes: existingStep.notes || ''
                 };
             } else {
-                // New step
                 return {
                     ...newStep,
                     completed: false,
@@ -4159,7 +4254,13 @@ EmployeeModule.applyStepsToAllStudents = function(type, newSteps) {
     
     // Save back
     localStorage.setItem('students_data', JSON.stringify(studentsData));
-    
+
+    // اطلاع به نمای شیت (اگر در تب دیگری باز باشد)
+    const storageKey = type === 'educational' ? 'custom_educational_steps'
+                     : type === 'defense'      ? 'custom_defense_steps'
+                                               : 'custom_requirements_steps';
+    window.dispatchEvent(new StorageEvent('storage', { key: storageKey }));
+
     console.log(`✅ Applied ${type} steps to ${Object.keys(studentsData).length} students`);
 };
 
@@ -4437,6 +4538,15 @@ EmployeeModule.getRequirementsStepsTimeline = function(student) {
 
 // Get default requirements steps
 EmployeeModule.getDefaultRequirementsSteps = function() {
+    // Check if custom steps exist in localStorage
+    const customSteps = localStorage.getItem('custom_requirements_steps');
+    if (customSteps) {
+        try {
+            return JSON.parse(customSteps);
+        } catch (e) {
+            console.error('Error parsing custom requirements steps:', e);
+        }
+    }
     return [
         { name: 'امر اداری', completed: false, date: null },
         { name: 'پروپوزال', completed: false, date: null },

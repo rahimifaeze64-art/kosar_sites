@@ -44,8 +44,8 @@ class AgentChat {
         // لیست ثابت عامل‌ها
         const fixedAgents = [
             { id: 'mgr001', name: 'مدیر سیستم', username: 'manager', role: 'manager' },
-            { id: 'agent001', name: 'رضایی', username: 'rezaei', role: 'agent' },
-            { id: 'agent002', name: 'کریمی', username: 'karimi', role: 'agent' },
+            { id: 'agent001', name: 'فتحی', username: 'rezaei', role: 'agent' },
+            { id: 'agent002', name: 'سجادی', username: 'karimi', role: 'agent' },
             { id: 'agent003', name: 'احمدی', username: 'ahmadi', role: 'agent' }
         ];
         

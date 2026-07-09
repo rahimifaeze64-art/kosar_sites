@@ -7,15 +7,26 @@ const UsersModule = {
         return `
             <div class="space-y-6">
                 <!-- Users Header -->
-                <div class="flex justify-center items-center mb-6">
-                    <button onclick="openAddUserModal()" 
-                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium btn shadow-lg">
-                        <i class="fas fa-user-plus ml-2"></i>
-                        افزودن کاربر
-                    </button>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">مدیریت کاربران</h2>
+                    <div class="flex gap-3">
+                        <button onclick="UsersModule.showAddEmployeeModal()" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium btn">
+                            <i class="fas fa-user-plus ml-2"></i>
+                            کارمند جدید
+                        </button>
+                        <button onclick="UsersModule.showAddAgentModal()" 
+                                class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium btn">
+                            <i class="fas fa-user-tie ml-2"></i>
+                            عامل جدید
+                        </button>
+                        <button onclick="openAddUserModal()" 
+                                class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium btn">
+                            <i class="fas fa-cog ml-2"></i>
+                            کاربر دیگر
+                        </button>
+                    </div>
                 </div>
-                
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">مدیریت کاربران</h2>
                 
                 <!-- Users Stats -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -221,5 +232,124 @@ const UsersModule = {
             [CONFIG.ROLES.STUDENT]: 'دانشجو'
         };
         return texts[role] || role;
+    },
+
+    // نمایش modal کارمند جدید
+    showAddEmployeeModal() {
+        this._showPersonModal('employee', 'کارمند جدید', 'bg-blue-600');
+    },
+
+    // نمایش modal عامل جدید
+    showAddAgentModal() {
+        this._showPersonModal('agent', 'عامل جدید', 'bg-purple-600');
+    },
+
+    // modal عمومی برای افزودن کارمند/عامل
+    _showPersonModal(role, title, btnColor) {
+        const existing = document.getElementById('add-person-modal');
+        if (existing) existing.remove();
+
+        const modal = document.createElement('div');
+        modal.id = 'add-person-modal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+        modal.innerHTML = `
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
+                <div class="p-6 border-b flex justify-between items-center">
+                    <h3 class="text-lg font-bold text-gray-800">
+                        <i class="fas fa-user-plus text-blue-600 ml-2"></i>
+                        ${title}
+                    </h3>
+                    <button onclick="document.getElementById('add-person-modal').remove()"
+                            class="text-gray-400 hover:text-gray-600 text-xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">نام <span class="text-red-500">*</span></label>
+                        <input type="text" id="person-name" placeholder="نام کامل"
+                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">نام کاربری <span class="text-red-500">*</span></label>
+                        <input type="text" id="person-username" placeholder="username"
+                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">رمز عبور <span class="text-red-500">*</span></label>
+                        <input type="password" id="person-password" placeholder="رمز عبور"
+                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ایمیل</label>
+                        <input type="email" id="person-email" placeholder="email@example.com"
+                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">شماره تماس</label>
+                        <input type="tel" id="person-phone" placeholder="شماره تلفن"
+                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+                <div class="p-6 pt-0 flex gap-3">
+                    <button onclick="UsersModule._savePerson('${role}')"
+                            class="flex-1 ${btnColor} text-white py-2 rounded-lg font-medium hover:opacity-90 btn">
+                        <i class="fas fa-save ml-2"></i>
+                        ذخیره
+                    </button>
+                    <button onclick="document.getElementById('add-person-modal').remove()"
+                            class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg font-medium">
+                        انصراف
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        document.getElementById('person-name').focus();
+    },
+
+    // ذخیره کارمند/عامل جدید
+    _savePerson(role) {
+        const name = document.getElementById('person-name').value.trim();
+        const username = document.getElementById('person-username').value.trim();
+        const password = document.getElementById('person-password').value.trim();
+        const email = document.getElementById('person-email').value.trim();
+        const phone = document.getElementById('person-phone').value.trim();
+
+        if (!name || !username || !password) {
+            alert('لطفاً نام، نام کاربری و رمز عبور را وارد کنید');
+            return;
+        }
+
+        const users = DataModule.getUsers();
+        if (users.find(u => u.username === username)) {
+            alert('این نام کاربری قبلاً استفاده شده است');
+            return;
+        }
+
+        const newUser = {
+            id: (role === 'employee' ? 'emp' : 'agent') + Date.now(),
+            name,
+            username,
+            password,
+            email: email || `${username}@edu-system.com`,
+            phone: phone || '',
+            role,
+            active: true,
+            createdAt: new Date().toISOString()
+        };
+
+        users.push(newUser);
+        DataModule.saveUsers(users);
+
+        document.getElementById('add-person-modal').remove();
+        UTILS.showNotification(`${role === 'employee' ? 'کارمند' : 'عامل'} جدید "${name}" اضافه شد`, 'success');
+
+        // بازسازی صفحه
+        const app = document.querySelector('[x-data]')?.__x?.$data;
+        if (app) {
+            const content = document.querySelector('[x-show="currentPage === \'users\'"]');
+            if (content) content.innerHTML = UsersModule.getUsersContent();
+        }
     }
 };

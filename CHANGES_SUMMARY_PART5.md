@@ -75,7 +75,7 @@
     senderId: 'emp001',
     senderName: 'زهرا',
     recipientId: 'agent001',
-    recipientName: 'رضایی',
+    recipientName: 'فتحی',
     text: 'متن پیام',
     file: {
         name: 'file.pdf',
@@ -100,7 +100,7 @@
     currency: 'دلار',
     doctorShare: 5000,
     assignedDoctorId: 'agent001',
-    assignedDoctor: 'رضایی',
+    assignedDoctor: 'فتحی',
     status: 'in_progress',
     progress: 0,
     createdBy: 'emp001',

@@ -1,766 +1,1010 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Flowchart Editor</title>
+    <title>فلوچارت مسیر تحصیلی</title>
     <script src="assets/libs/tailwindcss.js"></script>
     <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
     <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
     <style>
-        * {
-            font-family: 'Vazirmatn', sans-serif;
-        }
-        
-        body {
-            background: #FFFFFF;
-            overflow: hidden;
-            margin: 0;
-            padding: 0;
-        }
-        
-        .canvas-container {
-            position: relative;
-            width: 100%;
-            height: calc(100vh - 80px);
-            background-color: #FFFFFF;
-            background-image: 
-                linear-gradient(#E5E7EB 1px, transparent 1px),
-                linear-gradient(90deg, #E5E7EB 1px, transparent 1px);
-            background-size: 20px 20px;
-            overflow: hidden;
-            cursor: grab;
-        }
-        
-        .canvas-container.grabbing {
-            cursor: grabbing;
-        }
-        
-        .canvas-inner {
-            position: absolute;
-            min-width: 5000px;
-            min-height: 3000px;
-            transform-origin: 0 0;
-        }
-        
-        #connections-svg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 5;
-        }
-        
-        .flow-node {
-            position: absolute;
-            cursor: move;
-            user-select: none;
-            z-index: 10;
+        * { font-family: 'Vazirmatn', sans-serif; box-sizing: border-box; }
+        body { margin: 0; background: #0f172a; color: white; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+
+        /* ── Header ── */
+        #app-header {
+            background: #1e293b;
+            border-bottom: 2px solid #334155;
+            padding: 10px 18px;
             display: flex;
             align-items: center;
-            justify-content: center;
-        }
-        
-        .flow-node:hover {
-            filter: brightness(1.05);
-        }
-        
-        .flow-node.selected {
-            outline: 3px solid #1F2937;
-            outline-offset: 4px;
-            border-radius: 8px;
-        }
-        
-        /* Rectangle Node */
-        .node-rectangle {
-            width: 160px;
-            height: 100px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 14px;
-            color: white;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            border: 3px solid;
-        }
-        
-        .node-rectangle.blue {
-            background: #2563EB;
-            border-color: #1D4ED8;
-        }
-        
-        .node-rectangle.orange {
-            background: #F97316;
-            border-color: #EA580C;
-        }
-        
-        /* Diamond Node */
-        .node-diamond {
-            width: 100px;
-            height: 100px;
-            transform: rotate(45deg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 14px;
-            color: white;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            border: 3px solid;
-        }
-        
-        .node-diamond.blue {
-            background: #2563EB;
-            border-color: #1D4ED8;
-        }
-        
-        .node-diamond.orange {
-            background: #F97316;
-            border-color: #EA580C;
-        }
-        
-        .node-diamond .node-text {
-            transform: rotate(-45deg);
-        }
-        
-        .toolbar {
-            background: white;
-            border-radius: 16px;
-            padding: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-        }
-        
-        .tool-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
-            border: 2px solid #E5E7EB;
-            background: white;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-        }
-        
-        .tool-btn:hover {
-            border-color: #2563EB;
-            background: #EFF6FF;
-        }
-        
-        .tool-btn.active {
-            border-color: #2563EB;
-            background: #DBEAFE;
-            color: #2563EB;
-        }
-        
-        .zoom-controls {
-            position: fixed;
-            bottom: 30px;
-            left: 30px;
+            gap: 12px;
             z-index: 100;
+            flex-shrink: 0;
         }
-        
-        .zoom-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            border: none;
-            background: linear-gradient(135deg, #2563EB, #1D4ED8);
-            color: white;
-            font-size: 16px;
+        #app-header h1 { font-size: 16px; font-weight: 800; color: #e2e8f0; margin: 0; }
+        #app-header p  { font-size: 11px; color: #64748b; margin: 0; }
+
+        /* ── Path Tabs ── */
+        #path-tabs {
+            background: #1e293b;
+            display: flex;
+            gap: 4px;
+            padding: 8px 18px 0;
+            border-bottom: 2px solid #334155;
+            flex-shrink: 0;
+        }
+        .path-tab {
+            padding: 8px 20px;
+            border-radius: 8px 8px 0 0;
+            font-size: 13px;
+            font-weight: 700;
             cursor: pointer;
+            border: 2px solid transparent;
+            border-bottom: none;
+            transition: all 0.2s;
+            color: #94a3b8;
+            background: #0f172a;
+        }
+        .path-tab:hover { color: #e2e8f0; background: #1e3a5f; }
+        .path-tab.active { background: #0f172a; border-color: #3b82f6; color: #60a5fa; border-bottom: 2px solid #0f172a; }
+
+        /* ── Toolbar ── */
+        #toolbar {
+            position: fixed;
+            top: 50%;
+            right: 16px;
+            transform: translateY(-50%);
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 14px;
+            padding: 10px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 200;
+        }
+        .tb-btn {
+            width: 42px; height: 42px;
+            border-radius: 10px;
+            border: 1.5px solid #334155;
+            background: #0f172a;
+            color: #94a3b8;
+            font-size: 15px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
             transition: all 0.2s;
         }
-        
-        .zoom-btn:hover {
-            transform: scale(1.08);
+        .tb-btn:hover { background: #1e3a5f; color: #60a5fa; border-color: #3b82f6; }
+        .tb-btn.active { background: #1d4ed8; color: white; border-color: #3b82f6; }
+        .tb-sep { height: 1px; background: #334155; margin: 2px 0; }
+
+        /* ── Canvas area ── */
+        #canvas-wrap {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            cursor: default;
         }
-        
-        .notification {
+        #canvas-wrap.pan-mode { cursor: grab; }
+        #canvas-wrap.pan-mode.panning { cursor: grabbing; }
+
+        canvas#fc { position: absolute; top: 0; left: 0; }
+
+        /* ── Zoom indicator ── */
+        #zoom-badge {
             position: fixed;
             bottom: 20px;
-            right: 20px;
-            background: #10B981;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            z-index: 10000;
-            animation: slideIn 0.3s ease;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 20px;
+            padding: 5px 14px;
+            font-size: 12px;
+            color: #94a3b8;
+            z-index: 200;
+            pointer-events: none;
         }
-        
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+
+        /* ── Student selector ── */
+        #student-bar {
+            position: fixed;
+            bottom: 20px;
+            right: 80px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 200;
+            font-size: 12px;
         }
-        
-        .connection-line {
-            stroke: #374151;
-            stroke-width: 2;
-            fill: none;
+        #student-bar select {
+            background: #0f172a;
+            color: #e2e8f0;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-family: 'Vazirmatn', sans-serif;
+            outline: none;
         }
-        
-        .connection-line-temp {
-            stroke: #2563EB;
-            stroke-width: 2;
-            stroke-dasharray: 5,5;
-            fill: none;
+
+        /* ── Context menu ── */
+        #ctx-menu {
+            position: fixed;
+            background: #1e293b;
+            border: 1px solid #475569;
+            border-radius: 10px;
+            padding: 6px;
+            z-index: 9999;
+            display: none;
+            min-width: 170px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
         }
+        .ctx-item {
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .ctx-item:hover { background: #334155; }
+        .ctx-item.danger { color: #f87171; }
+        .ctx-item.danger:hover { background: #450a0a; }
+        .ctx-sep { height: 1px; background: #334155; margin: 4px 0; }
     </style>
 </head>
-<body class="min-h-screen">
-    <!-- Header -->
-    <header class="bg-white shadow-lg border-b-4 border-blue-600 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-6 py-3">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <a href="index.html" class="text-gray-500 hover:text-blue-600">
-                        <i class="fas fa-arrow-left text-xl"></i>
-                    </a>
-                    <div>
-                        <h1 class="text-xl font-bold text-gray-800">
-                            <i class="fas fa-project-diagram text-blue-600 ml-2"></i>
-                            Interactive Flowchart Editor
-                        </h1>
-                    </div>
-                </div>
-                
-                <div class="flex items-center gap-3">
-                    <button onclick="saveFlowchart()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium">
-                        <i class="fas fa-save ml-2"></i>
-                        Save
-                    </button>
-                    <button onclick="clearCanvas()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium">
-                        <i class="fas fa-trash ml-2"></i>
-                        Clear
-                    </button>
-                </div>
-            </div>
-        </div>
-    </header>
-    
-    <!-- Toolbar -->
-    <div class="fixed top-24 left-6 z-50">
-        <div class="toolbar flex flex-col gap-2">
-            <button class="tool-btn active" onclick="setTool('select')" id="tool-select" title="Select and Move">
-                <i class="fas fa-mouse-pointer"></i>
-            </button>
-            <button class="tool-btn" onclick="setTool('connect')" id="tool-connect" title="Connect Nodes">
-                <i class="fas fa-link"></i>
-            </button>
-            <hr class="my-2">
-            <button class="tool-btn" onclick="addNode('diamond', 'blue', 'شروع')" title="Add شروع (Blue Diamond)">
-                <i class="fas fa-diamond text-blue-600"></i>
-            </button>
-            <button class="tool-btn" onclick="addNode('rectangle', 'blue', 'شخص')" title="Add Blue Rectangle">
-                <i class="fas fa-square text-blue-600"></i>
-            </button>
-            <button class="tool-btn" onclick="addNode('rectangle', 'orange', 'شخص')" title="Add Orange Rectangle">
-                <i class="fas fa-square text-orange-600"></i>
-            </button>
-            <button class="tool-btn" onclick="addNode('diamond', 'orange', 'تصمیم')" title="Add Orange Diamond">
-                <i class="fas fa-diamond text-orange-600"></i>
-            </button>
-            <hr class="my-2">
-            <button class="tool-btn" onclick="deleteSelected()" title="Delete Selected Node">
-                <i class="fas fa-trash text-red-600"></i>
-            </button>
-        </div>
+<body>
+
+<!-- Header -->
+<div id="app-header">
+    <a href="index.html" style="color:#64748b;font-size:18px;text-decoration:none">
+        <i class="fas fa-arrow-right"></i>
+    </a>
+    <div>
+        <h1><i class="fas fa-project-diagram" style="color:#3b82f6;margin-left:6px"></i>فلوچارت مسیر تحصیلی</h1>
+        <p>کلیک‌راست روی node برای ویرایش | Drag برای جابه‌جایی | Scroll برای zoom</p>
     </div>
-    
-    <!-- Canvas -->
-    <div class="canvas-container" id="canvas-container">
-        <svg id="connections-svg">
-            <defs>
-                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                    <polygon points="0 0, 10 3.5, 0 7" fill="#374151" />
-                </marker>
-            </defs>
-        </svg>
-        <div class="canvas-inner" id="canvas-inner">
-            <!-- Nodes will be added here -->
-        </div>
+</div>
+
+<!-- Path tabs -->
+<div id="path-tabs">
+    <div class="path-tab active" data-path="defense" onclick="switchPath('defense')">
+        <i class="fas fa-shield-alt" style="margin-left:6px"></i>گردش دفاع
     </div>
-    
-    <!-- Zoom Controls -->
-    <div class="zoom-controls toolbar">
-        <div class="flex flex-col gap-2">
-            <button class="zoom-btn" onclick="zoomIn()">
-                <i class="fas fa-plus"></i>
-            </button>
-            <div class="text-center text-sm font-bold text-gray-700" id="zoom-level">100%</div>
-            <button class="zoom-btn" onclick="zoomOut()">
-                <i class="fas fa-minus"></i>
-            </button>
-            <button class="zoom-btn" onclick="resetView()" style="background: linear-gradient(135deg, #6B7280, #4B5563);">
-                <i class="fas fa-compress-arrows-alt"></i>
-            </button>
-        </div>
+    <div class="path-tab" data-path="requirements" onclick="switchPath('requirements')">
+        <i class="fas fa-clipboard-list" style="margin-left:6px"></i>ملزومات
     </div>
-    
-    <script>
-        // State
-        let nodes = [];
-        let connections = [];
-        let selectedNode = null;
-        let currentTool = 'select';
-        let nodeIdCounter = 0;
-        let zoom = 1;
-        let panX = 0, panY = 0;
-        let isDragging = false;
-        let isPanning = false;
-        let dragStartX, dragStartY;
-        let nodeStartX, nodeStartY;
-        let connectionStart = null;
-        let tempLine = null;
-        let pendingConnection = null;
-        
-        // Show notification
-        function showNotification(message, type = 'success') {
-            const notification = document.createElement('div');
-            notification.className = 'notification';
-            notification.textContent = message;
-            if (type === 'error') {
-                notification.style.background = '#EF4444';
-            }
-            document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 3000);
+    <div class="path-tab" data-path="educational" onclick="switchPath('educational')">
+        <i class="fas fa-graduation-cap" style="margin-left:6px"></i>فارغ‌التحصیلی
+    </div>
+</div>
+
+<!-- Canvas -->
+<div id="canvas-wrap">
+    <canvas id="fc"></canvas>
+</div>
+
+<!-- Toolbar -->
+<div id="toolbar">
+    <div class="tb-btn active" id="tb-select" onclick="setTool('select')" title="انتخاب و جابه‌جایی (S)">
+        <i class="fas fa-mouse-pointer"></i>
+    </div>
+    <div class="tb-btn" id="tb-pan" onclick="setTool('pan')" title="پان (Space)">
+        <i class="fas fa-hand-paper"></i>
+    </div>
+    <div class="tb-sep"></div>
+    <div class="tb-btn" id="tb-rect" onclick="setTool('add-rect')" title="افزودن مرحله (مستطیل)">
+        <i class="fas fa-square" style="color:#3b82f6"></i>
+    </div>
+    <div class="tb-btn" id="tb-diamond" onclick="setTool('add-diamond')" title="افزودن شرط (لوزی)">
+        <i class="fas fa-diamond" style="color:#f59e0b"></i>
+    </div>
+    <div class="tb-btn" id="tb-connect" onclick="setTool('connect')" title="اتصال (C)">
+        <i class="fas fa-link" style="color:#22c55e"></i>
+    </div>
+    <div class="tb-sep"></div>
+    <div class="tb-btn" onclick="zoomIn()" title="بزرگنمایی (+)">
+        <i class="fas fa-plus"></i>
+    </div>
+    <div class="tb-btn" onclick="zoomOut()" title="کوچک‌نمایی (-)">
+        <i class="fas fa-minus"></i>
+    </div>
+    <div class="tb-btn" onclick="resetView()" title="بازنشانی نما">
+        <i class="fas fa-compress-arrows-alt"></i>
+    </div>
+    <div class="tb-sep"></div>
+    <div class="tb-btn" onclick="saveCurrentPath()" title="ذخیره">
+        <i class="fas fa-save" style="color:#22c55e"></i>
+    </div>
+    <div class="tb-btn" onclick="rebuildFromSteps()" title="بازسازی از مراحل">
+        <i class="fas fa-sync-alt" style="color:#a78bfa"></i>
+    </div>
+</div>
+
+<!-- Zoom badge -->
+<div id="zoom-badge">100%</div>
+
+<!-- Student selector -->
+<div id="student-bar">
+    <i class="fas fa-user-graduate" style="color:#60a5fa"></i>
+    <label style="color:#94a3b8">دانشجو:</label>
+    <select id="student-sel" onchange="onStudentChange()">
+        <option value="">— پیش‌فرض —</option>
+    </select>
+</div>
+
+<!-- Context menu -->
+<div id="ctx-menu">
+    <div class="ctx-item" onclick="ctxEdit()"><i class="fas fa-edit" style="color:#60a5fa"></i>ویرایش متن</div>
+    <div class="ctx-item" onclick="ctxAddBelow()"><i class="fas fa-plus-circle" style="color:#22c55e"></i>افزودن مرحله بعد</div>
+    <div class="ctx-item" onclick="ctxAddCondition()"><i class="fas fa-diamond" style="color:#f59e0b"></i>افزودن شرط بعد</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item danger" onclick="ctxDelete()"><i class="fas fa-trash"></i>حذف</div>
+</div>
+
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+//  CONSTANTS & DEFAULTS
+// ══════════════════════════════════════════════════════════════════
+const STATUS_INCOMPLETE = 0, STATUS_CURRENT = 1, STATUS_COMPLETED = 2;
+
+const DEFAULT_STEPS = {
+    defense:      ['لوح','پوستر','نسخ','ثبت عنوان','بارگزاری','استاد','مشابهت','مدیر گروه','معاون','تحدید مناقشه'],
+    requirements: ['امر اداری','پروپوزال','مدرک لغت','ترجمه پایان نامه فارسی','ملخص','مشابهت','ترجمه','قطعه','لافته','چهارنسخه','تنضید رساله'],
+    educational:  ['محضر و اصالت','تنزیل نمره','تعدیل','ایرانداک خطه','ایرانداک رساله','مدرک لغت','ایجاد کردش','حاتمی','بارگزاری لغت','آزفا','ترجمه به اسماعیلی','دادگر','ارسال کد به تهران','وثیقه','تصدیق','تنضید','استلال','تجلید','ختم تجلید','قطعی','مدارک سابقه','ارسال']
+};
+
+const PATH_COLOR = {
+    defense:      '#3b82f6',
+    requirements: '#10b981',
+    educational:  '#8b5cf6'
+};
+
+// Node types
+const NT_START   = 'start';    // oval
+const NT_RECT    = 'rect';     // rectangle – step
+const NT_DIAMOND = 'diamond';  // condition
+const NT_END     = 'end';      // oval
+
+// ══════════════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════════════
+let currentPath   = 'defense';
+let currentTool   = 'select';
+let currentStudent = '';
+
+// Per-path graph: { nodes:[], edges:[] }
+const graphs = { defense: null, requirements: null, educational: null };
+
+let zoom = 1, panX = 0, panY = 0;
+let dragging = null, dragOffX = 0, dragOffY = 0;
+let connecting = null;  // source node id when connecting
+let mouseX = 0, mouseY = 0;
+let isPanning = false, panStartX = 0, panStartY = 0, panStartCamX = 0, panStartCamY = 0;
+let selectedNodeId = null;
+let ctxTargetId = null;
+let idCounter = 0;
+
+const canvas = document.getElementById('fc');
+const ctx    = canvas.getContext('2d');
+
+// ══════════════════════════════════════════════════════════════════
+//  STORAGE HELPERS
+// ══════════════════════════════════════════════════════════════════
+function loadManagedSteps() {
+    const parse = (key, fb) => {
+        try { const r = localStorage.getItem(key); if (r) return JSON.parse(r).map(s => typeof s === 'string' ? s : s.name); } catch(e){}
+        return fb;
+    };
+    return {
+        defense:      parse('custom_defense_steps',      DEFAULT_STEPS.defense),
+        requirements: parse('custom_requirements_steps',  DEFAULT_STEPS.requirements),
+        educational:  parse('custom_educational_steps',   DEFAULT_STEPS.educational)
+    };
+}
+
+function loadStudentProg(sid, path, count) {
+    if (!sid) return null;
+    const raw = localStorage.getItem(`prog_${sid}_${path}`);
+    if (!raw) return null;
+    try {
+        const arr = JSON.parse(raw);
+        while (arr.length < count) arr.push({ status: STATUS_INCOMPLETE });
+        return arr.slice(0, count);
+    } catch(e) { return null; }
+}
+
+function saveGraph(path) {
+    localStorage.setItem(`fc_graph_${path}`, JSON.stringify(graphs[path]));
+}
+
+function loadGraph(path) {
+    try {
+        const raw = localStorage.getItem(`fc_graph_${path}`);
+        if (raw) return JSON.parse(raw);
+    } catch(e) {}
+    return null;
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  GRAPH BUILDER – build from managed steps
+// ══════════════════════════════════════════════════════════════════
+function buildGraphFromSteps(path) {
+    const allSteps = loadManagedSteps();
+    const steps    = allSteps[path];
+    const prog     = loadStudentProg(currentStudent, path, steps.length);
+    const color    = PATH_COLOR[path];
+
+    const CX = 320;   // center X
+    const GAP = 130;  // vertical gap between nodes
+    let y = 60;
+
+    const nodes = [];
+    const edges = [];
+
+    // START oval
+    const startId = `n${idCounter++}`;
+    nodes.push({ id: startId, type: NT_START, label: 'شروع', x: CX, y, w: 140, h: 50, color, status: STATUS_COMPLETED });
+    y += GAP;
+
+    let prevId = startId;
+
+    steps.forEach((name, i) => {
+        let status = STATUS_INCOMPLETE;
+        if (prog) {
+            status = prog[i]?.status ?? STATUS_INCOMPLETE;
         }
-        
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeCanvas();
-            loadSavedFlowchart();
-        });
-        
-        function initializeCanvas() {
-            const container = document.getElementById('canvas-container');
-            const inner = document.getElementById('canvas-inner');
-            
-            container.addEventListener('dragstart', (e) => e.preventDefault());
-            
-            // Pan with mouse on canvas background
-            container.addEventListener('mousedown', (e) => {
-                if (e.target === container || e.target.id === 'canvas-inner' || e.target.id === 'connections-svg') {
-                    if (currentTool === 'select') {
-                        isPanning = true;
-                        dragStartX = e.clientX;
-                        dragStartY = e.clientY;
-                        container.classList.add('grabbing');
-                    }
-                }
-            });
-            
-            document.addEventListener('mousemove', (e) => {
-                // Handle panning
-                if (isPanning) {
-                    panX += e.clientX - dragStartX;
-                    panY += e.clientY - dragStartY;
-                    dragStartX = e.clientX;
-                    dragStartY = e.clientY;
-                    updateTransform();
-                }
-                
-                // Handle node dragging
-                if (isDragging && selectedNode) {
-                    const containerRect = container.getBoundingClientRect();
-                    const newX = (e.clientX - containerRect.left - panX) / zoom - nodeStartX;
-                    const newY = (e.clientY - containerRect.top - panY) / zoom - nodeStartY;
-                    
-                    selectedNode.x = Math.max(0, newX);
-                    selectedNode.y = Math.max(0, newY);
-                    
-                    const nodeEl = document.getElementById(selectedNode.id);
-                    nodeEl.style.left = `${selectedNode.x}px`;
-                    nodeEl.style.top = `${selectedNode.y}px`;
-                    
-                    updateConnections();
-                }
-                
-                // Handle temporary connection line
-                if (connectionStart && tempLine) {
-                    const containerRect = container.getBoundingClientRect();
-                    const mouseX = (e.clientX - containerRect.left - panX) / zoom;
-                    const mouseY = (e.clientY - containerRect.top - panY) / zoom;
-                    
-                    tempLine.setAttribute('x2', mouseX);
-                    tempLine.setAttribute('y2', mouseY);
-                }
-            });
-            
-            document.addEventListener('mouseup', (e) => {
-                if (isPanning) {
-                    isPanning = false;
-                    container.classList.remove('grabbing');
-                }
-                
-                if (isDragging) {
-                    isDragging = false;
-                }
-                
-                // Handle connection end
-                if (connectionStart) {
-                    const target = e.target.closest('.flow-node');
-                    if (target && target.id !== connectionStart.id) {
-                        const targetNode = nodes.find(n => n.id === target.id);
-                        if (targetNode) {
-                            connectNodes(connectionStart.id, targetNode.id);
-                        }
-                    }
-                    
-                    if (tempLine) {
-                        tempLine.remove();
-                        tempLine = null;
-                    }
-                    connectionStart = null;
-                }
-            });
-            
-            // Zoom with wheel
-            container.addEventListener('wheel', (e) => {
-                e.preventDefault();
-                const delta = e.deltaY > 0 ? -0.1 : 0.1;
-                zoom = Math.max(0.3, Math.min(2, zoom + delta));
-                updateTransform();
-            });
+
+        const nid = `n${idCounter++}`;
+        nodes.push({ id: nid, type: NT_RECT, label: name, x: CX, y, w: 180, h: 60, color, status, stepIndex: i });
+        edges.push({ id: `e${idCounter++}`, from: prevId, to: nid, label: '' });
+        prevId = nid;
+        y += GAP;
+    });
+
+    // END oval
+    const endId = `n${idCounter++}`;
+    nodes.push({ id: endId, type: NT_END, label: 'پایان', x: CX, y, w: 140, h: 50, color, status: STATUS_INCOMPLETE });
+    edges.push({ id: `e${idCounter++}`, from: prevId, to: endId, label: '' });
+
+    return { nodes, edges };
+}
+
+function getOrBuildGraph(path) {
+    if (!graphs[path]) {
+        const saved = loadGraph(path);
+        graphs[path] = saved || buildGraphFromSteps(path);
+    }
+    return graphs[path];
+}
+
+function rebuildFromSteps() {
+    graphs[currentPath] = buildGraphFromSteps(currentPath);
+    saveGraph(currentPath);
+    resetView();
+    draw();
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  CANVAS RESIZE
+// ══════════════════════════════════════════════════════════════════
+function resizeCanvas() {
+    const wrap = document.getElementById('canvas-wrap');
+    canvas.width  = wrap.clientWidth;
+    canvas.height = wrap.clientHeight;
+    draw();
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  COORDINATE HELPERS
+// ══════════════════════════════════════════════════════════════════
+function toWorld(cx, cy) {
+    return { x: (cx - panX) / zoom, y: (cy - panY) / zoom };
+}
+function toCanvas(wx, wy) {
+    return { x: wx * zoom + panX, y: wy * zoom + panY };
+}
+
+function nodeHit(node, wx, wy) {
+    if (node.type === NT_DIAMOND) {
+        const hw = node.w / 2, hh = node.h / 2;
+        const dx = Math.abs(wx - node.x) / hw;
+        const dy = Math.abs(wy - node.y) / hh;
+        return dx + dy <= 1;
+    }
+    return wx >= node.x - node.w/2 && wx <= node.x + node.w/2 &&
+           wy >= node.y - node.h/2 && wy <= node.y + node.h/2;
+}
+
+function nodeBottom(node) {
+    return { x: node.x, y: node.y + node.h / 2 };
+}
+function nodeTop(node) {
+    return { x: node.x, y: node.y - node.h / 2 };
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  DRAW ENGINE
+// ══════════════════════════════════════════════════════════════════
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // grid
+    drawGrid();
+
+    ctx.save();
+    ctx.translate(panX, panY);
+    ctx.scale(zoom, zoom);
+
+    const g = getOrBuildGraph(currentPath);
+
+    // draw edges first
+    g.edges.forEach(e => drawEdge(e, g));
+
+    // connecting preview line
+    if (connecting) {
+        const src = g.nodes.find(n => n.id === connecting);
+        if (src) {
+            const b = nodeBottom(src);
+            const w = toWorld(mouseX, mouseY);
+            ctx.save();
+            ctx.strokeStyle = '#22c55e';
+            ctx.lineWidth = 2 / zoom;
+            ctx.setLineDash([6 / zoom, 4 / zoom]);
+            ctx.beginPath();
+            ctx.moveTo(b.x, b.y);
+            ctx.lineTo(w.x, w.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
         }
-        
-        function updateTransform() {
-            const inner = document.getElementById('canvas-inner');
-            const svg = document.getElementById('connections-svg');
-            inner.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
-            svg.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
-            document.getElementById('zoom-level').textContent = `${Math.round(zoom * 100)}%`;
-        }
-        
-        function loadSavedFlowchart() {
-            const saved = localStorage.getItem('flowchart-data');
-            if (saved) {
-                try {
-                    const data = JSON.parse(saved);
-                    nodes = data.nodes || [];
-                    connections = data.connections || [];
-                    nodeIdCounter = data.nodeIdCounter || nodes.length;
-                    
-                    nodes.forEach(node => renderNode(node));
-                    updateConnections();
-                    showNotification('Flowchart loaded');
-                } catch (e) {
-                    console.error('Error loading flowchart:', e);
-                    loadDefaultFlowchart();
-                }
-            } else {
-                loadDefaultFlowchart();
-            }
-        }
-        
-        function loadDefaultFlowchart() {
-            // Create the 6-shape horizontal flowchart
-            const startY = 250;
-            const startX = 150;
-            const gap = 180;
-            
-            // 1. Blue Diamond (Start)
-            addNode('diamond', 'blue', 'شروع', startX, startY);
-            
-            // 2. Orange Rectangle
-            addNode('rectangle', 'orange', 'شخص اول ', startX + gap, startY);
-            
-            // 3. Blue Rectangle
-            addNode('rectangle', 'blue', 'شخص دوم', startX + gap * 2, startY);
-            
-            // 4. Orange Diamond
-            addNode('diamond', 'orange', 'تصمیم', startX + gap * 3, startY);
-            
-            // 5. Blue Rectangle
-            addNode('rectangle', 'blue', 'شخص سوم', startX + gap * 4, startY);
-            
-            // 6. Blue Diamond (End)
-            addNode('diamond', 'blue', 'پایان', startX + gap * 5, startY);
-            
-            // Create connections
-            setTimeout(() => {
-                for (let i = 0; i < nodes.length - 1; i++) {
-                    connectNodes(nodes[i].id, nodes[i + 1].id);
-                }
-            }, 100);
-        }
-        
-        function setTool(tool) {
-            currentTool = tool;
-            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(`tool-${tool}`).classList.add('active');
-            connectionStart = null;
-            
-            if (tool === 'connect') {
-                showNotification('Click on a node to start connection');
-            }
-        }
-        
-        function addNode(shape, color, text, x, y) {
-            const id = `node-${nodeIdCounter++}`;
-            const node = { id, shape, color, text, x, y };
-            nodes.push(node);
-            renderNode(node);
-            return node;
-        }
-        
-        function renderNode(node) {
-            const inner = document.getElementById('canvas-inner');
-            
-            const nodeEl = document.createElement('div');
-            nodeEl.className = 'flow-node';
-            nodeEl.id = node.id;
-            nodeEl.style.left = `${node.x}px`;
-            nodeEl.style.top = `${node.y}px`;
-            
-            let contentClass = '';
-            if (node.shape === 'rectangle') {
-                contentClass = `node-rectangle ${node.color}`;
-            } else if (node.shape === 'diamond') {
-                contentClass = `node-diamond ${node.color}`;
-            }
-            
-            const innerContent = node.shape === 'diamond' 
-                ? `<div class="node-text">${node.text}</div>` 
-                : node.text;
-            
-            nodeEl.innerHTML = `
-                <div class="${contentClass}">
-                    ${innerContent}
-                </div>
-            `;
-            
-            // Click handler
-            nodeEl.addEventListener('click', (e) => {
-                e.stopPropagation();
-                
-                if (currentTool === 'connect') {
-                    startConnection(node, e);
-                } else if (currentTool === 'select') {
-                    selectNode(node);
-                }
-            });
-            
-            // Drag handler
-            nodeEl.addEventListener('mousedown', (e) => {
-                if (currentTool !== 'select') return;
-                
-                e.stopPropagation();
-                isDragging = true;
-                selectNode(node);
-                
-                const nodeEl = document.getElementById(node.id);
-                const rect = nodeEl.getBoundingClientRect();
-                nodeStartX = (e.clientX - rect.left) / zoom;
-                nodeStartY = (e.clientY - rect.top) / zoom;
-            });
-            
-            inner.appendChild(nodeEl);
-        }
-        
-        function startConnection(node, e) {
-            connectionStart = node;
-            
-            const svg = document.getElementById('connections-svg');
-            const center = getNodeCenter(node);
-            
-            tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            tempLine.setAttribute('class', 'connection-line-temp');
-            tempLine.setAttribute('x1', center.x);
-            tempLine.setAttribute('y1', center.y);
-            tempLine.setAttribute('x2', center.x);
-            tempLine.setAttribute('y2', center.y);
-            svg.appendChild(tempLine);
-            
-            showNotification('Click on target node to connect');
-        }
-        
-        function connectNodes(fromId, toId) {
-            // Check if connection already exists
-            const exists = connections.find(c => c.from === fromId && c.to === toId);
-            if (exists) return;
-            
-            const connection = { from: fromId, to: toId };
-            connections.push(connection);
-            updateConnections();
-        }
-        
-        function getNodeCenter(node) {
-            let width, height;
-            if (node.shape === 'rectangle') {
-                width = 160;
-                height = 100;
-            } else {
-                width = 100;
-                height = 100;
-            }
-            return {
-                x: node.x + width / 2,
-                y: node.y + height / 2
-            };
-        }
-        
-        function updateConnections() {
-            const svg = document.getElementById('connections-svg');
-            
-            // Remove old lines
-            svg.querySelectorAll('line:not(.connection-line-temp)').forEach(el => el.remove());
-            
-            // Render all connections
-            connections.forEach(conn => {
-                const fromNode = nodes.find(n => n.id === conn.from);
-                const toNode = nodes.find(n => n.id === conn.to);
-                if (!fromNode || !toNode) return;
-                
-                const fromCenter = getNodeCenter(fromNode);
-                const toCenter = getNodeCenter(toNode);
-                
-                // Calculate edge points
-                const fromEdge = getEdgePoint(fromNode, toCenter);
-                const toEdge = getEdgePoint(toNode, fromCenter);
-                
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', fromEdge.x);
-                line.setAttribute('y1', fromEdge.y);
-                line.setAttribute('x2', toEdge.x);
-                line.setAttribute('y2', toEdge.y);
-                line.setAttribute('class', 'connection-line');
-                line.setAttribute('marker-end', 'url(#arrowhead)');
-                svg.appendChild(line);
-            });
-        }
-        
-        function getEdgePoint(node, targetPoint) {
-            const center = getNodeCenter(node);
-            let width, height;
-            
-            if (node.shape === 'rectangle') {
-                width = 160;
-                height = 100;
-            } else {
-                width = 100;
-                height = 100;
-            }
-            
-            const dx = targetPoint.x - center.x;
-            const dy = targetPoint.y - center.y;
-            
-            // For diamond, calculate intersection with rotated square
-            if (node.shape === 'diamond') {
-                const halfSize = width / 2;
-                const absX = Math.abs(dx);
-                const absY = Math.abs(dy);
-                
-                if (absX + absY === 0) return center;
-                
-                const scale = halfSize / (absX + absY);
-                return {
-                    x: center.x + dx * scale,
-                    y: center.y + dy * scale
-                };
-            }
-            
-            // For rectangle, calculate intersection with rectangle edges
-            const halfWidth = width / 2;
-            const halfHeight = height / 2;
-            
-            if (dx === 0 && dy === 0) return center;
-            
-            let scaleX = dx !== 0 ? halfWidth / Math.abs(dx) : Infinity;
-            let scaleY = dy !== 0 ? halfHeight / Math.abs(dy) : Infinity;
-            let scale = Math.min(scaleX, scaleY);
-            
-            return {
-                x: center.x + dx * scale,
-                y: center.y + dy * scale
-            };
-        }
-        
-        function selectNode(node) {
-            deselectAll();
-            selectedNode = node;
-            document.getElementById(node.id).classList.add('selected');
-        }
-        
-        function deselectAll() {
-            document.querySelectorAll('.flow-node.selected').forEach(el => el.classList.remove('selected'));
-            selectedNode = null;
-        }
-        
-        function deleteSelected() {
-            if (!selectedNode) {
-                showNotification('Please select a node first', 'error');
-                return;
-            }
-            
-            document.getElementById(selectedNode.id).remove();
-            nodes = nodes.filter(n => n.id !== selectedNode.id);
-            connections = connections.filter(c => c.from !== selectedNode.id && c.to !== selectedNode.id);
-            updateConnections();
-            
-            selectedNode = null;
-            showNotification('Node deleted');
-        }
-        
-        // Zoom functions
-        function zoomIn() {
-            zoom = Math.min(2, zoom + 0.1);
-            updateTransform();
-        }
-        
-        function zoomOut() {
-            zoom = Math.max(0.3, zoom - 0.1);
-            updateTransform();
-        }
-        
-        function resetView() {
-            zoom = 1;
-            panX = 0;
-            panY = 0;
-            updateTransform();
-        }
-        
-        // Save and load
-        function saveFlowchart() {
-            const data = { nodes, connections, nodeIdCounter };
-            localStorage.setItem('flowchart-data', JSON.stringify(data));
-            showNotification('Flowchart saved!');
-        }
-        
-        function clearCanvas() {
-            if (confirm('Are you sure you want to clear everything?')) {
-                nodes = [];
-                connections = [];
-                nodeIdCounter = 0;
-                
-                const inner = document.getElementById('canvas-inner');
-                inner.innerHTML = '';
-                
-                const svg = document.getElementById('connections-svg');
-                svg.querySelectorAll('line').forEach(el => el.remove());
-                
-                localStorage.removeItem('flowchart-data');
-                deselectAll();
-                showNotification('Canvas cleared');
-            }
-        }
-        
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Delete' && selectedNode) {
-                deleteSelected();
-            }
-            if (e.key === 'Escape') {
-                deselectAll();
+    }
+
+    // draw nodes on top
+    g.nodes.forEach(n => drawNode(n));
+
+    ctx.restore();
+
+    document.getElementById('zoom-badge').textContent = Math.round(zoom * 100) + '%';
+}
+
+function drawGrid() {
+    const step = 30 * zoom;
+    const offX = ((panX % step) + step) % step;
+    const offY = ((panY % step) + step) % step;
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    for (let x = offX; x < canvas.width; x += step) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+    }
+    for (let y = offY; y < canvas.height; y += step) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+    }
+}
+
+function drawNode(node) {
+    const hw = node.w / 2, hh = node.h / 2;
+    const sel = node.id === selectedNodeId;
+
+    // fill color based on status
+    let fill, stroke;
+    if (node.type === NT_START || node.type === NT_END) {
+        fill   = node.type === NT_START ? '#1d4ed8' : '#374151';
+        stroke = node.type === NT_START ? '#93c5fd' : '#9ca3af';
+    } else if (node.type === NT_DIAMOND) {
+        fill   = '#92400e';
+        stroke = '#fcd34d';
+    } else {
+        // rect – colored by status
+        if (node.status === STATUS_COMPLETED) { fill = '#166534'; stroke = '#4ade80'; }
+        else if (node.status === STATUS_CURRENT) { fill = '#1e3a8a'; stroke = '#60a5fa'; }
+        else { fill = '#7f1d1d'; stroke = '#f87171'; }
+    }
+
+    ctx.save();
+    ctx.shadowColor = sel ? '#fff' : stroke;
+    ctx.shadowBlur  = sel ? 18 / zoom : 8 / zoom;
+
+    if (node.type === NT_DIAMOND) {
+        ctx.beginPath();
+        ctx.moveTo(node.x,      node.y - hh);
+        ctx.lineTo(node.x + hw, node.y);
+        ctx.lineTo(node.x,      node.y + hh);
+        ctx.lineTo(node.x - hw, node.y);
+        ctx.closePath();
+    } else if (node.type === NT_START || node.type === NT_END) {
+        // pill / oval
+        const r = hh;
+        ctx.beginPath();
+        ctx.moveTo(node.x - hw + r, node.y - hh);
+        ctx.arcTo(node.x + hw, node.y - hh, node.x + hw, node.y + hh, r);
+        ctx.arcTo(node.x + hw, node.y + hh, node.x - hw, node.y + hh, r);
+        ctx.arcTo(node.x - hw, node.y + hh, node.x - hw, node.y - hh, r);
+        ctx.arcTo(node.x - hw, node.y - hh, node.x + hw, node.y - hh, r);
+        ctx.closePath();
+    } else {
+        // rounded rect
+        const r = 10;
+        ctx.beginPath();
+        ctx.moveTo(node.x - hw + r, node.y - hh);
+        ctx.arcTo(node.x + hw, node.y - hh, node.x + hw, node.y + hh, r);
+        ctx.arcTo(node.x + hw, node.y + hh, node.x - hw, node.y + hh, r);
+        ctx.arcTo(node.x - hw, node.y + hh, node.x - hw, node.y - hh, r);
+        ctx.arcTo(node.x - hw, node.y - hh, node.x + hw, node.y - hh, r);
+        ctx.closePath();
+    }
+
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.lineWidth = (sel ? 3 : 2) / zoom;
+    ctx.strokeStyle = sel ? '#ffffff' : stroke;
+    ctx.stroke();
+    ctx.restore();
+
+    // status icon (top-right of rect)
+    if (node.type === NT_RECT) {
+        const iconX = node.x + hw - 12 / zoom;
+        const iconY = node.y - hh + 12 / zoom;
+        ctx.font = `${13 / zoom}px serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        if (node.status === STATUS_COMPLETED)   ctx.fillText('✓', iconX, iconY);
+        else if (node.status === STATUS_CURRENT) ctx.fillText('●', iconX, iconY);
+    }
+
+    // label
+    ctx.save();
+    ctx.fillStyle = '#f1f5f9';
+    ctx.font = `bold ${Math.max(10, 13) / zoom}px Vazirmatn, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    wrapText(ctx, node.label, node.x, node.y, node.w - 20 / zoom, 16 / zoom);
+    ctx.restore();
+}
+
+function wrapText(ctx, text, x, y, maxW, lineH) {
+    if (!text) return;
+    const words = text.split('');
+    // For Persian, just draw full text with ellipsis if too wide
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const measured = ctx.measureText(text).width;
+    if (measured <= maxW) {
+        ctx.fillText(text, x, y);
+    } else {
+        // truncate
+        let t = text;
+        while (ctx.measureText(t + '…').width > maxW && t.length > 1) t = t.slice(0, -1);
+        ctx.fillText(t + '…', x, y);
+    }
+}
+
+function drawEdge(edge, g) {
+    const src = g.nodes.find(n => n.id === edge.from);
+    const dst = g.nodes.find(n => n.id === edge.to);
+    if (!src || !dst) return;
+
+    const from = nodeBottom(src);
+    const to   = nodeTop(dst);
+
+    // color: green if source completed
+    const edgeColor = (src.status === STATUS_COMPLETED || src.type === NT_START) ? '#4ade80' : '#475569';
+
+    ctx.save();
+    ctx.strokeStyle = edgeColor;
+    ctx.lineWidth = 2 / zoom;
+    ctx.shadowColor = edgeColor;
+    ctx.shadowBlur  = 4 / zoom;
+
+    // curved bezier
+    const cy1 = from.y + 30;
+    const cy2 = to.y   - 30;
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.bezierCurveTo(from.x, cy1, to.x, cy2, to.x, to.y);
+    ctx.stroke();
+
+    // arrowhead – always pointing straight down into top of target
+    const aw = 10 / zoom;
+    ctx.fillStyle = edgeColor;
+    ctx.shadowBlur = 0;
+    ctx.beginPath();
+    ctx.moveTo(to.x,        to.y);
+    ctx.lineTo(to.x - aw,   to.y - aw * 1.6);
+    ctx.lineTo(to.x + aw,   to.y - aw * 1.6);
+    ctx.closePath();
+    ctx.fill();
+
+    // edge label (condition)
+    if (edge.label) {
+        const mx = (from.x + to.x) / 2 + 12;
+        const my = (from.y + to.y) / 2;
+        ctx.fillStyle = '#fcd34d';
+        ctx.font = `${11 / zoom}px Vazirmatn, sans-serif`;
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(edge.label, mx, my);
+    }
+
+    ctx.restore();
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  TOOL MANAGEMENT
+// ══════════════════════════════════════════════════════════════════
+function setTool(t) {
+    currentTool = t;
+    connecting  = null;
+    document.querySelectorAll('.tb-btn').forEach(b => b.classList.remove('active'));
+    const map = { select: 'tb-select', pan: 'tb-pan', 'add-rect': 'tb-rect', 'add-diamond': 'tb-diamond', connect: 'tb-connect' };
+    if (map[t]) document.getElementById(map[t]).classList.add('active');
+    const wrap = document.getElementById('canvas-wrap');
+    wrap.classList.toggle('pan-mode', t === 'pan');
+    draw();
+}
+
+function switchPath(path) {
+    currentPath = path;
+    connecting  = null;
+    selectedNodeId = null;
+    document.querySelectorAll('.path-tab').forEach(tb => {
+        tb.classList.toggle('active', tb.dataset.path === path);
+    });
+    // ensure graph exists
+    getOrBuildGraph(path);
+    resetView();
+    draw();
+}
+
+function saveCurrentPath() {
+    saveGraph(currentPath);
+    // flash save icon
+    const btn = document.querySelector('[onclick="saveCurrentPath()"]');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check" style="color:#4ade80"></i>';
+    setTimeout(() => btn.innerHTML = orig, 1200);
+}
+
+function onStudentChange() {
+    currentStudent = document.getElementById('student-sel').value;
+    // Refresh prog status on rect nodes for all paths
+    ['defense','requirements','educational'].forEach(p => {
+        if (!graphs[p]) return;
+        const allSteps = loadManagedSteps();
+        const prog = loadStudentProg(currentStudent, p, allSteps[p].length);
+        if (!prog) return;
+        graphs[p].nodes.forEach(n => {
+            if (n.type === NT_RECT && n.stepIndex !== undefined) {
+                n.status = prog[n.stepIndex]?.status ?? STATUS_INCOMPLETE;
             }
         });
-    </script>
+    });
+    draw();
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  ZOOM / PAN
+// ══════════════════════════════════════════════════════════════════
+function zoomIn()  { setZoom(zoom * 1.15); }
+function zoomOut() { setZoom(zoom / 1.15); }
+function setZoom(z) {
+    zoom = Math.max(0.15, Math.min(3, z));
+    draw();
+}
+
+function resetView() {
+    zoom = 1;
+    const g = getOrBuildGraph(currentPath);
+    if (!g.nodes.length) { panX = 80; panY = 40; draw(); return; }
+    // center first node
+    const first = g.nodes[0];
+    const cw = canvas.width, ch = canvas.height;
+    panX = cw / 2 - first.x * zoom;
+    panY = 40;
+    draw();
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  MOUSE EVENTS
+// ══════════════════════════════════════════════════════════════════
+canvas.addEventListener('mousedown', onMouseDown);
+canvas.addEventListener('mousemove', onMouseMove);
+canvas.addEventListener('mouseup',   onMouseUp);
+canvas.addEventListener('wheel',     onWheel, { passive: false });
+canvas.addEventListener('contextmenu', onCtxMenu);
+canvas.addEventListener('dblclick',  onDblClick);
+document.addEventListener('click',   () => hideCtxMenu());
+document.addEventListener('keydown', onKeyDown);
+
+function onMouseDown(e) {
+    hideCtxMenu();
+    if (e.button === 1 || currentTool === 'pan') {
+        isPanning = true;
+        panStartX = e.clientX; panStartY = e.clientY;
+        panStartCamX = panX;   panStartCamY = panY;
+        document.getElementById('canvas-wrap').classList.add('panning');
+        return;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    const wx = (e.clientX - rect.left - panX) / zoom;
+    const wy = (e.clientY - rect.top  - panY) / zoom;
+    const g  = getOrBuildGraph(currentPath);
+    const hit = g.nodes.slice().reverse().find(n => nodeHit(n, wx, wy));
+
+    if (currentTool === 'connect') {
+        if (hit) {
+            if (!connecting) {
+                connecting = hit.id;
+            } else if (connecting !== hit.id) {
+                // create edge
+                g.edges.push({ id: `e${idCounter++}`, from: connecting, to: hit.id, label: '' });
+                saveGraph(currentPath);
+                connecting = null;
+                draw();
+            }
+        } else {
+            connecting = null;
+        }
+        return;
+    }
+
+    if (currentTool === 'add-rect' || currentTool === 'add-diamond') {
+        const type = currentTool === 'add-diamond' ? NT_DIAMOND : NT_RECT;
+        const label = type === NT_DIAMOND ? 'شرط؟' : 'مرحله جدید';
+        const nid = `n${idCounter++}`;
+        g.nodes.push({
+            id: nid, type, label, x: wx, y: wy,
+            w: type === NT_DIAMOND ? 160 : 180,
+            h: type === NT_DIAMOND ? 80  : 60,
+            color: PATH_COLOR[currentPath],
+            status: STATUS_INCOMPLETE
+        });
+        saveGraph(currentPath);
+        selectedNodeId = nid;
+        setTool('select');
+        draw();
+        return;
+    }
+
+    // select tool
+    if (hit) {
+        selectedNodeId = hit.id;
+        dragging = hit;
+        const rect2 = canvas.getBoundingClientRect();
+        dragOffX = wx - hit.x;
+        dragOffY = wy - hit.y;
+    } else {
+        selectedNodeId = null;
+    }
+    draw();
+}
+
+function onMouseMove(e) {
+    const rect = canvas.getBoundingClientRect();
+    mouseX = e.clientX - rect.left;
+    mouseY = e.clientY - rect.top;
+
+    if (isPanning) {
+        panX = panStartCamX + (e.clientX - panStartX);
+        panY = panStartCamY + (e.clientY - panStartY);
+        draw(); return;
+    }
+
+    if (dragging && currentTool === 'select') {
+        const wx = (mouseX - panX) / zoom;
+        const wy = (mouseY - panY) / zoom;
+        dragging.x = wx - dragOffX;
+        dragging.y = wy - dragOffY;
+        draw(); return;
+    }
+
+    if (connecting) draw();
+}
+
+function onMouseUp(e) {
+    if (isPanning) {
+        isPanning = false;
+        document.getElementById('canvas-wrap').classList.remove('panning');
+    }
+    if (dragging) {
+        saveGraph(currentPath);
+        dragging = null;
+    }
+}
+
+function onWheel(e) {
+    e.preventDefault();
+    const rect  = canvas.getBoundingClientRect();
+    const mx    = e.clientX - rect.left;
+    const my    = e.clientY - rect.top;
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    const newZ  = Math.max(0.15, Math.min(3, zoom * delta));
+    panX = mx - (mx - panX) * (newZ / zoom);
+    panY = my - (my - panY) * (newZ / zoom);
+    zoom = newZ;
+    draw();
+}
+
+function onDblClick(e) {
+    const rect = canvas.getBoundingClientRect();
+    const wx = (e.clientX - rect.left - panX) / zoom;
+    const wy = (e.clientY - rect.top  - panY) / zoom;
+    const g  = getOrBuildGraph(currentPath);
+    const hit = g.nodes.slice().reverse().find(n => nodeHit(n, wx, wy));
+    if (hit) { ctxTargetId = hit.id; ctxEditInline(hit); }
+}
+
+function onCtxMenu(e) {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const wx = (e.clientX - rect.left - panX) / zoom;
+    const wy = (e.clientY - rect.top  - panY) / zoom;
+    const g  = getOrBuildGraph(currentPath);
+    const hit = g.nodes.slice().reverse().find(n => nodeHit(n, wx, wy));
+    if (hit) {
+        ctxTargetId = hit.id;
+        selectedNodeId = hit.id;
+        showCtxMenu(e.clientX, e.clientY);
+        draw();
+    }
+}
+
+function onKeyDown(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedNodeId) { deleteNode(selectedNodeId); selectedNodeId = null; }
+    }
+    if (e.key === 's' || e.key === 'S') setTool('select');
+    if (e.key === 'c' || e.key === 'C') setTool('connect');
+    if (e.key === '+' || e.key === '=') zoomIn();
+    if (e.key === '-') zoomOut();
+    if (e.key === ' ') { e.preventDefault(); setTool('pan'); }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  CONTEXT MENU ACTIONS
+// ══════════════════════════════════════════════════════════════════
+function showCtxMenu(x, y) {
+    const menu = document.getElementById('ctx-menu');
+    menu.style.left = x + 'px';
+    menu.style.top  = y + 'px';
+    menu.style.display = 'block';
+}
+function hideCtxMenu() {
+    document.getElementById('ctx-menu').style.display = 'none';
+}
+
+function ctxEdit() {
+    hideCtxMenu();
+    const g = getOrBuildGraph(currentPath);
+    const n = g.nodes.find(nd => nd.id === ctxTargetId);
+    if (n) ctxEditInline(n);
+}
+
+function ctxEditInline(node) {
+    const newLabel = prompt('ویرایش متن:', node.label);
+    if (newLabel && newLabel.trim()) {
+        node.label = newLabel.trim();
+        saveGraph(currentPath);
+        draw();
+    }
+}
+
+function ctxDelete() {
+    hideCtxMenu();
+    if (!confirm('آیا از حذف این node اطمینان دارید؟')) return;
+    deleteNode(ctxTargetId);
+    ctxTargetId = null;
+}
+
+function deleteNode(id) {
+    const g = getOrBuildGraph(currentPath);
+    g.nodes = g.nodes.filter(n => n.id !== id);
+    g.edges = g.edges.filter(e => e.from !== id && e.to !== id);
+    saveGraph(currentPath);
+    draw();
+}
+
+function ctxAddBelow() {
+    hideCtxMenu();
+    const g = getOrBuildGraph(currentPath);
+    const src = g.nodes.find(n => n.id === ctxTargetId);
+    if (!src) return;
+
+    const nid = `n${idCounter++}`;
+    const newNode = {
+        id: nid, type: NT_RECT, label: 'مرحله جدید',
+        x: src.x, y: src.y + 130, w: 180, h: 60,
+        color: PATH_COLOR[currentPath], status: STATUS_INCOMPLETE
+    };
+    g.nodes.push(newNode);
+
+    // re-link edges: old target -> new -> old target's children
+    const childEdges = g.edges.filter(e => e.from === src.id);
+    childEdges.forEach(ce => ce.from = nid);
+    g.edges.push({ id: `e${idCounter++}`, from: src.id, to: nid, label: '' });
+
+    saveGraph(currentPath);
+    draw();
+}
+
+function ctxAddCondition() {
+    hideCtxMenu();
+    const g = getOrBuildGraph(currentPath);
+    const src = g.nodes.find(n => n.id === ctxTargetId);
+    if (!src) return;
+
+    const nid = `n${idCounter++}`;
+    const newNode = {
+        id: nid, type: NT_DIAMOND, label: 'شرط؟',
+        x: src.x, y: src.y + 120, w: 160, h: 80,
+        color: PATH_COLOR[currentPath], status: STATUS_INCOMPLETE
+    };
+    g.nodes.push(newNode);
+
+    // re-link edges
+    const childEdges = g.edges.filter(e => e.from === src.id);
+    childEdges.forEach(ce => ce.from = nid);
+    g.edges.push({ id: `e${idCounter++}`, from: src.id, to: nid, label: '' });
+
+    saveGraph(currentPath);
+    draw();
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════════
+function populateStudentSel() {
+    const sel = document.getElementById('student-sel');
+    sel.innerHTML = '<option value="">— پیش‌فرض —</option>';
+    try {
+        const stored = localStorage.getItem('students_data');
+        if (stored) {
+            Object.values(JSON.parse(stored))
+                .filter(s => s.role === 'student')
+                .forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = s.name;
+                    sel.appendChild(opt);
+                });
+        }
+    } catch(e) {}
+}
+
+window.addEventListener('resize', () => resizeCanvas());
+window.addEventListener('focus', () => {
+    // reload managed steps & rebuild if needed
+    getOrBuildGraph(currentPath);
+    draw();
+});
+window.addEventListener('storage', e => {
+    const watched = ['custom_defense_steps','custom_requirements_steps','custom_educational_steps'];
+    if (watched.includes(e.key) || (e.key && e.key.startsWith('prog_'))) {
+        // reload
+        graphs[currentPath] = null;
+        getOrBuildGraph(currentPath);
+        draw();
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    resizeCanvas();
+    populateStudentSel();
+    getOrBuildGraph(currentPath);
+    resetView();
+    draw();
+});
+</script>
 </body>
 </html>

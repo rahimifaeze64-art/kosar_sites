@@ -47,9 +47,9 @@ function archiveController() {
                 this.files = [
                     {
                         id: 'f1',
-                        name: 'استماره ثبت نام - احمد رضایی.pdf',
+                        name: 'استماره ثبت نام - احمد فتحی.pdf',
                         category: 'form1',
-                        author: 'عامل احمد رضایی',
+                        author: 'عامل احمد فتحی',
                         type: 'pdf',
                         size: '2.5 MB',
                         uploadDate: new Date().toISOString(),
@@ -87,9 +87,9 @@ function archiveController() {
                     },
                     {
                         id: 'f5',
-                        name: 'مقاله علمی - زینب کریمی.pdf',
+                        name: 'مقاله علمی - زینب سجادی.pdf',
                         category: 'articles',
-                        author: 'عامل زینب کریمی',
+                        author: 'عامل زینب سجادی',
                         type: 'pdf',
                         size: '1.2 MB',
                         uploadDate: new Date(Date.now() - 345600000).toISOString(),

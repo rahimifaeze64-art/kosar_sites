@@ -37,11 +37,6 @@ const TasksModule = {
                             <i class="fas fa-chart-bar ml-2"></i>
                             گزارش روزانه
                         </button>
-                        <button onclick="TasksModule.showNewEmployeeModal()" 
-                                class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium">
-                            <i class="fas fa-user-plus ml-2"></i>
-                            کارمند جدید
-                        </button>
                     </div>
                 </div>
                 
@@ -98,87 +93,24 @@ const TasksModule = {
         `;
     },
     
-    // Get employees list - از دیتابیس + لیست ثابت + عامل‌ها
+    // Get employees list - فقط کارمندها
     getemployees() {
         // لیست ثابت کارمند‌ها
         const fixedemployees = [
-            {
-                id: 'emp001',
-                name: 'ساره',
-                username: 'zahra',
-                email: 'zahra@edu-system.com',
-                role: 'employee'
-            },
-            {
-                id: 'emp002',
-                name: 'زینب',
-                username: 'fatemeh',
-                email: 'fatemeh@edu-system.com',
-                role: 'employee'
-            },
-            {
-                id: 'emp003',
-                name: 'فرزاد',
-                username: 'farzad',
-                email: 'farzad@edu-system.com',
-                role: 'employee'
-            },
-            {
-                id: 'emp004',
-                name: 'سلیمان',
-                username: 'soleiman',
-                email: 'soleiman@edu-system.com',
-                role: 'employee'
-            }
+            { id: 'emp001', name: 'ساره', username: 'zahra', email: 'zahra@edu-system.com', role: 'employee' },
+            { id: 'emp002', name: 'زینب', username: 'fatemeh', email: 'fatemeh@edu-system.com', role: 'employee' },
+            { id: 'emp003', name: 'فرزاد', username: 'farzad', email: 'farzad@edu-system.com', role: 'employee' },
+            { id: 'emp004', name: 'حسینی م', username: 'soleiman', email: 'soleiman@edu-system.com', role: 'employee' }
         ];
         
-        // لیست ثابت عامل‌ها
-        const fixedAgents = [
-            {
-                id: 'doc001',
-                name: 'عامل معصومی',
-                username: 'masoumi',
-                email: 'masoumi@edu-system.com',
-                role: 'agent'
-            },
-            {
-                id: 'doc002',
-                name: 'عامل زoghi',
-                username: 'zoghi',
-                email: 'zoghi@edu-system.com',
-                role: 'agent'
-            },
-            {
-                id: 'agent001',
-                name: 'رضایی',
-                username: 'rezaei',
-                email: 'rezaei@edu-system.com',
-                role: 'agent'
-            },
-            {
-                id: 'agent002',
-                name: 'کریمی',
-                username: 'karimi',
-                email: 'karimi@edu-system.com',
-                role: 'agent'
-            }
-        ];
-        
-        // کارمند‌های جدید از دیتابیس
+        // کارمند‌های جدید از دیتابیس (فقط نقش employee)
         const users = DataModule.getUsers();
         const newemployees = users.filter(u => u.role === 'employee' && u.active);
-        const newAgents = users.filter(u => u.role === 'agent' && u.active);
         
-        // ترکیب لیست ثابت و جدید (حذف تکراری‌ها)
-        const allemployees = [...fixedemployees, ...fixedAgents];
+        const allemployees = [...fixedemployees];
         newemployees.forEach(emp => {
             if (!allemployees.find(c => c.username === emp.username)) {
                 allemployees.push(emp);
-            }
-        });
-        newAgents.forEach(agent => {
-            if (!allemployees.find(c => c.username === agent.username)) {
-                allemployees.push(agent);
             }
         });
         

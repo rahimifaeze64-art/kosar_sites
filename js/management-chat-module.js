@@ -35,7 +35,7 @@ const ManagementChatModule = {
     // Get management chat content for sidebar
     getManagementChatContent(currentUser) {
         return `
-            <div class="management-chat-container" style="display: flex; flex-direction: column; height: calc(100vh - 200px); background: #1e293b; border-radius: 12px; overflow: hidden;">
+            <div class="management-chat-container" style="display: flex; flex-direction: column; height: calc(100vh - 200px); background: #f8fafc; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0;">
                 <!-- Header -->
                 <div style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 20px; color: white;">
                     <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 8px;">
@@ -48,43 +48,43 @@ const ManagementChatModule = {
                 </div>
 
                 <!-- Participants Bar -->
-                <div style="background: #334155; padding: 12px 20px; border-bottom: 1px solid #475569; display: flex; align-items: center; gap: 12px; overflow-x: auto;">
-                    <span style="color: #94a3b8; font-size: 0.875rem;">شرکت‌کنندگان:</span>
-                    <div style="display: flex; align-items: center; gap: 8px; background: #7c3aed; padding: 6px 12px; border-radius: 20px; white-space: nowrap; font-size: 14px;">
+                <div style="background: #f1f5f9; padding: 12px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 12px; overflow-x: auto;">
+                    <span style="color: #64748b; font-size: 0.875rem;">شرکت‌کنندگان:</span>
+                    <div style="display: flex; align-items: center; gap: 8px; background: #7c3aed; color: white; padding: 6px 12px; border-radius: 20px; white-space: nowrap; font-size: 14px;">
                         <i class="fas fa-crown"></i>
                         <span>مدیر</span>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 8px; background: #475569; padding: 6px 12px; border-radius: 20px; white-space: nowrap; font-size: 14px;">
+                    <div style="display: flex; align-items: center; gap: 8px; background: #e0e7ff; color: #4338ca; padding: 6px 12px; border-radius: 20px; white-space: nowrap; font-size: 14px;">
                         <i class="fas fa-user"></i>
                         <span>ساره</span>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 8px; background: #475569; padding: 6px 12px; border-radius: 20px; white-space: nowrap; font-size: 14px;">
+                    <div style="display: flex; align-items: center; gap: 8px; background: #e0e7ff; color: #4338ca; padding: 6px 12px; border-radius: 20px; white-space: nowrap; font-size: 14px;">
                         <i class="fas fa-user"></i>
                         <span>زینب</span>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 8px; background: #475569; padding: 6px 12px; border-radius: 20px; white-space: nowrap; font-size: 14px;">
+                    <div style="display: flex; align-items: center; gap: 8px; background: #e0e7ff; color: #4338ca; padding: 6px 12px; border-radius: 20px; white-space: nowrap; font-size: 14px;">
                         <i class="fas fa-user"></i>
                         <span>فرزاد</span>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 8px; background: #475569; padding: 6px 12px; border-radius: 20px; white-space: nowrap; font-size: 14px;">
+                    <div style="display: flex; align-items: center; gap: 8px; background: #e0e7ff; color: #4338ca; padding: 6px 12px; border-radius: 20px; white-space: nowrap; font-size: 14px;">
                         <i class="fas fa-user"></i>
-                        <span>سلیمان</span>
+                        <span>حسینی م</span>
                     </div>
                 </div>
 
                 <!-- Messages Area -->
-                <div id="managesChatMessages" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+                <div id="managesChatMessages" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; background: #ffffff;">
                     <!-- Messages will be rendered here by JS -->
                 </div>
 
                 <!-- Input Area -->
-                <div style="background: #334155; padding: 16px 20px; border-top: 1px solid #475569;">
+                <div style="background: #f1f5f9; padding: 16px 20px; border-top: 1px solid #e2e8f0;">
                     <div style="display: flex; gap: 12px; align-items: flex-end;">
                         <textarea 
                             id="managesChatInput" 
                             placeholder="پیام خود را بنویسید... (از @ برای منشن استفاده کنید)"
                             rows="1"
-                            style="flex: 1; background: #1e293b; border: 1px solid #475569; border-radius: 12px; padding: 12px 16px; color: white; resize: none; min-height: 44px; max-height: 120px; font-family: inherit;"
+                            style="flex: 1; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 16px; color: #333; resize: none; min-height: 44px; max-height: 120px; font-family: inherit;"
                             onkeypress="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); if(window.managesChatInstance) window.managesChatInstance.sendMessage(); }"
                             oninput="this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 120) + 'px';"></textarea>
                         
@@ -117,6 +117,17 @@ const ManagementChatModule = {
             <style>
                 .management-chat-container #managesChatMessages::-webkit-scrollbar {
                     width: 8px;
+                }
+                .management-chat-container #managesChatMessages::-webkit-scrollbar-track {
+                    background: #f1f5f9;
+                }
+                .management-chat-container #managesChatMessages::-webkit-scrollbar-thumb {
+                    background: #cbd5e1;
+                    border-radius: 4px;
+                }
+                .management-chat-container textarea:focus {
+                    outline: none;
+                    border-color: #6366f1 !important;
                 }
                 .management-chat-container #managesChatMessages::-webkit-scrollbar-track {
                     background: #1e293b;
@@ -157,17 +168,24 @@ const ManagementChatModule = {
             </style>
 
             <script>
-                // Initialize management chat when content is loaded
                 setTimeout(() => {
                     if (!window.managesChatInstance) {
                         window.managesChatInstance = new ManagesChat();
                         console.log('✅ Management chat initialized in sidebar');
                     } else {
-                        // Re-render messages if instance already exists
+                        // Re-init to reload messages fresh
+                        window.managesChatInstance.initialized = false;
+                        window.managesChatInstance.loadMessages();
                         window.managesChatInstance.renderMessages();
-                        console.log('✅ Management chat re-rendered');
+                        console.log('✅ Management chat messages re-rendered');
                     }
-                }, 100);
+                    
+                    // Scroll to bottom
+                    setTimeout(() => {
+                        const container = document.getElementById('managesChatMessages');
+                        if (container) container.scrollTop = container.scrollHeight;
+                    }, 200);
+                }, 150);
             </script>
         `;
     },

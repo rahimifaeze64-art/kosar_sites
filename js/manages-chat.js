@@ -49,7 +49,7 @@ class ManagesChat {
             { id: 'emp001', name: 'ساره', username: 'zahra', role: 'employee' },
             { id: 'emp002', name: 'زینب', username: 'fatemeh', role: 'employee' },
             { id: 'emp003', name: 'فرزاد', username: 'farzad', role: 'employee' },
-            { id: 'emp004', name: 'سلیمان', username: 'soleiman', role: 'employee' }
+            { id: 'emp004', name: 'حسینی م', username: 'soleiman', role: 'employee' }
         ];
         
         // ترکیب لیست ثابت با کاربران جدید
@@ -330,14 +330,14 @@ class ManagesChat {
                 <div style="display: flex; justify-content: flex-start; margin-bottom: 1rem; animation: slideIn 0.3s ease; direction: rtl;" class="message-group">
                     <div style="max-width: 70%; display: flex; flex-direction: column; align-items: flex-start;">
                         <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; font-size: 0.75rem;">
-                            <span style="font-weight: 600; color: #d1d5db;">${msg.senderName}</span>
-                            <span style="padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.625rem; font-weight: 600; ${msg.senderRole === 'manager' ? 'background: #7c3aed; color: white;' : 'background: #3b82f6; color: white;'}">
+                            <span style="font-weight: 600; color: #8b9dbbff;">${msg.senderName}</span>
+                            <span style="padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.625rem; font-weight: 600; ${msg.senderRole === 'manager' ? 'background: #b1a1ceff; color: white;' : 'background: #3b82f6; color: white;'}">
                                 ${this.getRoleName(msg.senderRole)}
                             </span>
-                            <span style="color: #6b7280;">${time}</span>
-                            <span style="color: #4b5563; font-size: 0.625rem;">${date}</span>
+                            <span style="color: #364157ff;">${time}</span>
+                            <span style="color: #95a8c4ff; font-size: 0.625rem;">${date}</span>
                         </div>
-                        <div style="position: relative; border-radius: 0.75rem; padding: 0.75rem 1rem; ${isOwn ? 'background: #6366f1; color: white;' : 'background: #475569; color: #f1f5f9;'}"
+                        <div style="position: relative; border-radius: 0.75rem; padding: 0.75rem 1rem; ${isOwn ? 'background: #8e8fccff; color: white;' : 'background: #e2e8f0; color: #03070eff;'}"
                              oncontextmenu="event.preventDefault(); if(window.managesChatInstance) window.managesChatInstance.showContextMenu(event, '${msg.id}'); return false;"
                              ontouchstart="if(window.managesChatInstance) window.managesChatInstance.handleLongPressStart(event, '${msg.id}')"
                              ontouchend="if(window.managesChatInstance) window.managesChatInstance.handleLongPressEnd()"

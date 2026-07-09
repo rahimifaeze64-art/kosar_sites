@@ -34,7 +34,7 @@ location.reload();
 ```javascript
 localStorage.setItem('currentUser', JSON.stringify({
     id: 'agent001',
-    name: 'رضایی',
+    name: 'فتحی',
     username: 'rezaei',
     role: 'agent',
     email: 'rezaei@edu-system.com'

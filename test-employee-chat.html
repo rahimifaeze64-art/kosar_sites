@@ -45,7 +45,7 @@
                 <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
                     <input type="checkbox" id="test3" class="mt-1">
                     <label for="test3" class="flex-1">
-                        <strong>تست 3:</strong> انتخاب یک عامل (رضایی یا کریمی) از لیست
+                        <strong>تست 3:</strong> انتخاب یک عامل (فتحی یا سجادی) از لیست
                     </label>
                 </div>
                 
@@ -145,10 +145,10 @@
                     <strong>کارمند 2:</strong> زینب (emp002)
                 </div>
                 <div class="bg-gray-50 p-3 rounded-lg">
-                    <strong>عامل 1:</strong> رضایی (agent001)
+                    <strong>عامل 1:</strong> فتحی (agent001)
                 </div>
                 <div class="bg-gray-50 p-3 rounded-lg">
-                    <strong>عامل 2:</strong> کریمی (agent002)
+                    <strong>عامل 2:</strong> سجادی (agent002)
                 </div>
                 <div class="bg-gray-50 p-3 rounded-lg">
                     <strong>مدیر:</strong> عامل تقی زاده (mgr001)
@@ -184,12 +184,12 @@
         function loginAsAgent() {
             localStorage.setItem('currentUser', JSON.stringify({
                 id: 'agent001',
-                name: 'رضایی',
+                name: 'فتحی',
                 username: 'rezaei',
                 role: 'agent',
                 email: 'rezaei@edu-system.com'
             }));
-            alert('وارد شدید به عنوان: رضایی (عامل)');
+            alert('وارد شدید به عنوان: فتحی (عامل)');
             window.location.href = 'index.html';
         }
 

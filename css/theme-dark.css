@@ -1,0 +1,168 @@
+/*
+ * Dark Gray Theme - تم دارک خاکستری
+ */
+
+:root {
+    --dark-bg: #1a1a2e;
+    --dark-surface: #16213e;
+    --dark-card: #1f2b47;
+    --dark-sidebar: #111827;
+    --dark-border: #374151;
+    --dark-text: #e5e7eb;
+    --dark-text-secondary: #9ca3af;
+    --dark-primary: #6b7280;
+    --dark-primary-hover: #4b5563;
+    --dark-input: #1f2937;
+}
+
+body[data-theme="dark"] {
+    background: #111827 !important;
+    color: var(--dark-text) !important;
+}
+
+/* Sidebar */
+body[data-theme="dark"] aside {
+    background: linear-gradient(to bottom, #111827, #1f2937, #111827) !important;
+    border-left: 1px solid var(--dark-border) !important;
+}
+
+body[data-theme="dark"] aside nav button {
+    color: #d1d5db !important;
+}
+
+body[data-theme="dark"] aside nav button:hover {
+    background-color: #374151 !important;
+}
+
+body[data-theme="dark"] aside nav button.bg-white {
+    background-color: #374151 !important;
+    border-right: 3px solid #6b7280;
+    color: #e5e7eb !important;
+}
+
+body[data-theme="dark"] aside .text-blue-200,
+body[data-theme="dark"] aside p,
+body[data-theme="dark"] aside span {
+    color: #9ca3af !important;
+}
+
+body[data-theme="dark"] aside h1 {
+    color: #e5e7eb !important;
+}
+
+/* Cards & surfaces */
+body[data-theme="dark"] .bg-white,
+body[data-theme="dark"] .dashboard-card {
+    background-color: #1f2937 !important;
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text) !important;
+}
+
+body[data-theme="dark"] .bg-gray-50,
+body[data-theme="dark"] .bg-gray-100 {
+    background-color: #111827 !important;
+}
+
+/* Text */
+body[data-theme="dark"] .text-gray-800,
+body[data-theme="dark"] .text-gray-700,
+body[data-theme="dark"] .text-gray-900 {
+    color: #e5e7eb !important;
+}
+
+body[data-theme="dark"] .text-gray-500,
+body[data-theme="dark"] .text-gray-600 {
+    color: #9ca3af !important;
+}
+
+/* Inputs */
+body[data-theme="dark"] input,
+body[data-theme="dark"] select,
+body[data-theme="dark"] textarea {
+    background-color: #111827 !important;
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text) !important;
+}
+
+body[data-theme="dark"] input:focus,
+body[data-theme="dark"] select:focus,
+body[data-theme="dark"] textarea:focus {
+    border-color: #6b7280 !important;
+    box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.2) !important;
+}
+
+/* Tables */
+body[data-theme="dark"] table {
+    background-color: #1f2937 !important;
+    border-color: var(--dark-border) !important;
+}
+
+body[data-theme="dark"] thead {
+    background-color: #111827 !important;
+}
+
+body[data-theme="dark"] tbody tr {
+    border-bottom-color: var(--dark-border) !important;
+}
+
+body[data-theme="dark"] tbody tr:hover {
+    background-color: #374151 !important;
+}
+
+body[data-theme="dark"] th,
+body[data-theme="dark"] td {
+    color: var(--dark-text) !important;
+}
+
+/* Borders */
+body[data-theme="dark"] .border,
+body[data-theme="dark"] .border-gray-200,
+body[data-theme="dark"] .border-gray-300 {
+    border-color: var(--dark-border) !important;
+}
+
+body[data-theme="dark"] .divide-y > * {
+    border-color: var(--dark-border) !important;
+}
+
+/* Header & Page title */
+body[data-theme="dark"] .text-white {
+    color: #e5e7eb !important;
+}
+
+/* Buttons - keep colors but slightly muted */
+body[data-theme="dark"] .btn,
+body[data-theme="dark"] button[class*="bg-blue"],
+body[data-theme="dark"] button[class*="bg-indigo"],
+body[data-theme="dark"] button[class*="bg-purple"] {
+    background-color: #4b5563 !important;
+    color: white !important;
+}
+
+body[data-theme="dark"] .btn:hover,
+body[data-theme="dark"] button[class*="bg-blue"]:hover,
+body[data-theme="dark"] button[class*="bg-indigo"]:hover,
+body[data-theme="dark"] button[class*="bg-purple"]:hover {
+    background-color: #374151 !important;
+}
+
+/* Keep green/red buttons visible */
+body[data-theme="dark"] button[class*="bg-green"] {
+    background-color: #065f46 !important;
+}
+
+body[data-theme="dark"] button[class*="bg-red"] {
+    background-color: #7f1d1d !important;
+}
+
+/* Stat cards on dashboard */
+body[data-theme="dark"] .bg-slate-800 {
+    background-color: #1f2937 !important;
+    border: 1px solid var(--dark-border);
+}
+
+/* Shadow */
+body[data-theme="dark"] .shadow-md,
+body[data-theme="dark"] .shadow-lg {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4) !important;
+}

@@ -59,6 +59,38 @@ const ProfileModule = {
                 <!-- Statistics -->
                 ${this.getProfileStats(user)}
                 
+                <!-- Theme Settings -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-bold mb-4 text-gray-800">
+                        <i class="fas fa-palette ml-2 text-indigo-500"></i>
+                        تنظیمات ظاهری
+                    </h3>
+                    <label class="block text-sm font-medium text-gray-600 mb-3">انتخاب تم رنگی</label>
+                    <div class="grid grid-cols-2 gap-4 max-w-xs">
+                        <button onclick="window.applyAppTheme('olive')" id="theme-btn-olive"
+                                class="flex flex-col items-center p-4 rounded-xl border-2 transition-all hover:shadow-md">
+                            <span class="text-3xl mb-2">🌿</span>
+                            <span class="text-sm font-medium text-gray-700">روشن زیتونی</span>
+                        </button>
+                        <button onclick="window.applyAppTheme('dark')" id="theme-btn-dark"
+                                class="flex flex-col items-center p-4 rounded-xl border-2 transition-all hover:shadow-md">
+                            <span class="text-3xl mb-2">🌑</span>
+                            <span class="text-sm font-medium text-gray-700">دارک خاکستری</span>
+                        </button>
+                    </div>
+                    <script>
+                        // نمایش تم فعال
+                        (function() {
+                            const t = localStorage.getItem('app-theme') || 'olive';
+                            const btn = document.getElementById('theme-btn-' + t);
+                            if (btn) {
+                                btn.style.borderColor = '#8FBF3F';
+                                btn.style.background = '#f0f9e0';
+                            }
+                        })();
+                    </script>
+                </div>
+
                 <!-- Actions -->
                 <div class="bg-white rounded-lg shadow-md p-6">
                     <h3 class="text-lg font-bold mb-4 text-gray-800">عملیات</h3>
