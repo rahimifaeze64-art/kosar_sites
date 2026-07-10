@@ -32,7 +32,7 @@ const OrderWizardModule = {
     getWizardModal() {
         return `
             <div x-data="orderWizardData()">
-                <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-indigo-600 to-purple-600 relative">
+                <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-yellow-600 to-yellow-600 relative">
                     <button @click="$dispatch('close-modal')" 
                             class="absolute left-4 top-4 text-white hover:text-gray-200 text-2xl"
                             type="button">
@@ -219,7 +219,7 @@ const OrderWizardModule = {
                         <!-- Submit Button -->
                         <div class="pt-4 border-t">
                             <button type="submit" 
-                                    class="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-bold text-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg">
+                                    class="w-full py-4 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-bold text-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg">
                                 <i class="fas fa-check-circle ml-2"></i>
                                 ثبت سفارش
                             </button>

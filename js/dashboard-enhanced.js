@@ -349,7 +349,7 @@ const EnhancedDashboardModule = {
 
             return `
                 <div class="space-y-6">
-                    <div class="bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl p-6">
+                    <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-xl p-6">
                         <div class="flex justify-between items-center">
                             <div>
                                 <h2 class="text-2xl font-bold mb-1">پنل کارمند</h2>

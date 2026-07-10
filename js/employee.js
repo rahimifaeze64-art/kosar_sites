@@ -3,6 +3,10 @@ const EmployeeModule = {
     // Get my tasks content for employee
     getMyTasksContent(userId) {
         const tasks = this.getMyTasks(userId);
+        const stepTasks = tasks.filter(t => t.isStepTask);
+        const regularTasks = tasks.filter(t => !t.isStepTask);
+        const pendingStepTasks = stepTasks.filter(t => t.status !== 'completed');
+        const doneStepTasks = stepTasks.filter(t => t.status === 'completed');
         
         return `
             <div class="space-y-6">
@@ -65,24 +69,76 @@ const EmployeeModule = {
                         </div>
                     </div>
                 </div>
-                
-                <!-- Tasks List -->
+
+                <!-- ═══════════════════════════════════════════
+                     کارتابل — مراحل دانشجویان (همیشه نمایش داده می‌شود)
+                ════════════════════════════════════════════ -->
+                <div class="bg-slate-800 rounded-lg shadow-md p-5 border-r-4 border-purple-500">
+                    <div class="flex items-center justify-between mb-1">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fas fa-graduation-cap text-purple-400"></i>
+                            کارتابل — مراحل دانشجویان
+                            ${pendingStepTasks.length > 0
+                                ? `<span class="bg-purple-600 text-white text-xs rounded-full px-2 py-0.5 animate-pulse">${pendingStepTasks.length}</span>`
+                                : `<span class="bg-slate-600 text-gray-300 text-xs rounded-full px-2 py-0.5">0</span>`
+                            }
+                        </h3>
+                        <button onclick="employeeModule.refreshMyTasks('${userId}')"
+                                class="text-gray-400 hover:text-white text-sm p-1 rounded" title="بروزرسانی">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-400 mb-4">
+                        مراحلی که مدیر به شما تخصیص داده. با زدن «انجام شد»، مرحله دانشجو خودکار سبز می‌شود.
+                    </p>
+
+                    ${pendingStepTasks.length === 0 ? `
+                        <div class="text-center py-6 border border-dashed border-slate-600 rounded-lg">
+                            <i class="fas fa-inbox text-3xl text-slate-500 mb-2 block"></i>
+                            <p class="text-gray-500 text-sm">در حال حاضر مرحله‌ای به شما تخصیص داده نشده</p>
+                            <p class="text-gray-600 text-xs mt-1">مدیر پس از تیک زدن مرحله قبلی، مرحله بعدی را ارسال می‌کند</p>
+                            <button onclick="employeeModule._addTestStepTask('${userId}'); employeeModule.refreshMyTasks('${userId}');"
+                                    class="mt-3 text-xs bg-slate-600 hover:bg-slate-500 text-gray-300 px-3 py-1 rounded-lg">
+                                <i class="fas fa-vial ml-1"></i>تست: افزودن وظیفه نمونه
+                            </button>
+                        </div>
+                    ` : `
+                        <div class="space-y-3">
+                            ${pendingStepTasks.map((task, i) => this.getStepTaskCard(task, userId, i + 1)).join('')}
+                        </div>
+                    `}
+
+                    ${doneStepTasks.length > 0 ? `
+                        <details class="mt-4">
+                            <summary class="cursor-pointer text-gray-400 hover:text-gray-200 text-sm flex items-center gap-2 list-none select-none">
+                                <i class="fas fa-history"></i>
+                                انجام‌شده‌ها (${doneStepTasks.length})
+                                <i class="fas fa-chevron-down text-xs mr-auto"></i>
+                            </summary>
+                            <div class="space-y-2 mt-3">
+                                ${doneStepTasks.map((task, i) => this.getStepTaskCard(task, userId, i + 1)).join('')}
+                            </div>
+                        </details>
+                    ` : ''}
+                </div>
+
+                <!-- لیست وظایف معمولی -->
                 <div class="bg-slate-800 rounded-lg shadow-md p-4">
                     <h3 class="text-lg font-bold text-white mb-4">
                         <i class="fas fa-list text-indigo-400 ml-2"></i>
                         لیست وظایف
                     </h3>
                     
-                    ${tasks.length === 0 ? `
+                    ${regularTasks.length === 0 ? `
                         <div class="text-center py-8">
                             <i class="fas fa-clipboard-check text-4xl text-gray-500 mb-4"></i>
                             <p class="text-gray-400">هنوز وظیفه‌ای برای شما تعریف نشده است</p>
                         </div>
                     ` : `
                         <div class="space-y-0">
-                            ${tasks.map((task, index) => `
+                            ${regularTasks.map((task, index) => `
                                 ${this.getTaskCard(task, userId, index + 1)}
-                                ${index < tasks.length - 1 ? '<div class="border-b border-gray-600 my-3"></div>' : ''}
+                                ${index < regularTasks.length - 1 ? '<div class="border-b border-gray-600 my-3"></div>' : ''}
                             `).join('')}
                         </div>
                     `}
@@ -90,6 +146,65 @@ const EmployeeModule = {
             </div>
         `;
     },
+
+    // کارت مرحله دانشجو در کارتابل
+    getStepTaskCard(task, userId, num) {
+        const typeColors = { defense: 'blue', educational: 'green', requirements: 'emerald' };
+        const typeNames  = { defense: 'گردش دفاع', educational: 'فارغ‌التحصیلی', requirements: 'ملزومات' };
+        const color = typeColors[task.stepType] || 'indigo';
+        const typeName = typeNames[task.stepType] || task.stepType || '';
+
+        const statusMap = {
+            pending:     { label: 'در انتظار',    cls: 'bg-yellow-500' },
+            in_progress: { label: 'در حال انجام', cls: 'bg-blue-500'   },
+            completed:   { label: 'انجام شد ✓',   cls: 'bg-green-500'  },
+        };
+        const st = statusMap[task.status] || statusMap.pending;
+        const isDone = task.status === 'completed';
+
+        return `
+            <div class="flex items-center gap-3 bg-slate-700 rounded-xl p-4 ${isDone ? 'opacity-60' : 'hover:bg-slate-600 transition-colors'}">
+                <!-- شماره مرحله -->
+                <div class="w-10 h-10 rounded-full bg-${color}-600 flex items-center justify-center font-bold text-white flex-shrink-0 text-sm">
+                    ${(task.stepIndex !== undefined ? task.stepIndex + 1 : num)}
+                </div>
+                <!-- اطلاعات -->
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-white font-semibold text-sm">${task.stepName || task.title}</span>
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-slate-600 text-gray-300">${typeName}</span>
+                    </div>
+                    <div class="flex items-center gap-3 mt-1 flex-wrap">
+                        <span class="text-xs text-gray-400">
+                            <i class="fas fa-user-graduate ml-1 text-indigo-400"></i>
+                            ${task.studentName || task.studentId || '—'}
+                        </span>
+                        <span class="text-xs text-gray-500">
+                            <i class="fas fa-calendar ml-1"></i>
+                            ${task.createdAt ? new Date(task.createdAt).toLocaleDateString('fa-IR') : ''}
+                        </span>
+                    </div>
+                </div>
+                <!-- وضعیت + دکمه -->
+                <div class="flex flex-col items-end gap-2 flex-shrink-0">
+                    <span class="text-xs px-2 py-1 rounded-full ${st.cls} text-white font-medium whitespace-nowrap">${st.label}</span>
+                    ${!isDone ? `
+                        <button onclick="employeeModule.updateTaskStatus('${task.id}', '${userId}')"
+                                class="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-medium transition-all whitespace-nowrap">
+                            <i class="fas fa-check ml-1"></i>انجام شد
+                        </button>
+                    ` : `
+                        <span class="text-xs text-green-400 whitespace-nowrap">
+                            <i class="fas fa-check-circle ml-1"></i>
+                            ${task.completedAt ? new Date(task.completedAt).toLocaleDateString('fa-IR') : 'تکمیل'}
+                        </span>
+                    `}
+                </div>
+            </div>
+        `;
+    },
+
+
     
     // Get task card for employee
     getTaskCard(task, userId, taskNumber) {
@@ -1353,6 +1468,11 @@ const EmployeeModule = {
         // Save to localStorage
         studentsData[studentId] = student;
         localStorage.setItem('students_data', JSON.stringify(studentsData));
+
+        // ---- Auto-assign: if step was just completed, trigger next step task ----
+        if (step.completed && typeof StepAssignmentModule !== 'undefined') {
+            StepAssignmentModule.triggerNextStepTask(studentId, 'defense', stepIndex);
+        }
 
         // ---- Auto-transfer: check if ALL defense steps are completed ----
         const allDefenseDone = student.defenseSteps.every(s => s.completed);
@@ -2730,6 +2850,11 @@ const EmployeeModule = {
         if (newStatus === 'completed') {
             tasks[taskIndex].completedAt = new Date().toISOString();
             tasks[taskIndex].completedBy = userId;
+
+            // اگر این وظیفه یک step-task است، مرحله دانشجو را هم سبز کن
+            if (tasks[taskIndex].isStepTask && typeof StepAssignmentModule !== 'undefined') {
+                StepAssignmentModule.onTaskCompleted(tasks[taskIndex], userId);
+            }
         }
         
         this.saveMyTasks(userId, tasks);
@@ -2971,7 +3096,7 @@ const EmployeeModule = {
     },
     
     refreshMyTasks(userId) {
-        // روش اول: جستجوی المان با x-show
+        // روش اول: جستجوی المان با x-show و re-inject
         const content = document.querySelector('[x-show="currentPage === \'myTasks\'"]');
         if (content) {
             content.innerHTML = this.getMyTasksContent(userId);
@@ -2987,6 +3112,13 @@ const EmployeeModule = {
                 mainContent.innerHTML = this.getMyTasksContent(userId);
             }
         }
+
+        // روش سوم: تمام divهایی که innerHTML شامل "کارتابل" است را آپدیت کن
+        document.querySelectorAll('[x-show*="myTasks"]').forEach(el => {
+            if (el.innerHTML.includes('وظایف من') || el.innerHTML.includes('کارتابل')) {
+                el.innerHTML = this.getMyTasksContent(userId);
+            }
+        });
     },
     
     refreshChat(userId) {
@@ -3781,9 +3913,14 @@ EmployeeModule.showStepsManagementModal = function() {
     const defenseSteps = this.getDefaultDefenseSteps2();
     const requirementsSteps = this.getDefaultRequirementsSteps();
     
-    const renderStepRow = (step, index, total, type, color) => `
+    const renderStepRow = (step, index, total, type, color) => {
+        // تخصیص کارمند (اگر StepAssignmentModule موجود باشد)
+        const assignDropdown = (typeof StepAssignmentModule !== 'undefined')
+            ? StepAssignmentModule.renderAssignDropdown(type, index)
+            : '';
+        return `
         <div class="bg-slate-700 rounded-lg p-3 hover:bg-slate-600 transition-all step-row" data-index="${index}" data-type="${type}">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center flex-1 min-w-0">
                     <span class="bg-${color}-600 text-white text-xs font-bold rounded-full w-7 h-7 flex items-center justify-center ml-2 flex-shrink-0">
                         ${index + 1}
@@ -3792,6 +3929,11 @@ EmployeeModule.showStepsManagementModal = function() {
                         <h5 class="font-medium text-white text-sm truncate">${step.name}</h5>
                         <p class="text-xs text-gray-400">مرحله ${index + 1} از ${total}</p>
                     </div>
+                </div>
+                <!-- تخصیص به کارمند -->
+                <div class="flex-shrink-0 flex items-center gap-1">
+                    <i class="fas fa-user-tie text-xs text-gray-400"></i>
+                    ${assignDropdown}
                 </div>
                 <div class="flex items-center gap-1 flex-shrink-0">
                     <!-- Move Up -->
@@ -3819,7 +3961,8 @@ EmployeeModule.showStepsManagementModal = function() {
                 </div>
             </div>
         </div>
-    `;
+    `};
+    
 
     const modalHTML = `
         <div id="steps-management-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -4973,3 +5116,36 @@ EmployeeModule.deleteDefenseStep = function(studentId, stepIndex) {
 // Make EmployeeModule available globally for inline onclick handlers
 window.EmployeeModule = EmployeeModule;
 window.employeeModule = EmployeeModule; // alias with lowercase for compatibility
+
+// ─── تابع تست: افزودن یک وظیفه نمونه برای کارتابل ─────────────────────────
+EmployeeModule._addTestStepTask = function(userId) {
+    const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+    if (!tasksData[userId]) tasksData[userId] = [];
+
+    // دریافت اولین دانشجو موجود
+    let studentId = 'student001', studentName = 'دانشجو نمونه';
+    try {
+        const sd = JSON.parse(localStorage.getItem('students_data') || '{}');
+        const first = Object.values(sd).find(s => s.role === 'student' || !s.role);
+        if (first) { studentId = first.id; studentName = first.name || studentId; }
+    } catch(e) {}
+
+    const task = {
+        id: `step_test_${Date.now()}`,
+        title: 'گردش دفاع - مرحله 3: ترجمه',
+        description: `دانشجو: ${studentName}\nمرحله: ترجمه\nمسیر: گردش دفاع`,
+        status: 'pending',
+        priority: 'normal',
+        createdAt: new Date().toISOString(),
+        dueDate: '',
+        isStepTask: true,
+        studentId: studentId,
+        studentName: studentName,
+        stepType: 'defense',
+        stepIndex: 2,
+        stepName: 'ترجمه',
+    };
+    tasksData[userId].push(task);
+    localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
+    console.log('✅ Test step task added for', userId);
+};

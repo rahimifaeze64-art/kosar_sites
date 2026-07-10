@@ -265,6 +265,13 @@ const OrdersModule = (function () {
                     <i class="fas fa-plus ml-2"></i> ایجاد سفارش جدید
                 </button>`;
         }
+        if (userRole === R.employee || userRole === 'employee') {
+            return `
+                <button type="button" onclick="OrdersModule.openModal('createProject')"
+                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium btn">
+                    <i class="fas fa-plus ml-2"></i> ثبت سفارش جدید
+                </button>`;
+        }
         return '';
     }
 

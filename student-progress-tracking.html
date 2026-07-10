@@ -295,7 +295,11 @@
     <!-- لود data.js برای دسترسی به داده‌های پیش‌فرض دانشجویان -->
     <script src="js/config.js"></script>
     <script src="js/realtime-events.js"></script>
+    <script src="js/utils.js"></script>
     <script src="js/data.js"></script>
+    <script src="js/sample-students.js"></script>
+    <script src="js/employee.js"></script>
+    <script src="js/step-assignment.js"></script>
     
     <script>
         // مقداردهی اولیه data.js تا دانشجویان پیش‌فرض در localStorage نوشته شوند
@@ -565,6 +569,25 @@
             else prog[stageIndex].status = STATUS_INCOMPLETE;
             
             saveProgress(studentId, currentPath, prog);
+
+            // ── اگر وضعیت به "تکمیل شده" رسید و StepAssignmentModule موجود است،
+            //    وظیفه مرحله بعدی را برای کارمند تخصیص‌یافته ایجاد کن
+            if (prog[stageIndex].status === STATUS_COMPLETED && window.StepAssignmentModule) {
+                // sync کردن با students_data تا StepAssignmentModule از نام دانشجو مطلع شود
+                try {
+                    const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
+                    if (!studentsData[studentId]) {
+                        studentsData[studentId] = { id: studentId, name: student.name, field: student.major };
+                        localStorage.setItem('students_data', JSON.stringify(studentsData));
+                    }
+                    // دریافت steps واقعی از employee module اگر موجود باشد
+                    const stepType = currentPath; // defense | educational | requirements
+                    const nextIndex = stageIndex + 1;
+                    const nextStepName = STEPS[stepType][nextIndex] || '';
+                    window.StepAssignmentModule.triggerNextStepTask(studentId, stepType, stageIndex, { nextStepName });
+                } catch(e) { console.warn('StepAssignment trigger error:', e); }
+            }
+
             renderTable();
             updateStats();
         }
