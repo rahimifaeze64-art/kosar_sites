@@ -1,5 +1,25 @@
 // Archive Management Module
+// ذخیره‌سازی: Supabase Storage (فایل واقعی) + archived_files جدول (متادیتا)
+// + localStorage (cache/آفلاین)
 function archiveController() {
+
+    // ── Helper: Supabase در دسترس است؟ ──────────────────────
+    function _sb() {
+        return typeof SupabaseDataModule !== 'undefined' &&
+               typeof SupabaseConnection !== 'undefined' &&
+               SupabaseConnection.isOnline === true
+               ? SupabaseDataModule : null;
+    }
+
+    function _currentUser() {
+        try {
+            return JSON.parse(
+                localStorage.getItem('currentUser') ||
+                localStorage.getItem('edu_system_current_user') || 'null'
+            );
+        } catch { return null; }
+    }
+
     return {
         sidebarOpen: window.innerWidth >= 1024,
         selectedCategory: 'form1',
@@ -37,70 +57,58 @@ function archiveController() {
             this.setupResponsive();
         },
         
-        // Load files from localStorage
-        loadFiles() {
+        // Load files — Supabase اگر آنلاین، localStorage اگر آفلاین
+        async loadFiles() {
+            const sb = _sb();
+            if (sb) {
+                try {
+                    const cloudFiles = await sb.getArchiveFiles();
+                    if (cloudFiles && cloudFiles.length > 0) {
+                        this.files = cloudFiles;
+                        console.log(`✅ ${cloudFiles.length} فایل آرشیو از Supabase بارگذاری شد`);
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('⚠️ بارگذاری آرشیو از Supabase خطا:', e.message);
+                }
+            }
+            // fallback به localStorage
             const stored = localStorage.getItem('archiveFiles');
             if (stored) {
                 this.files = JSON.parse(stored);
             } else {
-                // Sample data
-                this.files = [
-                    {
-                        id: 'f1',
-                        name: 'استماره ثبت نام - احمد فتحی.pdf',
-                        category: 'form1',
-                        author: 'عامل احمد فتحی',
-                        type: 'pdf',
-                        size: '2.5 MB',
-                        uploadDate: new Date().toISOString(),
-                        url: '#'
-                    },
-                    {
-                        id: 'f2',
-                        name: 'رساله دکتری - فایل اولیه - علی محمدی.docx',
-                        category: 'thesis-original',
-                        author: 'عامل علی محمدی',
-                        type: 'docx',
-                        size: '5.8 MB',
-                        uploadDate: new Date(Date.now() - 86400000).toISOString(),
-                        url: '#'
-                    },
-                    {
-                        id: 'f3',
-                        name: 'رساله دکتری - تعدیل شده - علی محمدی.docx',
-                        category: 'thesis-edited',
-                        author: 'عامل علی محمدی',
-                        type: 'docx',
-                        size: '6.2 MB',
-                        uploadDate: new Date(Date.now() - 172800000).toISOString(),
-                        url: '#'
-                    },
-                    {
-                        id: 'f4',
-                        name: 'رساله - فایل منضده قبل مناقشه - علی محمدی.pdf',
-                        category: 'thesis-pre-defense',
-                        author: 'عامل علی محمدی',
-                        type: 'pdf',
-                        size: '4.5 MB',
-                        uploadDate: new Date(Date.now() - 259200000).toISOString(),
-                        url: '#'
-                    },
-                    {
-                        id: 'f5',
-                        name: 'مقاله علمی - زینب سجادی.pdf',
-                        category: 'articles',
-                        author: 'عامل زینب سجادی',
-                        type: 'pdf',
-                        size: '1.2 MB',
-                        uploadDate: new Date(Date.now() - 345600000).toISOString(),
-                        url: '#'
-                    }
-                ];
+                this.files = this._getSampleFiles();
                 this.saveFiles();
             }
         },
+
+        // داده‌های نمونه اولیه
+        _getSampleFiles() {
+            return [
+                {
+                    id: 'f1',
+                    name: 'استماره ثبت نام - احمد فتحی.pdf',
+                    category: 'form1',
+                    author: 'عامل احمد فتحی',
+                    type: 'pdf',
+                    size: '2.5 MB',
+                    uploadDate: new Date().toISOString(),
+                    url: '#'
+                },
+                {
+                    id: 'f2',
+                    name: 'رساله دکتری - فایل اولیه - علی محمدی.docx',
+                    category: 'thesis-original',
+                    author: 'عامل علی محمدی',
+                    type: 'docx',
+                    size: '5.8 MB',
+                    uploadDate: new Date(Date.now() - 86400000).toISOString(),
+                    url: '#'
+                }
+            ];
+        },
         
-        // Save files to localStorage
+        // Save files — localStorage + Supabase (فقط متادیتا، نه فایل واقعی)
         saveFiles() {
             localStorage.setItem('archiveFiles', JSON.stringify(this.files));
         },
@@ -170,58 +178,103 @@ function archiveController() {
             }));
         },
         
-        // Upload files
-        uploadFiles() {
+        // Upload files — فایل واقعی به Storage + متادیتا به جدول
+        async uploadFiles() {
             if (!this.uploadCategory || !this.uploadAuthor || this.uploadQueue.length === 0) {
                 alert('لطفاً تمام فیلدها را پر کنید');
                 return;
             }
-            
-            this.uploadQueue.forEach(item => {
+
+            const sb = _sb();
+            const user = _currentUser();
+
+            for (const item of this.uploadQueue) {
+                const fileId = 'f' + Date.now() + Math.random().toString(36).substr(2, 9);
+
+                // ۱. آپلود فایل واقعی به Storage (اگر Supabase آنلاین)
+                let fileUrl = URL.createObjectURL(item.file);
+                let storagePath = null;
+
+                if (sb) {
+                    const uploaded = await sb.uploadArchiveFileToStorage(item.file, fileId);
+                    if (uploaded) {
+                        fileUrl = uploaded.url;
+                        storagePath = uploaded.path;
+                        console.log('✅ فایل در Storage آپلود شد:', storagePath);
+                    } else {
+                        console.warn('📴 آپلود Storage ناموفق — URL موقت استفاده می‌شود');
+                    }
+                }
+
                 const newFile = {
-                    id: 'f' + Date.now() + Math.random().toString(36).substr(2, 9),
-                    name: item.name,
-                    category: this.uploadCategory,
-                    author: this.uploadAuthor,
-                    type: item.type,
-                    size: item.size,
-                    uploadDate: new Date().toISOString(),
-                    url: URL.createObjectURL(item.file)
+                    id:          fileId,
+                    name:        item.name,
+                    category:    this.uploadCategory,
+                    author:      this.uploadAuthor,
+                    type:        item.type,
+                    size:        item.size,
+                    uploadDate:  new Date().toISOString(),
+                    url:         fileUrl,
+                    storagePath: storagePath,
+                    uploadedById: user ? user.id : null
                 };
-                
-                this.files.push(newFile);
-            });
-            
+
+                // ۲. ذخیره متادیتا — localStorage + Supabase
+                this.files.unshift(newFile);
+                if (sb) {
+                    sb.saveArchiveFile(newFile)
+                      .then(r => { if (r) console.log('✅ متادیتا در Supabase ذخیره شد:', fileId); })
+                      .catch(e => console.warn('⚠️ saveArchiveFile خطا:', e.message));
+                }
+            }
+
             this.saveFiles();
             this.uploadQueue = [];
             this.uploadCategory = '';
             this.uploadAuthor = '';
-            
-            // Reset file input
             document.querySelector('input[type="file"]').value = '';
-            
-            alert('فایل‌ها با موفقیت آپلود شدند');
+
+            const isOnline = typeof SupabaseConnection !== 'undefined' && SupabaseConnection.isOnline;
+            alert(isOnline
+                ? '✅ فایل‌ها در ابر ذخیره شدند'
+                : '📴 فایل‌ها در حافظه محلی ذخیره شدند');
         },
         
-        // Download file
+        // Download file — اگر URL واقعی دارد دانلود می‌کند
         downloadFile(file) {
-            // In a real application, this would download the actual file
-            alert(`دانلود فایل: ${file.name}`);
-            // window.open(file.url, '_blank');
+            if (!file.url || file.url === '#') {
+                alert(`فایل "${file.name}" URL دانلود ندارد`);
+                return;
+            }
+            const link = document.createElement('a');
+            link.href = file.url;
+            link.download = file.name;
+            link.target = '_blank';
+            link.click();
         },
         
-        // View file
+        // View file — باز کردن در تب جدید
         viewFile(file) {
-            // In a real application, this would open a file viewer
-            alert(`مشاهده فایل: ${file.name}`);
-            // window.open(file.url, '_blank');
+            if (!file.url || file.url === '#') {
+                alert(`فایل "${file.name}" URL مشاهده ندارد`);
+                return;
+            }
+            window.open(file.url, '_blank');
         },
         
-        // Delete file
+        // Delete file — localStorage + Supabase Storage + جدول
         deleteFile(fileId) {
-            if (confirm('آیا از حذف این فایل اطمینان دارید؟')) {
-                this.files = this.files.filter(f => f.id !== fileId);
-                this.saveFiles();
+            if (!confirm('آیا از حذف این فایل اطمینان دارید؟')) return;
+
+            const file = this.files.find(f => f.id === fileId);
+            this.files = this.files.filter(f => f.id !== fileId);
+            this.saveFiles();
+
+            const sb = _sb();
+            if (sb && file) {
+                sb.deleteArchiveFile(fileId, file.storagePath || file.url)
+                  .then(ok => { if (ok) console.log('✅ فایل از Supabase حذف شد:', fileId); })
+                  .catch(e => console.warn('⚠️ deleteArchiveFile خطا:', e.message));
             }
         },
         

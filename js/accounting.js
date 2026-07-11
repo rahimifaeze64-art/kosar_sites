@@ -1,10 +1,27 @@
 /**
- * سیستم حسابداری شخصی — localStorage
+ * سیستم حسابداری شخصی
+ * ذخیره‌سازی: localStorage (اصلی) + Supabase accounting_transactions (sync)
  */
 const AccountingModule = (function() {
     'use strict';
 
     const STORAGE_KEY = 'personal_accounting_data';
+
+    // ── آیا Supabase در دسترس است؟ ──────────────────────────
+    function _sb() {
+        return typeof SupabaseDataModule !== 'undefined' &&
+               typeof SupabaseConnection !== 'undefined' &&
+               SupabaseConnection.isOnline === true
+               ? SupabaseDataModule : null;
+    }
+
+    function _currentUserId() {
+        try {
+            const u = JSON.parse(localStorage.getItem('currentUser') ||
+                                 localStorage.getItem('edu_system_current_user') || 'null');
+            return u ? u.id : null;
+        } catch { return null; }
+    }
 
     const DEFAULT_CATEGORIES = {
         INCOME: ['درآمد شرکت', 'فروش خدمات', 'سود پروژه', 'سایر درآمدها'],
@@ -91,6 +108,8 @@ const AccountingModule = (function() {
     function init() {
         loadData();
         initialized = true;
+        // بارگذاری async از Supabase در پس‌زمینه
+        _loadFromSupabase().catch(() => {});
     }
 
     function loadData() {
@@ -118,6 +137,81 @@ const AccountingModule = (function() {
         const payload = { ...data, exchangeRates };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
         log('Accounting data saved', 'info');
+    }
+
+    // ── sync یک تراکنش به Supabase ──────────────────────────
+    function _syncTransactionToSupabase(transaction, deleted = false) {
+        const sb = _sb();
+        if (!sb) return;
+
+        if (deleted) {
+            // حذف از Supabase
+            const client = sb._db ? sb._db() : null;
+            if (client) {
+                client.from('accounting_transactions')
+                    .delete().eq('id', transaction.id)
+                    .then(({ error }) => {
+                        if (error) console.warn('⚠️ accounting delete خطا:', error.message);
+                        else console.log('✅ تراکنش از Supabase حذف شد:', transaction.id);
+                    });
+            }
+            return;
+        }
+
+        // ذخیره/آپدیت در Supabase
+        sb.saveAccountingTransaction({
+            id:          transaction.id,
+            type:        transaction.type,
+            amount:      transaction.amount,
+            description: `[${transaction.category || ''}] ${transaction.description || ''}`.trim(),
+            createdBy:   transaction.personId || _currentUserId() || null
+        })
+        .then(ok => { if (ok) console.log('✅ تراکنش در Supabase ذخیره شد:', transaction.id); })
+        .catch(e => console.warn('⚠️ accounting sync خطا:', e.message));
+    }
+
+    // ── بارگذاری اولیه از Supabase ──────────────────────────
+    async function _loadFromSupabase() {
+        const sb = _sb();
+        if (!sb) return;
+        try {
+            const rows = await sb.getAccountingTransactions(null);
+            if (!rows || rows.length === 0) return;
+
+            // تبدیل فرمت Supabase → فرمت محلی
+            const converted = rows.map(r => ({
+                id:          r.id,
+                type:        r.type || 'income',
+                amount:      parseFloat(r.amount) || 0,
+                currency:    'تومان',
+                category:    _extractCategory(r.description),
+                description: _extractDescription(r.description),
+                personId:    r.created_by || null,
+                date:        r.created_at || new Date().toISOString(),
+                createdAt:   r.created_at || new Date().toISOString()
+            }));
+
+            // merge با داده‌های محلی (بر اساس id)
+            const existing = data.transactions.map(t => t.id);
+            converted.forEach(t => {
+                if (!existing.includes(t.id)) data.transactions.push(t);
+            });
+            saveData();
+            console.log(`✅ ${converted.length} تراکنش از Supabase بارگذاری شد`);
+        } catch (e) {
+            console.warn('⚠️ _loadFromSupabase خطا:', e.message);
+        }
+    }
+
+    function _extractCategory(description) {
+        if (!description) return '';
+        const match = description.match(/^\[([^\]]*)\]/);
+        return match ? match[1] : '';
+    }
+
+    function _extractDescription(description) {
+        if (!description) return '';
+        return description.replace(/^\[[^\]]*\]\s*/, '');
     }
 
     function generateId() {
@@ -149,6 +243,10 @@ const AccountingModule = (function() {
         data.transactions.push(transaction);
         saveData();
         log('Transaction added', 'success', transaction);
+
+        // sync به Supabase در پس‌زمینه
+        _syncTransactionToSupabase(transaction);
+
         return transaction;
     }
 
@@ -160,6 +258,10 @@ const AccountingModule = (function() {
         if (updates.amount !== undefined) next.amount = parseFloat(updates.amount);
         data.transactions[index] = next;
         saveData();
+
+        // sync به Supabase در پس‌زمینه
+        _syncTransactionToSupabase(next);
+
         return next;
     }
 
@@ -168,6 +270,10 @@ const AccountingModule = (function() {
         if (index === -1) return null;
         const deleted = data.transactions.splice(index, 1)[0];
         saveData();
+
+        // حذف از Supabase در پس‌زمینه
+        _syncTransactionToSupabase(deleted, true);
+
         return deleted;
     }
 

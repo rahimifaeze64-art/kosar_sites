@@ -341,6 +341,26 @@ const SupabaseDataModule = {
         }
     },
 
+    async deleteWorkHour(id) {
+        // حذف از localStorage
+        const all = JSON.parse(localStorage.getItem('work_hours_data') || '[]');
+        const filtered = all.filter(e => e.id !== id);
+        localStorage.setItem('work_hours_data', JSON.stringify(filtered));
+
+        if (!this._online()) return true;
+        try {
+            const { error } = await this._db()
+                .from('work_hours')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+            return true;
+        } catch (e) {
+            console.warn('⚠️ deleteWorkHour خطا:', e.message);
+            return false;
+        }
+    },
+
     // ════════════════════════════════════════════════════════
     // MESSAGES
     // ════════════════════════════════════════════════════════
@@ -525,6 +545,166 @@ const SupabaseDataModule = {
             if (error) throw error;
             return true;
         } catch (e) { console.warn('⚠️ saveStepAssignment خطا:', e.message); return false; }
+    },
+
+    // ════════════════════════════════════════════════════════
+    // ARCHIVE FILES — آرشیو فایل‌ها
+    // ════════════════════════════════════════════════════════
+
+    async getArchiveFiles(category = null) {
+        const LOCAL_KEY = 'archiveFiles';
+        if (!this._online()) {
+            const raw = localStorage.getItem(LOCAL_KEY);
+            const all = raw ? JSON.parse(raw) : [];
+            return category ? all.filter(f => f.category === category) : all;
+        }
+        try {
+            let query = this._db()
+                .from('archived_files')
+                .select('*')
+                .order('created_at', { ascending: false });
+            if (category) query = query.eq('category', category);
+            const { data, error } = await query;
+            if (error) throw error;
+            const files = data.map(r => this._dbToArchiveFile(r));
+            // به‌روزرسانی کامل cache
+            if (!category) {
+                localStorage.setItem(LOCAL_KEY, JSON.stringify(files));
+            } else {
+                const existing = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]');
+                files.forEach(f => {
+                    const idx = existing.findIndex(e => e.id === f.id);
+                    if (idx >= 0) existing[idx] = f; else existing.push(f);
+                });
+                localStorage.setItem(LOCAL_KEY, JSON.stringify(existing));
+            }
+            return files;
+        } catch (e) {
+            console.warn('⚠️ getArchiveFiles خطا:', e.message);
+            const raw = localStorage.getItem(LOCAL_KEY);
+            const all = raw ? JSON.parse(raw) : [];
+            return category ? all.filter(f => f.category === category) : all;
+        }
+    },
+
+    async saveArchiveFile(fileRecord) {
+        // ۱. localStorage همیشه
+        const LOCAL_KEY = 'archiveFiles';
+        const existing = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]');
+        const idx = existing.findIndex(f => f.id === fileRecord.id);
+        if (idx >= 0) existing[idx] = fileRecord; else existing.unshift(fileRecord);
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(existing));
+
+        if (!this._online()) return { id: fileRecord.id };
+        try {
+            const row = this._archiveFileToDb(fileRecord);
+            const { data, error } = await this._db()
+                .from('archived_files')
+                .upsert(row, { onConflict: 'id' })
+                .select('id')
+                .single();
+            if (error) throw error;
+            return data;
+        } catch (e) {
+            console.warn('⚠️ saveArchiveFile خطا:', e.message);
+            return null;
+        }
+    },
+
+    async deleteArchiveFile(fileId, storagePath) {
+        // ۱. localStorage
+        const LOCAL_KEY = 'archiveFiles';
+        const existing = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]');
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(existing.filter(f => f.id !== fileId)));
+
+        if (!this._online()) return true;
+        try {
+            // حذف از Storage اگر path داشت
+            if (storagePath && storagePath !== '#' && !storagePath.startsWith('blob:')) {
+                // استخراج filename از URL
+                const filename = storagePath.split('/').pop().split('?')[0];
+                if (filename) {
+                    await this._db().storage.from('archive-files').remove([filename]);
+                }
+            }
+            // حذف رکورد از جدول
+            const { error } = await this._db()
+                .from('archived_files')
+                .delete()
+                .eq('id', fileId);
+            if (error) throw error;
+            return true;
+        } catch (e) {
+            console.warn('⚠️ deleteArchiveFile خطا:', e.message);
+            return false;
+        }
+    },
+
+    // آپلود فایل واقعی به Supabase Storage bucket: archive-files
+    async uploadArchiveFileToStorage(file, fileId) {
+        if (!this._online()) return null;
+        try {
+            const ext = file.name.split('.').pop();
+            const path = `${fileId}.${ext}`;
+            const { data, error } = await this._db()
+                .storage
+                .from('archive-files')
+                .upload(path, file, { upsert: true, contentType: file.type });
+            if (error) throw error;
+            const { data: urlData } = this._db()
+                .storage
+                .from('archive-files')
+                .getPublicUrl(data.path);
+            return { url: urlData?.publicUrl || null, path: data.path };
+        } catch (e) {
+            console.warn('⚠️ uploadArchiveFileToStorage خطا:', e.message);
+            return null;
+        }
+    },
+
+    // ── archive transformers ─────────────────────────────
+    _archiveFileToDb(f) {
+        return {
+            id:             f.id,
+            file_name:      f.name,
+            file_path:      f.storagePath || f.url || f.name,
+            file_size:      this._parseSizeToBytes(f.size),
+            category:       f.category     || null,
+            author:         f.author       || null,
+            file_type:      f.type         || null,
+            display_url:    f.url          || null,
+            file_size_text: f.size         || null,
+            student_id:     f.studentId    || null,
+            order_id:       f.orderId      || null,
+            uploaded_by:    f.uploadedById || null
+        };
+    },
+
+    _dbToArchiveFile(r) {
+        return {
+            id:           r.id,
+            name:         r.file_name,
+            category:     r.category      || 'other',
+            author:       r.author        || '',
+            type:         r.file_type     || (r.file_name || '').split('.').pop().toLowerCase(),
+            size:         r.file_size_text || (r.file_size ? Math.round(r.file_size / 1024) + ' KB' : ''),
+            url:          r.display_url   || r.file_path || '#',
+            storagePath:  r.file_path,
+            uploadDate:   r.created_at,
+            studentId:    r.student_id    || null,
+            orderId:      r.order_id      || null,
+            uploadedById: r.uploaded_by   || null
+        };
+    },
+
+    _parseSizeToBytes(sizeText) {
+        if (!sizeText) return null;
+        const match = String(sizeText).match(/([\d.]+)\s*(bytes|kb|mb|gb)/i);
+        if (!match) return null;
+        const val = parseFloat(match[1]);
+        const unit = match[2].toLowerCase();
+        const map = { bytes: 1, kb: 1024, mb: 1048576, gb: 1073741824 };
+        return Math.round(val * (map[unit] || 1));
     },
 
     // ════════════════════════════════════════════════════════

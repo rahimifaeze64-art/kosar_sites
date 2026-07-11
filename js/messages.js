@@ -322,6 +322,7 @@ const MessagesModule = {
         if (!this.currentConversation) return;
         
         const message = {
+            id: this.generateId(),
             senderId: this.currentUser.id,
             receiverId: this.currentConversation,
             timestamp: new Date().toISOString(),
@@ -339,33 +340,8 @@ const MessagesModule = {
             message.type = 'text';
             message.text = text;
         }
-        
-        // Try backend first
-        if (window.APIOrdersModule) {
-            try {
-                const messageData = {
-                    content: message.text,
-                    message_type: 'direct',
-                    recipient: this.currentConversation
-                };
-                
-                const result = await APIOrdersModule.sendMessage(messageData);
-                if (result) {
-                    UTILS.showNotification('پیام با موفقیت ارسال شد', 'success');
-                    input.value = '';
-                    this.attachedFile = null;
-                    document.getElementById('attachment-preview').style.display = 'none';
-                    this.loadMessages(this.currentConversation);
-                    this.loadConversations();
-                    return;
-                }
-            } catch (error) {
-                console.warn('Backend send failed, using localStorage:', error);
-            }
-        }
-        
-        // Fallback to localStorage
-        message.id = this.generateId();
+
+        // ذخیره در localStorage + Supabase
         this.saveMessage(message);
         
         // Clear input
@@ -376,8 +352,12 @@ const MessagesModule = {
         // Reload messages
         this.loadMessages(this.currentConversation);
         this.loadConversations();
-        
-        UTILS.showNotification('پیام در حافظه محلی ذخیره شد', 'success');
+
+        const isOnline = typeof SupabaseConnection !== 'undefined' && SupabaseConnection.isOnline;
+        UTILS.showNotification(
+            isOnline ? '✅ پیام در ابر ذخیره شد' : '📴 پیام در حافظه محلی ذخیره شد',
+            'success'
+        );
     },
     
     // Toggle voice recording
@@ -479,6 +459,7 @@ const MessagesModule = {
             read: false
         };
         
+        // ذخیره در localStorage + Supabase
         this.saveMessage(message);
         this.loadMessages(this.currentConversation);
         this.loadConversations();
@@ -683,17 +664,65 @@ const MessagesModule = {
         ).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     },
     
-    // Get all messages
+    // Get all messages — Supabase اگر آنلاین، localStorage اگر آفلاین
     getAllMessages() {
-        const messagesStr = localStorage.getItem('messages');
-        return messagesStr ? JSON.parse(messagesStr) : [];
+        const sb = typeof SupabaseDataModule !== 'undefined' &&
+                   typeof SupabaseConnection !== 'undefined' &&
+                   SupabaseConnection.isOnline ? SupabaseDataModule : null;
+
+        if (sb && this.currentUser) {
+            // sync پس‌زمینه: پیام‌های کاربر جاری از Supabase بگیر و cache کن
+            sb.getMessages(this.currentUser.id).then(msgs => {
+                if (msgs && msgs.length > 0) {
+                    // merge با پیام‌های محلی (بر اساس id)
+                    const local = (() => {
+                        try { return JSON.parse(localStorage.getItem('messages') || '[]'); } catch { return []; }
+                    })();
+                    const merged = [...local];
+                    msgs.forEach(m => {
+                        // نرمال‌سازی فیلدها (Supabase → فرمت محلی)
+                        const norm = {
+                            id:         m.id,
+                            senderId:   m.senderId   || m.sender_id,
+                            receiverId: m.receiverId || m.receiver_id,
+                            type:       'text',
+                            text:       m.content    || m.text || '',
+                            timestamp:  m.createdAt  || m.created_at || new Date().toISOString(),
+                            read:       !!(m.readAt  || m.read_at)
+                        };
+                        if (!merged.find(l => l.id === norm.id)) merged.push(norm);
+                    });
+                    localStorage.setItem('messages', JSON.stringify(merged));
+                }
+            }).catch(e => console.warn('⚠️ getAllMessages sync:', e.message));
+        }
+
+        try {
+            const messagesStr = localStorage.getItem('messages');
+            return messagesStr ? JSON.parse(messagesStr) : [];
+        } catch { return []; }
     },
     
-    // Save message
+    // Save message — localStorage + Supabase
     saveMessage(message) {
-        const messages = this.getAllMessages();
+        // ۱. ذخیره فوری در localStorage
+        const messages = (() => {
+            try { return JSON.parse(localStorage.getItem('messages') || '[]'); } catch { return []; }
+        })();
         messages.push(message);
         localStorage.setItem('messages', JSON.stringify(messages));
+
+        // ۲. ذخیره در Supabase در پس‌زمینه
+        const sb = typeof SupabaseDataModule !== 'undefined' &&
+                   typeof SupabaseConnection !== 'undefined' &&
+                   SupabaseConnection.isOnline ? SupabaseDataModule : null;
+        if (sb) {
+            sb.sendMessage(message)
+              .then(ok => { if (ok) console.log('✅ پیام در Supabase ذخیره شد:', message.id); })
+              .catch(e => console.warn('⚠️ saveMessage Supabase خطا:', e.message));
+        } else {
+            console.warn('📴 Supabase آفلاین — پیام فقط در localStorage ذخیره شد');
+        }
     },
     
     // Get unread count
@@ -705,16 +734,37 @@ const MessagesModule = {
             !m.read
         ).length;
     },
-    
-    // Mark as read
+
+    // Mark as read — localStorage + Supabase
     markAsRead(userId) {
-        const messages = this.getAllMessages();
+        const messages = (() => {
+            try { return JSON.parse(localStorage.getItem('messages') || '[]'); } catch { return []; }
+        })();
         messages.forEach(m => {
             if (m.senderId === userId && m.receiverId === this.currentUser.id) {
                 m.read = true;
             }
         });
         localStorage.setItem('messages', JSON.stringify(messages));
+
+        // آپدیت read در Supabase — فعلاً با updateTaskStatus مشابه
+        // (Supabase messages جدول read_at دارد، اینجا mark می‌کنیم)
+        const sb = typeof SupabaseDataModule !== 'undefined' &&
+                   typeof SupabaseConnection !== 'undefined' &&
+                   SupabaseConnection.isOnline ? SupabaseDataModule : null;
+        if (sb && typeof sb._db === 'function') {
+            const client = sb._db();
+            if (client) {
+                client.from('messages')
+                    .update({ read_at: new Date().toISOString() })
+                    .eq('sender_id', userId)
+                    .eq('receiver_id', this.currentUser.id)
+                    .is('read_at', null)
+                    .then(({ error }) => {
+                        if (error) console.warn('⚠️ markAsRead Supabase خطا:', error.message);
+                    });
+            }
+        }
     },
     
     // Format time

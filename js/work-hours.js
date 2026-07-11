@@ -1,18 +1,39 @@
 ﻿/**
  * سیستم ساعات کاری
  * مدیریت ثبت و نمایش ساعات کاری کارمندان
+ * ذخیره‌سازی: Supabase (اصلی) + localStorage (کش/آفلاین)
  */
 
 const WorkHoursModule = (function() {
     'use strict';
 
-    // کلید ذخیره‌سازی
+    // کلید ذخیره‌سازی محلی
     const STORAGE_KEY = 'work_hours_data';
-    
+
+    // ── آیا Supabase در دسترس و آنلاین است؟ ─────────────────
+    function _sb() {
+        return typeof SupabaseDataModule !== 'undefined' &&
+               typeof SupabaseConnection !== 'undefined' &&
+               SupabaseConnection.isOnline === true
+               ? SupabaseDataModule : null;
+    }
+
     /**
      * دریافت لیست ساعات کاری
+     * اگر Supabase آنلاین است → از ابر می‌خواند و localStorage را به‌روز می‌کند
+     * در غیر این صورت → از localStorage می‌خواند
      */
     function getWorkHours() {
+        const sb = _sb();
+        if (sb) {
+            // خواندن async از Supabase در پس‌زمینه و به‌روزرسانی cache
+            sb.getWorkHours().then(entries => {
+                if (entries && entries.length > 0) {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+                }
+            }).catch(e => console.warn('⚠️ WorkHoursModule.getWorkHours sync:', e.message));
+        }
+        // بازگشت فوری از localStorage (sync)
         try {
             const data = localStorage.getItem(STORAGE_KEY);
             return data ? JSON.parse(data) : [];
@@ -21,9 +42,31 @@ const WorkHoursModule = (function() {
             return [];
         }
     }
+
+    /**
+     * دریافت async کامل از Supabase (برای مواردی که باید منتظر ماند)
+     */
+    async function getWorkHoursAsync() {
+        const sb = _sb();
+        if (sb) {
+            try {
+                const entries = await sb.getWorkHours();
+                if (entries && entries.length >= 0) {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+                    return entries;
+                }
+            } catch (e) {
+                console.warn('⚠️ getWorkHoursAsync خطا:', e.message);
+            }
+        }
+        try {
+            const data = localStorage.getItem(STORAGE_KEY);
+            return data ? JSON.parse(data) : [];
+        } catch { return []; }
+    }
     
     /**
-     * ذخیره ساعات کاری
+     * ذخیره کل لیست ساعات کاری (localStorage + Supabase در پس‌زمینه)
      */
     function saveWorkHours(hours) {
         try {
@@ -36,14 +79,12 @@ const WorkHoursModule = (function() {
     }
     
     /**
-     * افزودن ساعت کاری جدید
+     * افزودن ساعت کاری جدید — localStorage + Supabase
      */
     function addWorkHour(entry) {
-        const hours = getWorkHours();
-        
         const newEntry = {
             id: Date.now().toString(),
-            type: 'work', // نوع: ساعت کاری
+            type: 'work',
             employeeId: entry.employeeId,
             employeeName: entry.employeeName,
             date: entry.date,
@@ -51,38 +92,60 @@ const WorkHoursModule = (function() {
             endTime: entry.endTime,
             description: entry.description,
             totalHours: calculateTotalHours(entry.startTime, entry.endTime),
-            status: 'pending', // pending, approved, rejected
+            status: 'pending',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
         
+        // ۱. ذخیره فوری در localStorage
+        const hours = getWorkHours();
         hours.push(newEntry);
         saveWorkHours(hours);
+
+        // ۲. ذخیره در Supabase در پس‌زمینه
+        const sb = _sb();
+        if (sb) {
+            sb.saveWorkHour(newEntry)
+              .then(ok => { if (ok) console.log('✅ ساعت کاری در Supabase ذخیره شد:', newEntry.id); })
+              .catch(e => console.warn('⚠️ addWorkHour Supabase خطا:', e.message));
+        } else {
+            console.warn('📴 Supabase آفلاین — ساعت کاری فقط در localStorage ذخیره شد');
+        }
         
         return newEntry;
     }
     
     /**
-     * افزودن هزینه
+     * افزودن هزینه — localStorage + Supabase
      */
     function addExpense(entry) {
-        const hours = getWorkHours(); // استفاده از همان لیست
-        
         const newEntry = {
             id: Date.now().toString(),
-            type: 'expense', // نوع: هزینه
+            type: 'expense',
             employeeId: entry.employeeId,
             employeeName: entry.employeeName,
             date: entry.date,
             amount: entry.amount,
             description: entry.description,
-            status: 'pending', // pending, approved, rejected
+            status: 'pending',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
         
-        hours.push(newEntry); // اضافه به همان لیست
+        // ۱. ذخیره فوری در localStorage
+        const hours = getWorkHours();
+        hours.push(newEntry);
         saveWorkHours(hours);
+
+        // ۲. ذخیره در Supabase در پس‌زمینه
+        const sb = _sb();
+        if (sb) {
+            sb.saveWorkHour(newEntry)
+              .then(ok => { if (ok) console.log('✅ هزینه در Supabase ذخیره شد:', newEntry.id); })
+              .catch(e => console.warn('⚠️ addExpense Supabase خطا:', e.message));
+        } else {
+            console.warn('📴 Supabase آفلاین — هزینه فقط در localStorage ذخیره شد');
+        }
         
         return newEntry;
     }
@@ -148,7 +211,7 @@ const WorkHoursModule = (function() {
     }
     
     /**
-     * ویرایش ساعت کاری
+     * ویرایش ساعت کاری — localStorage + Supabase
      */
     function updateWorkHour(id, updates) {
         const hours = getWorkHours();
@@ -165,6 +228,14 @@ const WorkHoursModule = (function() {
             };
             
             saveWorkHours(hours);
+
+            // sync به Supabase در پس‌زمینه
+            const sb = _sb();
+            if (sb) {
+                sb.saveWorkHour(hours[index])
+                  .catch(e => console.warn('⚠️ updateWorkHour Supabase خطا:', e.message));
+            }
+
             return hours[index];
         }
         
@@ -172,12 +243,20 @@ const WorkHoursModule = (function() {
     }
     
     /**
-     * حذف ساعت کاری
+     * حذف ساعت کاری — localStorage + Supabase
      */
     function deleteWorkHour(id) {
         const hours = getWorkHours();
         const filtered = hours.filter(h => h.id !== id);
         saveWorkHours(filtered);
+
+        // حذف از Supabase در پس‌زمینه
+        const sb = _sb();
+        if (sb && typeof sb.deleteWorkHour === 'function') {
+            sb.deleteWorkHour(id)
+              .catch(e => console.warn('⚠️ deleteWorkHour Supabase خطا:', e.message));
+        }
+
         return true;
     }
     
@@ -323,6 +402,7 @@ const WorkHoursModule = (function() {
     // عمومی‌سازی توابع
     return {
         getWorkHours,
+        getWorkHoursAsync,
         addWorkHour,
         updateWorkHour,
         deleteWorkHour,

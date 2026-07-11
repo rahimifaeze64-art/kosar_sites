@@ -692,16 +692,43 @@ const TasksModule = {
         `;
     },
 
-    // Data methods
+    // ── Helper: آیا Supabase آنلاین است؟ ────────────────────
+    _sb() {
+        return typeof SupabaseDataModule !== 'undefined' &&
+               typeof SupabaseConnection !== 'undefined' &&
+               SupabaseConnection.isOnline === true
+               ? SupabaseDataModule : null;
+    },
+
+    // Data methods — localStorage + Supabase
     getemployeeTasks(employeeId) {
+        const sb = this._sb();
+        if (sb) {
+            // sync پس‌زمینه از Supabase
+            sb.getEmployeeTasks(employeeId).then(tasks => {
+                if (tasks && tasks.length > 0) {
+                    const all = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+                    all[employeeId] = tasks;
+                    localStorage.setItem('employee_tasks', JSON.stringify(all));
+                }
+            }).catch(e => console.warn('⚠️ getemployeeTasks sync:', e.message));
+        }
         const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
         return tasksData[employeeId] || [];
     },
     
     saveemployeeTasks(employeeId, tasks) {
+        // ۱. ذخیره فوری در localStorage
         const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
         tasksData[employeeId] = tasks;
         localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
+        // ۲. sync آخرین task به Supabase
+        const sb = this._sb();
+        if (sb && tasks.length > 0) {
+            const latest = tasks[0];
+            sb.saveEmployeeTask(employeeId, latest)
+              .catch(e => console.warn('⚠️ saveemployeeTasks Supabase خطا:', e.message));
+        }
     },
     
     getemployeeMessages(employeeId) {
@@ -713,6 +740,7 @@ const TasksModule = {
         const messagesData = JSON.parse(localStorage.getItem('employee_messages') || '{}');
         messagesData[employeeId] = messages;
         localStorage.setItem('employee_messages', JSON.stringify(messagesData));
+        // پیام‌های تسک‌ها از طریق MessagesModule.saveMessage به Supabase می‌روند
     },
     
     getemployeeFiles(employeeId) {
@@ -1216,39 +1244,10 @@ const TasksModule = {
             UTILS.showNotification('لطفاً عنوان وظیفه را وارد کنید', 'error');
             return;
         }
-        
-        const newTask = {
-            title: title,
-            description: description,
-            due_date: dueDate || null,
-            priority: priority,
-            status: 'pending',
-            assigned_to: 'employee',
-            assigned_user: employeeId,
-            order: null, // Can be linked to an order if needed
-        };
-        
-        // Try backend first
-        if (window.APIOrdersModule) {
-            try {
-                const result = await APIOrdersModule.createTask(newTask);
-                if (result) {
-                    this.closeModal('new-task-modal');
-                    this.refreshContent();
-                    UTILS.showNotification('وظیفه با موفقیت در سیستم ثبت شد', 'success');
-                    debugLogger('Task created in backend', 'success', result);
-                    return;
-                }
-            } catch (error) {
-                console.warn('Backend create task failed, using localStorage:', error);
-            }
-        }
-        
-        // Fallback to localStorage
-        const tasks = this.getemployeeTasks(employeeId);
+
         const localTask = {
             id: UTILS.generateId(),
-            title: title,
+            title: title.trim(),
             description: description,
             dueDate: dueDate,
             priority: priority,
@@ -1258,15 +1257,31 @@ const TasksModule = {
             voiceMessage: null,
             voiceDuration: null
         };
-        
+
+        // ۱. ذخیره فوری در localStorage
+        const tasks = this.getemployeeTasks(employeeId);
         tasks.unshift(localTask);
-        this.saveemployeeTasks(employeeId, tasks);
+        const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+        tasksData[employeeId] = tasks;
+        localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
+
+        // ۲. ذخیره در Supabase در پس‌زمینه
+        const sb = this._sb();
+        if (sb) {
+            sb.saveEmployeeTask(employeeId, localTask)
+              .then(ok => { if (ok) console.log('✅ تسک در Supabase ذخیره شد:', localTask.id); })
+              .catch(e => console.warn('⚠️ createTask Supabase خطا:', e.message));
+        }
         
         this.closeModal('new-task-modal');
         this.refreshContent();
-        
-        UTILS.showNotification('وظیفه در حافظه محلی ذخیره شد', 'success');
-        debugLogger('Task created in localStorage', 'success', localTask);
+
+        const isOnline = typeof SupabaseConnection !== 'undefined' && SupabaseConnection.isOnline;
+        UTILS.showNotification(
+            isOnline ? '✅ وظیفه در ابر ذخیره شد' : '📴 وظیفه در حافظه محلی ذخیره شد',
+            'success'
+        );
+        debugLogger('Task created', 'success', localTask);
     },
     
     // ایجاد وظیفه صوتی
@@ -1280,17 +1295,11 @@ const TasksModule = {
         }
         
         const employee = this.getemployees().find(c => c.id === employeeId);
-        
         const tasks = this.getemployeeTasks(employeeId);
         
-        // Create task title based on content
         let taskTitle = 'پیام صوتی از مدیر';
-        if (additionalText) {
-            taskTitle += ' + متن';
-        }
-        if (this.selectedVoiceTaskFile) {
-            taskTitle += ' + فایل ضمیمه';
-        }
+        if (additionalText) taskTitle += ' + متن';
+        if (this.selectedVoiceTaskFile) taskTitle += ' + فایل ضمیمه';
         
         const newTask = {
             id: UTILS.generateId(),
@@ -1308,10 +1317,21 @@ const TasksModule = {
             isVoiceTask: true
         };
         
+        // ۱. ذخیره فوری در localStorage
         tasks.unshift(newTask);
-        this.saveemployeeTasks(employeeId, tasks);
+        const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+        tasksData[employeeId] = tasks;
+        localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
+
+        // ۲. ذخیره در Supabase در پس‌زمینه
+        const sb = this._sb();
+        if (sb) {
+            // برای صدا base64 رو کوتاه می‌کنیم — فایل اصلی در localStorage می‌مونه
+            const taskForCloud = { ...newTask, voiceMessage: '[voice:local]', attachedFile: null };
+            sb.saveEmployeeTask(employeeId, taskForCloud)
+              .catch(e => console.warn('⚠️ createVoiceTask Supabase خطا:', e.message));
+        }
         
-        // Reset voice data and file
         this.recordedVoiceData = null;
         this.recordedVoiceDuration = null;
         this.selectedVoiceTaskFile = null;
@@ -1320,13 +1340,9 @@ const TasksModule = {
         this.refreshContent();
         
         let successMessage = `وظیفه صوتی برای ${employee?.name || ''} ارسال شد`;
-        if (additionalText && this.selectedVoiceTaskFile) {
-            successMessage += ' (شامل متن و فایل ضمیمه)';
-        } else if (additionalText) {
-            successMessage += ' (شامل متن اضافی)';
-        } else if (this.selectedVoiceTaskFile) {
-            successMessage += ' (شامل فایل ضمیمه)';
-        }
+        if (additionalText && this.selectedVoiceTaskFile) successMessage += ' (شامل متن و فایل ضمیمه)';
+        else if (additionalText) successMessage += ' (شامل متن اضافی)';
+        else if (this.selectedVoiceTaskFile) successMessage += ' (شامل فایل ضمیمه)';
         
         UTILS.showNotification(successMessage, 'success');
         debugLogger('Voice task created', 'success', newTask);
@@ -1342,9 +1358,21 @@ const TasksModule = {
         
         const statusOrder = ['pending', 'in_progress', 'completed'];
         const currentIndex = statusOrder.indexOf(tasks[taskIndex].status);
-        tasks[taskIndex].status = statusOrder[(currentIndex + 1) % statusOrder.length];
+        const newStatus = statusOrder[(currentIndex + 1) % statusOrder.length];
+        tasks[taskIndex].status = newStatus;
         
-        this.saveemployeeTasks(this.selectedemployee, tasks);
+        // ۱. ذخیره در localStorage
+        const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+        tasksData[this.selectedemployee] = tasks;
+        localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
+
+        // ۲. آپدیت وضعیت در Supabase
+        const sb = this._sb();
+        if (sb) {
+            sb.updateTaskStatus(taskId, this.selectedemployee, newStatus)
+              .catch(e => console.warn('⚠️ toggleTaskStatus Supabase خطا:', e.message));
+        }
+
         this.refreshContent();
         UTILS.showNotification('وضعیت وظیفه تغییر کرد', 'success');
     },
@@ -1356,7 +1384,23 @@ const TasksModule = {
         let tasks = this.getemployeeTasks(this.selectedemployee);
         tasks = tasks.filter(t => t.id !== taskId);
         
-        this.saveemployeeTasks(this.selectedemployee, tasks);
+        // ۱. ذخیره در localStorage
+        const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+        tasksData[this.selectedemployee] = tasks;
+        localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
+
+        // ۲. حذف از Supabase
+        const sb = this._sb();
+        if (sb && typeof sb._db === 'function') {
+            const client = sb._db();
+            if (client) {
+                client.from('employee_tasks').delete().eq('id', taskId)
+                    .then(({ error }) => {
+                        if (error) console.warn('⚠️ deleteTask Supabase خطا:', error.message);
+                    });
+            }
+        }
+
         this.refreshContent();
         UTILS.showNotification('وظیفه حذف شد', 'success');
     },
