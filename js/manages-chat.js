@@ -228,14 +228,14 @@ class ManagesChat {
                         <div class="flex items-center gap-3 p-3 bg-slate-700 hover:bg-slate-600 rounded-lg cursor-pointer transition-all hover:translate-x-[-4px]" 
                              data-username="${p.username}"
                              onclick="document.getElementById('managesChatInput').value += '@${p.username} '; document.getElementById('managesChatInput').focus(); this.closest('.fixed').remove();">
-                            <div class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold">
+                            <div class="w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center text-gray-900 font-bold">
                                 ${p.name.charAt(0)}
                             </div>
                             <div class="flex-1">
                                 <p class="text-white font-medium">${p.name}</p>
                                 <p class="text-gray-400 text-sm">@${p.username}</p>
                             </div>
-                            <span class="px-2 py-1 rounded-full text-xs font-semibold ${p.role === 'manager' ? 'bg-purple-600 text-white' : 'bg-blue-600 text-white'}">
+                            <span class="px-2 py-1 rounded-full text-xs font-semibold ${p.role === 'manager' ? 'bg-yellow-600 text-gray-900' : 'bg-blue-600 text-white'}">
                                 ${this.getRoleName(p.role)}
                             </span>
                         </div>
@@ -524,12 +524,12 @@ class ManagesChat {
                     </button>
                     <button onclick="window.managesChatInstance.forwardFile('${messageId}')" 
                             class="w-full text-right px-4 py-2 hover:bg-slate-700 text-white flex items-center gap-3">
-                        <i class="fas fa-share text-purple-400"></i>
+                        <i class="fas fa-share text-yellow-400"></i>
                         <span>فوروارد</span>
                     </button>
                     <button onclick="window.managesChatInstance.shareToApp('${messageId}')" 
                             class="w-full text-right px-4 py-2 hover:bg-slate-700 text-white flex items-center gap-3">
-                        <i class="fas fa-share-alt text-indigo-400"></i>
+                        <i class="fas fa-share-alt text-yellow-400"></i>
                         <span>اشتراک‌گذاری</span>
                     </button>
                 ` : ''}
@@ -698,7 +698,7 @@ class ManagesChat {
         modal.innerHTML = `
             <div class="bg-slate-800 rounded-2xl p-6 max-w-md w-11/12">
                 <h3 class="text-xl font-bold text-white mb-4">
-                    <i class="fas fa-share text-purple-400 ml-2"></i>
+                    <i class="fas fa-share text-yellow-400 ml-2"></i>
                     فوروارد به
                 </h3>
                 <div class="space-y-2 mb-4">

@@ -57,7 +57,7 @@ function archiveController() {
                     },
                     {
                         id: 'f2',
-                        name: 'رساله عاملی - فایل اولیه - علی محمدی.docx',
+                        name: 'رساله دکتری - فایل اولیه - علی محمدی.docx',
                         category: 'thesis-original',
                         author: 'عامل علی محمدی',
                         type: 'docx',
@@ -67,7 +67,7 @@ function archiveController() {
                     },
                     {
                         id: 'f3',
-                        name: 'رساله عاملی - تعدیل شده - علی محمدی.docx',
+                        name: 'رساله دکتری - تعدیل شده - علی محمدی.docx',
                         category: 'thesis-edited',
                         author: 'عامل علی محمدی',
                         type: 'docx',

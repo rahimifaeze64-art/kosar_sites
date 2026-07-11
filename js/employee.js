@@ -13,7 +13,7 @@ const EmployeeModule = {
                 <!-- Header -->
                 <div class="flex justify-between items-center">
                     <h2 class="text-2xl font-bold text-white">
-                        <i class="fas fa-clipboard-check text-indigo-400 ml-2"></i>
+                        <i class="fas fa-clipboard-check text-yellow-400 ml-2"></i>
                         وظایف من
                     </h2>
                     <div class="flex space-x-3 space-x-reverse">
@@ -38,7 +38,7 @@ const EmployeeModule = {
                                 <p class="text-gray-400 text-sm">کل وظایف</p>
                                 <p class="text-2xl font-bold text-white">${tasks.length}</p>
                             </div>
-                            <i class="fas fa-tasks text-3xl text-indigo-400"></i>
+                            <i class="fas fa-tasks text-3xl text-yellow-400"></i>
                         </div>
                     </div>
                     <div class="bg-slate-800 rounded-lg p-4">
@@ -73,13 +73,13 @@ const EmployeeModule = {
                 <!-- ═══════════════════════════════════════════
                      کارتابل — مراحل دانشجویان (همیشه نمایش داده می‌شود)
                 ════════════════════════════════════════════ -->
-                <div class="bg-slate-800 rounded-lg shadow-md p-5 border-r-4 border-purple-500">
+                <div class="bg-slate-800 rounded-lg shadow-md p-5 border-r-4 border-yellow-500">
                     <div class="flex items-center justify-between mb-1">
                         <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                            <i class="fas fa-graduation-cap text-purple-400"></i>
+                            <i class="fas fa-graduation-cap text-yellow-400"></i>
                             کارتابل — مراحل دانشجویان
                             ${pendingStepTasks.length > 0
-                                ? `<span class="bg-purple-600 text-white text-xs rounded-full px-2 py-0.5 animate-pulse">${pendingStepTasks.length}</span>`
+                                ? `<span class="bg-yellow-600 text-gray-900 text-xs rounded-full px-2 py-0.5 animate-pulse">${pendingStepTasks.length}</span>`
                                 : `<span class="bg-slate-600 text-gray-300 text-xs rounded-full px-2 py-0.5">0</span>`
                             }
                         </h3>
@@ -125,7 +125,7 @@ const EmployeeModule = {
                 <!-- لیست وظایف معمولی -->
                 <div class="bg-slate-800 rounded-lg shadow-md p-4">
                     <h3 class="text-lg font-bold text-white mb-4">
-                        <i class="fas fa-list text-indigo-400 ml-2"></i>
+                        <i class="fas fa-list text-yellow-400 ml-2"></i>
                         لیست وظایف
                     </h3>
                     
@@ -176,7 +176,7 @@ const EmployeeModule = {
                     </div>
                     <div class="flex items-center gap-3 mt-1 flex-wrap">
                         <span class="text-xs text-gray-400">
-                            <i class="fas fa-user-graduate ml-1 text-indigo-400"></i>
+                            <i class="fas fa-user-graduate ml-1 text-yellow-400"></i>
                             ${task.studentName || task.studentId || '—'}
                         </span>
                         <span class="text-xs text-gray-500">
@@ -224,7 +224,7 @@ const EmployeeModule = {
             <div class="mt-3 bg-slate-600 rounded-lg p-3">
                 <div class="flex items-center space-x-3 space-x-reverse">
                     <button onclick="employeeModule.playVoice('${task.id}')" 
-                            class="w-10 h-10 rounded-full bg-indigo-500 hover:bg-indigo-600 flex items-center justify-center text-white"
+                            class="w-10 h-10 rounded-full bg-yellow-500 hover:bg-yellow-600 flex items-center justify-center text-gray-900"
                             id="emp-play-btn-${task.id}">
                         <i class="fas fa-play" id="emp-play-icon-${task.id}"></i>
                     </button>
@@ -237,7 +237,7 @@ const EmployeeModule = {
                             <span class="text-xs text-gray-400">${task.voiceDuration || '0:00'}</span>
                         </div>
                         <div class="w-full bg-slate-500 rounded-full h-1">
-                            <div class="bg-indigo-400 h-1 rounded-full" style="width: 0%" id="emp-progress-${task.id}"></div>
+                            <div class="bg-yellow-400 h-1 rounded-full" style="width: 0%" id="emp-progress-${task.id}"></div>
                         </div>
                     </div>
                     <audio id="emp-audio-${task.id}" src="${task.voiceMessage}" class="hidden"></audio>
@@ -269,7 +269,7 @@ const EmployeeModule = {
                         <p class="text-xs text-gray-400">${this.formatFileSize(task.attachedFile.size)}</p>
                     </div>
                     <button onclick="employeeModule.downloadTaskFile('${task.id}', '${userId}')" 
-                            class="text-indigo-400 hover:text-indigo-300 p-2" title="دانلود فایل">
+                            class="text-yellow-400 hover:text-yellow-300 p-2" title="دانلود فایل">
                         <i class="fas fa-download"></i>
                     </button>
                 </div>
@@ -281,7 +281,7 @@ const EmployeeModule = {
                 <div class="flex justify-between items-start">
                     <div class="flex-1">
                         <div class="flex items-center mb-2">
-                            <span class="bg-indigo-600 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center ml-2">${taskNumber}</span>
+                            <span class="bg-yellow-600 text-gray-900 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center ml-2">${taskNumber}</span>
                             <span class="w-3 h-3 rounded-full ${statusColors[task.status] || 'bg-gray-500'} ml-2"></span>
                             <h5 class="font-medium text-white">${task.title}</h5>
                             ${task.priority === 'high' ? '<span class="mr-2 px-2 py-0.5 bg-red-500 text-white text-xs rounded">فوری</span>' : ''}
@@ -322,7 +322,7 @@ const EmployeeModule = {
                 <!-- Header -->
                 <div class="flex justify-between items-center">
                     <h2 class="text-2xl font-bold text-white">
-                        <i class="fas fa-user-graduate text-indigo-400 ml-2"></i>
+                        <i class="fas fa-user-graduate text-yellow-400 ml-2"></i>
                         مدیریت دانشجویان
                     </h2>
                     <div class="flex space-x-3 space-x-reverse">
@@ -337,7 +337,7 @@ const EmployeeModule = {
                             فلوچارت
                         </a>
                         <button onclick="employeeModule.showStepsManagementModal();" 
-                                class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                                class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg text-sm font-medium transition-all">
                             <i class="fas fa-tasks ml-2"></i>
                             مدیریت مراحل
                         </button>
@@ -374,7 +374,7 @@ const EmployeeModule = {
                 <!-- Filter Section -->
                 <div class="bg-slate-800 rounded-lg shadow-md p-4">
                     <h3 class="text-lg font-bold text-white mb-4">
-                        <i class="fas fa-filter text-indigo-400 ml-2"></i>
+                        <i class="fas fa-filter text-yellow-400 ml-2"></i>
                         فیلترها
                     </h3>
                     
@@ -383,7 +383,7 @@ const EmployeeModule = {
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">نوع مسیر</label>
                             <select id="filter-type" onchange="employeeModule.updateFilterStepOptions()" 
-                                    class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                                 <option value="all">همه</option>
                                 <option value="educational">فارغ التحصیلی</option>
                                 <option value="defense">گردش دفاع</option>
@@ -395,7 +395,7 @@ const EmployeeModule = {
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">مرحله</label>
                             <select id="filter-step" 
-                                    class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                                 <option value="all">همه مراحل</option>
                             </select>
                         </div>
@@ -404,7 +404,7 @@ const EmployeeModule = {
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">فیلتر فیلدهای خالی</label>
                             <select id="filter-empty-field" 
-                                    class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                                 <option value="all">همه</option>
                                 <option value="passportImage">تصویر پاسپورت</option>
                                 <option value="administrativeOrder">تصویر امر اداری</option>
@@ -426,12 +426,12 @@ const EmployeeModule = {
                         </p>
                         <div class="flex items-center gap-3">
                             <button onclick="employeeModule.applyStudentFilter()" 
-                                    class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-2 rounded-lg transition-all">
+                                    class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 text-sm px-4 py-2 rounded-lg transition-all">
                                 <i class="fas fa-filter ml-1"></i>
                                 فیلتر
                             </button>
                             <button onclick="employeeModule.clearStudentFilter()" 
-                                    class="text-sm text-indigo-400 hover:text-indigo-300">
+                                    class="text-sm text-yellow-400 hover:text-yellow-300">
                                 <i class="fas fa-times ml-1"></i>
                                 پاک کردن فیلتر
                             </button>
@@ -442,7 +442,7 @@ const EmployeeModule = {
                 <!-- Students List -->
                 <div class="bg-slate-800 rounded-lg shadow-md p-4">
                     <h3 class="text-lg font-bold text-white mb-4">
-                        <i class="fas fa-list text-indigo-400 ml-2"></i>
+                        <i class="fas fa-list text-yellow-400 ml-2"></i>
                         لیست دانشجویان
                     </h3>
                     
@@ -500,7 +500,7 @@ const EmployeeModule = {
             <div class="bg-slate-700 rounded-lg p-4 hover:bg-slate-600 transition-all">
                 <div class="flex items-start justify-between mb-3">
                     <div class="flex items-center">
-                        <div class="w-12 h-12 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-lg ml-3">
+                        <div class="w-12 h-12 rounded-full bg-yellow-500 flex items-center justify-center text-gray-900 font-bold text-lg ml-3">
                             ${student.name ? student.name.charAt(0) : 'د'}
                         </div>
                         <div>
@@ -513,21 +513,21 @@ const EmployeeModule = {
                 
                 <div class="space-y-2 text-sm text-gray-300 mb-4">
                     <div class="flex items-center">
-                        <i class="fas fa-university text-indigo-400 w-5 ml-2"></i>
+                        <i class="fas fa-university text-yellow-400 w-5 ml-2"></i>
                         <span>${student.university || 'نامشخص'}</span>
                     </div>
                     <div class="flex items-center">
-                        <i class="fas fa-graduation-cap text-indigo-400 w-5 ml-2"></i>
+                        <i class="fas fa-graduation-cap text-yellow-400 w-5 ml-2"></i>
                         <span>${student.degree || 'نامشخص'} - ${student.field || 'نامشخص'}</span>
                     </div>
                     <div class="flex items-center">
-                        <i class="fas fa-phone text-indigo-400 w-5 ml-2"></i>
+                        <i class="fas fa-phone text-yellow-400 w-5 ml-2"></i>
                         <span>${student.phone || 'نامشخص'}</span>
                     </div>
                 </div>
                 
                 <button onclick="employeeModule.editStudentProfile('${student.id}')" 
-                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                        class="w-full bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg text-sm font-medium transition-all">
                     <i class="fas fa-edit ml-2"></i>
                     ویرایش پروفایل
                 </button>
@@ -565,7 +565,7 @@ const EmployeeModule = {
                 
                 <div class="flex items-start justify-between mb-3">
                     <div class="flex items-center">
-                        <div class="w-12 h-12 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-lg ml-3">
+                        <div class="w-12 h-12 rounded-full bg-yellow-500 flex items-center justify-center text-gray-900 font-bold text-lg ml-3">
                             ${student.name ? student.name.charAt(0) : 'د'}
                         </div>
                         <div>
@@ -578,15 +578,15 @@ const EmployeeModule = {
                 
                 <div class="space-y-2 text-sm text-gray-300 mb-4">
                     <div class="flex items-center">
-                        <i class="fas fa-university text-indigo-400 w-5 ml-2"></i>
+                        <i class="fas fa-university text-yellow-400 w-5 ml-2"></i>
                         <span>${student.university || 'نامشخص'}</span>
                     </div>
                     <div class="flex items-center">
-                        <i class="fas fa-graduation-cap text-indigo-400 w-5 ml-2"></i>
+                        <i class="fas fa-graduation-cap text-yellow-400 w-5 ml-2"></i>
                         <span>${student.degree || 'نامشخص'} - ${student.field || 'نامشخص'}</span>
                     </div>
                     <div class="flex items-center">
-                        <i class="fas fa-phone text-indigo-400 w-5 ml-2"></i>
+                        <i class="fas fa-phone text-yellow-400 w-5 ml-2"></i>
                         <span>${student.phone || 'نامشخص'}</span>
                     </div>
                 </div>
@@ -645,7 +645,7 @@ const EmployeeModule = {
                 </div>
                 
                 <button onclick="employeeModule.editStudentProfile('${student.id}')" 
-                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                        class="w-full bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg text-sm font-medium transition-all">
                     <i class="fas fa-edit ml-2"></i>
                     ویرایش پروفایل
                 </button>
@@ -956,10 +956,10 @@ const EmployeeModule = {
             
             if (tab === tabName) {
                 tabBtn.classList.remove('border-transparent', 'text-gray-400');
-                tabBtn.classList.add('border-indigo-500', 'text-indigo-400');
+                tabBtn.classList.add('border-yellow-500', 'text-yellow-400');
                 content.style.display = 'block';
             } else {
-                tabBtn.classList.remove('border-indigo-500', 'text-indigo-400');
+                tabBtn.classList.remove('border-yellow-500', 'text-yellow-400');
                 tabBtn.classList.add('border-transparent', 'text-gray-400');
                 content.style.display = 'none';
             }
@@ -1025,12 +1025,12 @@ const EmployeeModule = {
                                 <i class="fas fa-edit"></i>
                             </button>
                             <button onclick="employeeModule.moveEducationalStepUp('${student.id}', ${index})" 
-                                    class="text-indigo-600 hover:text-indigo-700 p-2 ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}" 
+                                    class="text-yellow-600 hover:text-yellow-700 p-2 ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}" 
                                     title="انتقال به بالا" ${index === 0 ? 'disabled' : ''}>
                                 <i class="fas fa-arrow-up"></i>
                             </button>
                             <button onclick="employeeModule.moveEducationalStepDown('${student.id}', ${index})" 
-                                    class="text-indigo-600 hover:text-indigo-700 p-2 ${index === steps.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}" 
+                                    class="text-yellow-600 hover:text-yellow-700 p-2 ${index === steps.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}" 
                                     title="انتقال به پایین" ${index === steps.length - 1 ? 'disabled' : ''}>
                                 <i class="fas fa-arrow-down"></i>
                             </button>
@@ -1075,7 +1075,7 @@ const EmployeeModule = {
                                 onclick="employeeModule.toggleDefenseStep('${student.id}', ${index})"
                                 class="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 transform hover:scale-110 ${
                                     step.completed 
-                                        ? 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/50' 
+                                        ? 'bg-gradient-to-br from-blue-500 to-yellow-600 shadow-lg shadow-blue-500/50' 
                                         : 'bg-gray-300 hover:bg-blue-300'
                                 }">
                                 ${step.completed 
@@ -1108,7 +1108,7 @@ const EmployeeModule = {
                         <div class="flex-shrink-0 flex space-x-2 space-x-reverse opacity-0 group-hover:opacity-100 transition-opacity">
                             ${step.name === 'تحدید مناقشه' ? `
                                 <button onclick="employeeModule.editDefenseStepDetails('${student.id}', ${index})" 
-                                        class="text-purple-600 hover:text-purple-700 p-2" title="ویرایش جزئیات">
+                                        class="text-yellow-600 hover:text-yellow-700 p-2" title="ویرایش جزئیات">
                                     <i class="fas fa-cog"></i>
                                 </button>
                             ` : ''}
@@ -1117,12 +1117,12 @@ const EmployeeModule = {
                                 <i class="fas fa-edit"></i>
                             </button>
                             <button onclick="employeeModule.moveDefenseStepUp('${student.id}', ${index})" 
-                                    class="text-indigo-600 hover:text-indigo-700 p-2 ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}" 
+                                    class="text-yellow-600 hover:text-yellow-700 p-2 ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}" 
                                     title="انتقال به بالا" ${index === 0 ? 'disabled' : ''}>
                                 <i class="fas fa-arrow-up"></i>
                             </button>
                             <button onclick="employeeModule.moveDefenseStepDown('${student.id}', ${index})" 
-                                    class="text-indigo-600 hover:text-indigo-700 p-2 ${index === steps.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}" 
+                                    class="text-yellow-600 hover:text-yellow-700 p-2 ${index === steps.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}" 
                                     title="انتقال به پایین" ${index === steps.length - 1 ? 'disabled' : ''}>
                                 <i class="fas fa-arrow-down"></i>
                             </button>
@@ -1143,7 +1143,7 @@ const EmployeeModule = {
             <!-- اطلاعات شخصی -->
             <div class="bg-slate-700 rounded-lg p-4">
                 <h4 class="font-bold text-white mb-3">
-                    <i class="fas fa-user text-indigo-400 ml-2"></i>
+                    <i class="fas fa-user text-yellow-400 ml-2"></i>
                     اطلاعات شخصی
                 </h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1185,7 +1185,7 @@ const EmployeeModule = {
             <!-- اطلاعات تحصیلی -->
             <div class="bg-slate-700 rounded-lg p-4">
                 <h4 class="font-bold text-white mb-3">
-                    <i class="fas fa-graduation-cap text-indigo-400 ml-2"></i>
+                    <i class="fas fa-graduation-cap text-yellow-400 ml-2"></i>
                     اطلاعات تحصیلی
                 </h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1218,12 +1218,12 @@ const EmployeeModule = {
             <!-- وضعیت -->
             <div class="bg-slate-700 rounded-lg p-4">
                 <h4 class="font-bold text-white mb-3">
-                    <i class="fas fa-toggle-on text-indigo-400 ml-2"></i>
+                    <i class="fas fa-toggle-on text-yellow-400 ml-2"></i>
                     وضعیت
                 </h4>
                 <label class="flex items-center cursor-pointer">
                     <input type="checkbox" id="edit-active" ${student.active ? 'checked' : ''}
-                           class="w-5 h-5 text-indigo-600 bg-slate-600 border-slate-500 rounded">
+                           class="w-5 h-5 text-yellow-600 bg-slate-600 border-slate-500 rounded">
                     <span class="mr-3 text-white">دانشجو فعال است</span>
                 </label>
             </div>
@@ -1252,7 +1252,7 @@ const EmployeeModule = {
                 <!-- Progress Bar -->
                 <div class="mb-8">
                     <div class="w-full bg-slate-600 rounded-full h-3">
-                        <div class="bg-gradient-to-r from-blue-500 to-indigo-500 h-3 rounded-full transition-all duration-500" 
+                        <div class="bg-gradient-to-r from-blue-500 to-yellow-500 h-3 rounded-full transition-all duration-500" 
                              style="width: ${progressPercent}%"></div>
                     </div>
                     <div class="flex justify-between mt-2 text-xs text-gray-400">
@@ -1338,7 +1338,7 @@ const EmployeeModule = {
                 <div class="flex-shrink-0">
                     ${isCompleted 
                         ? '<span class="text-xs px-3 py-1 bg-green-500 text-white rounded-full">تکمیل شده</span>'
-                        : '<span class="text-xs px-3 py-1 bg-yellow-500 text-white rounded-full">در انتظار</span>'
+                        : '<span class="text-xs px-3 py-1 bg-yellow-500 text-gray-900 rounded-full">در انتظار</span>'
                     }
                 </div>
             </div>
@@ -1399,10 +1399,10 @@ const EmployeeModule = {
             
             if (tab === tabName) {
                 tabBtn.classList.remove('border-transparent', 'text-gray-400');
-                tabBtn.classList.add('border-indigo-500', 'text-indigo-400');
+                tabBtn.classList.add('border-yellow-500', 'text-yellow-400');
                 content.style.display = 'block';
             } else {
-                tabBtn.classList.remove('border-indigo-500', 'text-indigo-400');
+                tabBtn.classList.remove('border-yellow-500', 'text-yellow-400');
                 tabBtn.classList.add('border-transparent', 'text-gray-400');
                 content.style.display = 'none';
             }
@@ -1546,7 +1546,7 @@ const EmployeeModule = {
                             <span class="px-3 py-1 rounded-full text-sm font-bold ${
                                 step.completed 
                                     ? 'bg-blue-500 text-white' 
-                                    : 'bg-yellow-500 text-white'
+                                    : 'bg-yellow-500 text-gray-900'
                             }">
                                 ${step.completed ? 'تکمیل شده ✓' : 'در انتظار'}
                             </span>
@@ -1715,7 +1715,7 @@ const EmployeeModule = {
                     <div class="p-6 border-b border-slate-700">
                         <div class="flex items-center justify-between">
                             <h3 class="text-lg font-bold text-white">
-                                <i class="fas fa-sticky-note text-indigo-400 ml-2"></i>
+                                <i class="fas fa-sticky-note text-yellow-400 ml-2"></i>
                                 ${step.name}
                             </h3>
                             <button onclick="employeeModule.closeModal('step-details-modal')" 
@@ -1732,7 +1732,7 @@ const EmployeeModule = {
                             <span class="px-3 py-1 rounded-full text-sm font-bold ${
                                 step.completed 
                                     ? 'bg-green-500 text-white' 
-                                    : 'bg-yellow-500 text-white'
+                                    : 'bg-yellow-500 text-gray-900'
                             }">
                                 ${step.completed ? 'تکمیل شده ✓' : 'در انتظار'}
                             </span>
@@ -1742,7 +1742,7 @@ const EmployeeModule = {
                             <div class="flex items-center justify-between bg-slate-700 rounded-lg p-4">
                                 <span class="text-gray-300">تاریخ تکمیل:</span>
                                 <span class="text-white font-bold">
-                                    <i class="fas fa-calendar ml-2 text-indigo-400"></i>
+                                    <i class="fas fa-calendar ml-2 text-yellow-400"></i>
                                     ${step.date}
                                 </span>
                             </div>
@@ -1751,13 +1751,13 @@ const EmployeeModule = {
                         <!-- یادداشت -->
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <i class="fas fa-edit text-indigo-400 ml-1"></i>
+                                <i class="fas fa-edit text-yellow-400 ml-1"></i>
                                 یادداشت (اختیاری)
                             </label>
                             <textarea id="step-notes-input" 
                                       rows="5"
                                       placeholder="توضیحات، یادداشت‌ها یا نکات مربوط به این مرحله را وارد کنید..."
-                                      class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white resize-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                                      class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white resize-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500"
                             >${step.notes || ''}</textarea>
                             <p class="text-xs text-gray-500 mt-2">
                                 <i class="fas fa-info-circle ml-1"></i>
@@ -1773,7 +1773,7 @@ const EmployeeModule = {
                             انصراف
                         </button>
                         <button onclick="employeeModule.saveStepNotes('${studentId}', ${stepIndex})" 
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium">
+                                class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-6 py-2 rounded-lg font-medium">
                             <i class="fas fa-save ml-2"></i>
                             ذخیره یادداشت
                         </button>
@@ -1918,7 +1918,7 @@ const EmployeeModule = {
                 <!-- Header -->
                 <div class="flex justify-between items-center">
                     <h2 class="text-2xl font-bold text-white">
-                        <i class="fas fa-tasks text-purple-400 ml-2"></i>
+                        <i class="fas fa-tasks text-yellow-400 ml-2"></i>
                         وظایف عامل‌ها
                     </h2>
                     <button onclick="employeeModule.showCreateAgentTaskModal('${employeeId}')" 
@@ -1936,7 +1936,7 @@ const EmployeeModule = {
                                 <p class="text-gray-400 text-sm">کل وظایف</p>
                                 <p class="text-2xl font-bold text-white">${tasks.length}</p>
                             </div>
-                            <i class="fas fa-clipboard-list text-3xl text-purple-400"></i>
+                            <i class="fas fa-clipboard-list text-3xl text-yellow-400"></i>
                         </div>
                     </div>
                     <div class="bg-slate-800 rounded-lg p-4">
@@ -1973,7 +1973,7 @@ const EmployeeModule = {
                     <div class="flex space-x-2 space-x-reverse">
                         <button onclick="employeeModule.filterAgentTasks('all', '${employeeId}')" 
                                 id="filter-all"
-                                class="flex-1 px-4 py-2 rounded-lg bg-purple-600 text-white font-medium">
+                                class="flex-1 px-4 py-2 rounded-lg bg-yellow-600 text-gray-900 font-medium">
                             همه (${tasks.length})
                         </button>
                         <button onclick="employeeModule.filterAgentTasks('pending', '${employeeId}')" 
@@ -1997,7 +1997,7 @@ const EmployeeModule = {
                 <!-- Tasks Grid -->
                 <div class="bg-slate-800 rounded-lg shadow-md p-4">
                     <h3 class="text-lg font-bold text-white mb-4">
-                        <i class="fas fa-list text-purple-400 ml-2"></i>
+                        <i class="fas fa-list text-yellow-400 ml-2"></i>
                         لیست وظایف تخصیص داده شده
                     </h3>
                     
@@ -2062,12 +2062,12 @@ const EmployeeModule = {
         const attachedFileHTML = task.attachedFile ? `
             <div class="mt-3 bg-slate-600 rounded-lg p-2">
                 <div class="flex items-center space-x-2 space-x-reverse">
-                    <i class="fas fa-paperclip text-purple-400"></i>
+                    <i class="fas fa-paperclip text-yellow-400"></i>
                     <div class="flex-1 min-w-0">
                         <p class="text-xs text-white truncate">${task.attachedFile.name}</p>
                     </div>
                     <button onclick="employeeModule.downloadAgentTaskFile('${task.id}')" 
-                            class="text-indigo-400 hover:text-indigo-300 p-1" title="دانلود">
+                            class="text-yellow-400 hover:text-yellow-300 p-1" title="دانلود">
                         <i class="fas fa-download text-sm"></i>
                     </button>
                 </div>
@@ -2093,7 +2093,7 @@ const EmployeeModule = {
                 <!-- Task Header -->
                 <div class="flex items-start justify-between mb-3">
                     <div class="flex items-center">
-                        <span class="bg-purple-600 text-white text-xs font-bold rounded-full w-7 h-7 flex items-center justify-center ml-2">${taskNumber}</span>
+                        <span class="bg-yellow-600 text-gray-900 text-xs font-bold rounded-full w-7 h-7 flex items-center justify-center ml-2">${taskNumber}</span>
                         <span class="w-3 h-3 rounded-full ${statusColors[task.status] || 'bg-gray-500'}"></span>
                     </div>
                     <span class="text-xs px-2 py-1 rounded ${statusColors[task.status]} text-white flex items-center">
@@ -2111,11 +2111,11 @@ const EmployeeModule = {
                 <!-- Agent and Student Info -->
                 <div class="space-y-2 text-xs text-gray-400 mb-3 pb-3 border-b border-slate-600">
                     <div class="flex items-center">
-                        <i class="fas fa-user-shield text-purple-400 ml-1 w-4"></i>
+                        <i class="fas fa-user-shield text-yellow-400 ml-1 w-4"></i>
                         <span>عامل: ${task.agentName}</span>
                     </div>
                     <div class="flex items-center">
-                        <i class="fas fa-user-graduate text-indigo-400 ml-1 w-4"></i>
+                        <i class="fas fa-user-graduate text-yellow-400 ml-1 w-4"></i>
                         <span>دانشجو: ${task.studentName}</span>
                     </div>
                 </div>
@@ -2169,7 +2169,7 @@ const EmployeeModule = {
                 <!-- Actions -->
                 <div class="mt-4 flex space-x-2 space-x-reverse">
                     <button onclick="employeeModule.viewAgentTaskDetails('${task.id}')" 
-                            class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all">
+                            class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-3 py-2 rounded-lg text-sm font-medium transition-all">
                         <i class="fas fa-eye ml-1"></i>
                         جزئیات
                     </button>
@@ -2215,9 +2215,9 @@ const EmployeeModule = {
             if (btn) {
                 if (s === status) {
                     btn.classList.remove('bg-slate-700', 'text-gray-300');
-                    btn.classList.add('bg-purple-600', 'text-white');
+                    btn.classList.add('bg-yellow-600', 'text-gray-900');
                 } else {
-                    btn.classList.remove('bg-purple-600', 'text-white');
+                    btn.classList.remove('bg-yellow-600', 'text-gray-900');
                     btn.classList.add('bg-slate-700', 'text-gray-300');
                 }
             }
@@ -2307,7 +2307,7 @@ const EmployeeModule = {
                     <div class="p-6 border-b border-slate-700 sticky top-0 bg-slate-800 z-10">
                         <div class="flex items-center justify-between">
                             <h3 class="text-lg font-bold text-white">
-                                <i class="fas fa-info-circle text-purple-400 ml-2"></i>
+                                <i class="fas fa-info-circle text-yellow-400 ml-2"></i>
                                 جزئیات وظیفه
                             </h3>
                             <button onclick="employeeModule.closeModal('task-details-modal')" 
@@ -2355,14 +2355,14 @@ const EmployeeModule = {
                                 <p class="text-sm text-gray-400 mb-2">فایل ضمیمه</p>
                                 <div class="flex items-center justify-between bg-slate-600 rounded-lg p-3">
                                     <div class="flex items-center space-x-3 space-x-reverse">
-                                        <i class="fas fa-file text-purple-400 text-2xl"></i>
+                                        <i class="fas fa-file text-yellow-400 text-2xl"></i>
                                         <div>
                                             <p class="text-white font-medium">${task.attachedFile.name}</p>
                                             <p class="text-xs text-gray-400">${this.formatFileSize(task.attachedFile.size)}</p>
                                         </div>
                                     </div>
                                     <button onclick="employeeModule.downloadAgentTaskFile('${task.id}')" 
-                                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">
+                                            class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg">
                                         <i class="fas fa-download ml-2"></i>
                                         دانلود
                                     </button>
@@ -2458,7 +2458,7 @@ const EmployeeModule = {
                 <div class="bg-slate-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                     <div class="p-6 border-b border-slate-700 sticky top-0 bg-slate-800 z-10">
                         <h3 class="text-lg font-bold text-white">
-                            <i class="fas fa-user-edit text-indigo-400 ml-2"></i>
+                            <i class="fas fa-user-edit text-yellow-400 ml-2"></i>
                             ویرایش پروفایل دانشجو - ${student.name}
                         </h3>
                     </div>
@@ -2468,7 +2468,7 @@ const EmployeeModule = {
                         <div class="flex space-x-2 space-x-reverse px-6">
                             <button onclick="employeeModule.switchStudentTab('info')" 
                                     id="tab-info"
-                                    class="px-4 py-3 font-medium border-b-2 border-indigo-500 text-indigo-400 transition-all">
+                                    class="px-4 py-3 font-medium border-b-2 border-yellow-500 text-yellow-400 transition-all">
                                 <i class="fas fa-user ml-1"></i>
                                 اطلاعات شخصی
                             </button>
@@ -2510,7 +2510,7 @@ const EmployeeModule = {
                             انصراف
                         </button>
                         <button onclick="employeeModule.saveStudentProfile('${studentId}')" 
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">
+                                class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg">
                             <i class="fas fa-save ml-2"></i>
                             ذخیره تغییرات
                         </button>
@@ -2664,7 +2664,7 @@ const EmployeeModule = {
                 <!-- Header -->
                 <div class="flex justify-between items-center">
                     <h2 class="text-2xl font-bold text-white">
-                        <i class="fas fa-comments text-indigo-400 ml-2"></i>
+                        <i class="fas fa-comments text-yellow-400 ml-2"></i>
                         گفتگو با مدیر
                     </h2>
                 </div>
@@ -2675,7 +2675,7 @@ const EmployeeModule = {
                         <div class="bg-slate-800 rounded-lg shadow-md">
                             <div class="p-4 border-b border-slate-700">
                                 <h3 class="text-lg font-bold text-white">
-                                    <i class="fas fa-comment-dots text-indigo-400 ml-2"></i>
+                                    <i class="fas fa-comment-dots text-yellow-400 ml-2"></i>
                                     پیام‌ها
                                 </h3>
                             </div>
@@ -2702,7 +2702,7 @@ const EmployeeModule = {
                                            placeholder="پیام خود را بنویسید..."
                                            onkeypress="if(event.key === 'Enter') employeeModule.sendMessage('${userId}')">
                                     <button onclick="employeeModule.sendMessage('${userId}')" 
-                                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">
+                                            class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg">
                                         <i class="fas fa-paper-plane"></i>
                                     </button>
                                 </div>
@@ -2715,11 +2715,11 @@ const EmployeeModule = {
                         <div class="bg-slate-800 rounded-lg shadow-md">
                             <div class="p-4 border-b border-slate-700 flex justify-between items-center">
                                 <h3 class="text-lg font-bold text-white">
-                                    <i class="fas fa-folder text-indigo-400 ml-2"></i>
+                                    <i class="fas fa-folder text-yellow-400 ml-2"></i>
                                     فایل‌های مشترک
                                 </h3>
                                 <button onclick="employeeModule.uploadFile('${userId}')" 
-                                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg text-sm">
+                                        class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-3 py-1 rounded-lg text-sm">
                                     <i class="fas fa-upload ml-1"></i>
                                     آپلود
                                 </button>
@@ -2750,7 +2750,7 @@ const EmployeeModule = {
         
         return `
             <div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
-                <div class="max-w-xs lg:max-w-md ${isMe ? 'bg-indigo-600' : 'bg-slate-600'} rounded-lg p-3">
+                <div class="max-w-xs lg:max-w-md ${isMe ? 'bg-yellow-600' : 'bg-slate-600'} rounded-lg p-3">
                     <p class="text-white text-sm">${message.text}</p>
                     <p class="text-xs text-gray-300 mt-1">${message.timestamp}</p>
                 </div>
@@ -2782,7 +2782,7 @@ const EmployeeModule = {
                     </div>
                 </div>
                 <button onclick="employeeModule.downloadFile('${file.id}')" 
-                        class="text-indigo-400 hover:text-indigo-300 p-1">
+                        class="text-yellow-400 hover:text-yellow-300 p-1">
                     <i class="fas fa-download"></i>
                 </button>
             </div>
@@ -3140,8 +3140,8 @@ const EmployeeModule = {
             'jpg': 'fa-file-image text-yellow-400',
             'png': 'fa-file-image text-yellow-400',
             'txt': 'fa-file-alt text-gray-400',
-            'zip': 'fa-file-archive text-purple-400',
-            'rar': 'fa-file-archive text-purple-400'
+            'zip': 'fa-file-archive text-yellow-400',
+            'rar': 'fa-file-archive text-yellow-400'
         };
         return iconMap[ext] || 'fa-file text-gray-400';
     },
@@ -3227,7 +3227,7 @@ const EmployeeModule = {
                         <!-- نام دانشجو -->
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <i class="fas fa-user-graduate text-indigo-400 ml-1"></i>
+                                <i class="fas fa-user-graduate text-yellow-400 ml-1"></i>
                                 نام دانشجو
                             </label>
                             <select id="agent-task-student" 
@@ -3242,7 +3242,7 @@ const EmployeeModule = {
                         <!-- عنوان وظیفه -->
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <i class="fas fa-heading text-indigo-400 ml-1"></i>
+                                <i class="fas fa-heading text-yellow-400 ml-1"></i>
                                 عنوان وظیفه
                             </label>
                             <input type="text" id="agent-task-title" 
@@ -3253,7 +3253,7 @@ const EmployeeModule = {
                         <!-- توضیحات -->
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <i class="fas fa-align-right text-indigo-400 ml-1"></i>
+                                <i class="fas fa-align-right text-yellow-400 ml-1"></i>
                                 توضیحات
                             </label>
                             <textarea id="agent-task-description" 
@@ -3265,7 +3265,7 @@ const EmployeeModule = {
                         <!-- فایل ضمیمه -->
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <i class="fas fa-paperclip text-indigo-400 ml-1"></i>
+                                <i class="fas fa-paperclip text-yellow-400 ml-1"></i>
                                 فایل ضمیمه (اختیاری)
                             </label>
                             <div class="flex items-center space-x-3 space-x-reverse">
@@ -3283,7 +3283,7 @@ const EmployeeModule = {
                         <!-- تخصیص به عامل -->
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <i class="fas fa-user-shield text-indigo-400 ml-1"></i>
+                                <i class="fas fa-user-shield text-yellow-400 ml-1"></i>
                                 تخصیص به عامل
                             </label>
                             <select id="agent-task-agent" 
@@ -3299,7 +3299,7 @@ const EmployeeModule = {
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-2">
-                                    <i class="fas fa-calendar text-indigo-400 ml-1"></i>
+                                    <i class="fas fa-calendar text-yellow-400 ml-1"></i>
                                     تاریخ تحویل
                                 </label>
                                 <input type="date" id="agent-task-date" 
@@ -3307,7 +3307,7 @@ const EmployeeModule = {
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-2">
-                                    <i class="fas fa-clock text-indigo-400 ml-1"></i>
+                                    <i class="fas fa-clock text-yellow-400 ml-1"></i>
                                     ساعت تحویل
                                 </label>
                                 <input type="time" id="agent-task-time" 
@@ -3318,7 +3318,7 @@ const EmployeeModule = {
                         <!-- اولویت -->
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <i class="fas fa-flag text-indigo-400 ml-1"></i>
+                                <i class="fas fa-flag text-yellow-400 ml-1"></i>
                                 اولویت
                             </label>
                             <select id="agent-task-priority" 
@@ -3522,7 +3522,7 @@ const EmployeeModule = {
                         <p class="text-sm text-white">${task.attachedFile.name}</p>
                     </div>
                     <button onclick="employeeModule.downloadAgentTaskFile('${task.id}')" 
-                            class="text-indigo-400 hover:text-indigo-300 p-2" title="دانلود فایل">
+                            class="text-yellow-400 hover:text-yellow-300 p-2" title="دانلود فایل">
                         <i class="fas fa-download"></i>
                     </button>
                 </div>
@@ -3600,7 +3600,7 @@ window.getMyTasksContent = function() {
                     <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
                     <p class="text-white text-lg mb-2">خطا در بارگذاری وظایف</p>
                     <p class="text-gray-400 text-sm">${error.message}</p>
-                    <button onclick="location.reload()" class="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">
+                    <button onclick="location.reload()" class="mt-4 bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg">
                         <i class="fas fa-redo ml-2"></i>
                         تلاش مجدد
                     </button>
@@ -3630,7 +3630,7 @@ window.getStudentsContent = function() {
                     <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
                     <p class="text-white text-lg mb-2">خطا در بارگذاری دانشجویان</p>
                     <p class="text-gray-400 text-sm">${error.message}</p>
-                    <button onclick="location.reload()" class="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">
+                    <button onclick="location.reload()" class="mt-4 bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg">
                         <i class="fas fa-redo ml-2"></i>
                         تلاش مجدد
                     </button>
@@ -3668,7 +3668,7 @@ window.getAgentTasksManagementContent = function() {
                     <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
                     <p class="text-white text-lg mb-2">خطا در بارگذاری وظایف عامل‌ها</p>
                     <p class="text-gray-400 text-sm">${error.message}</p>
-                    <button onclick="location.reload()" class="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">
+                    <button onclick="location.reload()" class="mt-4 bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg">
                         <i class="fas fa-redo ml-2"></i>
                         تلاش مجدد
                     </button>
@@ -3745,7 +3745,7 @@ EmployeeModule.showAddStudentModal = function() {
                     <!-- اطلاعات شخصی -->
                     <div class="bg-slate-700 rounded-lg p-4">
                         <h4 class="font-bold text-white mb-3">
-                            <i class="fas fa-user text-indigo-400 ml-2"></i>
+                            <i class="fas fa-user text-yellow-400 ml-2"></i>
                             اطلاعات شخصی
                         </h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -3787,7 +3787,7 @@ EmployeeModule.showAddStudentModal = function() {
                     <!-- اطلاعات تحصیلی -->
                     <div class="bg-slate-700 rounded-lg p-4">
                         <h4 class="font-bold text-white mb-3">
-                            <i class="fas fa-graduation-cap text-indigo-400 ml-2"></i>
+                            <i class="fas fa-graduation-cap text-yellow-400 ml-2"></i>
                             اطلاعات تحصیلی
                         </h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -3970,7 +3970,7 @@ EmployeeModule.showStepsManagementModal = function() {
                 <div class="p-6 border-b border-slate-700 sticky top-0 bg-slate-800 z-10">
                     <div class="flex items-center justify-between">
                         <h3 class="text-lg font-bold text-white">
-                            <i class="fas fa-tasks text-purple-400 ml-2"></i>
+                            <i class="fas fa-tasks text-yellow-400 ml-2"></i>
                             مدیریت مراحل
                         </h3>
                         <button onclick="employeeModule.closeModal('steps-management-modal')" 
@@ -4071,7 +4071,7 @@ EmployeeModule.showStepsManagementModal = function() {
                             بستن
                         </button>
                         <button onclick="employeeModule.saveStepsChanges()" 
-                                class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium">
+                                class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-6 py-2 rounded-lg font-medium">
                             <i class="fas fa-save ml-2"></i>
                             ذخیره تغییرات
                         </button>
@@ -4546,7 +4546,7 @@ EmployeeModule.switchPathTab = function(tab, studentId) {
     // Reset all tabs
     [educationalTab, defenseTab, requirementsTab].forEach(t => {
         if (t) {
-            t.classList.remove('border-indigo-500', 'text-indigo-600');
+            t.classList.remove('border-yellow-500', 'text-yellow-600');
             t.classList.add('border-transparent', 'text-gray-600');
         }
     });
@@ -4559,15 +4559,15 @@ EmployeeModule.switchPathTab = function(tab, studentId) {
     // Show selected tab
     if (tab === 'educational' && educationalTab && educationalContent) {
         educationalTab.classList.remove('border-transparent', 'text-gray-600');
-        educationalTab.classList.add('border-indigo-500', 'text-indigo-600');
+        educationalTab.classList.add('border-yellow-500', 'text-yellow-600');
         educationalContent.style.display = 'block';
     } else if (tab === 'defense' && defenseTab && defenseContent) {
         defenseTab.classList.remove('border-transparent', 'text-gray-600');
-        defenseTab.classList.add('border-indigo-500', 'text-indigo-600');
+        defenseTab.classList.add('border-yellow-500', 'text-yellow-600');
         defenseContent.style.display = 'block';
     } else if (tab === 'requirements' && requirementsTab && requirementsContent) {
         requirementsTab.classList.remove('border-transparent', 'text-gray-600');
-        requirementsTab.classList.add('border-indigo-500', 'text-indigo-600');
+        requirementsTab.classList.add('border-yellow-500', 'text-yellow-600');
         requirementsContent.style.display = 'block';
     }
 };

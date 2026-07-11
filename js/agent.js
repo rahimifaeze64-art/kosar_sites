@@ -161,7 +161,7 @@ const AgentModule = {
                         <p class="text-xs text-white truncate">${task.attachedFile.name}</p>
                     </div>
                     <button onclick="AgentModule.downloadTaskFile('${task.id}')" 
-                            class="text-indigo-400 hover:text-indigo-300 p-1" title="دانلود">
+                            class="text-yellow-400 hover:text-yellow-300 p-1" title="دانلود">
                         <i class="fas fa-download text-sm"></i>
                     </button>
                 </div>
@@ -194,7 +194,7 @@ const AgentModule = {
                 
                 <!-- Student Info -->
                 <div class="flex items-center text-xs text-gray-400 mb-3 pb-3 border-b border-slate-600">
-                    <i class="fas fa-user-graduate text-indigo-400 ml-1"></i>
+                    <i class="fas fa-user-graduate text-yellow-400 ml-1"></i>
                     <span>${task.studentName}</span>
                 </div>
                 
@@ -240,7 +240,7 @@ const AgentModule = {
                         </button>
                     ` : task.status === 'in_progress' ? `
                         <button onclick="AgentModule.updateTaskStatus('${task.id}', '${userId}', event)" 
-                                class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all">
+                                class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-3 py-2 rounded-lg text-sm font-medium transition-all">
                             <i class="fas fa-check ml-1"></i>
                             تکمیل
                         </button>

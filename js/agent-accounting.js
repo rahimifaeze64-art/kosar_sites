@@ -1,4 +1,4 @@
-// Agent Accounting Module - حسابداری شخصی عامل
+﻿// Agent Accounting Module - حسابداری شخصی عامل
 const AgentAccountingModule = {
 
     // دریافت سفارشات تخصیص‌یافته به عامل
@@ -153,7 +153,7 @@ const AgentAccountingModule = {
             <!-- لیست سفارشات -->
             <div class="bg-slate-800 rounded-xl p-5">
                 <h3 class="text-white font-bold text-lg mb-4 flex items-center">
-                    <i class="fas fa-list text-indigo-400 ml-2"></i>
+                    <i class="fas fa-list text-yellow-400 ml-2"></i>
                     سفارشات من
                     <span class="mr-2 text-sm font-normal text-gray-400">(${orders.length} سفارش)</span>
                 </h3>
@@ -244,7 +244,7 @@ const AgentAccountingModule = {
             'pending': { text: 'شروع نشده', cls: 'bg-yellow-900 text-yellow-300' },
             'in_progress': { text: 'در حال انجام', cls: 'bg-blue-900 text-blue-300' },
             'completed': { text: 'تکمیل شده', cls: 'bg-green-900 text-green-300' },
-            'approved': { text: 'تایید شده', cls: 'bg-indigo-900 text-indigo-300' },
+            'approved': { text: 'تایید شده', cls: 'bg-yellow-900 text-yellow-300' },
         };
         const st = statusMap[order.status] || { text: order.status, cls: 'bg-gray-700 text-gray-300' };
         const deadline = order.deadline ? new Date(order.deadline).toLocaleDateString('fa-IR') : '---';

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * سیستم حسابداری کارمندان
  * محاسبه حقوق و دستمزد بر اساس ساعات کاری و هزینه‌ها (localStorage)
  */
@@ -186,7 +186,7 @@ const EmployeeAccountingUI = (function() {
         const icons = { success: 'check-circle', error: 'exclamation-circle', warning: 'exclamation-triangle', info: 'info-circle' };
 
         const notification = document.createElement('div');
-        notification.className = `fixed top-4 left-4 ${colors[type] || colors.info} text-white px-6 py-3 rounded-xl shadow-lg z-50`;
+        notification.className = `fixed top-4 left-4 ${colors[type] || colors.info} text-gray-900 px-6 py-3 rounded-xl shadow-lg z-50`;
         notification.innerHTML = `
             <div class="flex items-center gap-3">
                 <i class="fas fa-${icons[type] || icons.info}"></i>
@@ -289,8 +289,8 @@ const EmployeeAccountingUI = (function() {
 
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                         <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 bg-indigo-500/20 rounded-xl flex items-center justify-center">
-                                <i class="fas fa-hand-holding-usd text-2xl text-indigo-400"></i>
+                            <div class="w-14 h-14 bg-yellow-500/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-hand-holding-usd text-2xl text-yellow-400"></i>
                             </div>
                             <div>
                                 <p class="text-blue-200 text-sm">نرخ ساعتی (مدیر)</p>
@@ -313,30 +313,30 @@ const EmployeeAccountingUI = (function() {
                     </div>
                 </div>
 
-                <div class="bg-gradient-to-r from-indigo-500/20 to-purple-500/20 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+                <div class="bg-gradient-to-r from-yellow-500/20 to-yellow-500/20 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                     <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                        <i class="fas fa-calendar-alt text-indigo-400"></i>
+                        <i class="fas fa-calendar-alt text-yellow-400"></i>
                         خلاصه ماه جاری
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div class="bg-white/10 rounded-xl p-4">
-                            <p class="text-indigo-200 text-sm mb-1">ساعات این ماه</p>
+                            <p class="text-yellow-200 text-sm mb-1">ساعات این ماه</p>
                             <p class="text-2xl font-bold text-white">${monthlySummary.totalHours} ساعت</p>
-                            <p class="text-indigo-300 text-xs mt-1">${monthlySummary.hoursCount} گزارش روزانه</p>
+                            <p class="text-yellow-300 text-xs mt-1">${monthlySummary.hoursCount} گزارش روزانه</p>
                         </div>
                         <div class="bg-white/10 rounded-xl p-4">
-                            <p class="text-indigo-200 text-sm mb-1">هزینه‌های این ماه</p>
+                            <p class="text-yellow-200 text-sm mb-1">هزینه‌های این ماه</p>
                             <p class="text-2xl font-bold text-white">${EmployeeAccountingModule.formatCurrency(monthlySummary.totalExpenses)}</p>
                         </div>
                         <div class="bg-white/10 rounded-xl p-4">
-                            <p class="text-indigo-200 text-sm mb-1">حقوق ساعات (تأیید × نرخ)</p>
+                            <p class="text-yellow-200 text-sm mb-1">حقوق ساعات (تأیید × نرخ)</p>
                             <p class="text-2xl font-bold text-blue-400">${EmployeeAccountingModule.formatCurrency(hoursPayment)}</p>
-                            <p class="text-indigo-300 text-xs mt-1">${monthlySummary.totalHoursApproved} ساعت تأیید × ${EmployeeAccountingModule.formatCurrency(monthlySummary.hourlyRate)}</p>
+                            <p class="text-yellow-300 text-xs mt-1">${monthlySummary.totalHoursApproved} ساعت تأیید × ${EmployeeAccountingModule.formatCurrency(monthlySummary.hourlyRate)}</p>
                         </div>
                         <div class="bg-white/10 rounded-xl p-4">
-                            <p class="text-indigo-200 text-sm mb-1">جمع کل این ماه</p>
+                            <p class="text-yellow-200 text-sm mb-1">جمع کل این ماه</p>
                             <p class="text-2xl font-bold text-emerald-400">${EmployeeAccountingModule.formatCurrency(monthlySummary.grandTotal)}</p>
-                            <p class="text-indigo-300 text-xs mt-1">حقوق ساعات + هزینه‌های تأیید</p>
+                            <p class="text-yellow-300 text-xs mt-1">حقوق ساعات + هزینه‌های تأیید</p>
                         </div>
                     </div>
                 </div>
@@ -395,8 +395,8 @@ const EmployeeAccountingUI = (function() {
                     <tr class="border-b border-white/5 hover:bg-white/5">
                         <td class="py-4 px-4">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-purple-500/20 rounded-full flex items-center justify-center">
-                                    <i class="fas fa-user text-purple-400"></i>
+                                <div class="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user text-yellow-400"></i>
                                 </div>
                                 <span class="text-white font-medium">${emp.employeeName}</span>
                             </div>
@@ -425,7 +425,7 @@ const EmployeeAccountingUI = (function() {
                         <td class="text-center py-4 px-4">${statusBadge}</td>
                         <td class="text-center py-4 px-4">
                             <button onclick="EmployeeAccountingUI.showEmployeeDetails('${emp.employeeId}')"
-                                    class="px-3 py-1 bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-400 rounded-lg text-sm transition-all">
+                                    class="px-3 py-1 bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400 rounded-lg text-sm transition-all">
                                 <i class="fas fa-eye ml-1"></i>جزئیات
                             </button>
                         </td>
@@ -433,7 +433,7 @@ const EmployeeAccountingUI = (function() {
             }).join('')
             : `<tr>
                 <td colspan="8" class="text-center py-12">
-                    <i class="fas fa-users text-5xl text-purple-400/30 mb-4 block"></i>
+                    <i class="fas fa-users text-5xl text-yellow-400/30 mb-4 block"></i>
                     <p class="text-blue-200">هنوز کارمندی گزارش ارسال نکرده است</p>
                     <p class="text-blue-300/60 text-sm mt-2">پس از ثبت ساعات کاری توسط کارمندان، اینجا نمایش داده می‌شود</p>
                 </td>
@@ -441,14 +441,14 @@ const EmployeeAccountingUI = (function() {
 
         return `
             <div class="space-y-6">
-                <div class="bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+                <div class="bg-gradient-to-r from-yellow-500/20 to-yellow-500/20 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                     <div class="flex items-center justify-between flex-wrap gap-4">
                         <div>
                             <h2 class="text-2xl font-bold text-white flex items-center gap-3">
-                                <i class="fas fa-users-cog text-purple-400"></i>
+                                <i class="fas fa-users-cog text-yellow-400"></i>
                                 حسابداری کارمندان
                             </h2>
-                            <p class="text-purple-200 mt-2">تنظیم نرخ ساعتی و مشاهده خلاصه مالی هر کارمند</p>
+                            <p class="text-yellow-200 mt-2">تنظیم نرخ ساعتی و مشاهده خلاصه مالی هر کارمند</p>
                         </div>
                         <button onclick="EmployeeAccountingUI.showSettingsModal()"
                                 class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all">
@@ -460,8 +460,8 @@ const EmployeeAccountingUI = (function() {
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                         <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 bg-purple-500/20 rounded-xl flex items-center justify-center">
-                                <i class="fas fa-users text-2xl text-purple-400"></i>
+                            <div class="w-14 h-14 bg-yellow-500/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-users text-2xl text-yellow-400"></i>
                             </div>
                             <div>
                                 <p class="text-blue-200 text-sm">تعداد کارمندان</p>
@@ -644,7 +644,7 @@ const EmployeeAccountingUI = (function() {
                 <div class="bg-slate-800 rounded-2xl p-6 max-w-4xl w-full max-h-[80vh] overflow-auto mx-4" onclick="event.stopPropagation()">
                     <div class="flex items-center justify-between mb-6">
                         <h3 class="text-xl font-bold text-white">
-                            <i class="fas fa-user text-purple-400 ml-2"></i>
+                            <i class="fas fa-user text-yellow-400 ml-2"></i>
                             جزئیات مالی: ${summary.employeeName}
                         </h3>
                         <button onclick="document.getElementById('employee-details-modal').remove()" class="text-gray-400 hover:text-white">

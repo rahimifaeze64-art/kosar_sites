@@ -1,10 +1,10 @@
-// Order Wizard Module - ماژول فرم سفارش ساده شده
+﻿// Order Wizard Module - ماژول فرم سفارش ساده شده
 const OrderWizardModule = {
     // لیست انواع کارها
     workTypes: [
-        'عناوین رساله ارشد', 'عناوین رساله عاملی', 'عناوین مقاله',
-        'پروپوزال رساله ارشد', 'پروپوزال رساله عاملی', 'پروپوزال مقاله',
-        'رساله ارشد', 'رساله عاملی', 'تعدیل', 'تنضید', 'ترجمه',
+        'عناوین رساله ارشد', 'عناوین رساله دکتری', 'عناوین مقاله',
+        'پروپوزال رساله ارشد', 'پروپوزال رساله دکتری', 'پروپوزال مقاله',
+        'رساله ارشد', 'رساله دکتری', 'تعدیل', 'تنضید', 'ترجمه',
         'استلال عراقی', 'استلال ایرانی', 'علاج استلال ایرانی', 'علاج استلال عراقی',
         'ترجمه و تصدیق مباشره', 'ترجمه و تصدیق قبول نهایی', 'ترجمه و تصدیق دانشنامه',
         'ترجمه مدرک', 'تجلید', 'همانند جویی',
@@ -50,22 +50,22 @@ const OrderWizardModule = {
                         <!-- 1. نام دانشجو -->
                         <div>
                             <label class="block text-lg font-bold text-gray-800 mb-2">
-                                <i class="fas fa-user text-indigo-500 ml-2"></i>
+                                <i class="fas fa-user text-yellow-500 ml-2"></i>
                                 نام دانشجو <span class="text-red-500">*</span>
                             </label>
                             <input type="text" x-model="newOrder.studentName" 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-lg"
                                    required placeholder="نام و نام خانوادگی دانشجو">
                         </div>
                         
                         <!-- 2. نوع کار -->
                         <div>
                             <label class="block text-lg font-bold text-gray-800 mb-2">
-                                <i class="fas fa-tasks text-indigo-500 ml-2"></i>
+                                <i class="fas fa-tasks text-yellow-500 ml-2"></i>
                                 نوع کار <span class="text-red-500">*</span>
                             </label>
                             <select x-model="newOrder.workType" 
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-lg"
                                     required>
                                 <option value="">انتخاب نوع کار...</option>
                                 ${this.workTypes.map(w => `<option value="${w}">${w}</option>`).join('')}
@@ -75,12 +75,12 @@ const OrderWizardModule = {
                         <!-- 3. دانشگاه -->
                         <div>
                             <label class="block text-lg font-bold text-gray-800 mb-2">
-                                <i class="fas fa-university text-indigo-500 ml-2"></i>
+                                <i class="fas fa-university text-yellow-500 ml-2"></i>
                                 دانشگاه <span class="text-red-500">*</span>
                             </label>
                             <div class="flex space-x-2 space-x-reverse">
                                 <select x-model="newOrder.universitySelect" 
-                                        class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
+                                        class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-lg"
                                         required
                                         @change="showCustomUniversity = (newOrder.universitySelect === 'سایر'); 
                                                  if(!showCustomUniversity) newOrder.university = newOrder.universitySelect;">
@@ -89,19 +89,19 @@ const OrderWizardModule = {
                                 </select>
                             </div>
                             <input x-show="showCustomUniversity" type="text" x-model="newOrder.university" 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-lg"
                                    placeholder="نام دانشگاه را وارد کنید">
                         </div>
                         
                         <!-- 4. رشته -->
                         <div>
                             <label class="block text-lg font-bold text-gray-800 mb-2">
-                                <i class="fas fa-graduation-cap text-indigo-500 ml-2"></i>
+                                <i class="fas fa-graduation-cap text-yellow-500 ml-2"></i>
                                 رشته تحصیلی <span class="text-red-500">*</span>
                             </label>
                             <div class="flex space-x-2 space-x-reverse">
                                 <select x-model="newOrder.fieldSelect" 
-                                        class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
+                                        class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-lg"
                                         required
                                         @change="showCustomField = (newOrder.fieldSelect === 'سایر'); 
                                                  if(!showCustomField) newOrder.field = newOrder.fieldSelect;">
@@ -110,27 +110,27 @@ const OrderWizardModule = {
                                 </select>
                             </div>
                             <input x-show="showCustomField" type="text" x-model="newOrder.field" 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-lg"
                                    placeholder="نام رشته را وارد کنید">
                         </div>
                         
                         <!-- 5. مهلت تحویل - روز و ساعت -->
                         <div>
                             <label class="block text-lg font-bold text-gray-800 mb-2">
-                                <i class="fas fa-calendar-alt text-indigo-500 ml-2"></i>
+                                <i class="fas fa-calendar-alt text-yellow-500 ml-2"></i>
                                 مهلت تحویل <span class="text-red-500">*</span>
                             </label>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-sm text-gray-600 mb-1">تاریخ</label>
                                     <input type="date" x-model="newOrder.deadlineDate" 
-                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                                            required>
                                 </div>
                                 <div>
                                     <label class="block text-sm text-gray-600 mb-1">ساعت</label>
                                     <input type="time" x-model="newOrder.deadlineTime" 
-                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                                            required>
                                 </div>
                             </div>
@@ -139,7 +139,7 @@ const OrderWizardModule = {
                         <!-- 6. فایل پیوست -->
                         <div>
                             <label class="block text-lg font-bold text-gray-800 mb-2">
-                                <i class="fas fa-paperclip text-indigo-500 ml-2"></i>
+                                <i class="fas fa-paperclip text-yellow-500 ml-2"></i>
                                 فایل پیوست
                                 <span class="text-sm text-gray-500 font-normal">(اختیاری)</span>
                             </label>
@@ -152,14 +152,14 @@ const OrderWizardModule = {
                                     <p class="text-gray-500 mb-2">فایل را آپلود کنید</p>
                                     <button type="button" 
                                             onclick="document.getElementById('order-attachment-input').click()"
-                                            class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                                            class="px-4 py-2 bg-yellow-600 text-gray-900 rounded-lg hover:bg-yellow-700">
                                         <i class="fas fa-upload ml-2"></i>
                                         انتخاب فایل
                                     </button>
                                 </div>
                                 <div id="order-file-selected" style="display:none;" class="flex items-center justify-between bg-white rounded-lg p-3 border">
                                     <div class="flex items-center">
-                                        <i class="fas fa-file text-2xl text-indigo-500 ml-3"></i>
+                                        <i class="fas fa-file text-2xl text-yellow-500 ml-3"></i>
                                         <span id="order-file-name" class="text-gray-700"></span>
                                     </div>
                                     <button type="button" 
@@ -174,22 +174,22 @@ const OrderWizardModule = {
                         <!-- 7. توضیحات -->
                         <div>
                             <label class="block text-lg font-bold text-gray-800 mb-2">
-                                <i class="fas fa-comment text-indigo-500 ml-2"></i>
+                                <i class="fas fa-comment text-yellow-500 ml-2"></i>
                                 توضیحات
                             </label>
                             <textarea x-model="newOrder.description" rows="3"
-                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                                       placeholder="توضیحات و جزئیات کار..."></textarea>
                         </div>
                         
                         <!-- 8. تخصیص به عامل -->
                         <div>
                             <label class="block text-lg font-bold text-gray-800 mb-2">
-                                <i class="fas fa-user-tie text-indigo-500 ml-2"></i>
+                                <i class="fas fa-user-tie text-yellow-500 ml-2"></i>
                                 تخصیص به عامل
                             </label>
                             <select x-model="newOrder.assignedAgent" 
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg">
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-lg">
                                 <option value="">بدون تخصیص</option>
                                 <option value="doc001">دکتر معصومی</option>
                                 <option value="doc002">دکتر ذوقی</option>
@@ -201,15 +201,15 @@ const OrderWizardModule = {
                         <!-- 9. هزینه کار -->
                         <div>
                             <label class="block text-lg font-bold text-gray-800 mb-2">
-                                <i class="fas fa-money-bill-wave text-indigo-500 ml-2"></i>
+                                <i class="fas fa-money-bill-wave text-yellow-500 ml-2"></i>
                                 هزینه کار <span class="text-red-500">*</span>
                             </label>
                             <div class="flex space-x-2 space-x-reverse">
                                 <input type="number" x-model="newOrder.cost" 
-                                       class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
+                                       class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-lg"
                                        required placeholder="مبلغ" min="0">
                                 <select x-model="newOrder.currency"
-                                        class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg bg-white">
+                                        class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-lg bg-white">
                                     <option value="تومان">تومان</option>
                                     <option value="دلار">دلار</option>
                                 </select>
@@ -219,7 +219,7 @@ const OrderWizardModule = {
                         <!-- Submit Button -->
                         <div class="pt-4 border-t">
                             <button type="submit" 
-                                    class="w-full py-4 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-bold text-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg">
+                                    class="w-full py-4 bg-gradient-to-r from-yellow-600 to-yellow-600 text-gray-900 rounded-lg font-bold text-lg hover:from-yellow-700 hover:to-yellow-700 transition-all shadow-lg">
                                 <i class="fas fa-check-circle ml-2"></i>
                                 ثبت سفارش
                             </button>
@@ -306,27 +306,44 @@ function orderWizardData() {
                 university: university,
                 field: field,
                 deadline: `${this.newOrder.deadlineDate}T${this.newOrder.deadlineTime}`,
+                deadlineDateTime: `${this.newOrder.deadlineDate}T${this.newOrder.deadlineTime}`,
                 attachmentName: attachmentName || null,
                 hasAttachment: !!attachmentData,
                 description: this.newOrder.description,
                 assignedDoctorId: this.newOrder.assignedAgent || null,
+                assignedAgentId:  this.newOrder.assignedAgent || null,
+                totalAmount: parseFloat(this.newOrder.cost) || 0,
                 cost: parseFloat(this.newOrder.cost) || 0,
                 currency: this.newOrder.currency || 'تومان',
+                paidAmount: 0,
+                paymentStatus: 'unpaid',
+                revenueAgentPercent: 60,
+                revenueManagerPercent: 40,
                 status: 'pending',
+                progress: 0,
+                tasks: [],
+                workLog: [],
                 createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
                 createdBy: currentUser.id || '',
                 studentId: currentUser.role === 'student' ? currentUser.id : null
             };
             
-            // ذخیره سفارش
+            // ذخیره سفارش از طریق DataModule (تا Supabase هم sync شود)
             try {
-                const storageKey = (typeof CONFIG !== 'undefined' && CONFIG.STORAGE_KEYS && CONFIG.STORAGE_KEYS.ORDERS) 
-                    ? CONFIG.STORAGE_KEYS.ORDERS 
-                    : 'edu_system_orders';
-                
-                const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
-                existing.unshift(order);
-                localStorage.setItem(storageKey, JSON.stringify(existing));
+                if (typeof DataModule !== 'undefined') {
+                    const existing = DataModule.getOrders();
+                    existing.unshift(order);
+                    DataModule.saveOrders(existing);
+                } else {
+                    // fallback مستقیم
+                    const storageKey = (typeof CONFIG !== 'undefined' && CONFIG.STORAGE_KEYS && CONFIG.STORAGE_KEYS.ORDERS)
+                        ? CONFIG.STORAGE_KEYS.ORDERS
+                        : 'edu_system_orders';
+                    const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                    existing.unshift(order);
+                    localStorage.setItem(storageKey, JSON.stringify(existing));
+                }
                 
                 // پاک کردن global فایل
                 window._orderAttachment = null;
@@ -347,16 +364,13 @@ function orderWizardData() {
             } catch (err) {
                 console.error('Error saving order:', err);
                 if (err.name === 'QuotaExceededError') {
-                    // حذف فایل‌های قدیمی برای آزاد کردن فضا
                     this._cleanupOldFiles();
-                    // دوباره امتحان
                     try {
-                        const storageKey = (typeof CONFIG !== 'undefined' && CONFIG.STORAGE_KEYS && CONFIG.STORAGE_KEYS.ORDERS) 
-                            ? CONFIG.STORAGE_KEYS.ORDERS 
-                            : 'edu_system_orders';
-                        const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
-                        existing.unshift(order);
-                        localStorage.setItem(storageKey, JSON.stringify(existing));
+                        if (typeof DataModule !== 'undefined') {
+                            const existing = DataModule.getOrders();
+                            existing.unshift(order);
+                            DataModule.saveOrders(existing);
+                        }
                         alert('✅ سفارش ثبت شد (فایل پیوست به دلیل محدودیت حافظه ذخیره نشد)');
                         this.$dispatch('close-modal');
                     } catch(e2) {

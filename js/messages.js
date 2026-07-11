@@ -99,8 +99,8 @@ const MessagesModule = {
         };
         
         const roleColors = {
-            'manager': 'bg-purple-500',
-            'employee': 'bg-indigo-500',
+            'manager': 'bg-yellow-500',
+            'employee': 'bg-yellow-500',
             'agent': 'bg-blue-500',
             'student': 'bg-green-500'
         };
@@ -135,7 +135,7 @@ const MessagesModule = {
                                 ${lastMessage ? this.getLastMessagePreview(lastMessage) : 'هنوز پیامی ارسال نشده'}
                             </p>
                             ${unreadCount > 0 ? `
-                                <span class="bg-indigo-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                <span class="bg-yellow-500 text-gray-900 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                                     ${unreadCount}
                                 </span>
                             ` : ''}
@@ -191,8 +191,8 @@ const MessagesModule = {
         };
         
         const roleColors = {
-            'manager': 'bg-purple-500',
-            'employee': 'bg-indigo-500',
+            'manager': 'bg-yellow-500',
+            'employee': 'bg-yellow-500',
             'agent': 'bg-blue-500',
             'student': 'bg-green-500'
         };
@@ -250,7 +250,7 @@ const MessagesModule = {
     getMessageHTML(message) {
         const isMe = message.senderId === this.currentUser.id;
         const alignment = isMe ? 'justify-end' : 'justify-start';
-        const bgColor = isMe ? 'bg-indigo-600' : 'bg-slate-700';
+        const bgColor = isMe ? 'bg-yellow-600' : 'bg-slate-700';
         
         let contentHTML = '';
         
@@ -304,7 +304,7 @@ const MessagesModule = {
             <div class="flex ${alignment} mb-4">
                 <div class="max-w-md ${bgColor} rounded-lg p-3 shadow-lg">
                     ${contentHTML}
-                    <div class="flex items-center justify-between mt-2 text-xs ${isMe ? 'text-indigo-200' : 'text-gray-400'}">
+                    <div class="flex items-center justify-between mt-2 text-xs ${isMe ? 'text-yellow-200' : 'text-gray-400'}">
                         <span>${this.formatTime(message.timestamp)}</span>
                         ${isMe ? `<i class="fas fa-check-double mr-2 ${message.read ? 'text-blue-300' : ''}"></i>` : ''}
                     </div>
@@ -557,7 +557,7 @@ const MessagesModule = {
             <div class="bg-slate-700 rounded-lg p-3 flex items-center justify-between">
                 <div class="flex items-center space-x-3 space-x-reverse">
                     <div class="w-10 h-10 rounded-lg bg-slate-600 flex items-center justify-center">
-                        <i class="fas ${fileIcon} text-indigo-400"></i>
+                        <i class="fas ${fileIcon} text-yellow-400"></i>
                     </div>
                     <div>
                         <p class="text-white text-sm font-medium">${this.attachedFile.name}</p>
@@ -606,15 +606,15 @@ const MessagesModule = {
             'xlsx': 'fa-file-excel text-green-400',
             'ppt': 'fa-file-powerpoint text-orange-400',
             'pptx': 'fa-file-powerpoint text-orange-400',
-            'jpg': 'fa-file-image text-purple-400',
-            'jpeg': 'fa-file-image text-purple-400',
-            'png': 'fa-file-image text-purple-400',
-            'gif': 'fa-file-image text-purple-400',
+            'jpg': 'fa-file-image text-yellow-400',
+            'jpeg': 'fa-file-image text-yellow-400',
+            'png': 'fa-file-image text-yellow-400',
+            'gif': 'fa-file-image text-yellow-400',
             'zip': 'fa-file-archive text-yellow-400',
             'rar': 'fa-file-archive text-yellow-400',
             'txt': 'fa-file-alt text-gray-400',
             'mp3': 'fa-file-audio text-pink-400',
-            'mp4': 'fa-file-video text-indigo-400',
+            'mp4': 'fa-file-video text-yellow-400',
         };
         return iconMap[ext] || 'fa-file text-gray-400';
     },

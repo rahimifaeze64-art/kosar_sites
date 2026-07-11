@@ -7,331 +7,250 @@
     <script src="assets/libs/tailwindcss.js"></script>
     <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
     <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
+    <!-- کاربران هاردکد -->
+    <script src="js/hardcoded-users.js"></script>
     <style>
         body { font-family: Vazirmatn, sans-serif; }
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="gradient-bg min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-md">
-        <!-- Logo and Title -->
-        <div class="text-center mb-8">
-            <div class="bg-white bg-opacity-20 w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden">
-                <img src="assets/logooo.png" alt="لوگو" class="w-full h-full object-cover">
-            </div>
-            <h1 class="text-3xl font-bold text-white mb-2">شرکة الکوثر للخدمات الجامعیة</h1>
-            <p class="text-white text-opacity-80">سیستم مدیریت تحصیلی دانشجویان بین‌المللی</p>
+<div class="w-full max-w-md">
+
+    <!-- لوگو و عنوان -->
+    <div class="text-center mb-8">
+        <div class="bg-white bg-opacity-20 w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden">
+            <img src="assets/logooo.png" alt="لوگو" class="w-full h-full object-cover">
         </div>
-
-        <!-- Login Form -->
-        <div class="bg-white rounded-2xl shadow-2xl p-8">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">ورود به سیستم</h2>
-            
-            <form id="login-form" onsubmit="handleLogin(event)">
-                <!-- Username -->
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="username">
-                        <i class="fas fa-user ml-2"></i>
-                        نام کاربری
-                    </label>
-                    <input 
-                        type="text" 
-                        id="username" 
-                        name="username"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
-                        placeholder="نام کاربری خود را وارد کنید"
-                        required
-                        autocomplete="username"
-                    >
-                </div>
-
-                <!-- Password -->
-                <div class="mb-6">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="password">
-                        <i class="fas fa-lock ml-2"></i>
-                        رمز عبور
-                    </label>
-                    <div class="relative">
-                        <input 
-                            type="password" 
-                            id="password" 
-                            name="password"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
-                            placeholder="رمز عبور خود را وارد کنید"
-                            required
-                            autocomplete="current-password"
-                        >
-                        <button 
-                            type="button"
-                            onclick="togglePassword()"
-                            class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                        >
-                            <i class="fas fa-eye" id="password-toggle-icon"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Remember Me -->
-                <div class="flex items-center justify-between mb-6">
-                    <label class="flex items-center">
-                        <input type="checkbox" id="remember-me" class="ml-2">
-                        <span class="text-sm text-gray-700">مرا به خاطر بسپار</span>
-                    </label>
-                </div>
-
-                <!-- Submit Button -->
-                <button 
-                    type="submit" 
-                    class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200"
-                    id="login-button"
-                >
-                    <i class="fas fa-sign-in-alt ml-2"></i>
-                    ورود
-                </button>
-            </form>
-
-            <!-- Error Message -->
-            <div id="error-message" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden">
-                <i class="fas fa-exclamation-circle ml-2"></i>
-                <span id="error-text"></span>
-            </div>
-
-            <!-- Demo Users Info -->
-            <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h3 class="font-bold text-blue-800 mb-2">
-                    <i class="fas fa-info-circle ml-2"></i>
-                    کاربران پیش‌فرض
-                </h3>
-                <div class="text-sm text-blue-700 space-y-2">
-                    <div class="flex justify-between">
-                        <span>مدیر:</span>
-                        <code class="bg-blue-100 px-2 py-1 rounded">taghizadeh / taghizadeh</code>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>کارمند 1:</span>
-                        <code class="bg-blue-100 px-2 py-1 rounded">sakhaei / Z@z12345</code>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>کارمند 2:</span>
-                        <code class="bg-blue-100 px-2 py-1 rounded">farzad / F@f12345</code>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="text-center mt-6 text-white text-opacity-80 text-sm">
-            <p>© 2026 شرکة الکوثر للخدمات الجامعیة - تمامی حقوق محفوظ است</p>
-        </div>
+        <h1 class="text-3xl font-bold text-white mb-2">شرکة الکوثر للخدمات الجامعیة</h1>
+        <p class="text-white text-opacity-80">سیستم مدیریت تحصیلی</p>
     </div>
 
-    <script src="js/api-orders.js"></script>
-    <script>
-        // Default users
-        const DEFAULT_USERS = [
-            {
-                id: 'mgr001',
-                username: 'taghizadeh',
-                password: 'taghizadeh',
-                name: 'دکتر تقی زاده',
-                role: 'manager',
-                email: 'taghizadeh@alkawsar.com',
-                phone: '+98 912 123 4567',
-                active: true
-            },
-            {
-                id: 'emp001',
-                username: 'sakhaei',
-                password: 'Z@z12345',
-                name: 'سخایی',
-                role: 'employee',
-                email: 'sakhaei@alkawsar.com',
-                phone: '+98 912 234 5678',
-                active: true
-            },
-            {
-                id: 'emp002',
-                username: 'farzad',
-                password: 'F@f12345',
-                name: 'فرزاد',
-                role: 'employee',
-                email: 'farzad@alkawsar.com',
-                phone: '+98 912 345 6789',
-                active: true
-            }
-        ];
+    <!-- فرم ورود -->
+    <div class="bg-white rounded-2xl shadow-2xl p-8">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">ورود به سیستم</h2>
 
-        // Initialize default users in localStorage if not exists
-        function initializeDefaultUsers() {
-            const usersKey = 'users';
-            let users = localStorage.getItem(usersKey);
-            
-            if (!users) {
-                localStorage.setItem(usersKey, JSON.stringify(DEFAULT_USERS));
-                console.log('Default users initialized');
-            } else {
-                // Merge with existing users
-                const existingUsers = JSON.parse(users);
-                DEFAULT_USERS.forEach(defaultUser => {
-                    const exists = existingUsers.find(u => u.username === defaultUser.username);
-                    if (!exists) {
-                        existingUsers.push(defaultUser);
-                    }
-                });
-                localStorage.setItem(usersKey, JSON.stringify(existingUsers));
-            }
-        }
+        <form id="login-form" onsubmit="handleLogin(event)" autocomplete="off">
 
-        // Toggle password visibility
-        function togglePassword() {
-            const passwordInput = document.getElementById('password');
-            const toggleIcon = document.getElementById('password-toggle-icon');
-            
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                toggleIcon.classList.remove('fa-eye');
-                toggleIcon.classList.add('fa-eye-slash');
-            } else {
-                passwordInput.type = 'password';
-                toggleIcon.classList.remove('fa-eye-slash');
-                toggleIcon.classList.add('fa-eye');
-            }
-        }
+            <!-- نام کاربری -->
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="username">
+                    <i class="fas fa-user ml-2 text-yellow-600"></i>نام کاربری
+                </label>
+                <input type="text" id="username" name="username"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-left"
+                    placeholder="نام کاربری" dir="ltr" required autocomplete="username">
+            </div>
 
-        // Show error message
-        function showError(message) {
-            const errorDiv = document.getElementById('error-message');
-            const errorText = document.getElementById('error-text');
-            errorText.textContent = message;
-            errorDiv.classList.remove('hidden');
-            
-            setTimeout(() => {
-                errorDiv.classList.add('hidden');
-            }, 5000);
-        }
+            <!-- رمز عبور -->
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="password">
+                    <i class="fas fa-lock ml-2 text-yellow-600"></i>رمز عبور
+                </label>
+                <div class="relative">
+                    <input type="password" id="password" name="password"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-left"
+                        placeholder="رمز عبور" dir="ltr" required autocomplete="current-password">
+                    <button type="button" onclick="togglePassword()"
+                        class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-eye" id="eye-icon"></i>
+                    </button>
+                </div>
+            </div>
 
-        // Handle login
-        async function handleLogin(event) {
-            event.preventDefault();
-            
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
-            const rememberMe = document.getElementById('remember-me').checked;
-            const loginButton = document.getElementById('login-button');
-            
-            // Disable button
-            loginButton.disabled = true;
-            loginButton.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i>در حال ورود...';
-            
-            try {
-                // Try backend API first
-                if (window.APIOrdersModule) {
-                    try {
-                        const response = await fetch('http://127.0.0.1:8000/api/auth/login/', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            credentials: 'include',
-                            body: JSON.stringify({ username, password })
-                        });
-                        
-                        const data = await response.json();
-                        
-                        if (data.success && data.user) {
-                            // Save user to localStorage
-                            const user = {
-                                id: data.user.id,
-                                username: data.user.username,
-                                name: `${data.user.first_name} ${data.user.last_name}`,
-                                role: data.user.role,
-                                email: data.user.email,
-                                phone: data.user.phone,
-                                active: data.user.active
-                            };
-                            
-                            localStorage.setItem('currentUser', JSON.stringify(user));
-                            localStorage.setItem('edu_system_current_user', JSON.stringify(user));
-                            
-                            if (rememberMe) {
-                                localStorage.setItem('remember_me', 'true');
-                            }
-                            
-                            // Redirect to main page
-                            window.location.href = 'index.html';
-                            return;
-                        }
-                    } catch (apiError) {
-                        console.warn('Backend login failed, trying localStorage:', apiError);
-                    }
+            <!-- دکمه ورود -->
+            <button type="submit" id="login-btn"
+                class="w-full bg-yellow-600 hover:bg-yellow-700 active:bg-yellow-800 text-gray-900 font-bold py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
+                <i class="fas fa-sign-in-alt"></i>
+                <span id="btn-text">ورود</span>
+            </button>
+        </form>
+
+        <!-- پیام خطا -->
+        <div id="error-box" class="mt-4 p-3 bg-red-50 border border-red-300 text-red-700 rounded-lg hidden text-sm">
+            <i class="fas fa-exclamation-circle ml-1"></i>
+            <span id="error-text"></span>
+        </div>
+
+        <!-- راهنمای کاربران -->
+        <details class="mt-6">
+            <summary class="cursor-pointer text-sm text-gray-500 hover:text-yellow-600 select-none">
+                <i class="fas fa-info-circle ml-1"></i>مشاهده لیست کاربران
+            </summary>
+            <div id="users-hint" class="mt-3 text-xs text-gray-600 space-y-1 bg-gray-50 rounded-lg p-3">
+                <!-- پر می‌شود توسط JS -->
+            </div>
+        </details>
+    </div>
+
+    <!-- فوتر -->
+    <p class="text-center mt-6 text-white text-opacity-70 text-sm">
+        © 1403 شرکة الکوثر للخدمات الجامعیة
+    </p>
+</div>
+
+<script>
+// ── نمایش راهنمای کاربران از لیست هاردکد ────────────────────
+(function buildHint() {
+    const container = document.getElementById('users-hint');
+    if (!container || typeof HARDCODED_USERS === 'undefined') return;
+
+    const roleLabel = { manager: 'مدیر', employee: 'کارمند', agent: 'عامل' };
+    const roleColor = { manager: 'text-red-600', employee: 'text-blue-600', agent: 'text-green-600' };
+
+    HARDCODED_USERS.forEach(u => {
+        const row = document.createElement('div');
+        row.className = 'flex justify-between items-center py-1 border-b border-gray-100 last:border-0';
+        row.innerHTML = `
+            <span class="${roleColor[u.role] || ''} font-semibold w-16">${roleLabel[u.role] || u.role}</span>
+            <span class="text-gray-700 flex-1 px-2">${u.name}</span>
+            <code class="bg-white border border-gray-200 rounded px-2 py-0.5 text-yellow-700 text-xs cursor-pointer hover:bg-yellow-50"
+                  onclick="fillLogin('${u.username}','${u.password}')"
+                  title="کلیک برای ورود خودکار">
+                ${u.username}
+            </code>`;
+        container.appendChild(row);
+    });
+})();
+
+// ── کلیک روی نام کاربری → پر کردن فرم ─────────────────────
+function fillLogin(username, password) {
+    document.getElementById('username').value = username;
+    document.getElementById('password').value = password;
+    document.getElementById('username').focus();
+}
+
+// ── نمایش/پنهان رمز ──────────────────────────────────────────
+function togglePassword() {
+    const input = document.getElementById('password');
+    const icon  = document.getElementById('eye-icon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'fas fa-eye';
+    }
+}
+
+// ── نمایش/پنهان خطا ──────────────────────────────────────────
+function showError(msg) {
+    const box  = document.getElementById('error-box');
+    const text = document.getElementById('error-text');
+    text.textContent = msg;
+    box.classList.remove('hidden');
+    setTimeout(() => box.classList.add('hidden'), 6000);
+}
+function hideError() {
+    document.getElementById('error-box').classList.add('hidden');
+}
+
+// ── حالت loading دکمه ────────────────────────────────────────
+function setLoading(on) {
+    const btn  = document.getElementById('login-btn');
+    const text = document.getElementById('btn-text');
+    if (on) {
+        btn.disabled = true;
+        text.textContent = 'در حال ورود...';
+        btn.querySelector('i').className = 'fas fa-spinner spin';
+    } else {
+        btn.disabled = false;
+        text.textContent = 'ورود';
+        btn.querySelector('i').className = 'fas fa-sign-in-alt';
+    }
+}
+
+// ── منطق اصلی ورود ───────────────────────────────────────────
+async function handleLogin(event) {
+    event.preventDefault();
+    hideError();
+
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+
+    if (!username || !password) {
+        showError('نام کاربری و رمز عبور را وارد کنید');
+        return;
+    }
+
+    setLoading(true);
+
+    // ── ۱. جستجو در لیست هاردکد (اصلی‌ترین روش) ─────────────
+    const user = findHardcodedUser(username, password);
+
+    if (user) {
+        // ذخیره کاربر جاری
+        const sessionUser = {
+            id:         user.id,
+            name:       user.name,
+            username:   user.username,
+            role:       user.role,
+            email:      user.email      || '',
+            phone:      user.phone      || '',
+            department: user.department || '',
+            specialization: user.specialization || '',
+            active:     true
+        };
+        localStorage.setItem('currentUser', JSON.stringify(sessionUser));
+        localStorage.setItem('edu_system_current_user', JSON.stringify(sessionUser));
+        console.log('✅ ورود موفق:', sessionUser.username, '|', sessionUser.role);
+
+        // ── ۲. تلاش برای ذخیره session در Supabase (اختیاری) ─
+        // اگر Supabase پیکربندی شده باشد، session را ثبت می‌کنیم
+        // این مرحله اختیاری است و در صورت خطا از ورود جلوگیری نمی‌کند
+        try {
+            if (typeof getSupabaseClient === 'function' &&
+                typeof SUPABASE_URL !== 'undefined' &&
+                SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+
+                const client = getSupabaseClient();
+                if (client) {
+                    const email = user.email || `${user.username}@kowsar.local`;
+                    await client.auth.signInWithPassword({ email, password });
+                    console.log('✅ Supabase session ثبت شد');
                 }
-                
-                // Fallback to localStorage authentication
-                const usersStr = localStorage.getItem('users');
-                const users = usersStr ? JSON.parse(usersStr) : DEFAULT_USERS;
-                
-                const user = users.find(u => 
-                    u.username === username && 
-                    u.password === password &&
-                    u.active
-                );
-                
-                if (user) {
-                    // Save current user
-                    const currentUser = {
-                        id: user.id,
-                        username: user.username,
-                        name: user.name,
-                        role: user.role,
-                        email: user.email,
-                        phone: user.phone,
-                        active: user.active
-                    };
-                    
-                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                    localStorage.setItem('edu_system_current_user', JSON.stringify(currentUser));
-                    
-                    if (rememberMe) {
-                        localStorage.setItem('remember_me', 'true');
-                    }
-                    
-                    // Redirect to main page
-                    window.location.href = 'index.html';
-                } else {
-                    showError('نام کاربری یا رمز عبور اشتباه است');
-                    loginButton.disabled = false;
-                    loginButton.innerHTML = '<i class="fas fa-sign-in-alt ml-2"></i>ورود';
-                }
-                
-            } catch (error) {
-                console.error('Login error:', error);
-                showError('خطا در ورود به سیستم. لطفاً دوباره تلاش کنید');
-                loginButton.disabled = false;
-                loginButton.innerHTML = '<i class="fas fa-sign-in-alt ml-2"></i>ورود';
             }
+        } catch (e) {
+            // مشکلی نیست — ورود هاردکد موفق بوده
+            console.warn('⚠️ Supabase session (اختیاری) خطا:', e.message);
         }
 
-        // Check if already logged in
-        function checkAlreadyLoggedIn() {
-            const currentUser = localStorage.getItem('currentUser');
-            if (currentUser) {
-                // Redirect to main page
+        // ریدایرکت
+        window.location.href = 'index.html';
+        return;
+    }
+
+    // ── ۳. کاربر پیدا نشد ────────────────────────────────────
+    setLoading(false);
+    showError('نام کاربری یا رمز عبور اشتباه است');
+    document.getElementById('password').value = '';
+    document.getElementById('password').focus();
+}
+
+// ── اگر قبلاً لاگین شده، مستقیم برو به index ────────────────
+(function checkSession() {
+    const saved = localStorage.getItem('currentUser');
+    if (saved) {
+        try {
+            const u = JSON.parse(saved);
+            if (u && u.id && u.role) {
                 window.location.href = 'index.html';
             }
+        } catch(e) {
+            localStorage.removeItem('currentUser');
         }
+    }
+})();
 
-        // Initialize on page load
-        window.addEventListener('load', () => {
-            initializeDefaultUsers();
-            checkAlreadyLoggedIn();
-        });
-
-        // Handle Enter key
-        document.getElementById('password').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                handleLogin(e);
-            }
-        });
-    </script>
+// Enter در فیلد username → رفتن به password
+document.getElementById('username').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('password').focus();
+    }
+});
+</script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * سیستم ساعات کاری
  * مدیریت ثبت و نمایش ساعات کاری کارمندان
  */
@@ -596,8 +596,8 @@ const WorkHoursUI = (function() {
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                         <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 bg-purple-500/20 rounded-xl flex items-center justify-center">
-                                <i class="fas fa-users text-2xl text-purple-400"></i>
+                            <div class="w-14 h-14 bg-yellow-500/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-users text-2xl text-yellow-400"></i>
                             </div>
                             <div>
                                 <p class="text-blue-200 text-sm">تعداد کارمندان</p>
@@ -1267,7 +1267,7 @@ const WorkHoursUI = (function() {
         };
         
         const notification = document.createElement('div');
-        notification.className = `fixed top-4 left-4 ${colors[type]} text-white px-6 py-3 rounded-xl shadow-lg z-50 fade-in`;
+        notification.className = `fixed top-4 left-4 ${colors[type]} text-gray-900 px-6 py-3 rounded-xl shadow-lg z-50 fade-in`;
         notification.innerHTML = `
             <div class="flex items-center gap-3">
                 <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>

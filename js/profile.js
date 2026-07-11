@@ -62,7 +62,7 @@ const ProfileModule = {
                 <!-- Theme Settings -->
                 <div class="bg-white rounded-lg shadow-md p-6">
                     <h3 class="text-lg font-bold mb-4 text-gray-800">
-                        <i class="fas fa-palette ml-2 text-indigo-500"></i>
+                        <i class="fas fa-palette ml-2 text-yellow-500"></i>
                         تنظیمات ظاهری
                     </h3>
                     <label class="block text-sm font-medium text-gray-600 mb-3">انتخاب تم رنگی</label>
@@ -101,7 +101,7 @@ const ProfileModule = {
                             ذخیره تغییرات
                         </button>
                         <button onclick="window.showModal = 'changePassword'" 
-                                class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-medium btn">
+                                class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg font-medium btn">
                             <i class="fas fa-key ml-2"></i>
                             تغییر رمز عبور
                         </button>

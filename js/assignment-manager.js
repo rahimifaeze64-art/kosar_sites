@@ -43,7 +43,7 @@ const AssignmentManagerModule = {
                             ${doctors.map(d => `<option value="${d.id}">${d.name} - ${d.specialization || 'متخصص'}</option>`).join('')}
                         </select>
                         <button onclick="assignAllWorks('${order.id}')" 
-                                class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 whitespace-nowrap">
+                                class="bg-yellow-600 text-gray-900 px-4 py-2 rounded-lg hover:bg-yellow-700 whitespace-nowrap">
                             <i class="fas fa-users ml-2"></i>
                             تخصیص همه به این عامل
                         </button>
@@ -69,7 +69,7 @@ const AssignmentManagerModule = {
                                     <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                         <div class="flex items-start justify-between mb-3">
                                             <div class="flex items-center flex-1">
-                                                <span class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm ml-3">
+                                                <span class="w-10 h-10 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center font-bold text-sm ml-3">
                                                     ${index + 1}
                                                 </span>
                                                 <div class="flex-1">
@@ -114,7 +114,7 @@ const AssignmentManagerModule = {
                                                 <div class="bg-white border rounded-lg p-3">
                                                     <p class="text-sm text-gray-600 mb-1">عامل فعلی:</p>
                                                     <div class="flex items-center">
-                                                        <i class="fas fa-user-md text-purple-600 ml-2"></i>
+                                                        <i class="fas fa-user-md text-yellow-600 ml-2"></i>
                                                         <div>
                                                             <p class="font-medium text-gray-800">${assignedDoctor.name}</p>
                                                             <p class="text-xs text-gray-500">${assignedDoctor.specialization || 'متخصص'}</p>

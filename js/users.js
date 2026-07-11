@@ -16,7 +16,7 @@ const UsersModule = {
                             کارمند جدید
                         </button>
                         <button onclick="UsersModule.showAddAgentModal()" 
-                                class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium btn">
+                                class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg font-medium btn">
                             <i class="fas fa-user-tie ml-2"></i>
                             عامل جدید
                         </button>
@@ -45,7 +45,7 @@ const UsersModule = {
                     <div class="dashboard-card purple">
                         <div class="text-center">
                             <h3 class="text-lg font-semibold text-gray-700">عامل‌ها</h3>
-                            <p class="text-2xl font-bold text-purple-600">${users.filter(u => u.role === CONFIG.ROLES.AGENT).length}</p>
+                            <p class="text-2xl font-bold text-yellow-600">${users.filter(u => u.role === CONFIG.ROLES.AGENT).length}</p>
                         </div>
                     </div>
                     <div class="dashboard-card yellow">
@@ -218,7 +218,7 @@ const UsersModule = {
         const classes = {
             [CONFIG.ROLES.MANAGER]: 'bg-red-100 text-red-800',
             [CONFIG.ROLES.employee]: 'bg-blue-100 text-blue-800',
-            [CONFIG.ROLES.AGENT]: 'bg-purple-100 text-purple-800',
+            [CONFIG.ROLES.AGENT]: 'bg-yellow-100 text-yellow-800',
             [CONFIG.ROLES.STUDENT]: 'bg-green-100 text-green-800'
         };
         return classes[role] || 'bg-gray-100 text-gray-800';
@@ -241,7 +241,7 @@ const UsersModule = {
 
     // نمایش modal عامل جدید
     showAddAgentModal() {
-        this._showPersonModal('agent', 'عامل جدید', 'bg-purple-600');
+        this._showPersonModal('agent', 'عامل جدید', 'bg-yellow-600');
     },
 
     // modal عمومی برای افزودن کارمند/عامل

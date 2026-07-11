@@ -132,7 +132,7 @@ const ModalsModule = {
             <!-- New Order Modal -->
             <div x-show="showModal === 'newOrder'" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-2 modal-backdrop"
                  @click.self="showModal = null">
-                <div class="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg w-[98vw] max-w-[1600px] h-[98vh] overflow-y-auto modal">
+                <div class="bg-gradient-to-br from-blue-50 to-yellow-100 rounded-lg w-[98vw] max-w-[1600px] h-[98vh] overflow-y-auto modal">
                     ${this.getNewOrderModal()}
                 </div>
             </div>
@@ -401,7 +401,7 @@ const ModalsModule = {
                             <i class="fas fa-passport text-4xl text-gray-400 mb-2"></i>
                             <p class="text-gray-500 text-sm mb-2">عکس پاسپورت را آپلود کنید</p>
                             <button type="button" @click="document.getElementById('passport-image-input').click()"
-                                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">
+                                    class="px-4 py-2 bg-yellow-600 text-gray-900 rounded-lg hover:bg-yellow-700 text-sm">
                                 <i class="fas fa-upload ml-2"></i>
                                 انتخاب فایل
                             </button>
@@ -590,8 +590,8 @@ const ModalsModule = {
                 </div>
 
                 <!-- Agent Specific Fields -->
-                <div x-show="newUser.role === 'agent'" class="bg-purple-50 p-4 rounded-lg">
-                    <h4 class="font-semibold text-purple-800 mb-3"><i class="fas fa-user-tie ml-1"></i> اطلاعات عامل</h4>
+                <div x-show="newUser.role === 'agent'" class="bg-yellow-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-yellow-800 mb-3"><i class="fas fa-user-tie ml-1"></i> اطلاعات عامل</h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">نوع کار (تخصص)</label>
@@ -687,8 +687,8 @@ const ModalsModule = {
                 </div>
 
                 <!-- Role-specific fields -->
-                <div x-show="editUser.role === 'agent'" class="bg-purple-50 p-4 rounded-lg">
-                    <h4 class="font-semibold text-purple-800 mb-3"><i class="fas fa-user-tie ml-1"></i> اطلاعات عامل</h4>
+                <div x-show="editUser.role === 'agent'" class="bg-yellow-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-yellow-800 mb-3"><i class="fas fa-user-tie ml-1"></i> اطلاعات عامل</h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">نوع کار (تخصص)</label>
@@ -759,7 +759,7 @@ const ModalsModule = {
                         انصراف
                     </button>
                     <button @click="changePassword(passwordForm)"
-                            class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 btn">
+                            class="px-4 py-2 bg-yellow-600 text-gray-900 rounded-lg hover:bg-yellow-700 btn">
                         تغییر رمز
                     </button>
                 </div>
@@ -818,7 +818,7 @@ const ModalsModule = {
     return `
             <div class="p-6 border-b">
                 <h3 class="text-lg font-bold text-gray-800">
-                    <i class="fas fa-user-plus text-purple-600 ml-2"></i>
+                    <i class="fas fa-user-plus text-yellow-600 ml-2"></i>
                     تخصیص سفارش به عامل
                 </h3>
             </div>
@@ -833,20 +833,20 @@ const ModalsModule = {
                         ${doctors
                           .map(
                             (d) => `
-                            <div class="doctor-card border-2 rounded-lg p-4 cursor-pointer transition-all hover:border-purple-400 hover:bg-purple-50"
-                                 :class="selectedDoctor === '${d.id}' ? 'border-purple-600 bg-purple-50' : 'border-gray-200'"
+                            <div class="doctor-card border-2 rounded-lg p-4 cursor-pointer transition-all hover:border-yellow-400 hover:bg-yellow-50"
+                                 :class="selectedDoctor === '${d.id}' ? 'border-yellow-600 bg-yellow-50' : 'border-gray-200'"
                                  @click="selectedDoctor = '${d.id}'">
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center">
-                                        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center ml-3">
-                                            <i class="fas fa-user-md text-purple-600"></i>
+                                        <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center ml-3">
+                                            <i class="fas fa-user-md text-yellow-600"></i>
                                         </div>
                                         <div>
                                             <p class="font-semibold text-gray-800">${d.name}</p>
                                             <p class="text-sm text-gray-500">${d.specialization || "متخصص"}</p>
                                         </div>
                                     </div>
-                                    <div x-show="selectedDoctor === '${d.id}'" class="text-purple-600">
+                                    <div x-show="selectedDoctor === '${d.id}'" class="text-yellow-600">
                                         <i class="fas fa-check-circle text-xl"></i>
                                     </div>
                                 </div>
@@ -864,7 +864,7 @@ const ModalsModule = {
                     </button>
                     <button @click="submitAssignOrder(selectedDoctor)"
                             :disabled="!selectedDoctor"
-                            :class="selectedDoctor ? 'bg-purple-600 hover:bg-purple-700' : 'bg-gray-300 cursor-not-allowed'"
+                            :class="selectedDoctor ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-gray-300 cursor-not-allowed'"
                             class="px-4 py-2 text-white rounded-lg btn">
                         <i class="fas fa-check ml-2"></i>
                         تخصیص به عامل
@@ -909,7 +909,7 @@ const ModalsModule = {
     return `
             <div class="p-6 border-b">
                 <h3 class="text-lg font-bold text-gray-800">
-                    <i class="fas fa-project-diagram text-purple-600 ml-2"></i>
+                    <i class="fas fa-project-diagram text-yellow-600 ml-2"></i>
                     ایجاد پروژه جدید
                 </h3>
                 <p class="text-sm text-gray-600 mt-1">پروژه جدید ایجاد کنید و مستقیماً به عامل تخصیص دهید</p>
@@ -1008,30 +1008,30 @@ const ModalsModule = {
                 </div>
 
                 <!-- Doctor Assignment -->
-                <div class="bg-purple-50 p-4 rounded-lg">
-                    <h4 class="font-semibold text-purple-800 mb-3">
+                <div class="bg-yellow-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-yellow-800 mb-3">
                         <i class="fas fa-user-md ml-1"></i> تخصیص به عامل
                     </h4>
                     <div class="grid grid-cols-1 gap-3">
                         ${doctors
                           .map(
                             (doctor) => `
-                            <div class="doctor-card border-2 rounded-lg p-3 cursor-pointer transition-all hover:border-purple-400 hover:bg-purple-50"
-                                 :class="selectedDoctor === '${doctor.id}' ? 'border-purple-600 bg-purple-100' : 'border-gray-200 bg-white'"
+                            <div class="doctor-card border-2 rounded-lg p-3 cursor-pointer transition-all hover:border-yellow-400 hover:bg-yellow-50"
+                                 :class="selectedDoctor === '${doctor.id}' ? 'border-yellow-600 bg-yellow-100' : 'border-gray-200 bg-white'"
                                  @click="selectedDoctor = '${doctor.id}';
                                          newProject.assignedDoctorId = '${doctor.id}';
                                          newProject.assignedDoctor = '${doctor.name}';">
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center">
-                                        <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center ml-3">
-                                            <i class="fas fa-user-md text-purple-600"></i>
+                                        <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center ml-3">
+                                            <i class="fas fa-user-md text-yellow-600"></i>
                                         </div>
                                         <div>
                                             <p class="font-semibold text-gray-800">${doctor.name}</p>
                                             <p class="text-sm text-gray-500">${doctor.specialization || "متخصص"}</p>
                                         </div>
                                     </div>
-                                    <div x-show="selectedDoctor === '${doctor.id}'" class="text-purple-600">
+                                    <div x-show="selectedDoctor === '${doctor.id}'" class="text-yellow-600">
                                         <i class="fas fa-check-circle text-xl"></i>
                                     </div>
                                 </div>
@@ -1068,7 +1068,7 @@ const ModalsModule = {
                     </button>
                     <button @click="submitCreateProject(newProject)"
                             :disabled="!selectedStudent || !selectedDoctor || !newProject.type || !newProject.degree || !newProject.deadline"
-                            :class="(selectedStudent && selectedDoctor && newProject.type && newProject.degree && newProject.deadline) ? 'bg-purple-600 hover:bg-purple-700' : 'bg-gray-300 cursor-not-allowed'"
+                            :class="(selectedStudent && selectedDoctor && newProject.type && newProject.degree && newProject.deadline) ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-gray-300 cursor-not-allowed'"
                             class="px-4 py-2 text-white rounded-lg btn">
                         <i class="fas fa-plus ml-2"></i>
                         ایجاد پروژه

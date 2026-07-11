@@ -1,4 +1,4 @@
-// Assignment Module - مدیریت تخصیص سفارشات به عاملها
+﻿// Assignment Module - مدیریت تخصیص سفارشات به عاملها
 const AssignmentModule = {
     // Show assignment modal
     showModal(orderId) {
@@ -50,7 +50,7 @@ const AssignmentModule = {
                 <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                     <div class="p-6 border-b">
                         <h3 class="text-lg font-bold text-gray-800">
-                            <i class="fas fa-user-plus text-purple-600 ml-2"></i>
+                            <i class="fas fa-user-plus text-yellow-600 ml-2"></i>
                             تخصیص سفارش به عامل
                         </h3>
                     </div>
@@ -65,13 +65,13 @@ const AssignmentModule = {
                             <label class="block text-sm font-medium text-gray-700 mb-3">انتخاب عامل:</label>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 ${doctors.map(doctor => `
-                                    <div class="doctor-card border-2 rounded-lg p-4 cursor-pointer transition-all hover:border-purple-400 hover:bg-purple-50"
-                                         :class="selectedDoctor === '${doctor.id}' ? 'border-purple-600 bg-purple-50' : 'border-gray-200'"
+                                    <div class="doctor-card border-2 rounded-lg p-4 cursor-pointer transition-all hover:border-yellow-400 hover:bg-yellow-50"
+                                         :class="selectedDoctor === '${doctor.id}' ? 'border-yellow-600 bg-yellow-50' : 'border-gray-200'"
                                          @click="selectedDoctor = '${doctor.id}'"
                                          onclick="selectDoctor('${doctor.id}')">
                                         <div class="flex items-center">
-                                            <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center ml-3">
-                                                <i class="fas fa-user-md text-purple-600 text-xl"></i>
+                                            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center ml-3">
+                                                <i class="fas fa-user-md text-yellow-600 text-xl"></i>
                                             </div>
                                             <div class="flex-1">
                                                 <p class="font-semibold text-gray-800">${doctor.name}</p>
@@ -82,7 +82,7 @@ const AssignmentModule = {
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div x-show="selectedDoctor === '${doctor.id}'" class="text-purple-600 doctor-check" style="display: none;">
+                                            <div x-show="selectedDoctor === '${doctor.id}'" class="text-yellow-600 doctor-check" style="display: none;">
                                                 <i class="fas fa-check-circle text-2xl"></i>
                                             </div>
                                         </div>
@@ -125,7 +125,7 @@ const AssignmentModule = {
             try {
                 // Remove selection from all cards
                 document.querySelectorAll('.doctor-card').forEach(card => {
-                    card.classList.remove('border-purple-600', 'bg-purple-50');
+                    card.classList.remove('border-yellow-600', 'bg-yellow-50');
                     card.classList.add('border-gray-200');
                     const checkElement = card.querySelector('.doctor-check');
                     if (checkElement) {
@@ -137,7 +137,7 @@ const AssignmentModule = {
                 const selectedCard = document.querySelector(`[onclick="selectDoctor('${doctorId}')"]`);
                 if (selectedCard) {
                     selectedCard.classList.remove('border-gray-200');
-                    selectedCard.classList.add('border-purple-600', 'bg-purple-50');
+                    selectedCard.classList.add('border-yellow-600', 'bg-yellow-50');
                     const checkElement = selectedCard.querySelector('.doctor-check');
                     if (checkElement) {
                         checkElement.style.display = 'block';
@@ -149,7 +149,7 @@ const AssignmentModule = {
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.classList.remove('bg-gray-300', 'cursor-not-allowed');
-                    submitBtn.classList.add('bg-purple-600', 'hover:bg-purple-700');
+                    submitBtn.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
                 }
                 
                 // Store selected doctor

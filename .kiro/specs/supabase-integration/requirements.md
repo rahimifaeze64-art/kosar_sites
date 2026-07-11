@@ -211,3 +211,5 @@
 2. THE System SHALL در `SUPABASE_SETUP.md` مراحل ایجاد پروژه در Supabase، اجرای SQL Schema، تنظیم متغیرهای محیطی و آزمایش اتصال را شرح دهد.
 3. THE System SHALL در `SUPABASE_SETUP.md` نمونه کد JavaScript برای آزمایش اتصال و تأیید RLS را شامل کند.
 4. THE System SHALL در `SUPABASE_SETUP.md` لیست تمام متغیرهایی که باید در `js/supabase-config.js` تنظیم شوند را مشخص کند.
+
+

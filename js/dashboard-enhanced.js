@@ -208,13 +208,13 @@ const EnhancedDashboardModule = {
                             <div class="bg-red-50 rounded-full p-3"><i class="fas fa-comments text-red-400 text-2xl"></i></div>
                         </div>
 
-                        <div class="bg-white rounded-xl shadow p-5 border-r-4 border-purple-500 flex items-center justify-between">
+                        <div class="bg-white rounded-xl shadow p-5 border-r-4 border-yellow-500 flex items-center justify-between">
                             <div>
                                 <p class="text-sm text-gray-500 mb-1">دانشجویان</p>
-                                <p class="text-3xl font-bold text-purple-600">${activeStudents}</p>
+                                <p class="text-3xl font-bold text-yellow-600">${activeStudents}</p>
                                 <p class="text-xs text-gray-400 mt-1">از ${users.length} کاربر کل</p>
                             </div>
-                            <div class="bg-purple-50 rounded-full p-3"><i class="fas fa-user-graduate text-purple-500 text-2xl"></i></div>
+                            <div class="bg-yellow-50 rounded-full p-3"><i class="fas fa-user-graduate text-yellow-500 text-2xl"></i></div>
                         </div>
                     </div>
 
@@ -230,13 +230,13 @@ const EnhancedDashboardModule = {
                             <div class="bg-amber-50 rounded-full p-3"><i class="fas fa-clock text-amber-400 text-2xl"></i></div>
                         </div>
 
-                        <div class="bg-white rounded-xl shadow p-5 border-r-4 border-indigo-400 flex items-center justify-between cursor-pointer hover:shadow-md" onclick="openWeeklyCalendar()">
+                        <div class="bg-white rounded-xl shadow p-5 border-r-4 border-yellow-400 flex items-center justify-between cursor-pointer hover:shadow-md" onclick="openWeeklyCalendar()">
                             <div>
                                 <p class="text-sm text-gray-500 mb-1">نرخ تکمیل سفارشات</p>
-                                <p class="text-3xl font-bold text-indigo-600">${completedPct}%</p>
+                                <p class="text-3xl font-bold text-yellow-600">${completedPct}%</p>
                                 <p class="text-xs text-gray-400 mt-1">${stats.completed_orders || 0} از ${totalOrders} سفارش</p>
                             </div>
-                            <div class="bg-indigo-50 rounded-full p-3"><i class="fas fa-chart-pie text-indigo-400 text-2xl"></i></div>
+                            <div class="bg-yellow-50 rounded-full p-3"><i class="fas fa-chart-pie text-yellow-400 text-2xl"></i></div>
                         </div>
 
                         <div class="bg-white rounded-xl shadow p-5 border-r-4 border-teal-400 flex items-center justify-between">
@@ -258,7 +258,7 @@ const EnhancedDashboardModule = {
                                 <i class="fas fa-bolt"></i> سفارش سریع
                             </button>
                             <button @click="showModal = 'createProject'"
-                                    class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2">
+                                    class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2">
                                 <i class="fas fa-plus-circle"></i> سفارش جدید
                             </button>
                             <button @click="currentPage = 'orders'"
@@ -349,11 +349,11 @@ const EnhancedDashboardModule = {
 
             return `
                 <div class="space-y-6">
-                    <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-xl p-6">
+                    <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 text-gray-900 rounded-xl p-6">
                         <div class="flex justify-between items-center">
                             <div>
                                 <h2 class="text-2xl font-bold mb-1">پنل کارمند</h2>
-                                <p class="text-purple-100 text-sm">مدیریت و هماهنگی سفارشات</p>
+                                <p class="text-yellow-100 text-sm">مدیریت و هماهنگی سفارشات</p>
                             </div>
                             <button onclick="location.reload()"
                                     class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all">
@@ -421,13 +421,13 @@ const EnhancedDashboardModule = {
                             <div class="bg-orange-50 rounded-full p-2"><i class="fas fa-calendar-week text-orange-400 text-xl"></i></div>
                         </div>
 
-                        <div class="bg-white rounded-xl shadow p-4 border-r-4 border-purple-500 flex items-center justify-between">
+                        <div class="bg-white rounded-xl shadow p-4 border-r-4 border-yellow-500 flex items-center justify-between">
                             <div>
                                 <p class="text-xs text-gray-500">دانشجویان</p>
-                                <p class="text-3xl font-bold text-purple-600">${students}</p>
+                                <p class="text-3xl font-bold text-yellow-600">${students}</p>
                                 <p class="text-xs text-gray-400 mt-1">تعداد کل</p>
                             </div>
-                            <div class="bg-purple-50 rounded-full p-2"><i class="fas fa-user-graduate text-purple-400 text-xl"></i></div>
+                            <div class="bg-yellow-50 rounded-full p-2"><i class="fas fa-user-graduate text-yellow-400 text-xl"></i></div>
                         </div>
                     </div>
 
@@ -444,7 +444,7 @@ const EnhancedDashboardModule = {
                                             <p class="text-sm text-gray-500">${order.type} — ${order.university || ''}</p>
                                         </div>
                                         <button onclick="window.assignOrder('${order.id}')"
-                                                class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">
+                                                class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">
                                             تخصیص
                                         </button>
                                     </div>
@@ -485,7 +485,7 @@ const EnhancedDashboardModule = {
                     <div class="flex justify-between items-center">
                         <h2 class="text-2xl font-bold text-white">داشبورد عامل</h2>
                         <button onclick="location.reload()" 
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">
+                                class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg">
                             <i class="fas fa-sync-alt ml-2"></i>
                             به‌روزرسانی
                         </button>
@@ -513,15 +513,15 @@ const EnhancedDashboardModule = {
                             </div>
                         </div>
                         
-                        <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white">
+                        <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg p-6 text-gray-900">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-purple-100">درآمد تخمینی</p>
+                                    <p class="text-yellow-100">درآمد تخمینی</p>
                                     <p class="text-2xl font-bold">${this.formatCurrency(
                                         myOrders.reduce((sum, o) => sum + (o.doctorShare || o.doctor_share || 0), 0)
                                     )}</p>
                                 </div>
-                                <i class="fas fa-dollar-sign text-4xl text-purple-200"></i>
+                                <i class="fas fa-dollar-sign text-4xl text-yellow-200"></i>
                             </div>
                         </div>
                     </div>
@@ -551,7 +551,7 @@ const EnhancedDashboardModule = {
                                             </div>
                                             <p class="text-sm text-green-400">سهم: ${this.formatCurrency(order.doctorShare || order.doctor_share)}</p>
                                             <button onclick="viewOrder('${order.id}')" 
-                                                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs mt-2">
+                                                    class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-3 py-1 rounded text-xs mt-2">
                                                 جزئیات
                                             </button>
                                         </div>
@@ -599,7 +599,7 @@ const EnhancedDashboardModule = {
                                 سفارش سریع
                             </button>
                             <button @click="showModal = 'createProject'" 
-                                    class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">
+                                    class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg">
                                 <i class="fas fa-plus ml-2"></i>
                                 درخواست جدید
                             </button>
@@ -634,7 +634,7 @@ const EnhancedDashboardModule = {
                                             </span>
                                             <p class="text-sm text-gray-300 mt-2">${this.formatCurrency(order.totalAmount || order.total_amount)}</p>
                                             <button onclick="viewOrder('${order.id}')" 
-                                                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs mt-2">
+                                                    class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-3 py-1 rounded text-xs mt-2">
                                                 جزئیات
                                             </button>
                                         </div>
@@ -647,7 +647,7 @@ const EnhancedDashboardModule = {
                                             <span>${order.progress || 0}%</span>
                                         </div>
                                         <div class="w-full bg-gray-600 rounded-full h-2">
-                                            <div class="bg-indigo-600 h-2 rounded-full" style="width: ${order.progress || 0}%"></div>
+                                            <div class="bg-yellow-600 h-2 rounded-full" style="width: ${order.progress || 0}%"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -662,7 +662,7 @@ const EnhancedDashboardModule = {
                                             سفارش سریع
                                         </button>
                                         <button @click="showModal = 'createProject'" 
-                                                class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg">
+                                                class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-6 py-2 rounded-lg">
                                             <i class="fas fa-plus ml-2"></i>
                                             درخواست کامل
                                         </button>
@@ -697,7 +697,7 @@ const EnhancedDashboardModule = {
                     <div class="flex justify-between items-center">
                         <h2 class="text-2xl font-bold text-white">داشبورد مترجم</h2>
                         <button onclick="location.reload()" 
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">
+                                class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg">
                             <i class="fas fa-sync-alt ml-2"></i>
                             به‌روزرسانی
                         </button>
@@ -725,15 +725,15 @@ const EnhancedDashboardModule = {
                             </div>
                         </div>
                         
-                        <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white">
+                        <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg p-6 text-gray-900">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-purple-100">درآمد تخمینی</p>
+                                    <p class="text-yellow-100">درآمد تخمینی</p>
                                     <p class="text-2xl font-bold">${this.formatCurrency(
                                         translationOrders.reduce((sum, o) => sum + (o.doctorShare || o.doctor_share || 0), 0)
                                     )}</p>
                                 </div>
-                                <i class="fas fa-dollar-sign text-4xl text-purple-200"></i>
+                                <i class="fas fa-dollar-sign text-4xl text-yellow-200"></i>
                             </div>
                         </div>
                     </div>

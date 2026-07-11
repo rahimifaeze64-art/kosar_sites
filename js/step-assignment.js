@@ -40,6 +40,7 @@ const StepAssignmentModule = {
      * @param {string} employeeId - "emp001" | "" (برای حذف تخصیص)
      */
     saveAssignment(type, stepIndex, employeeId) {
+        // ذخیره محلی همیشه
         const assignments = this.getAssignments();
         if (!assignments[type]) assignments[type] = {};
         if (employeeId) {
@@ -48,6 +49,12 @@ const StepAssignmentModule = {
             delete assignments[type][stepIndex];
         }
         localStorage.setItem(this.STORAGE_KEY, JSON.stringify(assignments));
+
+        // ذخیره در Supabase در پس‌زمینه (step_assignments table)
+        if (typeof DataModule !== 'undefined' && typeof DataModule.saveStepAssignment === 'function') {
+            DataModule.saveStepAssignment(type, stepIndex, employeeId || null)
+                .catch(e => console.warn('⚠️ saveStepAssignment async خطا:', e.message));
+        }
     },
 
     /** دریافت کارمند تخصیص‌یافته به یک مرحله
@@ -176,6 +183,22 @@ const StepAssignmentModule = {
 
         tasksData[employeeId].push(task);
         localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
+
+        // ذخیره در Supabase در پس‌زمینه
+        if (typeof SupabaseDataModule !== 'undefined' &&
+            typeof SupabaseConnection !== 'undefined' &&
+            SupabaseConnection.isOnline) {
+            SupabaseDataModule.saveEmployeeTask(employeeId, task)
+                .catch(e => console.warn('⚠️ saveEmployeeTask async خطا:', e.message));
+
+            // ارسال پیام سیستمی اطلاع‌رسانی (is_system = true)
+            SupabaseDataModule.sendMessage({
+                senderId:   null,
+                receiverId: employeeId,
+                content:    `📋 وظیفه جدید: ${stepName} (${typeName}) برای دانشجو ${studentName || studentId}`,
+                isSystem:   true     // ← پیام خودکار سیستمی
+            }).catch(() => {});
+        }
 
         console.log(`✅ Task created for employee ${employeeId}: step ${stepIndex} of ${type} for student ${studentId}`);
         if (typeof UTILS !== 'undefined' && UTILS.showNotification) {

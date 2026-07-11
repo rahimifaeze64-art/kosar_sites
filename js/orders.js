@@ -23,9 +23,9 @@ const OrdersModule = (function () {
     };
 
     const WORK_TYPES = [
-        'عناوین رساله ارشد', 'عناوین رساله عاملی', 'عناوین مقاله',
-        'پروپوزال رساله ارشد', 'پروپوزال رساله عاملی', 'پروپوزال مقاله',
-        'رساله ارشد', 'رساله عاملی', 'تعدیل', 'تنضید', 'ترجمه',
+        'عناوین رساله ارشد', 'عناوین رساله دکتری', 'عناوین مقاله',
+        'پروپوزال رساله ارشد', 'پروپوزال رساله دکتری', 'پروپوزال مقاله',
+        'رساله ارشد', 'رساله دکتری', 'تعدیل', 'تنضید', 'ترجمه',
         'استلال عراقی', 'استلال ایرانی', 'علاج استلال ایرانی', 'علاج استلال عراقی',
         'ترجمه و تصدیق مباشره', 'ترجمه و تصدیق قبول نهایی', 'ترجمه و تصدیق دانشنامه',
         'ترجمه مدرک', 'تجلید', 'همانند جویی',
@@ -79,6 +79,16 @@ const OrdersModule = (function () {
 
     function normalizeOrder(raw) {
         if (!raw || typeof raw !== 'object') return null;
+
+        // نرمال‌سازی status: 'active' مجاز نیست — همیشه 'in_progress' باشد
+        let status = raw.status || 'pending';
+        if (status === 'active') status = 'in_progress';
+        const validStatuses = ['pending', 'in_progress', 'completed', 'cancelled'];
+        if (!validStatuses.includes(status)) status = 'pending';
+
+        // نرمال‌سازی role ذخیره‌شده در سفارشات
+        const assignedDoctorId = raw.assignedDoctorId || raw.assignedAgentId || null;
+
         return {
             id: raw.id || ('ord_' + Date.now()),
             studentId: raw.studentId || null,
@@ -87,19 +97,25 @@ const OrdersModule = (function () {
             field: raw.field || '',
             degree: raw.degree || '',
             type: raw.type || 'سایر',
-            status: raw.status || ORDER_STATUS.PENDING,
+            status,
             stage: raw.stage || '',
             progress: parseInt(raw.progress, 10) || 0,
-            assignedDoctorId: raw.assignedDoctorId || null,
+            assignedDoctorId,
+            assignedAgentId: assignedDoctorId,   // alias
             assignedDoctor: raw.assignedDoctor || null,
             deadline: raw.deadline || '',
             deadlineTime: raw.deadlineTime || '',
             deadlineDateTime: raw.deadlineDateTime || null,
             totalAmount: parseFloat(raw.totalAmount) || 0,
             paidAmount: parseFloat(raw.paidAmount) || 0,
+            // سهم‌ها توسط DB trigger محاسبه می‌شوند — فقط درصد را ذخیره کن
+            revenueAgentPercent:   raw.revenueAgentPercent   != null ? parseFloat(raw.revenueAgentPercent)   : 60,
+            revenueManagerPercent: raw.revenueManagerPercent != null ? parseFloat(raw.revenueManagerPercent) : 40,
+            orderTypeId: raw.orderTypeId || null,
+            // backward-compat: doctorShare/managerShare هنوز ممکن است در localStorage قدیمی باشند
             doctorShare: parseFloat(raw.doctorShare) || 0,
             managerShare: parseFloat(raw.managerShare) || 0,
-            paymentStatus: raw.paymentStatus || 'pending',
+            paymentStatus: raw.paymentStatus || 'unpaid',
             description: raw.description || '',
             title: raw.title || '',
             isCustomOrder: !!raw.isCustomOrder,
@@ -254,7 +270,7 @@ const OrdersModule = (function () {
         if (userRole === R.MANAGER) {
             return `
                 <button type="button" onclick="OrdersModule.openModal('createProject')"
-                        class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium btn">
+                        class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg font-medium btn">
                     <i class="fas fa-plus-circle ml-2"></i> ایجاد سفارش جدید
                 </button>`;
         }
@@ -329,7 +345,7 @@ const OrdersModule = (function () {
             <tr class="hover:bg-gray-50">
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     ${safeId.slice(-8)}
-                    ${order.isCustomOrder ? '<span class="mr-1 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">سفارشی</span>' : ''}
+                    ${order.isCustomOrder ? '<span class="mr-1 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">سفارشی</span>' : ''}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-medium text-gray-900">${escapeHtml(order.studentName)}</div>
@@ -558,6 +574,10 @@ const OrdersModule = (function () {
             ...orderData,
             status: ORDER_STATUS.PENDING,
             progress: 0,
+            // درصدهای تقسیم درآمد — پیش‌فرض ۶۰/۴۰ یا از orderData
+            revenueAgentPercent:   orderData.revenueAgentPercent   != null ? orderData.revenueAgentPercent   : 60,
+            revenueManagerPercent: orderData.revenueManagerPercent != null ? orderData.revenueManagerPercent : 40,
+            // agent_share و manager_share توسط DB trigger محاسبه می‌شوند — در JS محاسبه نمی‌کنیم
             createdAt: new Date().toISOString()
         });
 
@@ -664,16 +684,17 @@ const OrdersModule = (function () {
         }];
 
         const updated = updateOrder(orderId, {
-            assignedDoctorId: agentId,
-            assignedDoctor: agent.name,
-            status: ORDER_STATUS.IN_PROGRESS,
-            stage: 'تخصیص یافته — در حال انجام',
-            assignedAt: new Date().toISOString(),
-            assignmentNotes: notes || '',
-            progress: Math.max(order.progress || 0, 5),
+            assignedDoctorId:      agentId,   // backward-compat
+            assignedAgentId:       agentId,   // ← ستون DB
+            assignedDoctor:        agent.name,
+            status:                ORDER_STATUS.IN_PROGRESS,  // نه 'active'
+            stage:                 'تخصیص یافته — در حال انجام',
+            assignedAt:            new Date().toISOString(),
+            assignmentNotes:       notes || '',
+            progress:              Math.max(order.progress || 0, 5),
             workLog,
-            files: order.files || [],
-            questions: order.questions || []
+            files:                 order.files || [],
+            questions:             order.questions || []
         });
 
         if (window.TasksModule && typeof TasksModule.createTaskFromOrder === 'function') {

@@ -326,7 +326,7 @@
         
         const ordersByAgentContainer = document.getElementById('ordersByAgent');
         if (agents.length === 0) {
-            ordersByAgentContainer.innerHTML = '<p class="text-yellow-400">هیچ عاملی در سیستم یافت نشد!</p>';
+            ordersByAgentContainer.innerHTML = '<p class="text-yellow-400">هیچ دکتری در سیستم یافت نشد!</p>';
         } else {
             agents.forEach(agent => {
                 const agentOrders = ordersByAgent[agent.id] || [];

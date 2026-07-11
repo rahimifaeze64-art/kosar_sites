@@ -2,6 +2,18 @@
 // نسخه داده - هر بار که لیست دانشجویان تغییر کند این عدد را افزایش دهید
 const DATA_VERSION = '2025.07.09.v4';
 
+// ── Supabase bridge: اگر SupabaseDataModule موجود و آنلاین باشد، از آن استفاده می‌شود
+// ⚠️ فعلاً غیرفعال — جداول Supabase باید اول پر شوند
+// وقتی جداول Supabase پر شدند، این را به true تغییر بده:
+const SUPABASE_SYNC_ENABLED = true;
+
+function _useSupabase() {
+    return SUPABASE_SYNC_ENABLED &&
+           typeof SupabaseDataModule !== 'undefined' &&
+           typeof SupabaseConnection !== 'undefined' &&
+           SupabaseConnection.isOnline === true;
+}
+
 const DataModule = {
     // Initialize default data
     initializeData() {
@@ -10,15 +22,10 @@ const DataModule = {
                 debugLogger('Initializing data module...', 'info');
             }
 
-            // اگر نسخه داده تغییر کرده، localStorage را پاک و با داده جدید جایگزین کن
-            const storedVersion = localStorage.getItem('data_version');
-            if (storedVersion !== DATA_VERSION) {
-                console.log(`🔄 نسخه داده تغییر کرده (${storedVersion} → ${DATA_VERSION}). بازنشانی داده‌ها...`);
-                localStorage.removeItem(CONFIG.STORAGE_KEYS.USERS);
-                localStorage.removeItem(CONFIG.STORAGE_KEYS.ORDERS);
-                localStorage.removeItem('students_data');
-                localStorage.setItem('data_version', DATA_VERSION);
-            }
+            // data_version reset حذف شد — کاربران از HARDCODED_USERS می‌آیند
+            // و orders داده کاربری هستند که نباید پاک شوند.
+            // فقط نسخه را ثبت می‌کنیم بدون هیچ reset:
+            localStorage.setItem('data_version', DATA_VERSION);
             
             if (!localStorage.getItem(CONFIG.STORAGE_KEYS.USERS)) {
                 if (typeof debugLogger !== 'undefined') {
@@ -46,8 +53,18 @@ const DataModule = {
         }
     },
     
-    // Get users from localStorage
+    // Get users — Supabase اول، localStorage دوم
     getUsers() {
+        // نسخه async را برای Supabase فراخوانی می‌کنیم،
+        // ولی چون بقیه کد sync است، نسخه sync localStorage را برمی‌گردانیم
+        // و به‌روزرسانی Supabase در پس‌زمینه انجام می‌شود.
+        if (_useSupabase()) {
+            SupabaseDataModule.getUsers().then(users => {
+                if (users && users.length > 0) {
+                    localStorage.setItem(CONFIG.STORAGE_KEYS.USERS, JSON.stringify(users));
+                }
+            }).catch(() => {});
+        }
         try {
             const users = localStorage.getItem(CONFIG.STORAGE_KEYS.USERS);
             const result = users ? JSON.parse(users) : this.getDefaultUsers();
@@ -64,14 +81,19 @@ const DataModule = {
         }
     },
 
-    // Save users to localStorage
+    // Save users — localStorage + Supabase
     saveUsers(users) {
         try {
             localStorage.setItem(CONFIG.STORAGE_KEYS.USERS, JSON.stringify(users));
             if (typeof debugLogger !== 'undefined') {
-                debugLogger(`Saved ${users.length} users to localStorage`, 'success');
+                debugLogger(`Saved ${users.length} users`, 'success');
             }
-            
+            // ذخیره در Supabase در پس‌زمینه
+            if (_useSupabase()) {
+                SupabaseDataModule.saveUsers(users).catch(e =>
+                    console.warn('⚠️ Supabase saveUsers:', e.message)
+                );
+            }
             // ارسال رویداد به‌روزرسانی
             if (typeof RealtimeEvents !== 'undefined') {
                 RealtimeEvents.emit(RealtimeEvents.EVENTS.USERS_CHANGED, { users });
@@ -83,8 +105,15 @@ const DataModule = {
         }
     },
     
-    // Get orders from localStorage
+    // Get orders — Supabase اول، localStorage دوم
     getOrders() {
+        if (_useSupabase()) {
+            SupabaseDataModule.getOrders().then(orders => {
+                if (orders && orders.length > 0) {
+                    localStorage.setItem(CONFIG.STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+                }
+            }).catch(() => {});
+        }
         try {
             const ordersStr = localStorage.getItem(CONFIG.STORAGE_KEYS.ORDERS);
             
@@ -111,7 +140,7 @@ const DataModule = {
         }
     },
     
-    // Save orders to localStorage
+    // Save orders — localStorage + Supabase
     saveOrders(orders) {
         try {
             if (!orders || !Array.isArray(orders)) {
@@ -124,7 +153,14 @@ const DataModule = {
             localStorage.setItem(CONFIG.STORAGE_KEYS.ORDERS, JSON.stringify(orders));
             
             if (typeof debugLogger !== 'undefined') {
-                debugLogger(`Saved ${orders.length} orders to localStorage`, 'success');
+                debugLogger(`Saved ${orders.length} orders`, 'success');
+            }
+
+            // ذخیره در Supabase در پس‌زمینه
+            if (_useSupabase()) {
+                SupabaseDataModule.saveOrders(orders).catch(e =>
+                    console.warn('⚠️ Supabase saveOrders:', e.message)
+                );
             }
             
             // ارسال رویداد به‌روزرسانی
@@ -140,6 +176,76 @@ const DataModule = {
             console.error('Error saving orders:', error);
             return false;
         }
+    },
+
+    // ════════════════════════════════════════════════
+    // STEP ASSIGNMENTS — Supabase bridge
+    // ════════════════════════════════════════════════
+
+    /** خواندن تخصیص مراحل از Supabase یا localStorage */
+    async getStepAssignments() {
+        if (_useSupabase()) {
+            try {
+                const rows = await SupabaseDataModule.getStepAssignments();
+                if (rows && rows.length > 0) {
+                    // تبدیل به فرمت فلت { defense: { "0": "emp001", ... }, ... }
+                    const flat = {};
+                    rows.forEach(r => {
+                        if (!flat[r.pathType]) flat[r.pathType] = {};
+                        if (r.employeeId) flat[r.pathType][r.stepIndex] = r.employeeId;
+                    });
+                    localStorage.setItem('step_assignments', JSON.stringify(flat));
+                    return flat;
+                }
+            } catch (e) {
+                console.warn('⚠️ getStepAssignments Supabase خطا:', e.message);
+            }
+        }
+        try {
+            return JSON.parse(localStorage.getItem('step_assignments') || '{}');
+        } catch { return {}; }
+    },
+
+    /** ذخیره یک تخصیص مرحله */
+    async saveStepAssignment(pathType, stepIndex, employeeId) {
+        // localStorage همیشه
+        try {
+            const all = JSON.parse(localStorage.getItem('step_assignments') || '{}');
+            if (!all[pathType]) all[pathType] = {};
+            if (employeeId) all[pathType][stepIndex] = employeeId;
+            else delete all[pathType][stepIndex];
+            localStorage.setItem('step_assignments', JSON.stringify(all));
+        } catch (e) { console.warn('step_assignments localStorage خطا:', e.message); }
+
+        if (_useSupabase()) {
+            SupabaseDataModule.saveStepAssignment(pathType, stepIndex, employeeId)
+                .catch(e => console.warn('⚠️ saveStepAssignment Supabase خطا:', e.message));
+        }
+    },
+
+    // ════════════════════════════════════════════════
+    // ORDER TYPES — Supabase bridge
+    // ════════════════════════════════════════════════
+
+    /** خواندن لیست انواع سفارش از Supabase یا fallback به CONFIG */
+    async getOrderTypes() {
+        if (_useSupabase()) {
+            try {
+                const rows = await SupabaseDataModule.getOrderTypes();
+                if (rows && rows.length > 0) {
+                    localStorage.setItem('order_types_cache', JSON.stringify(rows));
+                    return rows;
+                }
+            } catch (e) {
+                console.warn('⚠️ getOrderTypes Supabase خطا:', e.message);
+            }
+        }
+        // fallback به کش یا CONFIG
+        try {
+            const cached = localStorage.getItem('order_types_cache');
+            if (cached) return JSON.parse(cached);
+        } catch { }
+        return null; // null = استفاده از WORK_TYPES هاردکد در orders.js
     },
 
     // مقداردهی پیشرفت دانشجویان فارغ‌التحصیل در localStorage
@@ -193,16 +299,20 @@ const DataModule = {
         });
     },
 
-    // Default users data
+    // Default users data — از لیست هاردکد می‌خواند
     getDefaultUsers() {
+        // اگر hardcoded-users.js بارگذاری شده، از آن استفاده کن
+        if (typeof HARDCODED_USERS !== 'undefined' && HARDCODED_USERS.length > 0) {
+            return HARDCODED_USERS;
+        }
+        // fallback minimal
         return [
-            // Manager - مدیر
             {
                 id: 'mgr001',
-                name: 'دکتر تقی زاده',
-                username: 'manager',
-                password: '123456',
-                role: CONFIG.ROLES.MANAGER,
+                name: 'تقی‌زاده',
+                username: 'taghizadeh',
+                password: 'taghizadeh1403',
+                role: 'manager',
                 email: 'taghizadeh@edu-system.com',
                 phone: '+98 912 123 4567',
                 active: true,

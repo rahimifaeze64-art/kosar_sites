@@ -13,7 +13,7 @@ const OrderTabsModule = {
         return `
             <div class="space-y-6">
                 <!-- Order Header -->
-                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg">
+                <div class="bg-gradient-to-r from-blue-50 to-yellow-50 p-6 rounded-lg">
                     <div class="flex justify-between items-start">
                         <div>
                             <h4 class="text-xl font-bold text-gray-800">${order.studentName || '---'}</h4>
@@ -43,8 +43,8 @@ const OrderTabsModule = {
                 
                 <!-- Assignment Info -->
                 ${agentDisplay ? `
-                    <div class="bg-purple-50 p-4 rounded-lg">
-                        <h5 class="font-semibold text-purple-800 mb-2">
+                    <div class="bg-yellow-50 p-4 rounded-lg">
+                        <h5 class="font-semibold text-yellow-800 mb-2">
                             <i class="fas fa-user-md ml-1"></i>
                             اطلاعات تخصیص
                         </h5>
@@ -80,7 +80,7 @@ const OrderTabsModule = {
                         <div class="mt-4">
                             <strong>فایل پیوست:</strong>
                             <span class="mr-2 text-gray-700">
-                                <i class="fas fa-paperclip ml-1 text-indigo-500"></i>${order.attachmentName}
+                                <i class="fas fa-paperclip ml-1 text-yellow-500"></i>${order.attachmentName}
                             </span>
                             ${order.hasAttachment ? `
                                 <button onclick="window.downloadOrderFile('${order.id}', '${order.attachmentName}')"
@@ -173,8 +173,8 @@ const OrderTabsModule = {
                                 }
                                 
                                 return `
-                                    <div class="flex items-start bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border ${statusColor}">
-                                        <div class="flex-shrink-0 w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-lg ml-4">
+                                    <div class="flex items-start bg-gradient-to-r from-blue-50 to-yellow-50 rounded-lg p-4 border ${statusColor}">
+                                        <div class="flex-shrink-0 w-12 h-12 rounded-full bg-yellow-600 text-gray-900 flex items-center justify-center font-bold text-lg ml-4">
                                             ${index + 1}
                                         </div>
                                         <div class="flex-1">
@@ -320,7 +320,7 @@ const OrderTabsModule = {
                                         <div class="flex-1 min-w-0">
                                             <p class="font-medium text-gray-800 truncate">${file.name}</p>
                                             <div class="flex items-center space-x-2 space-x-reverse text-xs text-gray-500 mt-1">
-                                                ${file.fileType ? `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">${file.fileType}</span>` : ''}
+                                                ${file.fileType ? `<span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">${file.fileType}</span>` : ''}
                                                 <span>${file.uploadedByName || 'نامشخص'}</span>
                                                 <span>•</span>
                                                 <span>${file.uploadedAt}</span>
@@ -542,7 +542,7 @@ const OrderTabsModule = {
                 </div>
                 
                 <!-- هزینه کار -->
-                <div class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg p-8 text-white shadow-lg text-center">
+                <div class="bg-gradient-to-br from-blue-600 to-yellow-700 rounded-lg p-8 text-white shadow-lg text-center">
                     <i class="fas fa-money-bill-wave text-5xl mb-4 opacity-80"></i>
                     <h5 class="text-lg font-semibold mb-2 opacity-90">هزینه پروژه</h5>
                     <p class="text-4xl font-bold mb-2">

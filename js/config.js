@@ -8,20 +8,24 @@ const CONFIG = {
   API_BASE_URL: "http://127.0.0.1:8000/api",
 
   // User Roles
+  // NOTE: "doctor" as a stored role value is removed; use "agent" everywhere.
+  // "دکتر" may still be used as a Persian display label only.
   ROLES: {
     MANAGER: "manager",
     employee: "employee",
     AGENT: "agent",
-    DOCTOR: "agent",
+    DOCTOR: "agent",       // alias — stored value is always "agent"
     TRANSLATOR: "translator",
     STUDENT: "student",
   },
 
-  // Order Status
+  // Order Status — must match DB CHECK constraint: pending/in_progress/completed/cancelled
+  // 'active' is NOT a valid DB value; always use 'in_progress' instead.
   ORDER_STATUS: {
     PENDING: "pending",
     IN_PROGRESS: "in_progress",
     COMPLETED: "completed",
+    CANCELLED: "cancelled",
   },
 
   // Order Types
@@ -102,9 +106,32 @@ const CONFIG = {
   ],
 
   // Degree Levels
+  // DB column profiles.degree stores English values: bachelor / masters / phd
+  // UI may display Persian labels (کارشناسی/ارشد/دکتری) but must map them here.
   DEGREES: {
-    MASTERS: "ارشد",
-    PHD: "دكتراه",
+    BACHELOR: "bachelor",
+    MASTERS:  "masters",
+    PHD:      "phd",
+    // Persian display labels (read-only; do NOT send to DB)
+    MASTERS_FA:  "ارشد",
+    PHD_FA:      "دكتراه",
+    BACHELOR_FA: "کارشناسی",
+  },
+
+  // Degree label <-> DB value maps (for UI conversions)
+  DEGREE_TO_DB: {
+    "ارشد":      "masters",
+    "دکتری":     "phd",
+    "دكتراه":    "phd",
+    "کارشناسی":  "bachelor",
+    "masters":   "masters",
+    "phd":       "phd",
+    "bachelor":  "bachelor",
+  },
+  DEGREE_TO_FA: {
+    "masters":  "ارشد",
+    "phd":      "دكتراه",
+    "bachelor": "کارشناسی",
   },
 
   // Task Types

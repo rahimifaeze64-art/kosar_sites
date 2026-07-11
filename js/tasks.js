@@ -23,12 +23,12 @@ const TasksModule = {
                 <!-- Header -->
                 <div class="flex justify-between items-center">
                     <h2 class="text-2xl font-bold text-white">
-                        <i class="fas fa-users text-indigo-400 ml-2"></i>
+                        <i class="fas fa-users text-yellow-400 ml-2"></i>
                         مدیریت همکاران
                     </h2>
                     <div class="flex space-x-3 space-x-reverse">
                         <button onclick="TasksModule.showNewTaskModal()" 
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium">
+                                class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg font-medium">
                             <i class="fas fa-plus ml-2"></i>
                             وظیفه جدید
                         </button>
@@ -46,7 +46,7 @@ const TasksModule = {
                     <div class="lg:col-span-1">
                         <div class="bg-slate-800 rounded-lg shadow-md p-4">
                             <h3 class="text-lg font-bold text-white mb-4">
-                                <i class="fas fa-users text-indigo-400 ml-2"></i>
+                                <i class="fas fa-users text-yellow-400 ml-2"></i>
                                 کارمند‌ها
                             </h3>
                             <div class="space-y-2" id="employees-list">
@@ -63,19 +63,19 @@ const TasksModule = {
                                 <nav class="flex space-x-1 space-x-reverse p-2">
                                     <button onclick="TasksModule.switchTab('tasks')" 
                                             id="tab-tasks"
-                                            class="px-4 py-2 rounded-md font-medium transition-colors bg-indigo-600 text-white">
+                                            class="px-4 py-2 rounded-md font-medium transition-colors bg-yellow-600 text-gray-900">
                                         <i class="fas fa-list-check ml-2"></i>
                                         لیست وظایف
                                     </button>
                                     <button onclick="TasksModule.switchTab('files')" 
                                             id="tab-files"
-                                            class="px-4 py-2 rounded-md font-medium transition-colors text-gray-300 hover:text-indigo-400">
+                                            class="px-4 py-2 rounded-md font-medium transition-colors text-gray-300 hover:text-yellow-400">
                                         <i class="fas fa-folder ml-2"></i>
                                         فایل صوت متن
                                     </button>
                                     <button onclick="TasksModule.switchTab('reports')" 
                                             id="tab-reports"
-                                            class="px-4 py-2 rounded-md font-medium transition-colors text-gray-300 hover:text-indigo-400">
+                                            class="px-4 py-2 rounded-md font-medium transition-colors text-gray-300 hover:text-yellow-400">
                                         <i class="fas fa-file-alt ml-2"></i>
                                         گزارش
                                     </button>
@@ -126,10 +126,10 @@ const TasksModule = {
         
         return `
             <div onclick="TasksModule.selectemployee('${employee.id}')" 
-                 class="p-3 rounded-lg cursor-pointer transition-colors ${isSelected ? 'bg-indigo-600' : 'bg-slate-700 hover:bg-slate-600'}">
+                 class="p-3 rounded-lg cursor-pointer transition-colors ${isSelected ? 'bg-yellow-600' : 'bg-slate-700 hover:bg-slate-600'}">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
-                        <div class="w-10 h-10 rounded-full ${isAgent ? 'bg-blue-500' : 'bg-indigo-500'} flex items-center justify-center text-white font-bold ml-3">
+                        <div class="w-10 h-10 rounded-full ${isAgent ? 'bg-blue-500' : 'bg-yellow-500'} flex items-center justify-center text-gray-900 font-bold ml-3">
                             ${employee.name.charAt(0)}
                         </div>
                         <div>
@@ -166,9 +166,9 @@ const TasksModule = {
             const btn = document.getElementById(`tab-${t}`);
             if (btn) {
                 if (t === tab) {
-                    btn.className = 'px-4 py-2 rounded-md font-medium transition-colors bg-indigo-600 text-white';
+                    btn.className = 'px-4 py-2 rounded-md font-medium transition-colors bg-yellow-600 text-gray-900';
                 } else {
-                    btn.className = 'px-4 py-2 rounded-md font-medium transition-colors text-gray-300 hover:text-indigo-400';
+                    btn.className = 'px-4 py-2 rounded-md font-medium transition-colors text-gray-300 hover:text-yellow-400';
                 }
             }
         });
@@ -219,7 +219,7 @@ const TasksModule = {
                             صوتی
                         </button>
                         <button onclick="TasksModule.showNewTaskModal('${this.selectedemployee}')" 
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg text-sm">
+                                class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-3 py-1 rounded-lg text-sm">
                             <i class="fas fa-plus ml-1"></i>
                             بیشتر
                         </button>
@@ -258,7 +258,7 @@ const TasksModule = {
             <div class="mt-3 bg-slate-600 rounded-lg p-3">
                 <div class="flex items-center space-x-3 space-x-reverse">
                     <button onclick="TasksModule.playVoice('${task.id}')" 
-                            class="w-10 h-10 rounded-full bg-indigo-500 hover:bg-indigo-600 flex items-center justify-center text-white"
+                            class="w-10 h-10 rounded-full bg-yellow-500 hover:bg-yellow-600 flex items-center justify-center text-gray-900"
                             id="play-btn-${task.id}">
                         <i class="fas fa-play" id="play-icon-${task.id}"></i>
                     </button>
@@ -271,7 +271,7 @@ const TasksModule = {
                             <span class="text-xs text-gray-400">${task.voiceDuration || '0:00'}</span>
                         </div>
                         <div class="w-full bg-slate-500 rounded-full h-1">
-                            <div class="bg-indigo-400 h-1 rounded-full" style="width: 0%" id="progress-${task.id}"></div>
+                            <div class="bg-yellow-400 h-1 rounded-full" style="width: 0%" id="progress-${task.id}"></div>
                         </div>
                     </div>
                     <audio id="audio-${task.id}" src="${task.voiceMessage}" class="hidden"></audio>
@@ -303,7 +303,7 @@ const TasksModule = {
                         <p class="text-xs text-gray-400">${this.formatFileSize(task.attachedFile.size)}</p>
                     </div>
                     <button onclick="TasksModule.downloadTaskFile('${task.id}')" 
-                            class="text-indigo-400 hover:text-indigo-300 p-2" title="دانلود فایل">
+                            class="text-yellow-400 hover:text-yellow-300 p-2" title="دانلود فایل">
                         <i class="fas fa-download"></i>
                     </button>
                 </div>
@@ -357,8 +357,8 @@ const TasksModule = {
             'jpg': 'fa-file-image text-yellow-400',
             'png': 'fa-file-image text-yellow-400',
             'txt': 'fa-file-alt text-gray-400',
-            'zip': 'fa-file-archive text-purple-400',
-            'rar': 'fa-file-archive text-purple-400'
+            'zip': 'fa-file-archive text-yellow-400',
+            'rar': 'fa-file-archive text-yellow-400'
         };
         return iconMap[ext] || 'fa-file text-gray-400';
     },
@@ -427,7 +427,7 @@ const TasksModule = {
                            placeholder="پیام خود را بنویسید..."
                            onkeypress="if(event.key === 'Enter') TasksModule.sendemployeeMessage()">
                     <button onclick="TasksModule.sendemployeeMessage()" 
-                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">
+                            class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg">
                         <i class="fas fa-paper-plane"></i>
                     </button>
                 </div>
@@ -441,7 +441,7 @@ const TasksModule = {
         
         return `
             <div class="flex ${isManager ? 'justify-start' : 'justify-end'}">
-                <div class="max-w-xs lg:max-w-md ${isManager ? 'bg-indigo-600' : 'bg-slate-600'} rounded-lg p-3">
+                <div class="max-w-xs lg:max-w-md ${isManager ? 'bg-yellow-600' : 'bg-slate-600'} rounded-lg p-3">
                     <p class="text-white text-sm">${message.text}</p>
                     <p class="text-xs text-gray-300 mt-1">${message.timestamp}</p>
                 </div>
@@ -470,7 +470,7 @@ const TasksModule = {
                         فایل‌های مشترک با ${employee?.name || ''}
                     </h4>
                     <button onclick="TasksModule.uploademployeeFile()" 
-                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg text-sm">
+                            class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-3 py-1 rounded-lg text-sm">
                         <i class="fas fa-upload ml-1"></i>
                         آپلود فایل
                     </button>
@@ -515,7 +515,7 @@ const TasksModule = {
                 </div>
                 <div class="flex space-x-2 space-x-reverse">
                     <button onclick="TasksModule.downloademployeeFile('${file.id}')" 
-                            class="text-indigo-400 hover:text-indigo-300 p-1">
+                            class="text-yellow-400 hover:text-yellow-300 p-1">
                         <i class="fas fa-download"></i>
                     </button>
                     <button onclick="TasksModule.deleteemployeeFile('${file.id}')" 
@@ -583,12 +583,12 @@ const TasksModule = {
         return `
             <div class="management-chat-wrapper" style="height: calc(100vh - 350px); display: flex; flex-direction: column;">
                 <!-- Chat Header -->
-                <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-lg p-4 mb-4">
+                <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-t-lg p-4 mb-4">
                     <h4 class="text-lg font-bold text-white mb-2">
                         <i class="fas fa-users-cog ml-2"></i>
                         گفتگو مدیریت
                     </h4>
-                    <p class="text-indigo-100 text-sm">
+                    <p class="text-yellow-100 text-sm">
                         چت مشترک مدیر و کارمند ها برای هماهنگی وظایف
                     </p>
                 </div>
@@ -600,7 +600,7 @@ const TasksModule = {
                                id="managementChatSearch"
                                placeholder="جستجو در پیام‌ها..."
                                oninput="if(window.managesChatInstance) window.managesChatInstance.setSearchQuery(this.value)"
-                               class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 pr-10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                               class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 pr-10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                         <i class="fas fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                     </div>
                 </div>
@@ -609,7 +609,7 @@ const TasksModule = {
                 <div class="bg-slate-700 rounded-lg p-3 mb-4">
                     <div class="flex items-center gap-3 overflow-x-auto">
                         <span class="text-gray-400 text-sm whitespace-nowrap">شرکت‌کنندگان:</span>
-                        <div class="flex items-center gap-2 bg-purple-600 px-3 py-1 rounded-full text-sm">
+                        <div class="flex items-center gap-2 bg-yellow-600 px-3 py-1 rounded-full text-sm">
                             <i class="fas fa-crown"></i>
                             <span>مدیر</span>
                             <span class="w-2 h-2 bg-green-400 rounded-full"></span>
@@ -646,7 +646,7 @@ const TasksModule = {
                                 <i class="fas fa-at"></i>
                             </button>
                             <button id="attachFileBtn" 
-                                    class="w-11 h-11 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center justify-center"
+                                    class="w-11 h-11 bg-yellow-600 hover:bg-yellow-700 text-gray-900 rounded-lg flex items-center justify-center"
                                     title="پیوست فایل">
                                 <i class="fas fa-paperclip"></i>
                             </button>
@@ -656,7 +656,7 @@ const TasksModule = {
                                 <i class="fas fa-microphone"></i>
                             </button>
                             <button id="sendManagesChatBtn" 
-                                    class="w-11 h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center justify-center"
+                                    class="w-11 h-11 bg-yellow-600 hover:bg-yellow-700 text-gray-900 rounded-lg flex items-center justify-center"
                                     title="ارسال">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
@@ -750,7 +750,7 @@ const TasksModule = {
             <div id="new-task-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
                 <div class="bg-slate-800 rounded-lg max-w-md w-full p-6">
                     <h3 class="text-lg font-bold text-white mb-4">
-                        <i class="fas fa-plus text-indigo-400 ml-2"></i>
+                        <i class="fas fa-plus text-yellow-400 ml-2"></i>
                         وظیفه جدید
                     </h3>
                     <div class="space-y-4">
@@ -796,7 +796,7 @@ const TasksModule = {
                             انصراف
                         </button>
                         <button onclick="TasksModule.createTask()" 
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">
+                                class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg">
                             ایجاد وظیفه
                         </button>
                     </div>
@@ -901,7 +901,7 @@ const TasksModule = {
                                 <div id="voice-recorded" class="hidden">
                                     <div class="flex items-center space-x-3 space-x-reverse">
                                         <button onclick="TasksModule.playRecordedVoice()" 
-                                                class="w-14 h-14 rounded-full bg-indigo-500 hover:bg-indigo-600 flex items-center justify-center text-white"
+                                                class="w-14 h-14 rounded-full bg-yellow-500 hover:bg-yellow-600 flex items-center justify-center text-gray-900"
                                                 id="preview-play-btn">
                                             <i class="fas fa-play text-xl" id="preview-play-icon"></i>
                                         </button>
@@ -911,7 +911,7 @@ const TasksModule = {
                                                 <span class="text-gray-400" id="recorded-duration">0:00</span>
                                             </div>
                                             <div class="w-full bg-slate-600 rounded-full h-2">
-                                                <div class="bg-indigo-400 h-2 rounded-full" style="width: 0%" id="preview-progress"></div>
+                                                <div class="bg-yellow-400 h-2 rounded-full" style="width: 0%" id="preview-progress"></div>
                                             </div>
                                         </div>
                                         <button onclick="TasksModule.deleteRecording()" 
@@ -1139,8 +1139,8 @@ const TasksModule = {
             'jpg': 'fa-file-image text-yellow-400',
             'png': 'fa-file-image text-yellow-400',
             'txt': 'fa-file-alt text-gray-400',
-            'zip': 'fa-file-archive text-purple-400',
-            'rar': 'fa-file-archive text-purple-400'
+            'zip': 'fa-file-archive text-yellow-400',
+            'rar': 'fa-file-archive text-yellow-400'
         };
         
         fileIcon.className = `fas ${iconMap[ext] || 'fa-file text-gray-400'} text-xl ml-3`;
@@ -1538,7 +1538,7 @@ const TasksModule = {
             <div id="new-employee-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
                 <div class="bg-slate-800 rounded-lg max-w-md w-full p-6">
                     <h3 class="text-lg font-bold text-white mb-4">
-                        <i class="fas fa-user-plus text-purple-400 ml-2"></i>
+                        <i class="fas fa-user-plus text-yellow-400 ml-2"></i>
                         اضافه کردن کارمند جدید
                     </h3>
                     <div class="space-y-4">
@@ -1587,7 +1587,7 @@ const TasksModule = {
                             انصراف
                         </button>
                         <button onclick="TasksModule.createEmployee()" 
-                                class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">
+                                class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg">
                             <i class="fas fa-user-plus ml-2"></i>
                             ایجاد کارمند
                         </button>

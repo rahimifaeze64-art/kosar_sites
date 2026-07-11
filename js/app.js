@@ -40,9 +40,18 @@ function appController() {
             localStorage.setItem('sidebarOpen', val);
         });
 
-        // Subscribe to real-time events for automatic UI updates (optional - no-op if not available)
-        if (typeof this.subscribeToRealtimeEvents === 'function') {
-            this.subscribeToRealtimeEvents();
+        // Subscribe to real-time events for automatic UI updates
+        if (typeof RealtimeEvents !== 'undefined') {
+            RealtimeEvents.on(RealtimeEvents.EVENTS.ORDERS_CHANGED, async () => {
+                // اگر مدیر الان در صفحه orders است، refresh کن
+                if (this.currentPage === 'orders') {
+                    await this.loadOrdersPageWithRetry();
+                }
+                // داشبورد را هم refresh کن
+                if (this.currentPage === 'dashboard') {
+                    await this.loadDashboardContent();
+                }
+            }, 'app-controller');
         }
 
         // Watch for page changes to load content
@@ -1136,14 +1145,25 @@ document.addEventListener("DOMContentLoaded", function () {
 // Logout function
 window.logout = function () {
   if (confirm("آیا می‌خواهید از حساب کاربری خود خارج شوید؟")) {
-    // Clear session data
-    localStorage.removeItem(CONFIG.STORAGE_KEYS.CURRENT_USER);
-
-    // Redirect to login or reload
-    UTILS.showNotification("با موفقیت خارج شدید", "success");
-    setTimeout(() => {
-      location.reload();
-    }, 1000);
+    // Sign out from Supabase (handles both online and offline modes)
+    const doLogout = async () => {
+      try {
+        if (typeof SupabaseAuth !== 'undefined') {
+          await SupabaseAuth.logout(); // پاک کردن localStorage + signOut از Supabase
+        } else {
+          // fallback
+          localStorage.removeItem('currentUser');
+          localStorage.removeItem('edu_system_current_user');
+        }
+      } catch (e) {
+        console.warn('logout error:', e.message);
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('edu_system_current_user');
+      }
+      UTILS.showNotification("با موفقیت خارج شدید", "success");
+      setTimeout(() => { window.location.href = 'login.html'; }, 800);
+    };
+    doLogout();
   }
 };
 
@@ -1371,12 +1391,12 @@ window.getAgentTaskCard = function (task, userId) {
                 ? `
             <div class="mt-3 bg-slate-700 rounded p-2 flex items-center space-x-2 space-x-reverse">
                 <button onclick="agentPlayVoice('${task.id}')"
-                        class="w-8 h-8 rounded-full bg-indigo-500 hover:bg-indigo-600 flex items-center justify-center text-white flex-shrink-0">
+                        class="w-8 h-8 rounded-full bg-yellow-500 hover:bg-yellow-600 flex items-center justify-center text-gray-900 flex-shrink-0">
                     <i class="fas fa-play text-xs" id="agent-play-icon-${task.id}"></i>
                 </button>
                 <div class="flex-1">
                     <div class="w-full bg-slate-600 rounded-full h-1">
-                        <div class="bg-indigo-400 h-1 rounded-full" style="width:0%" id="agent-progress-${task.id}"></div>
+                        <div class="bg-yellow-400 h-1 rounded-full" style="width:0%" id="agent-progress-${task.id}"></div>
                     </div>
                     <span class="text-xs text-gray-400">${task.voiceDuration || "0:00"}</span>
                 </div>
@@ -1471,15 +1491,17 @@ window.getMyAgentTasksContent = function () {
     const rawTasks = tasksData[currentUser.id];
     const myTasks = Array.isArray(rawTasks) ? rawTasks : [];
 
-    // سفارشات مستقیم تخصیص‌یافته
+    // سفارشات مستقیم تخصیص‌یافته — همه وضعیت‌ها نمایش داده می‌شوند
     const orders = DataModule.getOrders();
     const myOrders = orders.filter((o) => {
       const isAssigned =
         o.assignedDoctorId === currentUser.id ||
-        o.assigned_doctor === currentUser.id ||
-        o.assignedDoctor === currentUser.id ||
-        o.doctorId === currentUser.id ||
-        o.doctor_id === currentUser.id;
+        o.assignedAgentId  === currentUser.id ||
+        o.assigned_doctor  === currentUser.id ||
+        o.assignedDoctor   === currentUser.id ||
+        o.doctorId         === currentUser.id ||
+        o.doctor_id        === currentUser.id;
+      // همه سفارشات تخصیص‌یافته نمایش داده شوند (حتی in_progress و completed)
       return isAssigned;
     });
 
@@ -1506,7 +1528,7 @@ window.getMyAgentTasksContent = function () {
                 <!-- Header -->
                 <div class="flex justify-between items-center">
                     <h2 class="text-2xl font-bold text-white">
-                        <i class="fas fa-clipboard-list text-indigo-400 ml-2"></i>
+                        <i class="fas fa-clipboard-list text-yellow-400 ml-2"></i>
                         وظایف من (${currentUser.name})
                     </h2>
                 </div>
@@ -1519,7 +1541,7 @@ window.getMyAgentTasksContent = function () {
                                 <p class="text-gray-400 text-sm">کل وظایف</p>
                                 <p class="text-2xl font-bold text-white">${myTasks.length}</p>
                             </div>
-                            <i class="fas fa-tasks text-3xl text-indigo-400"></i>
+                            <i class="fas fa-tasks text-3xl text-yellow-400"></i>
                         </div>
                     </div>
                     <div class="bg-slate-800 rounded-lg p-4">
@@ -1586,7 +1608,7 @@ window.getMyAgentTasksContent = function () {
                     ? `
                 <div class="bg-slate-800 rounded-lg p-4">
                     <h3 class="text-lg font-bold text-white mb-4">
-                        <i class="fas fa-list-check text-purple-400 ml-2"></i>
+                        <i class="fas fa-list-check text-yellow-400 ml-2"></i>
                         سایر وظایف
                         <span class="text-sm font-normal text-gray-400 mr-2">(${myTasks.filter((t) => !t.isOrderTask).length} وظیفه)</span>
                     </h3>
@@ -1609,7 +1631,7 @@ window.getMyAgentTasksContent = function () {
                     ? `
                 <div>
                     <h3 class="text-lg font-bold text-white mb-4">
-                        <i class="fas fa-layer-group text-indigo-400 ml-2"></i>
+                        <i class="fas fa-layer-group text-yellow-400 ml-2"></i>
                         سفارشات مستقیم
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1637,7 +1659,7 @@ window.getAgentOrderCard = function (order, index) {
   return `
         <div class="bg-slate-800 rounded-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <!-- Card Header -->
-            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-3">
+            <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 p-3">
                 <div class="flex items-center justify-between mb-2">
                     <span class="bg-white bg-opacity-20 text-white px-2 py-1 rounded text-xs font-bold">
                         #${index + 1}
@@ -1647,7 +1669,7 @@ window.getAgentOrderCard = function (order, index) {
                         ? "bg-green-500 text-white"
                         : order.status === "in_progress"
                           ? "bg-blue-500 text-white"
-                          : "bg-yellow-500 text-white"
+                          : "bg-yellow-500 text-gray-900"
                     }">
                         ${
                           order.status === "completed"
@@ -1666,7 +1688,7 @@ window.getAgentOrderCard = function (order, index) {
                 <!-- Student Info -->
                 <div class="mb-3">
                     <p class="text-gray-400 text-sm flex items-center">
-                        <i class="fas fa-user-graduate ml-2 text-indigo-400"></i>
+                        <i class="fas fa-user-graduate ml-2 text-yellow-400"></i>
                         ${order.studentName}
                     </p>
                     ${
@@ -1718,7 +1740,7 @@ window.getAgentOrderCard = function (order, index) {
 
                 <!-- Action Button -->
                 <button onclick="viewOrderDetails('${order.id}')"
-                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        class="w-full bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                     <i class="fas fa-eye ml-1"></i>
                     مشاهده جزئیات
                 </button>
@@ -1741,42 +1763,55 @@ window.agentConfirmOrder = function(orderId) {
     if (!confirm('آیا این سفارش را تایید می‌کنید و شروع به کار می‌کنید؟')) return;
     
     try {
-        const storageKey = (typeof CONFIG !== 'undefined' && CONFIG.STORAGE_KEYS && CONFIG.STORAGE_KEYS.ORDERS)
-            ? CONFIG.STORAGE_KEYS.ORDERS
-            : 'edu_system_orders';
-        
-        const orders = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        const orders = DataModule.getOrders();
         const index = orders.findIndex(o => o.id === orderId);
         
         if (index === -1) {
-            alert('سفارش یافت نشد');
+            UTILS.showNotification('سفارش یافت نشد', 'error');
             return;
         }
         
-        orders[index].status = 'in_progress';
+        orders[index].status        = 'in_progress';
         orders[index].confirmedByAgent = true;
-        orders[index].confirmedAt = new Date().toISOString();
-        orders[index].updatedAt = new Date().toISOString();
+        orders[index].confirmedAt   = new Date().toISOString();
+        orders[index].updatedAt     = new Date().toISOString();
         
-        localStorage.setItem(storageKey, JSON.stringify(orders));
+        // ذخیره sync در localStorage — مطمئن می‌شویم قبل از re-render آماده است
+        localStorage.setItem(
+            CONFIG.STORAGE_KEYS.ORDERS,
+            JSON.stringify(orders)
+        );
+        // ذخیره async در Supabase (fire-and-forget)
+        if (typeof SupabaseDataModule !== 'undefined' &&
+            typeof SupabaseConnection !== 'undefined' &&
+            SupabaseConnection.isOnline) {
+            SupabaseDataModule.saveOrders(orders).catch(e =>
+                console.warn('⚠️ Supabase sync خطا:', e.message)
+            );
+        }
+        // اطلاع به بقیه اجزای UI (از جمله صفحه مدیر)
+        if (typeof RealtimeEvents !== 'undefined') {
+            RealtimeEvents.emit(RealtimeEvents.EVENTS.ORDERS_CHANGED, { orders });
+        }
+
+        UTILS.showNotification('✅ سفارش تایید شد — در حال انجام', 'success', 3000);
         
-        alert('✅ سفارش تایید شد. وضعیت به "در حال انجام" تغییر یافت');
-        
-        // Refresh page content
-        const app = document.querySelector('[x-data]')?.__x?.$data;
-        if (app) {
-            if (app.currentPage === 'agentTasks') {
-                app.loadDashboardContent && app.loadDashboardContent();
-                // force re-render
-                const content = document.querySelector('[x-show="currentPage === \'agentTasks\'"]');
-                if (content && typeof window.getMyAgentTasksContent === 'function') {
-                    content.innerHTML = window.getMyAgentTasksContent();
+        // Re-render صفحه عامل — داده تازه از localStorage
+        setTimeout(() => {
+            const agentContainer = document.querySelector(
+                '[x-show*="agentTasks"]'
+            );
+            if (agentContainer && typeof window.getMyAgentTasksContent === 'function') {
+                agentContainer.innerHTML = window.getMyAgentTasksContent();
+                if (typeof window.startAgentTimers === 'function') {
+                    window.startAgentTimers();
                 }
             }
-        }
+        }, 100);
+
     } catch(err) {
         console.error('Error confirming order:', err);
-        alert('خطا در تایید سفارش: ' + err.message);
+        UTILS.showNotification('خطا در تایید سفارش: ' + err.message, 'error');
     }
 };
 
@@ -1957,7 +1992,7 @@ window.getMyIncomeContent = function () {
                 <!-- Income by Work Type -->
                 <div class="bg-slate-800 rounded-lg shadow-md p-4">
                     <h3 class="text-lg font-bold text-white mb-4">
-                        <i class="fas fa-chart-bar text-indigo-400 ml-2"></i>
+                        <i class="fas fa-chart-bar text-yellow-400 ml-2"></i>
                         درآمد بر اساس نوع کار
                     </h3>
 
@@ -1997,7 +2032,7 @@ window.getMyIncomeContent = function () {
                 <!-- Detailed Orders List -->
                 <div class="bg-white rounded-lg shadow-md p-4 border border-gray-200">
                     <h3 class="text-lg font-bold text-gray-800 mb-4">
-                        <i class="fas fa-list-ul text-indigo-500 ml-2"></i>
+                        <i class="fas fa-list-ul text-yellow-500 ml-2"></i>
                         جزئیات سفارشات و درآمد
                     </h3>
 
@@ -2012,14 +2047,14 @@ window.getMyIncomeContent = function () {
                         : `
                         <div class="overflow-x-auto">
                             <table class="w-full">
-                                <thead class="bg-indigo-50 border-b-2 border-indigo-100">
+                                <thead class="bg-yellow-50 border-b-2 border-yellow-100">
                                     <tr>
-                                        <th class="px-4 py-3 text-right text-sm font-semibold text-indigo-700">دانشجو</th>
-                                        <th class="px-4 py-3 text-right text-sm font-semibold text-indigo-700">نوع سفارش</th>
-                                        <th class="px-4 py-3 text-right text-sm font-semibold text-indigo-700">لیست کارها</th>
-                                        <th class="px-4 py-3 text-right text-sm font-semibold text-indigo-700">قیمت هر کار</th>
-                                        <th class="px-4 py-3 text-right text-sm font-semibold text-indigo-700">درآمد من</th>
-                                        <th class="px-4 py-3 text-right text-sm font-semibold text-indigo-700">وضعیت</th>
+                                        <th class="px-4 py-3 text-right text-sm font-semibold text-yellow-700">دانشجو</th>
+                                        <th class="px-4 py-3 text-right text-sm font-semibold text-yellow-700">نوع سفارش</th>
+                                        <th class="px-4 py-3 text-right text-sm font-semibold text-yellow-700">لیست کارها</th>
+                                        <th class="px-4 py-3 text-right text-sm font-semibold text-yellow-700">قیمت هر کار</th>
+                                        <th class="px-4 py-3 text-right text-sm font-semibold text-yellow-700">درآمد من</th>
+                                        <th class="px-4 py-3 text-right text-sm font-semibold text-yellow-700">وضعیت</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
@@ -2032,7 +2067,7 @@ window.getMyIncomeContent = function () {
                                           order.currency || "تومان";
 
                                         return `
-                                            <tr class="hover:bg-indigo-50 transition-colors">
+                                            <tr class="hover:bg-yellow-50 transition-colors">
                                                 <td class="px-4 py-3 text-sm font-medium text-gray-800">${order.studentName}</td>
                                                 <td class="px-4 py-3 text-sm text-gray-600">${order.type}</td>
                                                 <td class="px-4 py-3 text-sm text-gray-600">
