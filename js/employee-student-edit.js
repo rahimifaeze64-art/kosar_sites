@@ -119,7 +119,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                 <select id="edit-degree" class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg">
                                     <option value="کارشناسی" ${student.degree === 'کارشناسی' ? 'selected' : ''}>کارشناسی</option>
                                     <option value="کارشناسی ارشد" ${student.degree === 'کارشناسی ارشد' ? 'selected' : ''}>کارشناسی ارشد</option>
-                                    <option value="عاملا" ${student.degree === 'عاملا' ? 'selected' : ''}>عاملا</option>
+                                    <option value="دکتری" ${student.degree === 'دکتری' ? 'selected' : ''}>دکتری</option>
                                 </select>
                             </div>
                             <div>

@@ -32,7 +32,7 @@ function appData() {
                 studentId: 'ST002',
                 university: 'دانشگاه شریف',
                 field: 'مهندسی برق',
-                degree: 'عاملا',
+                degree: 'دکتری',
                 type: 'نوشتن مقاله',
                 status: 'approved',
                 stage: 'نوشتن مقاله اول',

@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>استمارة التسجيل - الدراسات العليا</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/css/intlTelInput.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap');
+        
+        * {
+            font-family: 'Tajawal', sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+            min-height: 100vh;
+        }
+        
+        /* Logo Styles */
+        .logo-container img {
+            max-width: 200px;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+        
+        .header-section {
+            background: linear-gradient(135deg, #d4af37 0%, #c9a961 100%);
+            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
+        }
+        
+        .form-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            border: 2px solid #d4af37;
+        }
+        
+        .input-field {
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            background: #fafafa;
+        }
+        
+        .input-field:focus {
+            border-color: #d4af37;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+            background: white;
+        }
+        
+        .upload-area {
+            border: 2px dashed #d4af37;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #fffef8;
+        }
+        
+        .upload-area:hover {
+            border-color: #c9a961;
+            background: #fffdf0;
+            transform: translateY(-2px);
+        }
+        
+        .upload-area.dragover {
+            border-color: #d4af37;
+            background: #fff9e6;
+            border-style: solid;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #d4af37 0%, #c9a961 100%);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+        }
+        
+        .file-preview {
+            background: #fffef8;
+            border: 1px solid #d4af37;
+            border-radius: 8px;
+            padding: 8px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .loading-overlay.active {
+            display: flex;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #d4af37;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .iti {
+            width: 100%;
+        }
+        
+        .iti__flag-container {
+            left: 0;
+            right: auto;
+        }
+        
+        .iti__selected-flag {
+            padding: 0 20px 0 8px;
+        }
+        
+        .section-title {
+            color: #5a5a5a;
+            border-bottom: 3px solid #d4af37;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        label {
+            color: #4a4a4a;
+            font-weight: 600;
+        }
+        
+        .required {
+            color: #d4af37;
+        }
+        
+        .success-message {
+            display: none;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            animation: slideDown 0.5s ease;
+        }
+        
+        .error-message {
+            display: none;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+            animation: slideDown 0.5s ease;
+        }
+        
+        .success-message.show,
+        .error-message.show {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .message-icon {
+            width: 50px;
+            height: 50px;
+            flex-shrink: 0;
+        }
+        
+        .message-content {
+            flex: 1;
+        }
+        
+        .message-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .message-text {
+            font-size: 16px;
+            opacity: 0.95;
+        }
+        
+        /* Hide reCAPTCHA test message */
+        .g-recaptcha > div > div {
+            position: relative;
+        }
+        
+        .g-recaptcha iframe {
+            position: relative;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body class="py-8 px-4">
+    <div class="max-w-5xl mx-auto">
+        <!-- Header Image -->
+        <div class="mb-8">
+            <img src="/assets/header.png" 
+                 alt="Header" 
+                 class="w-full h-auto rounded-2xl shadow-lg"
+                 style="max-height: 300px; object-fit: cover;"
+                 onerror="this.style.display='none'">
+        </div>
+
+        <!-- Header -->
+        <div class="header-section rounded-2xl p-8 mb-8 shadow-lg">
+            <div class="text-center">
+                <h1 class="text-5xl font-bold text-white mb-2">--   استمارة التسجيل  --</h1>
+                <p class="text-1xl text-white/90 mt-3">شركة الكوثر - للخدمات الجامعية</p>
+                <div class="mt-4 h-1 w-32 bg-white/30 mx-auto rounded"></div>
+            </div>
+        </div>
+        
+        <!-- Form Container -->
+        <div class="form-container p-10">
+            <!-- Success Message -->
+            <div class="success-message" id="successMessage">
+                <svg class="message-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div class="message-content">
+                    <div class="message-title">تم إرسال طلبك بنجاح!</div>
+                    <div class="message-text">سيتم مراجعة طلبك والتواصل معك قريباً</div>
+                </div>
+            </div>
+            
+            <!-- Error Message -->
+            <div class="error-message" id="errorMessage">
+                <svg class="message-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div class="message-content">
+                    <div class="message-title">حدث خطأ أثناء الإرسال</div>
+                    <div class="message-text">يرجى إدخال البيانات مرة أخرى. حدثت مشكلة في الاتصال بالإنترنت، يرجى المحاولة مرة أخرى</div>
+                </div>
+            </div>
+            
+            <form id="registrationForm" class="space-y-7">
+                
+                <!-- المعلومات الشخصية -->
+                <div>
+                    <h2 class="section-title text-2xl font-bold">المعلومات الشخصية</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block mb-2">الاسم الثلاثي حسب جواز السفر <span class="required">*</span></label>
+                            <input type="text" name="middle_name" required 
+                                class="input-field w-full rounded-lg px-4 py-3"
+                                placeholder="اسم الأب والجد">
+                        </div>
+
+                        <div>
+                            <label class="block mb-2">لقب العائلة حسب جواز السفر <span class="required">*</span></label>
+                            <input type="text" name="last_name" required 
+                                class="input-field w-full rounded-lg px-4 py-3"
+                                placeholder="اسم العائلة">
+                        </div>
+
+                        <div>
+                            <label class="block mb-2">الديانة <span class="required">*</span></label>
+                            <select name="religion" required 
+                                class="input-field w-full rounded-lg px-4 py-3">
+                                <option value="">اختر الديانة</option>
+                                <option value="سني">سني</option>
+                                <option value="شيعي">شيعي</option>
+                                <option value="مسيحي">مسيحي</option>
+                                <option value="سرياني">سرياني</option>
+                          
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block mb-2">رقم الهاتف <span class="required">*</span></label>
+                            <input type="tel" id="phone" name="phone" required 
+                                class="input-field w-full rounded-lg px-4 py-3"
+                                placeholder="+964">
+                        </div>
+
+                        <div>
+                            <label class="block mb-2">البريد الإلكتروني <span class="required">*</span></label>
+                            <input type="email" name="email" required 
+                                class="input-field w-full rounded-lg px-4 py-3"
+                                placeholder="example@email.com">
+                        </div>
+
+                        <div>
+                            <label class="block mb-2">العنوان في العراق <span class="required">*</span></label>
+                            <input type="text" name="address_iraq" required 
+                                class="input-field w-full rounded-lg px-4 py-3"
+                                placeholder="المحافظة والمدينة">
+                        </div>
+
+                        <div>
+                            <label class="block mb-2">الوظيفة <span class="required">*</span></label>
+                            <input type="text" name="job" required 
+                                class="input-field w-full rounded-lg px-4 py-3"
+                                placeholder="المهنة الحالية">
+                        </div>
+
+                        <div>
+                            <label class="block mb-2">الحالة الاجتماعية <span class="required">*</span></label>
+                            <select name="marital_status" id="maritalStatus" required 
+                                class="input-field w-full rounded-lg px-4 py-3">
+                                <option value="">اختر الحالة</option>
+                                <option value="أعزب">أعزب</option>
+                                <option value="متزوج">متزوج</option>
+                            </select>
+                        </div>
+
+                        <div id="childrenField" style="display: none;">
+                            <label class="block mb-2">عدد الأطفال <span class="required">*</span></label>
+                            <input type="number" name="children_count" min="0" 
+                                class="input-field w-full rounded-lg px-4 py-3"
+                                placeholder="0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- المعلومات الأكاديمية -->
+                <div>
+                    <h2 class="section-title text-2xl font-bold">المعلومات الأكاديمية</h2>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block mb-2">نوع الجامعة <span class="required">*</span></label>
+                            <select name="university_type" required 
+                                class="input-field w-full rounded-lg px-4 py-3">
+                                <option value="">اختر نوع الجامعة</option>
+                                <option value="نفقة خاصة">نفقة خاصة</option>
+                                <option value="ابتعاث">ابتعاث</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block mb-2">المقطع الدراسي <span class="required">*</span></label>
+                            <select name="degree" id="degreeSelect" required 
+                                class="input-field w-full rounded-lg px-4 py-3">
+                                <option value="">اختر المقطع</option>
+                                <option value="master">ماجستير</option>
+                                <option value="phd">دكتوراه</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block mb-2">التخصص المطلوب للدراسة <span class="required">*</span></label>
+                            <input type="text" name="major" required 
+                                class="input-field w-full rounded-lg px-4 py-3"
+                                placeholder="مثال: هندسة الحاسوب، الطب، إدارة الأعمال">
+                        </div>
+
+                        <div>
+                            <label class="block mb-2">اسم الجامعة السابقة (البكالوريوس) <span class="required">*</span></label>
+                            <input type="text" name="previous_university" required 
+                                class="input-field w-full rounded-lg px-4 py-3"
+                                placeholder="الجامعة التي تخرجت منها">
+                        </div>
+
+                        <div id="masterUniversityField" style="display: none;">
+                            <label class="block mb-2">اسم الجامعة السابقة (الماجستير) <span class="required">*</span></label>
+                            <input type="text" name="master_university" 
+                                class="input-field w-full rounded-lg px-4 py-3"
+                                placeholder="جامعة الماجستير">
+                        </div>
+
+                        <div>
+                            <label class="block mb-2">معدل البكالوريوس <span class="required">*</span></label>
+                            <input type="text" name="bachelor_gpa" required 
+                                class="input-field w-full rounded-lg px-4 py-3"
+                                placeholder="مثال: 3.5 أو 85%">
+                        </div>
+
+                        <div id="masterGpaField" style="display: none;">
+                            <label class="block mb-2">معدل الماجستير <span class="required">*</span></label>
+                            <input type="text" name="master_gpa" 
+                                class="input-field w-full rounded-lg px-4 py-3"
+                                placeholder="مثال: 3.8 أو 90%">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- تحميل المستندات -->
+                <div>
+                    <h2 class="section-title text-2xl font-bold">
+                        تحميل المستندات المطلوبة
+                        <span class="text-red-600 text-lg mr-4">⚠ يرجى تحميل صور واضحة ومقروءة (حجم الملف أقل من 2MB)</span>
+                    </h2>
+                    
+                    <!-- صورة جواز السفر -->
+                    <div class="mb-6">
+                        <label class="block mb-2">صورة جواز السفر <span class="required">*</span></label>
+                        <p class="text-sm text-gray-600 mb-2">يرجى تحميل صورة واضحة ومقروءة لجواز السفر لضمان نجاح التسجيل</p>
+                        <div class="upload-area rounded-lg p-6 text-center" data-field="passport">
+                            <svg class="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <p class="text-gray-600 font-medium">اضغط أو اسحب الملف هنا</p>
+                            <p class="text-sm text-gray-500 mt-1">PDF أو صورة</p>
+                            <input type="file" name="passport" accept="image/*,.pdf" required class="hidden">
+                        </div>
+                        <div class="file-preview-container"></div>
+                    </div>
+
+                    <!-- صورة الشخص -->
+                    <div class="mb-6">
+                        <label class="block mb-2">صورة الشخصیة <span class="required">*</span></label>
+                        <div class="upload-area rounded-lg p-6 text-center" data-field="personal_photo">
+                            <svg class="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <p class="text-gray-600 font-medium">اضغط أو اسحب الملف هنا</p>
+                            <p class="text-sm text-gray-500 mt-1">PDF أو صورة</p>
+                            <input type="file" name="personal_photo" accept="image/*,.pdf" required class="hidden">
+                        </div>
+                        <div class="file-preview-container"></div>
+                    </div>
+
+                    <!-- كشف درجات البكالوريوس -->
+                    <div class="mb-6">
+                        <label class="block mb-2">كشف درجات البكالوريوس <span class="required">*</span></label>
+                        <div class="upload-area rounded-lg p-6 text-center" data-field="transcript">
+                            <svg class="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <p class="text-gray-600 font-medium">اضغط أو اسحب الملف هنا</p>
+                            <p class="text-sm text-gray-500 mt-1">PDF أو صورة</p>
+                            <input type="file" name="transcript" accept="image/*,.pdf" required class="hidden">
+                        </div>
+                        <div class="file-preview-container"></div>
+                    </div>
+
+                    <!-- كشف درجات الماجستير (للدكتوراه فقط) -->
+                    <div class="mb-6" id="masterTranscriptField" style="display: none;">
+                        <label class="block mb-2">كشف درجات الماجستير <span class="required">*</span></label>
+                        <div class="upload-area rounded-lg p-6 text-center" data-field="master_transcript">
+                            <svg class="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <p class="text-gray-600 font-medium">اضغط أو اسحب الملف هنا</p>
+                            <p class="text-sm text-gray-500 mt-1">PDF أو صورة</p>
+                            <input type="file" name="master_transcript" accept="image/*,.pdf" class="hidden">
+                        </div>
+                        <div class="file-preview-container"></div>
+                    </div>
+
+                    <!-- وثيقة الماجستير (للدكتوراه فقط) -->
+                    <div class="mb-6" id="masterCertificateField" style="display: none;">
+                        <label class="block mb-2">وثيقة الماجستير <span class="required">*</span></label>
+                        <div class="upload-area rounded-lg p-6 text-center" data-field="master_certificate">
+                            <svg class="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <p class="text-gray-600 font-medium">اضغط أو اسحب الملف هنا</p>
+                            <p class="text-sm text-gray-500 mt-1">PDF أو صورة</p>
+                            <input type="file" name="master_certificate" accept="image/*,.pdf" class="hidden">
+                        </div>
+                        <div class="file-preview-container"></div>
+                    </div>
+                </div>
+
+                <!-- زر الإرسال -->
+                <button type="submit" class="btn-primary w-full text-white font-bold py-4 rounded-xl text-xl">
+                    إرسال الطلب ✓
+                </button>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-6 text-gray-600">
+            <p class="text-sm">سيتم مراجعة طلبك والتواصل معك قريباً</p>
+        </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="text-center">
+            <div class="spinner mx-auto mb-4"></div>
+            <p class="text-white text-2xl font-bold" id="loadingText">جاري معالجة الملفات...</p>
+            <p class="text-white/80 mt-2">يرجى الانتظار</p>
+        </div>
+    </div>
+
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- International Tel Input -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/intlTelInput.min.js"></script>
+    
+    <!-- Supabase Client + Registration Logic -->
+    <script type="module" src="/assets/js/supabase-client.js"></script>
+    <script type="module" src="/assets/js/registration.js"></script>
+    
+    <script>
+        // ── Phone Input ──────────────────────────────────────────
+        const phoneInput = document.querySelector("#phone");
+        const iti = window.intlTelInput(phoneInput, {
+            initialCountry: "iq",
+            preferredCountries: ["iq", "ir", "sa", "ae", "tr"],
+            separateDialCode: true,
+            utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js"
+        });
+
+        // expose iti globally so registration.js can call iti.getNumber()
+        window.itiPhone = iti;
+
+        // ── Degree: show/hide PhD fields ─────────────────────────
+        const degreeSelect           = document.getElementById('degreeSelect');
+        const masterGpaField         = document.getElementById('masterGpaField');
+        const masterTranscriptField  = document.getElementById('masterTranscriptField');
+        const masterUniversityField  = document.getElementById('masterUniversityField');
+        const masterCertificateField = document.getElementById('masterCertificateField');
+
+        degreeSelect.addEventListener('change', function () {
+            const isPhD = this.value === 'phd';
+
+            [masterGpaField, masterTranscriptField, masterUniversityField, masterCertificateField]
+                .forEach(el => el.style.display = isPhD ? 'block' : 'none');
+
+            const toggle = (selector, required) => {
+                const input = document.querySelector(selector);
+                if (!input) return;
+                required ? input.setAttribute('required', 'required')
+                         : input.removeAttribute('required');
+            };
+
+            toggle('input[name="master_gpa"]',          isPhD);
+            toggle('input[name="master_transcript"]',   isPhD);
+            toggle('input[name="master_university"]',   isPhD);
+            toggle('input[name="master_certificate"]',  isPhD);
+        });
+
+        // ── Marital status: show/hide children field ─────────────
+        const maritalStatus = document.getElementById('maritalStatus');
+        const childrenField = document.getElementById('childrenField');
+
+        maritalStatus.addEventListener('change', function () {
+            const isMarried = this.value === 'متزوج';
+            childrenField.style.display = isMarried ? 'block' : 'none';
+            const childrenInput = childrenField.querySelector('input');
+            isMarried ? childrenInput.setAttribute('required', 'required')
+                      : childrenInput.removeAttribute('required');
+        });
+
+        // ── File upload UI (drag & drop + preview) ───────────────
+        document.querySelectorAll('.upload-area').forEach(area => {
+            const input            = area.querySelector('input[type="file"]');
+            const previewContainer = area.nextElementSibling;
+
+            area.addEventListener('click', () => input.click());
+
+            area.addEventListener('dragover', e => {
+                e.preventDefault();
+                area.classList.add('dragover');
+            });
+            area.addEventListener('dragleave', () => area.classList.remove('dragover'));
+            area.addEventListener('drop', e => {
+                e.preventDefault();
+                area.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) {
+                    input.files = e.dataTransfer.files;
+                    showFilePreview(input, previewContainer);
+                }
+            });
+            input.addEventListener('change', () => showFilePreview(input, previewContainer));
+        });
+
+        function showFilePreview(input, container) {
+            container.innerHTML = '';
+            if (!input.files.length) return;
+            const file    = input.files[0];
+            const preview = document.createElement('div');
+            preview.className = 'file-preview';
+            preview.innerHTML = `
+                <svg class="w-5 h-5" style="color:#d4af37" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span class="text-sm text-gray-700 font-medium">${file.name}</span>
+                <button type="button" class="text-red-500 hover:text-red-700" onclick="removeFile(this)">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>`;
+            container.appendChild(preview);
+        }
+
+        function removeFile(button) {
+            const preview     = button.closest('.file-preview');
+            const container   = preview.parentElement;
+            const uploadArea  = container.previousElementSibling;
+            uploadArea.querySelector('input[type="file"]').value = '';
+            preview.remove();
+        }
+    </script>
+</body>
+</html>

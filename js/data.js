@@ -140,18 +140,13 @@ const DataModule = {
         }
     },
     
-    // Save orders — localStorage + Supabase
+    // Save orders — localStorage + Supabase + UI refresh
     saveOrders(orders) {
         try {
-            if (!orders || !Array.isArray(orders)) {
-                if (typeof debugLogger !== 'undefined') {
-                    debugLogger('Invalid orders data', 'error', orders);
-                }
-                return false;
-            }
-            
+            if (!orders || !Array.isArray(orders)) return false;
+
             localStorage.setItem(CONFIG.STORAGE_KEYS.ORDERS, JSON.stringify(orders));
-            
+
             if (typeof debugLogger !== 'undefined') {
                 debugLogger(`Saved ${orders.length} orders`, 'success');
             }
@@ -162,12 +157,12 @@ const DataModule = {
                     console.warn('⚠️ Supabase saveOrders:', e.message)
                 );
             }
-            
-            // ارسال رویداد به‌روزرسانی
+
+            // emit رویداد — UIRefresh listener در app.js UI را update می‌کند
             if (typeof RealtimeEvents !== 'undefined') {
                 RealtimeEvents.emit(RealtimeEvents.EVENTS.ORDERS_CHANGED, { orders });
             }
-            
+
             return true;
         } catch (error) {
             if (typeof debugLogger !== 'undefined') {

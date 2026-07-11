@@ -42,14 +42,36 @@ function appController() {
 
         // Subscribe to real-time events for automatic UI updates
         if (typeof RealtimeEvents !== 'undefined') {
+            // سفارشات تغییر کرد
             RealtimeEvents.on(RealtimeEvents.EVENTS.ORDERS_CHANGED, async () => {
-                // اگر مدیر الان در صفحه orders است، refresh کن
                 if (this.currentPage === 'orders') {
                     await this.loadOrdersPageWithRetry();
                 }
-                // داشبورد را هم refresh کن
                 if (this.currentPage === 'dashboard') {
                     await this.loadDashboardContent();
+                }
+            }, 'app-controller');
+
+            // کاربران تغییر کرد
+            RealtimeEvents.on(RealtimeEvents.EVENTS.USERS_CHANGED, () => {
+                if (this.currentPage === 'users') {
+                    const el = document.querySelector('[x-show*="currentPage === \'users\'"]');
+                    if (el && typeof UsersModule !== 'undefined') {
+                        el.innerHTML = UsersModule.getUsersContent();
+                    }
+                }
+            }, 'app-controller');
+
+            // وظایف تغییر کرد — برای عامل و کارمند
+            RealtimeEvents.on(RealtimeEvents.EVENTS.EMPLOYEE_TASKS_CHANGED, () => {
+                if (this.currentPage === 'agentTasks' &&
+                    typeof window.getMyAgentTasksContent === 'function') {
+                    const el = document.querySelector('[x-show*="agentTasks"]');
+                    if (el) el.innerHTML = window.getMyAgentTasksContent();
+                }
+                if (this.currentPage === 'myTasks' && typeof EmployeeModule !== 'undefined') {
+                    const el = document.querySelector('[x-show*="myTasks"]');
+                    if (el) el.innerHTML = EmployeeModule.getMyTasksContent(this.currentUser.id);
                 }
             }, 'app-controller');
         }
@@ -1019,7 +1041,7 @@ window.submitAssignOrder = function (doctorId) {
       alpineData.showModal = null;
     }
 
-    setTimeout(() => location.reload(), 1000);
+    UIRefresh.orders();
   } catch (error) {
     debugLogger("Error assigning order", "error", error);
     UTILS.showNotification("خطا در تخصیص سفارش", "error");
@@ -1053,7 +1075,7 @@ window.approveOrder = function (orderId) {
     debugLogger("Order approved successfully", "success", { orderId });
     UTILS.showNotification("سفارش با موفقیت تایید شد", "success");
 
-    setTimeout(() => location.reload(), 1000);
+    UIRefresh.orders();
   } catch (error) {
     debugLogger("Error approving order", "error", error);
     UTILS.showNotification("خطا در تایید سفارش", "error");
@@ -1130,7 +1152,7 @@ window.submitRejectOrder = function (reason) {
       alpineData.showModal = null;
     }
 
-    setTimeout(() => location.reload(), 1000);
+    UIRefresh.orders();
   } catch (error) {
     debugLogger("Error rejecting order", "error", error);
     UTILS.showNotification("خطا در رد سفارش", "error");
@@ -1268,7 +1290,7 @@ window.toggleUserStatus = function (userId) {
   if (confirm("آیا از تغییر وضعیت کاربر مطمئن هستید؟")) {
     const result = UsersModule.toggleUserStatus(userId);
     if (result) {
-      setTimeout(() => location.reload(), 1000);
+      UIRefresh.orders();
     }
   }
 };
@@ -1277,7 +1299,7 @@ window.deleteUser = function (userId) {
   if (confirm("آیا از حذف این کاربر مطمئن هستید؟ این عمل قابل بازگشت نیست.")) {
     const result = UsersModule.deleteUser(userId);
     if (result) {
-      setTimeout(() => location.reload(), 1000);
+      UIRefresh.orders();
     }
   }
 };

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Icon Generator</title>
+    <style>
+        canvas { border: 1px solid #ccc; margin: 10px; }
+        .icon-container { display: inline-block; text-align: center; margin: 10px; }
+    </style>
+</head>
+<body>
+    <h2>PWA Icon Generator</h2>
+    <p>این فایل آیکون‌های مورد نیاز PWA را تولید می‌کند</p>
+    
+    <div id="icons-container"></div>
+    
+    <script>
+        const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+        const container = document.getElementById('icons-container');
+        
+        sizes.forEach(size => {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#3b82f6');
+            gradient.addColorStop(1, '#1d4ed8');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+            
+            // Icon (graduation cap)
+            ctx.fillStyle = 'white';
+            ctx.font = `${size * 0.5}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🎓', size/2, size/2);
+            
+            // Create download link
+            const iconDiv = document.createElement('div');
+            iconDiv.className = 'icon-container';
+            
+            const label = document.createElement('div');
+            label.textContent = `${size}x${size}`;
+            
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL();
+            link.download = `icon-${size}x${size}.png`;
+            link.textContent = 'Download';
+            link.style.display = 'block';
+            link.style.marginTop = '5px';
+            
+            iconDiv.appendChild(canvas);
+            iconDiv.appendChild(label);
+            iconDiv.appendChild(link);
+            container.appendChild(iconDiv);
+        });
+    </script>
+</body>
+</html>

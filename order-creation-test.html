@@ -63,7 +63,7 @@
                     <select x-model="orderData.degree" class="w-full border border-gray-300 rounded-lg px-3 py-2">
                         <option value="">انتخاب کنید</option>
                         <option value="ارشد">کارشناسی ارشد</option>
-                        <option value="عاملا">عاملا</option>
+                        <option value="دکتری">دکتری</option>
                     </select>
                 </div>
                 
@@ -324,7 +324,7 @@
                 
                 calculatePrice() {
                     const pricing = {
-                        'نوشتن رساله': { ارشد: 800, عاملا: 1200 },
+                        'نوشتن رساله': { ارشد: 800, دکتری: 1200 },
                         'نوشتن مقاله': { price: 300 },
                         'ترجمه رساله': { price: 200 },
                         'تلخیص': { price: 150 }

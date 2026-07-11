@@ -1245,12 +1245,33 @@ const WorkHoursUI = (function() {
      */
     function refreshContent() {
         init();
-        
-        // اگر تابع appController وجود دارد، صفحه را بازخوانی کن
-        if (typeof window.appController === 'function') {
-            const app = document.querySelector('[x-data]');
-            if (app && app.__x) {
-                app.__x.$data.currentPage = app.__x.$data.currentPage; // Force refresh
+
+        // re-render بخش workHours در Alpine بدون reload کامل
+        try {
+            // روش ۱: پیدا کردن container و re-render مستقیم
+            const container = document.querySelector('[x-show*="workHours"]');
+            if (container) {
+                const app = UIRefresh ? UIRefresh._getApp() : null;
+                const role = app ? app.currentUser.role : (JSON.parse(localStorage.getItem('currentUser') || '{}').role);
+                if (role === 'manager') {
+                    container.innerHTML = getManagerContent();
+                } else {
+                    container.innerHTML = getEmployeeContent();
+                }
+                // re-attach event listeners
+                setupEventListeners();
+                return;
+            }
+        } catch (e) {
+            console.warn('refreshContent خطا:', e.message);
+        }
+
+        // روش ۲: از UIRefresh استفاده کن
+        if (typeof UIRefresh !== 'undefined') {
+            const app = UIRefresh._getApp();
+            if (app && app.currentPage === 'workHours') {
+                app.currentPage = '__temp__';
+                setTimeout(() => { app.currentPage = 'workHours'; }, 50);
             }
         }
     }

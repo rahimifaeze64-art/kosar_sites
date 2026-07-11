@@ -529,17 +529,19 @@ const OrdersModule = (function () {
         const currentUser = getCurrentUserSafe();
         if (!currentUser) return;
 
-        const content = await getOrdersContent(currentUser.role, currentUser.id);
+        // اگر UIRefresh موجود است از آن استفاده کن (بدون reload)
+        if (typeof UIRefresh !== 'undefined') {
+            await UIRefresh.orders();
+            return;
+        }
 
+        // fallback
+        const content = await getOrdersContent(currentUser.role, currentUser.id);
         const appEl = document.querySelector('[x-data]');
         if (appEl && typeof Alpine !== 'undefined' && Alpine.$data) {
             const app = Alpine.$data(appEl);
-            if (app) {
-                app.ordersContent = content;
-                return;
-            }
+            if (app) { app.ordersContent = content; return; }
         }
-
         const container = document.querySelector('[x-show="currentPage === \'orders\'"]');
         if (container) container.innerHTML = content;
     }

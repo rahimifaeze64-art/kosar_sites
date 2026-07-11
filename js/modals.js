@@ -273,7 +273,7 @@ const ModalsModule = {
                             <option value="">انتخاب کنید</option>
                             <option value="کارشناسی">کارشناسی</option>
                             <option value="کارشناسی ارشد">کارشناسی ارشد</option>
-                            <option value="عاملا">عاملا</option>
+                            <option value="دکتری">دکتری</option>
                             <option value="سایر">سایر</option>
                         </select>
                     </div>
@@ -560,7 +560,7 @@ const ModalsModule = {
                             <select x-model="newUser.degree" class="form-control">
                                 <option value="">انتخاب کنید</option>
                                 <option value="ارشد">کارشناسی ارشد</option>
-                                <option value="عاملا">عاملا</option>
+                                <option value="دکتری">دکتری</option>
                             </select>
                         </div>
                         <div>
@@ -983,7 +983,7 @@ const ModalsModule = {
                             <select x-model="newProject.degree" class="form-control" required>
                                 <option value="">انتخاب کنید</option>
                                 <option value="ارشد">کارشناسی ارشد</option>
-                                <option value="عاملا">عاملا</option>
+                                <option value="دکتری">دکتری</option>
                             </select>
                         </div>
                         <div>
@@ -1140,7 +1140,7 @@ const ModalsModule = {
                             <select x-model="newProject.degree" class="form-control" required>
                                 <option value="">انتخاب کنید</option>
                                 <option value="ارشد">کارشناسی ارشد</option>
-                                <option value="عاملا">عاملا</option>
+                                <option value="دکتری">دکتری</option>
                             </select>
                         </div>
                         <div>
@@ -1487,7 +1487,7 @@ const ModalsModule = {
       if (typeof OrdersModule !== 'undefined' && OrdersModule.refreshOrders) {
         await OrdersModule.refreshOrders();
       } else {
-        setTimeout(() => location.reload(), 1000);
+        UIRefresh.orders();
       }
     } catch (error) {
       debugLogger("Error submitting new order", "error", {
@@ -1544,7 +1544,7 @@ const ModalsModule = {
       window.showModal = null;
       // Refresh users page if currently viewing
       if (window.currentPage === "users") {
-        setTimeout(() => location.reload(), 1000);
+        UIRefresh.orders();
       }
     }
   },
@@ -1578,7 +1578,7 @@ const ModalsModule = {
       window.editingUserData = null;
       // Refresh users page if currently viewing
       if (window.currentPage === "users") {
-        setTimeout(() => location.reload(), 1000);
+        UIRefresh.orders();
       }
     }
   },
@@ -1636,7 +1636,7 @@ const ModalsModule = {
       debugLogger("Order approved successfully", "success", { orderId });
       UTILS.showNotification("سفارش با موفقیت تایید شد", "success");
 
-      setTimeout(() => location.reload(), 1000);
+      UIRefresh.orders();
     } catch (error) {
       debugLogger("Error approving order", "error", error);
       UTILS.showNotification("خطا در تایید سفارش", "error");
@@ -1711,7 +1711,7 @@ const ModalsModule = {
       UTILS.showNotification("سفارش رد شد و دلیل ثبت گردید", "warning");
 
       window.showModal = null;
-      setTimeout(() => location.reload(), 1000);
+      UIRefresh.orders();
     } catch (error) {
       debugLogger("Error rejecting order", "error", error);
       UTILS.showNotification("خطا در رد سفارش", "error");
@@ -1807,7 +1807,7 @@ const ModalsModule = {
       UTILS.showNotification(`سفارش به ${doctor.name} تخصیص یافت`, "success");
 
       window.showModal = null;
-      setTimeout(() => location.reload(), 1000);
+      UIRefresh.orders();
     } catch (error) {
       debugLogger("Error assigning order", "error", error);
       UTILS.showNotification("خطا در تخصیص سفارش", "error");
@@ -1923,9 +1923,7 @@ const ModalsModule = {
 
       // Close modal and refresh
       window.showModal = null;
-      setTimeout(() => {
-        location.reload();
-      }, 1500);
+      UIRefresh.orders();
     } catch (error) {
       debugLogger("Error creating project", "error", {
         message: error.message,
@@ -2030,9 +2028,7 @@ const ModalsModule = {
 
       // Close modal and refresh
       window.showModal = null;
-      setTimeout(() => {
-        location.reload();
-      }, 1500);
+      UIRefresh.orders();
     } catch (error) {
       debugLogger("Error creating student project request", "error", {
         message: error.message,

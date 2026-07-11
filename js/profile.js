@@ -155,7 +155,7 @@ const ProfileModule = {
                                 <label class="block text-sm font-medium text-gray-700 mb-2">مقطع</label>
                                 <select class="form-control" id="profile-degree">
                                     <option value="ارشد" ${user.degree === 'ارشد' ? 'selected' : ''}>کارشناسی ارشد</option>
-                                    <option value="عاملا" ${user.degree === 'عاملا' || user.degree === 'دكتراه' ? 'selected' : ''}>عاملا</option>
+                                    <option value="دکتری" ${user.degree === 'دکتری' || user.degree === 'دكتراه' ? 'selected' : ''}>دکتری</option>
                                 </select>
                             </div>
                             <div>

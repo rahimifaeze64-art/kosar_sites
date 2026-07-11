@@ -1204,7 +1204,7 @@ const EmployeeModule = {
                         <select id="edit-degree" class="w-full bg-slate-600 border border-slate-500 rounded-lg px-3 py-2 text-white">
                             <option value="کارشناسی" ${student.degree === 'کارشناسی' ? 'selected' : ''}>کارشناسی</option>
                             <option value="کارشناسی ارشد" ${student.degree === 'کارشناسی ارشد' ? 'selected' : ''}>کارشناسی ارشد</option>
-                            <option value="عاملا" ${student.degree === 'عاملا' ? 'selected' : ''}>عاملا</option>
+                            <option value="دکتری" ${student.degree === 'دکتری' ? 'selected' : ''}>دکتری</option>
                         </select>
                     </div>
                     <div>
@@ -3806,7 +3806,7 @@ EmployeeModule.showAddStudentModal = function() {
                                 <select id="new-degree" required class="w-full bg-slate-600 border border-slate-500 rounded-lg px-3 py-2 text-white">
                                     <option value="کارشناسی">کارشناسی</option>
                                     <option value="کارشناسی ارشد">کارشناسی ارشد</option>
-                                    <option value="عاملا">عاملا</option>
+                                    <option value="دکتری">دکتری</option>
                                 </select>
                             </div>
                             <div>

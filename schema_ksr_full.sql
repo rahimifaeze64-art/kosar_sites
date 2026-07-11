@@ -671,7 +671,7 @@ CREATE POLICY "step_assignments_select_employee" ON public.step_assignments
 
 
 -- ----------------------------------------------------------------------------
--- 7.1 employee_tasks — وظایف کارمندان و عاملان
+-- 7.1 employee_tasks — وظایف کارمندان و دکترین
 -- ----------------------------------------------------------------------------
 -- در localStorage با کلید 'employee_tasks' به شکل { empId: [...tasks] } ذخیره می‌شود.
 -- هر task می‌تواند دستی (توسط مدیر) یا خودکار (توسط StepAssignmentModule) ایجاد شود.
@@ -714,7 +714,7 @@ CREATE TABLE IF NOT EXISTS public.employee_tasks (
 
 ALTER TABLE public.employee_tasks ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
 
-COMMENT ON TABLE public.employee_tasks IS 'وظایف کارمندان و عاملان — دستی یا خودکار از سیستم تخصیص مراحل / Employee and agent tasks (manual or auto-generated from step-assignment)';
+COMMENT ON TABLE public.employee_tasks IS 'وظایف کارمندان و دکترین — دستی یا خودکار از سیستم تخصیص مراحل / Employee and agent tasks (manual or auto-generated from step-assignment)';
 COMMENT ON COLUMN public.employee_tasks.is_step_task IS 'true اگر وظیفه خودکار از سیستم پیشرفت مراحل ایجاد شده باشد';
 COMMENT ON COLUMN public.employee_tasks.voice_message IS 'پیام صوتی ضمیمه — URL سوپابیس Storage یا داده base64';
 
