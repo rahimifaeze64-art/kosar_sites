@@ -1,20 +1,28 @@
 ﻿/**
  * سیستم حسابداری کارمندان
- * محاسبه حقوق و دستمزد بر اساس ساعات کاری و هزینه‌ها (localStorage)
+ * محاسبه حقوق و دستمزد بر اساس ساعات کاری و هزینه‌ها
+ * ذخیره‌سازی: localStorage + Supabase employee_hourly_rates
  */
 
 const EmployeeAccountingModule = (function() {
     'use strict';
 
-    const STORAGE_KEY = 'employee_accounting_settings';
+    const STORAGE_KEY      = 'employee_accounting_settings';
     const HOURLY_RATES_KEY = 'employee_hourly_rates';
+
+    // ── Helper ───────────────────────────────────────────────
+    function _sb() {
+        return typeof SupabaseDataModule !== 'undefined' &&
+               typeof SupabaseConnection  !== 'undefined' &&
+               SupabaseConnection.isOnline === true
+               ? SupabaseDataModule : null;
+    }
 
     function getSettings() {
         try {
             const data = localStorage.getItem(STORAGE_KEY);
             return data ? JSON.parse(data) : { defaultHourlyRate: 0, currency: 'تومان' };
         } catch (error) {
-            console.error('خطا در دریافت تنظیمات:', error);
             return { defaultHourlyRate: 0, currency: 'تومان' };
         }
     }
@@ -23,20 +31,14 @@ const EmployeeAccountingModule = (function() {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
             return true;
-        } catch (error) {
-            console.error('خطا در ذخیره تنظیمات:', error);
-            return false;
-        }
+        } catch (error) { return false; }
     }
 
     function getHourlyRates() {
         try {
             const data = localStorage.getItem(HOURLY_RATES_KEY);
             return data ? JSON.parse(data) : {};
-        } catch (error) {
-            console.error('خطا در دریافت نرخ‌های ساعتی:', error);
-            return {};
-        }
+        } catch (error) { return {}; }
     }
 
     function setHourlyRate(employeeId, rate) {
@@ -44,14 +46,48 @@ const EmployeeAccountingModule = (function() {
             const rates = getHourlyRates();
             rates[employeeId] = parseFloat(rate) || 0;
             localStorage.setItem(HOURLY_RATES_KEY, JSON.stringify(rates));
+
+            // sync به Supabase — جدول employee_hourly_rates
+            const sb = _sb();
+            if (sb && typeof sb._db === 'function') {
+                const client = sb._db();
+                if (client) {
+                    client.from('employee_hourly_rates')
+                        .upsert({
+                            employee_id: employeeId,
+                            hourly_rate: parseFloat(rate) || 0,
+                            currency:    'تومان',
+                            updated_at:  new Date().toISOString()
+                        }, { onConflict: 'employee_id' })
+                        .then(({ error }) => {
+                            if (error) console.warn('⚠️ setHourlyRate Supabase خطا:', error.message);
+                            else       console.log('✅ نرخ ساعتی در Supabase ذخیره شد:', employeeId);
+                        });
+                }
+            }
             return true;
-        } catch (error) {
-            console.error('خطا در ذخیره نرخ ساعتی:', error);
-            return false;
-        }
+        } catch (error) { return false; }
     }
 
     function getEmployeeHourlyRate(employeeId) {
+        // sync از Supabase در پس‌زمینه
+        const sb = _sb();
+        if (sb && typeof sb._db === 'function') {
+            const client = sb._db();
+            if (client) {
+                client.from('employee_hourly_rates')
+                    .select('hourly_rate')
+                    .eq('employee_id', employeeId)
+                    .maybeSingle()
+                    .then(({ data, error }) => {
+                        if (!error && data) {
+                            const rates = getHourlyRates();
+                            rates[employeeId] = parseFloat(data.hourly_rate) || 0;
+                            localStorage.setItem(HOURLY_RATES_KEY, JSON.stringify(rates));
+                        }
+                    }).catch(() => {});
+            }
+        }
         const rates = getHourlyRates();
         const settings = getSettings();
         return rates[employeeId] ?? settings.defaultHourlyRate ?? 0;

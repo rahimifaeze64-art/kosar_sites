@@ -4,6 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>سیستم مدیریت تحصیلی دانشجویان بین‌المللی</title>
+
+    <!-- اگر لاگین نیست → صفحه اصلی سایت -->
+    <script>
+        (function() {
+            var saved = localStorage.getItem('currentUser');
+            if (!saved) { window.location.replace('landing.html'); return; }
+            try {
+                var u = JSON.parse(saved);
+                if (!u || !u.id || !u.role) {
+                    localStorage.removeItem('currentUser');
+                    window.location.replace('landing.html');
+                }
+            } catch(e) {
+                localStorage.removeItem('currentUser');
+                window.location.replace('landing.html');
+            }
+        })();
+    </script>
     
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#1e293b">
@@ -27,10 +45,11 @@
     <script src="js/students-sync.js"></script>
     <!-- کاربران هاردکد -->
     <script src="js/hardcoded-users.js"></script>
-    <!-- Offline Mode - Disable all API calls -->
-    <script src="js/offline-mode.js"></script>
-    <script src="js/accounting.js"></script>
-    <script src="js/accounting-ui.js"></script>
+    <!-- offline-mode.js disabled — Supabase is the backend now -->
+    <!-- <script src="js/offline-mode.js"></script> -->
+    <!-- accounting.js is loaded later in the correct order -->
+    <!-- <script src="js/accounting.js"></script> -->
+    <!-- <script src="js/accounting-ui.js"></script> -->
     <script defer src="assets/libs/alpine.min.js"></script>
     <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
     <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
@@ -528,7 +547,8 @@
     <script src="js/management-chat.js"></script>
     <script src="js/management-chat-module.js"></script>
     <script src="js/manages-chat.js"></script>
-    <script src="js/thesis-workflow.js"></script>
+    <!-- thesis-workflow.js removed - not in use -->
+    <!-- <script src="js/thesis-workflow.js"></script> -->
     <script src="js/thesis-progress-ui.js"></script>
     <!-- thesis-progress-integration.js removed - file not found -->
     <script src="js/realtime-events.js"></script>

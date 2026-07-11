@@ -142,8 +142,22 @@ const OrdersModule = (function () {
     }
 
     async function fetchOrdersFromStorage() {
-        // Always use localStorage - API disabled for offline mode
-        log('Using localStorage for orders (offline mode)', 'info');
+        // اگر Supabase client آماده است، از Supabase بارگذاری کن
+        const sbClient = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+        if (sbClient && typeof SupabaseDataModule !== 'undefined') {
+            try {
+                log('Loading orders from Supabase...', 'info');
+                const sbOrders = await SupabaseDataModule.getOrders();
+                if (sbOrders && sbOrders.length > 0) {
+                    log(`Loaded ${sbOrders.length} orders from Supabase`, 'success');
+                    return sortOrders(sbOrders.map(normalizeOrder).filter(Boolean));
+                }
+            } catch (e) {
+                log('Supabase orders load failed, fallback to localStorage: ' + e.message, 'warning');
+            }
+        }
+        // fallback به localStorage
+        log('Using localStorage for orders', 'info');
         return sortOrders(loadOrders().map(normalizeOrder).filter(Boolean));
     }
 

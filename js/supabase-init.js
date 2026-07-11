@@ -60,7 +60,12 @@
         console.warn('⚠️ بررسی نشست خطا:', e.message);
     }
 
-    // ── ۶. migration حذف شد — پروژه از ابتدا با Supabase کار می‌کند ──
+    // ── ۶. بارگذاری اولیه داده‌ها از Supabase به localStorage ──
+    // این مرحله حیاتی است: وقتی مرورگر جدید باز می‌شود،
+    // localStorage خالی است. باید داده‌ها از Supabase کشیده شوند
+    // تا app بتواند به درستی کار کند.
+    console.log('📥 شروع بارگذاری اولیه داده‌ها از Supabase...');
+    await _pullDataFromSupabase();
 
     // ── ۷. برچسب آنلاین در UI ────────────────────────────────
     _showOnlineBanner();
@@ -81,8 +86,125 @@
     });
 
     console.log('✅ Supabase کاملاً راه‌اندازی شد');
+
+    // اطلاع‌رسانی به app که داده‌ها آماده‌اند — Alpine می‌تواند refresh کند
+    window.dispatchEvent(new CustomEvent('supabase:dataready'));
+    console.log('📣 رویداد supabase:dataready ارسال شد');
 })();
 
+
+// ── بارگذاری اولیه داده‌ها از Supabase ──────────────────────
+// این تابع هنگام startup اجرا می‌شود تا localStorage را با
+// داده‌های ابر همگام‌سازی کند — ضروری برای مرورگرهای جدید
+async function _pullDataFromSupabase() {
+    if (typeof SupabaseDataModule === 'undefined') return;
+
+    try {
+        // ── سفارشات ─────────────────────────────────────────
+        const orders = await SupabaseDataModule.getOrders();
+        if (orders && orders.length > 0) {
+            localStorage.setItem('edu_system_orders', JSON.stringify(orders));
+            console.log(`✅ ${orders.length} سفارش از Supabase بارگذاری شد`);
+        }
+    } catch (e) {
+        console.warn('⚠️ pull orders خطا:', e.message);
+    }
+
+    try {
+        // ── کاربران/پروفایل‌ها ──────────────────────────────
+        const users = await SupabaseDataModule.getUsers();
+        if (users && users.length > 0) {
+            localStorage.setItem('edu_system_users', JSON.stringify(users));
+            console.log(`✅ ${users.length} کاربر از Supabase بارگذاری شد`);
+        }
+    } catch (e) {
+        console.warn('⚠️ pull users خطا:', e.message);
+    }
+
+    try {
+        // ── ساعات کاری ──────────────────────────────────────
+        const workHours = await SupabaseDataModule.getWorkHours();
+        if (workHours && workHours.length > 0) {
+            localStorage.setItem('work_hours_data', JSON.stringify(workHours));
+            console.log(`✅ ${workHours.length} ساعت کاری از Supabase بارگذاری شد`);
+        }
+    } catch (e) {
+        console.warn('⚠️ pull work_hours خطا:', e.message);
+    }
+
+    try {
+        // ── تسک‌های کارمندان ────────────────────────────────
+        const currentUser = (() => {
+            try { return JSON.parse(localStorage.getItem('currentUser') || 'null'); } catch { return null; }
+        })();
+        if (currentUser && currentUser.id) {
+            // تبدیل ID به UUID قبل از query
+            const userUUID = SupabaseDataModule._toUUID(currentUser.id);
+            const tasks = await SupabaseDataModule.getEmployeeTasks(userUUID);
+            if (tasks && tasks.length > 0) {
+                const all = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+                all[currentUser.id] = tasks;
+                localStorage.setItem('employee_tasks', JSON.stringify(all));
+                console.log(`✅ ${tasks.length} تسک از Supabase بارگذاری شد`);
+            }
+        }
+    } catch (e) {
+        console.warn('⚠️ pull employee_tasks خطا:', e.message);
+    }
+
+    try {
+        // ── پیام‌ها ──────────────────────────────────────────
+        const currentUser = (() => {
+            try { return JSON.parse(localStorage.getItem('currentUser') || 'null'); } catch { return null; }
+        })();
+        if (currentUser && currentUser.id) {
+            const userUUID = SupabaseDataModule._toUUID(currentUser.id);
+            const messages = await SupabaseDataModule.getMessages(userUUID);
+            if (messages && messages.length > 0) {
+                const existing = JSON.parse(localStorage.getItem('messages') || '[]');
+                const merged = [...existing];
+                messages.forEach(m => {
+                    if (!merged.find(e => e.id === m.id)) merged.push(m);
+                });
+                localStorage.setItem('messages', JSON.stringify(merged));
+                console.log(`✅ ${messages.length} پیام از Supabase بارگذاری شد`);
+            }
+        }
+    } catch (e) {
+        console.warn('⚠️ pull messages خطا:', e.message);
+    }
+
+    try {
+        // ── آرشیو فایل‌ها ────────────────────────────────────
+        const archiveFiles = await SupabaseDataModule.getArchiveFiles();
+        if (archiveFiles && archiveFiles.length > 0) {
+            localStorage.setItem('archiveFiles', JSON.stringify(archiveFiles));
+            console.log(`✅ ${archiveFiles.length} فایل آرشیو از Supabase بارگذاری شد`);
+        }
+    } catch (e) {
+        console.warn('⚠️ pull archiveFiles خطا:', e.message);
+    }
+
+    try {
+        // ── نرخ‌های ساعتی کارمندان ───────────────────────────
+        const client = getSupabaseClient();
+        if (client) {
+            const { data: rateRows } = await client
+                .from('employee_hourly_rates')
+                .select('employee_id, hourly_rate');
+            if (rateRows && rateRows.length > 0) {
+                const ratesMap = {};
+                rateRows.forEach(r => { ratesMap[r.employee_id] = parseFloat(r.hourly_rate) || 0; });
+                localStorage.setItem('employee_hourly_rates', JSON.stringify(ratesMap));
+                console.log(`✅ ${rateRows.length} نرخ ساعتی از Supabase بارگذاری شد`);
+            }
+        }
+    } catch (e) {
+        console.warn('⚠️ pull employee_hourly_rates خطا:', e.message);
+    }
+
+    console.log('✅ بارگذاری اولیه از Supabase کامل شد');
+}
 
 // ── helpers ───────────────────────────────────────────────────
 

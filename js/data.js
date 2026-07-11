@@ -10,8 +10,8 @@ const SUPABASE_SYNC_ENABLED = true;
 function _useSupabase() {
     return SUPABASE_SYNC_ENABLED &&
            typeof SupabaseDataModule !== 'undefined' &&
-           typeof SupabaseConnection !== 'undefined' &&
-           SupabaseConnection.isOnline === true;
+           typeof getSupabaseClient === 'function' &&
+           getSupabaseClient() !== null;
 }
 
 const DataModule = {
@@ -88,11 +88,30 @@ const DataModule = {
             if (typeof debugLogger !== 'undefined') {
                 debugLogger(`Saved ${users.length} users`, 'success');
             }
-            // ذخیره در Supabase در پس‌زمینه
-            if (_useSupabase()) {
-                SupabaseDataModule.saveUsers(users).catch(e =>
-                    console.warn('⚠️ Supabase saveUsers:', e.message)
-                );
+            // ذخیره در Supabase — بدون اتکا به isOnline
+            const _sbClient = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+            if (SUPABASE_SYNC_ENABLED &&
+                typeof SupabaseDataModule !== 'undefined' &&
+                _sbClient !== null) {
+
+                // اگر همه کاربران hardcoded هستند (از HARDCODED_USERS) در startup،
+                // از saveUsers صرف نظر می‌کنیم — fk_constraints باید ابتدا اجرا شده باشد
+                const isHardcodedInit = users.length > 0 &&
+                    users.every(u => u.id && /^[a-z]+\d+$/i.test(u.id));
+
+                if (!isHardcodedInit) {
+                    SupabaseDataModule.saveUsers(users).catch(e =>
+                        console.warn('⚠️ Supabase saveUsers:', e.message)
+                    );
+                } else {
+                    // برای کاربران hardcoded، فقط profiles رو upsert کن اگر Supabase آماده بود
+                    // ولی فوری در startup نه — بعد از supabase:dataready
+                    window.addEventListener('supabase:dataready', () => {
+                        SupabaseDataModule.saveUsers(users).catch(e =>
+                            console.warn('⚠️ Supabase saveUsers (deferred):', e.message)
+                        );
+                    }, { once: true });
+                }
             }
             // ارسال رویداد به‌روزرسانی
             if (typeof RealtimeEvents !== 'undefined') {
@@ -151,11 +170,32 @@ const DataModule = {
                 debugLogger(`Saved ${orders.length} orders`, 'success');
             }
 
-            // ذخیره در Supabase در پس‌زمینه
-            if (_useSupabase()) {
-                SupabaseDataModule.saveOrders(orders).catch(e =>
-                    console.warn('⚠️ Supabase saveOrders:', e.message)
-                );
+            // ذخیره در Supabase — بدون اتکا به isOnline (ممکنه هنوز set نشده باشه)
+            // فقط چک می‌کنیم client آماده باشه
+            const _sbClient = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+            if (SUPABASE_SYNC_ENABLED &&
+                typeof SupabaseDataModule !== 'undefined' &&
+                _sbClient !== null) {
+
+                SupabaseDataModule.saveOrders(orders)
+                    .then(ok => {
+                        if (ok) {
+                            console.log(`✅ ${orders.length} سفارش در Supabase ذخیره شد`);
+                        } else {
+                            console.warn('⚠️ Supabase saveOrders — false برگشت (احتمالاً RLS مشکل دارد)');
+                            console.warn('   ➜ فایل supabase/fix_rls_anon.sql را در Supabase اجرا کن');
+                        }
+                    })
+                    .catch(e => {
+                        console.warn('⚠️ Supabase saveOrders خطا:', e.message);
+                        if (e.message && e.message.includes('JWT')) {
+                            console.warn('   ➜ مشکل احراز هویت: supabase/fix_rls_anon.sql را اجرا کن');
+                        }
+                    });
+            } else {
+                if (!_sbClient) {
+                    console.warn('📴 Supabase client null — URL/Key را چک کن');
+                }
             }
 
             // emit رویداد — UIRefresh listener در app.js UI را update می‌کند

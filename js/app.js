@@ -105,6 +105,27 @@ function appController() {
         // Initialize data modules
         DataModule.initializeData();
 
+        // وقتی Supabase داده‌ها رو کشید، صفحه جاری رو refresh کن
+        window.addEventListener('supabase:dataready', async () => {
+            console.log('🔄 supabase:dataready — refreshing current page data...');
+            try {
+                // orders رو دوباره بارگذاری کن اگر صفحه orders باز است
+                if (this.currentPage === 'orders') {
+                    await this.loadOrdersPageWithRetry();
+                }
+                // dashboard رو هم refresh کن
+                if (this.currentPage === 'dashboard' || this.currentPage === 'home') {
+                    if (typeof UIRefresh !== 'undefined') {
+                        UIRefresh.refresh();
+                    }
+                }
+                // اگر هنوز صفحه اصلی است و سفارش جدید در localStorage آمد — نمایش بده
+                UTILS.showNotification('✅ داده‌ها از ابر بارگذاری شدند', 'success', 3000);
+            } catch (e) {
+                console.warn('⚠️ supabase:dataready refresh خطا:', e.message);
+            }
+        }, { once: true });  // فقط یک بار اجرا شود
+
         // Check if user is already logged in (from localStorage)
         const savedUser = localStorage.getItem("currentUser");
         if (savedUser) {

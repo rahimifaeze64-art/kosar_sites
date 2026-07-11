@@ -28,6 +28,9 @@ class ManagesChat {
         this.renderMessages();
         this.initialized = true;
         console.log('ManagesChat initialized successfully');
+
+        // بارگذاری از ابر در پس‌زمینه
+        this.loadMessagesFromCloud().then(() => this.renderMessages()).catch(() => {});
     }
 
     loadMessages() {
@@ -37,6 +40,61 @@ class ManagesChat {
 
     saveMessages() {
         localStorage.setItem('managesChat_messages', JSON.stringify(this.messages));
+        this._syncLastMessageToSupabase();
+    }
+
+    _syncLastMessageToSupabase() {
+        if (typeof SupabaseDataModule === 'undefined' ||
+            typeof SupabaseConnection === 'undefined' ||
+            !SupabaseConnection.isOnline) return;
+
+        const lastMsg = this.messages[this.messages.length - 1];
+        if (!lastMsg) return;
+
+        const sbMsg = {
+            id:         String(lastMsg.id),
+            senderId:   lastMsg.senderId   || null,
+            receiverId: null,
+            content:    lastMsg.text       || lastMsg.audioData || '[voice]',
+            isSystem:   false
+        };
+
+        SupabaseDataModule.sendMessage(sbMsg)
+            .then(ok => { if (ok) console.log('✅ managesChat پیام در Supabase:', sbMsg.id); })
+            .catch(e  => console.warn('⚠️ managesChat sync خطا:', e.message));
+    }
+
+    async loadMessagesFromCloud() {
+        if (typeof SupabaseDataModule === 'undefined' ||
+            typeof SupabaseConnection === 'undefined' ||
+            !SupabaseConnection.isOnline) return;
+        try {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            if (!currentUser.id) return;
+
+            const cloudMsgs = await SupabaseDataModule.getMessages(currentUser.id);
+            if (!cloudMsgs || cloudMsgs.length === 0) return;
+
+            const converted = cloudMsgs.map(m => ({
+                id:         m.id,
+                senderId:   m.senderId,
+                senderName: m.senderId,
+                senderRole: 'employee',
+                text:       m.content || m.text || '',
+                type:       'text',
+                timestamp:  m.createdAt || m.created_at,
+                mentions:   [],
+                readBy:     []
+            }));
+            const local = JSON.parse(localStorage.getItem('managesChat_messages') || '[]');
+            const allIds = new Set(local.map(m => String(m.id)));
+            converted.forEach(m => { if (!allIds.has(String(m.id))) local.push(m); });
+            local.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            this.messages = local;
+            localStorage.setItem('managesChat_messages', JSON.stringify(this.messages));
+        } catch (e) {
+            console.warn('⚠️ managesChat loadFromCloud خطا:', e.message);
+        }
     }
 
     loadParticipants() {

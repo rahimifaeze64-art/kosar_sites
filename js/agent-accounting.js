@@ -1,36 +1,102 @@
 ﻿// Agent Accounting Module - حسابداری شخصی عامل
+// ذخیره‌سازی: localStorage + Supabase accounting_transactions
 const AgentAccountingModule = {
+
+    // ── Helper ──────────────────────────────────────────────
+    _sb() {
+        return typeof SupabaseDataModule !== 'undefined' &&
+               typeof SupabaseConnection  !== 'undefined' &&
+               SupabaseConnection.isOnline === true
+               ? SupabaseDataModule : null;
+    },
 
     // دریافت سفارشات تخصیص‌یافته به عامل
     getMyOrders(agentId) {
         const orders = DataModule.getOrders();
         return orders.filter(o =>
             o.assignedDoctorId === agentId ||
-            o.assigned_doctor === agentId ||
-            o.assignedDoctor === agentId ||
-            o.doctorId === agentId
+            o.assigned_doctor  === agentId ||
+            o.assignedDoctor   === agentId ||
+            o.doctorId         === agentId ||
+            o.assignedAgentId  === agentId
         );
     },
 
-    // دریافت پرداخت‌های ثبت‌شده برای عامل
+    // دریافت پرداخت‌های ثبت‌شده — localStorage + sync از Supabase
     getPayments(agentId) {
         const key = `agent_payments_${agentId}`;
+        const sb = this._sb();
+        if (sb) {
+            // sync در پس‌زمینه
+            sb.getAccountingTransactions(null).then(rows => {
+                if (!rows || rows.length === 0) return;
+                // فقط تراکنش‌هایی که created_by این عامل هستند
+                const mine = rows
+                    .filter(r => r.created_by === agentId)
+                    .map(r => ({
+                        id:          r.id,
+                        amount:      parseFloat(r.amount) || 0,
+                        currency:    'تومان',
+                        description: r.description || '',
+                        date:        r.created_at  || new Date().toISOString()
+                    }));
+                if (mine.length > 0) {
+                    localStorage.setItem(key, JSON.stringify(mine));
+                }
+            }).catch(() => {});
+        }
         return JSON.parse(localStorage.getItem(key) || '[]');
     },
 
-    // ذخیره پرداخت جدید
+    // ذخیره پرداخت جدید — localStorage + Supabase
     savePayment(agentId, payment) {
         const key = `agent_payments_${agentId}`;
-        const payments = this.getPayments(agentId);
-        payments.unshift({ ...payment, id: 'PAY-' + Date.now(), date: new Date().toISOString() });
+        const payments = JSON.parse(localStorage.getItem(key) || '[]');
+        const newEntry = {
+            ...payment,
+            id:   'PAY-' + Date.now(),
+            date: new Date().toISOString()
+        };
+        payments.unshift(newEntry);
         localStorage.setItem(key, JSON.stringify(payments));
+
+        // sync به Supabase
+        const sb = this._sb();
+        if (sb) {
+            sb.saveAccountingTransaction({
+                id:          newEntry.id,
+                type:        'income',
+                amount:      newEntry.amount,
+                description: newEntry.description || 'دریافتی عامل',
+                createdBy:   agentId
+            })
+            .then(ok => { if (ok) console.log('✅ پرداخت عامل در Supabase ذخیره شد'); })
+            .catch(e  => console.warn('⚠️ savePayment Supabase خطا:', e.message));
+        } else {
+            console.warn('📴 Supabase آفلاین — پرداخت فقط در localStorage');
+        }
     },
 
-    // حذف پرداخت
+    // حذف پرداخت — localStorage + Supabase
     deletePayment(agentId, paymentId) {
         const key = `agent_payments_${agentId}`;
-        const payments = this.getPayments(agentId).filter(p => p.id !== paymentId);
+        const payments = JSON.parse(localStorage.getItem(key) || '[]')
+            .filter(p => p.id !== paymentId);
         localStorage.setItem(key, JSON.stringify(payments));
+
+        // حذف از Supabase
+        const sb = this._sb();
+        if (sb && typeof sb._db === 'function') {
+            const client = sb._db();
+            if (client) {
+                client.from('accounting_transactions')
+                    .delete().eq('id', paymentId)
+                    .then(({ error }) => {
+                        if (error) console.warn('⚠️ deletePayment Supabase خطا:', error.message);
+                        else       console.log('✅ پرداخت از Supabase حذف شد:', paymentId);
+                    });
+            }
+        }
     },
 
     // محاسبه خلاصه مالی

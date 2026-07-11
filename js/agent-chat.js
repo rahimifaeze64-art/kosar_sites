@@ -20,6 +20,7 @@ class AgentChat {
             return;
         }
         
+        // اول پیام‌های محلی رو نمایش بده، بعد از ابر به‌روز کن
         this.loadMessages();
         this.loadParticipants();
         this.setupEventListeners();
@@ -27,6 +28,9 @@ class AgentChat {
         this.renderMessages();
         this.initialized = true;
         console.log('AgentChat initialized successfully');
+
+        // بارگذاری از ابر در پس‌زمینه
+        this.loadMessagesFromCloud().then(() => this.renderMessages()).catch(() => {});
     }
 
     loadMessages() {
@@ -36,6 +40,71 @@ class AgentChat {
 
     saveMessages() {
         localStorage.setItem('agentChat_messages', JSON.stringify(this.messages));
+        // sync به Supabase — هر پیام رو به جدول messages ارسال می‌کند
+        this._syncLastMessageToSupabase();
+    }
+
+    // sync آخرین پیام به Supabase
+    _syncLastMessageToSupabase() {
+        if (typeof SupabaseDataModule === 'undefined' ||
+            typeof SupabaseConnection === 'undefined' ||
+            !SupabaseConnection.isOnline) return;
+
+        const lastMsg = this.messages[this.messages.length - 1];
+        if (!lastMsg) return;
+
+        // تبدیل فرمت agentChat به فرمت Supabase messages
+        const sbMsg = {
+            id:         String(lastMsg.id),
+            senderId:   lastMsg.senderId   || null,
+            receiverId: null,               // گروه — receiver خاصی ندارد
+            content:    lastMsg.text        || lastMsg.audioData || '[voice]',
+            isSystem:   false
+        };
+
+        SupabaseDataModule.sendMessage(sbMsg)
+            .then(ok => { if (ok) console.log('✅ agentChat پیام در Supabase:', sbMsg.id); })
+            .catch(e  => console.warn('⚠️ agentChat sync خطا:', e.message));
+    }
+
+    // بارگذاری پیام‌ها — ابر اول، localStorage دوم
+    async loadMessagesFromCloud() {
+        if (typeof SupabaseDataModule === 'undefined' ||
+            typeof SupabaseConnection === 'undefined' ||
+            !SupabaseConnection.isOnline) {
+            this.loadMessages();
+            return;
+        }
+        try {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            if (!currentUser.id) { this.loadMessages(); return; }
+
+            const cloudMsgs = await SupabaseDataModule.getMessages(currentUser.id);
+            if (cloudMsgs && cloudMsgs.length > 0) {
+                // تبدیل فرمت Supabase به فرمت agentChat
+                const converted = cloudMsgs.map(m => ({
+                    id:         m.id,
+                    senderId:   m.senderId,
+                    senderName: m.senderId,   // نام را بعداً از لیست کاربران می‌گیریم
+                    senderRole: 'agent',
+                    text:       m.content || m.text || '',
+                    type:       'text',
+                    timestamp:  m.createdAt || m.created_at,
+                    mentions:   []
+                }));
+                // merge با پیام‌های محلی
+                const local = JSON.parse(localStorage.getItem('agentChat_messages') || '[]');
+                const allIds = new Set(local.map(m => String(m.id)));
+                converted.forEach(m => { if (!allIds.has(String(m.id))) local.push(m); });
+                local.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                this.messages = local;
+                localStorage.setItem('agentChat_messages', JSON.stringify(this.messages));
+                return;
+            }
+        } catch (e) {
+            console.warn('⚠️ agentChat loadFromCloud خطا:', e.message);
+        }
+        this.loadMessages();
     }
 
     loadParticipants() {

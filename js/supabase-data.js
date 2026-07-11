@@ -26,7 +26,11 @@ const SupabaseDataModule = {
 
     // ── db helper ────────────────────────────────────────────
     _db() { return getSupabaseClient(); },
-    _online() { return !!(this._db() && SupabaseConnection.isOnline); },
+
+    // _online: client آماده است، چه isOnline set شده باشد چه نه
+    // این اصلاح ضروری است چون isOnline ممکن است هنوز false باشد
+    // اما client از قبل ساخته شده و قابل استفاده است
+    _online() { return !!(this._db()); },
 
     // ════════════════════════════════════════════════════════
     // USERS / PROFILES
@@ -60,19 +64,26 @@ const SupabaseDataModule = {
     async saveUsers(users) {
         // ذخیره محلی همیشه
         localStorage.setItem('edu_system_users', JSON.stringify(users));
-        if (!this._online()) return true;
+
+        const client = this._db();
+        if (!client) return true;
 
         try {
-            // تبدیل فرمت اپ به فرمت Supabase
             const rows = users.map(u => this._userToProfile(u));
-            const { error } = await this._db()
+            const { error } = await client
                 .from('profiles')
                 .upsert(rows, { onConflict: 'id' });
-            if (error) throw error;
+            if (error) {
+                console.warn('⚠️ saveUsers خطا:', error.message, error.code);
+                if (error.code === '42501' || error.message.includes('policy')) {
+                    console.error('🔒 RLS مشکل دارد! supabase/fix_rls_anon.sql را اجرا کن');
+                }
+                return false;
+            }
             this._cacheInvalidate('users');
             return true;
         } catch (e) {
-            console.warn('⚠️ saveUsers Supabase خطا:', e.message);
+            console.warn('⚠️ saveUsers خطا:', e.message);
             return false;
         }
     },
@@ -125,18 +136,31 @@ const SupabaseDataModule = {
 
     async saveOrders(orders) {
         localStorage.setItem('edu_system_orders', JSON.stringify(orders));
-        if (!this._online()) return true;
+
+        // به‌جای isOnline، مستقیم client رو چک می‌کنیم
+        const client = this._db();
+        if (!client) {
+            console.warn('⚠️ saveOrders: Supabase client آماده نیست');
+            return true; // localStorage OK بود
+        }
 
         try {
             const rows = orders.map(o => this._orderToDb(o));
-            const { error } = await this._db()
+            const { error } = await client
                 .from('orders')
                 .upsert(rows, { onConflict: 'id' });
-            if (error) throw error;
+            if (error) {
+                console.warn('⚠️ saveOrders upsert خطا:', error.message, error.code);
+                if (error.code === '42501' || error.message.includes('policy')) {
+                    console.error('🔒 RLS مشکل دارد! supabase/fix_rls_anon.sql را اجرا کن');
+                }
+                return false;
+            }
             this._cacheInvalidate('orders');
+            console.log(`✅ saveOrders: ${rows.length} سفارش در Supabase ذخیره شد`);
             return true;
         } catch (e) {
-            console.warn('⚠️ saveOrders Supabase خطا:', e.message);
+            console.warn('⚠️ saveOrders خطا:', e.message);
             return false;
         }
     },
@@ -207,17 +231,19 @@ const SupabaseDataModule = {
     async saveStudentProgress(studentId, pathType, progressArray) {
         const localKey = `prog_${studentId}_${pathType}`;
         localStorage.setItem(localKey, JSON.stringify(progressArray));
-        if (!this._online()) return true;
+
+        const client = this._db();
+        if (!client) return true;
 
         try {
             const rows = progressArray.map((item, idx) => ({
-                student_id: studentId,
+                student_id: this._toUUID(studentId),
                 path_type:  pathType,
                 step_index: idx,
                 status:     item ? item.status : 0,
                 updated_at: new Date().toISOString()
             }));
-            const { error } = await this._db()
+            const { error } = await client
                 .from('student_progress')
                 .upsert(rows, { onConflict: 'student_id,path_type,step_index' });
             if (error) throw error;
@@ -751,13 +777,12 @@ const SupabaseDataModule = {
     // ════════════════════════════════════════════════════════
 
     _userToProfile(u) {
-        // role: 'doctor' → 'agent' (DB CHECK constraint accepts only manager/employee/agent/student)
         const validRoles = ['manager', 'employee', 'agent', 'student'];
         let role = u.role === 'doctor' ? 'agent' : u.role;
         if (!validRoles.includes(role)) role = 'student';
 
         return {
-            id:              u.id,
+            id:              u.id,          // original app ID مثل 'mgr001'
             name:            u.name            || 'کاربر',
             username:        u.username,
             role,
@@ -768,12 +793,44 @@ const SupabaseDataModule = {
             university:      u.university      || null,
             student_id:      u.studentId       || null,
             field:           u.field           || null,
-            // degree: DB stores English values only (bachelor/masters/phd)
             degree:          SupabaseAuth._normalizeDegree(u.degree),
             passport_number: u.passportNumber  || null,
             bachelor_field:  u.bachelorField   || null,
             specialization:  u.specialization  || null
         };
+    },
+
+    // تبدیل هر string ID به UUID معتبر (deterministic)
+    // از crypto.subtle یا یه hash ساده استفاده می‌کنیم
+    _toUUID(id) {
+        if (!id) return null;
+        const s = String(id);
+        // اگر قبلاً UUID format معتبر است
+        if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)) return s;
+
+        // hash ساده djb2 → 32 کاراکتر hex
+        let h1 = 0x9e3779b9, h2 = 0x6c62272e;
+        for (let i = 0; i < s.length; i++) {
+            const c = s.charCodeAt(i);
+            h1 = Math.imul(h1 ^ c, 0x9e3779b9) >>> 0;
+            h2 = Math.imul(h2 ^ c, 0x6c62272e) >>> 0;
+        }
+        // ساخت 32 hex digit از ترکیب hash و string
+        const seed = (h1 >>> 0).toString(16).padStart(8, '0') +
+                     (h2 >>> 0).toString(16).padStart(8, '0');
+        // پر کردن بقیه از string خودش
+        const raw = (seed + s.replace(/[^0-9a-f]/gi, '').toLowerCase())
+                        .padEnd(32, '0')
+                        .substring(0, 32);
+        // فرمت UUID: 8-4-4-4-12
+        // version=5, variant=8
+        const a = raw.substring(0, 8);
+        const b = raw.substring(8, 12);
+        const c2 = '5' + raw.substring(13, 16);   // version 5
+        const d = (parseInt(raw.substring(16, 18), 16) | 0x80).toString(16).padStart(2,'0')
+                  + raw.substring(18, 20);           // variant
+        const e = raw.substring(20, 32);
+        return `${a}-${b}-${c2}-${d}-${e}`;
     },
 
     _orderToDb(o) {
@@ -783,12 +840,30 @@ const SupabaseDataModule = {
         if (status === 'active') status = 'in_progress';
         if (!validStatuses.includes(status)) status = 'pending';
 
-        // نرمال‌سازی role: 'doctor' → 'agent'
-        // (لازم نیست در orders، ولی assigned_agent_id باید UUID باشد)
-
         return {
-            id:                    o.id,
-            student_id:            o.studentId        || null,
+            id:                    o.id,           // original app ID مستقیم
+            student_id:            o.studentId     || null,
+            student_name:          o.studentName   || null,
+            university:            o.university    || null,
+            field:                 o.field         || null,
+            degree:                o.degree        || null,
+            order_type:            o.type          || null,
+            deadline:              o.deadline      || null,
+            deadline_datetime:     o.deadlineDateTime || null,
+            phone:                 o.phone         || null,
+            passport_number:       o.passportNumber || null,
+            currency:              o.currency      || 'تومان',
+            work_list:             JSON.stringify(o.workList || []),
+            files:                 JSON.stringify(o.files   || []),
+            title:                 o.title         || null,
+            is_custom_order:       o.isCustomOrder || false,
+            rejection_reason:      o.rejectionReason || null,
+            rejection_history:     JSON.stringify(o.rejectionHistory || []),
+            approved_at:           o.approvedAt    || null,
+            assigned_at:           o.assignedAt    || null,
+            completed_at:          o.completedAt   || null,
+            doctor_share:          parseFloat(o.doctorShare)  || 0,
+            manager_share:         parseFloat(o.managerShare) || 0,
             status,
             stage:                 o.stage            || null,
             progress:              o.progress         || 0,
@@ -799,7 +874,6 @@ const SupabaseDataModule = {
             description:           o.description      || null,
             tasks:                 JSON.stringify(o.tasks     || []),
             work_log:              JSON.stringify(o.workLog   || []),
-            // v2 columns
             order_type_id:         o.orderTypeId      || null,
             revenue_agent_percent: o.revenueAgentPercent  != null ? o.revenueAgentPercent  : 60,
             revenue_manager_percent: o.revenueManagerPercent != null ? o.revenueManagerPercent : 40,
@@ -811,11 +885,32 @@ const SupabaseDataModule = {
         return {
             id:                    r.id,
             studentId:             r.student_id,
+            studentName:           r.student_name   || 'نامشخص',
+            university:            r.university     || 'نامشخص',
+            field:                 r.field          || '',
+            degree:                r.degree         || '',
+            type:                  r.order_type     || 'سایر',
+            deadline:              r.deadline       || '',
+            deadlineDateTime:      r.deadline_datetime || null,
+            phone:                 r.phone          || '',
+            passportNumber:        r.passport_number || '',
+            currency:              r.currency       || 'تومان',
+            workList:              this._parseJSON(r.work_list, []),
+            files:                 this._parseJSON(r.files, []),
+            title:                 r.title          || '',
+            isCustomOrder:         r.is_custom_order || false,
+            rejectionReason:       r.rejection_reason || '',
+            rejectionHistory:      this._parseJSON(r.rejection_history, []),
+            approvedAt:            r.approved_at    || null,
+            assignedAt:            r.assigned_at    || null,
+            completedAt:           r.completed_at   || null,
+            doctorShare:           parseFloat(r.doctor_share)  || 0,
+            managerShare:          parseFloat(r.manager_share) || 0,
             status:                r.status,
             stage:                 r.stage,
             progress:              r.progress        || 0,
             assignedAgentId:       r.assigned_agent_id,
-            assignedDoctorId:      r.assigned_agent_id,   // backward-compat alias
+            assignedDoctorId:      r.assigned_agent_id,
             totalAmount:           parseFloat(r.total_amount)  || 0,
             paidAmount:            parseFloat(r.paid_amount)   || 0,
             paymentStatus:         r.payment_status   || 'unpaid',
@@ -914,7 +1009,6 @@ const SupabaseDataModule = {
             receiver_id: m.receiverId || null,
             order_id:    m.orderId    || null,
             content:     m.content   || m.text || '',
-            // is_system: true برای پیام‌های خودکار سیستمی، false برای چت انسانی
             is_system:   m.isSystem  === true ? true : false
         };
     },

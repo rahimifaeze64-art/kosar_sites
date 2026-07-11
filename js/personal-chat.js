@@ -272,13 +272,84 @@ const PersonalChatModule = {
         const currentUser = this.getCurrentUser();
         const key = `personalChat_${currentUser.id}_${userId}`;
         this.messages = JSON.parse(localStorage.getItem(key) || '[]');
+        // sync از ابر در پس‌زمینه
+        this._loadMessagesFromCloud(currentUser.id, userId);
     },
     
-    // Save messages
+    // Save messages — localStorage + Supabase
     saveMessages(userId) {
         const currentUser = this.getCurrentUser();
         const key = `personalChat_${currentUser.id}_${userId}`;
         localStorage.setItem(key, JSON.stringify(this.messages));
+        // sync آخرین پیام به Supabase
+        this._syncLastMessage(userId);
+    },
+
+    // sync آخرین پیام به Supabase
+    _syncLastMessage(receiverId) {
+        if (typeof SupabaseDataModule === 'undefined' ||
+            typeof SupabaseConnection === 'undefined' ||
+            !SupabaseConnection.isOnline) return;
+
+        const lastMsg = this.messages[this.messages.length - 1];
+        if (!lastMsg) return;
+
+        const sbMsg = {
+            id:         String(lastMsg.id),
+            senderId:   lastMsg.senderId || null,
+            receiverId: receiverId       || null,
+            content:    lastMsg.text || lastMsg.fileName || '[file]',
+            isSystem:   false
+        };
+
+        SupabaseDataModule.sendMessage(sbMsg)
+            .then(ok => { if (ok) console.log('✅ personalChat پیام در Supabase:', sbMsg.id); })
+            .catch(e  => console.warn('⚠️ personalChat sync خطا:', e.message));
+    },
+
+    // بارگذاری پیام‌ها از Supabase در پس‌زمینه
+    _loadMessagesFromCloud(myId, otherId) {
+        if (typeof SupabaseDataModule === 'undefined' ||
+            typeof SupabaseConnection === 'undefined' ||
+            !SupabaseConnection.isOnline) return;
+
+        SupabaseDataModule.getMessages(myId).then(cloudMsgs => {
+            if (!cloudMsgs || cloudMsgs.length === 0) return;
+
+            // فقط پیام‌های بین این دو نفر
+            const relevant = cloudMsgs.filter(m =>
+                (m.senderId === myId    && m.receiverId === otherId) ||
+                (m.senderId === otherId && m.receiverId === myId)
+            );
+            if (relevant.length === 0) return;
+
+            const key = `personalChat_${myId}_${otherId}`;
+            const local = JSON.parse(localStorage.getItem(key) || '[]');
+            const allIds = new Set(local.map(m => String(m.id)));
+
+            relevant.forEach(m => {
+                if (!allIds.has(String(m.id))) {
+                    local.push({
+                        id:         m.id,
+                        senderId:   m.senderId,
+                        senderName: m.senderId,
+                        text:       m.content || m.text || '',
+                        type:       'text',
+                        timestamp:  m.createdAt || m.created_at,
+                        read:       !!(m.readAt || m.read_at)
+                    });
+                }
+            });
+            local.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            localStorage.setItem(key, JSON.stringify(local));
+
+            // اگر این مکالمه هنوز باز است، پیام‌ها رو به‌روز کن
+            if (this.selectedUser && this.selectedUser.id === otherId) {
+                this.messages = local;
+                const currentUser = this.getCurrentUser();
+                this.refreshChatArea(currentUser);
+            }
+        }).catch(e => console.warn('⚠️ personalChat loadFromCloud خطا:', e.message));
     },
     
     // Mark messages as read

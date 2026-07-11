@@ -1,0 +1,182 @@
+tailwindcss.js:64 cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation
+(anonymous) @ tailwindcss.js:64
+persian-date-simple.js:1  Failed to load resource: the server responded with a status of 404 (Not Found)
+persian-date-auto.js:1  Failed to load resource: the server responded with a status of 404 (Not Found)
+passport-ocr.js:1  Failed to load resource: the server responded with a status of 404 (Not Found)
+management-chat.js:1  Failed to load resource: the server responded with a status of 404 (Not Found)
+supabase-config.js:107 📦 supabase-config.js بارگذاری شد
+supabase-auth.js:258 📦 supabase-auth.js بارگذاری شد
+supabase-data.js:1003 📦 supabase-data.js بارگذاری شد
+students-sync.js:189 📦 students-sync.js بارگذاری شد — students_data override فعال
+hardcoded-users.js:151 📦 hardcoded-users.js بارگذاری شد — 10 کاربر
+offline-mode.js:7 🔒 Offline mode activated - using localStorage only
+offline-mode.js:34 ✅ Offline mode configured successfully
+theme-auto-apply.js:14 ✅ Olive theme applied (fixed)
+(index):385 [۱۲:۵۴:۲۶] SUCCESS: Debug system initialized 
+(index):1 Refused to execute script from 'http://127.0.0.1:5501/js/persian-date-simple.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.
+(index):1 Refused to execute script from 'http://127.0.0.1:5501/js/persian-date-auto.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.
+(index):1 Refused to execute script from 'http://127.0.0.1:5501/js/passport-ocr.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.
+(index):385 [۱۲:۵۴:۲۶] SUCCESS: Dashboard module enhanced with API integration 
+theme-auto-apply.js:28 ✅ Inline styles updated for olive theme
+(index):1 Refused to execute script from 'http://127.0.0.1:5501/js/management-chat.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.
+realtime-events.js:71 ✅ Real-time Event System initialized
+realtime-events.js:374 ✅ Real-time Event System loaded
+ui-refresh.js:111 ✅ ui-refresh.js بارگذاری شد
+(index):385 [۱۲:۵۴:۲۶] ERROR: Unhandled Error: Uncaught SyntaxError: Identifier 'AccountingModule' has already been declared Object
+accounting.js?v=1.0:1 Uncaught SyntaxError: Identifier 'AccountingModule' has already been declared (at accounting.js?v=1.0:1:1)
+(index):385 [۱۲:۵۴:۲۶] ERROR: Unhandled Error: Uncaught SyntaxError: Identifier 'AccountingUI' has already been declared Object
+accounting-ui.js?v=1.0:1 Uncaught SyntaxError: Identifier 'AccountingUI' has already been declared (at accounting-ui.js?v=1.0:1:1)
+supabase-init.js:10 🔌 شروع راه‌اندازی Supabase...
+supabase-config.js:41 ✅ Supabase client ساخته شد
+theme-auto-apply.js:28 ✅ Inline styles updated for olive theme
+(index):549 ✅ AccountingModule loaded successfully
+(index):555 ✅ AccountingUI loaded successfully
+(index):562 ✅ OrdersModule loaded successfully
+(index):568 ✅ window.OrdersModule loaded successfully
+(index):605 Live reload enabled.
+(index):385 [۱۲:۵۴:۲۷] INFO: Initializing application... 
+(index):385 [۱۲:۵۴:۲۷] INFO: Listener registered for: orders:changed Object
+(index):385 [۱۲:۵۴:۲۷] INFO: Listener registered for: users:changed Object
+(index):385 [۱۲:۵۴:۲۷] INFO: Listener registered for: employee_tasks:changed Object
+(index):385 [۱۲:۵۴:۲۷] INFO: Initializing data module... 
+(index):385 [۱۲:۵۴:۲۷] INFO: No users found, creating default users 
+(index):385 [۱۲:۵۴:۲۷] SUCCESS: Saved 10 users 
+(index):385 [۱۲:۵۴:۲۷] INFO: Event emitted: users:changed Object
+(index):385 [۱۲:۵۴:۲۷] SUCCESS: Data module initialized successfully 
+(index):385 [۱۲:۵۴:۲۷] INFO: API integration disabled by config 
+(index):385 [۱۲:۵۴:۲۷] INFO: Switching to user: mgr001 
+(index):385 [۱۲:۵۴:۲۷] INFO: Retrieved 10 users 
+(index):385 [۱۲:۵۴:۲۷] SUCCESS: User switched successfully Proxy(Object)
+(index):385 [۱۲:۵۴:۲۷] INFO: Showing notification: وارد شدید به عنوان: تقی‌زاده Object
+(index):385 [۱۲:۵۴:۲۷] INFO: Loading dashboard content... Object
+(index):385 [۱۲:۵۴:۲۷] INFO: Loading dashboard for role: manager 
+(index):385 [۱۲:۵۴:۲۷] INFO: Loading manager dashboard... 
+(index):385 [۱۲:۵۴:۲۷] INFO: Retrieved 10 users 
+(index):385 [۱۲:۵۴:۲۷] INFO: Dashboard stats calculated from localStorage Object
+(index):385 [۱۲:۵۴:۲۷] INFO: Registering service worker... 
+(index):385 [۱۲:۵۴:۲۷] INFO: Loading dashboard content... Object
+(index):385 [۱۲:۵۴:۲۷] INFO: Loading dashboard for role: manager 
+(index):385 [۱۲:۵۴:۲۷] INFO: Loading manager dashboard... 
+(index):385 [۱۲:۵۴:۲۷] INFO: Retrieved 10 users 
+(index):385 [۱۲:۵۴:۲۷] INFO: Dashboard stats calculated from localStorage Object
+(index):385 [۱۲:۵۴:۲۷] INFO: Loading tasks content... Object
+(index):385 [۱۲:۵۴:۲۷] INFO: Retrieved 10 users 
+(index):385 [۱۲:۵۴:۲۷] SUCCESS: Tasks content loaded 
+(index):385 [۱۲:۵۴:۲۷] INFO: Loading my tasks content... Object
+(index):385 [۱۲:۵۴:۲۷] SUCCESS: My tasks content loaded 
+(index):385 [۱۲:۵۴:۲۷] INFO: Retrieved 10 users 
+employee.js:694 📝 Loaded 20 sample students
+(index):385 [۱۲:۵۴:۲۷] INFO: Loading agent tasks content... Object
+(index):385 [۱۲:۵۴:۲۷] SUCCESS: Agent tasks content loaded (enhanced) 
+(index):385 [۱۲:۵۴:۲۷] INFO: Loading chat with manager content... Object
+(index):385 [۱۲:۵۴:۲۷] SUCCESS: Chat with manager content loaded 
+(index):385 [۱۲:۵۴:۲۷] INFO: Loading personal chat content... Object
+(index):385 [۱۲:۵۴:۲۷] SUCCESS: Personal chat content loaded 
+(index):385 [۱۲:۵۴:۲۷] INFO: Loading management chat content... Object
+(index):385 [۱۲:۵۴:۲۷] SUCCESS: Management chat content loaded 
+(index):385 [۱۲:۵۴:۲۷] INFO: Loading work hours content... Object
+work-hours.js:454 WorkHoursUI initialized Object
+(index):385 [۱۲:۵۴:۲۷] INFO: Loading manager work hours view 
+(index):385 [۱۲:۵۴:۲۷] INFO: Loading accounting content... 
+(index):385 [۱۲:۵۴:۲۷] INFO: Accounting data saved 
+(index):385 [۱۲:۵۴:۲۷] INFO: Accounting data loaded 
+(index):385 [۱۲:۵۴:۲۷] SUCCESS: Accounting content loaded 
+(index):385 [۱۲:۵۴:۲۷] INFO: Loading employee accounting content... 
+(index):385 [۱۲:۵۴:۲۷] INFO: Loading profile content... Proxy(Object)
+(index):385 [۱۲:۵۴:۲۷] INFO: Retrieved 10 users 
+(index):385 [۱۲:۵۴:۲۷] SUCCESS: Profile content loaded 
+(index):385 [۱۲:۵۴:۲۷] INFO: Loading users content... Object
+(index):385 [۱۲:۵۴:۲۷] INFO: Retrieved 10 users 
+(index):385 [۱۲:۵۴:۲۷] SUCCESS: Users content loaded 
+(index):385 [۱۲:۵۴:۲۷] INFO: Recent orders loaded from localStorage Array(0)
+(index):385 [۱۲:۵۴:۲۷] INFO: Recent orders loaded from localStorage Array(0)
+2(index):385 [۱۲:۵۴:۲۷] INFO: Retrieved 10 users 
+2(index):385 [۱۲:۵۴:۲۷] SUCCESS: Dashboard content loaded 
+(index):385 [۱۲:۵۴:۲۷] SUCCESS: Application initialized successfully Object
+theme-auto-apply.js:28 ✅ Inline styles updated for olive theme
+(index):385 [۱۲:۵۴:۲۷] INFO: API integration disabled, using localStorage only 
+(index):385 [۱۲:۵۴:۲۷] INFO: Authentication module disabled (API disabled) 
+modals.js:2044 📄 DOM loaded, waiting for Alpine...
+modals.js:2045 🔍 OrderWizardModule available? true
+modals.js:2046 🔍 OrdersModule available? true
+modals.js:2047 🔍 DataModule available? true
+modals.js:2052 ✅ Alpine ready, initializing modals...
+(index):385 [۱۲:۵۴:۲۷] INFO: Retrieved 10 users 
+(index):385 [۱۲:۵۴:۲۷] INFO: Initializing WorkflowModule... 
+(index):385 [۱۲:۵۴:۲۷] SUCCESS: Workflow global functions bound 
+(index):385 [۱۲:۵۴:۲۷] SUCCESS: WorkflowModule initialized 
+(index):385 [۱۲:۵۴:۲۷] SUCCESS: WorkflowModule initialized successfully 
+manages-chat.js:30 ManagesChat initialized successfully
+manages-chat.js:856 ManagesChat initialized on DOMContentLoaded
+(index):385 [۱۲:۵۴:۲۷] INFO: DOM loaded, Alpine.js will initialize app 
+(index):385 [۱۲:۵۴:۲۷] SUCCESS: Theme applied successfully Object
+(index):385 [۱۲:۵۴:۲۷] SUCCESS: Theme Manager initialized Object
+(index):385 [۱۲:۵۴:۲۷] SUCCESS: Service worker registered successfully ServiceWorkerRegistration
+60theme-auto-apply.js:28 ✅ Inline styles updated for olive theme
+(index):385 [۱۲:۵۴:۲۷] INFO: Retrieved 10 users 
+init-students-data.js:94 📊 Found 0 students in DataModule
+init-students-data.js:95 📊 Found 0 students in localStorage
+init-students-data.js:102 ✓ Students data already initialized
+:5501/favicon.ico:1  Failed to load resource: the server responded with a status of 404 (Not Found)
+supabase-init.js:43 ✅ Supabase آنلاین است
+supabase-init.js:52 ✅ نشست کاربر بازیابی شد: taghizadeh
+supabase-init.js:67 📥 شروع بارگذاری اولیه داده‌ها از Supabase...
+cikwuctdkatcxwzwxvff.supabase.co/rest/v1/profiles?on_conflict=id&columns=%22id%22%2C%22name%22%2C%22username%22%2C%22role%22%2C%22email%22%2C%22phone%22%2C%22active%22%2C%22department%22%2C%22university%22%2C%22student_id%22%2C%22field%22%2C%22degree%22%2C%22passport_number%22%2C%22bachelor_field%22%2C%22specialization%22:1  Failed to load resource: the server responded with a status of 400 ()
+(index):385 [۱۲:۵۴:۲۸] WARNING: Console Warning: ⚠️ saveUsers خطا: invalid input syntax for type uuid: "mgr00100-0000-0000-0000-000000000000" 22P02 Array(3)
+(index):473 ⚠️ saveUsers خطا: invalid input syntax for type uuid: "mgr00100-0000-0000-0000-000000000000" 22P02
+console.warn @ (index):473
+manages-chat.js:170 خطا در دسترسی به میکروفون: NotAllowedError: Permission dismissed
+app.js:81 📄 Page changed to: orders
+app.js:83 🔄 Loading orders page...
+app.js:479 🔍 Checking OrdersModule availability:
+app.js:480   - typeof window.OrdersModule: object
+app.js:481   - window.OrdersModuleReady: true
+app.js:485 🔄 Attempt 1/10 to load orders...
+app.js:495 ✅ OrdersModule found! Loading content...
+(index):385 [۱۲:۵۴:۳۳] INFO: Loading orders content (attempt 1/3)... Object
+(index):385 [۱۲:۵۴:۳۳] INFO: Using localStorage for orders (offline mode) 
+(index):385 [۱۲:۵۴:۳۳] SUCCESS: Orders content loaded successfully 
+app.js:497 ✅ Orders loaded successfully
+3theme-auto-apply.js:28 ✅ Inline styles updated for olive theme
+cikwuctdkatcxwzwxvff.supabase.co/rest/v1/employee_tasks?select=*&assigned_to=eq.mgr001&order=created_at.desc:1  Failed to load resource: the server responded with a status of 400 ()
+(index):385 [۱۲:۵۴:۳۵] WARNING: Console Warning: ⚠️ getEmployeeTasks خطا: invalid input syntax for type uuid: "mgr001" Array(2)
+(index):473 ⚠️ getEmployeeTasks خطا: invalid input syntax for type uuid: "mgr001"
+console.warn @ (index):473
+cikwuctdkatcxwzwxvff.supabase.co/rest/v1/messages?select=*&or=%28sender_id.eq.mgr001%2Creceiver_id.eq.mgr001%29&order=created_at.asc:1  Failed to load resource: the server responded with a status of 400 ()
+supabase-init.js:205 ✅ بارگذاری اولیه از Supabase کامل شد
+supabase-init.js:88 ✅ Supabase کاملاً راه‌اندازی شد
+app.js:110 🔄 supabase:dataready — refreshing current page data...
+app.js:479 🔍 Checking OrdersModule availability:
+app.js:480   - typeof window.OrdersModule: object
+app.js:481   - window.OrdersModuleReady: true
+app.js:485 🔄 Attempt 1/10 to load orders...
+app.js:495 ✅ OrdersModule found! Loading content...
+(index):385 [۱۲:۵۴:۳۸] INFO: Loading orders content (attempt 1/3)... Object
+(index):385 [۱۲:۵۴:۳۸] INFO: Using localStorage for orders (offline mode) 
+supabase-init.js:92 📣 رویداد supabase:dataready ارسال شد
+(index):385 [۱۲:۵۴:۳۸] SUCCESS: Orders content loaded successfully 
+app.js:497 ✅ Orders loaded successfully
+(index):385 [۱۲:۵۴:۳۸] INFO: Showing notification: ✅ داده‌ها از ابر بارگذاری شدند Object
+4theme-auto-apply.js:28 ✅ Inline styles updated for olive theme
+(index):385 [۱۲:۵۵:۰۳] SUCCESS: Saved 1 orders 
+(index):385 [۱۲:۵۵:۰۳] INFO: Event emitted: orders:changed Object
+app.js:479 🔍 Checking OrdersModule availability:
+app.js:480   - typeof window.OrdersModule: object
+app.js:481   - window.OrdersModuleReady: true
+app.js:485 🔄 Attempt 1/10 to load orders...
+app.js:495 ✅ OrdersModule found! Loading content...
+(index):385 [۱۲:۵۵:۰۳] INFO: Loading orders content (attempt 1/3)... Object
+(index):385 [۱۲:۵۵:۰۳] INFO: Using localStorage for orders (offline mode) 
+(index):385 [۱۲:۵۵:۰۳] INFO: Retrieved 1 orders 
+(index):385 [۱۲:۵۵:۰۴] SUCCESS: Orders content loaded successfully 
+app.js:497 ✅ Orders loaded successfully
+2theme-auto-apply.js:28 ✅ Inline styles updated for olive theme
+cikwuctdkatcxwzwxvff.supabase.co/rest/v1/orders?on_conflict=id&columns=%22id%22%2C%22student_id%22%2C%22status%22%2C%22stage%22%2C%22progress%22%2C%22assigned_agent_id%22%2C%22total_amount%22%2C%22paid_amount%22%2C%22payment_status%22%2C%22description%22%2C%22tasks%22%2C%22work_log%22%2C%22order_type_id%22%2C%22revenue_agent_percent%22%2C%22revenue_manager_percent%22%2C%22updated_at%22:1  Failed to load resource: the server responded with a status of 400 ()
+(index):385 [۱۲:۵۵:۰۵] WARNING: Console Warning: ⚠️ saveOrders upsert خطا: invalid input syntax for type uuid: "doc00200-0000-0000-0000-000000000000" 22P02 Array(3)
+(index):473 ⚠️ saveOrders upsert خطا: invalid input syntax for type uuid: "doc00200-0000-0000-0000-000000000000" 22P02
+console.warn @ (index):473
+(index):385 [۱۲:۵۵:۰۵] WARNING: Console Warning: ⚠️ Supabase saveOrders — false برگشت (احتمالاً RLS مشکل دارد) Array(1)
+(index):473 ⚠️ Supabase saveOrders — false برگشت (احتمالاً RLS مشکل دارد)
+console.warn @ (index):473
+(index):385 [۱۲:۵۵:۰۵] WARNING: Console Warning:    ➜ فایل supabase/fix_rls_anon.sql را در Supabase اجرا کن Array(1)
+(index):473    ➜ فایل supabase/fix_rls_anon.sql را در Supabase اجرا کن
