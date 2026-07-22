@@ -213,7 +213,7 @@ const EmbassyModule = (function () {
                             <div>
                                 <label class="text-blue-200 text-sm font-semibold block mb-1">کد سجاد</label>
                                 <input type="text" id="f-sajadCode"
-                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400"
+                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-black-400"
                                     placeholder="کد سجاد دانشجو">
                             </div>
                         </div>
