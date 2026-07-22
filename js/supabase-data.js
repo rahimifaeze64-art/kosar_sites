@@ -69,10 +69,15 @@ const SupabaseDataModule = {
         if (!client) return true;
 
         try {
-            const rows = users.map(u => this._userToProfile(u));
+            const rows = users.map(u => {
+                const profile = this._userToProfile(u);
+                // null در student_id باعث duplicate key می‌شه — فقط مقدار واقعی بفرست
+                if (!profile.student_id) delete profile.student_id;
+                return profile;
+            });
             const { error } = await client
                 .from('profiles')
-                .upsert(rows, { onConflict: 'id' });
+                .upsert(rows, { onConflict: 'id', ignoreDuplicates: false });
             if (error) {
                 console.warn('⚠️ saveUsers خطا:', error.message, error.code);
                 if (error.code === '42501' || error.message.includes('policy')) {

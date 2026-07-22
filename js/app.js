@@ -84,13 +84,15 @@ function appController() {
             await this.loadOrdersPageWithRetry();
           }
           if (newPage === "embassy") {
-            this.$nextTick(() => {
+            setTimeout(() => {
               const root = document.getElementById('embassy-root');
               if (root && typeof EmbassyModule !== 'undefined') {
                 root.innerHTML = EmbassyModule.getContent();
-                setTimeout(() => EmbassyModule.init(), 100);
+                setTimeout(() => EmbassyModule.init(), 120);
+              } else {
+                console.warn('embassy-root not found or EmbassyModule missing');
               }
-            });
+            }, 50);
           }
         });
 
