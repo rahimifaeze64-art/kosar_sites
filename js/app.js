@@ -84,15 +84,22 @@ function appController() {
             await this.loadOrdersPageWithRetry();
           }
           if (newPage === "embassy") {
-            setTimeout(() => {
+            // تلاش چندباره تا embassy-root در DOM ظاهر شود
+            let attempts = 0;
+            const tryInit = () => {
               const root = document.getElementById('embassy-root');
               if (root && typeof EmbassyModule !== 'undefined') {
                 root.innerHTML = EmbassyModule.getContent();
                 setTimeout(() => EmbassyModule.init(), 120);
+                console.log('✅ Embassy loaded successfully');
+              } else if (attempts < 10) {
+                attempts++;
+                setTimeout(tryInit, 100);
               } else {
-                console.warn('embassy-root not found or EmbassyModule missing');
+                console.error('❌ embassy-root not found after 10 attempts');
               }
-            }, 50);
+            };
+            setTimeout(tryInit, 50);
           }
         });
 
