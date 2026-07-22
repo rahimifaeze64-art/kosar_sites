@@ -139,18 +139,36 @@ const EmbassyModule = (function () {
                                     placeholder="نام کامل دانشجو">
                             </div>
                             <div>
-                                <label class="text-blue-200 text-sm font-semibold block mb-1">
+                                <label class="text-blue-200 text-sm font-semibold block mb-2">
                                     نوع کار <span class="text-red-400">*</span>
                                 </label>
-                                <select id="f-workType" required
-                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400">
-                                    <option value="">انتخاب کنید...</option>
-                                    <option value="ترجمه">ترجمه</option>
-                                    <option value="تأیید">تأیید</option>
-                                    <option value="وکالتنامه">وکالتنامه</option>
-                                    <option value="تحصیلی">مدارک تحصیلی</option>
-                                    <option value="سایر">سایر</option>
-                                </select>
+                                <div class="bg-blue-700 bg-opacity-40 border border-blue-500 rounded-lg p-3 space-y-2">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" value="ترجمه" class="work-type-check w-4 h-4 accent-yellow-400">
+                                        <span class="text-white text-sm">ترجمه</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" value="تصدیق" class="work-type-check w-4 h-4 accent-yellow-400">
+                                        <span class="text-white text-sm">تصدیق</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" value="وکالتنامه" class="work-type-check w-4 h-4 accent-yellow-400">
+                                        <span class="text-white text-sm">وکالتنامه</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" value="مدارک تحصیلی" class="work-type-check w-4 h-4 accent-yellow-400">
+                                        <span class="text-white text-sm">مدارک تحصیلی</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" value="سایر" id="work-type-other-check" class="work-type-check w-4 h-4 accent-yellow-400"
+                                            onchange="document.getElementById('work-type-other-input').style.display=this.checked?'block':'none'">
+                                        <span class="text-white text-sm">سایر</span>
+                                    </label>
+                                    <input type="text" id="work-type-other-input"
+                                        style="display:none"
+                                        class="w-full bg-blue-600 bg-opacity-50 text-white border border-blue-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-yellow-400 mt-1"
+                                        placeholder="نوع کار سایر را بنویسید...">
+                                </div>
                             </div>
                         </div>
 
@@ -163,14 +181,9 @@ const EmbassyModule = (function () {
                             </div>
                             <div>
                                 <label class="text-blue-200 text-sm font-semibold block mb-1">نحوه ارسال</label>
-                                <select id="f-sendMethod"
-                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400">
-                                    <option value="">انتخاب کنید...</option>
-                                    <option value="حضوری">حضوری</option>
-                                    <option value="پست">پست</option>
-                                    <option value="پیک">پیک</option>
-                                    <option value="آنلاین">آنلاین</option>
-                                </select>
+                                <input type="text" id="f-sendMethod"
+                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400"
+                                    placeholder="مثال: پست، پیک، حضوری، آنلاین...">
                             </div>
                         </div>
 
@@ -382,6 +395,9 @@ const EmbassyModule = (function () {
         document.getElementById('embassy-modal-title').textContent = 'ثبت مدرک جدید';
         document.getElementById('embassy-submit-text').textContent = 'ذخیره';
         document.getElementById('embassy-form').reset();
+        document.querySelectorAll('.work-type-check').forEach(cb => cb.checked = false);
+        const otherInput = document.getElementById('work-type-other-input');
+        if (otherInput) { otherInput.style.display = 'none'; otherInput.value = ''; }
         document.getElementById('f-files-preview').innerHTML = '';
         document.getElementById('embassy-modal').classList.remove('hidden');
     }
@@ -396,7 +412,26 @@ const EmbassyModule = (function () {
         document.getElementById('embassy-submit-text').textContent = 'ذخیره تغییرات';
 
         document.getElementById('f-studentName').value      = r.student_name       || '';
-        document.getElementById('f-workType').value         = r.work_type          || '';
+
+        // پر کردن چک‌باکس‌های نوع کار
+        const savedTypes = (r.work_type || '').split('، ').map(s => s.trim());
+        document.querySelectorAll('.work-type-check').forEach(cb => {
+            cb.checked = false;
+        });
+        savedTypes.forEach(type => {
+            if (type.startsWith('سایر:')) {
+                const otherCb = document.getElementById('work-type-other-check');
+                if (otherCb) { otherCb.checked = true; }
+                const otherInput = document.getElementById('work-type-other-input');
+                if (otherInput) {
+                    otherInput.style.display = 'block';
+                    otherInput.value = type.replace('سایر:', '').trim();
+                }
+            } else {
+                const cb = document.querySelector(`.work-type-check[value="${type}"]`);
+                if (cb) cb.checked = true;
+            }
+        });
         document.getElementById('f-receiveDate').value      = r.receive_date       || '';
         document.getElementById('f-sendMethod').value       = r.send_method        || '';
         document.getElementById('f-sendDate').value         = r.send_date          || '';
@@ -440,6 +475,22 @@ const EmbassyModule = (function () {
 
         const editId = document.getElementById('embassy-edit-id').value;
 
+        // جمع‌آوری نوع کار از چک‌باکس‌ها
+        const checkedTypes = Array.from(document.querySelectorAll('.work-type-check:checked'))
+            .map(cb => cb.value);
+        if (checkedTypes.includes('سایر')) {
+            const otherText = document.getElementById('work-type-other-input').value.trim();
+            const idx = checkedTypes.indexOf('سایر');
+            if (otherText) checkedTypes[idx] = 'سایر: ' + otherText;
+        }
+        if (!checkedTypes.length) {
+            btn.disabled = false;
+            text.textContent = editId ? 'ذخیره تغییرات' : 'ذخیره';
+            _toast('لطفاً حداقل یک نوع کار انتخاب کنید', 'error');
+            return;
+        }
+        const workTypeValue = checkedTypes.join('، ');
+
         // آپلود فایل‌ها
         const fileInput  = document.getElementById('f-files');
         const filePaths  = [];
@@ -452,7 +503,7 @@ const EmbassyModule = (function () {
 
         const payload = {
             student_name:       document.getElementById('f-studentName').value.trim(),
-            work_type:          document.getElementById('f-workType').value,
+            work_type:          workTypeValue,
             receive_date:       document.getElementById('f-receiveDate').value || null,
             send_method:        document.getElementById('f-sendMethod').value  || null,
             send_date:          document.getElementById('f-sendDate').value    || null,
