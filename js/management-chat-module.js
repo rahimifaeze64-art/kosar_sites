@@ -68,7 +68,7 @@ const ManagementChatModule = {
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px; background: #e0e7ff; color: #4338ca; padding: 6px 12px; border-radius: 20px; white-space: nowrap; font-size: 14px;">
                         <i class="fas fa-user"></i>
-                        <span>حسینی م</span>
+                        <span>سخایی م</span>
                     </div>
                 </div>
 

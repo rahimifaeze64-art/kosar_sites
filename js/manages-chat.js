@@ -107,7 +107,7 @@ class ManagesChat {
             { id: 'emp001', name: 'ساره', username: 'zahra', role: 'employee' },
             { id: 'emp002', name: 'زینب', username: 'fatemeh', role: 'employee' },
             { id: 'emp003', name: 'فرزاد', username: 'farzad', role: 'employee' },
-            { id: 'emp004', name: 'حسینی م', username: 'soleiman', role: 'employee' }
+            { id: 'emp004', name: 'سخایی م', username: 'sakhaei', role: 'employee' }
         ];
         
         // ترکیب لیست ثابت با کاربران جدید

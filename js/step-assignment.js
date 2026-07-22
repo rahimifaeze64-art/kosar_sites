@@ -15,7 +15,7 @@ const StepAssignmentModule = {
         { id: 'emp001', name: 'ساره' },
         { id: 'emp002', name: 'زینب' },
         { id: 'emp003', name: 'فرزاد' },
-        { id: 'emp004', name: 'حسینی م' },
+        { id: 'emp004', name: 'سخایی م' },
     ],
 
     // کلید ذخیره‌سازی در localStorage

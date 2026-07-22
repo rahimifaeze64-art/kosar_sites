@@ -280,10 +280,10 @@ function appController() {
           },
           {
             id: "emp004",
-            name: "حسینی م",
-            username: "soleiman",
+            name: "سخایی م",
+            username: "sakhaei",
             role: "employee",
-            email: "soleiman@edu-system.com",
+            email: "sakhaei@edu-system.com",
           },
         ];
 

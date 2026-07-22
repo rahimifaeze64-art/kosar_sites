@@ -48,11 +48,11 @@ const HARDCODED_USERS = [
     },
     {
         id: 'emp004',
-        name: 'حسینی',
-        username: 'hosseini',
-        password: 'hosseini1403',
+        name: 'سخایی',
+        username: 'sakhaei',
+        password: 'sakhaei1403',
         role: 'employee',
-        email: 'hosseini@alkawsar.com',
+        email: 'sakhaei@alkawsar.com',
         department: 'هماهنگی فنی',
         active: true
     },

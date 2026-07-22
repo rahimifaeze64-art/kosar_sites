@@ -5,7 +5,7 @@ const SampleStudentsData = {
         return [
             {
                 id: 'student001',
-                name: 'حسن یاسر کرار حسینی',
+                name: 'حسن یاسر کرار سخایی',
                 studentId: 'ST001',
                 email: 'hassan.yasar@student.edu',
                 phone: '+964 770 123 4567',

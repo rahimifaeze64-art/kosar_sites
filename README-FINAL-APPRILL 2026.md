@@ -72,7 +72,7 @@ python -m http.server 8080
 - `zahra` / `123456`
 - `fatemeh` / `123456`
 - `farzad` / `123456`
-- `soleiman` / `123456`
+- `sakhaei` / `123456`
 
 ### عامل‌ها (Agents)
 - `masoumi` / `123456`

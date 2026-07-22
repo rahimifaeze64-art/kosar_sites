@@ -47,7 +47,7 @@ function appData() {
             },
             {
                 id: 3,
-                studentName: 'علی حسینی',
+                studentName: 'علی سخایی',
                 studentId: 'ST003',
                 university: 'دانشگاه امیرکبیر',
                 field: 'مهندسی مکانیک',
