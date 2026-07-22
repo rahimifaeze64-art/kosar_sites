@@ -83,6 +83,15 @@ function appController() {
             console.log("🔄 Loading orders page...");
             await this.loadOrdersPageWithRetry();
           }
+          if (newPage === "embassy") {
+            this.$nextTick(() => {
+              const root = document.getElementById('embassy-root');
+              if (root && typeof EmbassyModule !== 'undefined') {
+                root.innerHTML = EmbassyModule.getContent();
+                setTimeout(() => EmbassyModule.init(), 100);
+              }
+            });
+          }
         });
 
         // Listen for window resize
@@ -596,8 +605,6 @@ function appController() {
         return `<div class="text-red-400 p-4">خطا در بارگذاری سفارت: ${error.message}</div>`;
       }
     },
-
-    // Get profile content
     getProfileContent() {
       try {
         debugLogger("Loading profile content...", "info", this.currentUser);

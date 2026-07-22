@@ -384,8 +384,9 @@
             <div x-show="currentPage === 'profile'" x-html="getProfileContent()"></div>
 
             <!-- Embassy Page (Manager and Employee) -->
-            <div x-show="currentPage === 'embassy' && (currentUser.role === 'manager' || currentUser.role === 'employee')"
-                 x-html="getEmbassyContent()"></div>
+            <div x-show="currentPage === 'embassy' && (currentUser.role === 'manager' || currentUser.role === 'employee')">
+                <div id="embassy-root"></div>
+            </div>
             
             <!-- Users Management Page -->
             <div x-show="currentPage === 'users' && currentUser.role === 'manager'" x-html="getUsersContent()"></div>
