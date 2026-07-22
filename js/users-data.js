@@ -65,9 +65,7 @@ const HARDCODED_USERS = [
         email: 'mahdi@alkawsar.com',
         department: 'هماهنگی عمومی',
         active: true
-    }
-];
-
+    },
     // عامل‌ها
     {
         id: 'doc001',
