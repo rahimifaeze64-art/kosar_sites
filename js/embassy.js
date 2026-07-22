@@ -1,0 +1,542 @@
+// ============================================================
+// embassy.js  —  ماژول سفارت
+// ذخیره‌سازی در Supabase (جدول: embassy_records)
+// ============================================================
+
+const EmbassyModule = (function () {
+    'use strict';
+
+    const TABLE = 'embassy_records';
+
+    // ── helper: Supabase client ──────────────────────────────
+    function sb() {
+        const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+        if (!client) console.warn('⚠️ Embassy: Supabase client در دسترس نیست');
+        return client;
+    }
+
+    // ── کاربر جاری ──────────────────────────────────────────
+    function currentUser() {
+        try { return JSON.parse(localStorage.getItem('currentUser') || '{}'); }
+        catch { return {}; }
+    }
+
+    // ── CRUD ─────────────────────────────────────────────────
+    async function getAll() {
+        const client = sb(); if (!client) return [];
+        const { data, error } = await client
+            .from(TABLE)
+            .select('*')
+            .order('created_at', { ascending: false });
+        if (error) { console.error('Embassy getAll:', error.message); return []; }
+        return data || [];
+    }
+
+    async function insert(payload) {
+        const client = sb(); if (!client) return null;
+        const u = currentUser();
+        const row = { ...payload, created_by: u.id || null, created_by_name: u.name || null };
+        const { data, error } = await client.from(TABLE).insert([row]).select().single();
+        if (error) { console.error('Embassy insert:', error.message); return null; }
+        return data;
+    }
+
+    async function update(id, payload) {
+        const client = sb(); if (!client) return false;
+        const { error } = await client.from(TABLE).update(payload).eq('id', id);
+        if (error) { console.error('Embassy update:', error.message); return false; }
+        return true;
+    }
+
+    async function remove(id) {
+        const client = sb(); if (!client) return false;
+        const { error } = await client.from(TABLE).delete().eq('id', id);
+        if (error) { console.error('Embassy delete:', error.message); return false; }
+        return true;
+    }
+
+    // ── آپلود فایل به Storage ────────────────────────────────
+    async function uploadFile(file, recordId) {
+        const client = sb(); if (!client) return null;
+        const ext  = file.name.split('.').pop();
+        const path = `${recordId}/${Date.now()}_${file.name}`;
+        const { data, error } = await client.storage
+            .from('embassy-files')
+            .upload(path, file, { cacheControl: '3600', upsert: false });
+        if (error) { console.error('Embassy upload:', error.message); return null; }
+        return data.path;
+    }
+
+    // ── UI: صفحه اصلی ────────────────────────────────────────
+    function getContent() {
+        return `
+        <div id="embassy-app" class="space-y-6">
+
+            <!-- هدر -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                        <span class="bg-yellow-500 bg-opacity-20 p-2 rounded-xl">
+                            <i class="fas fa-landmark text-yellow-400"></i>
+                        </span>
+                        سفارت
+                    </h2>
+                    <p class="text-blue-200 text-sm mt-1">مدیریت مدارک سفارتخانه‌ای دانشجویان</p>
+                </div>
+                <button onclick="EmbassyModule.openAddModal()"
+                    class="bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all shadow-lg">
+                    <i class="fas fa-plus"></i> ثبت مدرک جدید
+                </button>
+            </div>
+
+            <!-- جستجو -->
+            <div class="bg-blue-900 bg-opacity-30 rounded-xl p-4 border border-blue-700 border-opacity-30">
+                <div class="flex gap-3 flex-wrap">
+                    <input type="text" id="embassy-search" placeholder="جستجو بر اساس نام دانشجو..."
+                        oninput="EmbassyModule.applyFilter()"
+                        class="flex-1 min-w-48 bg-blue-800 bg-opacity-50 text-white border border-blue-600 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-yellow-400">
+                    <select id="embassy-filter-type" onchange="EmbassyModule.applyFilter()"
+                        class="bg-blue-800 bg-opacity-50 text-white border border-blue-600 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-yellow-400">
+                        <option value="">همه نوع‌های کار</option>
+                        <option value="ترجمه">ترجمه</option>
+                        <option value="تأیید">تأیید</option>
+                        <option value="وکالتنامه">وکالتنامه</option>
+                        <option value="تحصیلی">مدارک تحصیلی</option>
+                        <option value="سایر">سایر</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- لودینگ -->
+            <div id="embassy-loading" class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-3xl text-yellow-400"></i>
+                <p class="text-blue-200 mt-3">در حال بارگذاری...</p>
+            </div>
+
+            <!-- جدول -->
+            <div id="embassy-table-container" class="hidden"></div>
+
+            <!-- مودال افزودن/ویرایش -->
+            <div id="embassy-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+                <div class="bg-gradient-to-b from-blue-800 to-blue-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-screen overflow-y-auto border border-blue-600">
+                    <div class="flex items-center justify-between p-6 border-b border-blue-600 border-opacity-40">
+                        <h3 id="embassy-modal-title" class="text-xl font-bold text-white">ثبت مدرک جدید</h3>
+                        <button onclick="EmbassyModule.closeModal()" class="text-gray-400 hover:text-white text-2xl">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <form id="embassy-form" onsubmit="EmbassyModule.submitForm(event)" class="p-6 space-y-4">
+                        <input type="hidden" id="embassy-edit-id">
+
+                        <!-- ردیف اول -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-blue-200 text-sm font-semibold block mb-1">
+                                    نام دانشجو <span class="text-red-400">*</span>
+                                </label>
+                                <input type="text" id="f-studentName" required
+                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400"
+                                    placeholder="نام کامل دانشجو">
+                            </div>
+                            <div>
+                                <label class="text-blue-200 text-sm font-semibold block mb-1">
+                                    نوع کار <span class="text-red-400">*</span>
+                                </label>
+                                <select id="f-workType" required
+                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400">
+                                    <option value="">انتخاب کنید...</option>
+                                    <option value="ترجمه">ترجمه</option>
+                                    <option value="تأیید">تأیید</option>
+                                    <option value="وکالتنامه">وکالتنامه</option>
+                                    <option value="تحصیلی">مدارک تحصیلی</option>
+                                    <option value="سایر">سایر</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- ردیف دوم -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-blue-200 text-sm font-semibold block mb-1">تاریخ دریافت مدارک</label>
+                                <input type="date" id="f-receiveDate"
+                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400">
+                            </div>
+                            <div>
+                                <label class="text-blue-200 text-sm font-semibold block mb-1">نحوه ارسال</label>
+                                <select id="f-sendMethod"
+                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400">
+                                    <option value="">انتخاب کنید...</option>
+                                    <option value="حضوری">حضوری</option>
+                                    <option value="پست">پست</option>
+                                    <option value="پیک">پیک</option>
+                                    <option value="آنلاین">آنلاین</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- ردیف سوم -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-blue-200 text-sm font-semibold block mb-1">تاریخ ارسال</label>
+                                <input type="date" id="f-sendDate"
+                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400">
+                            </div>
+                            <div>
+                                <label class="text-blue-200 text-sm font-semibold block mb-1">اعلام وصول</label>
+                                <input type="text" id="f-acknowledgment"
+                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400"
+                                    placeholder="تاریخ یا توضیح اعلام وصول">
+                            </div>
+                        </div>
+
+                        <!-- ردیف چهارم -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-blue-200 text-sm font-semibold block mb-1">تسویه</label>
+                                <input type="text" id="f-settlement"
+                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400"
+                                    placeholder="وضعیت تسویه">
+                            </div>
+                            <div>
+                                <label class="text-blue-200 text-sm font-semibold block mb-1">کد سجاد</label>
+                                <input type="text" id="f-sajadCode"
+                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400"
+                                    placeholder="کد سجاد دانشجو">
+                            </div>
+                        </div>
+
+                        <!-- دریافت از دار الترجمه -->
+                        <div>
+                            <label class="text-blue-200 text-sm font-semibold block mb-1">دریافت از دار الترجمه</label>
+                            <input type="text" id="f-translationOffice"
+                                class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400"
+                                placeholder="تاریخ یا توضیح دریافت از دار الترجمه">
+                        </div>
+
+                        <!-- آپلود فایل -->
+                        <div>
+                            <label class="text-blue-200 text-sm font-semibold block mb-1">
+                                <i class="fas fa-paperclip ml-1"></i>پیوست مدارک
+                            </label>
+                            <div class="border-2 border-dashed border-blue-500 rounded-xl p-4 text-center cursor-pointer hover:border-yellow-400 transition-colors"
+                                onclick="document.getElementById('f-files').click()">
+                                <i class="fas fa-cloud-upload-alt text-2xl text-blue-400 mb-2"></i>
+                                <p class="text-blue-200 text-sm">برای آپلود کلیک کنید</p>
+                                <p class="text-gray-400 text-xs mt-1">PDF، JPG، PNG (حداکثر 5 مگابایت)</p>
+                            </div>
+                            <input type="file" id="f-files" multiple accept=".pdf,.jpg,.jpeg,.png" class="hidden"
+                                onchange="EmbassyModule.previewFiles(this)">
+                            <div id="f-files-preview" class="mt-2 space-y-1"></div>
+                        </div>
+
+                        <!-- دکمه‌ها -->
+                        <div class="flex gap-3 pt-2">
+                            <button type="submit" id="embassy-submit-btn"
+                                class="flex-1 bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2">
+                                <i class="fas fa-save"></i>
+                                <span id="embassy-submit-text">ذخیره</span>
+                            </button>
+                            <button type="button" onclick="EmbassyModule.closeModal()"
+                                class="px-6 bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 rounded-xl transition-all">
+                                انصراف
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- مودال تأیید حذف -->
+            <div id="embassy-confirm-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+                <div class="bg-blue-900 rounded-2xl p-6 max-w-sm w-full border border-red-700 shadow-2xl text-center">
+                    <i class="fas fa-exclamation-triangle text-4xl text-red-400 mb-4"></i>
+                    <h3 class="text-white text-xl font-bold mb-2">تأیید حذف</h3>
+                    <p class="text-blue-200 mb-6" id="embassy-confirm-text">آیا مطمئن هستید؟</p>
+                    <div class="flex gap-3">
+                        <button id="embassy-confirm-yes"
+                            class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl transition-all">
+                            بله، حذف شود
+                        </button>
+                        <button onclick="document.getElementById('embassy-confirm-modal').classList.add('hidden')"
+                            class="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2.5 rounded-xl transition-all">
+                            انصراف
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    // ── رندر جدول ────────────────────────────────────────────
+    function renderTable(records) {
+        const container = document.getElementById('embassy-table-container');
+        if (!container) return;
+        container.classList.remove('hidden');
+
+        if (!records.length) {
+            container.innerHTML = `
+                <div class="text-center py-16 bg-blue-900 bg-opacity-20 rounded-2xl border border-blue-700 border-opacity-30">
+                    <i class="fas fa-folder-open text-5xl text-blue-400 mb-4 opacity-40"></i>
+                    <p class="text-blue-200 text-lg">هیچ رکوردی ثبت نشده</p>
+                    <p class="text-gray-400 text-sm mt-1">روی «ثبت مدرک جدید» کلیک کنید</p>
+                </div>`;
+            return;
+        }
+
+        const rows = records.map(r => `
+            <tr class="border-b border-blue-700 border-opacity-20 hover:bg-blue-900 hover:bg-opacity-30 transition-colors">
+                <td class="px-3 py-3 font-semibold text-white">${r.student_name}</td>
+                <td class="px-3 py-3">
+                    <span class="bg-blue-600 bg-opacity-40 text-blue-200 text-xs px-2 py-1 rounded-lg">${r.work_type}</span>
+                </td>
+                <td class="px-3 py-3 text-gray-300 text-sm">${r.receive_date || '—'}</td>
+                <td class="px-3 py-3 text-gray-300 text-sm">${r.send_method || '—'}</td>
+                <td class="px-3 py-3 text-gray-300 text-sm">${r.send_date || '—'}</td>
+                <td class="px-3 py-3">
+                    ${r.acknowledgment
+                        ? `<span class="bg-green-600 bg-opacity-40 text-green-300 text-xs px-2 py-1 rounded-lg">✓ ${r.acknowledgment}</span>`
+                        : `<span class="text-gray-500 text-xs">در انتظار</span>`}
+                </td>
+                <td class="px-3 py-3">
+                    ${r.settlement
+                        ? `<span class="bg-emerald-600 bg-opacity-40 text-emerald-300 text-xs px-2 py-1 rounded-lg">✓ ${r.settlement}</span>`
+                        : `<span class="text-gray-500 text-xs">—</span>`}
+                </td>
+                <td class="px-3 py-3 text-yellow-300 text-sm font-mono">${r.sajad_code || '—'}</td>
+                <td class="px-3 py-3 text-gray-300 text-sm">${r.translation_office || '—'}</td>
+                <td class="px-3 py-3">
+                    ${r.file_paths && r.file_paths.length
+                        ? `<span class="text-blue-400 text-xs"><i class="fas fa-paperclip ml-1"></i>${r.file_paths.length} فایل</span>`
+                        : `<span class="text-gray-500 text-xs">—</span>`}
+                </td>
+                <td class="px-3 py-3 text-xs text-gray-400">${r.created_by_name || '—'}</td>
+                <td class="px-3 py-3">
+                    <div class="flex gap-2">
+                        <button onclick="EmbassyModule.openEditModal('${r.id}')"
+                            class="bg-yellow-600 hover:bg-yellow-500 text-white text-xs px-3 py-1.5 rounded-lg transition-colors">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="EmbassyModule.confirmDelete('${r.id}','${(r.student_name||'').replace(/'/g,"\\'")}')"
+                            class="bg-red-600 hover:bg-red-500 text-white text-xs px-3 py-1.5 rounded-lg transition-colors">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>`).join('');
+
+        container.innerHTML = `
+            <div class="overflow-x-auto rounded-xl border border-blue-700 border-opacity-30">
+                <table class="w-full text-sm" style="min-width:1200px">
+                    <thead>
+                        <tr class="bg-blue-900 bg-opacity-60 text-blue-200 text-xs">
+                            <th class="px-3 py-3 text-right font-semibold">نام دانشجو</th>
+                            <th class="px-3 py-3 text-right font-semibold">نوع کار</th>
+                            <th class="px-3 py-3 text-right font-semibold">تاریخ دریافت</th>
+                            <th class="px-3 py-3 text-right font-semibold">نحوه ارسال</th>
+                            <th class="px-3 py-3 text-right font-semibold">تاریخ ارسال</th>
+                            <th class="px-3 py-3 text-right font-semibold">اعلام وصول</th>
+                            <th class="px-3 py-3 text-right font-semibold">تسویه</th>
+                            <th class="px-3 py-3 text-right font-semibold">کد سجاد</th>
+                            <th class="px-3 py-3 text-right font-semibold">دار الترجمه</th>
+                            <th class="px-3 py-3 text-right font-semibold">فایل‌ها</th>
+                            <th class="px-3 py-3 text-right font-semibold">ثبت‌کننده</th>
+                            <th class="px-3 py-3 text-right font-semibold">عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+            <p class="text-gray-400 text-xs mt-2 text-left">${records.length} رکورد</p>`;
+    }
+
+    // ── state داده‌های کش‌شده برای فیلتر ────────────────────
+    let _allRecords = [];
+
+    // ── بارگذاری و رندر ──────────────────────────────────────
+    async function load() {
+        const loading = document.getElementById('embassy-loading');
+        const container = document.getElementById('embassy-table-container');
+        if (loading) loading.classList.remove('hidden');
+        if (container) container.classList.add('hidden');
+
+        _allRecords = await getAll();
+
+        if (loading) loading.classList.add('hidden');
+        renderTable(_allRecords);
+    }
+
+    function applyFilter() {
+        const search = (document.getElementById('embassy-search')?.value || '').toLowerCase();
+        const type   = (document.getElementById('embassy-filter-type')?.value || '');
+
+        const filtered = _allRecords.filter(r => {
+            const matchName = !search || (r.student_name || '').toLowerCase().includes(search);
+            const matchType = !type  || (r.work_type || '') === type;
+            return matchName && matchType;
+        });
+        renderTable(filtered);
+    }
+
+    // ── مودال افزودن ─────────────────────────────────────────
+    function openAddModal() {
+        document.getElementById('embassy-edit-id').value = '';
+        document.getElementById('embassy-modal-title').textContent = 'ثبت مدرک جدید';
+        document.getElementById('embassy-submit-text').textContent = 'ذخیره';
+        document.getElementById('embassy-form').reset();
+        document.getElementById('f-files-preview').innerHTML = '';
+        document.getElementById('embassy-modal').classList.remove('hidden');
+    }
+
+    // ── مودال ویرایش ─────────────────────────────────────────
+    function openEditModal(id) {
+        const r = _allRecords.find(x => x.id === id);
+        if (!r) return;
+
+        document.getElementById('embassy-edit-id').value = id;
+        document.getElementById('embassy-modal-title').textContent = 'ویرایش رکورد';
+        document.getElementById('embassy-submit-text').textContent = 'ذخیره تغییرات';
+
+        document.getElementById('f-studentName').value      = r.student_name       || '';
+        document.getElementById('f-workType').value         = r.work_type          || '';
+        document.getElementById('f-receiveDate').value      = r.receive_date       || '';
+        document.getElementById('f-sendMethod').value       = r.send_method        || '';
+        document.getElementById('f-sendDate').value         = r.send_date          || '';
+        document.getElementById('f-acknowledgment').value   = r.acknowledgment     || '';
+        document.getElementById('f-settlement').value       = r.settlement         || '';
+        document.getElementById('f-sajadCode').value        = r.sajad_code         || '';
+        document.getElementById('f-translationOffice').value= r.translation_office || '';
+
+        const preview = document.getElementById('f-files-preview');
+        preview.innerHTML = r.file_paths && r.file_paths.length
+            ? r.file_paths.map(p => `<p class="text-xs text-blue-300"><i class="fas fa-file ml-1"></i>${p}</p>`).join('')
+            : '';
+
+        document.getElementById('embassy-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('embassy-modal').classList.add('hidden');
+    }
+
+    // ── پیش‌نمایش فایل‌ها ────────────────────────────────────
+    function previewFiles(input) {
+        const preview = document.getElementById('f-files-preview');
+        preview.innerHTML = '';
+        Array.from(input.files).forEach(f => {
+            const p = document.createElement('p');
+            p.className = 'text-xs text-blue-300';
+            p.innerHTML = `<i class="fas fa-file ml-1"></i>${f.name} (${(f.size/1024).toFixed(0)} KB)`;
+            preview.appendChild(p);
+        });
+    }
+
+    // ── ارسال فرم ────────────────────────────────────────────
+    async function submitForm(e) {
+        e.preventDefault();
+
+        const btn  = document.getElementById('embassy-submit-btn');
+        const text = document.getElementById('embassy-submit-text');
+        btn.disabled = true;
+        text.textContent = 'در حال ذخیره...';
+
+        const editId = document.getElementById('embassy-edit-id').value;
+
+        // آپلود فایل‌ها
+        const fileInput  = document.getElementById('f-files');
+        const filePaths  = [];
+        const recordId   = editId || ('emb_' + Date.now());
+
+        for (const file of Array.from(fileInput.files)) {
+            const path = await uploadFile(file, recordId);
+            if (path) filePaths.push(path);
+        }
+
+        const payload = {
+            student_name:       document.getElementById('f-studentName').value.trim(),
+            work_type:          document.getElementById('f-workType').value,
+            receive_date:       document.getElementById('f-receiveDate').value || null,
+            send_method:        document.getElementById('f-sendMethod').value  || null,
+            send_date:          document.getElementById('f-sendDate').value    || null,
+            acknowledgment:     document.getElementById('f-acknowledgment').value.trim() || null,
+            settlement:         document.getElementById('f-settlement').value.trim()     || null,
+            sajad_code:         document.getElementById('f-sajadCode').value.trim()      || null,
+            translation_office: document.getElementById('f-translationOffice').value.trim() || null,
+        };
+
+        if (filePaths.length) payload.file_paths = filePaths;
+
+        let ok = false;
+        if (editId) {
+            ok = await update(editId, payload);
+        } else {
+            const result = await insert(payload);
+            ok = !!result;
+        }
+
+        btn.disabled = false;
+        text.textContent = editId ? 'ذخیره تغییرات' : 'ذخیره';
+
+        if (ok) {
+            closeModal();
+            await load();
+            _toast(editId ? 'رکورد بروزرسانی شد ✓' : 'رکورد جدید ثبت شد ✓', 'success');
+        } else {
+            _toast('خطا در ذخیره‌سازی — اتصال Supabase را بررسی کنید', 'error');
+        }
+    }
+
+    // ── تأیید حذف ────────────────────────────────────────────
+    function confirmDelete(id, name) {
+        document.getElementById('embassy-confirm-text').textContent =
+            `رکورد دانشجو "${name}" حذف شود؟`;
+        const modal = document.getElementById('embassy-confirm-modal');
+        modal.classList.remove('hidden');
+
+        const btn = document.getElementById('embassy-confirm-yes');
+        btn.onclick = async () => {
+            modal.classList.add('hidden');
+            const ok = await remove(id);
+            if (ok) {
+                await load();
+                _toast('رکورد حذف شد', 'info');
+            } else {
+                _toast('خطا در حذف', 'error');
+            }
+        };
+    }
+
+    // ── toast ─────────────────────────────────────────────────
+    function _toast(msg, type = 'info') {
+        const colors = { success: '#16a34a', error: '#dc2626', info: '#2563eb' };
+        const t = document.createElement('div');
+        t.style.cssText = `
+            position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+            background:${colors[type]||colors.info}; color:#fff;
+            padding:12px 24px; border-radius:12px; font-family:Vazirmatn,sans-serif;
+            font-size:14px; z-index:9999; direction:rtl; box-shadow:0 4px 20px rgba(0,0,0,0.3);
+            animation: fadeIn .3s ease;`;
+        t.textContent = msg;
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 3500);
+    }
+
+    // ── init (هنگام ورود به صفحه) ────────────────────────────
+    function init() {
+        // دادن زمان کوتاه تا DOM رندر شود
+        setTimeout(() => load(), 100);
+    }
+
+    // ── Public API ───────────────────────────────────────────
+    return {
+        getContent,
+        init,
+        load,
+        applyFilter,
+        openAddModal,
+        openEditModal,
+        closeModal,
+        previewFiles,
+        submitForm,
+        confirmDelete,
+    };
+
+})(); // end EmbassyModule

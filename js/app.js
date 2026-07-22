@@ -225,6 +225,7 @@ function appController() {
     // Get page title
     getPageTitle() {
       const pageTitles = {
+        embassy: 'سفارت',
         dashboard: "داشبورد",
         tasks: "مدیریت همکاران",
         myTasks: "وظایف من",
@@ -578,6 +579,21 @@ function appController() {
       } catch (error) {
         debugLogger("Error loading employee accounting content", "error", error);
         return `<div class="text-red-500">خطا: ${error.message}</div>`;
+      }
+    },
+
+    // Get embassy content (manager and employee)
+    getEmbassyContent() {
+      try {
+        if (typeof EmbassyModule === 'undefined') {
+          return '<div class="text-red-400 p-4">خطا: ماژول سفارت بارگذاری نشده</div>';
+        }
+        const html = EmbassyModule.getContent();
+        // init بعد از رندر DOM
+        setTimeout(() => EmbassyModule.init(), 150);
+        return html;
+      } catch (error) {
+        return `<div class="text-red-400 p-4">خطا در بارگذاری سفارت: ${error.message}</div>`;
       }
     },
 

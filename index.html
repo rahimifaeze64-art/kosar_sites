@@ -210,6 +210,16 @@
                 </button>
             </template>
 
+            <!-- سفارت - مدیر و کارمند -->
+            <template x-if="currentUser.role === 'manager' || currentUser.role === 'employee'">
+                <button @click="currentPage = 'embassy'"
+                        :class="currentPage === 'embassy' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                        class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
+                    <i class="fas fa-landmark text-lg"></i>
+                    <span class="font-medium">سفارت</span>
+                </button>
+            </template>
+
             <!-- مدیریت کاربران - فقط مدیر -->
             <template x-if="currentUser.role === 'manager'">
                 <button @click="currentPage = 'users'"
@@ -372,6 +382,10 @@
             
             <!-- Profile Page -->
             <div x-show="currentPage === 'profile'" x-html="getProfileContent()"></div>
+
+            <!-- Embassy Page (Manager and Employee) -->
+            <div x-show="currentPage === 'embassy' && (currentUser.role === 'manager' || currentUser.role === 'employee')"
+                 x-html="getEmbassyContent()"></div>
             
             <!-- Users Management Page -->
             <div x-show="currentPage === 'users' && currentUser.role === 'manager'" x-html="getUsersContent()"></div>
@@ -558,6 +572,7 @@
     <script src="js/work-hours.js"></script>
     <script src="js/personal-chat.js"></script>
     <script src="js/employee-accounting.js?v=1.0"></script>
+    <script src="js/embassy.js"></script>
     <script src="js/app.js"></script>
     <script src="js/supabase-init.js"></script>
     
