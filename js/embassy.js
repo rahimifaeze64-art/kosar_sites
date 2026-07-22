@@ -67,7 +67,14 @@ const EmbassyModule = (function () {
         return data.path;
     }
 
-    // ── UI: صفحه اصلی ────────────────────────────────────────
+    // ── دریافت لینک دانلود فایل از Storage ─────────────────
+    async function getDownloadUrl(path) {
+        const client = sb(); if (!client) return null;
+        const { data } = await client.storage
+            .from('embassy-files')
+            .createSignedUrl(path, 3600); // لینک ۱ ساعته
+        return data?.signedUrl || null;
+    }
     function getContent() {
         return `
         <div id="embassy-app" class="space-y-6">
@@ -99,9 +106,9 @@ const EmbassyModule = (function () {
                         class="bg-blue-800 bg-opacity-50 text-white border border-blue-600 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-yellow-400">
                         <option value="">همه نوع‌های کار</option>
                         <option value="ترجمه">ترجمه</option>
-                        <option value="تأیید">تأیید</option>
+                        <option value="تصدیق">تصدیق</option>
                         <option value="وکالتنامه">وکالتنامه</option>
-                        <option value="تحصیلی">مدارک تحصیلی</option>
+                        <option value="مدارک تحصیلی">مدارک تحصیلی</option>
                         <option value="سایر">سایر</option>
                     </select>
                 </div>
@@ -314,13 +321,14 @@ const EmbassyModule = (function () {
                         ? `<span class="bg-emerald-600 bg-opacity-40 text-emerald-300 text-xs px-2 py-1 rounded-lg">✓ ${r.settlement}</span>`
                         : `<span class="text-gray-500 text-xs">—</span>`}
                 </td>
-                <td class="px-3 py-3 text-yellow-300 text-sm font-mono">${r.sajad_code || '—'}</td>
+                <td class="px-3 py-3 text-gray-100 text-sm font-mono">${r.sajad_code || '—'}</td>
                 <td class="px-3 py-3 text-gray-300 text-sm">${r.translation_office || '—'}</td>
                 <td class="px-3 py-3">
                     ${r.file_paths && r.file_paths.length
-                        ? `<span class="text-blue-400 text-xs"><i class="fas fa-paperclip ml-1"></i>${r.file_paths.length} فایل</span>`
+                        ? r.file_paths.map(p => `<button onclick="EmbassyModule.downloadFile('${p}')" class="block text-blue-300 hover:text-blue-100 text-xs underline truncate max-w-24"><i class="fas fa-download ml-1"></i>${p.split('/').pop()}</button>`).join('')
                         : `<span class="text-gray-500 text-xs">—</span>`}
                 </td>
+                <td class="px-3 py-3 text-gray-400 text-xs">${r.updated_at ? new Date(r.updated_at).toLocaleDateString('fa-IR') : '—'}</td>
                 <td class="px-3 py-3 text-xs text-gray-400">${r.created_by_name || '—'}</td>
                 <td class="px-3 py-3">
                     <div class="flex gap-2">
@@ -351,6 +359,7 @@ const EmbassyModule = (function () {
                             <th class="px-3 py-3 text-right font-semibold">کد سجاد</th>
                             <th class="px-3 py-3 text-right font-semibold">دار الترجمه</th>
                             <th class="px-3 py-3 text-right font-semibold">فایل‌ها</th>
+                            <th class="px-3 py-3 text-right font-semibold">آخرین آپدیت</th>
                             <th class="px-3 py-3 text-right font-semibold">ثبت‌کننده</th>
                             <th class="px-3 py-3 text-right font-semibold">عملیات</th>
                         </tr>
@@ -570,6 +579,17 @@ const EmbassyModule = (function () {
         setTimeout(() => t.remove(), 3500);
     }
 
+    // ── دانلود فایل ──────────────────────────────────────────
+    async function downloadFile(path) {
+        const url = await getDownloadUrl(path);
+        if (!url) { _toast('خطا در دریافت لینک دانلود', 'error'); return; }
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = path.split('/').pop();
+        a.target = '_blank';
+        a.click();
+    }
+
     // ── init (هنگام ورود به صفحه) ────────────────────────────
     function init() {
         // دادن زمان کوتاه تا DOM رندر شود
@@ -588,6 +608,7 @@ const EmbassyModule = (function () {
         previewFiles,
         submitForm,
         confirmDelete,
+        downloadFile,
     };
 
 })(); // end EmbassyModule
