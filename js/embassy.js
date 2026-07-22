@@ -183,7 +183,7 @@ const EmbassyModule = (function () {
                                 <label class="text-blue-200 text-sm font-semibold block mb-1">نحوه ارسال</label>
                                 <input type="text" id="f-sendMethod"
                                     class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400"
-                                    placeholder="مثال: پست، پیک، حضوری، آنلاین...">
+                                    placeholder="مثال: سخایی، پست، اسم معقب">
                             </div>
                         </div>
 
