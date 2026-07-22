@@ -248,7 +248,7 @@ function _showOnlineBanner() {
         z-index: 9999; border: 1px solid #34d399; direction: rtl; text-align: right;
         box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     `;
-    banner.innerHTML = '☁️ متصل به Supabase — داده‌ها در ابر ذخیره می‌شوند';
+    banner.innerHTML = 'داده‌ها ذخیره می‌شوند';
     document.body.appendChild(banner);
     setTimeout(() => { if (banner.parentNode) banner.parentNode.removeChild(banner); }, 4000);
 }
