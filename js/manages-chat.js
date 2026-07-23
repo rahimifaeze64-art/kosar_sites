@@ -382,7 +382,7 @@ class ManagesChat {
         container.innerHTML = displayMessages.map(msg => {
             const isOwn = msg.senderId === currentUser.id;
             const time = new Date(msg.timestamp).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
-            const date = new Date(msg.timestamp).toLocaleDateString('fa-IR');
+            const date = (typeof Jalali !== 'undefined') ? Jalali.toJalaliDisplay(new Date(msg.timestamp)) : new Date(msg.timestamp).toLocaleDateString('fa-IR');
             
             return `
                 <div style="display: flex; justify-content: flex-start; margin-bottom: 1rem; animation: slideIn 0.3s ease; direction: rtl;" class="message-group">

@@ -308,9 +308,9 @@ const EmbassyModule = (function () {
                 <td class="px-3 py-3">
                     <span class="bg-blue-600 bg-opacity-40 text-blue-200 text-xs px-2 py-1 rounded-lg">${r.work_type}</span>
                 </td>
-                <td class="px-3 py-3 text-gray-300 text-sm">${r.receive_date || '—'}</td>
+                <td class="px-3 py-3 text-gray-300 text-sm">${r.receive_date ? (typeof Jalali !== 'undefined' ? Jalali.displayDate(r.receive_date) : r.receive_date) : '—'}</td>
                 <td class="px-3 py-3 text-gray-300 text-sm">${r.send_method || '—'}</td>
-                <td class="px-3 py-3 text-gray-300 text-sm">${r.send_date || '—'}</td>
+                <td class="px-3 py-3 text-gray-300 text-sm">${r.send_date ? (typeof Jalali !== 'undefined' ? Jalali.displayDate(r.send_date) : r.send_date) : '—'}</td>
                 <td class="px-3 py-3">
                     ${r.acknowledgment
                         ? `<span class="bg-green-600 bg-opacity-40 text-green-300 text-xs px-2 py-1 rounded-lg">✓ ${r.acknowledgment}</span>`
@@ -328,7 +328,7 @@ const EmbassyModule = (function () {
                         ? r.file_paths.map(p => `<button onclick="EmbassyModule.downloadFile('${p}')" class="block text-blue-300 hover:text-blue-100 text-xs underline truncate max-w-24"><i class="fas fa-download ml-1"></i>${p.split('/').pop()}</button>`).join('')
                         : `<span class="text-gray-500 text-xs">—</span>`}
                 </td>
-                <td class="px-3 py-3 text-gray-400 text-xs">${r.updated_at ? new Date(r.updated_at).toLocaleDateString('fa-IR') : '—'}</td>
+                <td class="px-3 py-3 text-gray-400 text-xs">${r.updated_at ? (typeof Jalali!=='undefined' ? Jalali.toJalaliDateTime(r.updated_at) : new Date(r.updated_at).toLocaleDateString('fa-IR')) : '—'}</td>
                 <td class="px-3 py-3 text-xs text-gray-400">${r.created_by_name || '—'}</td>
                 <td class="px-3 py-3">
                     <div class="flex gap-2">

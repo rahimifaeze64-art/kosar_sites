@@ -68,7 +68,7 @@ const OrderTabsModule = {
                         ${degreeDisplay ? `<div><strong>مقطع:</strong> ${degreeDisplay}</div>` : ''}
                         <div><strong>مهلت تحویل:</strong> ${order.deadline || '---'}</div>
                         <div><strong>هزینه:</strong> ${costDisplay}</div>
-                        <div><strong>تاریخ ثبت:</strong> ${order.createdAt ? new Date(order.createdAt).toLocaleDateString('fa-IR') : '---'}</div>
+                        <div><strong>تاریخ ثبت:</strong> ${order.createdAt ? (typeof Jalali !== 'undefined' ? Jalali.toJalaliDisplay(new Date(order.createdAt)) : new Date(order.createdAt).toLocaleDateString('fa-IR')) : '---'}</div>
                     </div>
                     ${order.description ? `
                         <div class="mt-4">

@@ -384,8 +384,9 @@ const WorkHoursModule = (function() {
      * دریافت تاریخ شمسی
      */
     function getPersianDate(date = new Date()) {
-        const options = { year: 'numeric', month: 'long', day: 'numeric' };
-        return date.toLocaleDateString('fa-IR', options);
+        return (typeof Jalali !== 'undefined')
+            ? Jalali.toJalaliDisplay(date, 'long')
+            : date.toLocaleDateString('fa-IR', { year:'numeric', month:'long', day:'numeric' });
     }
     
     /**
@@ -784,7 +785,7 @@ const WorkHoursUI = (function() {
                                         </div>
                                         <div>
                                             <p class="text-white font-medium">${entry.employeeName}</p>
-                                            <p class="text-blue-200 text-sm">${entry.date} | ${entry.startTime || '-'} - ${entry.endTime || '-'}</p>
+                                            <p class="text-blue-200 text-sm">${typeof Jalali!=='undefined' ? Jalali.displayDate(entry.date) : entry.date} | ${entry.startTime || '-'} - ${entry.endTime || '-'}</p>
                                             <p class="text-blue-300 text-xs">${entry.totalHours || 0} ساعت</p>
                                         </div>
                                     </div>
@@ -829,7 +830,7 @@ const WorkHoursUI = (function() {
                                         </div>
                                         <div>
                                             <p class="text-white font-medium">${entry.employeeName}</p>
-                                            <p class="text-blue-200 text-sm">${entry.date}</p>
+                                            <p class="text-blue-200 text-sm">${typeof Jalali!=='undefined' ? Jalali.displayDate(entry.date) : entry.date}</p>
                                             <p class="text-orange-400 text-lg font-bold">${entry.amount ? entry.amount.toLocaleString('fa-IR') : 0} تومان</p>
                                             ${entry.description ? `<p class="text-blue-300 text-xs mt-1">${entry.description}</p>` : ''}
                                         </div>
@@ -987,7 +988,7 @@ const WorkHoursUI = (function() {
                         <span class="text-white font-medium">${expense.employeeName}</span>
                     </div>
                 </td>
-                <td class="py-4 px-4 text-white">${expense.date}</td>
+                <td class="py-4 px-4 text-white">${typeof Jalali!=='undefined' ? Jalali.displayDate(expense.date) : expense.date}</td>
                 <td class="py-4 px-4">
                     <span class="text-xl font-bold text-orange-400">${expense.amount ? expense.amount.toLocaleString('fa-IR') : 0}</span>
                     <span class="text-blue-300 text-sm"> تومان</span>
@@ -1049,7 +1050,7 @@ const WorkHoursUI = (function() {
                             '<span class="bg-blue-500/20 text-blue-400 px-2 py-1 rounded text-xs"><i class="fas fa-clock ml-1"></i>ساعت کاری</span>'
                         }
                     </td>
-                    <td class="py-3 px-4 text-white">${entry.date}</td>
+                    <td class="py-3 px-4 text-white">${typeof Jalali!=='undefined' ? Jalali.displayDate(entry.date) : entry.date}</td>
                     <td class="py-3 px-4 text-white">${isExpense ? '-' : (entry.startTime || '-')}</td>
                     <td class="py-3 px-4 text-white">${isExpense ? '-' : (entry.endTime || '-')}</td>
                     <td class="py-3 px-4 text-emerald-400 font-bold">${isExpense ? '-' : (entry.totalHours || '-')}</td>
@@ -1098,7 +1099,7 @@ const WorkHoursUI = (function() {
             
             return `
                 <tr class="border-b border-white/5 hover:bg-white/5">
-                    <td class="py-3 px-4 text-white">${entry.date}</td>
+                    <td class="py-3 px-4 text-white">${typeof Jalali!=='undefined' ? Jalali.displayDate(entry.date) : entry.date}</td>
                     <td class="py-3 px-4 text-white">${entry.startTime || '-'}</td>
                     <td class="py-3 px-4 text-white">${entry.endTime || '-'}</td>
                     <td class="py-3 px-4 text-emerald-400 font-bold">${entry.totalHours || '-'}</td>
@@ -1497,7 +1498,7 @@ const WorkHoursUI = (function() {
         const rows = list.slice().reverse().map(d => `
             <tr class="border-b border-white/5 hover:bg-white/5">
                 <td class="py-2 px-3 text-white text-sm">${d.employeeName || '—'}</td>
-                <td class="py-2 px-3 text-gray-300 text-sm">${d.date}</td>
+                <td class="py-2 px-3 text-gray-300 text-sm">${typeof Jalali!=='undefined' ? Jalali.displayDate(d.date) : d.date}</td>
                 <td class="py-2 px-3 text-red-300 font-bold text-sm">${Number(d.amount).toLocaleString('fa-IR')} تومان</td>
                 <td class="py-2 px-3 text-gray-300 text-sm">${d.reason}</td>
                 ${role === 'manager' ? `<td class="py-2 px-3">
