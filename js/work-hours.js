@@ -530,16 +530,20 @@ const WorkHoursUI = (function() {
                             <label class="block text-blue-200 text-sm mb-2">ساعت شروع</label>
                             <input type="time" id="startTime"
                                    step="60"
+                                   lang="en-GB"
                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400"
-                                   style="color-scheme:dark">
+                                   style="color-scheme:dark;-webkit-appearance:none;"
+                                   onchange="WorkHoursUI.updateTotalHours()">
                         </div>
                         
                         <div>
                             <label class="block text-blue-200 text-sm mb-2">ساعت پایان</label>
                             <input type="time" id="endTime"
                                    step="60"
+                                   lang="en-GB"
                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400"
-                                   style="color-scheme:dark">
+                                   style="color-scheme:dark;-webkit-appearance:none;"
+                                   onchange="WorkHoursUI.updateTotalHours()">
                         </div>
                         
                         <div class="md:col-span-2 lg:col-span-1">

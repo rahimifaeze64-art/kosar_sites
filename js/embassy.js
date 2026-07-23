@@ -96,14 +96,14 @@ const EmbassyModule = (function () {
                 </button>
             </div>
 
-            <!-- جستجو -->
-            <div class="bg-blue-900 bg-opacity-30 rounded-xl p-4 border border-blue-700 border-opacity-30">
+            <!-- جستجو و فیلتر -->
+            <div class="bg-white rounded-xl p-4 border border-gray-200 shadow-sm space-y-3">
                 <div class="flex gap-3 flex-wrap">
-                    <input type="text" id="embassy-search" placeholder="جستجو بر اساس نام دانشجو..."
+                    <input type="text" id="embassy-search" placeholder="🔍 جستجو بر اساس نام دانشجو..."
                         oninput="EmbassyModule.applyFilter()"
-                        class="flex-1 min-w-48 bg-blue-800 bg-opacity-50 text-white border border-blue-600 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-yellow-400">
+                        class="flex-1 min-w-48 bg-gray-50 text-gray-800 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200">
                     <select id="embassy-filter-type" onchange="EmbassyModule.applyFilter()"
-                        class="bg-blue-800 bg-opacity-50 text-white border border-blue-600 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-yellow-400">
+                        class="bg-gray-50 text-gray-800 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
                         <option value="">همه نوع‌های کار</option>
                         <option value="ترجمه">ترجمه</option>
                         <option value="تصدیق">تصدیق</option>
@@ -111,6 +111,34 @@ const EmbassyModule = (function () {
                         <option value="مدارک تحصیلی">مدارک تحصیلی</option>
                         <option value="سایر">سایر</option>
                     </select>
+                </div>
+                <!-- فیلترهای فیلد خالی -->
+                <div class="flex flex-wrap gap-2">
+                    <span class="text-gray-500 text-xs self-center font-medium">فیلتر موارد ناقص:</span>
+                    <button onclick="EmbassyModule.applyQuickFilter('no_sajad')" id="qf-no_sajad"
+                        class="quick-filter-btn text-xs px-3 py-1.5 rounded-full border border-gray-300 text-gray-600 hover:bg-red-50 hover:border-red-400 hover:text-red-600 transition-all">
+                        <i class="fas fa-id-card ml-1"></i>بدون سجاد
+                    </button>
+                    <button onclick="EmbassyModule.applyQuickFilter('no_docs')" id="qf-no_docs"
+                        class="quick-filter-btn text-xs px-3 py-1.5 rounded-full border border-gray-300 text-gray-600 hover:bg-red-50 hover:border-red-400 hover:text-red-600 transition-all">
+                        <i class="fas fa-file-alt ml-1"></i>مدارک آپلود نشده
+                    </button>
+                    <button onclick="EmbassyModule.applyQuickFilter('not_received')" id="qf-not_received"
+                        class="quick-filter-btn text-xs px-3 py-1.5 rounded-full border border-gray-300 text-gray-600 hover:bg-red-50 hover:border-red-400 hover:text-red-600 transition-all">
+                        <i class="fas fa-inbox ml-1"></i>دریافت نشده
+                    </button>
+                    <button onclick="EmbassyModule.applyQuickFilter('not_settled')" id="qf-not_settled"
+                        class="quick-filter-btn text-xs px-3 py-1.5 rounded-full border border-gray-300 text-gray-600 hover:bg-red-50 hover:border-red-400 hover:text-red-600 transition-all">
+                        <i class="fas fa-money-bill ml-1"></i>تسویه نشده
+                    </button>
+                    <button onclick="EmbassyModule.applyQuickFilter('no_vekalat')" id="qf-no_vekalat"
+                        class="quick-filter-btn text-xs px-3 py-1.5 rounded-full border border-gray-300 text-gray-600 hover:bg-red-50 hover:border-red-400 hover:text-red-600 transition-all">
+                        <i class="fas fa-scale-balanced ml-1"></i>وکالت ندارند
+                    </button>
+                    <button onclick="EmbassyModule.applyQuickFilter('')" id="qf-all"
+                        class="quick-filter-btn text-xs px-3 py-1.5 rounded-full border border-blue-400 text-blue-600 bg-blue-50 hover:bg-blue-100 transition-all">
+                        <i class="fas fa-list ml-1"></i>همه
+                    </button>
                 </div>
             </div>
 
@@ -232,52 +260,119 @@ const EmbassyModule = (function () {
                                 <input type="date" id="f-sendDate" data-jalali
                                     class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400">
                             </div>
+                            <!-- اعلام وصول + آپلود عکس -->
                             <div>
                                 <label class="text-blue-200 text-sm font-semibold block mb-1">اعلام وصول</label>
                                 <input type="text" id="f-acknowledgment"
-                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400"
+                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400 mb-2"
                                     placeholder="تاریخ یا توضیح اعلام وصول">
+                                <div class="flex items-center gap-2">
+                                    <label class="cursor-pointer bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all">
+                                        <i class="fas fa-camera"></i> تصویر وصول
+                                        <input type="file" id="f-acknowledgment-img" accept="image/*" class="hidden"
+                                            onchange="EmbassyModule.previewSingleImg(this,'ack-preview')">
+                                    </label>
+                                    <div id="ack-preview" class="flex gap-1 flex-wrap"></div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- ردیف چهارم -->
+                        <!-- ردیف چهارم — تسویه (۳ مرحله) -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label class="text-blue-200 text-sm font-semibold block mb-1">تسویه</label>
-                                <input type="text" id="f-settlement"
-                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400"
-                                    placeholder="وضعیت تسویه">
+                                <label class="text-blue-200 text-sm font-semibold block mb-2">تسویه</label>
+                                <div class="flex gap-2">
+                                    ${['عدد مورد اتفاق','بیعانه','تسویه'].map((s,i) => `
+                                    <button type="button" data-settle="${s}" onclick="EmbassyModule._setSettlement(this)"
+                                        class="settle-btn flex-1 text-xs py-2 rounded-lg border transition-all
+                                        ${i===0 ? 'border-orange-400/40 text-orange-300 bg-orange-500/10 hover:bg-orange-500/30'
+                                         : i===1 ? 'border-yellow-400/40 text-yellow-300 bg-yellow-500/10 hover:bg-yellow-500/30'
+                                         : 'border-green-400/40 text-green-300 bg-green-500/10 hover:bg-green-500/30'}">
+                                        ${i===0?'۱':i===1?'۲':'۳'}. ${s}
+                                    </button>`).join('')}
+                                </div>
+                                <input type="hidden" id="f-settlement" value="">
                             </div>
                             <div>
                                 <label class="text-blue-200 text-sm font-semibold block mb-1">کد سجاد</label>
                                 <input type="text" id="f-sajadCode"
-                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-black-400"
+                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400"
                                     placeholder="کد سجاد دانشجو">
                             </div>
                         </div>
 
-                        <!-- دریافت از دار الترجمه -->
-                        <div>
-                            <label class="text-blue-200 text-sm font-semibold block mb-1">دریافت از دار الترجمه</label>
-                            <input type="text" id="f-translationOffice"
-                                class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400"
-                                placeholder="تاریخ یا توضیح دریافت از دار الترجمه">
+                        <!-- دریافت از دار الترجمه — ۳ فیلد -->
+                        <div class="bg-blue-800/30 border border-blue-600/30 rounded-xl p-4 space-y-3">
+                            <h4 class="text-blue-200 text-sm font-bold flex items-center gap-2">
+                                <i class="fas fa-language text-yellow-400"></i>
+                                دریافت از دار الترجمه
+                            </h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="text-blue-300 text-xs mb-1 block">تاریخ دریافت</label>
+                                    <input type="date" id="f-translation-date" data-jalali
+                                        class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-3 py-2 focus:outline-none focus:border-yellow-400 text-sm">
+                                </div>
+                                <div>
+                                    <label class="text-blue-300 text-xs mb-1 block">توضیحات دریافت</label>
+                                    <input type="text" id="f-translationOffice"
+                                        class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-3 py-2 focus:outline-none focus:border-yellow-400 text-sm"
+                                        placeholder="توضیحات...">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-blue-300 text-xs mb-1 block">تصویر مدارک دریافت‌شده</label>
+                                <label class="cursor-pointer inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-lg transition-all">
+                                    <i class="fas fa-camera"></i> آپلود تصویر
+                                    <input type="file" id="f-translation-img" accept="image/*" class="hidden" multiple
+                                        onchange="EmbassyModule.previewSingleImg(this,'trans-preview')">
+                                </label>
+                                <div id="trans-preview" class="mt-2 flex gap-2 flex-wrap"></div>
+                            </div>
                         </div>
 
-                        <!-- آپلود فایل -->
-                        <div>
-                            <label class="text-blue-200 text-sm font-semibold block mb-1">
-                                <i class="fas fa-paperclip ml-1"></i>پیوست مدارک
-                            </label>
-                            <div class="border-2 border-dashed border-blue-500 rounded-xl p-4 text-center cursor-pointer hover:border-yellow-400 transition-colors"
-                                onclick="document.getElementById('f-files').click()">
-                                <i class="fas fa-cloud-upload-alt text-2xl text-blue-400 mb-2"></i>
-                                <p class="text-blue-200 text-sm">برای آپلود کلیک کنید</p>
-                                <p class="text-gray-400 text-xs mt-1">PDF، JPG، PNG (حداکثر 5 مگابایت)</p>
+                        <!-- آپلود مدارک — ۳ شخص جداگانه -->
+                        <div class="bg-blue-800/30 border border-blue-600/30 rounded-xl p-4 space-y-3">
+                            <h4 class="text-blue-200 text-sm font-bold flex items-center gap-2">
+                                <i class="fas fa-paperclip text-yellow-400"></i>
+                                پیوست مدارک
+                            </h4>
+                            <!-- کارمند ۱ -->
+                            <div class="bg-blue-700/20 rounded-lg p-3">
+                                <label class="text-blue-300 text-xs font-semibold mb-2 block">
+                                    <i class="fas fa-user text-blue-400 ml-1"></i>کارمند ۱ — مدارک
+                                </label>
+                                <label class="cursor-pointer inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-lg transition-all">
+                                    <i class="fas fa-upload"></i> انتخاب فایل
+                                    <input type="file" id="f-emp1-files" accept=".pdf,.jpg,.jpeg,.png" class="hidden" multiple
+                                        onchange="EmbassyModule.previewSingleImg(this,'emp1-preview')">
+                                </label>
+                                <div id="emp1-preview" class="mt-2 flex gap-2 flex-wrap"></div>
                             </div>
-                            <input type="file" id="f-files" multiple accept=".pdf,.jpg,.jpeg,.png" class="hidden"
-                                onchange="EmbassyModule.previewFiles(this)">
-                            <div id="f-files-preview" class="mt-2 space-y-1"></div>
+                            <!-- کارمند ۲ -->
+                            <div class="bg-blue-700/20 rounded-lg p-3">
+                                <label class="text-blue-300 text-xs font-semibold mb-2 block">
+                                    <i class="fas fa-user text-cyan-400 ml-1"></i>کارمند ۲ — مدارک
+                                </label>
+                                <label class="cursor-pointer inline-flex items-center gap-2 bg-cyan-700 hover:bg-cyan-600 text-white text-xs px-3 py-1.5 rounded-lg transition-all">
+                                    <i class="fas fa-upload"></i> انتخاب فایل
+                                    <input type="file" id="f-emp2-files" accept=".pdf,.jpg,.jpeg,.png" class="hidden" multiple
+                                        onchange="EmbassyModule.previewSingleImg(this,'emp2-preview')">
+                                </label>
+                                <div id="emp2-preview" class="mt-2 flex gap-2 flex-wrap"></div>
+                            </div>
+                            <!-- عکس سجادها -->
+                            <div class="bg-yellow-700/10 rounded-lg p-3">
+                                <label class="text-yellow-200 text-xs font-semibold mb-2 block">
+                                    <i class="fas fa-id-card text-yellow-400 ml-1"></i>عکس سجادها
+                                </label>
+                                <label class="cursor-pointer inline-flex items-center gap-2 bg-yellow-600 hover:bg-yellow-500 text-white text-xs px-3 py-1.5 rounded-lg transition-all">
+                                    <i class="fas fa-camera"></i> آپلود عکس سجاد
+                                    <input type="file" id="f-sajad-imgs" accept="image/*" class="hidden" multiple
+                                        onchange="EmbassyModule.previewSingleImg(this,'sajad-preview')">
+                                </label>
+                                <div id="sajad-preview" class="mt-2 flex gap-2 flex-wrap"></div>
+                            </div>
                         </div>
 
                         <!-- دکمه‌ها -->
@@ -334,41 +429,41 @@ const EmbassyModule = (function () {
         }
 
         const rows = records.map(r => `
-            <tr class="border-b border-blue-700 border-opacity-20 hover:bg-blue-900 hover:bg-opacity-30 transition-colors">
-                <td class="px-3 py-3 font-semibold text-white">${r.student_name}</td>
+            <tr class="border-b border-gray-200 hover:bg-yellow-50 transition-colors bg-white">
+                <td class="px-3 py-3 font-semibold text-gray-900">${r.student_name}</td>
                 <td class="px-3 py-3">
-                    <span class="bg-blue-600 bg-opacity-40 text-blue-200 text-xs px-2 py-1 rounded-lg">${r.work_type}</span>
+                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-lg font-medium">${r.work_type}</span>
                 </td>
-                <td class="px-3 py-3 text-gray-300 text-sm">${r.receive_date ? (typeof Jalali !== 'undefined' ? Jalali.displayDate(r.receive_date) : r.receive_date) : '—'}</td>
-                <td class="px-3 py-3 text-gray-300 text-sm">${r.send_method || '—'}</td>
-                <td class="px-3 py-3 text-gray-300 text-sm">${r.send_date ? (typeof Jalali !== 'undefined' ? Jalali.displayDate(r.send_date) : r.send_date) : '—'}</td>
+                <td class="px-3 py-3 text-gray-700 text-sm">${r.receive_date ? (typeof Jalali !== 'undefined' ? Jalali.displayDate(r.receive_date) : r.receive_date) : '—'}</td>
+                <td class="px-3 py-3 text-gray-700 text-sm">${r.send_method || '—'}</td>
+                <td class="px-3 py-3 text-gray-700 text-sm">${r.send_date ? (typeof Jalali !== 'undefined' ? Jalali.displayDate(r.send_date) : r.send_date) : '—'}</td>
                 <td class="px-3 py-3">
                     ${r.acknowledgment
-                        ? `<span class="bg-green-600 bg-opacity-40 text-green-300 text-xs px-2 py-1 rounded-lg">✓ ${r.acknowledgment}</span>`
-                        : `<span class="text-gray-500 text-xs">در انتظار</span>`}
+                        ? `<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-lg font-medium">✓ ${r.acknowledgment}</span>`
+                        : `<span class="text-red-500 text-xs font-medium">در انتظار</span>`}
                 </td>
                 <td class="px-3 py-3">
                     ${r.settlement
-                        ? `<span class="bg-emerald-600 bg-opacity-40 text-emerald-300 text-xs px-2 py-1 rounded-lg">✓ ${r.settlement}</span>`
-                        : `<span class="text-gray-500 text-xs">—</span>`}
+                        ? `<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded-lg font-medium">✓ ${r.settlement}</span>`
+                        : `<span class="text-red-500 text-xs font-medium">تسویه نشده</span>`}
                 </td>
-                <td class="px-3 py-3 text-gray-100 text-sm font-mono">${r.sajad_code || '—'}</td>
-                <td class="px-3 py-3 text-gray-300 text-sm">${r.translation_office || '—'}</td>
+                <td class="px-3 py-3 text-gray-900 text-sm font-mono font-semibold">${r.sajad_code || '<span class="text-red-500 text-xs">ندارد</span>'}</td>
+                <td class="px-3 py-3 text-gray-700 text-sm">${r.translation_office || '—'}</td>
                 <td class="px-3 py-3">
                     ${r.file_paths && r.file_paths.length
-                        ? r.file_paths.map(p => `<button onclick="EmbassyModule.downloadFile('${p}')" class="block text-blue-300 hover:text-blue-100 text-xs underline truncate max-w-24"><i class="fas fa-download ml-1"></i>${p.split('/').pop()}</button>`).join('')
-                        : `<span class="text-gray-500 text-xs">—</span>`}
+                        ? r.file_paths.map(p => `<button onclick="EmbassyModule.downloadFile('${p}')" class="block text-blue-600 hover:text-blue-800 text-xs underline truncate max-w-24 font-medium"><i class="fas fa-download ml-1"></i>${p.split('/').pop()}</button>`).join('')
+                        : `<span class="text-red-500 text-xs font-medium">آپلود نشده</span>`}
                 </td>
-                <td class="px-3 py-3 text-gray-400 text-xs">${r.updated_at ? (typeof Jalali!=='undefined' ? Jalali.toJalaliDateTime(r.updated_at) : new Date(r.updated_at).toLocaleDateString('fa-IR')) : '—'}</td>
-                <td class="px-3 py-3 text-xs text-gray-400">${r.created_by_name || '—'}</td>
+                <td class="px-3 py-3 text-gray-500 text-xs">${r.updated_at ? (typeof Jalali!=='undefined' ? Jalali.toJalaliDateTime(r.updated_at) : new Date(r.updated_at).toLocaleDateString('fa-IR')) : '—'}</td>
+                <td class="px-3 py-3 text-xs text-gray-600 font-medium">${r.created_by_name || '—'}</td>
                 <td class="px-3 py-3">
                     <div class="flex gap-2">
                         <button onclick="EmbassyModule.openEditModal('${r.id}')"
-                            class="bg-yellow-600 hover:bg-yellow-500 text-white text-xs px-3 py-1.5 rounded-lg transition-colors">
+                            class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-3 py-1.5 rounded-lg transition-colors">
                             <i class="fas fa-edit"></i>
                         </button>
                         <button onclick="EmbassyModule.confirmDelete('${r.id}','${(r.student_name||'').replace(/'/g,"\\'")}')"
-                            class="bg-red-600 hover:bg-red-500 text-white text-xs px-3 py-1.5 rounded-lg transition-colors">
+                            class="bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg transition-colors">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -376,29 +471,29 @@ const EmbassyModule = (function () {
             </tr>`).join('');
 
         container.innerHTML = `
-            <div class="overflow-x-auto rounded-xl border border-blue-700 border-opacity-30">
-                <table class="w-full text-sm" style="min-width:1200px">
+            <div class="overflow-x-auto rounded-xl border border-gray-300 shadow-sm">
+                <table class="w-full text-sm bg-white" style="min-width:1200px">
                     <thead>
-                        <tr class="bg-blue-900 bg-opacity-60 text-blue-200 text-xs">
-                            <th class="px-3 py-3 text-right font-semibold">نام دانشجو</th>
-                            <th class="px-3 py-3 text-right font-semibold">نوع کار</th>
-                            <th class="px-3 py-3 text-right font-semibold">تاریخ دریافت</th>
-                            <th class="px-3 py-3 text-right font-semibold">نحوه ارسال</th>
-                            <th class="px-3 py-3 text-right font-semibold">تاریخ ارسال</th>
-                            <th class="px-3 py-3 text-right font-semibold">اعلام وصول</th>
-                            <th class="px-3 py-3 text-right font-semibold">تسویه</th>
-                            <th class="px-3 py-3 text-right font-semibold">کد سجاد</th>
-                            <th class="px-3 py-3 text-right font-semibold">دار الترجمه</th>
-                            <th class="px-3 py-3 text-right font-semibold">فایل‌ها</th>
-                            <th class="px-3 py-3 text-right font-semibold">آخرین آپدیت</th>
-                            <th class="px-3 py-3 text-right font-semibold">ثبت‌کننده</th>
-                            <th class="px-3 py-3 text-right font-semibold">عملیات</th>
+                        <tr class="bg-gray-100 text-gray-700 text-xs border-b border-gray-300">
+                            <th class="px-3 py-3 text-right font-bold">نام دانشجو</th>
+                            <th class="px-3 py-3 text-right font-bold">نوع کار</th>
+                            <th class="px-3 py-3 text-right font-bold">تاریخ دریافت</th>
+                            <th class="px-3 py-3 text-right font-bold">نحوه ارسال</th>
+                            <th class="px-3 py-3 text-right font-bold">تاریخ ارسال</th>
+                            <th class="px-3 py-3 text-right font-bold">اعلام وصول</th>
+                            <th class="px-3 py-3 text-right font-bold">تسویه</th>
+                            <th class="px-3 py-3 text-right font-bold">کد سجاد</th>
+                            <th class="px-3 py-3 text-right font-bold">دار الترجمه</th>
+                            <th class="px-3 py-3 text-right font-bold">فایل‌ها</th>
+                            <th class="px-3 py-3 text-right font-bold">آخرین آپدیت</th>
+                            <th class="px-3 py-3 text-right font-bold">ثبت‌کننده</th>
+                            <th class="px-3 py-3 text-right font-bold">عملیات</th>
                         </tr>
                     </thead>
                     <tbody>${rows}</tbody>
                 </table>
             </div>
-            <p class="text-gray-400 text-xs mt-2 text-left">${records.length} رکورد</p>`;
+            <p class="text-gray-500 text-xs mt-2">${records.length} رکورد</p>`;
     }
 
     // ── toggle کارت سند ─────────────────────────────────────
@@ -455,6 +550,60 @@ const EmbassyModule = (function () {
         if (card) _toggleDocCard(card, cb.dataset.key, cb.dataset.label);
     }
 
+    // ── تنظیم تسویه ─────────────────────────────────────────
+    function _setSettlement(btn) {
+        document.querySelectorAll('.settle-btn').forEach(b => {
+            b.style.fontWeight = '';
+            b.style.boxShadow = '';
+        });
+        btn.style.fontWeight = '700';
+        btn.style.boxShadow = '0 0 0 2px currentColor';
+        document.getElementById('f-settlement').value = btn.dataset.settle;
+    }
+
+    // ── پیش‌نمایش تصویر کوچک ─────────────────────────────
+    function previewSingleImg(input, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        Array.from(input.files).forEach(file => {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #3b82f6;cursor:pointer;';
+                    img.title = file.name;
+                    img.onclick = () => window.open(e.target.result, '_blank');
+                    container.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                const p = document.createElement('div');
+                p.className = 'text-xs text-blue-300 flex items-center gap-1';
+                p.innerHTML = `<i class="fas fa-file"></i>${file.name}`;
+                container.appendChild(p);
+            }
+        });
+    }
+
+    // ── فیلتر سریع ───────────────────────────────────────
+    let _activeQuickFilter = '';
+    function applyQuickFilter(filterKey) {
+        _activeQuickFilter = filterKey;
+        // هایلایت دکمه
+        document.querySelectorAll('.quick-filter-btn').forEach(b => {
+            b.classList.remove('bg-red-100','border-red-400','text-red-700','bg-blue-50','border-blue-400','text-blue-600');
+            b.classList.add('border-gray-300','text-gray-600');
+        });
+        const activeBtn = document.getElementById('qf-' + (filterKey || 'all'));
+        if (activeBtn) {
+            activeBtn.classList.remove('border-gray-300','text-gray-600');
+            if (filterKey) activeBtn.classList.add('bg-red-100','border-red-400','text-red-700');
+            else activeBtn.classList.add('bg-blue-50','border-blue-400','text-blue-600');
+        }
+        applyFilter();
+    }
+
     // ── state داده‌های کش‌شده برای فیلتر ────────────────────
     let _allRecords = [];
 
@@ -475,11 +624,25 @@ const EmbassyModule = (function () {
         const search = (document.getElementById('embassy-search')?.value || '').toLowerCase();
         const type   = (document.getElementById('embassy-filter-type')?.value || '');
 
-        const filtered = _allRecords.filter(r => {
+        let filtered = _allRecords.filter(r => {
             const matchName = !search || (r.student_name || '').toLowerCase().includes(search);
-            const matchType = !type  || (r.work_type || '') === type;
+            const matchType = !type  || (r.work_type || '').includes(type);
             return matchName && matchType;
         });
+
+        // فیلتر سریع
+        if (_activeQuickFilter === 'no_sajad') {
+            filtered = filtered.filter(r => !r.sajad_code);
+        } else if (_activeQuickFilter === 'no_docs') {
+            filtered = filtered.filter(r => !r.file_paths || !r.file_paths.length);
+        } else if (_activeQuickFilter === 'not_received') {
+            filtered = filtered.filter(r => !r.acknowledgment);
+        } else if (_activeQuickFilter === 'not_settled') {
+            filtered = filtered.filter(r => !r.settlement);
+        } else if (_activeQuickFilter === 'no_vekalat') {
+            filtered = filtered.filter(r => !(r.work_type || '').includes('وکالت'));
+        }
+
         renderTable(filtered);
     }
 
@@ -500,7 +663,15 @@ const EmbassyModule = (function () {
             if (chk) chk.innerHTML = '';
         });
         document.querySelectorAll('.doc-type-check').forEach(function(cb) { cb.checked = false; });
-        document.getElementById('f-files-preview').innerHTML = '';
+        // پاک کردن preview های آپلود
+        ['f-files-preview','ack-preview','trans-preview','emp1-preview','emp2-preview','sajad-preview'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.innerHTML = '';
+        });
+        // ریست settlement buttons
+        document.querySelectorAll('.settle-btn').forEach(b => { b.style.fontWeight=''; b.style.boxShadow=''; });
+        var fs = document.getElementById('f-settlement');
+        if (fs) fs.value = '';
         document.getElementById('embassy-modal').classList.remove('hidden');
     }
 
@@ -551,7 +722,7 @@ const EmbassyModule = (function () {
         document.getElementById('f-translationOffice').value= r.translation_office || '';
 
         const preview = document.getElementById('f-files-preview');
-        preview.innerHTML = r.file_paths && r.file_paths.length
+        if (preview) preview.innerHTML = r.file_paths && r.file_paths.length
             ? r.file_paths.map(p => `<p class="text-xs text-blue-300"><i class="fas fa-file ml-1"></i>${p}</p>`).join('')
             : '';
 
@@ -706,16 +877,19 @@ const EmbassyModule = (function () {
         init,
         load,
         applyFilter,
+        applyQuickFilter,
         openAddModal,
         openEditModal,
         closeModal,
         previewFiles,
+        previewSingleImg,
         submitForm,
         confirmDelete,
         downloadFile,
         _toggleDocCard,
         _toggleDocType,
         _setStatus,
+        _setSettlement,
     };
 
 })(); // end EmbassyModule
