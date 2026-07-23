@@ -604,7 +604,7 @@ const WorkHoursUI = (function() {
 
                     <!-- لیست کسورات ثبت‌شده -->
                     <div class="mt-6" id="deductions-list">
-                        ${WorkHoursData ? WorkHoursUI._renderDeductions() : ''}
+                        ${typeof _renderDeductions === 'function' ? _renderDeductions() : ''}
                     </div>
                 </div>
 

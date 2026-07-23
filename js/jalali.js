@@ -29,7 +29,7 @@
     function jalCal(jy) {
         var breaks = [-61,9,38,199,426,686,756,818,1111,1181,1210,1635,2060,2097,2192,2262,2324,2394,2456,3178];
         var bl = breaks.length, gy = jy + 621, leapJ = -14, jp = breaks[0];
-        var jump, leap, n, i, jm, v, mod;
+        var jump, leap, n, i, jm, v;
         if (jy < jp || jy >= breaks[bl-1]) throw new Error('Invalid Jalali year ' + jy);
         for (i=1; i<bl; i++) {
             jm = breaks[i]; jump = jm - jp;
