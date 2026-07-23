@@ -241,14 +241,20 @@ const EmbassyModule = (function () {
                         <!-- ردیف دوم -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label class="text-blue-200 text-sm font-semibold block mb-1">تاریخ دریافت مدارک</label>
-                                <input type="date" id="f-receiveDate" data-jalali
-                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400">
+                                <label class="text-gray-800 text-sm font-semibold block mb-1">تاریخ دریافت مدارک</label>
+                                <div class="relative">
+                                    <input type="text" id="f-receiveDate-display" readonly
+                                        placeholder="انتخاب تاریخ شمسی"
+                                        class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 cursor-pointer focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
+                                        onclick="EmbassyModule._openDatePicker('f-receiveDate','f-receiveDate-display',this)">
+                                    <input type="hidden" id="f-receiveDate">
+                                    <i class="fas fa-calendar-alt absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                                </div>
                             </div>
                             <div>
-                                <label class="text-blue-200 text-sm font-semibold block mb-1">نحوه ارسال</label>
+                                <label class="text-gray-800 text-sm font-semibold block mb-1">نحوه ارسال</label>
                                 <input type="text" id="f-sendMethod"
-                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400"
+                                    class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:border-blue-500"
                                     placeholder="مثال: سخایی، پست، اسم معقب">
                             </div>
                         </div>
@@ -256,15 +262,21 @@ const EmbassyModule = (function () {
                         <!-- ردیف سوم -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label class="text-blue-200 text-sm font-semibold block mb-1">تاریخ ارسال</label>
-                                <input type="date" id="f-sendDate" data-jalali
-                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400">
+                                <label class="text-gray-800 text-sm font-semibold block mb-1">تاریخ ارسال</label>
+                                <div class="relative">
+                                    <input type="text" id="f-sendDate-display" readonly
+                                        placeholder="انتخاب تاریخ شمسی"
+                                        class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 cursor-pointer focus:outline-none focus:border-blue-500"
+                                        onclick="EmbassyModule._openDatePicker('f-sendDate','f-sendDate-display',this)">
+                                    <input type="hidden" id="f-sendDate">
+                                    <i class="fas fa-calendar-alt absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                                </div>
                             </div>
                             <!-- اعلام وصول + آپلود عکس -->
                             <div>
-                                <label class="text-blue-200 text-sm font-semibold block mb-1">اعلام وصول</label>
+                                <label class="text-gray-800 text-sm font-semibold block mb-1">اعلام وصول</label>
                                 <input type="text" id="f-acknowledgment"
-                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400 mb-2"
+                                    class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:border-blue-500 mb-2"
                                     placeholder="تاریخ یا توضیح اعلام وصول">
                                 <div class="flex items-center gap-2">
                                     <label class="cursor-pointer bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all">
@@ -277,42 +289,63 @@ const EmbassyModule = (function () {
                             </div>
                         </div>
 
-                        <!-- ردیف چهارم — تسویه (۳ فیلد عددی) -->
+                        <!-- ردیف چهارم — تسویه (۳ فیلد عددی + واحد پولی) -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label class="text-blue-200 text-sm font-semibold block mb-2">تسویه</label>
-                                <div class="bg-blue-800/30 border border-blue-600/30 rounded-xl p-3 space-y-2">
+                                <label class="text-gray-800 text-sm font-semibold block mb-2">تسویه</label>
+                                <!-- انتخاب واحد پولی -->
+                                <div class="flex gap-2 mb-3">
+                                    <button type="button" data-currency="تومان" onclick="EmbassyModule._setCurrency(this)"
+                                        class="currency-btn flex-1 text-xs py-1.5 rounded-lg border-2 border-blue-500 text-blue-700 bg-blue-50 font-bold transition-all active-currency">
+                                        تومان
+                                    </button>
+                                    <button type="button" data-currency="دلار" onclick="EmbassyModule._setCurrency(this)"
+                                        class="currency-btn flex-1 text-xs py-1.5 rounded-lg border border-gray-300 text-gray-600 bg-white hover:bg-gray-50 transition-all">
+                                        دلار $
+                                    </button>
+                                </div>
+                                <input type="hidden" id="f-currency" value="تومان">
+                                <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-2">
                                     <div>
-                                        <label class="text-orange-300 text-xs mb-1 block font-medium">
-                                            <i class="fas fa-handshake ml-1 text-orange-400"></i>۱. عدد مورد اتفاق (تومان)
+                                        <label class="text-orange-600 text-xs mb-1 block font-semibold">
+                                            <i class="fas fa-handshake ml-1"></i>۱. عدد مورد اتفاق
                                         </label>
-                                        <input type="number" id="f-settlement-agreed" min="0" step="1000"
-                                            placeholder="مبلغ توافق‌شده"
-                                            class="w-full bg-blue-700 bg-opacity-50 text-white border border-orange-400/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-400">
+                                        <div class="flex gap-1">
+                                            <input type="number" id="f-settlement-agreed" min="0" step="1"
+                                                placeholder="مبلغ"
+                                                class="flex-1 bg-white text-gray-900 border border-orange-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500">
+                                            <span class="currency-label text-xs text-gray-500 self-center">تومان</span>
+                                        </div>
                                     </div>
                                     <div>
-                                        <label class="text-yellow-300 text-xs mb-1 block font-medium">
-                                            <i class="fas fa-money-bill ml-1 text-yellow-400"></i>۲. بیعانه (تومان)
+                                        <label class="text-yellow-600 text-xs mb-1 block font-semibold">
+                                            <i class="fas fa-money-bill ml-1"></i>۲. بیعانه
                                         </label>
-                                        <input type="number" id="f-settlement-deposit" min="0" step="1000"
-                                            placeholder="مبلغ بیعانه پرداختی"
-                                            class="w-full bg-blue-700 bg-opacity-50 text-white border border-yellow-400/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-yellow-400">
+                                        <div class="flex gap-1">
+                                            <input type="number" id="f-settlement-deposit" min="0" step="1"
+                                                placeholder="مبلغ"
+                                                class="flex-1 bg-white text-gray-900 border border-yellow-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-yellow-500">
+                                            <span class="currency-label text-xs text-gray-500 self-center">تومان</span>
+                                        </div>
                                     </div>
                                     <div>
-                                        <label class="text-green-300 text-xs mb-1 block font-medium">
-                                            <i class="fas fa-check-circle ml-1 text-green-400"></i>۳. تسویه نهایی (تومان)
+                                        <label class="text-green-700 text-xs mb-1 block font-semibold">
+                                            <i class="fas fa-check-circle ml-1"></i>۳. تسویه نهایی
                                         </label>
-                                        <input type="number" id="f-settlement-final" min="0" step="1000"
-                                            placeholder="مبلغ تسویه کامل"
-                                            class="w-full bg-blue-700 bg-opacity-50 text-white border border-green-400/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
+                                        <div class="flex gap-1">
+                                            <input type="number" id="f-settlement-final" min="0" step="1"
+                                                placeholder="مبلغ"
+                                                class="flex-1 bg-white text-gray-900 border border-green-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500">
+                                            <span class="currency-label text-xs text-gray-500 self-center">تومان</span>
+                                        </div>
                                     </div>
                                 </div>
                                 <input type="hidden" id="f-settlement" value="">
                             </div>
                             <div>
-                                <label class="text-blue-200 text-sm font-semibold block mb-1">کد سجاد</label>
+                                <label class="text-gray-800 text-sm font-semibold block mb-1">کد سجاد</label>
                                 <input type="text" id="f-sajadCode"
-                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400"
+                                    class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:border-blue-500"
                                     placeholder="کد سجاد دانشجو">
                             </div>
                         </div>
@@ -570,8 +603,39 @@ const EmbassyModule = (function () {
         if (card) _toggleDocCard(card, cb.dataset.key, cb.dataset.label);
     }
 
-    // ── تنظیم تسویه ─────────────────────────────────────────
-    function _setSettlement(btn) {
+    // ── date picker manual trigger ──────────────────────────
+    function _openDatePicker(hiddenId, displayId, displayInput) {
+        if (typeof JalaliPicker === 'undefined') return;
+        var hidden = document.getElementById(hiddenId);
+        if (!hidden) return;
+        // موقتاً display:block کن و attach کن
+        hidden.style.display = '';
+        if (!hidden.dataset.pickerReady) {
+            JalaliPicker._attach(hidden);
+            hidden.dataset.pickerReady = '1';
+            // override display input با display ما
+        }
+        // simulate click روی display input که picker ساخته
+        var pickerDisplay = hidden.nextElementSibling;
+        if (pickerDisplay && pickerDisplay.readOnly) {
+            pickerDisplay.click();
+        } else {
+            displayInput.click();
+        }
+    }
+
+    // ── تغییر واحد پولی ──────────────────────────────────────
+    function _setCurrency(btn) {
+        document.querySelectorAll('.currency-btn').forEach(b => {
+            b.classList.remove('active-currency','border-2','border-blue-500','text-blue-700','bg-blue-50','font-bold');
+            b.classList.add('border','border-gray-300','text-gray-600','bg-white');
+        });
+        btn.classList.add('active-currency','border-2','border-blue-500','text-blue-700','bg-blue-50','font-bold');
+        btn.classList.remove('border','border-gray-300','text-gray-600','bg-white');
+        const currency = btn.dataset.currency;
+        document.getElementById('f-currency').value = currency;
+        document.querySelectorAll('.currency-label').forEach(el => { el.textContent = currency; });
+    }
         document.querySelectorAll('.settle-btn').forEach(b => {
             b.style.fontWeight = '';
             b.style.boxShadow = '';
@@ -847,6 +911,7 @@ const EmbassyModule = (function () {
             settlement_agreed:   parseFloat(document.getElementById('f-settlement-agreed')?.value)  || 0,
             settlement_deposit:  parseFloat(document.getElementById('f-settlement-deposit')?.value) || 0,
             settlement_final:    parseFloat(document.getElementById('f-settlement-final')?.value)   || 0,
+            settlement:          document.getElementById('f-currency')?.value || 'تومان',
             sajad_code:          document.getElementById('f-sajadCode').value.trim()      || null,
             translation_office:  document.getElementById('f-translationOffice').value.trim() || null,
             translation_date:    document.getElementById('f-translation-date')?.value || null,
@@ -945,6 +1010,8 @@ const EmbassyModule = (function () {
         _toggleDocType,
         _setStatus,
         _setSettlement,
+        _openDatePicker,
+        _setCurrency,
     };
 
 })(); // end EmbassyModule
