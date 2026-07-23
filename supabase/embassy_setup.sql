@@ -15,8 +15,10 @@ CREATE TABLE IF NOT EXISTS public.embassy_records (
     -- اعلام وصول + تصویر
     acknowledgment       text,
     acknowledgment_imgs  text[]      DEFAULT '{}',
-    -- تسویه (عدد مورد اتفاق / بیعانه / تسویه)
-    settlement           text,
+    -- تسویه (۳ مرحله مستقل با مبلغ)
+    settlement_agreed    numeric     DEFAULT 0,   -- عدد مورد اتفاق
+    settlement_deposit   numeric     DEFAULT 0,   -- بیعانه
+    settlement_final     numeric     DEFAULT 0,   -- تسویه نهایی
     -- کد سجاد
     sajad_code           text,
     -- دار الترجمه: تاریخ + توضیح + تصاویر
@@ -64,7 +66,10 @@ ALTER TABLE public.embassy_records
     ADD COLUMN IF NOT EXISTS translation_imgs    text[]  DEFAULT '{}',
     ADD COLUMN IF NOT EXISTS emp1_files          text[]  DEFAULT '{}',
     ADD COLUMN IF NOT EXISTS emp2_files          text[]  DEFAULT '{}',
-    ADD COLUMN IF NOT EXISTS sajad_imgs          text[]  DEFAULT '{}';
+    ADD COLUMN IF NOT EXISTS sajad_imgs          text[]  DEFAULT '{}',
+    ADD COLUMN IF NOT EXISTS settlement_agreed   numeric DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS settlement_deposit  numeric DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS settlement_final    numeric DEFAULT 0;
 
 -- ── ۵. فعال‌سازی RLS ─────────────────────────────────────────
 ALTER TABLE public.embassy_records ENABLE ROW LEVEL SECURITY;

@@ -277,19 +277,35 @@ const EmbassyModule = (function () {
                             </div>
                         </div>
 
-                        <!-- ردیف چهارم — تسویه (۳ مرحله) -->
+                        <!-- ردیف چهارم — تسویه (۳ فیلد عددی) -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="text-blue-200 text-sm font-semibold block mb-2">تسویه</label>
-                                <div class="flex gap-2">
-                                    ${['عدد مورد اتفاق','بیعانه','تسویه'].map((s,i) => `
-                                    <button type="button" data-settle="${s}" onclick="EmbassyModule._setSettlement(this)"
-                                        class="settle-btn flex-1 text-xs py-2 rounded-lg border transition-all
-                                        ${i===0 ? 'border-orange-400/40 text-orange-300 bg-orange-500/10 hover:bg-orange-500/30'
-                                         : i===1 ? 'border-yellow-400/40 text-yellow-300 bg-yellow-500/10 hover:bg-yellow-500/30'
-                                         : 'border-green-400/40 text-green-300 bg-green-500/10 hover:bg-green-500/30'}">
-                                        ${i===0?'۱':i===1?'۲':'۳'}. ${s}
-                                    </button>`).join('')}
+                                <div class="bg-blue-800/30 border border-blue-600/30 rounded-xl p-3 space-y-2">
+                                    <div>
+                                        <label class="text-orange-300 text-xs mb-1 block font-medium">
+                                            <i class="fas fa-handshake ml-1 text-orange-400"></i>۱. عدد مورد اتفاق (تومان)
+                                        </label>
+                                        <input type="number" id="f-settlement-agreed" min="0" step="1000"
+                                            placeholder="مبلغ توافق‌شده"
+                                            class="w-full bg-blue-700 bg-opacity-50 text-white border border-orange-400/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-400">
+                                    </div>
+                                    <div>
+                                        <label class="text-yellow-300 text-xs mb-1 block font-medium">
+                                            <i class="fas fa-money-bill ml-1 text-yellow-400"></i>۲. بیعانه (تومان)
+                                        </label>
+                                        <input type="number" id="f-settlement-deposit" min="0" step="1000"
+                                            placeholder="مبلغ بیعانه پرداختی"
+                                            class="w-full bg-blue-700 bg-opacity-50 text-white border border-yellow-400/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-yellow-400">
+                                    </div>
+                                    <div>
+                                        <label class="text-green-300 text-xs mb-1 block font-medium">
+                                            <i class="fas fa-check-circle ml-1 text-green-400"></i>۳. تسویه نهایی (تومان)
+                                        </label>
+                                        <input type="number" id="f-settlement-final" min="0" step="1000"
+                                            placeholder="مبلغ تسویه کامل"
+                                            class="w-full bg-blue-700 bg-opacity-50 text-white border border-green-400/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
+                                    </div>
                                 </div>
                                 <input type="hidden" id="f-settlement" value="">
                             </div>
@@ -443,8 +459,12 @@ const EmbassyModule = (function () {
                         : `<span class="text-red-500 text-xs font-medium">در انتظار</span>`}
                 </td>
                 <td class="px-3 py-3">
-                    ${r.settlement
-                        ? `<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded-lg font-medium">✓ ${r.settlement}</span>`
+                    ${(r.settlement_agreed || r.settlement_deposit || r.settlement_final)
+                        ? `<div class="space-y-0.5 text-xs">
+                            ${r.settlement_agreed  ? `<div class="text-orange-700 font-medium">توافق: ${Number(r.settlement_agreed).toLocaleString('fa-IR')} ت</div>` : ''}
+                            ${r.settlement_deposit ? `<div class="text-yellow-700 font-medium">بیعانه: ${Number(r.settlement_deposit).toLocaleString('fa-IR')} ت</div>` : ''}
+                            ${r.settlement_final   ? `<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded-lg font-bold">تسویه: ${Number(r.settlement_final).toLocaleString('fa-IR')} ت</span>` : ''}
+                           </div>`
                         : `<span class="text-red-500 text-xs font-medium">تسویه نشده</span>`}
                 </td>
                 <td class="px-3 py-3 text-gray-900 text-sm font-mono font-semibold">${r.sajad_code || '<span class="text-red-500 text-xs">ندارد</span>'}</td>
@@ -672,7 +692,24 @@ const EmbassyModule = (function () {
         document.querySelectorAll('.settle-btn').forEach(b => { b.style.fontWeight=''; b.style.boxShadow=''; });
         var fs = document.getElementById('f-settlement');
         if (fs) fs.value = '';
+        // پاک کردن picker state تا دوباره attach بشه
+        ['f-receiveDate','f-sendDate','f-translation-date'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) delete el.dataset.pickerAttached;
+        });
         document.getElementById('embassy-modal').classList.remove('hidden');
+        // فعال‌سازی تقویم شمسی روی فیلدهای تاریخ
+        setTimeout(function() {
+            if (typeof JalaliPicker !== 'undefined') {
+                ['f-receiveDate','f-sendDate','f-translation-date'].forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el && !el.dataset.pickerAttached) {
+                        JalaliPicker._attach(el);
+                        el.dataset.pickerAttached = '1';
+                    }
+                });
+            }
+        }, 80);
     }
 
     // ── مودال ویرایش ─────────────────────────────────────────
@@ -717,9 +754,12 @@ const EmbassyModule = (function () {
         document.getElementById('f-sendMethod').value       = r.send_method        || '';
         document.getElementById('f-sendDate').value         = r.send_date          || '';
         document.getElementById('f-acknowledgment').value   = r.acknowledgment     || '';
-        document.getElementById('f-settlement').value       = r.settlement         || '';
+        const fa = document.getElementById('f-settlement-agreed');   if(fa) fa.value = r.settlement_agreed  || '';
+        const fd = document.getElementById('f-settlement-deposit');  if(fd) fd.value = r.settlement_deposit || '';
+        const ff = document.getElementById('f-settlement-final');    if(ff) ff.value = r.settlement_final   || '';
         document.getElementById('f-sajadCode').value        = r.sajad_code         || '';
         document.getElementById('f-translationOffice').value= r.translation_office || '';
+        const ftd = document.getElementById('f-translation-date'); if(ftd) ftd.value = r.translation_date || '';
 
         const preview = document.getElementById('f-files-preview');
         if (preview) preview.innerHTML = r.file_paths && r.file_paths.length
@@ -727,6 +767,18 @@ const EmbassyModule = (function () {
             : '';
 
         document.getElementById('embassy-modal').classList.remove('hidden');
+        // فعال‌سازی تقویم شمسی
+        setTimeout(function() {
+            if (typeof JalaliPicker !== 'undefined') {
+                ['f-receiveDate','f-sendDate','f-translation-date'].forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el && !el.dataset.pickerAttached) {
+                        JalaliPicker._attach(el);
+                        el.dataset.pickerAttached = '1';
+                    }
+                });
+            }
+        }, 80);
     }
 
     function closeModal() {
@@ -786,15 +838,18 @@ const EmbassyModule = (function () {
         }
 
         const payload = {
-            student_name:       document.getElementById('f-studentName').value.trim(),
-            work_type:          workTypeValue,
-            receive_date:       document.getElementById('f-receiveDate').value || null,
-            send_method:        document.getElementById('f-sendMethod').value  || null,
-            send_date:          document.getElementById('f-sendDate').value    || null,
-            acknowledgment:     document.getElementById('f-acknowledgment').value.trim() || null,
-            settlement:         document.getElementById('f-settlement').value.trim()     || null,
-            sajad_code:         document.getElementById('f-sajadCode').value.trim()      || null,
-            translation_office: document.getElementById('f-translationOffice').value.trim() || null,
+            student_name:        document.getElementById('f-studentName').value.trim(),
+            work_type:           workTypeValue,
+            receive_date:        document.getElementById('f-receiveDate').value || null,
+            send_method:         document.getElementById('f-sendMethod').value  || null,
+            send_date:           document.getElementById('f-sendDate').value    || null,
+            acknowledgment:      document.getElementById('f-acknowledgment').value.trim() || null,
+            settlement_agreed:   parseFloat(document.getElementById('f-settlement-agreed')?.value)  || 0,
+            settlement_deposit:  parseFloat(document.getElementById('f-settlement-deposit')?.value) || 0,
+            settlement_final:    parseFloat(document.getElementById('f-settlement-final')?.value)   || 0,
+            sajad_code:          document.getElementById('f-sajadCode').value.trim()      || null,
+            translation_office:  document.getElementById('f-translationOffice').value.trim() || null,
+            translation_date:    document.getElementById('f-translation-date')?.value || null,
         };
 
         if (filePaths.length) payload.file_paths = filePaths;
