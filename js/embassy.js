@@ -149,64 +149,63 @@ const EmbassyModule = (function () {
                                 <label class="text-blue-200 text-sm font-semibold block mb-2">
                                     نوع کار <span class="text-red-400">*</span>
                                 </label>
-                                <div class="bg-blue-700 bg-opacity-40 border border-blue-500 rounded-lg p-3 space-y-3">
-                                    <!-- هر نوع سند با وضعیت -->
-                                    <p class="text-blue-300 text-xs mb-1">برای هر نوع سند، وضعیت مورد نیاز را انتخاب کنید:</p>
-
+                                <p class="text-blue-400 text-xs mb-3 flex items-center gap-1">
+                                    <i class="fas fa-info-circle"></i>
+                                    روی کارت کلیک کنید تا انتخاب شود، سپس وضعیت را مشخص کنید
+                                </p>
+                                <style>
+                                    .doc-card { transition: all .2s; }
+                                    .doc-card[data-checked="true"] { ring: 2px; }
+                                    .status-btn.active-status { font-weight:700; box-shadow:0 0 0 2px currentColor; }
+                                </style>
+                                <div class="grid grid-cols-2 gap-2">
                                     ${[
-                                        ['مباشره',       'mabashare'],
-                                        ['قبول نهایی',   'qabool'],
-                                        ['مدرک کارشناسی','karshenasi'],
-                                        ['مدرک ارشد',    'arshad'],
-                                        ['مدرک دکتری',   'doktori'],
-                                        ['مجلد',         'mojallad'],
-                                        ['وکالت‌نامه',   'vekalat'],
-                                    ].map(([label, key]) => `
-                                    <div class="flex items-center justify-between gap-2 py-1 border-b border-blue-600 border-opacity-30 last:border-0">
-                                        <label class="text-white text-sm w-28 flex-shrink-0">
-                                            <input type="checkbox" class="doc-type-check w-4 h-4 accent-yellow-400 ml-1"
-                                                   data-key="${key}" data-label="${label}"
-                                                   onchange="EmbassyModule._toggleDocType(this)">
-                                            ${label}
-                                        </label>
-                                        <div id="status-${key}" class="flex gap-2 opacity-40 pointer-events-none">
-                                            <label class="flex items-center gap-1 text-xs text-blue-200 cursor-pointer">
-                                                <input type="radio" name="status-${key}" value="ترجمه" class="accent-blue-400"> ترجمه
-                                            </label>
-                                            <label class="flex items-center gap-1 text-xs text-blue-200 cursor-pointer">
-                                                <input type="radio" name="status-${key}" value="تصدیق" class="accent-yellow-400"> تصدیق
-                                            </label>
-                                            <label class="flex items-center gap-1 text-xs text-green-300 cursor-pointer">
-                                                <input type="radio" name="status-${key}" value="هردو" class="accent-green-400"> هردو
-                                            </label>
+                                        ['مباشره',       'mabashare',  'fa-file-signature', '#a78bfa'],
+                                        ['قبول نهایی',   'qabool',     'fa-check-double',   '#34d399'],
+                                        ['کارشناسی',     'karshenasi', 'fa-graduation-cap', '#60a5fa'],
+                                        ['ارشد',         'arshad',     'fa-user-graduate',  '#22d3ee'],
+                                        ['دکتری',        'doktori',    'fa-award',          '#fbbf24'],
+                                        ['مجلد',         'mojallad',   'fa-book',           '#fb923c'],
+                                        ['وکالت‌نامه',   'vekalat',    'fa-scale-balanced', '#f87171'],
+                                        ['سایر',         'sayer',      'fa-ellipsis',       '#9ca3af'],
+                                    ].map(([label, key, icon, color]) => `
+                                    <div class="doc-card rounded-xl border-2 border-transparent bg-white/5 p-3 cursor-pointer select-none"
+                                         style="transition:all .2s"
+                                         data-key="${key}" data-label="${label}" data-checked="false"
+                                         onclick="EmbassyModule._toggleDocCard(this,'${key}','${label}')">
+                                        <div class="flex items-center gap-2 mb-0">
+                                            <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                                                 style="background:${color}22">
+                                                <i class="fas ${icon} text-sm" style="color:${color}"></i>
+                                            </div>
+                                            <span class="text-white text-sm font-medium flex-1">${label}</span>
+                                            <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0"
+                                                 style="border-color:${color}" id="chk-${key}">
+                                            </div>
+                                        </div>
+                                        <div id="status-${key}" class="hidden mt-2 pt-2 border-t border-white/10" onclick="event.stopPropagation()">
+                                            <div class="flex gap-1">
+                                                <button type="button" data-status="ترجمه"
+                                                    onclick="EmbassyModule._setStatus(this,'${key}','ترجمه')"
+                                                    class="status-btn flex-1 text-xs py-1.5 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-400/30 hover:bg-blue-500/40 transition-all">
+                                                    ترجمه
+                                                </button>
+                                                <button type="button" data-status="تصدیق"
+                                                    onclick="EmbassyModule._setStatus(this,'${key}','تصدیق')"
+                                                    class="status-btn flex-1 text-xs py-1.5 rounded-lg bg-yellow-500/20 text-yellow-300 border border-yellow-400/30 hover:bg-yellow-500/40 transition-all">
+                                                    تصدیق
+                                                </button>
+                                                <button type="button" data-status="هردو"
+                                                    onclick="EmbassyModule._setStatus(this,'${key}','هردو')"
+                                                    class="status-btn flex-1 text-xs py-1.5 rounded-lg bg-green-500/30 text-green-300 border-2 border-green-400/60 font-bold transition-all active-status">
+                                                    هردو
+                                                </button>
+                                            </div>
+                                            <input type="hidden" id="hid-status-${key}" value="هردو">
+                                            <input type="checkbox" class="doc-type-check hidden" data-key="${key}" data-label="${label}" checked>
+                                            ${key === 'sayer' ? `<input type="text" id="sayer-custom-text" placeholder="نوع سند را بنویسید..." onclick="event.stopPropagation()" class="mt-2 w-full bg-white/10 text-white border border-white/20 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-yellow-400">` : ''}
                                         </div>
                                     </div>`).join('')}
-
-                                    <!-- سایر -->
-                                    <div class="flex items-center justify-between gap-2 py-1">
-                                        <label class="text-white text-sm w-28 flex-shrink-0">
-                                            <input type="checkbox" class="doc-type-check w-4 h-4 accent-yellow-400 ml-1"
-                                                   data-key="sayer" data-label="سایر"
-                                                   onchange="EmbassyModule._toggleDocType(this)">
-                                            سایر
-                                        </label>
-                                        <div id="status-sayer" class="flex gap-2 opacity-40 pointer-events-none">
-                                            <label class="flex items-center gap-1 text-xs text-blue-200 cursor-pointer">
-                                                <input type="radio" name="status-sayer" value="ترجمه" class="accent-blue-400"> ترجمه
-                                            </label>
-                                            <label class="flex items-center gap-1 text-xs text-blue-200 cursor-pointer">
-                                                <input type="radio" name="status-sayer" value="تصدیق" class="accent-yellow-400"> تصدیق
-                                            </label>
-                                            <label class="flex items-center gap-1 text-xs text-green-300 cursor-pointer">
-                                                <input type="radio" name="status-sayer" value="هردو" class="accent-green-400"> هردو
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div id="sayer-text-wrap" class="hidden">
-                                        <input type="text" id="sayer-custom-text"
-                                            placeholder="نوع سند سایر را بنویسید..."
-                                            class="w-full bg-blue-600 bg-opacity-50 text-white border border-blue-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-yellow-400">
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -402,24 +401,58 @@ const EmbassyModule = (function () {
             <p class="text-gray-400 text-xs mt-2 text-left">${records.length} رکورد</p>`;
     }
 
-    // ── toggle وضعیت نوع سند ─────────────────────────────────
-    function _toggleDocType(cb) {
-        var key = cb.dataset.key;
+    // ── toggle کارت سند ─────────────────────────────────────
+    function _toggleDocCard(card, key, label) {
+        var isChecked = card.dataset.checked === 'true';
+        var statusDiv = document.getElementById('status-' + key);
+        var chkCircle = document.getElementById('chk-' + key);
+
+        if (isChecked) {
+            // deselect
+            card.dataset.checked = 'false';
+            card.style.borderColor = 'transparent';
+            card.style.background = 'rgba(255,255,255,0.05)';
+            if (statusDiv) statusDiv.classList.add('hidden');
+            if (chkCircle) chkCircle.innerHTML = '';
+            var cb = card.querySelector('.doc-type-check');
+            if (cb) cb.checked = false;
+        } else {
+            // select
+            card.dataset.checked = 'true';
+            card.style.borderColor = '#3b82f6';
+            card.style.background = 'rgba(59,130,246,0.15)';
+            if (statusDiv) {
+                statusDiv.classList.remove('hidden');
+                // پیش‌فرض: هردو
+                var hidInp = document.getElementById('hid-status-' + key);
+                if (hidInp && !hidInp.value) hidInp.value = 'هردو';
+                var btns = statusDiv.querySelectorAll('.status-btn');
+                btns.forEach(function(b) { b.classList.remove('active-status', 'border-2'); });
+                var defaultBtn = statusDiv.querySelector('[data-status="هردو"]');
+                if (defaultBtn) defaultBtn.classList.add('active-status', 'border-2');
+            }
+            if (chkCircle) chkCircle.innerHTML = '<i class="fas fa-check text-xs text-blue-400"></i>';
+            var cb2 = card.querySelector('.doc-type-check');
+            if (cb2) cb2.checked = true;
+        }
+    }
+
+    // ── تغییر وضعیت سند ─────────────────────────────────────
+    function _setStatus(btn, key, status) {
         var statusDiv = document.getElementById('status-' + key);
         if (!statusDiv) return;
-        if (cb.checked) {
-            statusDiv.classList.remove('opacity-40', 'pointer-events-none');
-            // پیش‌فرض: هردو
-            var def = statusDiv.querySelector('input[value="هردو"]');
-            if (def) def.checked = true;
-        } else {
-            statusDiv.classList.add('opacity-40', 'pointer-events-none');
-            statusDiv.querySelectorAll('input[type="radio"]').forEach(function(r) { r.checked = false; });
-        }
-        if (key === 'sayer') {
-            var wrap = document.getElementById('sayer-text-wrap');
-            if (wrap) wrap.classList.toggle('hidden', !cb.checked);
-        }
+        statusDiv.querySelectorAll('.status-btn').forEach(function(b) {
+            b.classList.remove('active-status', 'border-2', 'font-bold');
+        });
+        btn.classList.add('active-status', 'border-2', 'font-bold');
+        var hidInp = document.getElementById('hid-status-' + key);
+        if (hidInp) hidInp.value = status;
+    }
+
+    // ── toggle قدیمی (نگه داشته برای سازگاری) ───────────────
+    function _toggleDocType(cb) {
+        var card = cb.closest ? cb.closest('.doc-card') : null;
+        if (card) _toggleDocCard(card, cb.dataset.key, cb.dataset.label);
     }
 
     // ── state داده‌های کش‌شده برای فیلتر ────────────────────
@@ -456,16 +489,17 @@ const EmbassyModule = (function () {
         document.getElementById('embassy-modal-title').textContent = 'ثبت مدرک جدید';
         document.getElementById('embassy-submit-text').textContent = 'ذخیره';
         document.getElementById('embassy-form').reset();
-        document.querySelectorAll('.doc-type-check').forEach(function(cb) {
-            cb.checked = false;
-            var key = cb.dataset.key;
+        document.querySelectorAll('.doc-card').forEach(function(card) {
+            card.dataset.checked = 'false';
+            card.style.borderColor = 'transparent';
+            card.style.background = 'rgba(255,255,255,0.05)';
+            var key = card.dataset.key;
             var sd = document.getElementById('status-' + key);
-            if (sd) { sd.classList.add('opacity-40','pointer-events-none'); sd.querySelectorAll('input[type="radio"]').forEach(function(r){r.checked=false;}); }
+            if (sd) sd.classList.add('hidden');
+            var chk = document.getElementById('chk-' + key);
+            if (chk) chk.innerHTML = '';
         });
-        var wrap = document.getElementById('sayer-text-wrap');
-        if (wrap) wrap.classList.add('hidden');
-        var ct = document.getElementById('sayer-custom-text');
-        if (ct) ct.value = '';
+        document.querySelectorAll('.doc-type-check').forEach(function(cb) { cb.checked = false; });
         document.getElementById('f-files-preview').innerHTML = '';
         document.getElementById('embassy-modal').classList.remove('hidden');
     }
@@ -564,8 +598,8 @@ const EmbassyModule = (function () {
             const label = key === 'sayer'
                 ? (document.getElementById('sayer-custom-text')?.value.trim() || 'سایر')
                 : cb.dataset.label;
-            const radio = document.querySelector(`input[name="status-${key}"]:checked`);
-            const status = radio ? radio.value : '';
+            const hidInp = document.getElementById('hid-status-' + key);
+            const status = hidInp ? hidInp.value : '';
             return status ? `${label} (${status})` : label;
         });
         const workTypeValue = workTypeParts.join('، ');
@@ -679,7 +713,9 @@ const EmbassyModule = (function () {
         submitForm,
         confirmDelete,
         downloadFile,
+        _toggleDocCard,
         _toggleDocType,
+        _setStatus,
     };
 
 })(); // end EmbassyModule
