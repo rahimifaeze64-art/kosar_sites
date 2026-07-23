@@ -522,7 +522,7 @@ const WorkHoursUI = (function() {
                     <form id="workHoursForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
                             <label class="block text-blue-200 text-sm mb-2">تاریخ</label>
-                            <input type="date" id="workDate" value="${today}"
+                            <input type="date" id="workDate" value="${today}" data-jalali
                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400">
                         </div>
                         

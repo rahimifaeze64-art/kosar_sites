@@ -149,32 +149,64 @@ const EmbassyModule = (function () {
                                 <label class="text-blue-200 text-sm font-semibold block mb-2">
                                     نوع کار <span class="text-red-400">*</span>
                                 </label>
-                                <div class="bg-blue-700 bg-opacity-40 border border-blue-500 rounded-lg p-3 space-y-2">
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" value="ترجمه" class="work-type-check w-4 h-4 accent-yellow-400">
-                                        <span class="text-white text-sm">ترجمه</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" value="تصدیق" class="work-type-check w-4 h-4 accent-yellow-400">
-                                        <span class="text-white text-sm">تصدیق</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" value="وکالتنامه" class="work-type-check w-4 h-4 accent-yellow-400">
-                                        <span class="text-white text-sm">وکالتنامه</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" value="مدارک تحصیلی" class="work-type-check w-4 h-4 accent-yellow-400">
-                                        <span class="text-white text-sm">مدارک تحصیلی</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" value="سایر" id="work-type-other-check" class="work-type-check w-4 h-4 accent-yellow-400"
-                                            onchange="document.getElementById('work-type-other-input').style.display=this.checked?'block':'none'">
-                                        <span class="text-white text-sm">سایر</span>
-                                    </label>
-                                    <input type="text" id="work-type-other-input"
-                                        style="display:none"
-                                        class="w-full bg-blue-600 bg-opacity-50 text-white border border-blue-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-yellow-400 mt-1"
-                                        placeholder="نوع کار سایر را بنویسید...">
+                                <div class="bg-blue-700 bg-opacity-40 border border-blue-500 rounded-lg p-3 space-y-3">
+                                    <!-- هر نوع سند با وضعیت -->
+                                    <p class="text-blue-300 text-xs mb-1">برای هر نوع سند، وضعیت مورد نیاز را انتخاب کنید:</p>
+
+                                    ${[
+                                        ['مباشره',       'mabashare'],
+                                        ['قبول نهایی',   'qabool'],
+                                        ['مدرک کارشناسی','karshenasi'],
+                                        ['مدرک ارشد',    'arshad'],
+                                        ['مدرک دکتری',   'doktori'],
+                                        ['مجلد',         'mojallad'],
+                                        ['وکالت‌نامه',   'vekalat'],
+                                    ].map(([label, key]) => `
+                                    <div class="flex items-center justify-between gap-2 py-1 border-b border-blue-600 border-opacity-30 last:border-0">
+                                        <label class="text-white text-sm w-28 flex-shrink-0">
+                                            <input type="checkbox" class="doc-type-check w-4 h-4 accent-yellow-400 ml-1"
+                                                   data-key="${key}" data-label="${label}"
+                                                   onchange="EmbassyModule._toggleDocType(this)">
+                                            ${label}
+                                        </label>
+                                        <div id="status-${key}" class="flex gap-2 opacity-40 pointer-events-none">
+                                            <label class="flex items-center gap-1 text-xs text-blue-200 cursor-pointer">
+                                                <input type="radio" name="status-${key}" value="ترجمه" class="accent-blue-400"> ترجمه
+                                            </label>
+                                            <label class="flex items-center gap-1 text-xs text-blue-200 cursor-pointer">
+                                                <input type="radio" name="status-${key}" value="تصدیق" class="accent-yellow-400"> تصدیق
+                                            </label>
+                                            <label class="flex items-center gap-1 text-xs text-green-300 cursor-pointer">
+                                                <input type="radio" name="status-${key}" value="هردو" class="accent-green-400"> هردو
+                                            </label>
+                                        </div>
+                                    </div>`).join('')}
+
+                                    <!-- سایر -->
+                                    <div class="flex items-center justify-between gap-2 py-1">
+                                        <label class="text-white text-sm w-28 flex-shrink-0">
+                                            <input type="checkbox" class="doc-type-check w-4 h-4 accent-yellow-400 ml-1"
+                                                   data-key="sayer" data-label="سایر"
+                                                   onchange="EmbassyModule._toggleDocType(this)">
+                                            سایر
+                                        </label>
+                                        <div id="status-sayer" class="flex gap-2 opacity-40 pointer-events-none">
+                                            <label class="flex items-center gap-1 text-xs text-blue-200 cursor-pointer">
+                                                <input type="radio" name="status-sayer" value="ترجمه" class="accent-blue-400"> ترجمه
+                                            </label>
+                                            <label class="flex items-center gap-1 text-xs text-blue-200 cursor-pointer">
+                                                <input type="radio" name="status-sayer" value="تصدیق" class="accent-yellow-400"> تصدیق
+                                            </label>
+                                            <label class="flex items-center gap-1 text-xs text-green-300 cursor-pointer">
+                                                <input type="radio" name="status-sayer" value="هردو" class="accent-green-400"> هردو
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div id="sayer-text-wrap" class="hidden">
+                                        <input type="text" id="sayer-custom-text"
+                                            placeholder="نوع سند سایر را بنویسید..."
+                                            class="w-full bg-blue-600 bg-opacity-50 text-white border border-blue-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-yellow-400">
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -183,7 +215,7 @@ const EmbassyModule = (function () {
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="text-blue-200 text-sm font-semibold block mb-1">تاریخ دریافت مدارک</label>
-                                <input type="date" id="f-receiveDate"
+                                <input type="date" id="f-receiveDate" data-jalali
                                     class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400">
                             </div>
                             <div>
@@ -198,7 +230,7 @@ const EmbassyModule = (function () {
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="text-blue-200 text-sm font-semibold block mb-1">تاریخ ارسال</label>
-                                <input type="date" id="f-sendDate"
+                                <input type="date" id="f-sendDate" data-jalali
                                     class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400">
                             </div>
                             <div>
@@ -370,6 +402,26 @@ const EmbassyModule = (function () {
             <p class="text-gray-400 text-xs mt-2 text-left">${records.length} رکورد</p>`;
     }
 
+    // ── toggle وضعیت نوع سند ─────────────────────────────────
+    function _toggleDocType(cb) {
+        var key = cb.dataset.key;
+        var statusDiv = document.getElementById('status-' + key);
+        if (!statusDiv) return;
+        if (cb.checked) {
+            statusDiv.classList.remove('opacity-40', 'pointer-events-none');
+            // پیش‌فرض: هردو
+            var def = statusDiv.querySelector('input[value="هردو"]');
+            if (def) def.checked = true;
+        } else {
+            statusDiv.classList.add('opacity-40', 'pointer-events-none');
+            statusDiv.querySelectorAll('input[type="radio"]').forEach(function(r) { r.checked = false; });
+        }
+        if (key === 'sayer') {
+            var wrap = document.getElementById('sayer-text-wrap');
+            if (wrap) wrap.classList.toggle('hidden', !cb.checked);
+        }
+    }
+
     // ── state داده‌های کش‌شده برای فیلتر ────────────────────
     let _allRecords = [];
 
@@ -404,9 +456,16 @@ const EmbassyModule = (function () {
         document.getElementById('embassy-modal-title').textContent = 'ثبت مدرک جدید';
         document.getElementById('embassy-submit-text').textContent = 'ذخیره';
         document.getElementById('embassy-form').reset();
-        document.querySelectorAll('.work-type-check').forEach(cb => cb.checked = false);
-        const otherInput = document.getElementById('work-type-other-input');
-        if (otherInput) { otherInput.style.display = 'none'; otherInput.value = ''; }
+        document.querySelectorAll('.doc-type-check').forEach(function(cb) {
+            cb.checked = false;
+            var key = cb.dataset.key;
+            var sd = document.getElementById('status-' + key);
+            if (sd) { sd.classList.add('opacity-40','pointer-events-none'); sd.querySelectorAll('input[type="radio"]').forEach(function(r){r.checked=false;}); }
+        });
+        var wrap = document.getElementById('sayer-text-wrap');
+        if (wrap) wrap.classList.add('hidden');
+        var ct = document.getElementById('sayer-custom-text');
+        if (ct) ct.value = '';
         document.getElementById('f-files-preview').innerHTML = '';
         document.getElementById('embassy-modal').classList.remove('hidden');
     }
@@ -420,27 +479,35 @@ const EmbassyModule = (function () {
         document.getElementById('embassy-modal-title').textContent = 'ویرایش رکورد';
         document.getElementById('embassy-submit-text').textContent = 'ذخیره تغییرات';
 
-        document.getElementById('f-studentName').value      = r.student_name       || '';
+        document.getElementById('f-studentName').value = r.student_name || '';
 
-        // پر کردن چک‌باکس‌های نوع کار
-        const savedTypes = (r.work_type || '').split('، ').map(s => s.trim());
-        document.querySelectorAll('.work-type-check').forEach(cb => {
+        // پر کردن چک‌باکس‌های نوع سند + وضعیت
+        document.querySelectorAll('.doc-type-check').forEach(function(cb) {
             cb.checked = false;
+            var sd = document.getElementById('status-' + cb.dataset.key);
+            if (sd) { sd.classList.add('opacity-40','pointer-events-none'); sd.querySelectorAll('input[type="radio"]').forEach(function(r){r.checked=false;}); }
         });
-        savedTypes.forEach(type => {
-            if (type.startsWith('سایر:')) {
-                const otherCb = document.getElementById('work-type-other-check');
-                if (otherCb) { otherCb.checked = true; }
-                const otherInput = document.getElementById('work-type-other-input');
-                if (otherInput) {
-                    otherInput.style.display = 'block';
-                    otherInput.value = type.replace('سایر:', '').trim();
-                }
-            } else {
-                const cb = document.querySelector(`.work-type-check[value="${type}"]`);
-                if (cb) cb.checked = true;
-            }
-        });
+        if (r.work_type) {
+            r.work_type.split('، ').forEach(function(part) {
+                var match = part.match(/^(.+?)\s*\((.+?)\)$/);
+                var label = match ? match[1].trim() : part.trim();
+                var status = match ? match[2].trim() : '';
+                document.querySelectorAll('.doc-type-check').forEach(function(cb) {
+                    if (cb.dataset.label === label || (cb.dataset.key === 'sayer' && !['مباشره','قبول نهایی','مدرک کارشناسی','مدرک ارشد','مدرک دکتری','مجلد','وکالت‌نامه'].includes(label))) {
+                        cb.checked = true;
+                        _toggleDocType(cb);
+                        if (status) {
+                            var r2 = document.querySelector('input[name="status-' + cb.dataset.key + '"][value="' + status + '"]');
+                            if (r2) r2.checked = true;
+                        }
+                        if (cb.dataset.key === 'sayer') {
+                            var ct2 = document.getElementById('sayer-custom-text');
+                            if (ct2) ct2.value = label;
+                        }
+                    }
+                });
+            });
+        }
         document.getElementById('f-receiveDate').value      = r.receive_date       || '';
         document.getElementById('f-sendMethod').value       = r.send_method        || '';
         document.getElementById('f-sendDate').value         = r.send_date          || '';
@@ -484,21 +551,24 @@ const EmbassyModule = (function () {
 
         const editId = document.getElementById('embassy-edit-id').value;
 
-        // جمع‌آوری نوع کار از چک‌باکس‌ها
-        const checkedTypes = Array.from(document.querySelectorAll('.work-type-check:checked'))
-            .map(cb => cb.value);
-        if (checkedTypes.includes('سایر')) {
-            const otherText = document.getElementById('work-type-other-input').value.trim();
-            const idx = checkedTypes.indexOf('سایر');
-            if (otherText) checkedTypes[idx] = 'سایر: ' + otherText;
-        }
-        if (!checkedTypes.length) {
+        // جمع‌آوری نوع کار از چک‌باکس‌ها + وضعیت
+        const checkedDocs = Array.from(document.querySelectorAll('.doc-type-check:checked'));
+        if (!checkedDocs.length) {
             btn.disabled = false;
             text.textContent = editId ? 'ذخیره تغییرات' : 'ذخیره';
-            _toast('لطفاً حداقل یک نوع کار انتخاب کنید', 'error');
+            _toast('لطفاً حداقل یک نوع سند انتخاب کنید', 'error');
             return;
         }
-        const workTypeValue = checkedTypes.join('، ');
+        const workTypeParts = checkedDocs.map(cb => {
+            const key   = cb.dataset.key;
+            const label = key === 'sayer'
+                ? (document.getElementById('sayer-custom-text')?.value.trim() || 'سایر')
+                : cb.dataset.label;
+            const radio = document.querySelector(`input[name="status-${key}"]:checked`);
+            const status = radio ? radio.value : '';
+            return status ? `${label} (${status})` : label;
+        });
+        const workTypeValue = workTypeParts.join('، ');
 
         // آپلود فایل‌ها
         const fileInput  = document.getElementById('f-files');
@@ -609,6 +679,7 @@ const EmbassyModule = (function () {
         submitForm,
         confirmDelete,
         downloadFile,
+        _toggleDocType,
     };
 
 })(); // end EmbassyModule
