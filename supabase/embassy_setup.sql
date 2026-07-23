@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS public.embassy_records (
     settlement_agreed    numeric     DEFAULT 0,   -- عدد مورد اتفاق
     settlement_deposit   numeric     DEFAULT 0,   -- بیعانه
     settlement_final     numeric     DEFAULT 0,   -- تسویه نهایی
+    -- وکالت‌نامه
+    vekalat              text        DEFAULT 'ندارد',  -- دارد / ندارد
     -- کد سجاد
     sajad_code           text,
     -- دار الترجمه: تاریخ + توضیح + تصاویر
@@ -69,7 +71,8 @@ ALTER TABLE public.embassy_records
     ADD COLUMN IF NOT EXISTS sajad_imgs          text[]  DEFAULT '{}',
     ADD COLUMN IF NOT EXISTS settlement_agreed   numeric DEFAULT 0,
     ADD COLUMN IF NOT EXISTS settlement_deposit  numeric DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS settlement_final    numeric DEFAULT 0;
+    ADD COLUMN IF NOT EXISTS settlement_final    numeric DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS vekalat             text    DEFAULT 'ندارد';
 
 -- ── ۵. فعال‌سازی RLS ─────────────────────────────────────────
 ALTER TABLE public.embassy_records ENABLE ROW LEVEL SECURITY;

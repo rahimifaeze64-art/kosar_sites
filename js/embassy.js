@@ -347,6 +347,20 @@ const EmbassyModule = (function () {
                                 <input type="text" id="f-sajadCode"
                                     class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:border-blue-500"
                                     placeholder="کد سجاد دانشجو">
+                                <!-- وکالت -->
+                                <label class="text-gray-800 text-sm font-semibold block mb-1 mt-3">وکالت‌نامه</label>
+                                <div class="flex gap-3">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="f-vekalat" id="f-vekalat-yes" value="دارد"
+                                            class="accent-green-500 w-4 h-4">
+                                        <span class="text-green-700 text-sm font-semibold">دارد ✓</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="f-vekalat" id="f-vekalat-no" value="ندارد" checked
+                                            class="accent-red-500 w-4 h-4">
+                                        <span class="text-red-600 text-sm font-semibold">ندارد ✗</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
 
@@ -501,6 +515,11 @@ const EmbassyModule = (function () {
                         : `<span class="text-red-500 text-xs font-medium">تسویه نشده</span>`}
                 </td>
                 <td class="px-3 py-3 text-gray-900 text-sm font-mono font-semibold">${r.sajad_code || '<span class="text-red-500 text-xs">ندارد</span>'}</td>
+                <td class="px-3 py-3">
+                    ${r.vekalat === 'دارد'
+                        ? `<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">✓ دارد</span>`
+                        : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-medium">✗ ندارد</span>`}
+                </td>
                 <td class="px-3 py-3 text-gray-700 text-sm">${r.translation_office || '—'}</td>
                 <td class="px-3 py-3">
                     ${r.file_paths && r.file_paths.length
@@ -536,6 +555,7 @@ const EmbassyModule = (function () {
                             <th class="px-3 py-3 text-right font-bold">اعلام وصول</th>
                             <th class="px-3 py-3 text-right font-bold">تسویه</th>
                             <th class="px-3 py-3 text-right font-bold">کد سجاد</th>
+                            <th class="px-3 py-3 text-right font-bold">وکالت</th>
                             <th class="px-3 py-3 text-right font-bold">دار الترجمه</th>
                             <th class="px-3 py-3 text-right font-bold">فایل‌ها</th>
                             <th class="px-3 py-3 text-right font-bold">آخرین آپدیت</th>
@@ -822,6 +842,10 @@ const EmbassyModule = (function () {
         const fd = document.getElementById('f-settlement-deposit');  if(fd) fd.value = r.settlement_deposit || '';
         const ff = document.getElementById('f-settlement-final');    if(ff) ff.value = r.settlement_final   || '';
         document.getElementById('f-sajadCode').value        = r.sajad_code         || '';
+        // وکالت
+        const vekalatVal = r.vekalat || 'ندارد';
+        const vRadio = document.querySelector(`input[name="f-vekalat"][value="${vekalatVal}"]`);
+        if (vRadio) vRadio.checked = true;
         document.getElementById('f-translationOffice').value= r.translation_office || '';
         const ftd = document.getElementById('f-translation-date'); if(ftd) ftd.value = r.translation_date || '';
 
@@ -913,6 +937,7 @@ const EmbassyModule = (function () {
             settlement_final:    parseFloat(document.getElementById('f-settlement-final')?.value)   || 0,
             settlement:          document.getElementById('f-currency')?.value || 'تومان',
             sajad_code:          document.getElementById('f-sajadCode').value.trim()      || null,
+            vekalat:             document.querySelector('input[name="f-vekalat"]:checked')?.value || 'ندارد',
             translation_office:  document.getElementById('f-translationOffice').value.trim() || null,
             translation_date:    document.getElementById('f-translation-date')?.value || null,
         };
