@@ -612,7 +612,190 @@ const EmployeeAccountingUI = (function() {
                         <li><i class="fas fa-check text-green-400 ml-2"></i>تأیید/رد گزارش‌ها از بخش «ساعات کاری» انجام می‌شود</li>
                     </ul>
                 </div>
+
+                <!-- ── جدول کسورات کارمندان ── -->
+                <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+                    <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+                        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i class="fas fa-minus-circle text-red-400"></i>
+                            کسورات کارمندان
+                        </h3>
+                        <button onclick="EmployeeAccountingUI.showAddDeductionModal()"
+                            class="bg-red-600 hover:bg-red-500 text-white text-sm px-4 py-2 rounded-xl transition-all flex items-center gap-2">
+                            <i class="fas fa-plus"></i> ثبت کسر جدید
+                        </button>
+                    </div>
+
+                    ${(() => {
+                        try {
+                            const deductions = JSON.parse(localStorage.getItem('work_deductions') || '[]');
+                            if (!deductions.length) return `
+                                <p class="text-blue-300 text-sm text-center py-6">هیچ کسوراتی ثبت نشده</p>`;
+
+                            // گروه‌بندی بر اساس کارمند
+                            const grouped = {};
+                            deductions.forEach(d => {
+                                const name = d.employeeName || d.employeeId || '—';
+                                if (!grouped[name]) grouped[name] = [];
+                                grouped[name].push(d);
+                            });
+
+                            return Object.entries(grouped).map(([empName, items]) => {
+                                const total = items.reduce((s,d) => s + Number(d.amount||0), 0);
+                                const rows = items.map(d => `
+                                    <tr class="border-b border-white/5 hover:bg-white/5">
+                                        <td class="py-2 px-3 text-white text-sm">${d.date || '—'}</td>
+                                        <td class="py-2 px-3 text-red-300 font-bold text-sm">${Number(d.amount||0).toLocaleString('fa-IR')} ت</td>
+                                        <td class="py-2 px-3 text-blue-200 text-sm">${d.reason || '—'}</td>
+                                        <td class="py-2 px-3">
+                                            <button onclick="EmployeeAccountingUI.deleteDeduction('${d.id}')"
+                                                class="text-red-400 hover:text-red-300 text-xs"><i class="fas fa-trash"></i></button>
+                                        </td>
+                                    </tr>`).join('');
+
+                                return `
+                                    <div class="mb-4">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-white font-semibold flex items-center gap-2">
+                                                <i class="fas fa-user text-yellow-400 text-xs"></i>${empName}
+                                            </span>
+                                            <span class="bg-red-500/20 text-red-300 text-xs px-3 py-1 rounded-full font-bold">
+                                                جمع: ${total.toLocaleString('fa-IR')} ت
+                                            </span>
+                                        </div>
+                                        <table class="w-full text-sm">
+                                            <thead>
+                                                <tr class="text-blue-300 text-xs border-b border-white/10">
+                                                    <th class="text-right py-1 px-3">تاریخ</th>
+                                                    <th class="text-right py-1 px-3">مبلغ</th>
+                                                    <th class="text-right py-1 px-3">علت</th>
+                                                    <th class="py-1 px-3"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>${rows}</tbody>
+                                        </table>
+                                    </div>`;
+                            }).join('<hr class="border-white/10 my-3">');
+                        } catch { return '<p class="text-red-400 text-sm">خطا در بارگذاری کسورات</p>'; }
+                    })()}
+                </div>
+
             </div>`;
+    }
+
+    // ── مودال ثبت کسر جدید (برای مدیر) ──────────────────────
+    function showAddDeductionModal() {
+        document.getElementById('add-deduction-modal')?.remove();
+
+        const users = (() => {
+            try { return JSON.parse(localStorage.getItem('edu_system_users') || '[]').filter(u => u.role === 'employee'); }
+            catch { return []; }
+        })();
+
+        const userOptions = users.map(u =>
+            `<option value="${u.id}" data-name="${u.name}">${u.name}</option>`
+        ).join('');
+
+        const modal = document.createElement('div');
+        modal.id = 'add-deduction-modal';
+        modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-blue-900 rounded-2xl p-6 max-w-sm w-full mx-4 border border-red-500/30 shadow-2xl"
+                 onclick="event.stopPropagation()">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="text-white text-lg font-bold flex items-center gap-2">
+                        <i class="fas fa-minus-circle text-red-400"></i>ثبت کسر جدید
+                    </h3>
+                    <button onclick="document.getElementById('add-deduction-modal').remove()"
+                        class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-blue-200 text-sm mb-1 block">کارمند <span class="text-red-400">*</span></label>
+                        <select id="ded-emp" class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-yellow-400">
+                            <option value="">انتخاب کارمند...</option>
+                            ${userOptions}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-blue-200 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
+                        <input type="date" id="ded-date"
+                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-yellow-400">
+                    </div>
+                    <div>
+                        <label class="text-blue-200 text-sm mb-1 block">مبلغ (تومان) <span class="text-red-400">*</span></label>
+                        <input type="number" id="ded-amount" min="0" step="1000" placeholder="مثال: 500000"
+                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-yellow-400">
+                    </div>
+                    <div>
+                        <label class="text-blue-200 text-sm mb-1 block">علت <span class="text-red-400">*</span></label>
+                        <input type="text" id="ded-reason" placeholder="مثال: غیبت، تأخیر..."
+                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-yellow-400">
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-5">
+                    <button onclick="EmployeeAccountingUI.saveDeduction()"
+                        class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl transition-all">
+                        <i class="fas fa-save ml-1"></i>ثبت کسر
+                    </button>
+                    <button onclick="document.getElementById('add-deduction-modal').remove()"
+                        class="px-5 bg-gray-600 hover:bg-gray-500 text-white py-2.5 rounded-xl transition-all">
+                        انصراف
+                    </button>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    }
+
+    function saveDeduction() {
+        const empSel = document.getElementById('ded-emp');
+        const date   = document.getElementById('ded-date')?.value;
+        const amount = parseFloat(document.getElementById('ded-amount')?.value) || 0;
+        const reason = document.getElementById('ded-reason')?.value?.trim();
+
+        if (!empSel?.value || !date || !amount || !reason) {
+            alert('همه فیلدها را پر کنید'); return;
+        }
+
+        const empName = empSel.options[empSel.selectedIndex]?.dataset?.name || empSel.value;
+        const record = {
+            id: 'ded_' + Date.now(),
+            employeeId:   empSel.value,
+            employeeName: empName,
+            date, amount, reason,
+            createdAt: new Date().toISOString()
+        };
+
+        const list = (() => { try { return JSON.parse(localStorage.getItem('work_deductions') || '[]'); } catch { return []; } })();
+        list.push(record);
+        localStorage.setItem('work_deductions', JSON.stringify(list));
+
+        document.getElementById('add-deduction-modal')?.remove();
+
+        // رفرش صفحه
+        const container = document.querySelector('[x-show*="employeeAccounting"]');
+        if (container && typeof EmployeeAccountingUI?.getManagerEmployeesContent === 'function') {
+            container.innerHTML = EmployeeAccountingUI.getManagerEmployeesContent();
+        } else {
+            // fallback: reload محتوا از app
+            if (window.Alpine) {
+                const appEl = document.querySelector('[x-data="appController()"]');
+                if (appEl && appEl._x_dataStack) {
+                    appEl._x_dataStack[0].currentPage = 'dashboard';
+                    setTimeout(() => { appEl._x_dataStack[0].currentPage = 'employeeAccounting'; }, 50);
+                }
+            }
+        }
+    }
+
+    function deleteDeduction(id) {
+        if (!confirm('این کسر حذف شود؟')) return;
+        const list = (() => { try { return JSON.parse(localStorage.getItem('work_deductions') || '[]'); } catch { return []; } })();
+        localStorage.setItem('work_deductions', JSON.stringify(list.filter(d => d.id !== id)));
+        // رفرش
+        saveDeduction._refresh && saveDeduction._refresh();
+        window.location.reload();
     }
 
     function showSettingsModal() {
@@ -778,6 +961,9 @@ const EmployeeAccountingUI = (function() {
         showEmployeeDetails,
         showNotification,
         refreshContent,
-        renderEntriesList
+        renderEntriesList,
+        showAddDeductionModal,
+        saveDeduction,
+        deleteDeduction,
     };
 })();
