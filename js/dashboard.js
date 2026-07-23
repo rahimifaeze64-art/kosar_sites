@@ -192,6 +192,21 @@ const DashboardModule = {
                         </div>
                     </div>
 
+                    <div class="bg-white rounded-xl shadow p-5 border-r-4 border-red-400 flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">جمع کسورات</p>
+                            <p class="text-2xl font-bold text-red-500">${(() => { try {
+                                const total = JSON.parse(localStorage.getItem('work_deductions')||'[]')
+                                    .reduce((s,d) => s + Number(d.amount||0), 0);
+                                return total.toLocaleString('fa-IR') + ' ت';
+                            } catch { return '۰ ت'; } })()}</p>
+                            <p class="text-xs text-gray-400 mt-1">کل کسورات ثبت‌شده</p>
+                        </div>
+                        <div class="bg-red-50 rounded-full p-3">
+                            <i class="fas fa-minus-circle text-red-400 text-2xl"></i>
+                        </div>
+                    </div>
+
                 </div>
 
                 <!-- Quick Actions -->
@@ -314,6 +329,21 @@ const DashboardModule = {
                                 <p class="text-2xl font-bold text-yellow-600">${this.formatCurrency(stats.totalSpent)}</p>
                             </div>
                             <i class="fas fa-dollar-sign text-yellow-500 text-3xl"></i>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card" style="border-right:4px solid #ef4444; background:#fff;">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-700">جمع کسورات</h3>
+                                <p class="text-2xl font-bold text-red-500">${(() => { try {
+                                    const total = JSON.parse(localStorage.getItem('work_deductions')||'[]')
+                                        .filter(d => d.employeeId === currentUser.id)
+                                        .reduce((s,d) => s + Number(d.amount||0), 0);
+                                    return total.toLocaleString('fa-IR') + ' ت';
+                                } catch { return '۰ ت'; } })()}</p>
+                            </div>
+                            <i class="fas fa-minus-circle text-red-400 text-3xl"></i>
                         </div>
                     </div>
                 </div>

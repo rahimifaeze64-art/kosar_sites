@@ -234,9 +234,9 @@ const EmployeeAccountingUI = (function() {
 
     function renderEntriesList(entries) {
         const statusColors = {
-            pending: 'bg-yellow-500/20 text-yellow-400',
-            approved: 'bg-green-500/20 text-green-400',
-            rejected: 'bg-red-500/20 text-red-400'
+            pending:  'bg-blue-500/20 text-blue-300 border border-blue-400/30',
+            approved: 'bg-green-500/20 text-green-300 border border-green-400/30',
+            rejected: 'bg-red-500/20 text-red-300 border border-red-400/30'
         };
         const statusTexts = { pending: 'در انتظار', approved: 'تأیید شده', rejected: 'رد شده' };
 
@@ -344,6 +344,25 @@ const EmployeeAccountingUI = (function() {
                             <div>
                                 <p class="text-blue-200 text-sm">مبلغ کل (تأیید شده)</p>
                                 <p class="text-xl font-bold text-emerald-400">${EmployeeAccountingModule.formatCurrency(summary.grandTotal)}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-red-400/20">
+                        <div class="flex items-center gap-4">
+                            <div class="w-14 h-14 bg-red-500/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-minus-circle text-2xl text-red-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-blue-200 text-sm">جمع کسورات</p>
+                                <p class="text-xl font-bold text-red-400">${EmployeeAccountingModule.formatCurrency(
+                                    (() => { try {
+                                        const u = JSON.parse(localStorage.getItem('currentUser')||'{}');
+                                        return JSON.parse(localStorage.getItem('work_deductions')||'[]')
+                                            .filter(d => d.employeeId === u.id)
+                                            .reduce((s,d) => s + Number(d.amount||0), 0);
+                                    } catch { return 0; } })()
+                                )}</p>
                             </div>
                         </div>
                     </div>
@@ -535,6 +554,23 @@ const EmployeeAccountingUI = (function() {
                             <div>
                                 <p class="text-blue-200 text-sm">جمع کل پرداختی</p>
                                 <p class="text-xl font-bold text-emerald-400">${EmployeeAccountingModule.formatCurrency(totalAmount)}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-red-400/20">
+                        <div class="flex items-center gap-4">
+                            <div class="w-14 h-14 bg-red-500/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-minus-circle text-2xl text-red-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-blue-200 text-sm">جمع کسورات</p>
+                                <p class="text-xl font-bold text-red-400">${EmployeeAccountingModule.formatCurrency(
+                                    (() => { try {
+                                        return JSON.parse(localStorage.getItem('work_deductions')||'[]')
+                                            .reduce((s,d) => s + Number(d.amount||0), 0);
+                                    } catch { return 0; } })()
+                                )}</p>
                             </div>
                         </div>
                     </div>

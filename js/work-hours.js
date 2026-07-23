@@ -528,13 +528,17 @@ const WorkHoursUI = (function() {
                         <div>
                             <label class="block text-blue-200 text-sm mb-2">ساعت شروع</label>
                             <input type="time" id="startTime"
-                                   class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400">
+                                   step="60"
+                                   class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400"
+                                   style="color-scheme:dark">
                         </div>
                         
                         <div>
                             <label class="block text-blue-200 text-sm mb-2">ساعت پایان</label>
                             <input type="time" id="endTime"
-                                   class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400">
+                                   step="60"
+                                   class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400"
+                                   style="color-scheme:dark">
                         </div>
                         
                         <div class="md:col-span-2 lg:col-span-1">
@@ -562,7 +566,47 @@ const WorkHoursUI = (function() {
                         </div>
                     </form>
                 </div>
-                
+
+                <!-- ── بخش کسورات ── -->
+                <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+                    <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                        <i class="fas fa-minus-circle text-red-400"></i>
+                        کسورات
+                    </h3>
+                    <form id="deductionForm" onsubmit="WorkHoursUI.submitDeductionForm(event)">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div>
+                                <label class="block text-blue-200 text-sm mb-2">تاریخ کسر <span class="text-red-400">*</span></label>
+                                <input type="date" id="deductionDate" required
+                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-400">
+                            </div>
+                            <div>
+                                <label class="block text-blue-200 text-sm mb-2">مبلغ کسر (تومان) <span class="text-red-400">*</span></label>
+                                <input type="number" id="deductionAmount" required min="0" step="1000"
+                                    placeholder="مثال: 500000"
+                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300/50 focus:outline-none focus:border-red-400">
+                            </div>
+                            <div>
+                                <label class="block text-blue-200 text-sm mb-2">علت کسر <span class="text-red-400">*</span></label>
+                                <input type="text" id="deductionReason" required
+                                    placeholder="مثال: غیبت، تأخیر، جریمه..."
+                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300/50 focus:outline-none focus:border-red-400">
+                            </div>
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit"
+                                class="px-6 py-3 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white rounded-xl transition-all font-medium">
+                                <i class="fas fa-save ml-2"></i>ثبت کسر
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- لیست کسورات ثبت‌شده -->
+                    <div class="mt-6" id="deductions-list">
+                        ${WorkHoursData ? WorkHoursUI._renderDeductions() : ''}
+                    </div>
+                </div>
+
                 <!-- فرم ثبت هزینه مستقل -->
                 <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                     <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
@@ -1413,6 +1457,74 @@ const WorkHoursUI = (function() {
         setupEventListeners();
     });
     
+    // ── کسورات ───────────────────────────────────────────────
+    const DEDUCTION_KEY = 'work_deductions';
+
+    function _getDeductions() {
+        try { return JSON.parse(localStorage.getItem(DEDUCTION_KEY) || '[]'); } catch { return []; }
+    }
+
+    function submitDeductionForm(e) {
+        e.preventDefault();
+        const date   = document.getElementById('deductionDate').value;
+        const amount = parseFloat(document.getElementById('deductionAmount').value) || 0;
+        const reason = document.getElementById('deductionReason').value.trim();
+        if (!date || !amount || !reason) {
+            showNotification('همه فیلدهای کسر را پر کنید', 'error'); return;
+        }
+        const u = (() => { try { return JSON.parse(localStorage.getItem('currentUser') || '{}'); } catch { return {}; } })();
+        const record = {
+            id:           'ded_' + Date.now(),
+            employeeId:   u.id   || '',
+            employeeName: u.name || '',
+            date, amount, reason,
+            createdAt: new Date().toISOString()
+        };
+        const list = _getDeductions();
+        list.push(record);
+        localStorage.setItem(DEDUCTION_KEY, JSON.stringify(list));
+        document.getElementById('deductionForm').reset();
+        const listEl = document.getElementById('deductions-list');
+        if (listEl) listEl.innerHTML = _renderDeductions();
+        showNotification('کسر با موفقیت ثبت شد', 'success');
+    }
+
+    function _renderDeductions() {
+        const u    = (() => { try { return JSON.parse(localStorage.getItem('currentUser') || '{}'); } catch { return {}; } })();
+        const role = u.role || '';
+        const list = _getDeductions().filter(d => role === 'manager' || d.employeeId === u.id);
+        if (!list.length) return '<p class="text-blue-300 text-sm text-center py-4">کسوراتی ثبت نشده</p>';
+        const rows = list.slice().reverse().map(d => `
+            <tr class="border-b border-white/5 hover:bg-white/5">
+                <td class="py-2 px-3 text-white text-sm">${d.employeeName || '—'}</td>
+                <td class="py-2 px-3 text-gray-300 text-sm">${d.date}</td>
+                <td class="py-2 px-3 text-red-300 font-bold text-sm">${Number(d.amount).toLocaleString('fa-IR')} تومان</td>
+                <td class="py-2 px-3 text-gray-300 text-sm">${d.reason}</td>
+                ${role === 'manager' ? `<td class="py-2 px-3">
+                    <button onclick="WorkHoursUI._deleteDeduction('${d.id}')"
+                        class="text-red-400 hover:text-red-300 text-xs"><i class="fas fa-trash"></i></button>
+                </td>` : '<td></td>'}
+            </tr>`).join('');
+        return `
+            <table class="w-full text-sm mt-2">
+                <thead><tr class="text-blue-300 text-xs border-b border-white/10">
+                    <th class="text-right py-2 px-3">کارمند</th>
+                    <th class="text-right py-2 px-3">تاریخ</th>
+                    <th class="text-right py-2 px-3">مبلغ</th>
+                    <th class="text-right py-2 px-3">علت</th>
+                    <th class="py-2 px-3"></th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+    }
+
+    function _deleteDeduction(id) {
+        const list = _getDeductions().filter(d => d.id !== id);
+        localStorage.setItem(DEDUCTION_KEY, JSON.stringify(list));
+        const listEl = document.getElementById('deductions-list');
+        if (listEl) listEl.innerHTML = _renderDeductions();
+    }
+
     // عمومی‌سازی توابع
     return {
         init,
@@ -1430,6 +1542,9 @@ const WorkHoursUI = (function() {
         viewEmployeeDetails,
         refreshContent,
         showNotification,
-        renderExpensesList
+        renderExpensesList,
+        submitDeductionForm,
+        _renderDeductions,
+        _deleteDeduction,
     };
 })();
