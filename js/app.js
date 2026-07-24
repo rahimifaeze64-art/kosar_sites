@@ -12,6 +12,8 @@ function appController() {
       phone: "+98 912 123 4567",
     },
     currentPage: "dashboard",
+    accPage: "main",        // main | personal | employees
+    empAccPage: "main",     // main | emp_accounting | work_hours
     showModal: null,
     selectedOrder: null,
     notifications: [],
@@ -577,12 +579,15 @@ function appController() {
           return '<div class="text-red-500">خطا: ماژول AccountingUI یافت نشد</div>';
         }
 
-        // برای مدیر: hub page با ۲ کارت
+        // برای مدیر: hub در index.html با Alpine مدیریت می‌شه
+        // اینجا فقط حسابداری شخصی مدیر رو برمی‌گردونیم
         if (this.currentUser.role === 'manager') {
-            return this._getManagerAccountingHub();
+            if (typeof AccountingUI === 'undefined') {
+                return '<div class="text-red-500">خطا: AccountingModule یافت نشد</div>';
+            }
+            AccountingUI.init();
+            return AccountingUI.render();
         }
-
-        // Initialize and render
         AccountingUI.init();
         const content = AccountingUI.render();
         debugLogger("Accounting content loaded", "success");

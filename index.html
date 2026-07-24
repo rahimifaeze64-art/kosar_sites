@@ -250,7 +250,7 @@
 
                     <!-- حسابداری - مدیر و کارمند -->
                     <template x-if="currentUser.role === 'manager' || currentUser.role === 'employee'">
-                        <button @click="currentPage = 'accounting'"
+                        <button @click="currentPage = 'accounting'; accPage = 'main'; empAccPage = 'main'"
                                 :class="currentPage === 'accounting' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
                                 class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                             <i class="fas fa-calculator text-lg"></i>
@@ -258,15 +258,8 @@
                         </button>
                     </template>
 
-                    <!-- منوی کارمندان مالی - فقط برای مدیر -->
-                    <template x-if="currentUser.role === 'manager'">
-                        <button @click="currentPage = 'employeeAccounting'"
-                                :class="currentPage === 'employeeAccounting' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
-                                class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
-                            <i class="fas fa-users-cog text-lg"></i>
-                            <span class="font-medium">حسابداری کارمندان</span>
-                        </button>
-                    </template>
+                    <!-- منوی کارمندان مالی - فقط برای مدیر — حذف شد، داخل حسابداری است -->
+                    <!-- <template x-if="currentUser.role === 'manager'">...</template> -->
 
                     <button @click="currentPage = 'profile'"
                             :class="currentPage === 'profile' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
@@ -375,7 +368,121 @@
             </div>
             
             <!-- Accounting Page (Manager and Employee) -->
-            <div x-show="currentPage === 'accounting' && (currentUser.role === 'manager' || currentUser.role === 'employee')" x-html="getAccountingContent()"></div>
+            <div x-show="currentPage === 'accounting' && (currentUser.role === 'manager' || currentUser.role === 'employee')">
+
+                <!-- کارمند: حسابداری شخصی -->
+                <template x-if="currentUser.role === 'employee'">
+                    <div x-html="getAccountingContent()"></div>
+                </template>
+
+                <!-- مدیر: Hub سطح ۱ -->
+                <template x-if="currentUser.role === 'manager'">
+                    <div>
+                        <!-- سطح ۱: انتخاب حسابداری شخصی یا کارمندان -->
+                        <div x-show="accPage === 'main'" class="space-y-6">
+                            <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                                <span class="bg-yellow-500/20 p-2 rounded-xl"><i class="fas fa-calculator text-yellow-400"></i></span>
+                                حسابداری
+                            </h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <button @click="accPage = 'personal'"
+                                    class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 cursor-pointer hover:bg-white/15 transition-all group text-right">
+                                    <div class="flex flex-col items-center text-center gap-4">
+                                        <div class="w-16 h-16 bg-emerald-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                            <i class="fas fa-wallet text-3xl text-emerald-400"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-xl font-bold text-white mb-2">حسابداری شخصی</h3>
+                                            <p class="text-blue-200 text-sm">مشاهده درآمد، هزینه و سابقه مالی</p>
+                                        </div>
+                                        <i class="fas fa-chevron-left text-blue-300 group-hover:text-white transition-colors"></i>
+                                    </div>
+                                </button>
+                                <button @click="accPage = 'employees'; empAccPage = 'main'"
+                                    class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 cursor-pointer hover:bg-white/15 transition-all group text-right">
+                                    <div class="flex flex-col items-center text-center gap-4">
+                                        <div class="w-16 h-16 bg-yellow-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                            <i class="fas fa-users-cog text-3xl text-yellow-400"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-xl font-bold text-white mb-2">حسابداری کارمندان</h3>
+                                            <p class="text-blue-200 text-sm">مدیریت ساعات، هزینه‌ها و کسورات</p>
+                                        </div>
+                                        <i class="fas fa-chevron-left text-blue-300 group-hover:text-white transition-colors"></i>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- سطح ۱: حسابداری شخصی مدیر -->
+                        <div x-show="accPage === 'personal'">
+                            <button @click="accPage = 'main'" class="mb-4 flex items-center gap-2 text-blue-300 hover:text-white text-sm">
+                                <i class="fas fa-arrow-right"></i> بازگشت به حسابداری
+                            </button>
+                            <div x-html="getAccountingContent()"></div>
+                        </div>
+
+                        <!-- سطح ۱: حسابداری کارمندان — Hub سطح ۲ -->
+                        <div x-show="accPage === 'employees'">
+                            <button @click="accPage = 'main'" class="mb-4 flex items-center gap-2 text-blue-300 hover:text-white text-sm">
+                                <i class="fas fa-arrow-right"></i> بازگشت به حسابداری
+                            </button>
+
+                            <!-- سطح ۲: انتخاب -->
+                            <div x-show="empAccPage === 'main'" class="space-y-6">
+                                <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                                    <span class="bg-yellow-500/20 p-2 rounded-xl"><i class="fas fa-users-cog text-yellow-400"></i></span>
+                                    حسابداری کارمندان
+                                </h2>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <button @click="empAccPage = 'emp_accounting'"
+                                        class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 cursor-pointer hover:bg-white/15 transition-all group text-right">
+                                        <div class="flex flex-col items-center text-center gap-4">
+                                            <div class="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                <i class="fas fa-calculator text-3xl text-blue-400"></i>
+                                            </div>
+                                            <div>
+                                                <h3 class="text-xl font-bold text-white mb-2">حسابداری کارمندان</h3>
+                                                <p class="text-blue-200 text-sm">نرخ ساعتی، هزینه‌ها و کسورات</p>
+                                            </div>
+                                            <i class="fas fa-chevron-left text-blue-300 group-hover:text-white transition-colors"></i>
+                                        </div>
+                                    </button>
+                                    <button @click="empAccPage = 'work_hours'"
+                                        class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 cursor-pointer hover:bg-white/15 transition-all group text-right">
+                                        <div class="flex flex-col items-center text-center gap-4">
+                                            <div class="w-16 h-16 bg-amber-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                <i class="fas fa-clock text-3xl text-amber-400"></i>
+                                            </div>
+                                            <div>
+                                                <h3 class="text-xl font-bold text-white mb-2">ساعات کاری کارمندان</h3>
+                                                <p class="text-blue-200 text-sm">تأیید ساعات، هزینه‌ها و کسورات</p>
+                                            </div>
+                                            <i class="fas fa-chevron-left text-blue-300 group-hover:text-white transition-colors"></i>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- سطح ۲: حسابداری کارمندان -->
+                            <div x-show="empAccPage === 'emp_accounting'">
+                                <button @click="empAccPage = 'main'" class="mb-4 flex items-center gap-2 text-blue-300 hover:text-white text-sm">
+                                    <i class="fas fa-arrow-right"></i> بازگشت
+                                </button>
+                                <div x-html="getEmployeeAccountingContent()"></div>
+                            </div>
+
+                            <!-- سطح ۲: ساعات کاری -->
+                            <div x-show="empAccPage === 'work_hours'">
+                                <button @click="empAccPage = 'main'" class="mb-4 flex items-center gap-2 text-blue-300 hover:text-white text-sm">
+                                    <i class="fas fa-arrow-right"></i> بازگشت
+                                </button>
+                                <div x-html="getWorkHoursContent()"></div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
             
             <!-- Employee Accounting Page (Manager only) -->
             <div x-show="currentPage === 'employeeAccounting' && currentUser.role === 'manager'" x-html="getEmployeeAccountingContent()"></div>
