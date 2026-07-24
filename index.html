@@ -180,8 +180,8 @@
                 </button>
             </template>
 
-            <!-- ساعات کاری - کارمند و مدیر -->
-            <template x-if="currentUser.role === 'employee' || currentUser.role === 'manager'">
+            <!-- ساعات کاری - فقط کارمند (مدیر از طریق حسابداری دسترسی دارد) -->
+            <template x-if="currentUser.role === 'employee'">
                 <button @click="currentPage = 'workHours'"
                         :class="currentPage === 'workHours' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
                         class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
@@ -686,7 +686,7 @@
     <script src="js/employee-accounting.js?v=1.0"></script>
     <script src="js/embassy.js?v=1.9"></script>
     <script src="js/jalali-picker.js"></script>
-    <script src="js/app.js?v=1.3"></script>
+    <script src="js/app.js?v=1.4"></script>
     <script src="js/supabase-init.js"></script>
     
     <!-- Verify Accounting Modules Loaded -->    <script>
