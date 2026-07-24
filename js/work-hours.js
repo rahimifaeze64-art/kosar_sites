@@ -528,22 +528,28 @@ const WorkHoursUI = (function() {
                         
                         <div>
                             <label class="block text-blue-200 text-sm mb-2">ساعت شروع</label>
-                            <input type="time" id="startTime"
-                                   step="60"
-                                   lang="en-GB"
-                                   class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400"
-                                   style="color-scheme:dark;-webkit-appearance:none;"
-                                   onchange="WorkHoursUI.updateTotalHours()">
+                            <input type="text" id="startTime"
+                                   placeholder="مثال: 08:30"
+                                   pattern="^([01]?[0-9]|2[0-3]):[0-5][0-9]$"
+                                   maxlength="5"
+                                   dir="ltr"
+                                   oninput="this.value=this.value.replace(/[^0-9:]/g,''); if(this.value.length===2&&!this.value.includes(':'))this.value+=':';"
+                                   onchange="WorkHoursUI.updateTotalHours()"
+                                   class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400 text-left font-mono"
+                                   style="color-scheme:dark">
                         </div>
                         
                         <div>
                             <label class="block text-blue-200 text-sm mb-2">ساعت پایان</label>
-                            <input type="time" id="endTime"
-                                   step="60"
-                                   lang="en-GB"
-                                   class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400"
-                                   style="color-scheme:dark;-webkit-appearance:none;"
-                                   onchange="WorkHoursUI.updateTotalHours()">
+                            <input type="text" id="endTime"
+                                   placeholder="مثال: 17:00"
+                                   pattern="^([01]?[0-9]|2[0-3]):[0-5][0-9]$"
+                                   maxlength="5"
+                                   dir="ltr"
+                                   oninput="this.value=this.value.replace(/[^0-9:]/g,''); if(this.value.length===2&&!this.value.includes(':'))this.value+=':';"
+                                   onchange="WorkHoursUI.updateTotalHours()"
+                                   class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400 text-left font-mono"
+                                   style="color-scheme:dark">
                         </div>
                         
                         <div class="md:col-span-2 lg:col-span-1">
