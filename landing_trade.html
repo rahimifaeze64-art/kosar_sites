@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>شركة الكوثر | الطلبيات والاستيراد والحوالات</title>
+  <meta name="description" content="خدمات الطلبيات والاستيراد والحوالات المالية - تنفيذ بأمانة وكفاءة عالية" />
+  <meta name="theme-color" content="#1a2f5e" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            navy: { DEFAULT: '#1a2f5e', light: '#27407c', dark: '#111f40' },
+            gold: { DEFAULT: '#c9a84c', light: '#dbc27a', dark: '#a8893a' },
+          },
+          fontFamily: { sans: ['Tajawal', 'sans-serif'] },
+        },
+      },
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    :root{--navy:#1a2f5e;--gold:#c9a84c;}
+    html{scroll-behavior:smooth;}body{font-family:'Tajawal',sans-serif;}
+    #header{transition:background-color .35s,box-shadow .35s;background-color:rgba(255,255,255,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
+    #header.scrolled{background-color:rgba(255,255,255,.92);box-shadow:0 4px 24px rgba(26,47,94,.10);}
+    .dark #header{background-color:rgba(17,31,64,.55);}
+    .dark #header.scrolled{background-color:rgba(17,31,64,.92);box-shadow:0 4px 24px rgba(0,0,0,.35);}
+    .hero-pattern{background-image:radial-gradient(rgba(201,168,76,.14) 1.5px,transparent 1.5px),radial-gradient(rgba(26,47,94,.08) 1.5px,transparent 1.5px);background-size:42px 42px,42px 42px;background-position:0 0,21px 21px;}
+    .reveal{opacity:0;transform:translateY(28px);transition:opacity .7s,transform .7s;}
+    .reveal.visible{opacity:1;transform:translateY(0);}
+    .reveal-delay-1{transition-delay:.1s;}.reveal-delay-2{transition-delay:.2s;}.reveal-delay-3{transition-delay:.3s;}
+    .service-card{transition:transform .3s,box-shadow .3s,border-color .3s;}
+    .service-card:hover{transform:translateY(-8px);box-shadow:0 18px 40px rgba(201,168,76,.2);border-color:var(--gold);}
+    .service-card:hover .service-icon{transform:scale(1.08) rotate(-4deg);}
+    .service-icon{transition:all .3s;}
+    .faq-answer{max-height:0;overflow:hidden;transition:max-height .4s;}
+    .faq-item.open .faq-answer{max-height:300px;}
+    .faq-item .faq-chevron{transition:transform .3s;}
+    .faq-item.open .faq-chevron{transform:rotate(180deg);}
+    @keyframes waPulse{0%{box-shadow:0 0 0 0 rgba(37,211,102,.45)}70%{box-shadow:0 0 0 16px rgba(37,211,102,0)}100%{box-shadow:0 0 0 0 rgba(37,211,102,0)}}
+    .wa-float{animation:waPulse 2.4s infinite;}
+    a:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+  </style>
+</head>
+<body class="bg-white text-slate-800 dark:bg-navy-dark dark:text-slate-200 antialiased">
+
+  <!-- HEADER -->
+  <header id="header" class="fixed top-0 inset-x-0 z-50">
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[72px] flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="landing.html" class="flex items-center gap-2 shrink-0">
+          <span class="w-9 h-9 rounded-lg bg-gold/15 text-gold-dark flex items-center justify-center"><i class="fa-solid fa-arrow-right fa-sm"></i></span>
+          <span class="text-slate-600 dark:text-slate-300 font-medium text-sm hidden sm:inline">العودة</span>
+        </a>
+        <a href="landing.html" class="flex items-center gap-3 shrink-0">
+          <span class="w-[88px] h-[88px] rounded-none overflow-hidden shrink-0"><img src="assets/logo_main.jpg" alt="لوگو شركة الكوثر" class="w-full h-full object-cover"></span>
+          <span class="leading-tight hidden sm:block">
+            <span class="block font-black text-navy dark:text-white text-lg">شركة الكوثر</span>
+            <span class="block text-xs text-gold-dark dark:text-gold font-medium">الطلبيات والاستيراد</span>
+          </span>
+        </a>
+      </div>
+      <div class="flex items-center gap-3">
+        <button id="darkToggle" type="button" class="w-10 h-10 rounded-full border border-navy/20 dark:border-white/20 flex items-center justify-center text-navy dark:text-gold hover:bg-navy/5 transition-colors" aria-label="تبديل الوضع الليلي">
+          <i class="fa-solid fa-moon dark:hidden"></i><i class="fa-solid fa-sun hidden dark:inline"></i>
+        </button>
+        <a href="https://wa.me/+989120781003" target="_blank" rel="noopener noreferrer" class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg bg-[#25d366] text-white font-bold text-sm hover:bg-[#1ebe5d] transition-colors">
+          <i class="fa-brands fa-whatsapp"></i> تواصل معنا
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero-pattern min-h-screen flex items-center pt-[72px] bg-slate-50 dark:bg-navy-dark">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 w-full">
+        <div class="grid lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <span class="reveal inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gold/15 text-gold-dark dark:text-gold font-bold text-sm mb-6">
+              <i class="fa-solid fa-boxes-stacked"></i> الطلبيات · الاستيراد · الحوالات
+            </span>
+            <h1 class="reveal reveal-delay-1 text-4xl sm:text-5xl font-black leading-[1.25] text-navy dark:text-white">
+              تنفيذ طلباتك بأمانة <span class="text-gold-dark dark:text-gold">وكفاءة عالية</span>
+            </h1>
+            <p class="reveal reveal-delay-2 mt-6 text-lg text-slate-600 dark:text-slate-300 leading-relaxed">
+              هل لديك طلبية خاصة أو تريد استيراد بضاعة أو إجراء حوالة مالية؟ نتولى تنفيذ كل ذلك عنك بأعلى مستوى من الأمانة والكفاءة، ونضمن إيصال طلبك أو تحويلك في أقرب وقت وبأفضل الشروط.
+            </p>
+            <div class="reveal reveal-delay-3 mt-9 flex flex-col sm:flex-row gap-4">
+              <a href="https://wa.me/+989120781003" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-[#25d366] text-white font-bold text-lg hover:bg-[#1ebe5d] transition-colors shadow-lg shadow-[#25d366]/30">
+                <i class="fa-brands fa-whatsapp text-2xl"></i> تواصل معنا الآن
+              </a>
+              <a href="#services" class="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl border-2 border-gold text-gold-dark dark:text-gold font-bold text-lg hover:bg-gold hover:text-navy transition-colors">
+                اكتشف خدماتنا
+              </a>
+            </div>
+          </div>
+          <div class="reveal grid grid-cols-2 gap-4">
+            <div class="bg-navy dark:bg-navy-dark rounded-2xl p-6 text-center shadow-xl shadow-navy/20">
+              <p class="text-3xl font-black text-gold">1000+</p>
+              <p class="mt-2 text-white/80 font-medium">طلبية منفذة</p>
+            </div>
+            <div class="bg-gold rounded-2xl p-6 text-center shadow-xl shadow-gold/25 mt-8">
+              <p class="text-3xl font-black text-navy">100%</p>
+              <p class="mt-2 text-navy/80 font-medium">ضمان التسليم</p>
+            </div>
+            <div class="bg-gold rounded-2xl p-6 text-center shadow-xl shadow-gold/25 -mt-8">
+              <p class="text-3xl font-black text-navy">24/7</p>
+              <p class="mt-2 text-navy/80 font-medium">دعم متواصل</p>
+            </div>
+            <div class="bg-navy dark:bg-navy-dark rounded-2xl p-6 text-center shadow-xl shadow-navy/20">
+              <p class="text-3xl font-black text-gold">5+</p>
+              <p class="mt-2 text-white/80 font-medium">سنوات خبرة</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SERVICES -->
+    <section id="services" class="py-20 md:py-28 bg-white dark:bg-navy-dark">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center max-w-2xl mx-auto reveal">
+          <span class="text-gold-dark dark:text-gold font-bold text-sm tracking-wide">ما نقدمه لك</span>
+          <h2 class="mt-2 text-3xl md:text-4xl font-black text-navy dark:text-white">خدماتنا التجارية</h2>
+          <p class="mt-4 text-slate-600 dark:text-slate-300 leading-relaxed">ننفذ طلباتك من أي مكان في العالم بأعلى معايير الأمانة والشفافية.</p>
+        </div>
+        <div class="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <article class="service-card reveal bg-slate-50 dark:bg-navy rounded-2xl p-8 border-2 border-transparent">
+            <span class="service-icon w-16 h-16 rounded-2xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-2xl"><i class="fa-solid fa-box-open"></i></span>
+            <h3 class="mt-6 text-xl font-extrabold text-navy dark:text-white">الطلبيات الخاصة</h3>
+            <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">تنفيذ أي طلبية خاصة تحتاجها من إيران أو غيرها مع ضمان الجودة والتسليم في الوقت المحدد.</p>
+          </article>
+          <article class="service-card reveal reveal-delay-1 bg-slate-50 dark:bg-navy rounded-2xl p-8 border-2 border-transparent">
+            <span class="service-icon w-16 h-16 rounded-2xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-2xl"><i class="fa-solid fa-ship"></i></span>
+            <h3 class="mt-6 text-xl font-extrabold text-navy dark:text-white">استيراد البضائع</h3>
+            <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">إجراءات الاستيراد الكاملة من إيران بما فيها التخليص الجمركي والشحن والتوثيق الرسمي.</p>
+          </article>
+          <article class="service-card reveal reveal-delay-2 bg-slate-50 dark:bg-navy rounded-2xl p-8 border-2 border-transparent">
+            <span class="service-icon w-16 h-16 rounded-2xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-2xl"><i class="fa-solid fa-money-bill-transfer"></i></span>
+            <h3 class="mt-6 text-xl font-extrabold text-navy dark:text-white">الحوالات المالية</h3>
+            <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">تحويل الأموال بين إيران والدول العربية بضمان كامل وأسعار صرف تنافسية وأمان تام.</p>
+          </article>
+          <article class="service-card reveal bg-slate-50 dark:bg-navy rounded-2xl p-8 border-2 border-transparent">
+            <span class="service-icon w-16 h-16 rounded-2xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-2xl"><i class="fa-solid fa-file-contract"></i></span>
+            <h3 class="mt-6 text-xl font-extrabold text-navy dark:text-white">إجراءات الجمارك</h3>
+            <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">التخليص الجمركي السريع وإعداد وثائق الاستيراد والتصدير وفق الأنظمة المعمول بها.</p>
+          </article>
+          <article class="service-card reveal reveal-delay-1 bg-slate-50 dark:bg-navy rounded-2xl p-8 border-2 border-transparent">
+            <span class="service-icon w-16 h-16 rounded-2xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-2xl"><i class="fa-solid fa-truck-fast"></i></span>
+            <h3 class="mt-6 text-xl font-extrabold text-navy dark:text-white">الشحن والتوصيل</h3>
+            <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">خدمات الشحن البري والجوي بأسعار تنافسية مع تتبع الشحنات ومتابعتها حتى الوصول.</p>
+          </article>
+          <article class="service-card reveal reveal-delay-2 bg-slate-50 dark:bg-navy rounded-2xl p-8 border-2 border-transparent">
+            <span class="service-icon w-16 h-16 rounded-2xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-2xl"><i class="fa-solid fa-handshake"></i></span>
+            <h3 class="mt-6 text-xl font-extrabold text-navy dark:text-white">الوساطة التجارية</h3>
+            <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">ربطك بالموردين والمصنّعين الموثوقين في إيران وإجراء الاتفاقيات التجارية نيابة عنك.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHY US -->
+    <section class="py-20 bg-slate-50 dark:bg-navy">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center max-w-2xl mx-auto reveal mb-14">
+          <span class="text-gold-dark dark:text-gold font-bold text-sm tracking-wide">لماذا تختارنا</span>
+          <h2 class="mt-2 text-3xl md:text-4xl font-black text-navy dark:text-white">وكيلك الموثوق في إيران</h2>
+        </div>
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div class="reveal bg-white dark:bg-navy-dark rounded-2xl p-6 text-center border border-slate-100 dark:border-white/10 shadow-sm">
+            <span class="w-14 h-14 mx-auto rounded-xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-2xl mb-4"><i class="fa-solid fa-shield-halved"></i></span>
+            <h3 class="font-extrabold text-navy dark:text-white">ضمان الأمانة</h3>
+            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">نضمن تنفيذ كل طلبية بأمانة ونزاهة مطلقة</p>
+          </div>
+          <div class="reveal reveal-delay-1 bg-white dark:bg-navy-dark rounded-2xl p-6 text-center border border-slate-100 dark:border-white/10 shadow-sm">
+            <span class="w-14 h-14 mx-auto rounded-xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-2xl mb-4"><i class="fa-solid fa-bolt"></i></span>
+            <h3 class="font-extrabold text-navy dark:text-white">سرعة التنفيذ</h3>
+            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">ننجز طلباتك في أسرع وقت بدون تأخير أو مماطلة</p>
+          </div>
+          <div class="reveal reveal-delay-2 bg-white dark:bg-navy-dark rounded-2xl p-6 text-center border border-slate-100 dark:border-white/10 shadow-sm">
+            <span class="w-14 h-14 mx-auto rounded-xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-2xl mb-4"><i class="fa-solid fa-chart-line"></i></span>
+            <h3 class="font-extrabold text-navy dark:text-white">أسعار تنافسية</h3>
+            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">أفضل أسعار الصرف والشحن مع شفافية كاملة في التكاليف</p>
+          </div>
+          <div class="reveal reveal-delay-3 bg-white dark:bg-navy-dark rounded-2xl p-6 text-center border border-slate-100 dark:border-white/10 shadow-sm">
+            <span class="w-14 h-14 mx-auto rounded-xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-2xl mb-4"><i class="fa-solid fa-headset"></i></span>
+            <h3 class="font-extrabold text-navy dark:text-white">متابعة مستمرة</h3>
+            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">تحديثات دورية عن حالة طلبيتك أو تحويلك في كل مرحلة</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="py-20 bg-white dark:bg-navy-dark">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center reveal mb-12">
+          <span class="text-gold-dark dark:text-gold font-bold text-sm tracking-wide">الأسئلة الشائعة</span>
+          <h2 class="mt-2 text-3xl font-black text-navy dark:text-white">أسئلة حول الطلبيات والحوالات</h2>
+        </div>
+        <div class="space-y-4">
+          <div class="faq-item reveal bg-slate-50 dark:bg-navy rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
+            <button type="button" class="faq-toggle w-full flex items-center justify-between gap-4 p-6 text-right font-extrabold text-navy dark:text-white" aria-expanded="false">
+              <span>كيف أضمن وصول حوالتي المالية بأمان؟</span>
+              <i class="faq-chevron fa-solid fa-chevron-down text-gold-dark dark:text-gold shrink-0"></i>
+            </button>
+            <div class="faq-answer"><p class="px-6 pb-6 text-slate-600 dark:text-slate-300 leading-relaxed">نعتمد آلية تسوية واضحة ومضمونة مع إيصالات رسمية في كل خطوة. لدينا سجل نظيف في تحويل الأموال وتاريخ طويل من الثقة مع عملائنا.</p></div>
+          </div>
+          <div class="faq-item reveal bg-slate-50 dark:bg-navy rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
+            <button type="button" class="faq-toggle w-full flex items-center justify-between gap-4 p-6 text-right font-extrabold text-navy dark:text-white" aria-expanded="false">
+              <span>ما هي أنواع البضائع التي يمكن استيرادها؟</span>
+              <i class="faq-chevron fa-solid fa-chevron-down text-gold-dark dark:text-gold shrink-0"></i>
+            </button>
+            <div class="faq-answer"><p class="px-6 pb-6 text-slate-600 dark:text-slate-300 leading-relaxed">نتعامل مع معظم أنواع البضائع المسموح بها قانونياً. تواصل معنا لمناقشة تفاصيل طلبيتك وسنقدم لك الحل الأنسب.</p></div>
+          </div>
+          <div class="faq-item reveal bg-slate-50 dark:bg-navy rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
+            <button type="button" class="faq-toggle w-full flex items-center justify-between gap-4 p-6 text-right font-extrabold text-navy dark:text-white" aria-expanded="false">
+              <span>كم يستغرق تنفيذ الطلبية أو الحوالة؟</span>
+              <i class="faq-chevron fa-solid fa-chevron-down text-gold-dark dark:text-gold shrink-0"></i>
+            </button>
+            <div class="faq-answer"><p class="px-6 pb-6 text-slate-600 dark:text-slate-300 leading-relaxed">الحوالات المالية تتم عادة خلال 24-48 ساعة، والطلبيات التجارية بحسب الاتفاق ونوع البضاعة ووجهة التسليم.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section id="contact" class="py-20 bg-slate-50 dark:bg-navy">
+      <div class="max-w-2xl mx-auto px-4 text-center">
+        <span class="reveal block text-gold-dark dark:text-gold font-bold text-sm tracking-wide mb-2">تواصل معنا</span>
+        <h2 class="reveal text-3xl font-black text-navy dark:text-white mb-4">جاهزون لتنفيذ طلبك</h2>
+        <p class="reveal text-slate-600 dark:text-slate-300 leading-relaxed mb-10">أرسل لنا تفاصيل طلبيتك أو استفسارك وسيتواصل معك فريقنا فوراً.</p>
+        <div class="reveal flex flex-col items-center gap-5">
+          <a href="https://wa.me/+989120781003" target="_blank" rel="noopener noreferrer"
+            class="inline-flex items-center gap-3 px-10 py-5 rounded-2xl bg-[#25d366] text-white font-extrabold text-xl hover:bg-[#1ebe5d] transition-colors shadow-xl shadow-[#25d366]/30 hover:scale-105">
+            <i class="fa-brands fa-whatsapp text-3xl"></i> تواصل معنا عبر واتساب
+          </a>
+          <p class="text-slate-500 dark:text-slate-400 text-sm">نرد على رسائلكم خلال دقائق · متاحون طوال أيام الأسبوع</p>
+        </div>
+        <div class="reveal mt-10 grid sm:grid-cols-2 gap-5">
+          <div class="bg-white dark:bg-navy-dark rounded-2xl p-6 border border-slate-200 dark:border-white/10">
+            <span class="w-12 h-12 mx-auto rounded-xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-xl mb-4"><i class="fa-solid fa-phone"></i></span>
+            <p class="text-sm text-slate-500 dark:text-slate-400">الهاتف / واتساب</p>
+            <a href="https://wa.me/+989120781003" class="font-bold text-navy dark:text-white text-sm" dir="ltr">+98 912 078 1003</a>
+          </div>
+          <div class="bg-white dark:bg-navy-dark rounded-2xl p-6 border border-slate-200 dark:border-white/10">
+            <span class="w-12 h-12 mx-auto rounded-xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-xl mb-4"><i class="fa-solid fa-clock"></i></span>
+            <p class="text-sm text-slate-500 dark:text-slate-400">ساعات العمل</p>
+            <p class="font-bold text-navy dark:text-white text-sm">السبت - جمعه : 19 - 1</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-navy-dark text-white py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-5">
+      <div class="flex flex-wrap items-center justify-center gap-6 text-sm text-white/70">
+        <div class="flex items-center gap-2"><i class="fa-solid fa-location-dot text-gold"></i><span>إيران، قم المقدسة، شارع انقلاب</span></div>
+        <div class="flex items-center gap-2"><i class="fa-solid fa-phone text-gold"></i><a href="tel:+989120781003" class="hover:text-gold transition-colors" dir="ltr">+98 912 078 1003</a></div>
+        <div class="flex items-center gap-2"><i class="fa-solid fa-envelope text-gold"></i><a href="mailto:info@alkawthar-edu.com" class="hover:text-gold transition-colors" dir="ltr">info@alkawthar-edu.com</a></div>
+      </div>
+      <a href="https://wa.me/+989120781003" target="_blank" rel="noopener noreferrer"
+        class="wa-float inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#25d366] text-white font-extrabold hover:bg-[#1ebe5d] transition-colors shadow-lg whitespace-nowrap">
+        <i class="fa-brands fa-whatsapp text-xl"></i> تواصل عبر واتساب
+      </a>
+    </div>
+    <div class="text-center mt-6 text-white/40 text-xs">&copy; <span id="year"></span> شركة الكوثر للخدمات الجامعية — جميع الحقوق محفوظة</div>
+  </footer>
+
+  <a href="https://wa.me/+989120781003" target="_blank" rel="noopener noreferrer"
+    class="wa-float fixed bottom-6 left-6 z-50 w-14 h-14 rounded-full bg-[#25d366] text-white flex items-center justify-center text-2xl shadow-xl hover:scale-110 transition-transform"
+    aria-label="تواصل معنا عبر واتساب"><i class="fa-brands fa-whatsapp"></i></a>
+
+  <script>
+    (function(){
+      'use strict';
+      var root=document.documentElement;
+      try{if(localStorage.getItem('theme')==='dark')root.classList.add('dark');}catch(e){}
+      document.getElementById('darkToggle').addEventListener('click',function(){
+        root.classList.toggle('dark');
+        try{localStorage.setItem('theme',root.classList.contains('dark')?'dark':'light');}catch(e){}
+      });
+      var header=document.getElementById('header');
+      window.addEventListener('scroll',function(){header.classList.toggle('scrolled',window.scrollY>24);},{passive:true});
+      var ro=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('visible');ro.unobserve(e.target);}});},{threshold:.12});
+      document.querySelectorAll('.reveal').forEach(function(el){ro.observe(el);});
+      document.querySelectorAll('.faq-toggle').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          var item=btn.closest('.faq-item'),isOpen=item.classList.contains('open');
+          document.querySelectorAll('.faq-item.open').forEach(function(o){o.classList.remove('open');o.querySelector('.faq-toggle').setAttribute('aria-expanded','false');});
+          if(!isOpen){item.classList.add('open');btn.setAttribute('aria-expanded','true');}
+        });
+      });
+      document.getElementById('year').textContent=new Date().getFullYear();
+    })();
+  </script>
+</body>
+</html>

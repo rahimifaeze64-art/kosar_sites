@@ -3,20 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>شركة الكوثر للخدمات الجامعية | رفيقك في مسيرتك الأكاديمية</title>
-  <meta name="description" content="شركة الكوثر للخدمات الجامعية - خدمات أكاديمية متكاملة: كتابة الرسائل الجامعية، الترجمة والتوثيق، الاستشارات الأكاديمية ومتابعة الإجراءات الجامعية للطلاب الدوليين." />
-  <meta name="keywords" content="خدمات جامعية, كتابة رسائل ماجستير, دكتوراه, ترجمة أكاديمية, استشارات أكاديمية, بروبوزال" />
-  <meta property="og:title" content="شركة الكوثر للخدمات الجامعية" />
-  <meta property="og:description" content="رافقك في مسيرتك الأكاديمية من البداية حتى التخرج - خدمات أكاديمية شاملة للطلاب الدوليين" />
-  <meta property="og:type" content="website" />
+  <title>شركة الكوثر | اختر خدمتك</title>
+  <meta name="description" content="شركة الكوثر - خدمات جامعية، طبية، واستيراد وحوالات" />
   <meta name="theme-color" content="#1a2f5e" />
-
-  <!-- Google Fonts: Tajawal -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
-
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -32,1007 +24,252 @@
       },
     }
   </script>
-
-  <!-- Font Awesome CDN -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
   <style>
-    :root {
-      --navy: #1a2f5e;
-      --gold: #c9a84c;
-    }
-    html { scroll-behavior: smooth; }
-    body { font-family: 'Tajawal', sans-serif; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: 'Tajawal', sans-serif; overflow: hidden; }
+    body { display: flex; flex-direction: column; background: #f1f5f9; }
 
-    /* ---------- Glassmorphism header ---------- */
-    #header {
-      transition: background-color .35s ease, box-shadow .35s ease, backdrop-filter .35s ease;
-      background-color: rgba(255, 255, 255, .55);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-    }
-    #header.scrolled {
-      background-color: rgba(255, 255, 255, .92);
-      box-shadow: 0 4px 24px rgba(26, 47, 94, .10);
-    }
-    .dark #header { background-color: rgba(17, 31, 64, .55); }
-    .dark #header.scrolled { background-color: rgba(17, 31, 64, .92); box-shadow: 0 4px 24px rgba(0,0,0,.35); }
-
-    /* ---------- Hero pattern ---------- */
-    .hero-pattern {
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
       background-image:
-        radial-gradient(rgba(201,168,76,.14) 1.5px, transparent 1.5px),
-        radial-gradient(rgba(26,47,94,.10) 1.5px, transparent 1.5px);
-      background-size: 42px 42px, 42px 42px;
-      background-position: 0 0, 21px 21px;
-    }
-    .dark .hero-pattern {
-      background-image:
-        radial-gradient(rgba(201,168,76,.12) 1.5px, transparent 1.5px),
-        radial-gradient(rgba(255,255,255,.05) 1.5px, transparent 1.5px);
+        radial-gradient(rgba(201,168,76,.13) 1.5px, transparent 1.5px),
+        radial-gradient(rgba(26,47,94,.08) 1.5px, transparent 1.5px);
+      background-size: 40px 40px, 40px 40px;
+      background-position: 0 0, 20px 20px;
+      pointer-events: none; z-index: 0;
     }
 
-    /* ---------- Scroll reveal ---------- */
-    .reveal { opacity: 0; transform: translateY(28px); transition: opacity .7s ease, transform .7s ease; }
-    .reveal.visible { opacity: 1; transform: translateY(0); }
-    .reveal-delay-1 { transition-delay: .1s; }
-    .reveal-delay-2 { transition-delay: .2s; }
-    .reveal-delay-3 { transition-delay: .3s; }
-    @media (prefers-reduced-motion: reduce) {
-      .reveal { opacity: 1; transform: none; transition: none; }
-      html { scroll-behavior: auto; }
+    header {
+      position: relative; z-index: 10;
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(26,47,94,0.08);
+      padding: 0 1.5rem; height: 72px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
     }
 
-    /* ---------- Floating stats animation ---------- */
-    @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-    .floaty { animation: floaty 4.5s ease-in-out infinite; }
-    .floaty:nth-child(2) { animation-delay: .8s; }
-    .floaty:nth-child(3) { animation-delay: 1.6s; }
-    .floaty:nth-child(4) { animation-delay: 2.4s; }
-    @media (prefers-reduced-motion: reduce) { .floaty { animation: none; } }
-
-    /* ---------- Service card hover ---------- */
-    .service-card { transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease; }
-    .service-card:hover { transform: translateY(-8px); box-shadow: 0 18px 40px rgba(26,47,94,.14); border-color: var(--gold); }
-    .service-card:hover .service-icon { background-color: var(--navy); color: var(--gold); transform: scale(1.08) rotate(-4deg); }
-    .service-icon { transition: all .3s ease; }
-
-    /* ---------- Timeline connector ---------- */
-    @media (min-width: 768px) {
-      .timeline-step:not(:last-child)::after {
-        content: '';
-        position: absolute;
-        top: 34px;
-        left: -50%;
-        width: 100%;
-        height: 3px;
-        background: repeating-linear-gradient(90deg, var(--gold) 0 10px, transparent 10px 18px);
-        z-index: 0;
-      }
+    main {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      position: relative; z-index: 1;
+      padding: 1rem 1.5rem; gap: 1.5rem;
     }
 
-    /* ---------- Testimonials slider ---------- */
-    .slides-track { display: flex; transition: transform .6s cubic-bezier(.4,0,.2,1); }
-    .slide { flex: 0 0 100%; }
+    .tagline { text-align: center; }
+    .tagline h1 { animation: fadeUp .5s ease both; }
+    .tagline p  { animation: fadeUp .5s ease .1s both; }
 
-    /* ---------- FAQ accordion ---------- */
-    .faq-answer { max-height: 0; overflow: hidden; transition: max-height .4s ease; }
-    .faq-item.open .faq-answer { max-height: 300px; }
-    .faq-item .faq-chevron { transition: transform .3s ease; }
-    .faq-item.open .faq-chevron { transform: rotate(180deg); }
+    .cards-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem; width: 100%; max-width: 980px;
+    }
 
-    /* ---------- WhatsApp float ---------- */
+    @media (max-width: 720px) {
+      html, body { overflow: auto; }
+      .cards-grid { grid-template-columns: 1fr; max-width: 400px; }
+    }
+
+    .card {
+      position: relative; border-radius: 1.5rem; overflow: hidden;
+      cursor: pointer; text-decoration: none;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 2rem 1.5rem; gap: 1rem;
+      border: 2px solid transparent; text-align: center;
+      transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+      animation: fadeUp .5s ease both;
+    }
+    .card:nth-child(1) { animation-delay: .05s; }
+    .card:nth-child(2) { animation-delay: .15s; }
+    .card:nth-child(3) { animation-delay: .25s; }
+
+    .card:hover { transform: translateY(-8px); border-color: #c9a84c; }
+    .card:focus-visible { outline: 3px solid #c9a84c; outline-offset: 2px; }
+
+    .card::before {
+      content: ''; position: absolute; inset: 0; opacity: .06;
+      background-image: radial-gradient(circle, white 1px, transparent 1px);
+      background-size: 24px 24px; pointer-events: none;
+    }
+
+    .card-academic { background: linear-gradient(145deg,#1a2f5e 0%,#27407c 100%); color: white; box-shadow: 0 8px 32px rgba(26,47,94,.22); }
+    .card-medical  { background: linear-gradient(145deg,#065f46 0%,#047857 100%); color: white; box-shadow: 0 8px 32px rgba(6,95,70,.22); }
+    .card-trade    { background: linear-gradient(145deg,#92400e 0%,#c9a84c 100%); color: white; box-shadow: 0 8px 32px rgba(201,168,76,.22); }
+
+    .card:hover { box-shadow: 0 20px 48px rgba(26,47,94,.22); }
+
+    .card-icon {
+      width: 72px; height: 72px; border-radius: 1.2rem;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; transition: transform .3s ease;
+    }
+    .card:hover .card-icon { transform: scale(1.1) rotate(-4deg); }
+    .card-academic .card-icon { background: rgba(201,168,76,.2); color: #c9a84c; }
+    .card-medical  .card-icon { background: rgba(255,255,255,.15); color: #6ee7b7; }
+    .card-trade    .card-icon { background: rgba(255,255,255,.15); color: #fde68a; }
+
+    .card-title { font-size: 1.15rem; font-weight: 800; line-height: 1.4; }
+    .card-desc  { font-size: .82rem; opacity: .82; line-height: 1.7; }
+
+    .card-arrow {
+      margin-top: .25rem; display: inline-flex; align-items: center; gap: .4rem;
+      font-size: .82rem; font-weight: 700; padding: .4rem 1rem; border-radius: 999px;
+      transition: gap .2s ease;
+    }
+    .card:hover .card-arrow { gap: .7rem; }
+    .card-academic .card-arrow { background: rgba(201,168,76,.22); color: #dbc27a; }
+    .card-medical  .card-arrow { background: rgba(255,255,255,.15); color: #a7f3d0; }
+    .card-trade    .card-arrow { background: rgba(255,255,255,.15); color: #fef3c7; }
+
+    footer {
+      position: relative; z-index: 10;
+      background: #111f40; color: rgba(255,255,255,.75);
+      padding: .9rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: .75rem; flex-shrink: 0;
+    }
+    .footer-info { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; font-size: .8rem; }
+    .footer-info-item { display: flex; align-items: center; gap: .4rem; }
+    .footer-info-item i { color: #c9a84c; }
+    .footer-info-item a { color: rgba(255,255,255,.75); text-decoration: none; }
+    .footer-info-item a:hover { color: #c9a84c; }
+
+    .wa-btn {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .55rem 1.2rem; border-radius: 999px;
+      background: #25d366; color: white; font-weight: 800; font-size: .82rem;
+      text-decoration: none; transition: background .2s, transform .2s;
+      animation: waPulse 2.4s infinite; white-space: nowrap;
+    }
+    .wa-btn:hover { background: #1ebe5d; transform: scale(1.04); }
+
     @keyframes waPulse {
-      0% { box-shadow: 0 0 0 0 rgba(37,211,102,.45); }
-      70% { box-shadow: 0 0 0 16px rgba(37,211,102,0); }
+      0%   { box-shadow: 0 0 0 0 rgba(37,211,102,.45); }
+      70%  { box-shadow: 0 0 0 12px rgba(37,211,102,0); }
       100% { box-shadow: 0 0 0 0 rgba(37,211,102,0); }
     }
-    .wa-float { animation: waPulse 2.4s infinite; }
-
-    /* ---------- Focus visibility ---------- */
-    a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
-      outline: 3px solid var(--gold);
-      outline-offset: 2px;
-    }
-
-    .sr-only {
-      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 
-<body class="bg-white text-slate-800 dark:bg-navy-dark dark:text-slate-200 antialiased">
+<body>
 
-  <!-- ============ HEADER ============ -->
-  <header id="header" class="fixed top-0 inset-x-0 z-50">
-    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[72px] flex items-center justify-between" aria-label="التنقل الرئيسي">
-      <!-- Logo -->
-      <a href="#home" class="flex items-center gap-3 shrink-0" aria-label="شركة الكوثر - الرئيسية">
-        <span class="w-11 h-11 rounded-xl overflow-hidden shrink-0" aria-hidden="true">
-          <img src="assets/logooo.png" alt="لوگو شركة الكوثر" class="w-full h-full object-cover">
-        </span>
-        <span class="leading-tight">
-          <span class="block font-black text-navy dark:text-white text-lg">شركة الكوثر</span>
-          <span class="block text-xs text-gold-dark dark:text-gold font-medium">للخدمات الجامعية</span>
-        </span>
+  <!-- HEADER -->
+  <header>
+    <a href="landing.html" style="display:flex;align-items:center;gap:.75rem;text-decoration:none;">
+      <span style="width:88px;height:88px;border-radius:0;overflow:hidden;flex-shrink:0;">
+        <img src="assets/logo_main.jpg" alt="لوگو شركة الكوثر" style="width:100%;height:100%;object-fit:cover;">
+      </span>
+      <span style="line-height:1.3;">
+        <span style="display:block;font-weight:900;color:#1a2f5e;font-size:1.05rem;">شركة الكوثر</span>
+        <span style="display:block;font-size:.72rem;color:#a8893a;font-weight:600;">للخدمات الجامعية</span>
+      </span>
+    </a>
+
+    <div style="display:flex;align-items:center;gap:.75rem;">
+      <button id="darkToggle" type="button"
+        style="width:38px;height:38px;border-radius:50%;border:1.5px solid rgba(26,47,94,0.2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#1a2f5e;font-size:.95rem;"
+        aria-label="تبديل الوضع الليلي">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+      <a href="login.html"
+        style="padding:.5rem 1.1rem;border-radius:.6rem;border:2px solid #1a2f5e;color:#1a2f5e;font-weight:700;font-size:.82rem;text-decoration:none;"
+        onmouseover="this.style.background='#1a2f5e';this.style.color='white';"
+        onmouseout="this.style.background='transparent';this.style.color='#1a2f5e';">
+        دخول المتعاونين
       </a>
-
-      <!-- Desktop nav -->
-      <ul class="hidden lg:flex items-center gap-7 font-medium text-navy dark:text-slate-200">
-        <li><a href="#home" class="hover:text-gold-dark dark:hover:text-gold transition-colors">الرئيسية</a></li>
-        <li><a href="#services" class="hover:text-gold-dark dark:hover:text-gold transition-colors">خدماتنا</a></li>
-        <li><a href="#why-us" class="hover:text-gold-dark dark:hover:text-gold transition-colors">لماذا نحن</a></li>
-        <li><a href="#testimonials" class="hover:text-gold-dark dark:hover:text-gold transition-colors">الشهادات</a></li>
-        <li><a href="#contact" class="hover:text-gold-dark dark:hover:text-gold transition-colors">تواصل معنا</a></li>
-      </ul>
-
-      <!-- CTAs + dark mode -->
-      <div class="hidden lg:flex items-center gap-3">
-        <button id="darkToggle" type="button" class="w-10 h-10 rounded-full border border-navy/20 dark:border-white/20 flex items-center justify-center text-navy dark:text-gold hover:bg-navy/5 dark:hover:bg-white/10 transition-colors" aria-label="تبديل الوضع الليلي">
-          <i class="fa-solid fa-moon dark:hidden" aria-hidden="true"></i>
-          <i class="fa-solid fa-sun hidden dark:inline" aria-hidden="true"></i>
-        </button>
-        <a href="login.html" class="px-5 py-2.5 rounded-lg border-2 border-navy text-navy dark:border-gold dark:text-gold font-bold hover:bg-navy hover:text-white dark:hover:bg-gold dark:hover:text-navy transition-colors">
-          دخول المتعاونين
-        </a>
-        <a href="tasjil/templates/registration.html" class="px-5 py-2.5 rounded-lg bg-gold text-navy font-bold hover:bg-gold-dark transition-colors shadow-md shadow-gold/30">
-          تسجيل الطلاب
-        </a>
-      </div>
-
-      <!-- Mobile buttons -->
-      <div class="flex lg:hidden items-center gap-2">
-        <button id="darkToggleMobile" type="button" class="w-10 h-10 rounded-full border border-navy/20 dark:border-white/20 flex items-center justify-center text-navy dark:text-gold" aria-label="تبديل الوضع الليلي">
-          <i class="fa-solid fa-moon dark:hidden" aria-hidden="true"></i>
-          <i class="fa-solid fa-sun hidden dark:inline" aria-hidden="true"></i>
-        </button>
-        <button id="menuBtn" type="button" class="w-10 h-10 rounded-lg flex items-center justify-center text-navy dark:text-white text-xl" aria-label="فتح القائمة" aria-expanded="false" aria-controls="mobileMenu">
-          <i class="fa-solid fa-bars" aria-hidden="true"></i>
-        </button>
-      </div>
-    </nav>
-
-    <!-- Mobile menu -->
-    <div id="mobileMenu" class="lg:hidden hidden bg-white/95 dark:bg-navy-dark/95 backdrop-blur-md border-t border-slate-100 dark:border-white/10 shadow-lg">
-      <ul class="px-6 py-4 space-y-1 font-medium text-navy dark:text-slate-200">
-        <li><a href="#home" class="block py-2.5 hover:text-gold-dark dark:hover:text-gold">الرئيسية</a></li>
-        <li><a href="#services" class="block py-2.5 hover:text-gold-dark dark:hover:text-gold">خدماتنا</a></li>
-        <li><a href="#why-us" class="block py-2.5 hover:text-gold-dark dark:hover:text-gold">لماذا نحن</a></li>
-        <li><a href="#testimonials" class="block py-2.5 hover:text-gold-dark dark:hover:text-gold">الشهادات</a></li>
-        <li><a href="#contact" class="block py-2.5 hover:text-gold-dark dark:hover:text-gold">تواصل معنا</a></li>
-      </ul>
-      <div class="px-6 pb-5 flex flex-col gap-3">
-        <a href="login.html" class="text-center px-5 py-3 rounded-lg border-2 border-navy text-navy dark:border-gold dark:text-gold font-bold">دخول المتعاونين</a>
-        <a href="tasjil/templates/registration.html" class="text-center px-5 py-3 rounded-lg bg-gold text-navy font-bold">تسجيل الطلاب</a>
-      </div>
     </div>
   </header>
 
-  <main id="main">
-    <!-- ============ 1. HERO ============ -->
-    <section id="home" class="hero-pattern min-h-screen flex items-center pt-[72px] bg-slate-50 dark:bg-navy-dark relative overflow-hidden">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 w-full text-center">
-        <span class="reveal inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gold/15 text-gold-dark dark:text-gold font-bold text-sm mb-6">
-          <i class="fa-solid fa-award" aria-hidden="true"></i>
-          خدمات أكاديمية موثوقة للطلاب الدوليين
+  <!-- MAIN -->
+  <main>
+    <div class="tagline">
+      <h1 style="font-size:clamp(1.3rem,3vw,1.9rem);font-weight:900;color:#1a2f5e;margin-bottom:.4rem;">
+        كيف يمكننا مساعدتك؟
+      </h1>
+      <p style="font-size:.9rem;color:#64748b;max-width:420px;line-height:1.7;">
+        اختر الخدمة التي تحتاجها وسيتولى فريقنا المتخصص مساعدتك فوراً
+      </p>
+    </div>
+
+    <div class="cards-grid">
+      <!-- Card 1: Academic -->
+      <a href="landing_uni.html" class="card card-academic" aria-label="الخدمات الجامعية">
+        <span class="card-icon"><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i></span>
+        <div>
+          <p class="card-title">الخدمات الجامعية</p>
+          <p class="card-desc">رسائل الماجستير والدكتوراه، البروبوزال، الترجمة، استشارات أكاديمية ومتابعة الإجراءات</p>
+        </div>
+        <span class="card-arrow">
+          اعرف أكثر <i class="fa-solid fa-arrow-left fa-sm" aria-hidden="true"></i>
         </span>
+      </a>
 
-        <h1 class="reveal reveal-delay-1 text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.25] text-navy dark:text-white max-w-4xl mx-auto">
-          رافقك في مسيرتك الأكاديمية
-          <span class="text-gold-dark dark:text-gold">من البداية حتى التخرج</span>
-        </h1>
-
-        <p class="reveal reveal-delay-2 mt-6 text-lg sm:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
-          نقدم خدمات جامعية شاملة تشمل كتابة الرسائل، الترجمة والتوثيق، الاستشارات الأكاديمية،
-          ومتابعة كافة الإجراءات الجامعية بسرية تامة واحترافية عالية.
-        </p>
-
-        <div class="reveal reveal-delay-3 mt-9 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <a href="#services" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-navy text-white font-bold text-lg hover:bg-navy-light transition-colors shadow-lg shadow-navy/25">
-            اكتشف خدماتنا
-            <i class="fa-solid fa-arrow-down mr-2 text-gold" aria-hidden="true"></i>
-          </a>
-          <a href="#contact" class="w-full sm:w-auto px-8 py-4 rounded-xl border-2 border-gold text-gold-dark dark:text-gold font-bold text-lg hover:bg-gold hover:text-navy transition-colors">
-            تواصل معنا الآن
-          </a>
+      <!-- Card 2: Medical -->
+      <a href="landing_medical.html" class="card card-medical" aria-label="الخدمات الطبية">
+        <span class="card-icon"><i class="fa-solid fa-heart-pulse" aria-hidden="true"></i></span>
+        <div>
+          <p class="card-title">الخدمات الطبية</p>
+          <p class="card-desc">رعاية طبية متخصصة داخل إيران، أفضل الأطباء والمستشفيات مع متابعة كاملة لإجراءاتك</p>
         </div>
+        <span class="card-arrow">
+          اعرف أكثر <i class="fa-solid fa-arrow-left fa-sm" aria-hidden="true"></i>
+        </span>
+      </a>
 
-        <!-- Floating stats -->
-        <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-          <div class="floaty reveal bg-white dark:bg-navy rounded-2xl p-6 shadow-lg shadow-navy/10 border border-slate-100 dark:border-white/10">
-            <p class="text-3xl font-black text-navy dark:text-gold"><span class="counter" data-target="1200">0</span>+</p>
-            <p class="mt-1 text-sm font-medium text-slate-500 dark:text-slate-300">طالب مستفيد</p>
-          </div>
-          <div class="floaty reveal reveal-delay-1 bg-white dark:bg-navy rounded-2xl p-6 shadow-lg shadow-navy/10 border border-slate-100 dark:border-white/10">
-            <p class="text-3xl font-black text-navy dark:text-gold"><span class="counter" data-target="98">0</span>%</p>
-            <p class="mt-1 text-sm font-medium text-slate-500 dark:text-slate-300">نسبة النجاح</p>
-          </div>
-          <div class="floaty reveal reveal-delay-2 bg-white dark:bg-navy rounded-2xl p-6 shadow-lg shadow-navy/10 border border-slate-100 dark:border-white/10">
-            <p class="text-3xl font-black text-navy dark:text-gold"><span class="counter" data-target="5">0</span>+</p>
-            <p class="mt-1 text-sm font-medium text-slate-500 dark:text-slate-300">سنوات الخبرة</p>
-          </div>
-          <div class="floaty reveal reveal-delay-3 bg-white dark:bg-navy rounded-2xl p-6 shadow-lg shadow-navy/10 border border-slate-100 dark:border-white/10">
-            <p class="text-3xl font-black text-navy dark:text-gold"><span class="counter" data-target="35">0</span>+</p>
-            <p class="mt-1 text-sm font-medium text-slate-500 dark:text-slate-300">تخصصاً أكاديمياً</p>
-          </div>
+      <!-- Card 3: Trade -->
+      <a href="landing_trade.html" class="card card-trade" aria-label="الطلبيات والاستيراد والحوالات">
+        <span class="card-icon"><i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i></span>
+        <div>
+          <p class="card-title">الطلبيات والاستيراد والحوالات</p>
+          <p class="card-desc">تنفيذ الطلبيات، استيراد البضائع، إجراءات الجمارك والحوالات المالية بأمانة وكفاءة</p>
         </div>
-      </div>
-    </section>
-
-    <!-- ============ 2. SERVICES ============ -->
-    <section id="services" class="py-20 md:py-28 bg-white dark:bg-navy-dark">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center max-w-2xl mx-auto reveal">
-          <span class="text-gold-dark dark:text-gold font-bold text-sm tracking-wide">ما نقدمه لك</span>
-          <h2 class="mt-2 text-3xl md:text-4xl font-black text-navy dark:text-white">خدماتنا الأكاديمية</h2>
-          <p class="mt-4 text-slate-600 dark:text-slate-300 leading-relaxed">
-            مجموعة متكاملة من الخدمات المصممة لدعمك في كل مرحلة من مراحل رحلتك الجامعية.
-          </p>
-        </div>
-
-        <div class="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          <!-- Card 1 -->
-          <article class="service-card reveal bg-slate-50 dark:bg-navy rounded-2xl p-8 border-2 border-transparent">
-            <span class="service-icon w-16 h-16 rounded-2xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-2xl" aria-hidden="true">
-              <i class="fa-solid fa-book-open"></i>
-            </span>
-            <h3 class="mt-6 text-xl font-extrabold text-navy dark:text-white">كتابة الرسائل الجامعية</h3>
-            <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">
-              إعداد رسائل الماجستير والدكتوراه بمنهجية علمية دقيقة، مع الالتزام بمعايير الجامعات ومتطلبات المشرفين.
-            </p>
-            <a href="#contact" class="mt-5 inline-flex items-center gap-2 font-bold text-gold-dark dark:text-gold hover:gap-3 transition-all">
-              اعرف أكثر <i class="fa-solid fa-arrow-left text-sm" aria-hidden="true"></i>
-            </a>
-          </article>
-
-          <!-- Card 2 -->
-          <article class="service-card reveal reveal-delay-1 bg-slate-50 dark:bg-navy rounded-2xl p-8 border-2 border-transparent">
-            <span class="service-icon w-16 h-16 rounded-2xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-2xl" aria-hidden="true">
-              <i class="fa-solid fa-file-lines"></i>
-            </span>
-            <h3 class="mt-6 text-xl font-extrabold text-navy dark:text-white">إعداد البروبوزال والاستمارات</h3>
-            <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">
-              صياغة مقترحات البحث والخطط الدراسية وتعبئة الاستمارات الجامعية باحترافية تضمن القبول والموافقة.
-            </p>
-            <a href="#contact" class="mt-5 inline-flex items-center gap-2 font-bold text-gold-dark dark:text-gold hover:gap-3 transition-all">
-              اعرف أكثر <i class="fa-solid fa-arrow-left text-sm" aria-hidden="true"></i>
-            </a>
-          </article>
-
-          <!-- Card 3 -->
-          <article class="service-card reveal reveal-delay-2 bg-slate-50 dark:bg-navy rounded-2xl p-8 border-2 border-transparent">
-            <span class="service-icon w-16 h-16 rounded-2xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-2xl" aria-hidden="true">
-              <i class="fa-solid fa-language"></i>
-            </span>
-            <h3 class="mt-6 text-xl font-extrabold text-navy dark:text-white">الترجمة والتوثيق</h3>
-            <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">
-              ترجمة أكاديمية معتمدة للوثائق والأبحاث والشهادات، مع خدمات التوثيق الرسمي لدى الجهات المختصة.
-            </p>
-            <a href="#contact" class="mt-5 inline-flex items-center gap-2 font-bold text-gold-dark dark:text-gold hover:gap-3 transition-all">
-              اعرف أكثر <i class="fa-solid fa-arrow-left text-sm" aria-hidden="true"></i>
-            </a>
-          </article>
-
-          <!-- Card 4 -->
-          <article class="service-card reveal bg-slate-50 dark:bg-navy rounded-2xl p-8 border-2 border-transparent">
-            <span class="service-icon w-16 h-16 rounded-2xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-2xl" aria-hidden="true">
-              <i class="fa-solid fa-list-check"></i>
-            </span>
-            <h3 class="mt-6 text-xl font-extrabold text-navy dark:text-white">متابعة الإجراءات الجامعية</h3>
-            <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">
-              متابعة مدکتریت التسجيل والقبول والمعادلات والتأشيرات الدراسية نيابة عنك حتى إتمامها بنجاح.
-            </p>
-            <a href="#contact" class="mt-5 inline-flex items-center gap-2 font-bold text-gold-dark dark:text-gold hover:gap-3 transition-all">
-              اعرف أكثر <i class="fa-solid fa-arrow-left text-sm" aria-hidden="true"></i>
-            </a>
-          </article>
-
-          <!-- Card 5 -->
-          <article class="service-card reveal reveal-delay-1 bg-slate-50 dark:bg-navy rounded-2xl p-8 border-2 border-transparent">
-            <span class="service-icon w-16 h-16 rounded-2xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-2xl" aria-hidden="true">
-              <i class="fa-solid fa-display"></i>
-            </span>
-            <h3 class="mt-6 text-xl font-extrabold text-navy dark:text-white">التلخيص وإعداد البوربوينت</h3>
-            <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">
-              تلخيص الأبحاث والمراجع العلمية وتصميم عروض تقديمية احترافية جاهزة للمناقشة والعرض.
-            </p>
-            <a href="#contact" class="mt-5 inline-flex items-center gap-2 font-bold text-gold-dark dark:text-gold hover:gap-3 transition-all">
-              اعرف أكثر <i class="fa-solid fa-arrow-left text-sm" aria-hidden="true"></i>
-            </a>
-          </article>
-
-          <!-- Card 6 -->
-          <article class="service-card reveal reveal-delay-2 bg-slate-50 dark:bg-navy rounded-2xl p-8 border-2 border-transparent">
-            <span class="service-icon w-16 h-16 rounded-2xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-2xl" aria-hidden="true">
-              <i class="fa-solid fa-comments"></i>
-            </span>
-            <h3 class="mt-6 text-xl font-extrabold text-navy dark:text-white">الاستشارات الأكاديمية</h3>
-            <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">
-              جلسات إرشادية متخصصة لاختيار التخصص والجامعة المناسبة، وتوجيهك في كل خطوة من رحلتك الدراسية.
-            </p>
-            <a href="#contact" class="mt-5 inline-flex items-center gap-2 font-bold text-gold-dark dark:text-gold hover:gap-3 transition-all">
-              اعرف أكثر <i class="fa-solid fa-arrow-left text-sm" aria-hidden="true"></i>
-            </a>
-          </article>
-        </div>
-
-        <!-- ── Divider: Additional Services ── -->
-        <div class="mt-16 reveal">
-          <div class="flex items-center gap-4 mb-10">
-            <div class="flex-1 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent"></div>
-            <span class="shrink-0 px-5 py-1.5 rounded-full border-2 border-gold/50 text-gold-dark dark:text-gold font-bold text-sm tracking-wide">
-              <i class="fa-solid fa-plus me-1.5" aria-hidden="true"></i>خدمات إضافية
-            </span>
-            <div class="flex-1 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent"></div>
-          </div>
-
-          <div class="grid gap-6 sm:grid-cols-2">
-            <!-- Card: Medical Services -->
-            <article class="service-card reveal bg-gradient-to-br from-slate-50 to-emerald-50/40 dark:from-navy dark:to-emerald-950/20 rounded-2xl p-8 border-2 border-transparent">
-              <span class="service-icon w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-2xl" aria-hidden="true">
-                <i class="fa-solid fa-heart-pulse"></i>
-              </span>
-              <span class="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
-                <i class="fa-solid fa-star text-[10px]" aria-hidden="true"></i>
-                خدمة مميزة
-              </span>
-              <h3 class="mt-3 text-xl font-extrabold text-navy dark:text-white">خدمات طبية داخل إيران</h3>
-              <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">
-                هل تبحث عن رعاية طبية متخصصة وعالية الجودة داخل إيران؟ نوفر لك وصولاً مباشراً إلى أفضل الأطباء والمستشفيات المتخصصة، مع متابعة مواعيدك وإجراءاتك الطبية بالكامل من البداية حتى التعافي.
-              </p>
-              <a href="#contact" class="mt-5 inline-flex items-center gap-2 font-bold text-emerald-700 dark:text-emerald-400 hover:gap-3 transition-all">
-                تواصل معنا <i class="fa-solid fa-arrow-left text-sm" aria-hidden="true"></i>
-              </a>
-            </article>
-
-            <!-- Card: Import / Orders / Remittance -->
-            <article class="service-card reveal reveal-delay-1 bg-gradient-to-br from-slate-50 to-blue-50/40 dark:from-navy dark:to-blue-950/20 rounded-2xl p-8 border-2 border-transparent">
-              <span class="service-icon w-16 h-16 rounded-2xl bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 flex items-center justify-center text-2xl" aria-hidden="true">
-                <i class="fa-solid fa-boxes-stacked"></i>
-              </span>
-              <span class="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 text-xs font-bold">
-                <i class="fa-solid fa-star text-[10px]" aria-hidden="true"></i>
-                خدمة مميزة
-              </span>
-              <h3 class="mt-3 text-xl font-extrabold text-navy dark:text-white">الطلبيات والاستيراد والحوالات</h3>
-              <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">
-                هل لديك طلبية أو تريد استيراد بضاعة أو إرسال حوالة مالية؟ نتولى تنفيذ كل ذلك عنك بأعلى مستوى من الأمانة والكفاءة، ونضمن إيصال طلبك أو تحويلك في أقرب وقت وبأفضل الشروط.
-              </p>
-              <a href="#contact" class="mt-5 inline-flex items-center gap-2 font-bold text-blue-700 dark:text-blue-400 hover:gap-3 transition-all">
-                تواصل معنا <i class="fa-solid fa-arrow-left text-sm" aria-hidden="true"></i>
-              </a>
-            </article>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- ============ 3. WHY US ============ -->
-    <section id="why-us" class="py-20 md:py-28 bg-slate-50 dark:bg-navy">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-        <!-- Stats side -->
-        <div class="reveal order-2 lg:order-1 grid grid-cols-2 gap-5">
-          <div class="bg-navy dark:bg-navy-dark rounded-2xl p-8 text-center shadow-xl shadow-navy/20">
-            <p class="text-4xl font-black text-gold"><span class="counter" data-target="1200">0</span>+</p>
-            <p class="mt-2 text-white/80 font-medium">طالب وثق بنا</p>
-          </div>
-          <div class="bg-gold rounded-2xl p-8 text-center shadow-xl shadow-gold/25 mt-8">
-            <p class="text-4xl font-black text-navy"><span class="counter" data-target="98">0</span>%</p>
-            <p class="mt-2 text-navy/80 font-medium">رضا العملاء</p>
-          </div>
-          <div class="bg-gold rounded-2xl p-8 text-center shadow-xl shadow-gold/25 -mt-8">
-            <p class="text-4xl font-black text-navy"><span class="counter" data-target="3500">0</span>+</p>
-            <p class="mt-2 text-navy/80 font-medium">مشروع منجز</p>
-          </div>
-          <div class="bg-navy dark:bg-navy-dark rounded-2xl p-8 text-center shadow-xl shadow-navy/20">
-            <p class="text-4xl font-black text-gold"><span class="counter" data-target="24">0</span>/7</p>
-            <p class="mt-2 text-white/80 font-medium">دعم متواصل</p>
-          </div>
-        </div>
-
-        <!-- Features side -->
-        <div class="order-1 lg:order-2">
-          <span class="reveal block text-gold-dark dark:text-gold font-bold text-sm tracking-wide">لماذا تختارنا</span>
-          <h2 class="reveal mt-2 text-3xl md:text-4xl font-black text-navy dark:text-white leading-snug">
-            شريكك الموثوق نحو النجاح الأكاديمي
-          </h2>
-          <p class="reveal mt-4 text-slate-600 dark:text-slate-300 leading-relaxed">
-            نجمع بين الخبرة الأكاديمية العميقة والالتزام المهني لنقدم لك تجربة خدمة استثنائية.
-          </p>
-
-          <ul class="mt-8 space-y-5">
-            <li class="reveal flex items-start gap-4">
-              <span class="shrink-0 w-12 h-12 rounded-xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-lg" aria-hidden="true"><i class="fa-solid fa-user-graduate"></i></span>
-              <div>
-                <h3 class="font-extrabold text-navy dark:text-white">خبرة متخصصة</h3>
-                <p class="text-slate-600 dark:text-slate-300 leading-relaxed">فريق من الأكاديميين حملة الشهادات العليا في مختلف التخصصات.</p>
-              </div>
-            </li>
-            <li class="reveal reveal-delay-1 flex items-start gap-4">
-              <span class="shrink-0 w-12 h-12 rounded-xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-lg" aria-hidden="true"><i class="fa-solid fa-shield-halved"></i></span>
-              <div>
-                <h3 class="font-extrabold text-navy dark:text-white">سرية تامة</h3>
-                <p class="text-slate-600 dark:text-slate-300 leading-relaxed">حماية كاملة لبياناتك ومعلوماتك الشخصية والأكاديمية دون استثناء.</p>
-              </div>
-            </li>
-            <li class="reveal reveal-delay-2 flex items-start gap-4">
-              <span class="shrink-0 w-12 h-12 rounded-xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-lg" aria-hidden="true"><i class="fa-solid fa-clock"></i></span>
-              <div>
-                <h3 class="font-extrabold text-navy dark:text-white">التسليم في الوقت المحدد</h3>
-                <p class="text-slate-600 dark:text-slate-300 leading-relaxed">التزام صارم بالمواعيد المتفق عليها مهما كانت ضيقة.</p>
-              </div>
-            </li>
-            <li class="reveal reveal-delay-2 flex items-start gap-4">
-              <span class="shrink-0 w-12 h-12 rounded-xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-lg" aria-hidden="true"><i class="fa-solid fa-headset"></i></span>
-              <div>
-                <h3 class="font-extrabold text-navy dark:text-white">متابعة مستمرة</h3>
-                <p class="text-slate-600 dark:text-slate-300 leading-relaxed">تحديثات دورية عن سير العمل وتواصل مباشر معك في كل مرحلة.</p>
-              </div>
-            </li>
-            <li class="reveal reveal-delay-3 flex items-start gap-4">
-              <span class="shrink-0 w-12 h-12 rounded-xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-lg" aria-hidden="true"><i class="fa-solid fa-users"></i></span>
-              <div>
-                <h3 class="font-extrabold text-navy dark:text-white">فريق متخصص</h3>
-                <p class="text-slate-600 dark:text-slate-300 leading-relaxed">كل مشروع يُسند إلى المتخصص الأنسب في مجاله لضمان أعلى جودة.</p>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ 3b. EXTRA SERVICES BANNER ============ -->
-    <section class="py-14 md:py-20 bg-white dark:bg-navy-dark border-y border-slate-100 dark:border-white/10">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="reveal text-center mb-10">
-          <span class="text-gold-dark dark:text-gold font-bold text-sm tracking-wide">نقدم أيضاً</span>
-          <h2 class="mt-2 text-2xl md:text-3xl font-black text-navy dark:text-white">خدمات إضافية متميزة</h2>
-        </div>
-        <div class="grid md:grid-cols-2 gap-6">
-
-          <!-- Medical Banner -->
-          <div class="reveal group relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 to-emerald-800 p-8 md:p-10 text-white shadow-2xl shadow-emerald-900/30">
-            <!-- BG pattern -->
-            <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(circle, white 1px, transparent 1px); background-size: 28px 28px;"></div>
-            <div class="relative z-10 flex flex-col h-full gap-5">
-              <span class="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center text-3xl shrink-0" aria-hidden="true">
-                <i class="fa-solid fa-heart-pulse"></i>
-              </span>
-              <div>
-                <h3 class="text-2xl font-black leading-snug">خدمات طبية عالية الجودة داخل إيران</h3>
-                <p class="mt-3 text-white/85 leading-relaxed">
-                  هل تحتاج إلى علاج متخصص أو استشارة طبية في إيران؟ نوصلك إلى أفضل الأطباء والمستشفيات ونتابع إجراءاتك الطبية من أولها حتى آخرها.
-                </p>
-              </div>
-              <ul class="space-y-2 text-white/90 text-sm">
-                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-300 shrink-0" aria-hidden="true"></i> حجز مواعيد مع متخصصين معتمدين</li>
-                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-300 shrink-0" aria-hidden="true"></i> متابعة كاملة للإجراءات والفحوصات</li>
-                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-300 shrink-0" aria-hidden="true"></i> ترجمة الوثائق الطبية</li>
-              </ul>
-              <a href="#contact" class="mt-auto self-start inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-emerald-700 font-extrabold hover:bg-emerald-50 transition-colors shadow-lg">
-                تواصل معنا الآن
-                <i class="fa-solid fa-arrow-left text-sm" aria-hidden="true"></i>
-              </a>
-            </div>
-          </div>
-
-          <!-- Trade / Remittance Banner -->
-          <div class="reveal reveal-delay-1 group relative overflow-hidden rounded-3xl bg-gradient-to-br from-navy to-navy-light p-8 md:p-10 text-white shadow-2xl shadow-navy/30">
-            <!-- BG pattern -->
-            <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(circle, white 1px, transparent 1px); background-size: 28px 28px;"></div>
-            <div class="relative z-10 flex flex-col h-full gap-5">
-              <span class="w-16 h-16 rounded-2xl bg-gold/25 flex items-center justify-center text-3xl text-gold shrink-0" aria-hidden="true">
-                <i class="fa-solid fa-boxes-stacked"></i>
-              </span>
-              <div>
-                <h3 class="text-2xl font-black leading-snug">الطلبيات · الاستيراد · الحوالات</h3>
-                <p class="mt-3 text-white/85 leading-relaxed">
-                  هل لديك طلبية خاصة أو تريد استيراد بضاعة أو إجراء حوالة مالية؟ نتولى تنفيذ كل ذلك بأمانة وكفاءة وبأفضل الأسعار.
-                </p>
-              </div>
-              <ul class="space-y-2 text-white/90 text-sm">
-                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-gold shrink-0" aria-hidden="true"></i> تنفيذ الطلبيات الخاصة والمخصصة</li>
-                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-gold shrink-0" aria-hidden="true"></i> استيراد البضائع وإجراءات الجمارك</li>
-                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-gold shrink-0" aria-hidden="true"></i> تحويل الأموال والحوالات بضمان كامل</li>
-              </ul>
-              <a href="#contact" class="mt-auto self-start inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gold text-navy font-extrabold hover:bg-gold-dark transition-colors shadow-lg shadow-gold/30">
-                تواصل معنا الآن
-                <i class="fa-solid fa-arrow-left text-sm" aria-hidden="true"></i>
-              </a>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ 4. HOW IT WORKS ============ -->
-    <section id="process" class="py-20 md:py-28 bg-white dark:bg-navy-dark">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center max-w-2xl mx-auto reveal">
-          <span class="text-gold-dark dark:text-gold font-bold text-sm tracking-wide">آلية العمل</span>
-          <h2 class="mt-2 text-3xl md:text-4xl font-black text-navy dark:text-white">كيف نعمل معك؟</h2>
-          <p class="mt-4 text-slate-600 dark:text-slate-300 leading-relaxed">أربع خطوات بسيطة تفصلك عن إنجاز مشروعك الأكاديمي.</p>
-        </div>
-
-        <ol class="mt-16 grid gap-10 md:gap-6 md:grid-cols-4">
-          <li class="timeline-step reveal relative text-center">
-            <span class="relative z-10 w-[68px] h-[68px] mx-auto rounded-full bg-navy text-gold flex items-center justify-center text-2xl shadow-lg shadow-navy/25" aria-hidden="true">
-              <i class="fa-solid fa-phone-volume"></i>
-            </span>
-            <span class="mt-4 inline-block px-3 py-0.5 rounded-full bg-gold/15 text-gold-dark dark:text-gold font-black text-sm">الخطوة 1</span>
-            <h3 class="mt-2 font-extrabold text-lg text-navy dark:text-white">تواصل معنا</h3>
-            <p class="mt-2 text-slate-600 dark:text-slate-300 leading-relaxed text-sm px-2">راسلنا عبر النموذج أو الواتساب وسنرد عليك خلال دقائق.</p>
-          </li>
-          <li class="timeline-step reveal reveal-delay-1 relative text-center">
-            <span class="relative z-10 w-[68px] h-[68px] mx-auto rounded-full bg-navy text-gold flex items-center justify-center text-2xl shadow-lg shadow-navy/25" aria-hidden="true">
-              <i class="fa-solid fa-clipboard-list"></i>
-            </span>
-            <span class="mt-4 inline-block px-3 py-0.5 rounded-full bg-gold/15 text-gold-dark dark:text-gold font-black text-sm">الخطوة 2</span>
-            <h3 class="mt-2 font-extrabold text-lg text-navy dark:text-white">تحديد المتطلبات</h3>
-            <p class="mt-2 text-slate-600 dark:text-slate-300 leading-relaxed text-sm px-2">نستمع لاحتياجاتك ونحدد نطاق العمل والموعد والتكلفة بشفافية.</p>
-          </li>
-          <li class="timeline-step reveal reveal-delay-2 relative text-center">
-            <span class="relative z-10 w-[68px] h-[68px] mx-auto rounded-full bg-navy text-gold flex items-center justify-center text-2xl shadow-lg shadow-navy/25" aria-hidden="true">
-              <i class="fa-solid fa-gears"></i>
-            </span>
-            <span class="mt-4 inline-block px-3 py-0.5 rounded-full bg-gold/15 text-gold-dark dark:text-gold font-black text-sm">الخطوة 3</span>
-            <h3 class="mt-2 font-extrabold text-lg text-navy dark:text-white">التنفيذ والمتابعة</h3>
-            <p class="mt-2 text-slate-600 dark:text-slate-300 leading-relaxed text-sm px-2">يبدأ الفريق المتخصص بالعمل مع إرسال تحديثات دورية لك.</p>
-          </li>
-          <li class="timeline-step reveal reveal-delay-3 relative text-center">
-            <span class="relative z-10 w-[68px] h-[68px] mx-auto rounded-full bg-gold text-navy flex items-center justify-center text-2xl shadow-lg shadow-gold/30" aria-hidden="true">
-              <i class="fa-solid fa-circle-check"></i>
-            </span>
-            <span class="mt-4 inline-block px-3 py-0.5 rounded-full bg-gold/15 text-gold-dark dark:text-gold font-black text-sm">الخطوة 4</span>
-            <h3 class="mt-2 font-extrabold text-lg text-navy dark:text-white">التسليم والتعديل</h3>
-            <p class="mt-2 text-slate-600 dark:text-slate-300 leading-relaxed text-sm px-2">نسلّم العمل في موعده مع تعديلات مجانية حتى رضاك الكامل.</p>
-          </li>
-        </ol>
-      </div>
-    </section>
-
-    <!-- ============ 5. TESTIMONIALS ============ -->
-    <section id="testimonials" class="py-20 md:py-28 bg-navy dark:bg-navy text-white overflow-hidden">
-      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center reveal">
-          <span class="text-gold font-bold text-sm tracking-wide">آراء طلابنا</span>
-          <h2 class="mt-2 text-3xl md:text-4xl font-black">ماذا يقول طلابنا عنا؟</h2>
-        </div>
-
-        <div class="mt-12 reveal" role="region" aria-label="شهادات الطلاب" aria-roledescription="عرض شرائح">
-          <div class="overflow-hidden rounded-3xl">
-            <div id="slidesTrack" class="slides-track">
-              <!-- Slide 1 -->
-              <div class="slide px-2">
-                <figure class="bg-white/5 border border-white/10 rounded-3xl p-8 md:p-10 text-center">
-                  <div class="text-gold text-lg" aria-label="تقييم 5 من 5 نجوم">
-                    <i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i>
-                  </div>
-                  <blockquote class="mt-5 text-lg md:text-xl leading-relaxed text-white/90">
-                    &quot;تعاملت مع فريق الكوثر في رسالة الماجستير، وكانت التجربة استثنائية من حيث الدقة والالتزام بالمواعيد. أنصح بهم بشدة.&quot;
-                  </blockquote>
-                  <figcaption class="mt-6">
-                    <p class="font-extrabold text-gold">رائد</p>
-                    <p class="text-white/60 text-sm mt-1">ماجستير  قانون عام — جامعة قم</p>
-                  </figcaption>
-                </figure>
-              </div>
-              <!-- Slide 2 -->
-              <div class="slide px-2">
-                <figure class="bg-white/5 border border-white/10 rounded-3xl p-8 md:p-10 text-center">
-                  <div class="text-gold text-lg" aria-label="تقييم 5 من 5 نجوم">
-                    <i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i>
-                  </div>
-                  <blockquote class="mt-5 text-lg md:text-xl leading-relaxed text-white/90">
-                    &quot;ساعدوني في إعداد البروبوزال وتمت الموافقة عليه من أول مرة. متابعة مستمرة وتواصل راقٍ في كل خطوة.&quot;
-                  </blockquote>
-                  <figcaption class="mt-6">
-                    <p class="font-extrabold text-gold">محمد</p>
-                    <p class="text-white/60 text-sm mt-1">دكتوراه قانون دولي — جامعة قم</p>
-                  </figcaption>
-                </figure>
-              </div>
-              <!-- Slide 3 -->
-              <div class="slide px-2">
-                <figure class="bg-white/5 border border-white/10 rounded-3xl p-8 md:p-10 text-center">
-                  <div class="text-gold text-lg" aria-label="تقييم 5 من 5 نجوم">
-                    <i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i>
-                  </div>
-                  <blockquote class="mt-5 text-lg md:text-xl leading-relaxed text-white/90">
-                    &quot;خدمة الترجمة والتوثيق كانت سريعة ودقيقة جداً، وأنجزوا معاملة المعادلة كاملة دون أن أراجع أي جهة بنفسي.&quot;
-                  </blockquote>
-                  <figcaption class="mt-6">
-                    <p class="font-extrabold text-gold">أسماء</p>
-                    <p class="text-white/60 text-sm mt-1">ماجستير قانون الدولی — جامعة قم</p>
-                  </figcaption>
-                </figure>
-              </div>
-              <!-- Slide 4 -->
-              <div class="slide px-2">
-                <figure class="bg-white/5 border border-white/10 rounded-3xl p-8 md:p-10 text-center">
-                  <div class="text-gold text-lg" aria-label="تقييم 5 من 5 نجوم">
-                    <i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i>
-                  </div>
-                  <blockquote class="mt-5 text-lg md:text-xl leading-relaxed text-white/90">
-                    &quot;الاستشارة الأكاديمية غيّرت مساري بالكامل؛ اختاروا لي التخصص والجامعة الأنسب وتابعوا قبولي حتى وصلت.&quot;
-                  </blockquote>
-                  <figcaption class="mt-6">
-                    <p class="font-extrabold text-gold">كرار</p>
-                    <p class="text-white/60 text-sm mt-1">ماجستير قانون الخاص  — جامعة قم</p>
-                  </figcaption>
-                </figure>
-              </div>
-              <!-- Slide 5 -->
-              <div class="slide px-2">
-                <figure class="bg-white/5 border border-white/10 rounded-3xl p-8 md:p-10 text-center">
-                  <div class="text-gold text-lg" aria-label="تقييم 5 من 5 نجوم">
-                    <i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i>
-                  </div>
-                  <blockquote class="mt-5 text-lg md:text-xl leading-relaxed text-white/90">
-                    &quot;عرض البوربوينت الذي أعدّوه لمناقشتي كان احترافياً للغاية ونال إعجاب اللجنة. شكراً لفريق الكوثر.&quot;
-                  </blockquote>
-                  <figcaption class="mt-6">
-                    <p class="font-extrabold text-gold">سماح</p>
-                    <p class="text-white/60 text-sm mt-1">ماجستير قانون العام  — جامعة قم</p>
-                  </figcaption>
-                </figure>
-              </div>
-            </div>
-          </div>
-
-          <!-- Controls -->
-          <div class="mt-8 flex items-center justify-center gap-4">
-            <button id="prevSlide" type="button" class="w-11 h-11 rounded-full border border-white/25 text-white hover:bg-gold hover:text-navy hover:border-gold transition-colors" aria-label="الشهادة السابقة">
-              <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
-            </button>
-            <div id="sliderDots" class="flex items-center gap-2" role="tablist" aria-label="اختيار الشهادة"></div>
-            <button id="nextSlide" type="button" class="w-11 h-11 rounded-full border border-white/25 text-white hover:bg-gold hover:text-navy hover:border-gold transition-colors" aria-label="الشهادة التالية">
-              <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ 6. FAQ ============ -->
-    <section id="faq" class="py-20 md:py-28 bg-slate-50 dark:bg-navy">
-      <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center reveal">
-          <span class="text-gold-dark dark:text-gold font-bold text-sm tracking-wide">الأسئلة الشائعة</span>
-          <h2 class="mt-2 text-3xl md:text-4xl font-black text-navy dark:text-white">إجابات لأكثر ما يشغل بالك</h2>
-        </div>
-
-        <div class="mt-12 space-y-4">
-          <div class="faq-item reveal bg-white dark:bg-navy-dark rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
-            <button type="button" class="faq-toggle w-full flex items-center justify-between gap-4 p-6 text-right font-extrabold text-navy dark:text-white" aria-expanded="false">
-              <span>هل معلوماتي وبياناتي في أمان تام؟</span>
-              <i class="faq-chevron fa-solid fa-chevron-down text-gold-dark dark:text-gold shrink-0" aria-hidden="true"></i>
-            </button>
-            <div class="faq-answer">
-              <p class="px-6 pb-6 text-slate-600 dark:text-slate-300 leading-relaxed">نعم، نلتزم بسرية تامة تجاه جميع بيانات عملائنا. لا نشارك أي معلومات شخصية أو أكاديمية مع أي طرف ثالث، ويتم التعامل مع كل مشروع تحت اتفاقية سرية صارمة.</p>
-            </div>
-          </div>
-
-          <div class="faq-item reveal bg-white dark:bg-navy-dark rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
-            <button type="button" class="faq-toggle w-full flex items-center justify-between gap-4 p-6 text-right font-extrabold text-navy dark:text-white" aria-expanded="false">
-              <span>كم تستغرق مدة إنجاز رسالة الماجستير أو الدكتوراه؟</span>
-              <i class="faq-chevron fa-solid fa-chevron-down text-gold-dark dark:text-gold shrink-0" aria-hidden="true"></i>
-            </button>
-            <div class="faq-answer">
-              <p class="px-6 pb-6 text-slate-600 dark:text-slate-300 leading-relaxed">تعتمد المدة على حجم العمل والتخصص، وتتراوح عادة بين 4 و12 أسبوعاً. نحدد جدولاً زمنياً واضحاً في بداية الاتفاق ونلتزم به بدقة.</p>
-            </div>
-          </div>
-
-          <div class="faq-item reveal bg-white dark:bg-navy-dark rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
-            <button type="button" class="faq-toggle w-full flex items-center justify-between gap-4 p-6 text-right font-extrabold text-navy dark:text-white" aria-expanded="false">
-              <span>كيف يتم تحديد الأسعار؟</span>
-              <i class="faq-chevron fa-solid fa-chevron-down text-gold-dark dark:text-gold shrink-0" aria-hidden="true"></i>
-            </button>
-            <div class="faq-answer">
-              <p class="px-6 pb-6 text-slate-600 dark:text-slate-300 leading-relaxed">تُحدد التكلفة بناءً على نوع الخدمة وحجم العمل والمدة المطلوبة. نقدم عرض سعر مفصلاً وشفافاً قبل البدء، دون أي رسوم خفية، مع إمكانية الدفع على دفعات.</p>
-            </div>
-          </div>
-
-          <div class="faq-item reveal bg-white dark:bg-navy-dark rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
-            <button type="button" class="faq-toggle w-full flex items-center justify-between gap-4 p-6 text-right font-extrabold text-navy dark:text-white" aria-expanded="false">
-              <span>هل تشمل الخدمة تعديلات بعد التسليم؟</span>
-              <i class="faq-chevron fa-solid fa-chevron-down text-gold-dark dark:text-gold shrink-0" aria-hidden="true"></i>
-            </button>
-            <div class="faq-answer">
-              <p class="px-6 pb-6 text-slate-600 dark:text-slate-300 leading-relaxed">بالتأكيد. نوفر تعديلات مجانية بعد التسليم بناءً على ملاحظاتك أو ملاحظات المشرف، حتى تحصل على النتيجة التي ترضيك بالكامل.</p>
-            </div>
-          </div>
-
-          <div class="faq-item reveal bg-white dark:bg-navy-dark rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
-            <button type="button" class="faq-toggle w-full flex items-center justify-between gap-4 p-6 text-right font-extrabold text-navy dark:text-white" aria-expanded="false">
-              <span>هل يمكنني متابعة سير العمل أولاً بأول؟</span>
-              <i class="faq-chevron fa-solid fa-chevron-down text-gold-dark dark:text-gold shrink-0" aria-hidden="true"></i>
-            </button>
-            <div class="faq-answer">
-              <p class="px-6 pb-6 text-slate-600 dark:text-slate-300 leading-relaxed">نعم، نرسل لك تحديثات دورية عن مراحل الإنجاز، ويمكنك التواصل مع فريق المتابعة في أي وقت للاستفسار أو إضافة ملاحظات.</p>
-            </div>
-          </div>
-
-          <div class="faq-item reveal bg-white dark:bg-navy-dark rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
-            <button type="button" class="faq-toggle w-full flex items-center justify-between gap-4 p-6 text-right font-extrabold text-navy dark:text-white" aria-expanded="false">
-              <span>ما هي طرق الدفع المتاحة؟</span>
-              <i class="faq-chevron fa-solid fa-chevron-down text-gold-dark dark:text-gold shrink-0" aria-hidden="true"></i>
-            </button>
-            <div class="faq-answer">
-              <p class="px-6 pb-6 text-slate-600 dark:text-slate-300 leading-relaxed">نوفر خيارات دفع متعددة تشمل التحويل البنكي والمحافظ الإلكترونية والدفع النقدي في مكاتبنا، مع إمكانية تقسيط المبلغ على مراحل العمل.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ 7. CONTACT ============ -->
-    <section id="contact" class="py-20 md:py-28 bg-white dark:bg-navy-dark">
-      <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <span class="reveal block text-gold-dark dark:text-gold font-bold text-sm tracking-wide">تواصل معنا</span>
-        <h2 class="reveal mt-2 text-3xl md:text-4xl font-black text-navy dark:text-white leading-snug">جاهزون للإجابة على استفساراتك</h2>
-        <p class="reveal mt-4 text-slate-600 dark:text-slate-300 leading-relaxed max-w-xl mx-auto">
-          فريقنا متاح للرد على جميع أسئلتك ومساعدتك في اختيار الخدمة المناسبة. للحصول على مزيد من المعلومات انقر على أيقونة الواتساب أدناه وسنعود إليك في أقرب وقت.
-        </p>
-
-        <div class="reveal mt-10 flex flex-col items-center gap-6">
-          <!-- WhatsApp CTA button -->
-          <a href="https://wa.me/+989120781003" target="_blank" rel="noopener noreferrer"
-            class="inline-flex items-center gap-3 px-10 py-5 rounded-2xl bg-[#25d366] text-white font-extrabold text-xl hover:bg-[#1ebe5d] transition-colors shadow-xl shadow-[#25d366]/30 hover:scale-105 transition-transform">
-            <i class="fa-brands fa-whatsapp text-3xl" aria-hidden="true"></i>
-            للكسب الاطلاعات - اضغط هنا
-          </a>
-          <p class="text-slate-500 dark:text-slate-400 text-sm">نرد على رسائلكم خلال دقائق · متاحون طوال أيام الأسبوع</p>
-        </div>
-
-        <!-- Info cards -->
-        <div class="reveal mt-12 grid sm:grid-cols-3 gap-5">
-          <div class="bg-slate-50 dark:bg-navy rounded-2xl p-6 border border-slate-200 dark:border-white/10">
-            <span class="w-12 h-12 mx-auto rounded-xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-xl mb-4" aria-hidden="true"><i class="fa-solid fa-envelope"></i></span>
-            <p class="text-sm text-slate-500 dark:text-slate-400">البريد الإلكتروني</p>
-            <a href="mailto:info@alkawthar-edu.com" class="font-bold text-navy dark:text-white hover:text-gold-dark dark:hover:text-gold text-sm" dir="ltr">info@alkawthar-edu.com</a>
-          </div>
-          <div class="bg-slate-50 dark:bg-navy rounded-2xl p-6 border border-slate-200 dark:border-white/10">
-            <span class="w-12 h-12 mx-auto rounded-xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-xl mb-4" aria-hidden="true"><i class="fa-solid fa-phone"></i></span>
-            <p class="text-sm text-slate-500 dark:text-slate-400">الهاتف / واتساب</p>
-            <a href="https://wa.me/+989120781003" class="font-bold text-navy dark:text-white hover:text-gold-dark dark:hover:text-gold text-sm" dir="ltr">+98 912 078 1003</a>
-          </div>
-          <div class="bg-slate-50 dark:bg-navy rounded-2xl p-6 border border-slate-200 dark:border-white/10">
-            <span class="w-12 h-12 mx-auto rounded-xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-xl mb-4" aria-hidden="true"><i class="fa-solid fa-clock"></i></span>
-            <p class="text-sm text-slate-500 dark:text-slate-400">ساعات العمل</p>
-            <p class="font-bold text-navy dark:text-white text-sm">السبت - جمعه : 19 - 1 </p>
-          </div>
-        </div>
-      </div>
-    </section>
+        <span class="card-arrow">
+          اعرف أكثر <i class="fa-solid fa-arrow-left fa-sm" aria-hidden="true"></i>
+        </span>
+      </a>
+    </div>
   </main>
 
-  <!-- ============ 8. FOOTER ============ -->
-  <footer class="bg-navy-dark text-white pt-16 pb-8">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid gap-10 md:grid-cols-3">
-      <!-- Brand -->
-      <div>
-        <a href="#home" class="flex items-center gap-3" aria-label="شركة الكوثر - الرئيسية">
-          <span class="w-11 h-11 rounded-xl overflow-hidden shrink-0" aria-hidden="true">
-            <img src="assets/logooo.png" alt="لوگو شركة الكوثر" class="w-full h-full object-cover">
-          </span>
-          <span class="leading-tight">
-            <span class="block font-black text-lg">شركة الكوثر</span>
-            <span class="block text-xs text-gold font-medium">للخدمات الجامعية</span>
-          </span>
-        </a>
-        <p class="mt-4 text-white/70 leading-relaxed text-sm max-w-xs">
-          شريكك الموثوق في رحلتك الأكاديمية؛ نقدم خدمات جامعية متكاملة بخبرة واحترافية وسرية تامة.
-        </p>
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-info">
+      <div class="footer-info-item">
+        <i class="fa-solid fa-location-dot"></i>
+        <span>إيران، قم المقدسة، شارع انقلاب</span>
       </div>
-
-      <!-- Quick links -->
-      <nav aria-label="روابط سريعة">
-        <h3 class="font-extrabold text-gold mb-4">روابط سريعة</h3>
-        <ul class="space-y-2.5 text-white/75 text-sm">
-          <li><a href="#home" class="hover:text-gold transition-colors">الرئيسية</a></li>
-          <li><a href="#services" class="hover:text-gold transition-colors">خدماتنا</a></li>
-          <li><a href="#why-us" class="hover:text-gold transition-colors">لماذا نحن</a></li>
-          <li><a href="#testimonials" class="hover:text-gold transition-colors">الشهادات</a></li>
-          <li><a href="#contact" class="hover:text-gold transition-colors">تواصل معنا</a></li>
-          <li><a href="login.html" class="hover:text-gold transition-colors">دخول المتعاونين</a></li>
-          <li><a href="tasjil/templates/registration.html" class="hover:text-gold transition-colors">تسجيل الطلاب</a></li>
-        </ul>
-      </nav>
-
-      <!-- Social -->
-      <div>
-        <h3 class="font-extrabold text-gold mb-4">تابعنا</h3>
-        <div class="flex items-center gap-3">
-          <a href="#" class="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center hover:bg-gold hover:text-navy transition-colors" aria-label="فيسبوك"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
-          <a href="#" class="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center hover:bg-gold hover:text-navy transition-colors" aria-label="إنستغرام"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
-          <a href="#" class="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center hover:bg-gold hover:text-navy transition-colors" aria-label="تويتر / إكس"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i></a>
-          <a href="#" class="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center hover:bg-gold hover:text-navy transition-colors" aria-label="تيليغرام"><i class="fa-brands fa-telegram" aria-hidden="true"></i></a>
-          <a href="https://wa.me/989120781003" class="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center hover:bg-gold hover:text-navy transition-colors" aria-label="واتساب"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></a>
-        </div>
-
-        <!-- Address -->
-        <div class="mt-6 flex items-start gap-3">
-          <span class="mt-1 w-9 h-9 rounded-lg bg-gold/15 text-gold flex items-center justify-center shrink-0" aria-hidden="true">
-            <i class="fa-solid fa-location-dot"></i>
-          </span>
-          <div class="text-white/70 text-sm leading-relaxed">
-            <p class="text-white font-bold mb-1">العنوان</p>
-            <p>إيران، قم المقدسة</p>
-            <p>شارع انقلاب </p>
-          </div>
-        </div>
+      <div class="footer-info-item">
+        <i class="fa-solid fa-phone"></i>
+        <a href="tel:+989120781003" dir="ltr">+98 912 078 1003</a>
+      </div>
+      <div class="footer-info-item">
+        <i class="fa-solid fa-envelope"></i>
+        <a href="mailto:info@alkawthar-edu.com" dir="ltr">info@alkawthar-edu.com</a>
       </div>
     </div>
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-6 border-t border-white/10 text-center text-white/50 text-sm">
-      <p>&copy; <span id="year">2026</span> شركة الكوثر للخدمات الجامعية — جميع الحقوق محفوظة</p>
-    </div>
+    <a href="https://wa.me/+989120781003" target="_blank" rel="noopener noreferrer" class="wa-btn">
+      <i class="fa-brands fa-whatsapp" style="font-size:1.1rem;" aria-hidden="true"></i>
+      تواصل عبر واتساب
+    </a>
   </footer>
-
-  <!-- WhatsApp floating button -->
-  <a href="https://wa.me/+989120781003" target="_blank" rel="noopener noreferrer"
-    class="wa-float fixed bottom-6 left-6 z-50 w-14 h-14 rounded-full bg-[#25d366] text-white flex items-center justify-center text-2xl shadow-xl hover:scale-110 transition-transform"
-    aria-label="تواصل معنا عبر واتساب">
-    <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
-  </a>
 
   <script>
     (function () {
-      'use strict';
-
-      /* ---------- Dark mode ---------- */
       var root = document.documentElement;
       var stored = null;
-      try { stored = localStorage.getItem('theme'); } catch (e) {}
-      /* Default is always light; only apply dark if user explicitly chose it */
-      if (stored === 'dark') {
-        root.classList.add('dark');
-      }
-      function toggleDark() {
+      try { stored = localStorage.getItem('theme'); } catch(e){}
+      if (stored === 'dark') root.classList.add('dark');
+      document.getElementById('darkToggle').addEventListener('click', function () {
         root.classList.toggle('dark');
-        try { localStorage.setItem('theme', root.classList.contains('dark') ? 'dark' : 'light'); } catch (e) {}
-      }
-      document.getElementById('darkToggle').addEventListener('click', toggleDark);
-      document.getElementById('darkToggleMobile').addEventListener('click', toggleDark);
-
-      /* ---------- Sticky header scroll state ---------- */
-      var header = document.getElementById('header');
-      function onScroll() {
-        header.classList.toggle('scrolled', window.scrollY > 24);
-      }
-      window.addEventListener('scroll', onScroll, { passive: true });
-      onScroll();
-
-      /* ---------- Mobile menu ---------- */
-      var menuBtn = document.getElementById('menuBtn');
-      var mobileMenu = document.getElementById('mobileMenu');
-      menuBtn.addEventListener('click', function () {
-        var open = mobileMenu.classList.toggle('hidden') === false;
-        menuBtn.setAttribute('aria-expanded', String(open));
-        menuBtn.setAttribute('aria-label', open ? 'إغلاق القائمة' : 'فتح القائمة');
-        menuBtn.querySelector('i').className = open ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
+        try { localStorage.setItem('theme', root.classList.contains('dark') ? 'dark' : 'light'); } catch(e){}
       });
-      mobileMenu.querySelectorAll('a').forEach(function (link) {
-        link.addEventListener('click', function () {
-          mobileMenu.classList.add('hidden');
-          menuBtn.setAttribute('aria-expanded', 'false');
-          menuBtn.querySelector('i').className = 'fa-solid fa-bars';
-        });
-      });
-
-      /* ---------- Scroll reveal (Intersection Observer) ---------- */
-      var revealObserver = new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-            revealObserver.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.12 });
-      document.querySelectorAll('.reveal').forEach(function (el) { revealObserver.observe(el); });
-
-      /* ---------- Animated counters ---------- */
-      function animateCounter(el) {
-        var target = parseInt(el.getAttribute('data-target'), 10);
-        var duration = 1800;
-        var start = performance.now();
-        function tick(now) {
-          var progress = Math.min((now - start) / duration, 1);
-          var eased = 1 - Math.pow(1 - progress, 3);
-          el.textContent = Math.round(target * eased).toLocaleString('ar-EG');
-          if (progress < 1) requestAnimationFrame(tick);
-        }
-        requestAnimationFrame(tick);
-      }
-      var counterObserver = new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) {
-          if (entry.isIntersecting) {
-            animateCounter(entry.target);
-            counterObserver.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.5 });
-      document.querySelectorAll('.counter').forEach(function (el) { counterObserver.observe(el); });
-
-      /* ---------- Testimonials slider ---------- */
-      var track = document.getElementById('slidesTrack');
-      var slides = track.children;
-      var total = slides.length;
-      var current = 0;
-      var dotsWrap = document.getElementById('sliderDots');
-      var autoplayTimer = null;
-
-      for (var i = 0; i < total; i++) {
-        (function (idx) {
-          var dot = document.createElement('button');
-          dot.type = 'button';
-          dot.setAttribute('role', 'tab');
-          dot.setAttribute('aria-label', 'الشهادة رقم ' + (idx + 1));
-          dot.className = 'w-2.5 h-2.5 rounded-full transition-all';
-          dot.addEventListener('click', function () { goTo(idx); restartAutoplay(); });
-          dotsWrap.appendChild(dot);
-        })(i);
-      }
-
-      function updateDots() {
-        Array.prototype.forEach.call(dotsWrap.children, function (dot, idx) {
-          dot.className = 'rounded-full transition-all ' + (idx === current ? 'w-7 h-2.5 bg-gold' : 'w-2.5 h-2.5 bg-white/30 hover:bg-white/60');
-          dot.setAttribute('aria-selected', String(idx === current));
-        });
-      }
-
-      function goTo(idx) {
-        current = (idx + total) % total;
-        /* RTL: translate positively to move slides */
-        track.style.transform = 'translateX(' + (current * 100) + '%)';
-        updateDots();
-      }
-
-      document.getElementById('nextSlide').addEventListener('click', function () { goTo(current + 1); restartAutoplay(); });
-      document.getElementById('prevSlide').addEventListener('click', function () { goTo(current - 1); restartAutoplay(); });
-
-      function restartAutoplay() {
-        clearInterval(autoplayTimer);
-        autoplayTimer = setInterval(function () { goTo(current + 1); }, 5000);
-      }
-      restartAutoplay();
-      goTo(0);
-
-      /* ---------- FAQ accordion ---------- */
-      document.querySelectorAll('.faq-toggle').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          var item = btn.closest('.faq-item');
-          var isOpen = item.classList.contains('open');
-          document.querySelectorAll('.faq-item.open').forEach(function (openItem) {
-            openItem.classList.remove('open');
-            openItem.querySelector('.faq-toggle').setAttribute('aria-expanded', 'false');
-          });
-          if (!isOpen) {
-            item.classList.add('open');
-            btn.setAttribute('aria-expanded', 'true');
-          }
-        });
-      });
-
-      /* ---------- Contact form ---------- */
-      var form = document.getElementById('contactForm');
-      var status = document.getElementById('formStatus');
-      form.addEventListener('submit', function (e) {
-        e.preventDefault();
-        if (!form.checkValidity()) {
-          form.reportValidity();
-          return;
-        }
-        status.classList.remove('hidden');
-        form.reset();
-        setTimeout(function () { status.classList.add('hidden'); }, 6000);
-      });
-
-      /* ---------- Footer year ---------- */
-      document.getElementById('year').textContent = new Date().getFullYear();
     })();
   </script>
 </body>

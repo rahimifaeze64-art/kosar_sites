@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>شركة الكوثر | الخدمات الجامعية</title>
+  <meta name="description" content="خدمات جامعية متكاملة: رسائل ماجستير ودكتوراه، ترجمة، استشارات أكاديمية" />
+  <meta name="theme-color" content="#1a2f5e" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            navy: { DEFAULT: '#1a2f5e', light: '#27407c', dark: '#111f40' },
+            gold: { DEFAULT: '#c9a84c', light: '#dbc27a', dark: '#a8893a' },
+          },
+          fontFamily: { sans: ['Tajawal', 'sans-serif'] },
+        },
+      },
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    :root { --navy:#1a2f5e; --gold:#c9a84c; }
+    html { scroll-behavior: smooth; }
+    body { font-family:'Tajawal',sans-serif; }
+    #header { transition:background-color .35s,box-shadow .35s; background-color:rgba(255,255,255,.55); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+    #header.scrolled { background-color:rgba(255,255,255,.92); box-shadow:0 4px 24px rgba(26,47,94,.10); }
+    .dark #header { background-color:rgba(17,31,64,.55); }
+    .dark #header.scrolled { background-color:rgba(17,31,64,.92); box-shadow:0 4px 24px rgba(0,0,0,.35); }
+    .hero-pattern {
+      background-image: radial-gradient(rgba(201,168,76,.14) 1.5px,transparent 1.5px), radial-gradient(rgba(26,47,94,.10) 1.5px,transparent 1.5px);
+      background-size:42px 42px,42px 42px; background-position:0 0,21px 21px;
+    }
+    .reveal { opacity:0; transform:translateY(28px); transition:opacity .7s,transform .7s; }
+    .reveal.visible { opacity:1; transform:translateY(0); }
+    .reveal-delay-1 { transition-delay:.1s; }
+    .reveal-delay-2 { transition-delay:.2s; }
+    .reveal-delay-3 { transition-delay:.3s; }
+    .service-card { transition:transform .3s,box-shadow .3s,border-color .3s; }
+    .service-card:hover { transform:translateY(-8px); box-shadow:0 18px 40px rgba(26,47,94,.14); border-color:var(--gold); }
+    .service-card:hover .service-icon { background-color:var(--navy); color:var(--gold); transform:scale(1.08) rotate(-4deg); }
+    .service-icon { transition:all .3s; }
+    .faq-answer { max-height:0; overflow:hidden; transition:max-height .4s; }
+    .faq-item.open .faq-answer { max-height:300px; }
+    .faq-item .faq-chevron { transition:transform .3s; }
+    .faq-item.open .faq-chevron { transform:rotate(180deg); }
+    @keyframes waPulse { 0%{box-shadow:0 0 0 0 rgba(37,211,102,.45)} 70%{box-shadow:0 0 0 16px rgba(37,211,102,0)} 100%{box-shadow:0 0 0 0 rgba(37,211,102,0)} }
+    .wa-float { animation:waPulse 2.4s infinite; }
+    @keyframes floaty { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+    .floaty { animation:floaty 4.5s ease-in-out infinite; }
+    .floaty:nth-child(2){animation-delay:.8s} .floaty:nth-child(3){animation-delay:1.6s} .floaty:nth-child(4){animation-delay:2.4s}
+    .slides-track { display:flex; transition:transform .6s cubic-bezier(.4,0,.2,1); }
+    .slide { flex:0 0 100%; }
+    a:focus-visible,button:focus-visible { outline:3px solid var(--gold); outline-offset:2px; }
+  </style>
+</head>
+<body class="bg-white text-slate-800 dark:bg-navy-dark dark:text-slate-200 antialiased">
+
+  <!-- HEADER -->
+  <header id="header" class="fixed top-0 inset-x-0 z-50">
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[72px] flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="landing.html" class="flex items-center gap-2 shrink-0" aria-label="العودة">
+          <span class="w-9 h-9 rounded-lg bg-gold/15 text-gold-dark flex items-center justify-center"><i class="fa-solid fa-arrow-right fa-sm"></i></span>
+          <span class="text-slate-600 dark:text-slate-300 font-medium text-sm hidden sm:inline">العودة</span>
+        </a>
+        <a href="landing.html" class="flex items-center gap-3 shrink-0">
+          <span class="w-[88px] h-[88px] rounded-none overflow-hidden shrink-0"><img src="assets/logo_main.jpg" alt="لوگو شركة الكوثر" class="w-full h-full object-cover"></span>
+          <span class="leading-tight hidden sm:block">
+            <span class="block font-black text-navy dark:text-white text-lg">شركة الكوثر</span>
+            <span class="block text-xs text-gold-dark dark:text-gold font-medium">للخدمات الجامعية</span>
+          </span>
+        </a>
+      </div>
+      <div class="flex items-center gap-3">
+        <button id="darkToggle" type="button" class="w-10 h-10 rounded-full border border-navy/20 dark:border-white/20 flex items-center justify-center text-navy dark:text-gold hover:bg-navy/5 transition-colors" aria-label="تبديل الوضع الليلي">
+          <i class="fa-solid fa-moon dark:hidden"></i><i class="fa-solid fa-sun hidden dark:inline"></i>
+        </button>
+        <a href="https://wa.me/+989120781003" target="_blank" rel="noopener noreferrer" class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg bg-[#25d366] text-white font-bold text-sm hover:bg-[#1ebe5d] transition-colors">
+          <i class="fa-brands fa-whatsapp"></i> تواصل معنا
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero-pattern min-h-screen flex items-center pt-[72px] bg-slate-50 dark:bg-navy-dark">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 w-full text-center">
+        <span class="reveal inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gold/15 text-gold-dark dark:text-gold font-bold text-sm mb-6">
+          <i class="fa-solid fa-award"></i> خدمات أكاديمية موثوقة للطلاب الدوليين
+        </span>
+        <h1 class="reveal reveal-delay-1 text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.25] text-navy dark:text-white max-w-4xl mx-auto">
+          رافقك في مسيرتك الأكاديمية
+          <span class="text-gold-dark dark:text-gold"> من البداية حتى التخرج</span>
+        </h1>
+        <p class="reveal reveal-delay-2 mt-6 text-lg sm:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
+          نقدم خدمات جامعية شاملة تشمل كتابة الرسائل، الترجمة والتوثيق، الاستشارات الأكاديمية، ومتابعة كافة الإجراءات الجامعية بسرية تامة واحترافية عالية.
+        </p>
+        <div class="reveal reveal-delay-3 mt-9 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <a href="#services" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-navy text-white font-bold text-lg hover:bg-navy-light transition-colors shadow-lg shadow-navy/25">
+            اكتشف خدماتنا <i class="fa-solid fa-arrow-down mr-2 text-gold"></i>
+          </a>
+          <a href="#contact" class="w-full sm:w-auto px-8 py-4 rounded-xl border-2 border-gold text-gold-dark dark:text-gold font-bold text-lg hover:bg-gold hover:text-navy transition-colors">
+            تواصل معنا الآن
+          </a>
+        </div>
+        <!-- Stats -->
+        <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+          <div class="floaty reveal bg-white dark:bg-navy rounded-2xl p-6 shadow-lg border border-slate-100 dark:border-white/10">
+            <p class="text-3xl font-black text-navy dark:text-gold"><span class="counter" data-target="1200">0</span>+</p>
+            <p class="mt-1 text-sm font-medium text-slate-500 dark:text-slate-300">طالب مستفيد</p>
+          </div>
+          <div class="floaty reveal reveal-delay-1 bg-white dark:bg-navy rounded-2xl p-6 shadow-lg border border-slate-100 dark:border-white/10">
+            <p class="text-3xl font-black text-navy dark:text-gold"><span class="counter" data-target="98">0</span>%</p>
+            <p class="mt-1 text-sm font-medium text-slate-500 dark:text-slate-300">نسبة النجاح</p>
+          </div>
+          <div class="floaty reveal reveal-delay-2 bg-white dark:bg-navy rounded-2xl p-6 shadow-lg border border-slate-100 dark:border-white/10">
+            <p class="text-3xl font-black text-navy dark:text-gold"><span class="counter" data-target="5">0</span>+</p>
+            <p class="mt-1 text-sm font-medium text-slate-500 dark:text-slate-300">سنوات الخبرة</p>
+          </div>
+          <div class="floaty reveal reveal-delay-3 bg-white dark:bg-navy rounded-2xl p-6 shadow-lg border border-slate-100 dark:border-white/10">
+            <p class="text-3xl font-black text-navy dark:text-gold"><span class="counter" data-target="35">0</span>+</p>
+            <p class="mt-1 text-sm font-medium text-slate-500 dark:text-slate-300">تخصصاً أكاديمياً</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SERVICES -->
+    <section id="services" class="py-20 md:py-28 bg-white dark:bg-navy-dark">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center max-w-2xl mx-auto reveal">
+          <span class="text-gold-dark dark:text-gold font-bold text-sm tracking-wide">ما نقدمه لك</span>
+          <h2 class="mt-2 text-3xl md:text-4xl font-black text-navy dark:text-white">خدماتنا الأكاديمية</h2>
+          <p class="mt-4 text-slate-600 dark:text-slate-300 leading-relaxed">مجموعة متكاملة من الخدمات المصممة لدعمك في كل مرحلة من رحلتك الجامعية.</p>
+        </div>
+        <div class="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <article class="service-card reveal bg-slate-50 dark:bg-navy rounded-2xl p-8 border-2 border-transparent">
+            <span class="service-icon w-16 h-16 rounded-2xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-2xl"><i class="fa-solid fa-book-open"></i></span>
+            <h3 class="mt-6 text-xl font-extrabold text-navy dark:text-white">كتابة الرسائل الجامعية</h3>
+            <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">إعداد رسائل الماجستير والدكتوراه بمنهجية علمية دقيقة مع الالتزام بمعايير الجامعات.</p>
+            <a href="#contact" class="mt-5 inline-flex items-center gap-2 font-bold text-gold-dark dark:text-gold hover:gap-3 transition-all">اعرف أكثر <i class="fa-solid fa-arrow-left text-sm"></i></a>
+          </article>
+          <article class="service-card reveal reveal-delay-1 bg-slate-50 dark:bg-navy rounded-2xl p-8 border-2 border-transparent">
+            <span class="service-icon w-16 h-16 rounded-2xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-2xl"><i class="fa-solid fa-file-lines"></i></span>
+            <h3 class="mt-6 text-xl font-extrabold text-navy dark:text-white">إعداد البروبوزال والاستمارات</h3>
+            <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">صياغة مقترحات البحث والخطط الدراسية وتعبئة الاستمارات باحترافية تضمن القبول.</p>
+            <a href="#contact" class="mt-5 inline-flex items-center gap-2 font-bold text-gold-dark dark:text-gold hover:gap-3 transition-all">اعرف أكثر <i class="fa-solid fa-arrow-left text-sm"></i></a>
+          </article>
+          <article class="service-card reveal reveal-delay-2 bg-slate-50 dark:bg-navy rounded-2xl p-8 border-2 border-transparent">
+            <span class="service-icon w-16 h-16 rounded-2xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-2xl"><i class="fa-solid fa-language"></i></span>
+            <h3 class="mt-6 text-xl font-extrabold text-navy dark:text-white">الترجمة والتوثيق</h3>
+            <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">ترجمة أكاديمية معتمدة للوثائق والأبحاث والشهادات مع خدمات التوثيق الرسمي.</p>
+            <a href="#contact" class="mt-5 inline-flex items-center gap-2 font-bold text-gold-dark dark:text-gold hover:gap-3 transition-all">اعرف أكثر <i class="fa-solid fa-arrow-left text-sm"></i></a>
+          </article>
+          <article class="service-card reveal bg-slate-50 dark:bg-navy rounded-2xl p-8 border-2 border-transparent">
+            <span class="service-icon w-16 h-16 rounded-2xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-2xl"><i class="fa-solid fa-list-check"></i></span>
+            <h3 class="mt-6 text-xl font-extrabold text-navy dark:text-white">متابعة الإجراءات الجامعية</h3>
+            <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">متابعة التسجيل والقبول والمعادلات والتأشيرات الدراسية نيابة عنك حتى إتمامها.</p>
+            <a href="#contact" class="mt-5 inline-flex items-center gap-2 font-bold text-gold-dark dark:text-gold hover:gap-3 transition-all">اعرف أكثر <i class="fa-solid fa-arrow-left text-sm"></i></a>
+          </article>
+          <article class="service-card reveal reveal-delay-1 bg-slate-50 dark:bg-navy rounded-2xl p-8 border-2 border-transparent">
+            <span class="service-icon w-16 h-16 rounded-2xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-2xl"><i class="fa-solid fa-display"></i></span>
+            <h3 class="mt-6 text-xl font-extrabold text-navy dark:text-white">التلخيص وإعداد البوربوينت</h3>
+            <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">تلخيص الأبحاث وتصميم عروض تقديمية احترافية جاهزة للمناقشة والعرض.</p>
+            <a href="#contact" class="mt-5 inline-flex items-center gap-2 font-bold text-gold-dark dark:text-gold hover:gap-3 transition-all">اعرف أكثر <i class="fa-solid fa-arrow-left text-sm"></i></a>
+          </article>
+          <article class="service-card reveal reveal-delay-2 bg-slate-50 dark:bg-navy rounded-2xl p-8 border-2 border-transparent">
+            <span class="service-icon w-16 h-16 rounded-2xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-2xl"><i class="fa-solid fa-comments"></i></span>
+            <h3 class="mt-6 text-xl font-extrabold text-navy dark:text-white">الاستشارات الأكاديمية</h3>
+            <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">جلسات إرشادية متخصصة لاختيار التخصص والجامعة المناسبة وتوجيهك في كل خطوة.</p>
+            <a href="#contact" class="mt-5 inline-flex items-center gap-2 font-bold text-gold-dark dark:text-gold hover:gap-3 transition-all">اعرف أكثر <i class="fa-solid fa-arrow-left text-sm"></i></a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- TESTIMONIALS -->
+    <section id="testimonials" class="py-20 md:py-28 bg-navy text-white overflow-hidden">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center reveal">
+          <span class="text-gold font-bold text-sm tracking-wide">آراء طلابنا</span>
+          <h2 class="mt-2 text-3xl md:text-4xl font-black">ماذا يقول طلابنا عنا؟</h2>
+        </div>
+        <div class="mt-12 reveal" role="region" aria-label="شهادات الطلاب">
+          <div class="overflow-hidden rounded-3xl">
+            <div id="slidesTrack" class="slides-track">
+              <div class="slide px-2">
+                <figure class="bg-white/5 border border-white/10 rounded-3xl p-8 md:p-10 text-center">
+                  <div class="text-gold text-lg" aria-label="تقييم 5 من 5 نجوم">
+                    <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                  </div>
+                  <blockquote class="mt-5 text-lg md:text-xl leading-relaxed text-white/90">&quot;تعاملت مع فريق الكوثر في رسالة الماجستير، وكانت التجربة استثنائية من حيث الدقة والالتزام بالمواعيد. أنصح بهم بشدة.&quot;</blockquote>
+                  <figcaption class="mt-6"><p class="font-extrabold text-gold">رائد</p><p class="text-white/60 text-sm mt-1">ماجستير قانون عام — جامعة قم</p></figcaption>
+                </figure>
+              </div>
+              <div class="slide px-2">
+                <figure class="bg-white/5 border border-white/10 rounded-3xl p-8 md:p-10 text-center">
+                  <div class="text-gold text-lg"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+                  <blockquote class="mt-5 text-lg md:text-xl leading-relaxed text-white/90">&quot;ساعدوني في إعداد البروبوزال وتمت الموافقة عليه من أول مرة. متابعة مستمرة وتواصل راقٍ في كل خطوة.&quot;</blockquote>
+                  <figcaption class="mt-6"><p class="font-extrabold text-gold">محمد</p><p class="text-white/60 text-sm mt-1">دكتوراه قانون دولي — جامعة قم</p></figcaption>
+                </figure>
+              </div>
+              <div class="slide px-2">
+                <figure class="bg-white/5 border border-white/10 rounded-3xl p-8 md:p-10 text-center">
+                  <div class="text-gold text-lg"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+                  <blockquote class="mt-5 text-lg md:text-xl leading-relaxed text-white/90">&quot;خدمة الترجمة والتوثيق كانت سريعة ودقيقة جداً، وأنجزوا معاملة المعادلة كاملة دون أن أراجع أي جهة بنفسي.&quot;</blockquote>
+                  <figcaption class="mt-6"><p class="font-extrabold text-gold">أسماء</p><p class="text-white/60 text-sm mt-1">ماجستير قانون الدولي — جامعة قم</p></figcaption>
+                </figure>
+              </div>
+              <div class="slide px-2">
+                <figure class="bg-white/5 border border-white/10 rounded-3xl p-8 md:p-10 text-center">
+                  <div class="text-gold text-lg"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+                  <blockquote class="mt-5 text-lg md:text-xl leading-relaxed text-white/90">&quot;الاستشارة الأكاديمية غيّرت مساري بالكامل؛ اختاروا لي التخصص والجامعة الأنسب وتابعوا قبولي حتى وصلت.&quot;</blockquote>
+                  <figcaption class="mt-6"><p class="font-extrabold text-gold">كرار</p><p class="text-white/60 text-sm mt-1">ماجستير قانون الخاص — جامعة قم</p></figcaption>
+                </figure>
+              </div>
+              <div class="slide px-2">
+                <figure class="bg-white/5 border border-white/10 rounded-3xl p-8 md:p-10 text-center">
+                  <div class="text-gold text-lg"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+                  <blockquote class="mt-5 text-lg md:text-xl leading-relaxed text-white/90">&quot;عرض البوربوينت الذي أعدّوه لمناقشتي كان احترافياً للغاية ونال إعجاب اللجنة. شكراً لفريق الكوثر.&quot;</blockquote>
+                  <figcaption class="mt-6"><p class="font-extrabold text-gold">سماح</p><p class="text-white/60 text-sm mt-1">ماجستير قانون العام — جامعة قم</p></figcaption>
+                </figure>
+              </div>
+            </div>
+          </div>
+          <div class="mt-8 flex items-center justify-center gap-4">
+            <button id="prevSlide" type="button" class="w-11 h-11 rounded-full border border-white/25 text-white hover:bg-gold hover:text-navy hover:border-gold transition-colors" aria-label="السابق"><i class="fa-solid fa-chevron-right"></i></button>
+            <div id="sliderDots" class="flex items-center gap-2" role="tablist"></div>
+            <button id="nextSlide" type="button" class="w-11 h-11 rounded-full border border-white/25 text-white hover:bg-gold hover:text-navy hover:border-gold transition-colors" aria-label="التالي"><i class="fa-solid fa-chevron-left"></i></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="py-20 bg-slate-50 dark:bg-navy">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center reveal mb-12">
+          <span class="text-gold-dark dark:text-gold font-bold text-sm tracking-wide">الأسئلة الشائعة</span>
+          <h2 class="mt-2 text-3xl font-black text-navy dark:text-white">إجابات لأكثر ما يشغل بالك</h2>
+        </div>
+        <div class="space-y-4">
+          <div class="faq-item reveal bg-white dark:bg-navy-dark rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
+            <button type="button" class="faq-toggle w-full flex items-center justify-between gap-4 p-6 text-right font-extrabold text-navy dark:text-white" aria-expanded="false">
+              <span>هل معلوماتي وبياناتي في أمان تام؟</span>
+              <i class="faq-chevron fa-solid fa-chevron-down text-gold-dark dark:text-gold shrink-0"></i>
+            </button>
+            <div class="faq-answer"><p class="px-6 pb-6 text-slate-600 dark:text-slate-300 leading-relaxed">نعم، نلتزم بسرية تامة. لا نشارك أي معلومات شخصية أو أكاديمية مع أي طرف ثالث، ويتم التعامل مع كل مشروع تحت اتفاقية سرية صارمة.</p></div>
+          </div>
+          <div class="faq-item reveal bg-white dark:bg-navy-dark rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
+            <button type="button" class="faq-toggle w-full flex items-center justify-between gap-4 p-6 text-right font-extrabold text-navy dark:text-white" aria-expanded="false">
+              <span>كم تستغرق مدة إنجاز رسالة الماجستير أو الدكتوراه؟</span>
+              <i class="faq-chevron fa-solid fa-chevron-down text-gold-dark dark:text-gold shrink-0"></i>
+            </button>
+            <div class="faq-answer"><p class="px-6 pb-6 text-slate-600 dark:text-slate-300 leading-relaxed">تعتمد المدة على حجم العمل والتخصص، وتتراوح عادة بين 4 و12 أسبوعاً. نحدد جدولاً زمنياً واضحاً في بداية الاتفاق ونلتزم به بدقة.</p></div>
+          </div>
+          <div class="faq-item reveal bg-white dark:bg-navy-dark rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
+            <button type="button" class="faq-toggle w-full flex items-center justify-between gap-4 p-6 text-right font-extrabold text-navy dark:text-white" aria-expanded="false">
+              <span>هل تشمل الخدمة تعديلات بعد التسليم؟</span>
+              <i class="faq-chevron fa-solid fa-chevron-down text-gold-dark dark:text-gold shrink-0"></i>
+            </button>
+            <div class="faq-answer"><p class="px-6 pb-6 text-slate-600 dark:text-slate-300 leading-relaxed">بالتأكيد. نوفر تعديلات مجانية بعد التسليم بناءً على ملاحظاتك أو ملاحظات المشرف، حتى تحصل على النتيجة التي ترضيك بالكامل.</p></div>
+          </div>
+          <div class="faq-item reveal bg-white dark:bg-navy-dark rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
+            <button type="button" class="faq-toggle w-full flex items-center justify-between gap-4 p-6 text-right font-extrabold text-navy dark:text-white" aria-expanded="false">
+              <span>كيف يتم تحديد الأسعار؟</span>
+              <i class="faq-chevron fa-solid fa-chevron-down text-gold-dark dark:text-gold shrink-0"></i>
+            </button>
+            <div class="faq-answer"><p class="px-6 pb-6 text-slate-600 dark:text-slate-300 leading-relaxed">تُحدد التكلفة بناءً على نوع الخدمة وحجم العمل والمدة المطلوبة. نقدم عرض سعر مفصلاً وشفافاً قبل البدء دون أي رسوم خفية.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section id="contact" class="py-20 bg-white dark:bg-navy-dark">
+      <div class="max-w-2xl mx-auto px-4 text-center">
+        <span class="reveal block text-gold-dark dark:text-gold font-bold text-sm tracking-wide mb-2">تواصل معنا</span>
+        <h2 class="reveal text-3xl font-black text-navy dark:text-white mb-4">جاهزون للإجابة على استفساراتك</h2>
+        <p class="reveal text-slate-600 dark:text-slate-300 leading-relaxed mb-10">فريقنا متاح للرد على جميع أسئلتك ومساعدتك في اختيار الخدمة المناسبة.</p>
+        <div class="reveal flex flex-col items-center gap-5">
+          <a href="https://wa.me/+989120781003" target="_blank" rel="noopener noreferrer"
+            class="inline-flex items-center gap-3 px-10 py-5 rounded-2xl bg-[#25d366] text-white font-extrabold text-xl hover:bg-[#1ebe5d] transition-colors shadow-xl shadow-[#25d366]/30 hover:scale-105">
+            <i class="fa-brands fa-whatsapp text-3xl"></i> تواصل معنا عبر واتساب
+          </a>
+          <p class="text-slate-500 dark:text-slate-400 text-sm">نرد على رسائلكم خلال دقائق · متاحون طوال أيام الأسبوع</p>
+        </div>
+        <div class="reveal mt-10 grid sm:grid-cols-3 gap-5">
+          <div class="bg-slate-50 dark:bg-navy rounded-2xl p-6 border border-slate-200 dark:border-white/10">
+            <span class="w-12 h-12 mx-auto rounded-xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-xl mb-4"><i class="fa-solid fa-envelope"></i></span>
+            <p class="text-sm text-slate-500 dark:text-slate-400">البريد الإلكتروني</p>
+            <a href="mailto:info@alkawthar-edu.com" class="font-bold text-navy dark:text-white hover:text-gold-dark text-sm" dir="ltr">info@alkawthar-edu.com</a>
+          </div>
+          <div class="bg-slate-50 dark:bg-navy rounded-2xl p-6 border border-slate-200 dark:border-white/10">
+            <span class="w-12 h-12 mx-auto rounded-xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-xl mb-4"><i class="fa-solid fa-phone"></i></span>
+            <p class="text-sm text-slate-500 dark:text-slate-400">الهاتف / واتساب</p>
+            <a href="https://wa.me/+989120781003" class="font-bold text-navy dark:text-white hover:text-gold-dark text-sm" dir="ltr">+98 912 078 1003</a>
+          </div>
+          <div class="bg-slate-50 dark:bg-navy rounded-2xl p-6 border border-slate-200 dark:border-white/10">
+            <span class="w-12 h-12 mx-auto rounded-xl bg-gold/15 text-gold-dark dark:text-gold flex items-center justify-center text-xl mb-4"><i class="fa-solid fa-clock"></i></span>
+            <p class="text-sm text-slate-500 dark:text-slate-400">ساعات العمل</p>
+            <p class="font-bold text-navy dark:text-white text-sm">السبت - جمعه : 19 - 1</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-navy-dark text-white py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-5">
+      <div class="flex flex-wrap items-center justify-center gap-6 text-sm text-white/70">
+        <div class="flex items-center gap-2"><i class="fa-solid fa-location-dot text-gold"></i><span>إيران، قم المقدسة، شارع انقلاب</span></div>
+        <div class="flex items-center gap-2"><i class="fa-solid fa-phone text-gold"></i><a href="tel:+989120781003" class="hover:text-gold transition-colors" dir="ltr">+98 912 078 1003</a></div>
+        <div class="flex items-center gap-2"><i class="fa-solid fa-envelope text-gold"></i><a href="mailto:info@alkawthar-edu.com" class="hover:text-gold transition-colors" dir="ltr">info@alkawthar-edu.com</a></div>
+      </div>
+      <a href="https://wa.me/+989120781003" target="_blank" rel="noopener noreferrer"
+        class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#25d366] text-white font-extrabold hover:bg-[#1ebe5d] transition-colors shadow-lg whitespace-nowrap">
+        <i class="fa-brands fa-whatsapp text-xl"></i> تواصل عبر واتساب
+      </a>
+    </div>
+    <div class="text-center mt-6 text-white/40 text-xs">&copy; <span id="year"></span> شركة الكوثر للخدمات الجامعية — جميع الحقوق محفوظة</div>
+  </footer>
+
+  <a href="https://wa.me/+989120781003" target="_blank" rel="noopener noreferrer"
+    class="wa-float fixed bottom-6 left-6 z-50 w-14 h-14 rounded-full bg-[#25d366] text-white flex items-center justify-center text-2xl shadow-xl hover:scale-110 transition-transform"
+    aria-label="تواصل معنا عبر واتساب"><i class="fa-brands fa-whatsapp"></i></a>
+
+  <script>
+    (function(){
+      'use strict';
+      var root=document.documentElement;
+      try{ if(localStorage.getItem('theme')==='dark') root.classList.add('dark'); }catch(e){}
+      document.getElementById('darkToggle').addEventListener('click',function(){
+        root.classList.toggle('dark');
+        try{localStorage.setItem('theme',root.classList.contains('dark')?'dark':'light');}catch(e){}
+      });
+      var header=document.getElementById('header');
+      window.addEventListener('scroll',function(){header.classList.toggle('scrolled',window.scrollY>24);},{passive:true});
+      var ro=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('visible');ro.unobserve(e.target);}});},{threshold:.12});
+      document.querySelectorAll('.reveal').forEach(function(el){ro.observe(el);});
+      function animCounter(el){
+        var t=parseInt(el.dataset.target,10),dur=1800,s=performance.now();
+        (function tick(now){var p=Math.min((now-s)/dur,1),ea=1-Math.pow(1-p,3);
+          el.textContent=Math.round(t*ea).toLocaleString('ar-EG');if(p<1)requestAnimationFrame(tick);})(s);
+      }
+      var co=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){animCounter(e.target);co.unobserve(e.target);}});},{threshold:.5});
+      document.querySelectorAll('.counter').forEach(function(el){co.observe(el);});
+      var track=document.getElementById('slidesTrack'),total=track.children.length,cur=0,dots=document.getElementById('sliderDots'),timer;
+      for(var i=0;i<total;i++){(function(idx){var d=document.createElement('button');d.type='button';d.setAttribute('role','tab');d.setAttribute('aria-label','الشهادة '+(idx+1));d.addEventListener('click',function(){goTo(idx);restart();});dots.appendChild(d);})(i);}
+      function updateDots(){Array.from(dots.children).forEach(function(d,i){d.className='rounded-full transition-all '+(i===cur?'w-7 h-2.5 bg-gold':'w-2.5 h-2.5 bg-white/30');d.setAttribute('aria-selected',String(i===cur));});}
+      function goTo(idx){cur=(idx+total)%total;track.style.transform='translateX('+(cur*100)+'%)';updateDots();}
+      function restart(){clearInterval(timer);timer=setInterval(function(){goTo(cur+1);},5000);}
+      document.getElementById('nextSlide').addEventListener('click',function(){goTo(cur+1);restart();});
+      document.getElementById('prevSlide').addEventListener('click',function(){goTo(cur-1);restart();});
+      restart();goTo(0);
+      document.querySelectorAll('.faq-toggle').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          var item=btn.closest('.faq-item'),isOpen=item.classList.contains('open');
+          document.querySelectorAll('.faq-item.open').forEach(function(o){o.classList.remove('open');o.querySelector('.faq-toggle').setAttribute('aria-expanded','false');});
+          if(!isOpen){item.classList.add('open');btn.setAttribute('aria-expanded','true');}
+        });
+      });
+      document.getElementById('year').textContent=new Date().getFullYear();
+    })();
+  </script>
+</body>
+</html>
