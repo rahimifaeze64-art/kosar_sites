@@ -656,6 +656,9 @@ const EmbassyModule = (function () {
         document.getElementById('f-currency').value = currency;
         document.querySelectorAll('.currency-label').forEach(el => { el.textContent = currency; });
     }
+
+    // ── تنظیم تسویه ─────────────────────────────────────────
+    function _setSettlement(btn) {
         document.querySelectorAll('.settle-btn').forEach(b => {
             b.style.fontWeight = '';
             b.style.boxShadow = '';
