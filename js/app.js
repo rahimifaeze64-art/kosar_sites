@@ -84,22 +84,27 @@ function appController() {
             await this.loadOrdersPageWithRetry();
           }
           if (newPage === "embassy") {
-            // تلاش چندباره تا embassy-root در DOM ظاهر شود
-            let attempts = 0;
-            const tryInit = () => {
+            // embassy-root همیشه در DOM است (x-show فقط display:none می‌کند)
+            // مستقیم inject می‌کنیم
+            const doInit = () => {
               const root = document.getElementById('embassy-root');
               if (root && typeof EmbassyModule !== 'undefined') {
                 root.innerHTML = EmbassyModule.getContent();
                 setTimeout(() => EmbassyModule.init(), 120);
                 console.log('✅ Embassy loaded successfully');
-              } else if (attempts < 10) {
-                attempts++;
-                setTimeout(tryInit, 100);
               } else {
-                console.error('❌ embassy-root not found after 10 attempts');
+                // اگر هنوز پیدا نشد یک بار دیگر تلاش کن
+                setTimeout(() => {
+                  const r2 = document.getElementById('embassy-root');
+                  if (r2 && typeof EmbassyModule !== 'undefined') {
+                    r2.innerHTML = EmbassyModule.getContent();
+                    setTimeout(() => EmbassyModule.init(), 120);
+                  }
+                }, 300);
               }
             };
-            setTimeout(tryInit, 50);
+            // Alpine x-show نیاز به یک tick دارد
+            this.$nextTick(() => doInit());
           }
         });
 
