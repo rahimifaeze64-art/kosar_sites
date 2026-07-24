@@ -79,6 +79,10 @@ function appController() {
         // Watch for page changes to load content
         this.$watch("currentPage", async (newPage) => {
           console.log("📄 Page changed to:", newPage);
+          if (newPage !== 'accounting') {
+            window._accPage = 'main';
+            window._empAccPage = 'main';
+          }
           if (newPage === "orders") {
             console.log("🔄 Loading orders page...");
             await this.loadOrdersPageWithRetry();
@@ -573,6 +577,11 @@ function appController() {
           return '<div class="text-red-500">خطا: ماژول AccountingUI یافت نشد</div>';
         }
 
+        // برای مدیر: hub page با ۲ کارت
+        if (this.currentUser.role === 'manager') {
+            return this._getManagerAccountingHub();
+        }
+
         // Initialize and render
         AccountingUI.init();
         const content = AccountingUI.render();
@@ -582,6 +591,124 @@ function appController() {
         debugLogger("Error loading accounting content", "error", error);
         return `<div class="text-red-500">خطا در بارگذاری حسابداری: ${error.message}</div>`;
       }
+    },
+
+    // ── Hub حسابداری مدیر ───────────────────────────────────
+    _getManagerAccountingHub() {
+      // sub-page state روی window نگه می‌داریم
+      if (!window._accPage) window._accPage = 'main';
+      const page = window._accPage;
+
+      if (page === 'personal') {
+        if (typeof AccountingUI === 'undefined') return '<p class="text-red-400">AccountingUI یافت نشد</p>';
+        AccountingUI.init();
+        return `<div>
+            <button onclick="window._accPage='main'; document.querySelector('[x-show*=\"currentPage === \'accounting\'\"]').innerHTML=window.__alpineApp.getAccountingContent();"
+                class="mb-4 flex items-center gap-2 text-blue-300 hover:text-white text-sm"><i class="fas fa-arrow-right"></i> بازگشت</button>
+            ${AccountingUI.render()}</div>`;
+      }
+
+      if (page === 'employees') {
+        return this._getEmployeeAccountingSubHub();
+      }
+
+      // صفحه اصلی — ۲ کارت
+      return `
+        <div class="space-y-6">
+            <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                <span class="bg-yellow-500/20 p-2 rounded-xl"><i class="fas fa-calculator text-yellow-400"></i></span>
+                حسابداری
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- کارت ۱: حسابداری شخصی -->
+                <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 cursor-pointer hover:bg-white/15 transition-all group"
+                     onclick="window._accPage='personal'; window.__alpineApp=document.querySelector('[x-data]').__x.$data; document.querySelector('[x-show*=\\'currentPage === \\'accounting\\'\\']').innerHTML=window.__alpineApp.getAccountingContent();">
+                    <div class="flex flex-col items-center text-center gap-4">
+                        <div class="w-16 h-16 bg-emerald-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <i class="fas fa-wallet text-3xl text-emerald-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-white mb-2">حسابداری شخصی</h3>
+                            <p class="text-blue-200 text-sm">مشاهده درآمد، هزینه و سابقه مالی</p>
+                        </div>
+                        <i class="fas fa-chevron-left text-blue-300 group-hover:text-white transition-colors"></i>
+                    </div>
+                </div>
+                <!-- کارت ۲: حسابداری کارمندان -->
+                <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 cursor-pointer hover:bg-white/15 transition-all group"
+                     onclick="window._accPage='employees'; window.__alpineApp=document.querySelector('[x-data]').__x.$data; document.querySelector('[x-show*=\\'currentPage === \\'accounting\\'\\']').innerHTML=window.__alpineApp.getAccountingContent();">
+                    <div class="flex flex-col items-center text-center gap-4">
+                        <div class="w-16 h-16 bg-yellow-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <i class="fas fa-users-cog text-3xl text-yellow-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-white mb-2">حسابداری کارمندان</h3>
+                            <p class="text-blue-200 text-sm">مدیریت ساعات، هزینه‌ها و کسورات کارمندان</p>
+                        </div>
+                        <i class="fas fa-chevron-left text-blue-300 group-hover:text-white transition-colors"></i>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    },
+
+    _getEmployeeAccountingSubHub() {
+      if (!window._empAccPage) window._empAccPage = 'main';
+      const page = window._empAccPage;
+      const backToMain = `<button onclick="window._accPage='main'; window._empAccPage='main'; document.querySelector('[x-show*=\\"currentPage === \\'accounting\\'\\"]').innerHTML=document.querySelector('[x-data]').__x.$data.getAccountingContent();"
+          class="mb-4 flex items-center gap-2 text-blue-300 hover:text-white text-sm"><i class="fas fa-arrow-right"></i> بازگشت به حسابداری</button>`;
+
+      if (page === 'emp_accounting') {
+        if (typeof EmployeeAccountingUI === 'undefined') return backToMain + '<p class="text-red-400">ماژول یافت نشد</p>';
+        EmployeeAccountingUI.init();
+        return `<div>${backToMain}${EmployeeAccountingUI.getManagerEmployeesContent()}</div>`;
+      }
+
+      if (page === 'work_hours') {
+        if (typeof WorkHoursUI === 'undefined') return backToMain + '<p class="text-red-400">ماژول یافت نشد</p>';
+        WorkHoursUI.init();
+        return `<div>${backToMain}${WorkHoursUI.getManagerContent()}</div>`;
+      }
+
+      const backBtn = `<button onclick="window._accPage='main'; window._empAccPage='main'; document.querySelector('[x-show*=\\"currentPage === \\'accounting\\'\\"]').innerHTML=document.querySelector('[x-data]').__x.$data.getAccountingContent();"
+          class="mb-4 flex items-center gap-2 text-blue-300 hover:text-white text-sm"><i class="fas fa-arrow-right"></i> بازگشت</button>`;
+
+      return `
+        <div class="space-y-6">
+            ${backBtn}
+            <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                <span class="bg-yellow-500/20 p-2 rounded-xl"><i class="fas fa-users-cog text-yellow-400"></i></span>
+                حسابداری کارمندان
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 cursor-pointer hover:bg-white/15 transition-all group"
+                     onclick="window._empAccPage='emp_accounting'; document.querySelector('[x-show*=\\"currentPage === \\'accounting\\'\\"]').innerHTML=document.querySelector('[x-data]').__x.$data.getAccountingContent();">
+                    <div class="flex flex-col items-center text-center gap-4">
+                        <div class="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <i class="fas fa-calculator text-3xl text-blue-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-white mb-2">حسابداری کارمندان</h3>
+                            <p class="text-blue-200 text-sm">نرخ ساعتی، هزینه‌ها و کسورات</p>
+                        </div>
+                        <i class="fas fa-chevron-left text-blue-300 group-hover:text-white transition-colors"></i>
+                    </div>
+                </div>
+                <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 cursor-pointer hover:bg-white/15 transition-all group"
+                     onclick="window._empAccPage='work_hours'; document.querySelector('[x-show*=\\"currentPage === \\'accounting\\'\\"]').innerHTML=document.querySelector('[x-data]').__x.$data.getAccountingContent();">
+                    <div class="flex flex-col items-center text-center gap-4">
+                        <div class="w-16 h-16 bg-amber-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <i class="fas fa-clock text-3xl text-amber-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-white mb-2">ساعات کاری کارمندان</h3>
+                            <p class="text-blue-200 text-sm">تأیید ساعات، هزینه‌ها و کسورات</p>
+                        </div>
+                        <i class="fas fa-chevron-left text-blue-300 group-hover:text-white transition-colors"></i>
+                    </div>
+                </div>
+            </div>
+        </div>`;
     },
 
     // Get employee management accounting content (manager only)

@@ -949,6 +949,22 @@ const WorkHoursUI = (function() {
                         </table>
                     </div>
                 </div>
+
+                <!-- ── جدول کسورات کارمندان ── -->
+                <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+                    <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+                        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i class="fas fa-minus-circle text-red-400"></i>
+                            کسورات کارمندان
+                        </h3>
+                        <button onclick="WorkHoursUI.showAddDeductionForEmployeeModal()"
+                            class="bg-red-600 hover:bg-red-500 text-white text-sm px-4 py-2 rounded-xl transition-all flex items-center gap-2">
+                            <i class="fas fa-plus"></i> ثبت کسر جدید
+                        </button>
+                    </div>
+                    ${_renderManagerDeductions()}
+                </div>
+
             </div>
         `;
     }
@@ -1462,6 +1478,135 @@ const WorkHoursUI = (function() {
         setupEventListeners();
     });
     
+    // ── کسورات کارمندان — رندر برای مدیر ────────────────────
+    function _renderManagerDeductions() {
+        try {
+            const list = JSON.parse(localStorage.getItem('work_deductions') || '[]');
+            if (!list.length) return '<p class="text-blue-300 text-sm text-center py-6">هیچ کسوراتی ثبت نشده</p>';
+
+            // گروه‌بندی بر اساس کارمند
+            const grouped = {};
+            list.forEach(function(d) {
+                var n = d.employeeName || d.employeeId || '—';
+                if (!grouped[n]) grouped[n] = { items: [], total: 0 };
+                grouped[n].items.push(d);
+                grouped[n].total += Number(d.amount || 0);
+            });
+
+            return Object.entries(grouped).map(function(entry) {
+                var empName = entry[0], info = entry[1];
+                var rows = info.items.map(function(d) {
+                    return `<tr class="border-b border-white/5 hover:bg-white/5">
+                        <td class="py-2 px-3 text-blue-200 text-sm">${typeof Jalali !== 'undefined' ? Jalali.displayDate(d.date) : d.date}</td>
+                        <td class="py-2 px-3 text-red-300 font-bold text-sm">${Number(d.amount||0).toLocaleString('fa-IR')} ت</td>
+                        <td class="py-2 px-3 text-blue-200 text-sm">${d.reason || '—'}</td>
+                        <td class="py-2 px-3">
+                            <button onclick="WorkHoursUI._deleteManagerDeduction('${d.id}')"
+                                class="text-red-400 hover:text-red-300 text-xs"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>`;
+                }).join('');
+
+                return `<div class="mb-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-white font-semibold flex items-center gap-2">
+                            <i class="fas fa-user text-yellow-400 text-xs"></i>${empName}
+                        </span>
+                        <span class="bg-red-500/20 text-red-300 text-xs px-3 py-1 rounded-full font-bold">
+                            جمع: ${info.total.toLocaleString('fa-IR')} ت
+                        </span>
+                    </div>
+                    <table class="w-full text-sm">
+                        <thead><tr class="text-blue-300 text-xs border-b border-white/10">
+                            <th class="text-right py-1 px-3">تاریخ</th>
+                            <th class="text-right py-1 px-3">مبلغ</th>
+                            <th class="text-right py-1 px-3">علت</th>
+                            <th class="py-1 px-3"></th>
+                        </tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>`;
+            }).join('<hr class="border-white/10 my-3">');
+        } catch(e) { return '<p class="text-red-400 text-sm">خطا در بارگذاری کسورات</p>'; }
+    }
+
+    function _deleteManagerDeduction(id) {
+        if (!confirm('این کسر حذف شود؟')) return;
+        var list = JSON.parse(localStorage.getItem('work_deductions') || '[]').filter(function(d) { return d.id !== id; });
+        localStorage.setItem('work_deductions', JSON.stringify(list));
+        refreshContent();
+    }
+
+    function showAddDeductionForEmployeeModal() {
+        var users = [];
+        try {
+            users = JSON.parse(localStorage.getItem('edu_system_users') || '[]').filter(function(u) { return u.role === 'employee'; });
+        } catch(e) {}
+
+        var opts = users.map(function(u) { return '<option value="' + u.id + '" data-name="' + (u.name||'') + '">' + (u.name||u.id) + '</option>'; }).join('');
+
+        var existing = document.getElementById('add-deduction-mgr-modal');
+        if (existing) existing.remove();
+
+        var modal = document.createElement('div');
+        modal.id = 'add-deduction-mgr-modal';
+        modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-blue-900 rounded-2xl p-6 max-w-sm w-full mx-4 border border-red-500/30 shadow-2xl" onclick="event.stopPropagation()">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="text-white text-lg font-bold flex items-center gap-2">
+                        <i class="fas fa-minus-circle text-red-400"></i>ثبت کسر کارمند
+                    </h3>
+                    <button onclick="document.getElementById('add-deduction-mgr-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-blue-200 text-sm mb-1 block">کارمند <span class="text-red-400">*</span></label>
+                        <select id="mgr-ded-emp" class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none">
+                            <option value="">انتخاب کارمند...</option>${opts}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-blue-200 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
+                        <input type="date" id="mgr-ded-date" class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-blue-200 text-sm mb-1 block">مبلغ (تومان) <span class="text-red-400">*</span></label>
+                        <input type="number" id="mgr-ded-amount" min="0" step="1000" placeholder="مثال: 500000" class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-blue-200 text-sm mb-1 block">علت <span class="text-red-400">*</span></label>
+                        <input type="text" id="mgr-ded-reason" placeholder="مثال: غیبت، تأخیر..." class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none">
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-5">
+                    <button onclick="WorkHoursUI.saveMgrDeduction()" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl transition-all">
+                        <i class="fas fa-save ml-1"></i>ثبت کسر
+                    </button>
+                    <button onclick="document.getElementById('add-deduction-mgr-modal').remove()" class="px-5 bg-gray-600 hover:bg-gray-500 text-white py-2.5 rounded-xl">انصراف</button>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+    }
+
+    function saveMgrDeduction() {
+        var empSel = document.getElementById('mgr-ded-emp');
+        var date   = document.getElementById('mgr-ded-date')?.value;
+        var amount = parseFloat(document.getElementById('mgr-ded-amount')?.value) || 0;
+        var reason = document.getElementById('mgr-ded-reason')?.value?.trim();
+        if (!empSel?.value || !date || !amount || !reason) { showNotification('همه فیلدها را پر کنید', 'error'); return; }
+
+        var empName = empSel.options[empSel.selectedIndex]?.dataset?.name || empSel.value;
+        var record = { id: 'ded_' + Date.now(), employeeId: empSel.value, employeeName: empName, date, amount, reason, createdAt: new Date().toISOString() };
+        var list = JSON.parse(localStorage.getItem('work_deductions') || '[]');
+        list.push(record);
+        localStorage.setItem('work_deductions', JSON.stringify(list));
+        document.getElementById('add-deduction-mgr-modal')?.remove();
+        showNotification('کسر با موفقیت ثبت شد', 'success');
+        refreshContent();
+    }
+
     // ── کسورات ───────────────────────────────────────────────
     const DEDUCTION_KEY = 'work_deductions';
 
@@ -1551,5 +1696,9 @@ const WorkHoursUI = (function() {
         submitDeductionForm,
         _renderDeductions,
         _deleteDeduction,
+        _renderManagerDeductions,
+        _deleteManagerDeduction,
+        showAddDeductionForEmployeeModal,
+        saveMgrDeduction,
     };
 })();
