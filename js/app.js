@@ -12,8 +12,9 @@ function appController() {
       phone: "+98 912 123 4567",
     },
     currentPage: "dashboard",
-    accPage: "main",        // main | personal | employees
+    accPage: "main",        // main | personal | employees | embassy
     empAccPage: "main",     // main | emp_accounting | work_hours
+    accMenuOpen: false,     // dropdown حسابداری در sidebar
     showModal: null,
     selectedOrder: null,
     notifications: [],
@@ -264,6 +265,7 @@ function appController() {
         accounting: "حسابداری",
         employeeAccounting: "حسابداری کارمندان",
         workHours: "ساعات کاری",
+        workChecklist: "چک‌لیست کاری",
         chatWithManager: "گفتگو با مدیر",
         personalChat: "گفتگو شخصی",
         managementChat: "گفتگو مدیریت",
