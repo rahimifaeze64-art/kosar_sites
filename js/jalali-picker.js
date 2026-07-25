@@ -149,6 +149,9 @@
 
         // اتصال به یک input خاص
         _attach: function(input) {
+            // اطمینان از اینکه pickerEl ساخته شده
+            createPicker();
+
             // مخفی کردن input اصلی
             input.style.display = 'none';
 
@@ -243,6 +246,11 @@
         attachById: function(id) {
             var el = document.getElementById(id);
             if (el) JalaliPicker._attach(el);
+        },
+
+        // اطمینان از اینکه picker DOM ساخته شده
+        _ensureCreated: function() {
+            createPicker();
         }
     };
 

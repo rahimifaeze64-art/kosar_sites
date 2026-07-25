@@ -438,11 +438,68 @@ const EmployeeAccountingUI = (function() {
         const totalHours = employeesSummary.reduce((sum, emp) => sum + parseFloat(emp.totalHoursApproved || emp.totalHours), 0);
         const totalExpenses = employeesSummary.reduce((sum, emp) => sum + emp.totalExpensesApproved, 0);
 
+        // ── ساعات و هزینه‌های در انتظار تأیید ──
+        const pendingHours    = (typeof WorkHoursModule !== 'undefined') ? WorkHoursModule.getPendingWorkHours()  : [];
+        const pendingExpenses = (typeof WorkHoursModule !== 'undefined') ? WorkHoursModule.getPendingExpenses()   : [];
+
+        const pendingSection = (pendingHours.length > 0 || pendingExpenses.length > 0) ? `
+        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-yellow-400/30">
+            <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fas fa-hourglass-half text-yellow-400"></i>
+                در انتظار تأیید
+                <span class="bg-yellow-500/30 text-yellow-300 text-sm px-3 py-0.5 rounded-full">${pendingHours.length + pendingExpenses.length}</span>
+            </h3>
+            <div class="space-y-3">
+                ${[...pendingHours.map(e=>({...e,_kind:'hour'})), ...pendingExpenses.map(e=>({...e,_kind:'expense'}))].map(entry => `
+                <div class="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 ${entry._kind==='hour'?'bg-blue-500/20':'bg-orange-500/20'} rounded-full flex items-center justify-center">
+                            <i class="fas ${entry._kind==='hour'?'fa-clock text-blue-400':'fa-money-bill-wave text-orange-400'}"></i>
+                        </div>
+                        <div>
+                            <p class="text-white font-medium">${entry.employeeName}</p>
+                            <p class="text-blue-200 text-sm">${typeof Jalali!=='undefined'?Jalali.displayDate(entry.date):entry.date}
+                                ${entry._kind==='hour' ? ` | ${entry.startTime||'-'} - ${entry.endTime||'-'} | <span class="text-emerald-400 font-bold">${entry.totalHours||0} ساعت</span>` : ` | <span class="text-orange-400 font-bold">${entry.amount?entry.amount.toLocaleString('fa-IR'):0} تومان</span>`}
+                            </p>
+                            ${entry.description ? `<p class="text-blue-300 text-xs mt-1">${entry.description}</p>` : ''}
+                        </div>
+                    </div>
+                    <div class="flex gap-2 flex-shrink-0">
+                        <button onclick="WorkHoursUI.approveEntry('${entry.id}')"
+                            class="px-3 py-1.5 bg-green-500/20 hover:bg-green-500/40 text-green-400 rounded-lg text-sm transition-all">
+                            <i class="fas fa-check ml-1"></i>تأیید
+                        </button>
+                        <button onclick="WorkHoursUI.rejectEntry('${entry.id}')"
+                            class="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded-lg text-sm transition-all">
+                            <i class="fas fa-times ml-1"></i>رد
+                        </button>
+                    </div>
+                </div>`).join('')}
+            </div>
+        </div>` : '';
+
+        // ── خلاصه روزانه (امروز) ──
+        const todayStr = EmployeeAccountingModule.formatDate(new Date());
+        const todayEntries = (typeof WorkHoursModule !== 'undefined') ? WorkHoursModule.getWorkHours().filter(e => e.date === todayStr) : [];
+        const dailyRows = todayEntries.length ? todayEntries.map(e => {
+            const isExp = e.type === 'expense';
+            const statusMap = {approved:'تأیید',rejected:'رد',pending:'در انتظار'};
+            const statusCls = e.status==='approved'?'bg-green-500/20 text-green-400':e.status==='rejected'?'bg-red-500/20 text-red-400':'bg-yellow-500/20 text-yellow-400';
+            return `<tr class="border-b border-white/5 hover:bg-white/5">
+                <td class="py-2 px-4 text-white text-sm">${e.employeeName||'—'}</td>
+                <td class="py-2 px-4">${isExp?'<span class="bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded text-xs">هزینه</span>':'<span class="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded text-xs">ساعت کاری</span>'}</td>
+                <td class="py-2 px-4 text-center">${isExp?`<span class="text-orange-400 font-bold">${(e.amount||0).toLocaleString('fa-IR')} ت</span>`:`<span class="text-emerald-400 font-bold">${e.totalHours||0} ساعت</span>`}</td>
+                <td class="py-2 px-4 text-blue-200 text-xs max-w-xs truncate">${e.description||'—'}</td>
+                <td class="py-2 px-4 text-center"><span class="${statusCls} px-2 py-0.5 rounded-full text-xs">${statusMap[e.status]||e.status}</span></td>
+            </tr>`;
+        }).join('') : `<tr><td colspan="5" class="text-center py-6 text-blue-300 text-sm">امروز هیچ ثبتی وجود ندارد</td></tr>`;
+
         const employeeRows = employeesSummary.length > 0
             ? employeesSummary.map(emp => {
-                const statusBadge = (emp.pendingHours > 0 || emp.pendingExpenses > 0)
-                    ? `<span class="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-sm">${emp.pendingHours + emp.pendingExpenses} در انتظار</span>`
-                    : '<span class="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm"><i class="fas fa-check ml-1"></i>تأیید شده</span>';
+                const hasPending = emp.pendingHours > 0 || emp.pendingExpenses > 0;
+                const statusBadge = hasPending
+                    ? `<span class="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full text-xs">${emp.pendingHours + emp.pendingExpenses} در انتظار</span>`
+                    : '<span class="bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs"><i class="fas fa-check ml-1"></i>تأیید</span>';
 
                 const safeName = (emp.employeeName || '').replace(/'/g, "\\'");
 
@@ -474,17 +531,38 @@ const EmployeeAccountingUI = (function() {
                         <td class="text-center py-4 px-4">
                             <span class="text-white font-bold">${EmployeeAccountingModule.formatCurrency(emp.totalAmount)}</span>
                         </td>
-                        <td class="text-center py-4 px-4">
-                            <span class="text-2xl font-bold text-emerald-400">${EmployeeAccountingModule.formatCurrency(emp.grandTotal)}</span>
-                        </td>
-                        <td class="text-center py-4 px-4">${statusBadge}</td>
-                        <td class="text-center py-4 px-4">
+                    <td class="text-center py-4 px-4">
+                        ${(() => {
+                            const paid = (() => { try { return JSON.parse(localStorage.getItem('work_settlements')||'[]').filter(s=>s.employeeId===emp.employeeId).reduce((s,r)=>s+Number(r.amount||0),0); } catch { return 0; } })();
+                            const ded  = (() => { try { return JSON.parse(localStorage.getItem('work_deductions')||'[]').filter(d=>d.employeeId===emp.employeeId).reduce((s,d)=>s+Number(d.amount||0),0); } catch { return 0; } })();
+                            const gift = (() => { try { return JSON.parse(localStorage.getItem('work_gifts')||'[]').filter(g=>g.employeeId===emp.employeeId).reduce((s,g)=>s+Number(g.amount||0),0); } catch { return 0; } })();
+                            const remaining = emp.grandTotal + gift - ded - paid;
+                            const color = remaining > 0 ? 'text-emerald-400' : remaining < 0 ? 'text-red-400' : 'text-gray-400';
+                            return `<div><span class="text-lg font-bold ${color}">${EmployeeAccountingModule.formatCurrency(remaining)}</span>${paid > 0 ? `<p class="text-purple-400 text-xs mt-0.5">تسویه: ${EmployeeAccountingModule.formatCurrency(paid)}</p>` : ''}</div>`;
+                        })()}
+                    </td>
+                    <td class="text-center py-4 px-4">${statusBadge}</td>
+                    <td class="text-center py-4 px-4">
+                        <div class="flex gap-1 justify-center flex-wrap">
                             <button onclick="EmployeeAccountingUI.showEmployeeDetails('${emp.employeeId}')"
-                                    class="px-3 py-1 bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400 rounded-lg text-sm transition-all">
+                                    class="px-2 py-1 bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400 rounded-lg text-xs transition-all">
                                 <i class="fas fa-eye ml-1"></i>جزئیات
                             </button>
-                        </td>
-                    </tr>`;
+                            <button onclick="EmployeeAccountingUI.showGiftModal('${emp.employeeId}', '${safeName}')"
+                                    class="px-2 py-1 bg-green-500/20 hover:bg-green-500/40 text-green-400 rounded-lg text-xs transition-all">
+                                <i class="fas fa-gift ml-1"></i>هدیه
+                            </button>
+                            <button onclick="EmployeeAccountingUI.showDeductionModal('${emp.employeeId}', '${safeName}')"
+                                    class="px-2 py-1 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded-lg text-xs transition-all">
+                                <i class="fas fa-minus ml-1"></i>کسر
+                            </button>
+                            <button onclick="EmployeeAccountingUI.showSettlementModal('${emp.employeeId}', '${safeName}', ${emp.grandTotal})"
+                                    class="px-2 py-1 bg-purple-500/20 hover:bg-purple-500/40 text-purple-400 rounded-lg text-xs transition-all">
+                                <i class="fas fa-hand-holding-usd ml-1"></i>تسویه
+                            </button>
+                        </div>
+                    </td>
+                </tr>`;
             }).join('')
             : `<tr>
                 <td colspan="8" class="text-center py-12">
@@ -503,7 +581,7 @@ const EmployeeAccountingUI = (function() {
                                 <i class="fas fa-users-cog text-yellow-400"></i>
                                 حسابداری کارمندان
                             </h2>
-                            <p class="text-yellow-200 mt-2">تنظیم نرخ ساعتی و مشاهده خلاصه مالی هر کارمند</p>
+                            <p class="text-yellow-200 mt-2">تنظیم نرخ ساعتی، تأیید ساعات و مدیریت مالی کارمندان</p>
                         </div>
                         <button onclick="EmployeeAccountingUI.showSettingsModal()"
                                 class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all">
@@ -512,74 +590,114 @@ const EmployeeAccountingUI = (function() {
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-                        <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 bg-yellow-500/20 rounded-xl flex items-center justify-center">
-                                <i class="fas fa-users text-2xl text-yellow-400"></i>
+                <!-- ردیف ۱: ۴ کارت اصلی -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 border border-white/20">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-users text-xl text-yellow-400"></i>
                             </div>
                             <div>
-                                <p class="text-blue-200 text-sm">تعداد کارمندان</p>
-                                <p class="text-3xl font-bold text-white">${employeesSummary.length}</p>
+                                <p class="text-blue-200 text-xs">تعداد کارمندان</p>
+                                <p class="text-2xl font-bold text-white">${employeesSummary.length}</p>
                             </div>
                         </div>
                     </div>
-                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-                        <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                                <i class="fas fa-clock text-2xl text-blue-400"></i>
+                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 border border-white/20">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-clock text-xl text-blue-400"></i>
                             </div>
                             <div>
-                                <p class="text-blue-200 text-sm">کل ساعات تأیید شده</p>
-                                <p class="text-3xl font-bold text-white">${totalHours.toFixed(1)}</p>
+                                <p class="text-blue-200 text-xs">کل ساعات تأیید</p>
+                                <p class="text-2xl font-bold text-white">${totalHours.toFixed(1)}</p>
                             </div>
                         </div>
                     </div>
-                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-                        <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 bg-orange-500/20 rounded-xl flex items-center justify-center">
-                                <i class="fas fa-money-bill-wave text-2xl text-orange-400"></i>
+                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 border border-white/20">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-money-bill-wave text-xl text-orange-400"></i>
                             </div>
                             <div>
-                                <p class="text-blue-200 text-sm">کل هزینه‌های تأیید</p>
-                                <p class="text-xl font-bold text-white">${EmployeeAccountingModule.formatCurrency(totalExpenses)}</p>
+                                <p class="text-blue-200 text-xs">کل هزینه‌های تأیید</p>
+                                <p class="text-sm font-bold text-white">${EmployeeAccountingModule.formatCurrency(totalExpenses)}</p>
                             </div>
                         </div>
                     </div>
-                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-                        <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 bg-emerald-500/20 rounded-xl flex items-center justify-center">
-                                <i class="fas fa-wallet text-2xl text-emerald-400"></i>
+                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 border border-white/20">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-wallet text-xl text-emerald-400"></i>
                             </div>
                             <div>
-                                <p class="text-blue-200 text-sm">جمع کل پرداختی</p>
-                                <p class="text-xl font-bold text-emerald-400">${EmployeeAccountingModule.formatCurrency(totalAmount)}</p>
+                                <p class="text-blue-200 text-xs">جمع کل پرداختی</p>
+                                <p class="text-sm font-bold text-emerald-400">${EmployeeAccountingModule.formatCurrency(totalAmount)}</p>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-red-400/20">
-                        <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 bg-red-500/20 rounded-xl flex items-center justify-center">
-                                <i class="fas fa-minus-circle text-2xl text-red-400"></i>
+                <!-- ردیف ۲: ۴ کارت تکمیلی -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 border border-cyan-400/20">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-cyan-500/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-hourglass-end text-xl text-cyan-400"></i>
                             </div>
                             <div>
-                                <p class="text-blue-200 text-sm">جمع کسورات</p>
-                                <p class="text-xl font-bold text-red-400">${EmployeeAccountingModule.formatCurrency(
-                                    (() => { try {
-                                        return JSON.parse(localStorage.getItem('work_deductions')||'[]')
-                                            .reduce((s,d) => s + Number(d.amount||0), 0);
-                                    } catch { return 0; } })()
+                                <p class="text-blue-200 text-xs">جمع ساعات (کل ثبت‌شده)</p>
+                                <p class="text-xl font-bold text-cyan-400">${employeesSummary.reduce((s,e)=>s+parseFloat(e.totalHours||0),0).toFixed(1)} <span class="text-sm font-normal text-blue-300">ساعت</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 border border-red-400/20">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-minus-circle text-xl text-red-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-blue-200 text-xs">جمع کسورات</p>
+                                <p class="text-sm font-bold text-red-400">${EmployeeAccountingModule.formatCurrency(
+                                    (() => { try { return JSON.parse(localStorage.getItem('work_deductions')||'[]').reduce((s,d)=>s+Number(d.amount||0),0); } catch { return 0; } })()
+                                )}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 border border-indigo-400/20">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-indigo-500/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-calculator text-xl text-indigo-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-blue-200 text-xs">جمع مبالغ (ساعات × نرخ)</p>
+                                <p class="text-sm font-bold text-indigo-400">${EmployeeAccountingModule.formatCurrency(
+                                    employeesSummary.reduce((s,e)=>s+e.totalAmount,0)
+                                )}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 border border-purple-400/20">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-hand-holding-usd text-xl text-purple-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-blue-200 text-xs">جمع پرداختی‌ها (تسویه)</p>
+                                <p class="text-sm font-bold text-purple-400">${EmployeeAccountingModule.formatCurrency(
+                                    (() => { try { return JSON.parse(localStorage.getItem('work_settlements')||'[]').reduce((s,r)=>s+Number(r.amount||0),0); } catch { return 0; } })()
                                 )}</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
+                ${pendingSection}
+
                 <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-                    <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                    <h3 class="text-xl font-bold text-white mb-5 flex items-center gap-2">
                         <i class="fas fa-table text-blue-400"></i>
-                        خلاصه مالی کارمندان
+                        خلاصه کاری کارمندان
                     </h3>
                     <div class="overflow-x-auto">
                         <table class="w-full">
@@ -590,7 +708,7 @@ const EmployeeAccountingUI = (function() {
                                     <th class="text-center text-blue-200 font-medium py-3 px-4">ساعات تأیید</th>
                                     <th class="text-center text-blue-200 font-medium py-3 px-4">هزینه‌ها</th>
                                     <th class="text-center text-blue-200 font-medium py-3 px-4">مبلغ ساعات</th>
-                                    <th class="text-center text-blue-200 font-medium py-3 px-4">جمع کل</th>
+                                    <th class="text-center text-blue-200 font-medium py-3 px-4">مانده طلب</th>
                                     <th class="text-center text-blue-200 font-medium py-3 px-4">وضعیت</th>
                                     <th class="text-center text-blue-200 font-medium py-3 px-4">عملیات</th>
                                 </tr>
@@ -600,87 +718,273 @@ const EmployeeAccountingUI = (function() {
                     </div>
                 </div>
 
-                <div class="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-                    <h4 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
-                        <i class="fas fa-info-circle text-blue-400"></i>
-                        راهنما
-                    </h4>
-                    <ul class="text-blue-200 text-sm space-y-2">
-                        <li><i class="fas fa-check text-green-400 ml-2"></i>برای هر کارمند نرخ ساعتی را با کلیک روی دکمه نرخ تنظیم کنید</li>
-                        <li><i class="fas fa-check text-green-400 ml-2"></i>مبلغ ساعات = ساعات تأیید شده × نرخ ساعتی</li>
-                        <li><i class="fas fa-check text-green-400 ml-2"></i>جمع کل = مبلغ ساعات + هزینه‌های تأیید شده</li>
-                        <li><i class="fas fa-check text-green-400 ml-2"></i>تأیید/رد گزارش‌ها از بخش «ساعات کاری» انجام می‌شود</li>
-                    </ul>
-                </div>
-
-                <!-- ── جدول کسورات کارمندان ── -->
+                <!-- خلاصه روزانه کارمندان -->
                 <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-                    <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
-                        <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                            <i class="fas fa-minus-circle text-red-400"></i>
-                            کسورات کارمندان
-                        </h3>
-                        <button onclick="EmployeeAccountingUI.showAddDeductionModal()"
-                            class="bg-red-600 hover:bg-red-500 text-white text-sm px-4 py-2 rounded-xl transition-all flex items-center gap-2">
-                            <i class="fas fa-plus"></i> ثبت کسر جدید
-                        </button>
+                    <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                        <i class="fas fa-calendar-day text-cyan-400"></i>
+                        خلاصه روزانه کارمندان
+                        <span class="bg-cyan-500/20 text-cyan-300 text-sm px-3 py-0.5 rounded-full">
+                            ${typeof Jalali !== 'undefined' ? Jalali.displayDate(todayStr) : todayStr}
+                        </span>
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-white/10 text-xs">
+                                    <th class="text-right text-blue-200 font-medium py-2 px-4">نام کارمند</th>
+                                    <th class="text-right text-blue-200 font-medium py-2 px-4">نوع</th>
+                                    <th class="text-center text-blue-200 font-medium py-2 px-4">مقدار</th>
+                                    <th class="text-right text-blue-200 font-medium py-2 px-4">توضیحات</th>
+                                    <th class="text-center text-blue-200 font-medium py-2 px-4">وضعیت</th>
+                                </tr>
+                            </thead>
+                            <tbody>${dailyRows}</tbody>
+                        </table>
                     </div>
+                </div>
+            </div>`;
+    }
 
-                    ${(() => {
-                        try {
-                            const deductions = JSON.parse(localStorage.getItem('work_deductions') || '[]');
-                            if (!deductions.length) return `
-                                <p class="text-blue-300 text-sm text-center py-6">هیچ کسوراتی ثبت نشده</p>`;
+    // ── مودال تسویه ──────────────────────────────────────────
+    function showSettlementModal(employeeId, employeeName, grandTotal) {
+        document.getElementById('settlement-modal')?.remove();
 
-                            // گروه‌بندی بر اساس کارمند
-                            const grouped = {};
-                            deductions.forEach(d => {
-                                const name = d.employeeName || d.employeeId || '—';
-                                if (!grouped[name]) grouped[name] = [];
-                                grouped[name].push(d);
-                            });
+        // محاسبه مانده واقعی
+        const paid = (() => { try { return JSON.parse(localStorage.getItem('work_settlements')||'[]').filter(s=>s.employeeId===employeeId).reduce((s,r)=>s+Number(r.amount||0),0); } catch { return 0; } })();
+        const ded  = (() => { try { return JSON.parse(localStorage.getItem('work_deductions')||'[]').filter(d=>d.employeeId===employeeId).reduce((s,d)=>s+Number(d.amount||0),0); } catch { return 0; } })();
+        const gift = (() => { try { return JSON.parse(localStorage.getItem('work_gifts')||'[]').filter(g=>g.employeeId===employeeId).reduce((s,g)=>s+Number(g.amount||0),0); } catch { return 0; } })();
+        const remaining = grandTotal + gift - ded - paid;
 
-                            return Object.entries(grouped).map(([empName, items]) => {
-                                const total = items.reduce((s,d) => s + Number(d.amount||0), 0);
-                                const rows = items.map(d => `
-                                    <tr class="border-b border-white/5 hover:bg-white/5">
-                                        <td class="py-2 px-3 text-white text-sm">${d.date || '—'}</td>
-                                        <td class="py-2 px-3 text-red-300 font-bold text-sm">${Number(d.amount||0).toLocaleString('fa-IR')} ت</td>
-                                        <td class="py-2 px-3 text-blue-200 text-sm">${d.reason || '—'}</td>
-                                        <td class="py-2 px-3">
-                                            <button onclick="EmployeeAccountingUI.deleteDeduction('${d.id}')"
-                                                class="text-red-400 hover:text-red-300 text-xs"><i class="fas fa-trash"></i></button>
-                                        </td>
-                                    </tr>`).join('');
+        // تاریخچه تسویه‌ها
+        const history = (() => { try { return JSON.parse(localStorage.getItem('work_settlements')||'[]').filter(s=>s.employeeId===employeeId); } catch { return []; } })();
+        const historyRows = history.length ? history.map(s=>`
+            <tr class="border-b border-white/5 text-xs">
+                <td class="py-1.5 px-3 text-white">${s.date||'—'}</td>
+                <td class="py-1.5 px-3 text-purple-300 font-bold">${Number(s.amount||0).toLocaleString('fa-IR')} ت</td>
+                <td class="py-1.5 px-3 text-blue-200">${s.note||'—'}</td>
+            </tr>`).join('') : `<tr><td colspan="3" class="text-center py-3 text-blue-300 text-xs">تسویه‌ای ثبت نشده</td></tr>`;
 
-                                return `
-                                    <div class="mb-4">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <span class="text-white font-semibold flex items-center gap-2">
-                                                <i class="fas fa-user text-yellow-400 text-xs"></i>${empName}
-                                            </span>
-                                            <span class="bg-red-500/20 text-red-300 text-xs px-3 py-1 rounded-full font-bold">
-                                                جمع: ${total.toLocaleString('fa-IR')} ت
-                                            </span>
-                                        </div>
-                                        <table class="w-full text-sm">
-                                            <thead>
-                                                <tr class="text-blue-300 text-xs border-b border-white/10">
-                                                    <th class="text-right py-1 px-3">تاریخ</th>
-                                                    <th class="text-right py-1 px-3">مبلغ</th>
-                                                    <th class="text-right py-1 px-3">علت</th>
-                                                    <th class="py-1 px-3"></th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>${rows}</tbody>
-                                        </table>
-                                    </div>`;
-                            }).join('<hr class="border-white/10 my-3">');
-                        } catch { return '<p class="text-red-400 text-sm">خطا در بارگذاری کسورات</p>'; }
-                    })()}
+        const modal = document.createElement('div');
+        modal.id = 'settlement-modal';
+        modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4';
+        modal.innerHTML = `
+            <div class="bg-blue-900 rounded-2xl p-6 max-w-md w-full border border-purple-500/30 shadow-2xl" onclick="event.stopPropagation()">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-white text-lg font-bold flex items-center gap-2">
+                        <i class="fas fa-hand-holding-usd text-purple-400"></i>تسویه حساب
+                    </h3>
+                    <button onclick="document.getElementById('settlement-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
+                </div>
+                <p class="text-yellow-300 font-semibold mb-4">${employeeName}</p>
+
+                <!-- مانده -->
+                <div class="bg-purple-500/10 border border-purple-400/20 rounded-xl p-4 mb-5">
+                    <div class="flex justify-between items-center">
+                        <span class="text-blue-200 text-sm">جمع طلب کارمند</span>
+                        <span class="text-emerald-400 font-bold">${EmployeeAccountingModule.formatCurrency(grandTotal + gift)}</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-1">
+                        <span class="text-blue-200 text-sm">کسر کسورات</span>
+                        <span class="text-red-400 font-bold">- ${EmployeeAccountingModule.formatCurrency(ded)}</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-1">
+                        <span class="text-blue-200 text-sm">تسویه‌های قبلی</span>
+                        <span class="text-purple-400 font-bold">- ${EmployeeAccountingModule.formatCurrency(paid)}</span>
+                    </div>
+                    <hr class="border-white/10 my-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-white font-semibold">مانده طلب</span>
+                        <span class="text-xl font-bold ${remaining > 0 ? 'text-emerald-400' : remaining < 0 ? 'text-red-400' : 'text-gray-400'}">${EmployeeAccountingModule.formatCurrency(remaining)}</span>
+                    </div>
                 </div>
 
+                <!-- فرم تسویه جدید -->
+                <div class="space-y-3 mb-5">
+                    <div>
+                        <label class="text-blue-200 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
+                        <input type="date" id="settle-date" class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-400">
+                    </div>
+                    <div>
+                        <label class="text-blue-200 text-sm mb-1 block">مبلغ تسویه (تومان) <span class="text-red-400">*</span></label>
+                        <div class="relative">
+                            <input type="number" id="settle-amount" min="0" step="1000"
+                                placeholder="${remaining > 0 ? 'مانده: ' + remaining.toLocaleString('fa-IR') : '0'}"
+                                class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-400">
+                            ${remaining > 0 ? `<button type="button" onclick="document.getElementById('settle-amount').value='${remaining}'"
+                                class="absolute left-2 top-1/2 -translate-y-1/2 text-purple-400 hover:text-purple-300 text-xs px-2 py-0.5 bg-purple-500/20 rounded">
+                                تسویه کامل
+                            </button>` : ''}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-blue-200 text-sm mb-1 block">یادداشت</label>
+                        <input type="text" id="settle-note" placeholder="مثال: پرداخت نقدی، کارت..."
+                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-400">
+                    </div>
+                </div>
+                <div class="flex gap-3 mb-5">
+                    <button onclick="EmployeeAccountingUI.saveSettlement('${employeeId}', '${employeeName}')"
+                        class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 rounded-xl transition-all">
+                        <i class="fas fa-save ml-1"></i>ثبت تسویه
+                    </button>
+                    <button onclick="document.getElementById('settlement-modal').remove()"
+                        class="px-5 bg-gray-600 hover:bg-gray-500 text-white py-2.5 rounded-xl transition-all">انصراف</button>
+                </div>
+
+                <!-- تاریخچه -->
+                ${history.length > 0 ? `
+                <div>
+                    <h4 class="text-white text-sm font-semibold mb-2 flex items-center gap-1">
+                        <i class="fas fa-history text-purple-400 text-xs"></i>تاریخچه تسویه‌ها
+                    </h4>
+                    <div class="overflow-auto max-h-40">
+                        <table class="w-full">
+                            <thead><tr class="text-blue-300 text-xs border-b border-white/10">
+                                <th class="text-right py-1 px-3">تاریخ</th>
+                                <th class="text-right py-1 px-3">مبلغ</th>
+                                <th class="text-right py-1 px-3">یادداشت</th>
+                            </tr></thead>
+                            <tbody>${historyRows}</tbody>
+                        </table>
+                    </div>
+                </div>` : ''}
             </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        document.getElementById('settle-date').value = new Date().toISOString().split('T')[0];
+    }
+
+    function saveSettlement(employeeId, employeeName) {
+        const date   = document.getElementById('settle-date')?.value;
+        const amount = parseFloat(document.getElementById('settle-amount')?.value) || 0;
+        const note   = document.getElementById('settle-note')?.value?.trim() || '';
+        if (!date || !amount) { alert('تاریخ و مبلغ الزامی است'); return; }
+
+        const list = (() => { try { return JSON.parse(localStorage.getItem('work_settlements') || '[]'); } catch { return []; } })();
+        list.push({ id: 'settle_' + Date.now(), employeeId, employeeName, date, amount, note, createdAt: new Date().toISOString() });
+        localStorage.setItem('work_settlements', JSON.stringify(list));
+
+        document.getElementById('settlement-modal')?.remove();
+        showNotification(`تسویه ${Number(amount).toLocaleString('fa-IR')} تومان برای ${employeeName} ثبت شد ✓`, 'success');
+        refreshContent();
+    }
+
+    // ── مودال ثبت هدیه ────────────────────────────────────────
+    function showGiftModal(employeeId, employeeName) {
+        document.getElementById('gift-modal')?.remove();
+        const modal = document.createElement('div');
+        modal.id = 'gift-modal';
+        modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-blue-900 rounded-2xl p-6 max-w-sm w-full mx-4 border border-green-500/30 shadow-2xl" onclick="event.stopPropagation()">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="text-white text-lg font-bold flex items-center gap-2">
+                        <i class="fas fa-gift text-green-400"></i>ثبت هدیه
+                    </h3>
+                    <button onclick="document.getElementById('gift-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
+                </div>
+                <p class="text-yellow-300 text-sm mb-4 font-semibold">${employeeName}</p>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-blue-200 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
+                        <input type="date" id="gift-date" class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-green-400">
+                    </div>
+                    <div>
+                        <label class="text-blue-200 text-sm mb-1 block">مبلغ هدیه (تومان) <span class="text-red-400">*</span></label>
+                        <input type="number" id="gift-amount" min="0" step="1000" placeholder="مثال: 500000"
+                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-green-400">
+                    </div>
+                    <div>
+                        <label class="text-blue-200 text-sm mb-1 block">توضیحات</label>
+                        <input type="text" id="gift-reason" placeholder="مثال: پاداش عملکرد..."
+                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-green-400">
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-5">
+                    <button onclick="EmployeeAccountingUI.saveGift('${employeeId}', '${employeeName}')"
+                        class="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 rounded-xl transition-all">
+                        <i class="fas fa-save ml-1"></i>ثبت هدیه
+                    </button>
+                    <button onclick="document.getElementById('gift-modal').remove()"
+                        class="px-5 bg-gray-600 hover:bg-gray-500 text-white py-2.5 rounded-xl transition-all">انصراف</button>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('gift-date').value = today;
+    }
+
+    function saveGift(employeeId, employeeName) {
+        const date   = document.getElementById('gift-date')?.value;
+        const amount = parseFloat(document.getElementById('gift-amount')?.value) || 0;
+        const reason = document.getElementById('gift-reason')?.value?.trim() || 'هدیه';
+        if (!date || !amount) { alert('تاریخ و مبلغ الزامی است'); return; }
+        const gifts = (() => { try { return JSON.parse(localStorage.getItem('work_gifts') || '[]'); } catch { return []; } })();
+        gifts.push({ id: 'gift_' + Date.now(), employeeId, employeeName, date, amount, reason, createdAt: new Date().toISOString() });
+        localStorage.setItem('work_gifts', JSON.stringify(gifts));
+        document.getElementById('gift-modal')?.remove();
+        showNotification('هدیه با موفقیت ثبت شد ✓', 'success');
+        refreshContent();
+    }
+
+    // ── مودال ثبت کسر (inline برای یک کارمند) ───────────────
+    function showDeductionModal(employeeId, employeeName) {
+        document.getElementById('deduction-inline-modal')?.remove();
+        const modal = document.createElement('div');
+        modal.id = 'deduction-inline-modal';
+        modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-blue-900 rounded-2xl p-6 max-w-sm w-full mx-4 border border-red-500/30 shadow-2xl" onclick="event.stopPropagation()">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="text-white text-lg font-bold flex items-center gap-2">
+                        <i class="fas fa-minus-circle text-red-400"></i>ثبت کسر
+                    </h3>
+                    <button onclick="document.getElementById('deduction-inline-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
+                </div>
+                <p class="text-yellow-300 text-sm mb-4 font-semibold">${employeeName}</p>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-blue-200 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
+                        <input type="date" id="ded2-date" class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-red-400">
+                    </div>
+                    <div>
+                        <label class="text-blue-200 text-sm mb-1 block">مبلغ کسر (تومان) <span class="text-red-400">*</span></label>
+                        <input type="number" id="ded2-amount" min="0" step="1000" placeholder="مثال: 200000"
+                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-red-400">
+                    </div>
+                    <div>
+                        <label class="text-blue-200 text-sm mb-1 block">علت <span class="text-red-400">*</span></label>
+                        <input type="text" id="ded2-reason" placeholder="مثال: غیبت، تأخیر..."
+                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-red-400">
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-5">
+                    <button onclick="EmployeeAccountingUI.saveDeductionInline('${employeeId}', '${employeeName}')"
+                        class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl transition-all">
+                        <i class="fas fa-save ml-1"></i>ثبت کسر
+                    </button>
+                    <button onclick="document.getElementById('deduction-inline-modal').remove()"
+                        class="px-5 bg-gray-600 hover:bg-gray-500 text-white py-2.5 rounded-xl transition-all">انصراف</button>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('ded2-date').value = today;
+    }
+
+    function saveDeductionInline(employeeId, employeeName) {
+        const date   = document.getElementById('ded2-date')?.value;
+        const amount = parseFloat(document.getElementById('ded2-amount')?.value) || 0;
+        const reason = document.getElementById('ded2-reason')?.value?.trim();
+        if (!date || !amount || !reason) { alert('همه فیلدها الزامی است'); return; }
+        const list = (() => { try { return JSON.parse(localStorage.getItem('work_deductions') || '[]'); } catch { return []; } })();
+        list.push({ id: 'ded_' + Date.now(), employeeId, employeeName, date, amount, reason, createdAt: new Date().toISOString() });
+        localStorage.setItem('work_deductions', JSON.stringify(list));
+        document.getElementById('deduction-inline-modal')?.remove();
+        showNotification('کسر با موفقیت ثبت شد', 'success');
+        refreshContent();
     }
 
     // ── مودال ثبت کسر جدید (برای مدیر) ──────────────────────
@@ -891,63 +1195,151 @@ const EmployeeAccountingUI = (function() {
     function showEmployeeDetails(employeeId) {
         const summary = EmployeeAccountingModule.getEmployeeFinancialSummary(employeeId);
         const entries = WorkHoursModule.getAllEntriesByEmployee(employeeId);
+        const deductions = (() => { try { return JSON.parse(localStorage.getItem('work_deductions')||'[]').filter(d=>d.employeeId===employeeId); } catch { return []; } })();
+        const gifts      = (() => { try { return JSON.parse(localStorage.getItem('work_gifts')||'[]').filter(g=>g.employeeId===employeeId); } catch { return []; } })();
+        const totalDed   = deductions.reduce((s,d) => s + Number(d.amount||0), 0);
+        const totalGift  = gifts.reduce((s,g) => s + Number(g.amount||0), 0);
+        const safeName   = (summary.employeeName||'').replace(/'/g,"\\'");
 
         document.getElementById('employee-details-modal')?.remove();
 
-        const modal = `
-            <div id="employee-details-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onclick="if(event.target === this) this.remove()">
-                <div class="bg-slate-800 rounded-2xl p-6 max-w-4xl w-full max-h-[80vh] overflow-auto mx-4" onclick="event.stopPropagation()">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-xl font-bold text-white">
-                            <i class="fas fa-user text-yellow-400 ml-2"></i>
-                            جزئیات مالی: ${summary.employeeName}
-                        </h3>
-                        <button onclick="document.getElementById('employee-details-modal').remove()" class="text-gray-400 hover:text-white">
-                            <i class="fas fa-times"></i>
+        // pending برای این کارمند
+        const pendingH = (typeof WorkHoursModule !== 'undefined') ? WorkHoursModule.getPendingWorkHours().filter(e=>e.employeeId===employeeId) : [];
+        const pendingE = (typeof WorkHoursModule !== 'undefined') ? WorkHoursModule.getPendingExpenses().filter(e=>e.employeeId===employeeId) : [];
+        const pendingItems = [...pendingH.map(e=>({...e,_k:'hour'})), ...pendingE.map(e=>({...e,_k:'expense'}))];
+
+        const pendingBlock = pendingItems.length ? `
+        <div class="bg-yellow-500/10 border border-yellow-400/30 rounded-xl p-4 mb-4">
+            <h4 class="text-yellow-300 font-semibold mb-3 flex items-center gap-2 text-sm">
+                <i class="fas fa-hourglass-half"></i>در انتظار تأیید (${pendingItems.length})
+            </h4>
+            <div class="space-y-2">
+                ${pendingItems.map(e=>`
+                <div class="flex items-center justify-between bg-white/5 rounded-lg p-3 text-sm">
+                    <div>
+                        <span class="${e._k==='hour'?'text-blue-400':'text-orange-400'}">${e._k==='hour'?`${e.totalHours||0} ساعت`:`${(e.amount||0).toLocaleString('fa-IR')} ت`}</span>
+                        <span class="text-blue-200 mr-2 text-xs">${typeof Jalali!=='undefined'?Jalali.displayDate(e.date):e.date}</span>
+                        ${e.description ? `<span class="text-blue-300 text-xs"> — ${e.description}</span>` : ''}
+                    </div>
+                    <div class="flex gap-1">
+                        <button onclick="WorkHoursUI.approveEntry('${e.id}'); document.getElementById('employee-details-modal').remove()"
+                            class="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs hover:bg-green-500/40">✓</button>
+                        <button onclick="WorkHoursUI.rejectEntry('${e.id}'); document.getElementById('employee-details-modal').remove()"
+                            class="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs hover:bg-red-500/40">✗</button>
+                    </div>
+                </div>`).join('')}
+            </div>
+        </div>` : '';
+
+        const dedBlock = deductions.length ? deductions.map(d=>`
+        <tr class="border-b border-white/5">
+            <td class="py-2 px-3 text-white text-xs">${d.date||'—'}</td>
+            <td class="py-2 px-3 text-red-300 font-bold text-xs">${Number(d.amount||0).toLocaleString('fa-IR')} ت</td>
+            <td class="py-2 px-3 text-blue-200 text-xs">${d.reason||'—'}</td>
+            <td class="py-2 px-3 text-center">
+                <button onclick="EmployeeAccountingUI.deleteDeduction('${d.id}')" class="text-red-400 hover:text-red-300 text-xs"><i class="fas fa-trash"></i></button>
+            </td>
+        </tr>`).join('') : `<tr><td colspan="4" class="text-center py-3 text-blue-300 text-xs">کسوراتی ثبت نشده</td></tr>`;
+
+        const giftBlock = gifts.length ? gifts.map(g=>`
+        <tr class="border-b border-white/5">
+            <td class="py-2 px-3 text-white text-xs">${g.date||'—'}</td>
+            <td class="py-2 px-3 text-green-300 font-bold text-xs">${Number(g.amount||0).toLocaleString('fa-IR')} ت</td>
+            <td class="py-2 px-3 text-blue-200 text-xs">${g.reason||'—'}</td>
+        </tr>`).join('') : `<tr><td colspan="3" class="text-center py-3 text-blue-300 text-xs">هدیه‌ای ثبت نشده</td></tr>`;
+
+        const modal = document.createElement('div');
+        modal.id = 'employee-details-modal';
+        modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4';
+        modal.innerHTML = `
+            <div class="bg-slate-800 rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-auto" onclick="event.stopPropagation()">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-user text-yellow-400"></i>جزئیات مالی: ${summary.employeeName}
+                    </h3>
+                    <div class="flex gap-2">
+                        <button onclick="EmployeeAccountingUI.showGiftModal('${employeeId}','${safeName}'); document.getElementById('employee-details-modal').remove()"
+                            class="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg text-sm hover:bg-green-500/40">
+                            <i class="fas fa-gift ml-1"></i>هدیه
                         </button>
-                    </div>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                        <div class="bg-white/10 rounded-xl p-4">
-                            <p class="text-blue-200 text-sm mb-1">ساعات تأیید شده</p>
-                            <p class="text-2xl font-bold text-blue-400">${summary.totalHoursApproved}</p>
-                        </div>
-                        <div class="bg-white/10 rounded-xl p-4">
-                            <p class="text-blue-200 text-sm mb-1">هزینه‌های تأیید</p>
-                            <p class="text-xl font-bold text-orange-400">${EmployeeAccountingModule.formatCurrency(summary.totalExpensesApproved)}</p>
-                        </div>
-                        <div class="bg-white/10 rounded-xl p-4">
-                            <p class="text-blue-200 text-sm mb-1">نرخ ساعتی</p>
-                            <p class="text-xl font-bold text-white">${EmployeeAccountingModule.formatCurrency(summary.hourlyRate)}</p>
-                        </div>
-                        <div class="bg-white/10 rounded-xl p-4">
-                            <p class="text-blue-200 text-sm mb-1">جمع کل</p>
-                            <p class="text-2xl font-bold text-emerald-400">${EmployeeAccountingModule.formatCurrency(summary.grandTotal)}</p>
-                        </div>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead>
-                                <tr class="border-b border-white/10">
-                                    <th class="text-right text-blue-200 font-medium py-3 px-4">نوع</th>
-                                    <th class="text-right text-blue-200 font-medium py-3 px-4">تاریخ</th>
-                                    <th class="text-right text-blue-200 font-medium py-3 px-4">ساعت/مبلغ</th>
-                                    <th class="text-right text-blue-200 font-medium py-3 px-4">شرح</th>
-                                    <th class="text-center text-blue-200 font-medium py-3 px-4">وضعیت</th>
-                                </tr>
-                            </thead>
-                            <tbody>${renderEntriesList(entries)}</tbody>
-                        </table>
-                    </div>
-                    <div class="flex justify-end mt-6">
-                        <button onclick="document.getElementById('employee-details-modal').remove()"
-                                class="px-6 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all">
-                            بستن
+                        <button onclick="EmployeeAccountingUI.showDeductionModal('${employeeId}','${safeName}'); document.getElementById('employee-details-modal').remove()"
+                            class="px-3 py-1.5 bg-red-500/20 text-red-400 rounded-lg text-sm hover:bg-red-500/40">
+                            <i class="fas fa-minus ml-1"></i>کسر
                         </button>
+                        <button onclick="document.getElementById('employee-details-modal').remove()" class="text-gray-400 hover:text-white text-xl ml-2"><i class="fas fa-times"></i></button>
                     </div>
                 </div>
-            </div>`;
 
-        document.body.insertAdjacentHTML('beforeend', modal);
+                <!-- کارت‌های خلاصه -->
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
+                    <div class="bg-white/10 rounded-xl p-3 text-center">
+                        <p class="text-blue-200 text-xs mb-1">ساعات تأیید</p>
+                        <p class="text-xl font-bold text-blue-400">${summary.totalHoursApproved}</p>
+                    </div>
+                    <div class="bg-white/10 rounded-xl p-3 text-center">
+                        <p class="text-blue-200 text-xs mb-1">هزینه‌های تأیید</p>
+                        <p class="text-sm font-bold text-orange-400">${EmployeeAccountingModule.formatCurrency(summary.totalExpensesApproved)}</p>
+                    </div>
+                    <div class="bg-white/10 rounded-xl p-3 text-center">
+                        <p class="text-blue-200 text-xs mb-1">نرخ ساعتی</p>
+                        <p class="text-sm font-bold text-white">${EmployeeAccountingModule.formatCurrency(summary.hourlyRate)}</p>
+                    </div>
+                    <div class="bg-red-500/10 border border-red-400/20 rounded-xl p-3 text-center">
+                        <p class="text-red-200 text-xs mb-1">جمع کسورات</p>
+                        <p class="text-sm font-bold text-red-400">${EmployeeAccountingModule.formatCurrency(totalDed)}</p>
+                    </div>
+                    <div class="bg-green-500/10 border border-green-400/20 rounded-xl p-3 text-center">
+                        <p class="text-green-200 text-xs mb-1">جمع هدایا</p>
+                        <p class="text-sm font-bold text-green-400">${EmployeeAccountingModule.formatCurrency(totalGift)}</p>
+                    </div>
+                </div>
+
+                ${pendingBlock}
+
+                <!-- ساعات و هزینه‌ها -->
+                <h4 class="text-white font-semibold mb-3 flex items-center gap-2 text-sm"><i class="fas fa-list text-blue-400"></i>سوابق کاری</h4>
+                <div class="overflow-x-auto mb-5">
+                    <table class="w-full text-sm">
+                        <thead><tr class="border-b border-white/10 text-xs">
+                            <th class="text-right text-blue-200 py-2 px-3">نوع</th>
+                            <th class="text-right text-blue-200 py-2 px-3">تاریخ</th>
+                            <th class="text-right text-blue-200 py-2 px-3">مقدار</th>
+                            <th class="text-right text-blue-200 py-2 px-3">شرح</th>
+                            <th class="text-center text-blue-200 py-2 px-3">وضعیت</th>
+                        </tr></thead>
+                        <tbody>${renderEntriesList(entries)}</tbody>
+                    </table>
+                </div>
+
+                <!-- کسورات -->
+                <h4 class="text-white font-semibold mb-2 flex items-center gap-2 text-sm"><i class="fas fa-minus-circle text-red-400"></i>کسورات</h4>
+                <div class="overflow-x-auto mb-5">
+                    <table class="w-full text-sm">
+                        <thead><tr class="border-b border-white/10 text-xs">
+                            <th class="text-right text-blue-200 py-1 px-3">تاریخ</th>
+                            <th class="text-right text-blue-200 py-1 px-3">مبلغ</th>
+                            <th class="text-right text-blue-200 py-1 px-3">علت</th>
+                            <th class="py-1 px-3"></th>
+                        </tr></thead>
+                        <tbody>${dedBlock}</tbody>
+                    </table>
+                </div>
+
+                <!-- هدایا -->
+                <h4 class="text-white font-semibold mb-2 flex items-center gap-2 text-sm"><i class="fas fa-gift text-green-400"></i>هدایا</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead><tr class="border-b border-white/10 text-xs">
+                            <th class="text-right text-blue-200 py-1 px-3">تاریخ</th>
+                            <th class="text-right text-blue-200 py-1 px-3">مبلغ</th>
+                            <th class="text-right text-blue-200 py-1 px-3">توضیحات</th>
+                        </tr></thead>
+                        <tbody>${giftBlock}</tbody>
+                    </table>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
     }
 
     return {
@@ -965,5 +1357,11 @@ const EmployeeAccountingUI = (function() {
         showAddDeductionModal,
         saveDeduction,
         deleteDeduction,
+        showGiftModal,
+        saveGift,
+        showDeductionModal,
+        saveDeductionInline,
+        showSettlementModal,
+        saveSettlement,
     };
 })();

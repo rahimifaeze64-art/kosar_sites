@@ -86,7 +86,7 @@ const EmbassyModule = (function () {
                         <span class="bg-yellow-500 bg-opacity-20 p-2 rounded-xl">
                             <i class="fas fa-landmark text-yellow-400"></i>
                         </span>
-                        سفارت
+                        سفارت - مدیریت مدارک دانشجویان
                     </h2>
                     <p class="text-blue-200 text-sm mt-1">مدیریت مدارک سفارتخانه‌ای دانشجویان</p>
                 </div>
@@ -105,10 +105,13 @@ const EmbassyModule = (function () {
                     <select id="embassy-filter-type" onchange="EmbassyModule.applyFilter()"
                         class="bg-gray-50 text-gray-800 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
                         <option value="">همه نوع‌های کار</option>
-                        <option value="ترجمه">ترجمه</option>
-                        <option value="تصدیق">تصدیق</option>
-                        <option value="وکالتنامه">وکالتنامه</option>
-                        <option value="مدارک تحصیلی">مدارک تحصیلی</option>
+                        <option value="مباشره">مباشره</option>
+                        <option value="قبول نهایی">قبول نهایی</option>
+                        <option value="کارشناسی">کارشناسی</option>
+                        <option value="ارشد">ارشد</option>
+                        <option value="دکتری">دکتری</option>
+                        <option value="مجلد">مجلد</option>
+                        <option value="وکالت‌نامه">وکالت‌نامه</option>
                         <option value="سایر">سایر</option>
                     </select>
                 </div>
@@ -122,6 +125,14 @@ const EmbassyModule = (function () {
                     <button onclick="EmbassyModule.applyQuickFilter('no_docs')" id="qf-no_docs"
                         class="quick-filter-btn text-xs px-3 py-1.5 rounded-full border border-gray-300 text-gray-600 hover:bg-red-50 hover:border-red-400 hover:text-red-600 transition-all">
                         <i class="fas fa-file-alt ml-1"></i>مدارک آپلود نشده
+                    </button>
+                    <button onclick="EmbassyModule.applyQuickFilter('not_sent')" id="qf-not_sent"
+                        class="quick-filter-btn text-xs px-3 py-1.5 rounded-full border border-gray-300 text-gray-600 hover:bg-red-50 hover:border-red-400 hover:text-red-600 transition-all">
+                        <i class="fas fa-paper-plane ml-1"></i>مدارک ارسال نشده
+                    </button>
+                    <button onclick="EmbassyModule.applyQuickFilter('not_acknowledged')" id="qf-not_acknowledged"
+                        class="quick-filter-btn text-xs px-3 py-1.5 rounded-full border border-gray-300 text-gray-600 hover:bg-red-50 hover:border-red-400 hover:text-red-600 transition-all">
+                        <i class="fas fa-bell ml-1"></i>اعلام وصول نشده
                     </button>
                     <button onclick="EmbassyModule.applyQuickFilter('not_received')" id="qf-not_received"
                         class="quick-filter-btn text-xs px-3 py-1.5 rounded-full border border-gray-300 text-gray-600 hover:bg-red-50 hover:border-red-400 hover:text-red-600 transition-all">
@@ -153,10 +164,10 @@ const EmbassyModule = (function () {
 
             <!-- مودال افزودن/ویرایش -->
             <div id="embassy-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
-                <div class="bg-gradient-to-b from-blue-800 to-blue-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-screen overflow-y-auto border border-blue-600">
-                    <div class="flex items-center justify-between p-6 border-b border-blue-600 border-opacity-40">
-                        <h3 id="embassy-modal-title" class="text-xl font-bold text-white">ثبت مدرک جدید</h3>
-                        <button onclick="EmbassyModule.closeModal()" class="text-gray-400 hover:text-white text-2xl">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-screen overflow-y-auto border border-gray-200">
+                    <div class="flex items-center justify-between p-6 border-b border-gray-200 bg-gray-50 rounded-t-2xl">
+                        <h3 id="embassy-modal-title" class="text-xl font-bold text-gray-800">ثبت مدرک جدید</h3>
+                        <button onclick="EmbassyModule.closeModal()" class="text-gray-400 hover:text-gray-700 text-2xl">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -166,18 +177,18 @@ const EmbassyModule = (function () {
                         <!-- ردیف اول -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label class="text-blue-200 text-sm font-semibold block mb-1">
-                                    نام دانشجو <span class="text-red-400">*</span>
+                                <label class="text-gray-700 text-sm font-semibold block mb-1">
+                                    نام دانشجو <span class="text-red-500">*</span>
                                 </label>
                                 <input type="text" id="f-studentName" required
-                                    class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-4 py-2.5 focus:outline-none focus:border-yellow-400"
+                                    class="w-full bg-gray-50 text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200"
                                     placeholder="نام کامل دانشجو">
                             </div>
                             <div>
-                                <label class="text-blue-200 text-sm font-semibold block mb-2">
-                                    نوع کار <span class="text-red-400">*</span>
+                                <label class="text-gray-700 text-sm font-semibold block mb-2">
+                                    نوع کار <span class="text-red-500">*</span>
                                 </label>
-                                <p class="text-blue-400 text-xs mb-3 flex items-center gap-1">
+                                <p class="text-gray-500 text-xs mb-3 flex items-center gap-1">
                                     <i class="fas fa-info-circle"></i>
                                     روی کارت کلیک کنید تا انتخاب شود، سپس وضعیت را مشخص کنید
                                 </p>
@@ -188,16 +199,16 @@ const EmbassyModule = (function () {
                                 </style>
                                 <div class="grid grid-cols-2 gap-2">
                                     ${[
-                                        ['مباشره',       'mabashare',  'fa-file-signature', '#a78bfa'],
-                                        ['قبول نهایی',   'qabool',     'fa-check-double',   '#34d399'],
-                                        ['کارشناسی',     'karshenasi', 'fa-graduation-cap', '#60a5fa'],
-                                        ['ارشد',         'arshad',     'fa-user-graduate',  '#22d3ee'],
-                                        ['دکتری',        'doktori',    'fa-award',          '#fbbf24'],
-                                        ['مجلد',         'mojallad',   'fa-book',           '#fb923c'],
-                                        ['وکالت‌نامه',   'vekalat',    'fa-scale-balanced', '#f87171'],
-                                        ['سایر',         'sayer',      'fa-ellipsis',       '#9ca3af'],
+                                        ['مباشره',       'mabashare',  'fa-file-signature', '#6d28d9'],
+                                        ['قبول نهایی',   'qabool',     'fa-check-double',   '#059669'],
+                                        ['کارشناسی',     'karshenasi', 'fa-graduation-cap', '#2563eb'],
+                                        ['ارشد',         'arshad',     'fa-user-graduate',  '#0891b2'],
+                                        ['دکتری',        'doktori',    'fa-award',          '#d97706'],
+                                        ['مجلد',         'mojallad',   'fa-book',           '#ea580c'],
+                                        ['وکالت‌نامه',   'vekalat',    'fa-scale-balanced', '#dc2626'],
+                                        ['سایر',         'sayer',      'fa-ellipsis',       '#6b7280'],
                                     ].map(([label, key, icon, color]) => `
-                                    <div class="doc-card rounded-xl border-2 border-transparent bg-white/5 p-3 cursor-pointer select-none"
+                                    <div class="doc-card rounded-xl border-2 border-transparent bg-gray-100 p-3 cursor-pointer select-none"
                                          style="transition:all .2s"
                                          data-key="${key}" data-label="${label}" data-checked="false"
                                          onclick="EmbassyModule._toggleDocCard(this,'${key}','${label}')">
@@ -206,32 +217,32 @@ const EmbassyModule = (function () {
                                                  style="background:${color}22">
                                                 <i class="fas ${icon} text-sm" style="color:${color}"></i>
                                             </div>
-                                            <span class="text-white text-sm font-medium flex-1">${label}</span>
+                                            <span class="text-gray-800 text-sm font-medium flex-1">${label}</span>
                                             <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0"
                                                  style="border-color:${color}" id="chk-${key}">
                                             </div>
                                         </div>
-                                        <div id="status-${key}" class="hidden mt-2 pt-2 border-t border-white/10" onclick="event.stopPropagation()">
+                                        <div id="status-${key}" class="hidden mt-2 pt-2 border-t border-gray-200" onclick="event.stopPropagation()">
                                             <div class="flex gap-1">
                                                 <button type="button" data-status="ترجمه"
                                                     onclick="EmbassyModule._setStatus(this,'${key}','ترجمه')"
-                                                    class="status-btn flex-1 text-xs py-1.5 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-400/30 hover:bg-blue-500/40 transition-all">
+                                                    class="status-btn flex-1 text-xs py-1.5 rounded-lg bg-blue-100 text-blue-700 border border-blue-300 hover:bg-blue-200 transition-all">
                                                     ترجمه
                                                 </button>
                                                 <button type="button" data-status="تصدیق"
                                                     onclick="EmbassyModule._setStatus(this,'${key}','تصدیق')"
-                                                    class="status-btn flex-1 text-xs py-1.5 rounded-lg bg-yellow-500/20 text-yellow-300 border border-yellow-400/30 hover:bg-yellow-500/40 transition-all">
+                                                    class="status-btn flex-1 text-xs py-1.5 rounded-lg bg-yellow-100 text-yellow-700 border border-yellow-300 hover:bg-yellow-200 transition-all">
                                                     تصدیق
                                                 </button>
                                                 <button type="button" data-status="هردو"
                                                     onclick="EmbassyModule._setStatus(this,'${key}','هردو')"
-                                                    class="status-btn flex-1 text-xs py-1.5 rounded-lg bg-green-500/30 text-green-300 border-2 border-green-400/60 font-bold transition-all active-status">
+                                                    class="status-btn flex-1 text-xs py-1.5 rounded-lg bg-green-100 text-green-700 border-2 border-green-500 font-bold transition-all active-status">
                                                     هردو
                                                 </button>
                                             </div>
                                             <input type="hidden" id="hid-status-${key}" value="هردو">
                                             <input type="checkbox" class="doc-type-check hidden" data-key="${key}" data-label="${label}" checked>
-                                            ${key === 'sayer' ? `<input type="text" id="sayer-custom-text" placeholder="نوع سند را بنویسید..." onclick="event.stopPropagation()" class="mt-2 w-full bg-white/10 text-white border border-white/20 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-yellow-400">` : ''}
+                                            ${key === 'sayer' ? `<input type="text" id="sayer-custom-text" placeholder="نوع سند را بنویسید..." onclick="event.stopPropagation()" class="mt-2 w-full bg-white text-gray-800 border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-green-500">` : ''}
                                         </div>
                                     </div>`).join('')}
                                 </div>
@@ -241,20 +252,20 @@ const EmbassyModule = (function () {
                         <!-- ردیف دوم -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label class="text-gray-800 text-sm font-semibold block mb-1">تاریخ دریافت مدارک</label>
+                                <label class="text-gray-700 text-sm font-semibold block mb-1">تاریخ دریافت مدارک</label>
                                 <div class="relative">
                                     <input type="text" id="f-receiveDate-display" readonly
                                         placeholder="انتخاب تاریخ شمسی"
-                                        class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 cursor-pointer focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
+                                        class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 cursor-pointer focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200"
                                         onclick="EmbassyModule._openDatePicker('f-receiveDate','f-receiveDate-display',this)">
                                     <input type="hidden" id="f-receiveDate">
                                     <i class="fas fa-calendar-alt absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
                                 </div>
                             </div>
                             <div>
-                                <label class="text-gray-800 text-sm font-semibold block mb-1">نحوه ارسال</label>
+                                <label class="text-gray-700 text-sm font-semibold block mb-1">نحوه ارسال</label>
                                 <input type="text" id="f-sendMethod"
-                                    class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:border-blue-500"
+                                    class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:border-green-500"
                                     placeholder="مثال: سخایی، پست، اسم معقب">
                             </div>
                         </div>
@@ -262,11 +273,11 @@ const EmbassyModule = (function () {
                         <!-- ردیف سوم -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label class="text-gray-800 text-sm font-semibold block mb-1">تاریخ ارسال</label>
+                                <label class="text-gray-700 text-sm font-semibold block mb-1">تاریخ ارسال</label>
                                 <div class="relative">
                                     <input type="text" id="f-sendDate-display" readonly
                                         placeholder="انتخاب تاریخ شمسی"
-                                        class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 cursor-pointer focus:outline-none focus:border-blue-500"
+                                        class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 cursor-pointer focus:outline-none focus:border-green-500"
                                         onclick="EmbassyModule._openDatePicker('f-sendDate','f-sendDate-display',this)">
                                     <input type="hidden" id="f-sendDate">
                                     <i class="fas fa-calendar-alt absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
@@ -274,12 +285,12 @@ const EmbassyModule = (function () {
                             </div>
                             <!-- اعلام وصول + آپلود عکس -->
                             <div>
-                                <label class="text-gray-800 text-sm font-semibold block mb-1">اعلام وصول</label>
+                                <label class="text-gray-700 text-sm font-semibold block mb-1">اعلام وصول</label>
                                 <input type="text" id="f-acknowledgment"
-                                    class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:border-blue-500 mb-2"
+                                    class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:border-green-500 mb-2"
                                     placeholder="تاریخ یا توضیح اعلام وصول">
                                 <div class="flex items-center gap-2">
-                                    <label class="cursor-pointer bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all">
+                                    <label class="cursor-pointer bg-green-600 hover:bg-green-500 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all">
                                         <i class="fas fa-camera"></i> تصویر وصول
                                         <input type="file" id="f-acknowledgment-img" accept="image/*" class="hidden"
                                             onchange="EmbassyModule.previewSingleImg(this,'ack-preview')">
@@ -289,14 +300,22 @@ const EmbassyModule = (function () {
                             </div>
                         </div>
 
+                        <!-- شماره تماس -->
+                        <div>
+                            <label class="text-gray-700 text-sm font-semibold block mb-1">شماره تماس</label>
+                            <input type="text" id="f-phone"
+                                class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:border-green-500"
+                                placeholder="شماره تماس دانشجو">
+                        </div>
+
                         <!-- ردیف چهارم — تسویه (۳ فیلد عددی + واحد پولی) -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label class="text-gray-800 text-sm font-semibold block mb-2">تسویه</label>
+                                <label class="text-gray-700 text-sm font-semibold block mb-2">تسویه</label>
                                 <!-- انتخاب واحد پولی -->
                                 <div class="flex gap-2 mb-3">
                                     <button type="button" data-currency="تومان" onclick="EmbassyModule._setCurrency(this)"
-                                        class="currency-btn flex-1 text-xs py-1.5 rounded-lg border-2 border-blue-500 text-blue-700 bg-blue-50 font-bold transition-all active-currency">
+                                        class="currency-btn flex-1 text-xs py-1.5 rounded-lg border-2 border-green-500 text-green-700 bg-green-50 font-bold transition-all active-currency">
                                         تومان
                                     </button>
                                     <button type="button" data-currency="دلار" onclick="EmbassyModule._setCurrency(this)"
@@ -308,7 +327,7 @@ const EmbassyModule = (function () {
                                 <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-2">
                                     <div>
                                         <label class="text-orange-600 text-xs mb-1 block font-semibold">
-                                            <i class="fas fa-handshake ml-1"></i>۱. عدد مورد اتفاق
+                                            <i class="fas fa-handshake ml-1"></i>۱. مبلغ مورد اتفاق
                                         </label>
                                         <div class="flex gap-1">
                                             <input type="number" id="f-settlement-agreed" min="0" step="1"
@@ -343,13 +362,21 @@ const EmbassyModule = (function () {
                                 <input type="hidden" id="f-settlement" value="">
                             </div>
                             <div>
-                                <label class="text-gray-800 text-sm font-semibold block mb-1">کد سجاد</label>
+                                <label class="text-gray-700 text-sm font-semibold block mb-1">کد سجاد</label>
                                 <input type="text" id="f-sajadCode"
-                                    class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:border-blue-500"
+                                    class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:border-green-500 mb-2"
                                     placeholder="کد سجاد دانشجو">
-                                <!-- وکالت -->
-                                <label class="text-gray-800 text-sm font-semibold block mb-1 mt-3">وکالت‌نامه</label>
-                                <div class="flex gap-3">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <label class="cursor-pointer bg-green-600 hover:bg-green-500 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all">
+                                        <i class="fas fa-id-card"></i> تصویر سجاد
+                                        <input type="file" id="f-sajad-img" accept="image/*" class="hidden"
+                                            onchange="EmbassyModule.previewSingleImg(this,'sajad-code-preview')">
+                                    </label>
+                                    <div id="sajad-code-preview" class="flex gap-1 flex-wrap"></div>
+                                </div>
+                                <!-- وکالت‌نامه + آپلود عکس -->
+                                <label class="text-gray-700 text-sm font-semibold block mb-1">وکالت‌نامه</label>
+                                <div class="flex gap-3 mb-2">
                                     <label class="flex items-center gap-2 cursor-pointer">
                                         <input type="radio" name="f-vekalat" id="f-vekalat-yes" value="دارد"
                                             class="accent-green-500 w-4 h-4">
@@ -361,92 +388,74 @@ const EmbassyModule = (function () {
                                         <span class="text-red-600 text-sm font-semibold">ندارد ✗</span>
                                     </label>
                                 </div>
+                                <div class="flex items-center gap-2">
+                                    <label class="cursor-pointer bg-green-600 hover:bg-green-500 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all">
+                                        <i class="fas fa-camera"></i> تصویر وکالت‌نامه
+                                        <input type="file" id="f-vekalat-img" accept="image/*" class="hidden"
+                                            onchange="EmbassyModule.previewSingleImg(this,'vekalat-preview')">
+                                    </label>
+                                    <div id="vekalat-preview" class="flex gap-1 flex-wrap"></div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- دریافت از دار الترجمه — ۳ فیلد -->
-                        <div class="bg-blue-800/30 border border-blue-600/30 rounded-xl p-4 space-y-3">
-                            <h4 class="text-blue-200 text-sm font-bold flex items-center gap-2">
-                                <i class="fas fa-language text-yellow-400"></i>
-                                دریافت از دار الترجمه
-                            </h4>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                    <label class="text-blue-300 text-xs mb-1 block">تاریخ دریافت</label>
-                                    <input type="date" id="f-translation-date" data-jalali
-                                        class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-3 py-2 focus:outline-none focus:border-yellow-400 text-sm">
-                                </div>
-                                <div>
-                                    <label class="text-blue-300 text-xs mb-1 block">توضیحات دریافت</label>
-                                    <input type="text" id="f-translationOffice"
-                                        class="w-full bg-blue-700 bg-opacity-50 text-white border border-blue-500 rounded-lg px-3 py-2 focus:outline-none focus:border-yellow-400 text-sm"
-                                        placeholder="توضیحات...">
+                        <!-- ارسال و دریافت -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-gray-700 text-sm font-semibold block mb-1">ارسال</label>
+                                <div class="flex gap-3">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="f-send-status" id="f-send-yes" value="ارسال شده"
+                                            class="accent-green-500 w-4 h-4">
+                                        <span class="text-green-700 text-sm font-semibold">ارسال شده ✓</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="f-send-status" id="f-send-no" value="ارسال نشده" checked
+                                            class="accent-red-500 w-4 h-4">
+                                        <span class="text-red-600 text-sm font-semibold">ارسال نشده ✗</span>
+                                    </label>
                                 </div>
                             </div>
                             <div>
-                                <label class="text-blue-300 text-xs mb-1 block">تصویر مدارک دریافت‌شده</label>
-                                <label class="cursor-pointer inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-lg transition-all">
-                                    <i class="fas fa-camera"></i> آپلود تصویر
-                                    <input type="file" id="f-translation-img" accept="image/*" class="hidden" multiple
-                                        onchange="EmbassyModule.previewSingleImg(this,'trans-preview')">
-                                </label>
-                                <div id="trans-preview" class="mt-2 flex gap-2 flex-wrap"></div>
+                                <label class="text-gray-700 text-sm font-semibold block mb-1">دریافت</label>
+                                <div class="flex gap-3">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="f-receive-status" id="f-receive-yes" value="شده"
+                                            class="accent-green-500 w-4 h-4">
+                                        <span class="text-green-700 text-sm font-semibold">شده ✓</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="f-receive-status" id="f-receive-no" value="نشده" checked
+                                            class="accent-red-500 w-4 h-4">
+                                        <span class="text-red-600 text-sm font-semibold">نشده ✗</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- آپلود مدارک — ۳ شخص جداگانه -->
-                        <div class="bg-blue-800/30 border border-blue-600/30 rounded-xl p-4 space-y-3">
-                            <h4 class="text-blue-200 text-sm font-bold flex items-center gap-2">
-                                <i class="fas fa-paperclip text-yellow-400"></i>
+                        <!-- پیوست مدارک — فقط آپلود -->
+                        <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
+                            <h4 class="text-gray-700 text-sm font-bold flex items-center gap-2">
+                                <i class="fas fa-paperclip text-green-600"></i>
                                 پیوست مدارک
                             </h4>
-                            <!-- کارمند ۱ -->
-                            <div class="bg-blue-700/20 rounded-lg p-3">
-                                <label class="text-blue-300 text-xs font-semibold mb-2 block">
-                                    <i class="fas fa-user text-blue-400 ml-1"></i>کارمند ۱ — مدارک
-                                </label>
-                                <label class="cursor-pointer inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-lg transition-all">
-                                    <i class="fas fa-upload"></i> انتخاب فایل
-                                    <input type="file" id="f-emp1-files" accept=".pdf,.jpg,.jpeg,.png" class="hidden" multiple
-                                        onchange="EmbassyModule.previewSingleImg(this,'emp1-preview')">
-                                </label>
-                                <div id="emp1-preview" class="mt-2 flex gap-2 flex-wrap"></div>
-                            </div>
-                            <!-- کارمند ۲ -->
-                            <div class="bg-blue-700/20 rounded-lg p-3">
-                                <label class="text-blue-300 text-xs font-semibold mb-2 block">
-                                    <i class="fas fa-user text-cyan-400 ml-1"></i>کارمند ۲ — مدارک
-                                </label>
-                                <label class="cursor-pointer inline-flex items-center gap-2 bg-cyan-700 hover:bg-cyan-600 text-white text-xs px-3 py-1.5 rounded-lg transition-all">
-                                    <i class="fas fa-upload"></i> انتخاب فایل
-                                    <input type="file" id="f-emp2-files" accept=".pdf,.jpg,.jpeg,.png" class="hidden" multiple
-                                        onchange="EmbassyModule.previewSingleImg(this,'emp2-preview')">
-                                </label>
-                                <div id="emp2-preview" class="mt-2 flex gap-2 flex-wrap"></div>
-                            </div>
-                            <!-- عکس سجادها -->
-                            <div class="bg-yellow-700/10 rounded-lg p-3">
-                                <label class="text-yellow-200 text-xs font-semibold mb-2 block">
-                                    <i class="fas fa-id-card text-yellow-400 ml-1"></i>عکس سجادها
-                                </label>
-                                <label class="cursor-pointer inline-flex items-center gap-2 bg-yellow-600 hover:bg-yellow-500 text-white text-xs px-3 py-1.5 rounded-lg transition-all">
-                                    <i class="fas fa-camera"></i> آپلود عکس سجاد
-                                    <input type="file" id="f-sajad-imgs" accept="image/*" class="hidden" multiple
-                                        onchange="EmbassyModule.previewSingleImg(this,'sajad-preview')">
-                                </label>
-                                <div id="sajad-preview" class="mt-2 flex gap-2 flex-wrap"></div>
-                            </div>
+                            <label class="cursor-pointer inline-flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white text-xs px-4 py-2 rounded-lg transition-all">
+                                <i class="fas fa-upload"></i> انتخاب فایل
+                                <input type="file" id="f-files" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" class="hidden" multiple
+                                    onchange="EmbassyModule.previewFiles(this)">
+                            </label>
+                            <div id="f-files-preview" class="mt-2 flex gap-2 flex-wrap"></div>
                         </div>
 
                         <!-- دکمه‌ها -->
                         <div class="flex gap-3 pt-2">
                             <button type="submit" id="embassy-submit-btn"
-                                class="flex-1 bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2">
+                                class="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2">
                                 <i class="fas fa-save"></i>
                                 <span id="embassy-submit-text">ذخیره</span>
                             </button>
                             <button type="button" onclick="EmbassyModule.closeModal()"
-                                class="px-6 bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 rounded-xl transition-all">
+                                class="px-6 bg-gray-500 hover:bg-gray-400 text-white font-bold py-3 rounded-xl transition-all">
                                 انصراف
                             </button>
                         </div>
@@ -520,7 +529,16 @@ const EmbassyModule = (function () {
                         ? `<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">✓ دارد</span>`
                         : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-medium">✗ ندارد</span>`}
                 </td>
-                <td class="px-3 py-3 text-gray-700 text-sm">${r.translation_office || '—'}</td>
+                <td class="px-3 py-3">
+                    ${r.send_status === 'ارسال شده'
+                        ? `<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">✓ ارسال شده</span>`
+                        : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-medium">✗ ارسال نشده</span>`}
+                </td>
+                <td class="px-3 py-3">
+                    ${r.receive_status === 'شده'
+                        ? `<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">✓ شده</span>`
+                        : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-medium">✗ نشده</span>`}
+                </td>
                 <td class="px-3 py-3">
                     ${r.file_paths && r.file_paths.length
                         ? r.file_paths.map(p => `<button onclick="EmbassyModule.downloadFile('${p}')" class="block text-blue-600 hover:text-blue-800 text-xs underline truncate max-w-24 font-medium"><i class="fas fa-download ml-1"></i>${p.split('/').pop()}</button>`).join('')
@@ -556,7 +574,8 @@ const EmbassyModule = (function () {
                             <th class="px-3 py-3 text-right font-bold">تسویه</th>
                             <th class="px-3 py-3 text-right font-bold">کد سجاد</th>
                             <th class="px-3 py-3 text-right font-bold">وکالت</th>
-                            <th class="px-3 py-3 text-right font-bold">دار الترجمه</th>
+                            <th class="px-3 py-3 text-right font-bold">ارسال</th>
+                            <th class="px-3 py-3 text-right font-bold">دریافت</th>
                             <th class="px-3 py-3 text-right font-bold">فایل‌ها</th>
                             <th class="px-3 py-3 text-right font-bold">آخرین آپدیت</th>
                             <th class="px-3 py-3 text-right font-bold">ثبت‌کننده</th>
@@ -626,21 +645,31 @@ const EmbassyModule = (function () {
     // ── date picker manual trigger ──────────────────────────
     function _openDatePicker(hiddenId, displayId, displayInput) {
         if (typeof JalaliPicker === 'undefined') return;
+        // مطمئن شو pickerEl ساخته شده (اگر init صدا نخورده)
+        if (typeof JalaliPicker._ensureCreated === 'function') {
+            JalaliPicker._ensureCreated();
+        }
         var hidden = document.getElementById(hiddenId);
         if (!hidden) return;
-        // موقتاً display:block کن و attach کن
-        hidden.style.display = '';
-        if (!hidden.dataset.pickerReady) {
-            JalaliPicker._attach(hidden);
-            hidden.dataset.pickerReady = '1';
-            // override display input با display ما
+
+        // اگر قبلاً attach شده، مستقیم روی display input کلیک کن
+        if (hidden.dataset.pickerReady) {
+            var existing = hidden.nextElementSibling;
+            if (existing && existing.readOnly) {
+                existing.click();
+                return;
+            }
         }
-        // simulate click روی display input که picker ساخته
+
+        // اول display رو visible کن تا _attach بتونه parentNode پیدا کنه
+        hidden.style.display = '';
+        JalaliPicker._attach(hidden);
+        hidden.dataset.pickerReady = '1';
+
+        // بعد از attach، display input اضافه شده
         var pickerDisplay = hidden.nextElementSibling;
         if (pickerDisplay && pickerDisplay.readOnly) {
             pickerDisplay.click();
-        } else {
-            displayInput.click();
         }
     }
 
@@ -742,12 +771,16 @@ const EmbassyModule = (function () {
             filtered = filtered.filter(r => !r.sajad_code);
         } else if (_activeQuickFilter === 'no_docs') {
             filtered = filtered.filter(r => !r.file_paths || !r.file_paths.length);
-        } else if (_activeQuickFilter === 'not_received') {
+        } else if (_activeQuickFilter === 'not_sent') {
+            filtered = filtered.filter(r => r.send_status !== 'ارسال شده');
+        } else if (_activeQuickFilter === 'not_acknowledged') {
             filtered = filtered.filter(r => !r.acknowledgment);
+        } else if (_activeQuickFilter === 'not_received') {
+            filtered = filtered.filter(r => r.receive_status !== 'شده');
         } else if (_activeQuickFilter === 'not_settled') {
-            filtered = filtered.filter(r => !r.settlement);
+            filtered = filtered.filter(r => !r.settlement_final || r.settlement_final === 0);
         } else if (_activeQuickFilter === 'no_vekalat') {
-            filtered = filtered.filter(r => !(r.work_type || '').includes('وکالت'));
+            filtered = filtered.filter(r => r.vekalat !== 'دارد');
         }
 
         renderTable(filtered);
@@ -771,7 +804,7 @@ const EmbassyModule = (function () {
         });
         document.querySelectorAll('.doc-type-check').forEach(function(cb) { cb.checked = false; });
         // پاک کردن preview های آپلود
-        ['f-files-preview','ack-preview','trans-preview','emp1-preview','emp2-preview','sajad-preview'].forEach(function(id) {
+        ['f-files-preview','ack-preview','sajad-code-preview','vekalat-preview'].forEach(function(id) {
             var el = document.getElementById(id);
             if (el) el.innerHTML = '';
         });
@@ -780,7 +813,7 @@ const EmbassyModule = (function () {
         var fs = document.getElementById('f-settlement');
         if (fs) fs.value = '';
         // پاک کردن picker state تا دوباره attach بشه
-        ['f-receiveDate','f-sendDate','f-translation-date'].forEach(function(id) {
+        ['f-receiveDate','f-sendDate'].forEach(function(id) {
             var el = document.getElementById(id);
             if (el) delete el.dataset.pickerAttached;
         });
@@ -788,7 +821,7 @@ const EmbassyModule = (function () {
         // فعال‌سازی تقویم شمسی روی فیلدهای تاریخ
         setTimeout(function() {
             if (typeof JalaliPicker !== 'undefined') {
-                ['f-receiveDate','f-sendDate','f-translation-date'].forEach(function(id) {
+                ['f-receiveDate','f-sendDate'].forEach(function(id) {
                     var el = document.getElementById(id);
                     if (el && !el.dataset.pickerAttached) {
                         JalaliPicker._attach(el);
@@ -849,8 +882,17 @@ const EmbassyModule = (function () {
         const vekalatVal = r.vekalat || 'ندارد';
         const vRadio = document.querySelector(`input[name="f-vekalat"][value="${vekalatVal}"]`);
         if (vRadio) vRadio.checked = true;
-        document.getElementById('f-translationOffice').value= r.translation_office || '';
-        const ftd = document.getElementById('f-translation-date'); if(ftd) ftd.value = r.translation_date || '';
+        // ارسال
+        const sendStatusVal = r.send_status || 'ارسال نشده';
+        const sRadio = document.querySelector(`input[name="f-send-status"][value="${sendStatusVal}"]`);
+        if (sRadio) sRadio.checked = true;
+        // دریافت
+        const recvStatusVal = r.receive_status || 'نشده';
+        const rRadio = document.querySelector(`input[name="f-receive-status"][value="${recvStatusVal}"]`);
+        if (rRadio) rRadio.checked = true;
+        // شماره تماس
+        const phoneEl = document.getElementById('f-phone');
+        if (phoneEl) phoneEl.value = r.phone || '';
 
         const preview = document.getElementById('f-files-preview');
         if (preview) preview.innerHTML = r.file_paths && r.file_paths.length
@@ -861,7 +903,7 @@ const EmbassyModule = (function () {
         // فعال‌سازی تقویم شمسی
         setTimeout(function() {
             if (typeof JalaliPicker !== 'undefined') {
-                ['f-receiveDate','f-sendDate','f-translation-date'].forEach(function(id) {
+                ['f-receiveDate','f-sendDate'].forEach(function(id) {
                     var el = document.getElementById(id);
                     if (el && !el.dataset.pickerAttached) {
                         JalaliPicker._attach(el);
@@ -880,11 +922,24 @@ const EmbassyModule = (function () {
     function previewFiles(input) {
         const preview = document.getElementById('f-files-preview');
         preview.innerHTML = '';
-        Array.from(input.files).forEach(f => {
-            const p = document.createElement('p');
-            p.className = 'text-xs text-blue-300';
-            p.innerHTML = `<i class="fas fa-file ml-1"></i>${f.name} (${(f.size/1024).toFixed(0)} KB)`;
-            preview.appendChild(p);
+        Array.from(input.files).forEach(file => {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #16a34a;cursor:pointer;';
+                    img.title = file.name;
+                    img.onclick = () => window.open(e.target.result, '_blank');
+                    preview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                const p = document.createElement('div');
+                p.className = 'text-xs text-gray-600 flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-lg';
+                p.innerHTML = `<i class="fas fa-file text-green-600"></i>${file.name} (${(file.size/1024).toFixed(0)} KB)`;
+                preview.appendChild(p);
+            }
         });
     }
 
@@ -931,6 +986,7 @@ const EmbassyModule = (function () {
         const payload = {
             student_name:        document.getElementById('f-studentName').value.trim(),
             work_type:           workTypeValue,
+            phone:               document.getElementById('f-phone')?.value.trim() || null,
             receive_date:        document.getElementById('f-receiveDate').value || null,
             send_method:         document.getElementById('f-sendMethod').value  || null,
             send_date:           document.getElementById('f-sendDate').value    || null,
@@ -939,10 +995,10 @@ const EmbassyModule = (function () {
             settlement_deposit:  parseFloat(document.getElementById('f-settlement-deposit')?.value) || 0,
             settlement_final:    parseFloat(document.getElementById('f-settlement-final')?.value)   || 0,
             settlement:          document.getElementById('f-currency')?.value || 'تومان',
-            sajad_code:          document.getElementById('f-sajadCode').value.trim()      || null,
+            sajad_code:          document.getElementById('f-sajadCode').value.trim() || null,
             vekalat:             document.querySelector('input[name="f-vekalat"]:checked')?.value || 'ندارد',
-            translation_office:  document.getElementById('f-translationOffice').value.trim() || null,
-            translation_date:    document.getElementById('f-translation-date')?.value || null,
+            send_status:         document.querySelector('input[name="f-send-status"]:checked')?.value || 'ارسال نشده',
+            receive_status:      document.querySelector('input[name="f-receive-status"]:checked')?.value || 'نشده',
         };
 
         if (filePaths.length) payload.file_paths = filePaths;
