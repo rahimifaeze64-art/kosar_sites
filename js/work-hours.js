@@ -523,12 +523,8 @@ const WorkHoursUI = (function() {
                         <div>
                             <label class="block text-blue-200 text-sm mb-2">تاریخ</label>
                             <div class="relative">
-                                <input type="text" id="workDate-display" readonly
-                                    placeholder="انتخاب تاریخ شمسی"
-                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white cursor-pointer focus:outline-none focus:border-blue-400"
-                                    onclick="(function(el){if(typeof JalaliPicker==='undefined')return;var h=document.getElementById('workDate');if(!h.dataset.pr){JalaliPicker._attach(h);h.dataset.pr='1';}var d=h.nextElementSibling;if(d&&d.readOnly)d.click();})(this)">
-                                <input type="hidden" id="workDate" value="${today}">
-                                <i class="fas fa-calendar-alt absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                                <input type="date" id="workDate" value="${today}"
+                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400">
                             </div>
                         </div>
                         
@@ -595,12 +591,8 @@ const WorkHoursUI = (function() {
                             <div>
                                 <label class="block text-blue-200 text-sm mb-2">تاریخ کسر <span class="text-red-400">*</span></label>
                                 <div class="relative">
-                                    <input type="text" id="deductionDate-display" readonly required
-                                        placeholder="انتخاب تاریخ شمسی"
-                                        class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white cursor-pointer focus:outline-none focus:border-red-400"
-                                        onclick="(function(){if(typeof JalaliPicker==='undefined')return;var h=document.getElementById('deductionDate');if(!h.dataset.pr){JalaliPicker._attach(h);h.dataset.pr='1';}var d=h.nextElementSibling;if(d&&d.readOnly)d.click();})()">
-                                    <input type="hidden" id="deductionDate">
-                                    <i class="fas fa-calendar-alt absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                                    <input type="date" id="deductionDate" required
+                                        class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-400">
                                 </div>
                             </div>
                             <div>
@@ -641,12 +633,8 @@ const WorkHoursUI = (function() {
                         <div>
                             <label class="block text-blue-200 text-sm mb-2">تاریخ</label>
                             <div class="relative">
-                                <input type="text" id="expenseDate-display" readonly
-                                    placeholder="انتخاب تاریخ شمسی"
-                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white cursor-pointer focus:outline-none focus:border-blue-400"
-                                    onclick="(function(){if(typeof JalaliPicker==='undefined')return;var h=document.getElementById('expenseDate');if(!h.dataset.pr){JalaliPicker._attach(h);h.dataset.pr='1';}var d=h.nextElementSibling;if(d&&d.readOnly)d.click();})()">
-                                <input type="hidden" id="expenseDate" value="${today}">
-                                <i class="fas fa-calendar-alt absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                                <input type="date" id="expenseDate" value="${today}"
+                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400">
                             </div>
                         </div>
                         
@@ -1593,12 +1581,8 @@ const WorkHoursUI = (function() {
                     <div>
                         <label class="text-blue-200 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
                         <div class="relative">
-                            <input type="text" id="mgr-ded-date-display" readonly
-                                placeholder="انتخاب تاریخ شمسی"
-                                class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 cursor-pointer focus:outline-none"
-                                onclick="(function(){if(typeof JalaliPicker==='undefined')return;var h=document.getElementById('mgr-ded-date');if(!h.dataset.pr){JalaliPicker._attach(h);h.dataset.pr='1';}var d=h.nextElementSibling;if(d&&d.readOnly)d.click();})()">
-                            <input type="hidden" id="mgr-ded-date">
-                            <i class="fas fa-calendar-alt absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                            <input type="date" id="mgr-ded-date" required
+                                class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none">
                         </div>
                     </div>
                     <div>

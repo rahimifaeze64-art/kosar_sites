@@ -254,12 +254,8 @@ const EmbassyModule = (function () {
                             <div>
                                 <label class="text-gray-700 text-sm font-semibold block mb-1">تاریخ دریافت مدارک</label>
                                 <div class="relative">
-                                    <input type="text" id="f-receiveDate-display" readonly
-                                        placeholder="انتخاب تاریخ شمسی"
-                                        class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 cursor-pointer focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200"
-                                        onclick="EmbassyModule._openDatePicker('f-receiveDate','f-receiveDate-display',this)">
-                                    <input type="hidden" id="f-receiveDate">
-                                    <i class="fas fa-calendar-alt absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                                    <input type="date" id="f-receiveDate"
+                                        class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200">
                                 </div>
                             </div>
                             <div>
@@ -275,12 +271,8 @@ const EmbassyModule = (function () {
                             <div>
                                 <label class="text-gray-700 text-sm font-semibold block mb-1">تاریخ ارسال</label>
                                 <div class="relative">
-                                    <input type="text" id="f-sendDate-display" readonly
-                                        placeholder="انتخاب تاریخ شمسی"
-                                        class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 cursor-pointer focus:outline-none focus:border-green-500"
-                                        onclick="EmbassyModule._openDatePicker('f-sendDate','f-sendDate-display',this)">
-                                    <input type="hidden" id="f-sendDate">
-                                    <i class="fas fa-calendar-alt absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                                    <input type="date" id="f-sendDate"
+                                        class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:border-green-500">
                                 </div>
                             </div>
                             <!-- اعلام وصول + آپلود عکس -->
