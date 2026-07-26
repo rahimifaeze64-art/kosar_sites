@@ -9,7 +9,7 @@ const HARDCODED_USERS = [
     // ─── مدیر ────────────────────────────────────────────────
     {
         id:         'mgr001',
-        name:       'تقی‌زاده',
+        name:       'محسن تقی زاده',
         username:   'taghizadeh',
         password:   'taghizadeh1403',
         role:       'manager',
@@ -23,7 +23,7 @@ const HARDCODED_USERS = [
     // ─── کارمندان ─────────────────────────────────────────────
     {
         id:         'emp001',
-        name:       'ساره',
+        name:       'سارا سادات حسینی',
         username:   'sareh',
         password:   'sareh1403',
         role:       'employee',
@@ -35,7 +35,7 @@ const HARDCODED_USERS = [
     },
     {
         id:         'emp002',
-        name:       'زینب',
+        name:       'زینب بتول محمدی',
         username:   'zainab',
         password:   'zainab1403',
         role:       'employee',
@@ -47,7 +47,7 @@ const HARDCODED_USERS = [
     },
     {
         id:         'emp003',
-        name:       'فرزاد',
+        name:       'علیرضا غلامی فرزاد',
         username:   'farzad',
         password:   'farzad1403',
         role:       'employee',
@@ -59,7 +59,7 @@ const HARDCODED_USERS = [
     },
     {
         id:         'emp004',
-        name:       'سخایی',
+        name:       'زینب سخایی',
         username:   'sakhaei',
         password:   'sakhaei1403',
         role:       'employee',
@@ -71,7 +71,7 @@ const HARDCODED_USERS = [
     },
     {
         id:         'emp005',
-        name:       'مهدی',
+        name:       'مهدی خدایاری',
         username:   'mahdi',
         password:   'mahdi1403',
         role:       'employee',

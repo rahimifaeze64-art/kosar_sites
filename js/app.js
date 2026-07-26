@@ -5,7 +5,7 @@ function appController() {
     selectedUserId: "mgr001",
     currentUser: {
       id: "mgr001",
-      name: "دکتر تقی زاده",
+      name: "دکتر محسن تقی زاده",
       username: "manager",
       role: "manager",
       email: "taghizadeh@edu-system.com",
@@ -291,28 +291,28 @@ function appController() {
         const employees = [
           {
             id: "emp001",
-            name: "ساره",
+            name: "سارا سادات حسینی",
             username: "zahra",
             role: "employee",
             email: "zahra@edu-system.com",
           },
           {
             id: "emp002",
-            name: "زینب",
+            name: "زینب بتول محمدی",
             username: "fatemeh",
             role: "employee",
             email: "fatemeh@edu-system.com",
           },
           {
             id: "emp003",
-            name: "فرزاد",
+            name: "علیرضا غلامی فرزاد",
             username: "farzad",
             role: "employee",
             email: "farzad@edu-system.com",
           },
           {
             id: "emp004",
-            name: "سخایی م",
+            name: "زینب سخایی م",
             username: "sakhaei",
             role: "employee",
             email: "sakhaei@edu-system.com",

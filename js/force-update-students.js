@@ -47,9 +47,9 @@ function forceUpdateStudentsTo20() {
             { id: 'std001', eduSteps: 1, defSteps: 0 },   // قاسم - محضر و اصالت
             { id: 'std002', eduSteps: 3, defSteps: 1 },   // حسن - تعدیل + لوح
             { id: 'std003', eduSteps: 5, defSteps: 0 },   // علی - ایرانداک رساله
-            { id: 'std004', eduSteps: 7, defSteps: 2 },   // زینب - حاتمی + نسخ
+            { id: 'std004', eduSteps: 7, defSteps: 2 },   // زینب بتول محمدی - حاتمی + نسخ
             { id: 'std005', eduSteps: 10, defSteps: 3 },  // محمد جواد - ترجمه به اسماعیلی + ثبت عنوان
-            { id: 'std006', eduSteps: 12, defSteps: 4 },  // زینب حسین - ارسال کد به تهران + بارگزاری
+            { id: 'std006', eduSteps: 12, defSteps: 4 },  // زینب بتول محمدی حسین - ارسال کد به تهران + بارگزاری
             { id: 'std007', eduSteps: 2, defSteps: 0 },   // احمد - تنزیل نمره
             { id: 'std008', eduSteps: 15, defSteps: 5 },  // مریم - تصدیق + استاد
             { id: 'std009', eduSteps: 17, defSteps: 7 },  // حسین علی - استلال + مدیر گروه

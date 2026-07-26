@@ -97,10 +97,10 @@ const TasksModule = {
     getemployees() {
         // لیست ثابت کارمند‌ها
         const fixedemployees = [
-            { id: 'emp001', name: 'ساره', username: 'zahra', email: 'zahra@edu-system.com', role: 'employee' },
-            { id: 'emp002', name: 'زینب', username: 'fatemeh', email: 'fatemeh@edu-system.com', role: 'employee' },
-            { id: 'emp003', name: 'فرزاد', username: 'farzad', email: 'farzad@edu-system.com', role: 'employee' },
-            { id: 'emp004', name: 'سخایی م', username: 'sakhaei', email: 'sakhaei@edu-system.com', role: 'employee' }
+            { id: 'emp001', name: 'سارا سادات حسینی', username: 'zahra', email: 'zahra@edu-system.com', role: 'employee' },
+            { id: 'emp002', name: 'زینب بتول محمدی', username: 'fatemeh', email: 'fatemeh@edu-system.com', role: 'employee' },
+            { id: 'emp003', name: 'علیرضا غلامی فرزاد', username: 'farzad', email: 'farzad@edu-system.com', role: 'employee' },
+            { id: 'emp004', name: 'زینب سخایی م', username: 'sakhaei', email: 'sakhaei@edu-system.com', role: 'employee' }
         ];
         
         // کارمند‌های جدید از دیتابیس (فقط نقش employee)

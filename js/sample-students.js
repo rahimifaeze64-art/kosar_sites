@@ -5,7 +5,7 @@ const SampleStudentsData = {
         return [
             {
                 id: 'student001',
-                name: 'حسن یاسر کرار سخایی',
+                name: 'حسن یاسر کرار زینب سخایی',
                 studentId: 'ST001',
                 email: 'hassan.yasar@student.edu',
                 phone: '+964 770 123 4567',
@@ -62,7 +62,7 @@ const SampleStudentsData = {
             },
             {
                 id: 'student004',
-                name: 'زینب حسین جاسم موسوی',
+                name: 'زینب بتول محمدی حسین جاسم موسوی',
                 studentId: 'ST004',
                 email: 'fatima.hussein@student.edu',
                 phone: '+964 773 456 7890',
@@ -100,7 +100,7 @@ const SampleStudentsData = {
             },
             {
                 id: 'student006',
-                name: 'زینب حسین عبدالله سجادی',
+                name: 'زینب بتول محمدی حسین عبدالله سجادی',
                 studentId: 'ST006',
                 email: 'zainab.hussein@student.edu',
                 phone: '+964 775 678 9012',

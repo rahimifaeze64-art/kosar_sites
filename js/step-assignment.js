@@ -12,10 +12,10 @@ const StepAssignmentModule = {
 
     // لیست کارمندان ثابت (همگام با app.js)
     EMPLOYEES: [
-        { id: 'emp001', name: 'ساره' },
-        { id: 'emp002', name: 'زینب' },
-        { id: 'emp003', name: 'فرزاد' },
-        { id: 'emp004', name: 'سخایی م' },
+        { id: 'emp001', name: 'سارا سادات حسینی' },
+        { id: 'emp002', name: 'زینب بتول محمدی' },
+        { id: 'emp003', name: 'علیرضا غلامی فرزاد' },
+        { id: 'emp004', name: 'زینب سخایی م' },
     ],
 
     // کلید ذخیره‌سازی در localStorage

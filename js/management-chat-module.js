@@ -56,19 +56,19 @@ const ManagementChatModule = {
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px; background: #e0e7ff; color: #4338ca; padding: 6px 12px; border-radius: 20px; white-space: nowrap; font-size: 14px;">
                         <i class="fas fa-user"></i>
-                        <span>ساره</span>
+                        <span>سارا سادات حسینی</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px; background: #e0e7ff; color: #4338ca; padding: 6px 12px; border-radius: 20px; white-space: nowrap; font-size: 14px;">
                         <i class="fas fa-user"></i>
-                        <span>زینب</span>
+                        <span>زینب بتول محمدی</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px; background: #e0e7ff; color: #4338ca; padding: 6px 12px; border-radius: 20px; white-space: nowrap; font-size: 14px;">
                         <i class="fas fa-user"></i>
-                        <span>فرزاد</span>
+                        <span>علیرضا غلامی فرزاد</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px; background: #e0e7ff; color: #4338ca; padding: 6px 12px; border-radius: 20px; white-space: nowrap; font-size: 14px;">
                         <i class="fas fa-user"></i>
-                        <span>سخایی م</span>
+                        <span>زینب سخایی م</span>
                     </div>
                 </div>
 

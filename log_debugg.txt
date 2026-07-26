@@ -47,7 +47,7 @@ theme-auto-apply.js:28 ✅ Inline styles updated for olive theme
 (index):385 [۱۲:۵۴:۲۷] INFO: Switching to user: mgr001 
 (index):385 [۱۲:۵۴:۲۷] INFO: Retrieved 10 users 
 (index):385 [۱۲:۵۴:۲۷] SUCCESS: User switched successfully Proxy(Object)
-(index):385 [۱۲:۵۴:۲۷] INFO: Showing notification: وارد شدید به عنوان: تقی‌زاده Object
+(index):385 [۱۲:۵۴:۲۷] INFO: Showing notification: وارد شدید به عنوان: محسن تقی زاده Object
 (index):385 [۱۲:۵۴:۲۷] INFO: Loading dashboard content... Object
 (index):385 [۱۲:۵۴:۲۷] INFO: Loading dashboard for role: manager 
 (index):385 [۱۲:۵۴:۲۷] INFO: Loading manager dashboard... 

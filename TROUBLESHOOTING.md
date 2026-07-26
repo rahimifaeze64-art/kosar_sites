@@ -46,7 +46,7 @@ location.reload();
 ```javascript
 localStorage.setItem('currentUser', JSON.stringify({
     id: 'mgr001',
-    name: 'دکتر تقی زاده',
+    name: 'دکتر محسن تقی زاده',
     username: 'manager',
     role: 'manager',
     email: 'taghizadeh@edu-system.com'

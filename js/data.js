@@ -344,7 +344,7 @@ const DataModule = {
         return [
             {
                 id: 'mgr001',
-                name: 'تقی‌زاده',
+                name: 'محسن تقی زاده',
                 username: 'taghizadeh',
                 password: 'taghizadeh1403',
                 role: 'manager',
@@ -357,7 +357,7 @@ const DataModule = {
             // employees - کارمند‌ها
             {
                 id: 'emp001',
-                name: 'ساره',
+                name: 'سارا سادات حسینی',
                 username: 'zahra',
                 password: '123456',
                 role: CONFIG.ROLES.employee,
@@ -369,7 +369,7 @@ const DataModule = {
             },
             {
                 id: 'emp002',
-                name: 'زینب',
+                name: 'زینب بتول محمدی',
                 username: 'fatemeh',
                 password: '123456',
                 role: CONFIG.ROLES.employee,
@@ -381,7 +381,7 @@ const DataModule = {
             },
             {
                 id: 'emp003',
-                name: 'فرزاد',
+                name: 'علیرضا غلامی فرزاد',
                 username: 'farzad',
                 password: '123456',
                 role: CONFIG.ROLES.employee,
@@ -393,7 +393,7 @@ const DataModule = {
             },
             {
                 id: 'emp004',
-                name: 'سخایی م',
+                name: 'زینب سخایی م',
                 username: 'sakhaei',
                 password: '123456',
                 role: CONFIG.ROLES.employee,
@@ -405,7 +405,7 @@ const DataModule = {
             },
             {
                 id: 'emp005',
-                name: 'مهدی',
+                name: 'مهدی خدایاری',
                 username: 'mahdi',
                 password: '123456',
                 role: CONFIG.ROLES.employee,
@@ -797,7 +797,7 @@ const DataModule = {
             // دانشجویان فارغ‌التحصیلی (گردش دفاع و ملزومات کامل)
             { id:'grad001', name:'زمان فاضل احمد الشروفي',   username:'zaman.fadhel',    password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD001', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
             { id:'grad002', name:'سماح کریم نجم بهادلی',      username:'samah.karim',      password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD002', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
-            { id:'grad003', name:'زینب جبار وذاح البهادلی',   username:'zainab.jabbar',    password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD003', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
+            { id:'grad003', name:'زینب بتول محمدی جبار وذاح البهادلی',   username:'zainab.jabbar',    password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD003', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
             { id:'grad004', name:'رائد فیصل عبیس الجبوری',    username:'raed.faisal',      password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD004', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
             { id:'grad005', name:'کرار عمار حمید حمید',        username:'karar.ammar',      password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD005', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },
             { id:'grad006', name:'حسین علي حسین الفطن',        username:'hussein.ali.fatan', password:'123456', role:CONFIG.ROLES.STUDENT, university:'جامعه المصطفی', studentId:'GRAD006', field:'حقوق', degree:CONFIG.DEGREES.MASTERS, active:true, createdAt:'2023-09-01T00:00:00.000Z' },

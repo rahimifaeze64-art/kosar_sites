@@ -28,7 +28,7 @@ function appData() {
             },
             {
                 id: 2,
-                studentName: 'زینب احمدی',
+                studentName: 'زینب بتول محمدی احمدی',
                 studentId: 'ST002',
                 university: 'دانشگاه شریف',
                 field: 'مهندسی برق',
@@ -47,7 +47,7 @@ function appData() {
             },
             {
                 id: 3,
-                studentName: 'علی سخایی',
+                studentName: 'علی زینب سخایی',
                 studentId: 'ST003',
                 university: 'دانشگاه امیرکبیر',
                 field: 'مهندسی مکانیک',
