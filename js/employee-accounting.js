@@ -484,7 +484,7 @@ const EmployeeAccountingUI = (function() {
         const dailyRows = todayEntries.length ? todayEntries.map(e => {
             const isExp = e.type === 'expense';
             const statusMap = {approved:'تأیید',rejected:'رد',pending:'در انتظار'};
-            const statusCls = e.status==='approved'?'bg-green-500/20 text-green-400':e.status==='rejected'?'bg-red-500/20 text-red-400':'bg-yellow-500/20 text-yellow-400';
+            const statusCls = e.status==='approved'?'bg-green-500/20 text-green-400':e.status==='rejected'?'bg-red-500/20 text-red-400':'bg-blue-500/20 text-blue-400';
             return `<tr class="border-b border-white/5 hover:bg-white/5">
                 <td class="py-2 px-4 text-white text-sm">${e.employeeName||'—'}</td>
                 <td class="py-2 px-4">${isExp?'<span class="bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded text-xs">هزینه</span>':'<span class="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded text-xs">ساعت کاری</span>'}</td>
@@ -498,7 +498,7 @@ const EmployeeAccountingUI = (function() {
             ? employeesSummary.map(emp => {
                 const hasPending = emp.pendingHours > 0 || emp.pendingExpenses > 0;
                 const statusBadge = hasPending
-                    ? `<span class="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full text-xs">${emp.pendingHours + emp.pendingExpenses} در انتظار</span>`
+                    ? `<span class="bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full text-xs">${emp.pendingHours + emp.pendingExpenses} در انتظار</span>`
                     : '<span class="bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs"><i class="fas fa-check ml-1"></i>تأیید</span>';
 
                 const safeName = (emp.employeeName || '').replace(/'/g, "\\'");

@@ -49,6 +49,16 @@ const EmbassyAccountingModule = (function () {
         return Number(n || 0).toLocaleString('fa-IR') + ' تومان';
     }
 
+    // نمایش مبلغ با واحد ارز واقعی (تومان یا دلار)
+    function fmtWithCurrency(n, currency) {
+        const amount = Number(n || 0);
+        if (amount <= 0) return '—';
+        if (currency === 'دلار') {
+            return '$' + amount.toLocaleString('en');
+        }
+        return amount.toLocaleString('fa-IR') + ' ت';
+    }
+
     // ── رندر محتوا ──────────────────────────────────────────
     function getContent() {
         return `
@@ -167,6 +177,7 @@ const EmbassyAccountingModule = (function () {
             const final_  = parseFloat(r.settlement_final   || 0);
             const remaining = agreed - deposit - final_;
             const isSettled = final_ > 0;
+            const cur = r.settlement || 'تومان'; // واحد ارز واقعی
 
             return `
             <tr class="border-b border-gray-100 hover:bg-orange-50 transition-colors">
@@ -175,16 +186,21 @@ const EmbassyAccountingModule = (function () {
                 <td class="px-3 py-3">
                     <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-lg">${r.work_type || '—'}</span>
                 </td>
-                <td class="px-3 py-3 text-orange-700 font-medium text-sm">${agreed > 0 ? fmt(agreed) : '—'}</td>
-                <td class="px-3 py-3 text-yellow-700 font-medium text-sm">${deposit > 0 ? fmt(deposit) : '—'}</td>
-                <td class="px-3 py-3 text-green-700 font-bold text-sm">${final_ > 0 ? fmt(final_) : '—'}</td>
+                <td class="px-3 py-3 text-orange-700 font-medium text-sm">${agreed > 0 ? fmtWithCurrency(agreed, cur) : '—'}</td>
+                <td class="px-3 py-3 text-yellow-700 font-medium text-sm">${deposit > 0 ? fmtWithCurrency(deposit, cur) : '—'}</td>
+                <td class="px-3 py-3 text-green-700 font-bold text-sm">${final_ > 0 ? fmtWithCurrency(final_, cur) : '—'}</td>
                 <td class="px-3 py-3 text-sm ${remaining > 0 ? 'text-red-600 font-bold' : 'text-gray-400'}">
-                    ${remaining > 0 ? fmt(remaining) : '✓ تسویه'}
+                    ${remaining > 0 ? fmtWithCurrency(remaining, cur) : '<span class="text-green-600">✓ تسویه</span>'}
+                </td>
+                <td class="px-3 py-3 text-center">
+                    <span class="text-xs px-1.5 py-0.5 rounded font-bold ${cur === 'دلار' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}">
+                        ${cur === 'دلار' ? '$ دلار' : 'ت تومان'}
+                    </span>
                 </td>
                 <td class="px-3 py-3">
                     ${isSettled
                         ? '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">✓ تسویه</span>'
-                        : '<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">در انتظار</span>'}
+                        : '<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">در انتظار</span>'}
                 </td>
                 <td class="px-3 py-3 text-gray-500 text-xs">${r.created_by_name || '—'}</td>
             </tr>`;
