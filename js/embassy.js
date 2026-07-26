@@ -425,18 +425,21 @@ const EmbassyModule = (function () {
                             </div>
                         </div>
 
-                        <!-- پیوست مدارک — فقط آپلود -->
+                        <!-- پیوست مدارک — فایل‌های موجود + آپلود جدید -->
                         <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
                             <h4 class="text-gray-700 text-sm font-bold flex items-center gap-2">
                                 <i class="fas fa-paperclip text-green-600"></i>
                                 پیوست مدارک
                             </h4>
+                            <!-- فایل‌های ذخیره‌شده قبلی -->
+                            <div id="f-existing-files" class="flex gap-2 flex-wrap min-h-[4px]"></div>
                             <label class="cursor-pointer inline-flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white text-xs px-4 py-2 rounded-lg transition-all">
-                                <i class="fas fa-upload"></i> انتخاب فایل
+                                <i class="fas fa-upload"></i> افزودن فایل
                                 <input type="file" id="f-files" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" class="hidden" multiple
                                     onchange="EmbassyModule.previewFiles(this)">
                             </label>
-                            <div id="f-files-preview" class="mt-2 flex gap-2 flex-wrap"></div>
+                            <!-- فایل‌های جدید انتخاب‌شده -->
+                            <div id="f-files-preview" class="flex gap-2 flex-wrap"></div>
                         </div>
 
                         <!-- دکمه‌ها -->
@@ -790,6 +793,11 @@ const EmbassyModule = (function () {
         document.getElementById('embassy-modal-title').textContent = 'ثبت مدرک جدید';
         document.getElementById('embassy-submit-text').textContent = 'ذخیره';
         document.getElementById('embassy-form').reset();
+        // ریست لیست فایل‌ها
+        _selectedFiles = [];
+        _existingFilePaths = [];
+        const existingEl = document.getElementById('f-existing-files');
+        if (existingEl) existingEl.innerHTML = '';
         document.querySelectorAll('.doc-card').forEach(function(card) {
             card.dataset.checked = 'false';
             card.style.borderColor = 'transparent';
@@ -892,10 +900,11 @@ const EmbassyModule = (function () {
         const phoneEl = document.getElementById('f-phone');
         if (phoneEl) phoneEl.value = r.phone || '';
 
+        // فایل‌های موجود — با قابلیت حذف
+        _selectedFiles = [];
+        _existingFilePaths = r.file_paths ? [...r.file_paths] : [];
         const preview = document.getElementById('f-files-preview');
-        if (preview) preview.innerHTML = r.file_paths && r.file_paths.length
-            ? r.file_paths.map(p => `<p class="text-xs text-blue-300"><i class="fas fa-file ml-1"></i>${p}</p>`).join('')
-            : '';
+        if (preview) _renderExistingFiles(preview);
 
         document.getElementById('embassy-modal').classList.remove('hidden');
         // فعال‌سازی تقویم شمسی
@@ -917,28 +926,88 @@ const EmbassyModule = (function () {
     }
 
     // ── پیش‌نمایش فایل‌ها ────────────────────────────────────
+    // نگه‌داری لیست فایل‌های انتخاب‌شده برای امکان حذف
+    let _selectedFiles = [];
+    let _existingFilePaths = []; // فایل‌های از قبل ذخیره‌شده در Supabase
+
+    // نمایش فایل‌های موجود (ذخیره‌شده) با دکمه حذف
+    function _renderExistingFiles(container) {
+        const existing = document.getElementById('f-existing-files');
+        if (!existing) return;
+        existing.innerHTML = '';
+        _existingFilePaths.forEach((path, idx) => {
+            const name = path.split('/').pop();
+            const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(name);
+            const div = document.createElement('div');
+            div.className = 'relative group';
+            div.innerHTML = `
+                <div class="flex items-center gap-1 bg-blue-50 border border-blue-200 px-2 py-1 rounded-lg text-xs text-blue-700 relative">
+                    <i class="fas ${isImg ? 'fa-image' : 'fa-file'} text-blue-500"></i>
+                    <span class="max-w-28 truncate" title="${name}">${name}</span>
+                    <button type="button"
+                            onclick="EmbassyModule._removeExistingFile(${idx})"
+                            class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-600 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-700 shadow"
+                            title="حذف این فایل">×</button>
+                </div>`;
+            existing.appendChild(div);
+        });
+    }
+
+    function _removeExistingFile(idx) {
+        _existingFilePaths.splice(idx, 1);
+        const existing = document.getElementById('f-existing-files');
+        if (existing) _renderExistingFiles(existing);
+    }
+
     function previewFiles(input) {
+        // فایل‌های جدید رو به لیست اضافه کن
+        Array.from(input.files).forEach(f => _selectedFiles.push(f));
+        // input رو reset کن تا بتونه دوباره همون فایل رو انتخاب کنه
+        input.value = '';
+        _renderSelectedFiles();
+    }
+
+    function _renderSelectedFiles() {
         const preview = document.getElementById('f-files-preview');
+        if (!preview) return;
         preview.innerHTML = '';
-        Array.from(input.files).forEach(file => {
+        _selectedFiles.forEach((file, idx) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'relative group';
+
             if (file.type.startsWith('image/')) {
                 const reader = new FileReader();
                 reader.onload = e => {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #16a34a;cursor:pointer;';
-                    img.title = file.name;
-                    img.onclick = () => window.open(e.target.result, '_blank');
-                    preview.appendChild(img);
+                    wrapper.innerHTML = `
+                        <img src="${e.target.result}"
+                             style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:2px solid #16a34a;cursor:pointer;display:block;"
+                             title="${file.name}"
+                             onclick="window.open('${e.target.result}','_blank')">
+                        <button type="button"
+                                onclick="EmbassyModule._removeSelectedFile(${idx})"
+                                class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-600 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-700 shadow"
+                                title="حذف">×</button>`;
                 };
                 reader.readAsDataURL(file);
             } else {
-                const p = document.createElement('div');
-                p.className = 'text-xs text-gray-600 flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-lg';
-                p.innerHTML = `<i class="fas fa-file text-green-600"></i>${file.name} (${(file.size/1024).toFixed(0)} KB)`;
-                preview.appendChild(p);
+                wrapper.innerHTML = `
+                    <div class="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-lg text-xs text-gray-700 pr-6 relative">
+                        <i class="fas fa-file text-green-600"></i>
+                        <span class="max-w-24 truncate">${file.name}</span>
+                        <span class="text-gray-400">(${(file.size/1024).toFixed(0)} KB)</span>
+                        <button type="button"
+                                onclick="EmbassyModule._removeSelectedFile(${idx})"
+                                class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-600 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-700 shadow"
+                                title="حذف">×</button>
+                    </div>`;
             }
+            preview.appendChild(wrapper);
         });
+    }
+
+    function _removeSelectedFile(idx) {
+        _selectedFiles.splice(idx, 1);
+        _renderSelectedFiles();
     }
 
     // ── ارسال فرم ────────────────────────────────────────────
@@ -971,15 +1040,16 @@ const EmbassyModule = (function () {
         });
         const workTypeValue = workTypeParts.join('، ');
 
-        // آپلود فایل‌ها
-        const fileInput  = document.getElementById('f-files');
+        // آپلود فایل‌ها از _selectedFiles
         const filePaths  = [];
         const recordId   = editId || ('emb_' + Date.now());
 
-        for (const file of Array.from(fileInput.files)) {
+        for (const file of _selectedFiles) {
             const path = await uploadFile(file, recordId);
             if (path) filePaths.push(path);
         }
+        // اضافه کردن فایل‌های قبلی که حذف نشدن
+        const existingPaths = _existingFilePaths.filter(p => p); // فیلتر حذف‌شده‌ها
 
         const payload = {
             student_name:        document.getElementById('f-studentName').value.trim(),
@@ -999,7 +1069,12 @@ const EmbassyModule = (function () {
             receive_status:      document.querySelector('input[name="f-receive-status"]:checked')?.value || 'نشده',
         };
 
-        if (filePaths.length) payload.file_paths = filePaths;
+        if (filePaths.length || existingPaths.length) {
+            payload.file_paths = [...existingPaths, ...filePaths];
+        } else if (editId) {
+            // اگر ویرایش است و همه فایل‌ها حذف شدن، آرایه خالی بفرست
+            payload.file_paths = [];
+        }
 
         let ok = false;
         if (editId) {
@@ -1094,6 +1169,8 @@ const EmbassyModule = (function () {
         _setSettlement,
         _openDatePicker,
         _setCurrency,
+        _removeSelectedFile,
+        _removeExistingFile,
     };
 
 })(); // end EmbassyModule
