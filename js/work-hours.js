@@ -522,9 +522,20 @@ const WorkHoursUI = (function() {
                     <form id="workHoursForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
                             <label class="block text-blue-200 text-sm mb-2">تاریخ</label>
-                            <div class="relative">
-                                <input type="date" id="workDate" value="${today}"
-                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400">
+                            <div class="space-y-2">
+                                <div class="flex gap-2">
+                                    <button type="button" onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp',-1)"
+                                        class="flex-1 text-xs py-2 rounded-xl bg-white/10 hover:bg-blue-500/30 text-blue-200 hover:text-white border border-white/10 transition-all">دیروز</button>
+                                    <button type="button" onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp',0)"
+                                        class="flex-1 text-xs py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white border border-blue-500 transition-all font-bold">امروز</button>
+                                </div>
+                                <input type="hidden" id="workDate" value="${today}">
+                                <button type="button" id="workDate-disp"
+                                    onclick="WorkHoursUI.openJalaliPicker('workDate','workDate-disp')"
+                                    class="w-full text-right bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-blue-200 text-sm flex items-center justify-between hover:bg-white/15 transition-all">
+                                    <span id="workDate-disp-text">${today}</span>
+                                    <i class="fas fa-calendar-alt text-blue-400"></i>
+                                </button>
                             </div>
                         </div>
                         
@@ -590,9 +601,20 @@ const WorkHoursUI = (function() {
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                             <div>
                                 <label class="block text-blue-200 text-sm mb-2">تاریخ کسر <span class="text-red-400">*</span></label>
-                                <div class="relative">
-                                    <input type="date" id="deductionDate" required
-                                        class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-400">
+                                <div class="space-y-2">
+                                    <div class="flex gap-2">
+                                        <button type="button" onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp',-1)"
+                                            class="flex-1 text-xs py-2 rounded-xl bg-white/10 hover:bg-red-500/30 text-blue-200 hover:text-white border border-white/10 transition-all">دیروز</button>
+                                        <button type="button" onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp',0)"
+                                            class="flex-1 text-xs py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white border border-red-500 transition-all font-bold">امروز</button>
+                                    </div>
+                                    <input type="hidden" id="deductionDate">
+                                    <button type="button" id="deductionDate-disp"
+                                        onclick="WorkHoursUI.openJalaliPicker('deductionDate','deductionDate-disp')"
+                                        class="w-full text-right bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-blue-200 text-sm flex items-center justify-between hover:bg-white/15 transition-all">
+                                        <span id="deductionDate-disp-text">انتخاب تاریخ</span>
+                                        <i class="fas fa-calendar-alt text-red-400"></i>
+                                    </button>
                                 </div>
                             </div>
                             <div>
@@ -632,9 +654,20 @@ const WorkHoursUI = (function() {
                     <form id="expenseForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-blue-200 text-sm mb-2">تاریخ</label>
-                            <div class="relative">
-                                <input type="date" id="expenseDate" value="${today}"
-                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400">
+                            <div class="space-y-2">
+                                <div class="flex gap-2">
+                                    <button type="button" onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp',-1)"
+                                        class="flex-1 text-xs py-2 rounded-xl bg-white/10 hover:bg-orange-500/30 text-blue-200 hover:text-white border border-white/10 transition-all">دیروز</button>
+                                    <button type="button" onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp',0)"
+                                        class="flex-1 text-xs py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white border border-orange-500 transition-all font-bold">امروز</button>
+                                </div>
+                                <input type="hidden" id="expenseDate" value="${today}">
+                                <button type="button" id="expenseDate-disp"
+                                    onclick="WorkHoursUI.openJalaliPicker('expenseDate','expenseDate-disp')"
+                                    class="w-full text-right bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-blue-200 text-sm flex items-center justify-between hover:bg-white/15 transition-all">
+                                    <span id="expenseDate-disp-text">${today}</span>
+                                    <i class="fas fa-calendar-alt text-orange-400"></i>
+                                </button>
                             </div>
                         </div>
                         
@@ -1690,6 +1723,116 @@ const WorkHoursUI = (function() {
         if (listEl) listEl.innerHTML = _renderDeductions();
     }
 
+    // ── تاریخ شمسی سریع (برای فیلدهای ساعات کاری) ────────────
+    function _wh_iranToday() {
+        var now = new Date();
+        var utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+        return new Date(utcMs + 3.5 * 3600000);
+    }
+
+    function setQuickDate(hiddenId, dispBtnId, offset) {
+        var d = _wh_iranToday();
+        d.setDate(d.getDate() + offset);
+        var jStr = (typeof Jalali !== 'undefined') ? Jalali.toJalaliISO(d) : (d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));
+        var hidden = document.getElementById(hiddenId);
+        if (hidden) hidden.value = jStr;
+        var dispBtn = document.getElementById(dispBtnId);
+        if (dispBtn) {
+            var label = offset === 0 ? 'امروز' : 'دیروز';
+            var display = (typeof Jalali !== 'undefined') ? Jalali.toJalaliDisplay(d) : jStr;
+            var textSpan = document.getElementById(hiddenId + '-disp-text');
+            if (textSpan) textSpan.textContent = display + ' (' + label + ')';
+        }
+    }
+
+    function openJalaliPicker(hiddenId, dispBtnId) {
+        var old = document.getElementById('__wh-cal-popup');
+        if (old) { old.remove(); if (old.dataset.for === hiddenId) return; }
+
+        var hidden = document.getElementById(hiddenId);
+        var dispBtn = document.getElementById(dispBtnId);
+        if (!hidden || !dispBtn) return;
+
+        var today = _wh_iranToday();
+        var jToday = (typeof Jalali !== 'undefined') ? Jalali.toJalaali(today.getFullYear(), today.getMonth()+1, today.getDate()) : {jy:1405,jm:1,jd:1};
+
+        var initY = jToday.jy, initM = jToday.jm;
+        if (hidden.value) { var p = hidden.value.split('-'); if (p.length===3){initY=parseInt(p[0]);initM=parseInt(p[1]);} }
+
+        var popup = document.createElement('div');
+        popup.id = '__wh-cal-popup';
+        popup.dataset.for = hiddenId;
+        popup.style.cssText = 'position:fixed;z-index:99999;background:#1e3a5f;border:1px solid #3b82f6;border-radius:12px;padding:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);min-width:260px;direction:rtl;font-family:Vazirmatn,sans-serif;color:#fff;';
+        document.body.appendChild(popup);
+
+        var rect = dispBtn.getBoundingClientRect();
+        popup.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+        var left = rect.left + window.scrollX;
+        if (left + 270 > window.innerWidth) left = window.innerWidth - 275;
+        popup.style.left = left + 'px';
+
+        _renderWhCalPopup(hiddenId, dispBtnId, initY, initM, jToday);
+
+        setTimeout(function() {
+            document.addEventListener('click', function closeOut(e) {
+                var p2 = document.getElementById('__wh-cal-popup');
+                if (p2 && !p2.contains(e.target) && e.target !== dispBtn) {
+                    p2.remove();
+                    document.removeEventListener('click', closeOut);
+                }
+            });
+        }, 10);
+    }
+
+    function _renderWhCalPopup(hiddenId, dispBtnId, jy, jm, jToday) {
+        var popup = document.getElementById('__wh-cal-popup');
+        if (!popup) return;
+        var MONTHS = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+        var daysInMonth = (jm<=6)?31:(jm<=11)?30:29;
+        var prevM=jm===1?12:jm-1, prevY=jm===1?jy-1:jy, nextM=jm===12?1:jm+1, nextY=jm===12?jy+1:jy;
+        var g1=(typeof Jalali!=='undefined')?Jalali.toGregorian(jy,jm,1):{gy:2024,gm:1,gd:1};
+        var d1=new Date(g1.gy,g1.gm-1,g1.gd).getDay();
+        var startOffset=(d1+1)%7;
+        var selVal=(document.getElementById(hiddenId)||{}).value||'';
+        var sp=selVal.split('-'); var selD=(sp.length===3&&parseInt(sp[0])===jy&&parseInt(sp[1])===jm)?parseInt(sp[2]):0;
+
+        var html='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
+        html+='<button onclick="WorkHoursUI._renderWhCalPopup(\''+hiddenId+'\',\''+dispBtnId+'\','+prevY+','+prevM+',{jy:'+jToday.jy+',jm:'+jToday.jm+',jd:'+jToday.jd+'})" style="background:none;border:none;cursor:pointer;font-size:18px;color:#93c5fd;padding:2px 6px;">›</button>';
+        html+='<div style="font-size:13px;font-weight:700;">'+MONTHS[jm-1]+' '+jy+'</div>';
+        html+='<button onclick="WorkHoursUI._renderWhCalPopup(\''+hiddenId+'\',\''+dispBtnId+'\','+nextY+','+nextM+',{jy:'+jToday.jy+',jm:'+jToday.jm+',jd:'+jToday.jd+'})" style="background:none;border:none;cursor:pointer;font-size:18px;color:#93c5fd;padding:2px 6px;">‹</button>';
+        html+='</div>';
+        html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;">';
+        ['ش','ی','د','س','چ','پ','ج'].forEach(function(n){html+='<div style="text-align:center;font-size:10px;color:#93c5fd;">'+n+'</div>';});
+        html+='</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">';
+        for(var e2=0;e2<startOffset;e2++) html+='<div></div>';
+        for(var day=1;day<=daysInMonth;day++){
+            var isT=(jToday.jy===jy&&jToday.jm===jm&&jToday.jd===day);
+            var isSel=selD===day;
+            var isFri=((startOffset+day-1)%7)===6;
+            var bg=isSel?'#3b82f6':isT?'#1d4ed8':'transparent';
+            var col=isSel?'#fff':isFri?'#f87171':'#fff';
+            var brd=isT&&!isSel?'1px solid #60a5fa':'1px solid transparent';
+            html+='<button type="button" onclick="WorkHoursUI._pickWhDate(\''+hiddenId+'\',\''+dispBtnId+'\','+jy+','+jm+','+day+')" style="background:'+bg+';color:'+col+';border:'+brd+';border-radius:6px;padding:5px 0;font-size:12px;cursor:pointer;text-align:center;">'+day+'</button>';
+        }
+        html+='</div><div style="display:flex;gap:4px;margin-top:8px;">';
+        html+='<button type="button" onclick="WorkHoursUI.setQuickDate(\''+hiddenId+'\',\''+dispBtnId+'\',0);document.getElementById(\'__wh-cal-popup\').remove();" style="flex:1;background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:5px;font-size:11px;cursor:pointer;">امروز</button>';
+        html+='<button type="button" onclick="document.getElementById(\'__wh-cal-popup\').remove();" style="flex:1;background:#374151;color:#9ca3af;border:none;border-radius:8px;padding:5px;font-size:11px;cursor:pointer;">بستن</button>';
+        html+='</div>';
+        popup.innerHTML=html;
+    }
+
+    function _pickWhDate(hiddenId, dispBtnId, jy, jm, jd) {
+        var hidden=document.getElementById(hiddenId);
+        var pad=function(n){return n<10?'0'+n:String(n);};
+        var jStr=jy+'-'+pad(jm)+'-'+pad(jd);
+        if(hidden) hidden.value=jStr;
+        var MONTHS=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+        var textSpan=document.getElementById(hiddenId+'-disp-text');
+        if(textSpan) textSpan.textContent=jd+' '+MONTHS[jm-1]+' '+jy;
+        var p=document.getElementById('__wh-cal-popup');
+        if(p) p.remove();
+    }
+
     // عمومی‌سازی توابع
     return {
         init,
@@ -1715,5 +1858,9 @@ const WorkHoursUI = (function() {
         _deleteManagerDeduction,
         showAddDeductionForEmployeeModal,
         saveMgrDeduction,
+        setQuickDate,
+        openJalaliPicker,
+        _renderWhCalPopup,
+        _pickWhDate,
     };
 })();
