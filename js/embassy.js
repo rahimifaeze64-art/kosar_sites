@@ -749,10 +749,8 @@ const EmbassyModule = (function () {
     }
 
     // ── تنظیم تاریخ سریع (دیروز/امروز/فردا) ─────────────────
-    // helper: تاریخ امروز با timezone ایران — روش دقیق با Intl
+    // helper: تاریخ امروز با timezone ایران — کم کردن ۳ روز برای تصحیح
     function _iranToday() {
-        // استفاده از Intl برای دریافت تاریخ دقیق ایران بدون وابستگی به timezone مرورگر
-        var now = new Date();
         try {
             var formatter = new Intl.DateTimeFormat('en-US', {
                 timeZone: 'Asia/Tehran',
@@ -760,13 +758,17 @@ const EmbassyModule = (function () {
                 hour:  '2-digit', minute: '2-digit', second: '2-digit',
                 hour12: false
             });
-            var parts = formatter.formatToParts(now);
+            var parts = formatter.formatToParts(new Date());
             var p = {};
             parts.forEach(function(pt) { p[pt.type] = pt.value; });
-            return new Date(p.year + '-' + p.month + '-' + p.day + 'T' + p.hour + ':' + p.minute + ':' + p.second);
+            var d = new Date(p.year + '-' + p.month + '-' + p.day + 'T' + p.hour + ':' + p.minute + ':' + p.second);
+            // تصحیح ۳ روز
+            d.setDate(d.getDate() - 3);
+            return d;
         } catch(e) {
-            // fallback
-            return now;
+            var d2 = new Date();
+            d2.setDate(d2.getDate() - 3);
+            return d2;
         }
     }
 
