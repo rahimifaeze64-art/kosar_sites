@@ -577,28 +577,32 @@ const EmbassyModule = (function () {
                 <!-- اعلام وصول: سبز=دارد | آبی=در انتظار -->
                 <td class="px-3 py-3">
                     ${r.acknowledgment
-                        ? `<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">✓ ${r.acknowledgment}</span>`
-                        : `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">در انتظار</span>`}
+                        ? `<span style="background:#dcfce7;color:#15803d;font-size:11px;padding:2px 8px;border-radius:8px;font-weight:700;">✓ ${r.acknowledgment}</span>`
+                        : `<span style="background:#dbeafe;color:#1d4ed8;font-size:11px;padding:2px 8px;border-radius:8px;font-weight:500;">در انتظار</span>`}
                 </td>
 
                 <!-- تسویه: سبز=تسویه شده | قرمز=نشده -->
                 <td class="px-3 py-3">
                     ${(() => {
-                        // بررسی payment lists جدید
                         const agreed  = r.settlement_agreed_list  && r.settlement_agreed_list.length  ? r.settlement_agreed_list  : (r.settlement_agreed  > 0 ? [{amount: r.settlement_agreed,  currency: r.settlement||'تومان'}] : []);
                         const deposit = r.settlement_deposit_list && r.settlement_deposit_list.length ? r.settlement_deposit_list : (r.settlement_deposit > 0 ? [{amount: r.settlement_deposit, currency: r.settlement||'تومان'}] : []);
                         const final_  = r.settlement_final_list   && r.settlement_final_list.length   ? r.settlement_final_list   : (r.settlement_final   > 0 ? [{amount: r.settlement_final,   currency: r.settlement||'تومان'}] : []);
 
                         if (!agreed.length && !deposit.length && !final_.length) {
-                            return '<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-bold">✗ تسویه نشده</span>';
+                            return '<span style="background:#fee2e2;color:#b91c1c;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">✗ تسویه نشده</span>';
                         }
-                        const fmt = (p) => p.currency === 'دلار' ? `$${Number(p.amount).toLocaleString('en')}` : `${Number(p.amount).toLocaleString('fa-IR')} ت`;
+                        const fmt = (p) => {
+                            const amt = Number(p.amount).toLocaleString(p.currency === 'تومان' ? 'fa-IR' : 'en');
+                            if (p.currency === 'دلار')  return `$${amt}`;
+                            if (p.currency === 'دینار') return `${amt} دینار`;
+                            return `${Number(p.amount).toLocaleString('fa-IR')} ت`;
+                        };
                         const rows = [];
-                        if (agreed.length)  rows.push(`<div class="text-orange-700 text-xs">توافق: ${agreed.map(fmt).join(' + ')}</div>`);
-                        if (deposit.length) rows.push(`<div class="text-yellow-700 text-xs">بیعانه: ${deposit.map(fmt).join(' + ')}</div>`);
-                        if (final_.length)  rows.push(`<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-bold">✓ تسویه: ${final_.map(fmt).join(' + ')}</span>`);
-                        else                rows.push(`<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">در انتظار تسویه</span>`);
-                        return `<div class="space-y-0.5">${rows.join('')}</div>`;
+                        if (agreed.length)  rows.push(`<div style="color:#c2410c;font-size:11px;">توافق: ${agreed.map(fmt).join(' + ')}</div>`);
+                        if (deposit.length) rows.push(`<div style="color:#92400e;font-size:11px;">بیعانه: ${deposit.map(fmt).join(' + ')}</div>`);
+                        if (final_.length)  rows.push(`<span style="background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;">✓ تسویه: ${final_.map(fmt).join(' + ')}</span>`);
+                        else                rows.push(`<span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:999px;font-size:11px;">در انتظار تسویه</span>`);
+                        return `<div style="display:flex;flex-direction:column;gap:2px;">${rows.join('')}</div>`;
                     })()}
                 </td>
 
@@ -606,39 +610,39 @@ const EmbassyModule = (function () {
                 <td class="px-3 py-3 text-gray-900 text-sm font-mono font-semibold">
                     ${r.sajad_code
                         ? r.sajad_code
-                        : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-bold">✗ ندارد</span>`}
+                        : `<span style="background:#fee2e2;color:#b91c1c;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">✗ ندارد</span>`}
                 </td>
 
                 <!-- وکالت: سبز=دارد | قرمز=ندارد -->
                 <td class="px-3 py-3">
                     ${r.vekalat === 'دارد'
-                        ? `<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">✓ دارد</span>`
-                        : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-bold">✗ ندارد</span>`}
+                        ? `<span style="background:#dcfce7;color:#15803d;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">✓ دارد</span>`
+                        : `<span style="background:#fee2e2;color:#b91c1c;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">✗ ندارد</span>`}
                 </td>
 
                 <!-- ارسال: سبز=شده | آبی=در انتظار | قرمز=نشده -->
                 <td class="px-3 py-3">
                     ${r.send_status === 'ارسال شده'
-                        ? `<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">✓ ارسال شده</span>`
+                        ? `<span style="background:#dcfce7;color:#15803d;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">✓ ارسال شده</span>`
                         : r.send_status === 'در انتظار'
-                        ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">در انتظار</span>`
-                        : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-bold">✗ ارسال نشده</span>`}
+                        ? `<span style="background:#dbeafe;color:#1d4ed8;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:500;">در انتظار</span>`
+                        : `<span style="background:#fee2e2;color:#b91c1c;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">✗ ارسال نشده</span>`}
                 </td>
 
                 <!-- دریافت: سبز=شده | آبی=در انتظار | قرمز=نشده -->
                 <td class="px-3 py-3">
                     ${r.receive_status === 'شده'
-                        ? `<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">✓ شده</span>`
+                        ? `<span style="background:#dcfce7;color:#15803d;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">✓ شده</span>`
                         : r.receive_status === 'در انتظار'
-                        ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">در انتظار</span>`
-                        : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-bold">✗ نشده</span>`}
+                        ? `<span style="background:#dbeafe;color:#1d4ed8;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:500;">در انتظار</span>`
+                        : `<span style="background:#fee2e2;color:#b91c1c;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">✗ نشده</span>`}
                 </td>
 
                 <!-- فایل‌ها: لینک دانلود | قرمز=آپلود نشده -->
                 <td class="px-3 py-3">
                     ${r.file_paths && r.file_paths.length
-                        ? r.file_paths.map(p => `<button onclick="EmbassyModule.downloadFile('${p}')" class="block text-blue-600 hover:text-blue-800 text-xs underline truncate max-w-24 font-medium"><i class="fas fa-download ml-1"></i>${p.split('/').pop()}</button>`).join('')
-                        : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-bold">✗ آپلود نشده</span>`}
+                        ? r.file_paths.map(p => `<button onclick="EmbassyModule.downloadFile('${p}')" style="display:block;color:#2563eb;font-size:11px;text-decoration:underline;max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;background:none;border:none;cursor:pointer;"><i class="fas fa-download" style="margin-left:4px;"></i>${p.split('/').pop()}</button>`).join('')
+                        : `<span style="background:#fee2e2;color:#b91c1c;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">✗ آپلود نشده</span>`}
                 </td>
 
                 <td class="px-3 py-3 text-gray-500 text-xs">
@@ -949,6 +953,7 @@ const EmbassyModule = (function () {
             <select class="bg-white text-gray-700 border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none" style="min-width:56px">
                 <option value="تومان" ${(!currency || currency==='تومان')?'selected':''}>تومان</option>
                 <option value="دلار"  ${currency==='دلار'?'selected':''}>دلار</option>
+                <option value="دینار" ${currency==='دینار'?'selected':''}>دینار</option>
             </select>
             <button type="button" onclick="this.closest('.payment-row').remove()"
                     class="text-red-400 hover:text-red-600 text-lg leading-none px-1">×</button>`;
