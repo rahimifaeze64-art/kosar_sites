@@ -505,45 +505,64 @@ const EmbassyModule = (function () {
                 <td class="px-3 py-3 text-gray-700 text-sm">${r.receive_date ? (typeof Jalali !== 'undefined' ? Jalali.displayDate(r.receive_date) : r.receive_date) : '—'}</td>
                 <td class="px-3 py-3 text-gray-700 text-sm">${r.send_method || '—'}</td>
                 <td class="px-3 py-3 text-gray-700 text-sm">${r.send_date ? (typeof Jalali !== 'undefined' ? Jalali.displayDate(r.send_date) : r.send_date) : '—'}</td>
+
+                <!-- اعلام وصول: سبز=دارد | آبی=در انتظار -->
                 <td class="px-3 py-3">
                     ${r.acknowledgment
-                        ? `<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-lg font-medium">✓ ${r.acknowledgment}</span>`
-                        : `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-lg font-medium">در انتظار</span>`}
+                        ? `<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">✓ ${r.acknowledgment}</span>`
+                        : `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">در انتظار</span>`}
                 </td>
+
+                <!-- تسویه: سبز=تسویه شده | قرمز=نشده -->
                 <td class="px-3 py-3">
                     ${(r.settlement_agreed || r.settlement_deposit || r.settlement_final)
                         ? `<div class="space-y-0.5 text-xs">
                             ${r.settlement_agreed  ? `<div class="text-orange-700 font-medium">توافق: ${Number(r.settlement_agreed).toLocaleString('fa-IR')} ت</div>` : ''}
                             ${r.settlement_deposit ? `<div class="text-yellow-700 font-medium">بیعانه: ${Number(r.settlement_deposit).toLocaleString('fa-IR')} ت</div>` : ''}
-                            ${r.settlement_final   ? `<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded-lg font-bold">تسویه: ${Number(r.settlement_final).toLocaleString('fa-IR')} ت</span>` : ''}
+                            ${r.settlement_final   ? `<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-bold">✓ تسویه: ${Number(r.settlement_final).toLocaleString('fa-IR')} ت</span>` : '<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">در انتظار تسویه</span>'}
                            </div>`
-                        : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-medium">تسویه نشده</span>`}
+                        : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-bold">✗ تسویه نشده</span>`}
                 </td>
-                <td class="px-3 py-3 text-gray-900 text-sm font-mono font-semibold">${r.sajad_code || '<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">ندارد</span>'}</td>
+
+                <!-- کد سجاد -->
+                <td class="px-3 py-3 text-gray-900 text-sm font-mono font-semibold">
+                    ${r.sajad_code
+                        ? r.sajad_code
+                        : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-bold">✗ ندارد</span>`}
+                </td>
+
+                <!-- وکالت: سبز=دارد | قرمز=ندارد -->
                 <td class="px-3 py-3">
                     ${r.vekalat === 'دارد'
                         ? `<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">✓ دارد</span>`
-                        : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-medium">✗ ندارد</span>`}
+                        : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-bold">✗ ندارد</span>`}
                 </td>
+
+                <!-- ارسال: سبز=شده | آبی=در انتظار | قرمز=نشده -->
                 <td class="px-3 py-3">
                     ${r.send_status === 'ارسال شده'
                         ? `<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">✓ ارسال شده</span>`
                         : r.send_status === 'در انتظار'
-                        ? `<span class="bg-blue-100 text-501-800 text-xs px-2 py-1 rounded-full font-medium">در انتظار</span>`
-                        : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-medium">✗ ارسال نشده</span>`}
+                        ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">در انتظار</span>`
+                        : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-bold">✗ ارسال نشده</span>`}
                 </td>
+
+                <!-- دریافت: سبز=شده | آبی=در انتظار | قرمز=نشده -->
                 <td class="px-3 py-3">
                     ${r.receive_status === 'شده'
                         ? `<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">✓ شده</span>`
                         : r.receive_status === 'در انتظار'
                         ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">در انتظار</span>`
-                        : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-medium">✗ نشده</span>`}
+                        : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-bold">✗ نشده</span>`}
                 </td>
+
+                <!-- فایل‌ها: لینک دانلود | قرمز=آپلود نشده -->
                 <td class="px-3 py-3">
                     ${r.file_paths && r.file_paths.length
                         ? r.file_paths.map(p => `<button onclick="EmbassyModule.downloadFile('${p}')" class="block text-blue-600 hover:text-blue-800 text-xs underline truncate max-w-24 font-medium"><i class="fas fa-download ml-1"></i>${p.split('/').pop()}</button>`).join('')
-                        : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-medium">آپلود نشده</span>`}
+                        : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-bold">✗ آپلود نشده</span>`}
                 </td>
+
                 <td class="px-3 py-3 text-gray-500 text-xs">${r.updated_at ? (typeof Jalali!=='undefined' ? Jalali.toJalaliDateTime(r.updated_at) : new Date(r.updated_at).toLocaleDateString('fa-IR')) : '—'}</td>
                 <td class="px-3 py-3 text-xs text-gray-600 font-medium">${r.created_by_name || '—'}</td>
                 <td class="px-3 py-3">
