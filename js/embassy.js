@@ -55,6 +55,40 @@ const EmbassyModule = (function () {
         return true;
     }
 
+    // ── ثبت لاگ فعالیت ──────────────────────────────────────
+    async function _logActivity(recordId, action, actionLabel, changedFields) {
+        try {
+            const client = sb(); if (!client) return;
+            const u = currentUser();
+
+            // بروزرسانی ستون‌های خلاصه در رکورد اصلی
+            const { error: updateErr } = await client.from(TABLE).update({
+                updated_by:      u.id   || null,
+                updated_by_name: u.name || null,
+                last_action:     actionLabel,
+            }).eq('id', recordId);
+            if (updateErr) {
+                // اگر ستون‌ها هنوز نیستن (migration اجرا نشده) skip کن
+                console.warn('Embassy: updated_by columns missing — run embassy_v4_migration.sql');
+            }
+
+            // ثبت در جدول لاگ (اگر جدول وجود داشت)
+            const { error: logErr } = await client.from('embassy_activity_log').insert([{
+                record_id:      recordId,
+                user_id:        u.id   || null,
+                user_name:      u.name || null,
+                action,
+                action_label:   actionLabel,
+                changed_fields: Array.isArray(changedFields) ? changedFields : [],
+            }]);
+            if (logErr && logErr.code !== '42P01') { // 42P01 = table not found
+                console.warn('Embassy logActivity:', logErr.message);
+            }
+        } catch (e) {
+            console.warn('Embassy logActivity error:', e);
+        }
+    }
+
     // ── آپلود فایل به Storage ────────────────────────────────
     async function uploadFile(file, recordId) {
         const client = sb(); if (!client) return null;
@@ -332,57 +366,59 @@ const EmbassyModule = (function () {
                                 placeholder="شماره تماس دانشجو">
                         </div>
 
-                        <!-- ردیف چهارم — تسویه (۳ فیلد عددی + واحد پولی) -->
+                        <!-- ردیف چهارم — تسویه چندمرحله‌ای -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="text-gray-700 text-sm font-semibold block mb-2">تسویه</label>
-                                <!-- انتخاب واحد پولی -->
-                                <div class="flex gap-2 mb-3">
-                                    <button type="button" data-currency="تومان" onclick="EmbassyModule._setCurrency(this)"
-                                        class="currency-btn flex-1 text-xs py-1.5 rounded-lg border-2 border-green-500 text-green-700 bg-green-50 font-bold transition-all active-currency">
-                                        تومان
-                                    </button>
-                                    <button type="button" data-currency="دلار" onclick="EmbassyModule._setCurrency(this)"
-                                        class="currency-btn flex-1 text-xs py-1.5 rounded-lg border border-gray-300 text-gray-600 bg-white hover:bg-gray-50 transition-all">
-                                        دلار $
-                                    </button>
+                                <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-4" id="settlement-container">
+
+                                    <!-- ۱. مبلغ مورد اتفاق -->
+                                    <div>
+                                        <div class="flex items-center justify-between mb-1">
+                                            <label class="text-orange-600 text-xs font-semibold">
+                                                <i class="fas fa-handshake ml-1"></i>۱. مبلغ مورد اتفاق
+                                            </label>
+                                            <button type="button" onclick="EmbassyModule._addPaymentRow('agreed-list','agreed')"
+                                                class="text-xs text-orange-600 hover:text-orange-800 flex items-center gap-1">
+                                                <i class="fas fa-plus-circle"></i>افزودن مرحله
+                                            </button>
+                                        </div>
+                                        <div id="agreed-list" class="space-y-1.5"></div>
+                                    </div>
+
+                                    <!-- ۲. بیعانه -->
+                                    <div>
+                                        <div class="flex items-center justify-between mb-1">
+                                            <label class="text-yellow-600 text-xs font-semibold">
+                                                <i class="fas fa-money-bill ml-1"></i>۲. بیعانه
+                                            </label>
+                                            <button type="button" onclick="EmbassyModule._addPaymentRow('deposit-list','deposit')"
+                                                class="text-xs text-yellow-600 hover:text-yellow-800 flex items-center gap-1">
+                                                <i class="fas fa-plus-circle"></i>افزودن مرحله
+                                            </button>
+                                        </div>
+                                        <div id="deposit-list" class="space-y-1.5"></div>
+                                    </div>
+
+                                    <!-- ۳. تسویه نهایی -->
+                                    <div>
+                                        <div class="flex items-center justify-between mb-1">
+                                            <label class="text-green-700 text-xs font-semibold">
+                                                <i class="fas fa-check-circle ml-1"></i>۳. تسویه نهایی
+                                            </label>
+                                            <button type="button" onclick="EmbassyModule._addPaymentRow('final-list','final')"
+                                                class="text-xs text-green-700 hover:text-green-900 flex items-center gap-1">
+                                                <i class="fas fa-plus-circle"></i>افزودن مرحله
+                                            </button>
+                                        </div>
+                                        <div id="final-list" class="space-y-1.5"></div>
+                                    </div>
                                 </div>
+                                <!-- hidden inputs برای سازگاری با payload قبلی -->
+                                <input type="hidden" id="f-settlement-agreed">
+                                <input type="hidden" id="f-settlement-deposit">
+                                <input type="hidden" id="f-settlement-final">
                                 <input type="hidden" id="f-currency" value="تومان">
-                                <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-2">
-                                    <div>
-                                        <label class="text-orange-600 text-xs mb-1 block font-semibold">
-                                            <i class="fas fa-handshake ml-1"></i>۱. مبلغ مورد اتفاق
-                                        </label>
-                                        <div class="flex gap-1">
-                                            <input type="number" id="f-settlement-agreed" min="0" step="1"
-                                                placeholder="مبلغ"
-                                                class="flex-1 bg-white text-gray-900 border border-orange-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500">
-                                            <span class="currency-label text-xs text-gray-500 self-center">تومان</span>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label class="text-yellow-600 text-xs mb-1 block font-semibold">
-                                            <i class="fas fa-money-bill ml-1"></i>۲. بیعانه
-                                        </label>
-                                        <div class="flex gap-1">
-                                            <input type="number" id="f-settlement-deposit" min="0" step="1"
-                                                placeholder="مبلغ"
-                                                class="flex-1 bg-white text-gray-900 border border-yellow-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-yellow-500">
-                                            <span class="currency-label text-xs text-gray-500 self-center">تومان</span>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label class="text-green-700 text-xs mb-1 block font-semibold">
-                                            <i class="fas fa-check-circle ml-1"></i>۳. تسویه نهایی
-                                        </label>
-                                        <div class="flex gap-1">
-                                            <input type="number" id="f-settlement-final" min="0" step="1"
-                                                placeholder="مبلغ"
-                                                class="flex-1 bg-white text-gray-900 border border-green-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500">
-                                            <span class="currency-label text-xs text-gray-500 self-center">تومان</span>
-                                        </div>
-                                    </div>
-                                </div>
                                 <input type="hidden" id="f-settlement" value="">
                             </div>
                             <div>
@@ -547,13 +583,23 @@ const EmbassyModule = (function () {
 
                 <!-- تسویه: سبز=تسویه شده | قرمز=نشده -->
                 <td class="px-3 py-3">
-                    ${(r.settlement_agreed || r.settlement_deposit || r.settlement_final)
-                        ? `<div class="space-y-0.5 text-xs">
-                            ${r.settlement_agreed  ? `<div class="text-orange-700 font-medium">توافق: ${Number(r.settlement_agreed).toLocaleString('fa-IR')} ت</div>` : ''}
-                            ${r.settlement_deposit ? `<div class="text-yellow-700 font-medium">بیعانه: ${Number(r.settlement_deposit).toLocaleString('fa-IR')} ت</div>` : ''}
-                            ${r.settlement_final   ? `<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-bold">✓ تسویه: ${Number(r.settlement_final).toLocaleString('fa-IR')} ت</span>` : '<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">در انتظار تسویه</span>'}
-                           </div>`
-                        : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-bold">✗ تسویه نشده</span>`}
+                    ${(() => {
+                        // بررسی payment lists جدید
+                        const agreed  = r.settlement_agreed_list  && r.settlement_agreed_list.length  ? r.settlement_agreed_list  : (r.settlement_agreed  > 0 ? [{amount: r.settlement_agreed,  currency: r.settlement||'تومان'}] : []);
+                        const deposit = r.settlement_deposit_list && r.settlement_deposit_list.length ? r.settlement_deposit_list : (r.settlement_deposit > 0 ? [{amount: r.settlement_deposit, currency: r.settlement||'تومان'}] : []);
+                        const final_  = r.settlement_final_list   && r.settlement_final_list.length   ? r.settlement_final_list   : (r.settlement_final   > 0 ? [{amount: r.settlement_final,   currency: r.settlement||'تومان'}] : []);
+
+                        if (!agreed.length && !deposit.length && !final_.length) {
+                            return '<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-bold">✗ تسویه نشده</span>';
+                        }
+                        const fmt = (p) => p.currency === 'دلار' ? `$${Number(p.amount).toLocaleString('en')}` : `${Number(p.amount).toLocaleString('fa-IR')} ت`;
+                        const rows = [];
+                        if (agreed.length)  rows.push(`<div class="text-orange-700 text-xs">توافق: ${agreed.map(fmt).join(' + ')}</div>`);
+                        if (deposit.length) rows.push(`<div class="text-yellow-700 text-xs">بیعانه: ${deposit.map(fmt).join(' + ')}</div>`);
+                        if (final_.length)  rows.push(`<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-bold">✓ تسویه: ${final_.map(fmt).join(' + ')}</span>`);
+                        else                rows.push(`<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">در انتظار تسویه</span>`);
+                        return `<div class="space-y-0.5">${rows.join('')}</div>`;
+                    })()}
                 </td>
 
                 <!-- کد سجاد -->
@@ -595,7 +641,15 @@ const EmbassyModule = (function () {
                         : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-bold">✗ آپلود نشده</span>`}
                 </td>
 
-                <td class="px-3 py-3 text-gray-500 text-xs">${r.updated_at ? (typeof Jalali!=='undefined' ? Jalali.toJalaliDateTime(r.updated_at) : new Date(r.updated_at).toLocaleDateString('fa-IR')) : '—'}</td>
+                <td class="px-3 py-3 text-gray-500 text-xs">
+                    <div>${r.updated_at ? (typeof Jalali!=='undefined' ? Jalali.toJalaliDateTime(r.updated_at) : new Date(r.updated_at).toLocaleDateString('fa-IR')) : '—'}</div>
+                    ${r.updated_by_name ? `<div class="text-blue-600 text-xs mt-0.5">توسط: ${r.updated_by_name}</div>` : ''}
+                    ${r.last_action ? `<div class="text-gray-400 text-xs">${r.last_action}</div>` : ''}
+                    <button onclick="EmbassyModule.showActivityLog('${r.id}')"
+                        class="mt-1 text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full border border-blue-200 transition-all">
+                        <i class="fas fa-history ml-1"></i>جزئیات
+                    </button>
+                </td>
                 <td class="px-3 py-3 text-xs text-gray-600 font-medium">${r.created_by_name || '—'}</td>
                 <td class="px-3 py-3">
                     <div class="flex gap-2">
@@ -695,14 +749,25 @@ const EmbassyModule = (function () {
     }
 
     // ── تنظیم تاریخ سریع (دیروز/امروز/فردا) ─────────────────
-    // helper: تاریخ امروز با timezone ایران
+    // helper: تاریخ امروز با timezone ایران — روش دقیق با Intl
     function _iranToday() {
-        // timezone ایران: UTC+3:30
+        // استفاده از Intl برای دریافت تاریخ دقیق ایران بدون وابستگی به timezone مرورگر
         var now = new Date();
-        var iranOffset = 3.5 * 60; // دقیقه
-        var utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
-        var iranDate = new Date(utcMs + iranOffset * 60000);
-        return iranDate;
+        try {
+            var formatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'Asia/Tehran',
+                year:  'numeric', month: '2-digit', day: '2-digit',
+                hour:  '2-digit', minute: '2-digit', second: '2-digit',
+                hour12: false
+            });
+            var parts = formatter.formatToParts(now);
+            var p = {};
+            parts.forEach(function(pt) { p[pt.type] = pt.value; });
+            return new Date(p.year + '-' + p.month + '-' + p.day + 'T' + p.hour + ':' + p.minute + ':' + p.second);
+        } catch(e) {
+            // fallback
+            return now;
+        }
     }
 
     function _setQuickDate(hiddenId, dispBtnId, offset) {
@@ -720,6 +785,21 @@ const EmbassyModule = (function () {
             dispBtn.classList.remove('text-gray-500');
             dispBtn.querySelector('span').classList.add('text-green-700');
             dispBtn.querySelector('span').classList.remove('text-gray-500');
+        }
+        // هایلایت دکمه انتخاب‌شده — حذف active از بقیه
+        var container = document.getElementById(dispBtnId)?.closest('.space-y-2');
+        if (container) {
+            container.querySelectorAll('button[onclick*="_setQuickDate"]').forEach(function(btn) {
+                btn.classList.remove('bg-green-500','text-white','border-green-500','font-bold');
+                btn.classList.add('bg-gray-100','text-gray-600','border-gray-200');
+            });
+            // پیدا کردن دکمه‌ای که همین offset رو داره
+            container.querySelectorAll('button[onclick*="_setQuickDate"]').forEach(function(btn) {
+                if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(',' + offset + ')')) {
+                    btn.classList.add('bg-green-500','text-white','border-green-500','font-bold');
+                    btn.classList.remove('bg-gray-100','text-gray-600','border-gray-200');
+                }
+            });
         }
     }
 
@@ -845,6 +925,75 @@ const EmbassyModule = (function () {
     function _gToJISO(date) {
         // تقریب ساده — در پروژه همیشه Jalali موجوده
         return date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0') + '-' + String(date.getDate()).padStart(2,'0');
+    }
+
+    // تاریخ امروز با timezone ایران — روش دقیق با Intl
+    function _iranNow() {
+        return _iranToday(); // از همان تابع استفاده کن
+    }
+
+    // ── توابع تسویه چندمرحله‌ای ──────────────────────────────
+
+    // اضافه کردن یه ردیف پرداخت جدید
+    function _addPaymentRow(listId, type, amount, currency) {
+        var list = document.getElementById(listId);
+        if (!list) return;
+        var row = document.createElement('div');
+        row.className = 'flex gap-1 items-center payment-row';
+        row.innerHTML = `
+            <input type="number" min="0" step="1" placeholder="مبلغ"
+                   value="${amount || ''}"
+                   class="flex-1 bg-white text-gray-900 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400">
+            <select class="bg-white text-gray-700 border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none" style="min-width:56px">
+                <option value="تومان" ${(!currency || currency==='تومان')?'selected':''}>تومان</option>
+                <option value="دلار"  ${currency==='دلار'?'selected':''}>دلار</option>
+            </select>
+            <button type="button" onclick="this.closest('.payment-row').remove()"
+                    class="text-red-400 hover:text-red-600 text-lg leading-none px-1">×</button>`;
+        list.appendChild(row);
+    }
+
+    // جمع مبالغ یه نوع (برای backward-compat با فیلد عددی قدیمی)
+    function _sumPayments(listId, currency) {
+        var list = document.getElementById(listId);
+        if (!list) return 0;
+        var total = 0;
+        list.querySelectorAll('.payment-row').forEach(function(row) {
+            var cur = row.querySelector('select')?.value || 'تومان';
+            if (!currency || cur === currency) {
+                total += parseFloat(row.querySelector('input')?.value || 0);
+            }
+        });
+        return total;
+    }
+
+    // خواندن همه پرداخت‌های یه نوع به صورت آرایه {amount, currency}
+    function _getPayments(listId) {
+        var list = document.getElementById(listId);
+        if (!list) return [];
+        var result = [];
+        list.querySelectorAll('.payment-row').forEach(function(row) {
+            var amt = parseFloat(row.querySelector('input')?.value || 0);
+            var cur = row.querySelector('select')?.value || 'تومان';
+            if (amt > 0) result.push({amount: amt, currency: cur});
+        });
+        return result;
+    }
+
+    // پر کردن لیست پرداخت‌ها هنگام ویرایش
+    function _loadPayments(listId, payments, fallbackAmount, fallbackCurrency) {
+        var list = document.getElementById(listId);
+        if (!list) return;
+        list.innerHTML = '';
+        if (payments && payments.length) {
+            payments.forEach(function(p) {
+                _addPaymentRow(listId, '', p.amount, p.currency);
+            });
+        } else if (fallbackAmount && parseFloat(fallbackAmount) > 0) {
+            _addPaymentRow(listId, '', fallbackAmount, fallbackCurrency || 'تومان');
+        } else {
+            _addPaymentRow(listId, '');
+        }
     }
 
     // ── date picker manual trigger ──────────────────────────
@@ -1016,6 +1165,10 @@ const EmbassyModule = (function () {
         _existingFilePaths = [];
         const existingEl = document.getElementById('f-existing-files');
         if (existingEl) existingEl.innerHTML = '';
+        // ریست تسویه
+        ['agreed-list','deposit-list','final-list'].forEach(function(id) {
+            _addPaymentRow(id, '');
+        });
         document.querySelectorAll('.doc-card').forEach(function(card) {
             card.dataset.checked = 'false';
             card.style.borderColor = 'transparent';
@@ -1068,28 +1221,58 @@ const EmbassyModule = (function () {
         document.getElementById('f-studentName').value = r.student_name || '';
 
         // پر کردن چک‌باکس‌های نوع سند + وضعیت
-        document.querySelectorAll('.doc-type-check').forEach(function(cb) {
-            cb.checked = false;
-            var sd = document.getElementById('status-' + cb.dataset.key);
-            if (sd) { sd.classList.add('opacity-40','pointer-events-none'); sd.querySelectorAll('input[type="radio"]').forEach(function(r){r.checked=false;}); }
+        // اول همه رو reset کن
+        document.querySelectorAll('.doc-card').forEach(function(card) {
+            card.dataset.checked = 'false';
+            card.style.borderColor = 'transparent';
+            card.style.background = 'rgba(255,255,255,0.05)';
+            var key = card.dataset.key;
+            var sd = document.getElementById('status-' + key);
+            if (sd) sd.classList.add('hidden');
+            var chk = document.getElementById('chk-' + key);
+            if (chk) chk.innerHTML = '';
+            var cb = card.querySelector('.doc-type-check');
+            if (cb) cb.checked = false;
         });
         if (r.work_type) {
             r.work_type.split('، ').forEach(function(part) {
                 var match = part.match(/^(.+?)\s*\((.+?)\)$/);
                 var label = match ? match[1].trim() : part.trim();
                 var status = match ? match[2].trim() : '';
-                document.querySelectorAll('.doc-type-check').forEach(function(cb) {
-                    if (cb.dataset.label === label || (cb.dataset.key === 'sayer' && !['مباشره','قبول نهایی','مدرک کارشناسی','مدرک ارشد','مدرک دکتری','مجلد','وکالت‌نامه'].includes(label))) {
-                        cb.checked = true;
-                        _toggleDocType(cb);
-                        if (status) {
-                            var r2 = document.querySelector('input[name="status-' + cb.dataset.key + '"][value="' + status + '"]');
-                            if (r2) r2.checked = true;
-                        }
-                        if (cb.dataset.key === 'sayer') {
-                            var ct2 = document.getElementById('sayer-custom-text');
-                            if (ct2) ct2.value = label;
-                        }
+                document.querySelectorAll('.doc-card').forEach(function(card) {
+                    var cardLabel = card.dataset.label;
+                    var cardKey   = card.dataset.key;
+                    var isMatch   = cardLabel === label ||
+                                    (cardKey === 'sayer' && !['مباشره','قبول نهایی','مدرک کارشناسی','مدرک ارشد','مدرک دکتری','مجلد','وکالت‌نامه','کارشناسی','ارشد','دکتری'].includes(label));
+                    if (!isMatch) return;
+
+                    // فعال کردن card
+                    card.dataset.checked = 'true';
+                    card.style.borderColor = '#3b82f6';
+                    card.style.background = 'rgba(59,130,246,0.15)';
+                    var chk = document.getElementById('chk-' + cardKey);
+                    if (chk) chk.innerHTML = '<i class="fas fa-check text-xs text-blue-400"></i>';
+                    var cb = card.querySelector('.doc-type-check');
+                    if (cb) cb.checked = true;
+
+                    // نمایش status panel
+                    var sd = document.getElementById('status-' + cardKey);
+                    if (sd) {
+                        sd.classList.remove('hidden');
+                        // ست کردن وضعیت
+                        var targetStatus = status || 'هردو';
+                        var hidInp = document.getElementById('hid-status-' + cardKey);
+                        if (hidInp) hidInp.value = targetStatus;
+                        sd.querySelectorAll('.status-btn').forEach(function(b) {
+                            b.classList.remove('active-status','border-2','font-bold');
+                            if (b.dataset.status === targetStatus) {
+                                b.classList.add('active-status','border-2','font-bold');
+                            }
+                        });
+                    }
+                    if (cardKey === 'sayer') {
+                        var ct2 = document.getElementById('sayer-custom-text');
+                        if (ct2) ct2.value = label;
                     }
                 });
             });
@@ -1101,6 +1284,11 @@ const EmbassyModule = (function () {
         const fa = document.getElementById('f-settlement-agreed');   if(fa) fa.value = r.settlement_agreed  || '';
         const fd = document.getElementById('f-settlement-deposit');  if(fd) fd.value = r.settlement_deposit || '';
         const ff = document.getElementById('f-settlement-final');    if(ff) ff.value = r.settlement_final   || '';
+        // بارگذاری تسویه چندمرحله‌ای
+        const cur = r.settlement || 'تومان';
+        _loadPayments('agreed-list',  r.settlement_agreed_list,  r.settlement_agreed,  cur);
+        _loadPayments('deposit-list', r.settlement_deposit_list, r.settlement_deposit, cur);
+        _loadPayments('final-list',   r.settlement_final_list,   r.settlement_final,   cur);
         document.getElementById('f-sajadCode').value        = r.sajad_code         || '';
         // وکالت
         const vekalatVal = r.vekalat || 'ندارد';
@@ -1277,10 +1465,14 @@ const EmbassyModule = (function () {
             send_method:         document.getElementById('f-sendMethod').value  || null,
             send_date:           document.getElementById('f-sendDate').value    || null,
             acknowledgment:      document.getElementById('f-acknowledgment').value.trim() || null,
-            settlement_agreed:   parseFloat(document.getElementById('f-settlement-agreed')?.value)  || 0,
-            settlement_deposit:  parseFloat(document.getElementById('f-settlement-deposit')?.value) || 0,
-            settlement_final:    parseFloat(document.getElementById('f-settlement-final')?.value)   || 0,
-            settlement:          document.getElementById('f-currency')?.value || 'تومان',
+            settlement_agreed:   parseFloat(document.getElementById('f-settlement-agreed')?.value)  || _sumPayments('agreed-list',  'تومان'),
+            settlement_deposit:  parseFloat(document.getElementById('f-settlement-deposit')?.value) || _sumPayments('deposit-list', 'تومان'),
+            settlement_final:    parseFloat(document.getElementById('f-settlement-final')?.value)   || _sumPayments('final-list',   'تومان'),
+            settlement:          'تومان',
+            // لیست‌های چندمرحله‌ای
+            settlement_agreed_list:  _getPayments('agreed-list'),
+            settlement_deposit_list: _getPayments('deposit-list'),
+            settlement_final_list:   _getPayments('final-list'),
             sajad_code:          document.getElementById('f-sajadCode').value.trim() || null,
             vekalat:             document.querySelector('input[name="f-vekalat"]:checked')?.value || 'ندارد',
             send_status:         document.querySelector('input[name="f-send-status"]:checked')?.value || 'ارسال نشده',
@@ -1295,11 +1487,51 @@ const EmbassyModule = (function () {
         }
 
         let ok = false;
+        let savedId = editId || recordId;
+
+        // ── نقشه ترجمه فیلدها به فارسی ──────────────────────
+        const FIELD_FA = {
+            student_name:       'نام دانشجو',
+            work_type:          'نوع کار',
+            phone:              'شماره تماس',
+            receive_date:       'تاریخ دریافت',
+            send_method:        'نحوه ارسال',
+            send_date:          'تاریخ ارسال',
+            acknowledgment:     'اعلام وصول',
+            settlement_agreed:  'مبلغ توافق',
+            settlement_deposit: 'بیعانه',
+            settlement_final:   'تسویه نهایی',
+            settlement:         'واحد ارز',
+            sajad_code:         'کد سجاد',
+            vekalat:            'وکالت‌نامه',
+            send_status:        'وضعیت ارسال',
+            receive_status:     'وضعیت دریافت',
+            file_paths:         'فایل‌های پیوست',
+        };
+
         if (editId) {
+            // پیدا کردن فیلدهایی که واقعاً تغییر کردن
+            const oldRec = _allRecords.find(r => r.id === editId) || {};
+            const changedFa = [];
+            Object.keys(payload).forEach(key => {
+                const oldVal = String(oldRec[key] ?? '');
+                const newVal = String(payload[key] ?? '');
+                if (oldVal !== newVal) {
+                    changedFa.push(FIELD_FA[key] || key);
+                }
+            });
+
             ok = await update(editId, payload);
+            if (ok) {
+                const label = changedFa.length
+                    ? 'ویرایش: ' + changedFa.join('، ')
+                    : 'ویرایش رکورد (بدون تغییر)';
+                await _logActivity(editId, 'update', label, changedFa);
+            }
         } else {
             const result = await insert(payload);
             ok = !!result;
+            if (ok && result) await _logActivity(result.id, 'create', 'ثبت رکورد جدید', []);
         }
 
         btn.disabled = false;
@@ -1360,6 +1592,82 @@ const EmbassyModule = (function () {
         a.click();
     }
 
+    // ── مودال لاگ فعالیت ─────────────────────────────────────
+    async function showActivityLog(recordId) {
+        const client = sb();
+        let logs = [];
+        if (client) {
+            const { data } = await client
+                .from('embassy_activity_log')
+                .select('*')
+                .eq('record_id', recordId)
+                .order('created_at', { ascending: false })
+                .limit(50);
+            logs = data || [];
+        }
+
+        // اطلاعات رکورد
+        const rec = _allRecords.find(r => r.id === recordId);
+        const name = rec ? rec.student_name : '';
+
+        const rows = logs.length ? logs.map(log => {
+            const dt = log.created_at
+                ? (typeof Jalali !== 'undefined' ? Jalali.toJalaliDisplay(log.created_at) : new Date(log.created_at).toLocaleDateString('fa-IR'))
+                : '—';
+            const time = log.created_at ? new Date(log.created_at).toLocaleTimeString('fa-IR') : '';
+            const actionIcon = {
+                'create':      'fa-plus-circle text-green-500',
+                'update':      'fa-edit text-blue-500',
+                'file_upload': 'fa-upload text-purple-500',
+                'file_delete': 'fa-trash text-red-500',
+            }[log.action] || 'fa-circle text-gray-400';
+
+            const fields = log.changed_fields && log.changed_fields.length
+                ? `<div class="text-gray-400 text-xs mt-1">${log.changed_fields.join('، ')}</div>` : '';
+
+            return `
+            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                <td class="py-3 px-4">
+                    <i class="fas ${actionIcon} ml-2"></i>
+                    <span class="text-gray-800 font-medium text-sm">${log.action_label || log.action}</span>
+                    ${fields}
+                </td>
+                <td class="py-3 px-4 text-gray-700 font-medium text-sm">${log.user_name || '—'}</td>
+                <td class="py-3 px-4 text-gray-500 text-xs">${dt}<br>${time}</td>
+            </tr>`;
+        }).join('') : `<tr><td colspan="3" class="text-center py-8 text-gray-400 text-sm">هنوز فعالیتی ثبت نشده</td></tr>`;
+
+        const modal = document.createElement('div');
+        modal.id = '__embassy-activity-modal';
+        modal.className = 'fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4';
+        modal.innerHTML = `
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
+                    <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fas fa-history text-blue-500"></i>
+                        تاریخچه فعالیت‌ها
+                        ${name ? `<span class="text-blue-600 font-semibold">— ${name}</span>` : ''}
+                    </h3>
+                    <button onclick="document.getElementById('__embassy-activity-modal').remove()"
+                        class="text-gray-400 hover:text-gray-700 text-xl"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="overflow-y-auto flex-1">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 sticky top-0">
+                            <tr class="border-b border-gray-200">
+                                <th class="text-right text-gray-600 font-semibold py-3 px-4">اکشن</th>
+                                <th class="text-right text-gray-600 font-semibold py-3 px-4">کاربر</th>
+                                <th class="text-right text-gray-600 font-semibold py-3 px-4">زمان</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    }
+
     // ── init (هنگام ورود به صفحه) ────────────────────────────
     function init() {
         // دادن زمان کوتاه تا DOM رندر شود
@@ -1393,6 +1701,9 @@ const EmbassyModule = (function () {
         _openJalaliPicker,
         _renderCalPopup,
         _pickCalDate,
+        showActivityLog,
+        _addPaymentRow,
+        _loadPayments,
     };
 
 })(); // end EmbassyModule
