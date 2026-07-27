@@ -253,9 +253,26 @@ const EmbassyModule = (function () {
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="text-gray-700 text-sm font-semibold block mb-1">تاریخ دریافت مدارک</label>
-                                <div class="relative">
-                                    <input type="date" id="f-receiveDate"
-                                        class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200">
+                                <div class="space-y-2">
+                                    <!-- دکمه‌های سریع -->
+                                    <div class="flex gap-1">
+                                        <button type="button" onclick="EmbassyModule._setQuickDate('f-receiveDate','f-receiveDate-disp',-1)"
+                                            class="flex-1 text-xs py-1.5 rounded-lg bg-gray-100 hover:bg-blue-100 text-gray-600 hover:text-blue-700 border border-gray-200 transition-all">دیروز</button>
+                                        <button type="button" onclick="EmbassyModule._setQuickDate('f-receiveDate','f-receiveDate-disp',0)"
+                                            class="flex-1 text-xs py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white border border-blue-500 transition-all font-bold">امروز</button>
+                                        <button type="button" onclick="EmbassyModule._setQuickDate('f-receiveDate','f-receiveDate-disp',1)"
+                                            class="flex-1 text-xs py-1.5 rounded-lg bg-gray-100 hover:bg-blue-100 text-gray-600 hover:text-blue-700 border border-gray-200 transition-all">فردا</button>
+                                    </div>
+                                    <!-- نمایش تاریخ انتخاب‌شده + باز کردن تقویم -->
+                                    <div class="relative">
+                                        <input type="hidden" id="f-receiveDate">
+                                        <button type="button" id="f-receiveDate-disp"
+                                            onclick="EmbassyModule._openJalaliPicker('f-receiveDate','f-receiveDate-disp')"
+                                            class="w-full text-right bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-sm text-gray-500 focus:outline-none focus:border-green-500 flex items-center justify-between">
+                                            <span>انتخاب از تقویم</span>
+                                            <i class="fas fa-calendar-alt text-gray-400"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             <div>
@@ -270,9 +287,24 @@ const EmbassyModule = (function () {
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="text-gray-700 text-sm font-semibold block mb-1">تاریخ ارسال</label>
-                                <div class="relative">
-                                    <input type="date" id="f-sendDate"
-                                        class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:border-green-500">
+                                <div class="space-y-2">
+                                    <div class="flex gap-1">
+                                        <button type="button" onclick="EmbassyModule._setQuickDate('f-sendDate','f-sendDate-disp',-1)"
+                                            class="flex-1 text-xs py-1.5 rounded-lg bg-gray-100 hover:bg-blue-100 text-gray-600 hover:text-blue-700 border border-gray-200 transition-all">دیروز</button>
+                                        <button type="button" onclick="EmbassyModule._setQuickDate('f-sendDate','f-sendDate-disp',0)"
+                                            class="flex-1 text-xs py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white border border-blue-500 transition-all font-bold">امروز</button>
+                                        <button type="button" onclick="EmbassyModule._setQuickDate('f-sendDate','f-sendDate-disp',1)"
+                                            class="flex-1 text-xs py-1.5 rounded-lg bg-gray-100 hover:bg-blue-100 text-gray-600 hover:text-blue-700 border border-gray-200 transition-all">فردا</button>
+                                    </div>
+                                    <div class="relative">
+                                        <input type="hidden" id="f-sendDate">
+                                        <button type="button" id="f-sendDate-disp"
+                                            onclick="EmbassyModule._openJalaliPicker('f-sendDate','f-sendDate-disp')"
+                                            class="w-full text-right bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-sm text-gray-500 focus:outline-none focus:border-green-500 flex items-center justify-between">
+                                            <span>انتخاب از تقویم</span>
+                                            <i class="fas fa-calendar-alt text-gray-400"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             <!-- اعلام وصول + آپلود عکس -->
@@ -662,6 +694,149 @@ const EmbassyModule = (function () {
         if (card) _toggleDocCard(card, cb.dataset.key, cb.dataset.label);
     }
 
+    // ── تنظیم تاریخ سریع (دیروز/امروز/فردا) ─────────────────
+    function _setQuickDate(hiddenId, dispBtnId, offset) {
+        var d = new Date();
+        d.setDate(d.getDate() + offset);
+        var jStr = (typeof Jalali !== 'undefined') ? Jalali.toJalaliISO(d) : _gToJISO(d);
+        var hidden = document.getElementById(hiddenId);
+        var dispBtn = document.getElementById(dispBtnId);
+        if (hidden) hidden.value = jStr;
+        if (dispBtn) {
+            var labels = {'-1':'دیروز', '0':'امروز', '1':'فردا'};
+            var display = (typeof Jalali !== 'undefined') ? Jalali.toJalaliDisplay(d) : jStr;
+            dispBtn.querySelector('span').textContent = display + ' (' + (labels[String(offset)] || '') + ')';
+            dispBtn.classList.add('border-green-500');
+            dispBtn.classList.remove('text-gray-500');
+            dispBtn.querySelector('span').classList.add('text-green-700');
+            dispBtn.querySelector('span').classList.remove('text-gray-500');
+        }
+    }
+
+    // ── تقویم شمسی ساده (grid انتخاب روز از ماه) ─────────────
+    function _openJalaliPicker(hiddenId, dispBtnId) {
+        // حذف picker قبلی اگر باز باشه
+        var old = document.getElementById('__emb-cal-popup');
+        if (old) { old.remove(); if (old.dataset.for === hiddenId) return; }
+
+        var hidden = document.getElementById(hiddenId);
+        var dispBtn = document.getElementById(dispBtnId);
+        if (!hidden || !dispBtn) return;
+
+        // تاریخ جاری برای نمایش
+        var today = new Date();
+        var jToday = (typeof Jalali !== 'undefined') ? Jalali.toJalaali(today.getFullYear(), today.getMonth()+1, today.getDate()) : {jy:1403,jm:1,jd:1};
+
+        // اگر مقدار قبلی داره، از آن شروع کن
+        var initY = jToday.jy, initM = jToday.jm;
+        if (hidden.value) {
+            var p = hidden.value.split('-');
+            if (p.length === 3) { initY = parseInt(p[0]); initM = parseInt(p[1]); }
+        }
+
+        var popup = document.createElement('div');
+        popup.id = '__emb-cal-popup';
+        popup.dataset.for = hiddenId;
+        popup.style.cssText = 'position:fixed;z-index:99999;background:#fff;border:1px solid #d1d5db;border-radius:12px;padding:12px;box-shadow:0 8px 32px rgba(0,0,0,0.18);min-width:260px;direction:rtl;font-family:Vazirmatn,sans-serif;';
+        document.body.appendChild(popup);
+
+        // position زیر دکمه
+        var rect = dispBtn.getBoundingClientRect();
+        popup.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+        var left = rect.left + window.scrollX;
+        if (left + 270 > window.innerWidth) left = window.innerWidth - 275;
+        popup.style.left = left + 'px';
+
+        _renderCalPopup(hiddenId, dispBtnId, initY, initM, jToday);
+
+        // بستن با کلیک خارج
+        setTimeout(function() {
+            document.addEventListener('click', function closeOnOut(e) {
+                var p2 = document.getElementById('__emb-cal-popup');
+                if (p2 && !p2.contains(e.target) && e.target !== dispBtn) {
+                    p2.remove();
+                    document.removeEventListener('click', closeOnOut);
+                }
+            });
+        }, 10);
+    }
+
+    function _renderCalPopup(hiddenId, dispBtnId, jy, jm, jToday) {
+        var popup = document.getElementById('__emb-cal-popup');
+        if (!popup) return;
+        var MONTHS = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+        var daysInMonth = (jm <= 6) ? 31 : (jm <= 11) ? 30 : 29;
+        var prevM = jm === 1 ? 12 : jm - 1, prevY = jm === 1 ? jy - 1 : jy;
+        var nextM = jm === 12 ? 1 : jm + 1, nextY = jm === 12 ? jy + 1 : jy;
+
+        // روز اول هفته
+        var g1 = (typeof Jalali !== 'undefined') ? Jalali.toGregorian(jy, jm, 1) : {gy:2024,gm:1,gd:1};
+        var d1 = new Date(g1.gy, g1.gm - 1, g1.gd).getDay();
+        var startOffset = (d1 + 1) % 7;
+
+        var selectedVal = (document.getElementById(hiddenId)||{}).value || '';
+        var selParts = selectedVal.split('-');
+        var selD = (selParts.length===3 && parseInt(selParts[0])===jy && parseInt(selParts[1])===jm) ? parseInt(selParts[2]) : 0;
+
+        var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
+        html += '<button onclick="EmbassyModule._renderCalPopup(\''+hiddenId+'\',\''+dispBtnId+'\','+prevY+','+prevM+',{jy:'+jToday.jy+',jm:'+jToday.jm+',jd:'+jToday.jd+'})" style="background:none;border:none;cursor:pointer;font-size:18px;color:#6b7280;padding:2px 6px;">›</button>';
+        html += '<div style="font-size:13px;font-weight:700;color:#111;">' + MONTHS[jm-1] + ' ' + jy + '</div>';
+        html += '<button onclick="EmbassyModule._renderCalPopup(\''+hiddenId+'\',\''+dispBtnId+'\','+nextY+','+nextM+',{jy:'+jToday.jy+',jm:'+jToday.jm+',jd:'+jToday.jd+'})" style="background:none;border:none;cursor:pointer;font-size:18px;color:#6b7280;padding:2px 6px;">‹</button>';
+        html += '</div>';
+
+        // سرستون روزهای هفته
+        html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;">';
+        ['ش','ی','د','س','چ','پ','ج'].forEach(function(n) {
+            html += '<div style="text-align:center;font-size:10px;color:#9ca3af;padding:2px 0;">' + n + '</div>';
+        });
+        html += '</div>';
+
+        html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">';
+        for (var e2 = 0; e2 < startOffset; e2++) html += '<div></div>';
+        for (var day = 1; day <= daysInMonth; day++) {
+            var isToday = (jToday.jy===jy && jToday.jm===jm && jToday.jd===day);
+            var isSel = selD === day;
+            var isFri = ((startOffset + day - 1) % 7) === 6;
+            var bg = isSel ? '#3b82f6' : isToday ? '#dbeafe' : 'transparent';
+            var col = isSel ? '#fff' : isFri ? '#ef4444' : '#111';
+            var brd = isToday && !isSel ? '1px solid #3b82f6' : '1px solid transparent';
+            html += '<button type="button" onclick="EmbassyModule._pickCalDate(\''+hiddenId+'\',\''+dispBtnId+'\','+jy+','+jm+','+day+')"'
+                  + ' style="background:'+bg+';color:'+col+';border:'+brd+';border-radius:6px;padding:5px 0;font-size:12px;cursor:pointer;text-align:center;">'
+                  + day + '</button>';
+        }
+        html += '</div>';
+        html += '<div style="display:flex;gap:4px;margin-top:8px;">';
+        html += '<button type="button" onclick="EmbassyModule._setQuickDate(\''+hiddenId+'\',\''+dispBtnId+'\',0);document.getElementById(\'__emb-cal-popup\').remove();" style="flex:1;background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:5px;font-size:11px;cursor:pointer;">امروز</button>';
+        html += '<button type="button" onclick="document.getElementById(\'__emb-cal-popup\').remove();" style="flex:1;background:#f3f4f6;color:#374151;border:none;border-radius:8px;padding:5px;font-size:11px;cursor:pointer;">بستن</button>';
+        html += '</div>';
+
+        popup.innerHTML = html;
+    }
+
+    function _pickCalDate(hiddenId, dispBtnId, jy, jm, jd) {
+        var hidden = document.getElementById(hiddenId);
+        var dispBtn = document.getElementById(dispBtnId);
+        var pad = function(n) { return n < 10 ? '0'+n : String(n); };
+        var jStr = jy + '-' + pad(jm) + '-' + pad(jd);
+        if (hidden) hidden.value = jStr;
+        if (dispBtn) {
+            var MONTHS = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+            var txt = jd + ' ' + MONTHS[jm-1] + ' ' + jy;
+            dispBtn.querySelector('span').textContent = txt;
+            dispBtn.querySelector('span').classList.add('text-green-700');
+            dispBtn.querySelector('span').classList.remove('text-gray-500');
+            dispBtn.classList.add('border-green-500');
+        }
+        var p = document.getElementById('__emb-cal-popup');
+        if (p) p.remove();
+    }
+
+    // helper fallback اگر Jalali.js لود نشده
+    function _gToJISO(date) {
+        // تقریب ساده — در پروژه همیشه Jalali موجوده
+        return date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0') + '-' + String(date.getDate()).padStart(2,'0');
+    }
+
     // ── date picker manual trigger ──────────────────────────
     function _openDatePicker(hiddenId, displayId, displayInput) {
         if (typeof JalaliPicker === 'undefined') return;
@@ -717,29 +892,43 @@ const EmbassyModule = (function () {
         document.getElementById('f-settlement').value = btn.dataset.settle;
     }
 
-    // ── پیش‌نمایش تصویر کوچک ─────────────────────────────
+    // ── پیش‌نمایش تصویر کوچک (با قابلیت حذف) ────────────────
     function previewSingleImg(input, containerId) {
         const container = document.getElementById(containerId);
         if (!container) return;
         Array.from(input.files).forEach(file => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'relative inline-block';
+
             if (file.type.startsWith('image/')) {
                 const reader = new FileReader();
                 reader.onload = e => {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #3b82f6;cursor:pointer;';
-                    img.title = file.name;
-                    img.onclick = () => window.open(e.target.result, '_blank');
-                    container.appendChild(img);
+                    wrapper.innerHTML = `
+                        <img src="${e.target.result}"
+                             style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:2px solid #3b82f6;cursor:pointer;display:block;"
+                             title="${file.name}"
+                             onclick="window.open('${e.target.result}','_blank')">
+                        <button type="button"
+                                onclick="this.closest('.relative').remove()"
+                                style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;background:#dc2626;color:#fff;border:none;border-radius:50%;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;font-weight:bold;"
+                                title="حذف">×</button>`;
                 };
                 reader.readAsDataURL(file);
             } else {
-                const p = document.createElement('div');
-                p.className = 'text-xs text-blue-300 flex items-center gap-1';
-                p.innerHTML = `<i class="fas fa-file"></i>${file.name}`;
-                container.appendChild(p);
+                wrapper.innerHTML = `
+                    <div style="position:relative;display:inline-flex;align-items:center;gap:4px;background:#f3f4f6;border-radius:8px;padding:4px 8px;font-size:12px;color:#374151;">
+                        <i class="fas fa-file" style="color:#3b82f6;"></i>
+                        <span style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${file.name}</span>
+                        <button type="button"
+                                onclick="this.closest('.relative').remove()"
+                                style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;background:#dc2626;color:#fff;border:none;border-radius:50%;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:bold;"
+                                title="حذف">×</button>
+                    </div>`;
             }
+            container.appendChild(wrapper);
         });
+        // reset input تا بشه دوباره همون فایل رو انتخاب کرد
+        input.value = '';
     }
 
     // ── فیلتر سریع ───────────────────────────────────────
