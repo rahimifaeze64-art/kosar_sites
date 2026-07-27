@@ -1379,6 +1379,10 @@ const EmbassyModule = (function () {
         _setCurrency,
         _removeSelectedFile,
         _removeExistingFile,
+        _setQuickDate,
+        _openJalaliPicker,
+        _renderCalPopup,
+        _pickCalDate,
     };
 
 })(); // end EmbassyModule
