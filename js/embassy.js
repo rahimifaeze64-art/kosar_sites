@@ -695,8 +695,18 @@ const EmbassyModule = (function () {
     }
 
     // ── تنظیم تاریخ سریع (دیروز/امروز/فردا) ─────────────────
+    // helper: تاریخ امروز با timezone ایران
+    function _iranToday() {
+        // timezone ایران: UTC+3:30
+        var now = new Date();
+        var iranOffset = 3.5 * 60; // دقیقه
+        var utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+        var iranDate = new Date(utcMs + iranOffset * 60000);
+        return iranDate;
+    }
+
     function _setQuickDate(hiddenId, dispBtnId, offset) {
-        var d = new Date();
+        var d = _iranToday();
         d.setDate(d.getDate() + offset);
         var jStr = (typeof Jalali !== 'undefined') ? Jalali.toJalaliISO(d) : _gToJISO(d);
         var hidden = document.getElementById(hiddenId);
@@ -723,9 +733,9 @@ const EmbassyModule = (function () {
         var dispBtn = document.getElementById(dispBtnId);
         if (!hidden || !dispBtn) return;
 
-        // تاریخ جاری برای نمایش
-        var today = new Date();
-        var jToday = (typeof Jalali !== 'undefined') ? Jalali.toJalaali(today.getFullYear(), today.getMonth()+1, today.getDate()) : {jy:1403,jm:1,jd:1};
+        // تاریخ امروز با timezone ایران
+        var today = _iranToday();
+        var jToday = (typeof Jalali !== 'undefined') ? Jalali.toJalaali(today.getFullYear(), today.getMonth()+1, today.getDate()) : {jy:1405,jm:1,jd:1};
 
         // اگر مقدار قبلی داره، از آن شروع کن
         var initY = jToday.jy, initM = jToday.jm;
