@@ -1,688 +1,852 @@
 /**
- * رابط کاربری حسابداری شخصی (مدیر)
+ * حسابداری شخصی — بازطراحی کامل
+ * تمام داده‌ها روی Supabase (company_accounting + accounting_persons)
+ * بدون localStorage — real-time با Supabase Realtime
  */
-const AccountingUI = (function() {
+const AccountingUI = (function () {
     'use strict';
 
-    let currentFilter = 'all';
-    let currentPerson = 'all';
-    let displayCurrency = 'تومان';
+    const TBL   = 'company_accounting';
+    const PTBL  = 'accounting_persons';
+    const BUCKET = 'accounting-receipts';
 
-    const TYPE_LABELS = {
-        income: 'درآمد',
-        expense: 'هزینه',
-        debt: 'بدهی',
-        credit: 'بستانکاری'
-    };
+    let _txns    = [];   // همه تراکنش‌ها
+    let _persons = [];   // همه اشخاص
+    let _sub     = null; // realtime subscription
 
-    const PERSON_TYPE_LABELS = {
-        student: 'دانشجو',
-        writer: 'نویسنده',
-        freelance: 'آزاد',
-        other: 'سایر'
-    };
+    // ── فیلترهای فعال ───────────────────────────────────────
+    let _fType   = '';
+    let _fSearch = '';
+    let _fPerson = '';
+    let _fFrom   = '';
+    let _fTo     = '';
 
-    function notify(msg, type) {
-        if (typeof UTILS !== 'undefined' && UTILS.showNotification) {
-            UTILS.showNotification(msg, type);
-        } else {
-            alert(msg);
+    // ── Supabase client ──────────────────────────────────────
+    function sb() {
+        return (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+    }
+
+    function esc(s) {
+        return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── فرمت عدد ────────────────────────────────────────────
+    function fmtNum(n, cur) {
+        const v = Math.abs(parseFloat(n) || 0);
+        if (cur === 'دلار')  return '$' + v.toLocaleString('en');
+        if (cur === 'دینار') return v.toLocaleString('fa-IR') + ' د';
+        return v.toLocaleString('fa-IR') + ' ت';
+    }
+
+    // ── جمع مبالغ از آرایه amounts ─────────────────────────
+    function parseAmounts(tx) {
+        // amounts جدید = [{amount, currency}]
+        if (tx.amounts && Array.isArray(tx.amounts) && tx.amounts.length) {
+            return tx.amounts.map(a => ({ amount: parseFloat(a.amount||0), currency: a.currency||'تومان' }))
+                             .filter(a => a.amount > 0);
         }
+        // fallback به فیلد قدیمی
+        const a = parseFloat(tx.amount || 0);
+        if (a > 0) return [{ amount: a, currency: tx.currency || 'تومان' }];
+        return [];
     }
 
-    function escapeHtml(str) {
-        if (str == null) return '';
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
+    function totalByCur(txns, types) {
+        const m = { تومان:0, دلار:0, دینار:0 };
+        txns.filter(t => !types || types.includes(t.type)).forEach(t => {
+            parseAmounts(t).forEach(a => { m[a.currency] = (m[a.currency]||0) + a.amount; });
+        });
+        return m;
     }
 
-    function init() {
-        AccountingModule.init();
+    function fmtMulti(byCur, cls='') {
+        return ['تومان','دلار','دینار'].filter(c=>(byCur[c]||0)>0)
+            .map(c => `<span class="${cls}">${fmtNum(byCur[c],c)}</span>`)
+            .join('<br>') || '—';
     }
 
-    function refresh() {
-        const appEl = document.querySelector('[x-data]');
-        if (appEl && typeof Alpine !== 'undefined' && Alpine.$data) {
-            const app = Alpine.$data(appEl);
-            if (app && app.currentPage === 'accounting') {
-                const page = app.currentPage;
-                app.currentPage = '';
-                setTimeout(() => { app.currentPage = page; }, 10);
-                return;
-            }
-        }
-        const container = document.getElementById('accounting-app');
-        if (container) {
-            container.innerHTML = render();
-        }
+    // ── بارگذاری داده ───────────────────────────────────────
+    async function loadAll() {
+        const client = sb();
+        if (!client) { _txns = []; _persons = []; render(); return; }
+
+        const [txRes, pRes] = await Promise.all([
+            client.from(TBL).select('*').order('tx_date', { ascending: false }),
+            client.from(PTBL).select('*').order('name')
+        ]);
+
+        _txns    = txRes.data  || [];
+        _persons = pRes.data   || [];
+        render();
     }
 
-    function closeModal(event) {
-        if (event && event.target !== event.currentTarget) return;
-        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+    // ── realtime ─────────────────────────────────────────────
+    function subscribeRealtime() {
+        const client = sb();
+        if (!client || _sub) return;
+        try {
+            _sub = client.channel('acc_rt')
+                .on('postgres_changes', { event: '*', schema: 'public', table: TBL  }, () => loadAll())
+                .on('postgres_changes', { event: '*', schema: 'public', table: PTBL }, () => loadAll())
+                .subscribe();
+        } catch(e) { console.warn('accounting realtime:', e.message); }
     }
 
-    function render() {
-        const balance = AccountingModule.calculateBalance(currentPerson, displayCurrency);
-        const transactions = getFilteredTransactions();
-        const persons = AccountingModule.getPersons();
-        const currencies = AccountingModule.getCurrencies();
-        const activePerson = currentPerson !== 'all' ? AccountingModule.getPerson(currentPerson) : null;
+    // ── کارت‌های داشبورد ─────────────────────────────────────
+    function renderDashboard(filtered) {
+        const credit  = totalByCur(filtered, ['credit']);
+        const debt    = totalByCur(filtered, ['debt']);
+        const income  = totalByCur(filtered, ['income']);
+        const expense = totalByCur(filtered, ['expense']);
 
-        return `
-        <div class="accounting-container">
-            <div class="currency-selector-section">
-                <div class="currency-selector-header">
-                    <h3><i class="fas fa-money-bill-wave"></i> واحد پول نمایش</h3>
-                    <select id="display-currency" onchange="AccountingUI.changeCurrency(this.value)" class="currency-select">
-                        ${currencies.map(c => `
-                            <option value="${c.code}" ${displayCurrency === c.code ? 'selected' : ''}>
-                                ${escapeHtml(c.name)} (${escapeHtml(c.symbol)})
-                            </option>`).join('')}
-                    </select>
-                </div>
-            </div>
+        // خالص دارایی = بستانکاری + درآمد - بدهی - هزینه
+        const netByCur = {};
+        ['تومان','دلار','دینار'].forEach(c => {
+            const v = (credit[c]||0) + (income[c]||0) - (debt[c]||0) - (expense[c]||0);
+            if (v !== 0) netByCur[c] = v;
+        });
 
-            <div class="person-filter-section">
-                <div class="person-filter-header">
-                    <h3><i class="fas fa-users"></i> فیلتر بر اساس شخص</h3>
-                    <div class="person-filter-actions">
-                        <button class="btn btn-sm btn-info" onclick="AccountingUI.showAllPersonsList()">
-                            <i class="fas fa-list"></i> لیست اشخاص
-                        </button>
-                        <button class="btn btn-sm btn-primary" onclick="AccountingUI.showAddPersonModal()">
-                            <i class="fas fa-user-plus"></i> افزودن شخص
-                        </button>
-                    </div>
-                </div>
-                <div class="person-chips">
-                    ${renderPersonChip('all', 'همه اشخاص')}
-                    ${persons.map(p => renderPersonChip(p.id, p.name)).join('')}
-                </div>
-                ${activePerson ? `
-                    <div class="active-person-banner">
-                        <span><i class="fas fa-filter"></i> فیلتر فعال: <strong>${escapeHtml(activePerson.name)}</strong></span>
-                        <button class="btn btn-sm btn-secondary" onclick="AccountingUI.filterByPerson('all')">حذف فیلتر</button>
-                    </div>` : ''}
-            </div>
+        // حساب کارمندان
+        const empUnsettled = (() => {
+            try {
+                if (typeof EmployeeAccountingModule === 'undefined') return null;
+                const summary = EmployeeAccountingModule.getAllEmployeesSummary();
+                const settlements = JSON.parse(localStorage.getItem('work_settlements')||'[]');
+                const deductions  = JSON.parse(localStorage.getItem('work_deductions')||'[]');
+                const gifts       = JSON.parse(localStorage.getItem('work_gifts')||'[]');
+                const total = summary.reduce((t, emp) => {
+                    const paid = settlements.filter(s=>s.employeeId===emp.employeeId).reduce((s,r)=>s+Number(r.amount||0),0);
+                    const ded  = deductions.filter(d=>d.employeeId===emp.employeeId).reduce((s,d)=>s+Number(d.amount||0),0);
+                    const gift = gifts.filter(g=>g.employeeId===emp.employeeId).reduce((s,g)=>s+Number(g.amount||0),0);
+                    return t + Math.max(0, emp.grandTotal + gift - ded - paid);
+                }, 0);
+                return total;
+            } catch { return null; }
+        })();
 
-            <div class="accounting-header">
-                <div class="balance-cards">
-                    ${renderBalanceCard('income', 'کل درآمد', balance.totalIncome, 'fa-arrow-up')}
-                    ${renderBalanceCard('expense', 'کل هزینه', balance.totalExpense, 'fa-arrow-down')}
-                    ${renderBalanceCard('debt', 'بدهی‌ها', balance.totalDebt, 'fa-hand-holding-usd')}
-                    ${renderBalanceCard('credit', 'بستانکاری‌ها', balance.totalCredit, 'fa-coins')}
-                    <div class="balance-card net-balance-card">
-                        <div class="card-icon"><i class="fas fa-chart-line"></i></div>
-                        <div class="card-content">
-                            <h4>تراز جریان نقد</h4>
-                            <p class="amount ${balance.netBalance >= 0 ? 'positive' : 'negative'}">
-                                ${AccountingModule.formatCurrency(Math.abs(balance.netBalance), displayCurrency)}
-                                ${balance.netBalance < 0 ? '(منفی)' : ''}
-                            </p>
-                        </div>
-                    </div>
-                    <div class="balance-card net">
-                        <div class="card-icon"><i class="fas fa-wallet"></i></div>
-                        <div class="card-content">
-                            <h4>خالص دارایی</h4>
-                            <p class="amount ${balance.netWorth >= 0 ? 'positive' : 'negative'}">
-                                ${AccountingModule.formatCurrency(Math.abs(balance.netWorth), displayCurrency)}
-                                ${balance.netWorth < 0 ? '(منفی)' : ''}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        // حساب سفارت
+        const embUnsettled = (() => {
+            try {
+                if (typeof EmbassyAccountingModule === 'undefined') return null;
+                return null; // از module واقعی می‌خوانیم
+            } catch { return null; }
+        })();
 
-            <div class="accounting-actions">
-                <button class="btn btn-primary" onclick="AccountingUI.showAddTransactionModal()">
-                    <i class="fas fa-plus"></i> افزودن تراکنش
-                </button>
-                <div class="filter-buttons">
-                    ${renderFilterButton('all', 'همه')}
-                    ${renderFilterButton('income', 'درآمد')}
-                    ${renderFilterButton('expense', 'هزینه')}
-                    ${renderFilterButton('debt', 'بدهی')}
-                    ${renderFilterButton('credit', 'بستانکاری')}
-                </div>
-                <button class="btn btn-info" onclick="AccountingUI.showPersonsReport()">
-                    <i class="fas fa-chart-bar"></i> گزارش اشخاص
-                </button>
-                <button class="btn btn-dark" onclick="AccountingModule.exportData()">
-                    <i class="fas fa-download"></i> خروجی
-                </button>
-            </div>
-
-            <div class="transactions-container">
-                <h3><i class="fas fa-list"></i> لیست تراکنش‌ها (${transactions.length})</h3>
-                ${renderTransactionsList(transactions)}
-            </div>
-        </div>`;
-    }
-
-    function renderBalanceCard(type, title, amount, icon) {
-        return `
-        <div class="balance-card ${type}">
-            <div class="card-icon"><i class="fas ${icon}"></i></div>
-            <div class="card-content">
-                <h4>${title}</h4>
-                <p class="amount">${AccountingModule.formatCurrency(amount, displayCurrency)}</p>
-            </div>
-        </div>`;
-    }
-
-    function renderFilterButton(type, label) {
-        const active = currentFilter === type ? 'active' : '';
-        return `<button type="button" class="filter-btn ${active}" onclick="AccountingUI.filterTransactions('${type}')">${label}</button>`;
-    }
-
-    function renderPersonChip(personId, personName) {
-        const active = currentPerson === personId ? 'active' : '';
-        const safeId = escapeHtml(personId);
-        const safeName = escapeHtml(personName);
-        const detailsBtn = personId !== 'all'
-            ? `<button type="button" class="person-chip-detail" title="جزئیات" onclick="event.stopPropagation(); AccountingUI.showPersonDetails('${safeId}')"><i class="fas fa-eye"></i></button>`
-            : '';
-        return `
-            <div class="person-chip-wrap ${active}">
-                <button type="button" class="person-chip ${active}" onclick="AccountingUI.filterByPerson('${safeId}')">${safeName}</button>
-                ${detailsBtn}
-            </div>`;
-    }
-
-    function getFilteredTransactions() {
-        const filters = {};
-        if (currentFilter !== 'all') filters.type = currentFilter;
-        if (currentPerson !== 'all') filters.personId = currentPerson;
-        return AccountingModule.getTransactions(filters);
-    }
-
-    function filterByPerson(personId) {
-        currentPerson = personId || 'all';
-        refresh();
-    }
-
-    function changeCurrency(currency) {
-        displayCurrency = currency || 'تومان';
-        refresh();
-    }
-
-    function filterTransactions(type) {
-        currentFilter = type || 'all';
-        refresh();
-    }
-
-    function renderTransactionsList(transactions) {
-        if (!transactions.length) {
+        function card(title, content, bg, border, icon, iconColor) {
             return `
-            <div class="empty-state">
-                <i class="fas fa-inbox"></i>
-                <p>هیچ تراکنشی ثبت نشده است</p>
-                <button class="btn btn-primary btn-sm" onclick="AccountingUI.showAddTransactionModal()">ثبت اولین تراکنش</button>
+            <div class="${bg} rounded-2xl p-4 border ${border} shadow-sm">
+                <div class="flex items-center gap-2 mb-2">
+                    <i class="fas ${icon} ${iconColor} text-sm"></i>
+                    <p class="text-gray-500 text-xs font-medium">${title}</p>
+                </div>
+                <div class="space-y-0.5">${content}</div>
             </div>`;
         }
 
-        return `<div class="transactions-list">${transactions.map(t => renderTransactionItem(t)).join('')}</div>`;
-    }
-
-    function renderTransactionItem(t) {
-        const personName = t.personId ? AccountingModule.getPersonName(t.personId) : '';
-        const displayAmount = AccountingModule.convertAmount(t.amount, t.currency || 'تومان', displayCurrency);
-        const description = t.description || 'بدون توضیحات';
-        const shortDesc = description.length > 60 ? description.slice(0, 60) + '…' : description;
-        const txCurrency = t.currency || 'تومان';
+        const netColor = Object.values(netByCur).some(v=>v<0) ? 'text-red-600' : 'text-emerald-700';
 
         return `
-        <div class="transaction-item ${t.type}">
-            <div class="transaction-main">
-                <div>
-                    <strong>${escapeHtml(t.category)}</strong>
-                    <span class="transaction-type-label">${TYPE_LABELS[t.type] || t.type}</span>
-                    ${personName ? `<span class="person-badge"><i class="fas fa-user"></i> ${escapeHtml(personName)}</span>` : ''}
-                    <span class="currency-badge">${escapeHtml(txCurrency)}</span>
-                </div>
-                <div class="amount-display">
-                    <span class="amount">${AccountingModule.formatCurrency(displayAmount, displayCurrency)}</span>
-                    ${txCurrency !== displayCurrency ? `<span class="original-amount">(${AccountingModule.formatCurrency(t.amount, txCurrency)})</span>` : ''}
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
+            ${card('بستانکاری', fmtMulti(credit,'text-emerald-700 font-bold text-sm'), 'bg-emerald-50','border-emerald-200','fa-coins','text-emerald-500')}
+            ${card('بدهی',      fmtMulti(debt,  'text-red-600 font-bold text-sm'),     'bg-red-50',    'border-red-200',   'fa-hand-holding-usd','text-red-400')}
+            ${card('خالص دارایی', Object.keys(netByCur).length
+                ? Object.entries(netByCur).map(([c,v])=>`<span class="${v>=0?'text-emerald-700':'text-red-600'} font-bold text-sm">${fmtNum(v,c)}</span>`).join('<br>')
+                : '<span class="text-gray-400 text-sm">—</span>',
+                'bg-blue-50','border-blue-200','fa-chart-line','text-blue-500')}
+            ${card('حساب کارمندان', empUnsettled !== null
+                ? `<span class="text-orange-700 font-bold text-sm">${empUnsettled.toLocaleString('fa-IR')} ت</span><p class="text-gray-400 text-xs">تسویه‌نشده</p>`
+                : '<span class="text-gray-400 text-xs">در دسترس نیست</span>',
+                'bg-orange-50','border-orange-200','fa-users','text-orange-500')}
+            ${card('حساب سفارت', '<span class="text-purple-700 text-xs">→ حسابداری سفارت</span>',
+                'bg-purple-50','border-purple-200','fa-landmark','text-purple-500')}
+        </div>`;
+    }
+
+    // ── رندر جدول تراکنش‌ها ──────────────────────────────────
+    function applyFilters() {
+        let f = [..._txns];
+        if (_fType)   f = f.filter(t => t.type === _fType);
+        if (_fSearch) f = f.filter(t =>
+            (t.description||'').includes(_fSearch) ||
+            (t.category||'').includes(_fSearch) ||
+            (t.person_name||'').includes(_fSearch) ||
+            (t.person_free_text||'').includes(_fSearch));
+        if (_fPerson) f = f.filter(t => t.person_acc_id === _fPerson || t.person_name === _fPerson || t.person_free_text === _fPerson);
+        if (_fFrom)   f = f.filter(t => (t.tx_date||t.created_at||'') >= _fFrom);
+        if (_fTo)     f = f.filter(t => (t.tx_date||t.created_at||'') <= _fTo);
+        return f;
+    }
+
+    const TYPE_LABELS = { income:'درآمد', expense:'هزینه', debt:'بدهی', credit:'بستانکاری' };
+    const TYPE_COLORS = {
+        income:  'bg-green-100 text-green-800',
+        expense: 'bg-red-100 text-red-700',
+        debt:    'bg-orange-100 text-orange-700',
+        credit:  'bg-blue-100 text-blue-800'
+    };
+
+    function renderTable(filtered) {
+        if (!filtered.length) return `
+            <div class="text-center py-16 bg-white rounded-2xl border border-gray-200">
+                <i class="fas fa-inbox text-4xl text-gray-300 mb-3 block"></i>
+                <p class="text-gray-400">هیچ تراکنشی یافت نشد</p>
+                <button onclick="AccountingUI.showAddModal()"
+                    class="mt-3 text-sm text-blue-600 hover:underline">+ افزودن اولین تراکنش</button>
+            </div>`;
+
+        const rows = filtered.map((t,i) => {
+            const amts = parseAmounts(t);
+            const amtHtml = amts.map(a =>
+                `<span class="font-bold text-sm ${t.type==='income'||t.type==='credit'?'text-emerald-700':'text-red-600'}">${fmtNum(a.amount, a.currency)}</span>`
+            ).join('<br>') || '—';
+
+            const personName = (() => {
+                if (t.person_acc_id) {
+                    const p = _persons.find(p=>p.id===t.person_acc_id);
+                    return p ? p.name : (t.person_name||'');
+                }
+                return t.person_free_text || t.person_name || '';
+            })();
+
+            return `
+            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <td class="px-3 py-3 text-gray-400 text-xs text-center">${i+1}</td>
+                <td class="px-3 py-3">
+                    <span class="text-xs px-2 py-1 rounded-full font-medium ${TYPE_COLORS[t.type]||'bg-gray-100 text-gray-600'}">
+                        ${TYPE_LABELS[t.type]||t.type}
+                    </span>
+                </td>
+                <td class="px-3 py-3 text-gray-700 text-sm">${esc(t.category||'—')}</td>
+                <td class="px-3 py-3">${amtHtml}</td>
+                <td class="px-3 py-3 text-gray-500 text-sm max-w-xs truncate" title="${esc(t.description||'')}">
+                    ${esc((t.description||t.note||'').substring(0,50))}</td>
+                <td class="px-3 py-3 text-gray-500 text-sm">${personName ? `<span class="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded-full">${esc(personName)}</span>` : '—'}</td>
+                <td class="px-3 py-3 text-gray-400 text-xs">${(t.tx_date||t.created_at||'').substring(0,10)}</td>
+                <td class="px-3 py-3 text-center">
+                    ${t.receipt_url
+                        ? `<a href="${esc(t.receipt_url)}" target="_blank" class="text-blue-500 hover:text-blue-700 text-xs"><i class="fas fa-paperclip"></i></a>`
+                        : ''}
+                </td>
+                <td class="px-3 py-3 text-center">
+                    <div class="flex gap-1 justify-center">
+                        <button onclick="AccountingUI.showEditModal('${t.id}')"
+                            class="w-7 h-7 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-all" title="ویرایش">
+                            <i class="fas fa-edit text-xs"></i>
+                        </button>
+                        <button onclick="AccountingUI.deleteTransaction('${t.id}')"
+                            class="w-7 h-7 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg transition-all" title="حذف">
+                            <i class="fas fa-trash text-xs"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>`;
+        }).join('');
+
+        return `
+        <div class="overflow-x-auto rounded-2xl border border-gray-200 shadow-sm bg-white">
+            <table class="w-full text-sm" style="min-width:820px">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-500 text-xs border-b border-gray-200">
+                        <th class="px-3 py-3 text-center w-8">#</th>
+                        <th class="px-3 py-3 text-right">نوع</th>
+                        <th class="px-3 py-3 text-right">دسته‌بندی</th>
+                        <th class="px-3 py-3 text-right">مبلغ</th>
+                        <th class="px-3 py-3 text-right">توضیحات</th>
+                        <th class="px-3 py-3 text-right">شخص</th>
+                        <th class="px-3 py-3 text-right">تاریخ</th>
+                        <th class="px-3 py-3 text-center">رسید</th>
+                        <th class="px-3 py-3 text-center">عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+        <p class="text-gray-400 text-xs mt-2 text-left">${filtered.length} تراکنش</p>`;
+    }
+
+    // ── رندر اصلی ────────────────────────────────────────────
+    function render() {
+        const container = document.getElementById('accounting-app');
+        if (!container) return;
+
+        const filtered = applyFilters();
+
+        const personsOpts = _persons.map(p =>
+            `<option value="${p.id}" ${_fPerson===p.id?'selected':''}>${esc(p.name)}</option>`
+        ).join('');
+
+        container.innerHTML = `
+        <div class="space-y-4" dir="rtl">
+
+            <!-- داشبورد -->
+            ${renderDashboard(filtered)}
+
+            <!-- نوار ابزار -->
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-3">
+                <div class="flex flex-wrap gap-2 items-center">
+                    <!-- دکمه‌های عملیات -->
+                    <button onclick="AccountingUI.showAddModal()"
+                        class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 transition-all">
+                        <i class="fas fa-plus"></i>افزودن تراکنش
+                    </button>
+                    <button onclick="AccountingUI.showAddPersonModal()"
+                        class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl text-sm flex items-center gap-1.5 transition-all">
+                        <i class="fas fa-user-plus text-blue-500"></i>افزودن شخص
+                    </button>
+                    <button onclick="AccountingUI.showPersonsList()"
+                        class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl text-sm flex items-center gap-1.5 transition-all">
+                        <i class="fas fa-users text-purple-500"></i>اشخاص
+                    </button>
+                    <button onclick="AccountingUI.showExportModal()"
+                        class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl text-sm flex items-center gap-1.5 transition-all">
+                        <i class="fas fa-file-excel text-green-600"></i>خروجی Excel
+                    </button>
+
+                    <!-- جستجو -->
+                    <div class="flex-1 min-w-40">
+                        <input type="text" id="acc-search" value="${esc(_fSearch)}"
+                            oninput="AccountingUI.onSearchInput(this.value)"
+                            placeholder="🔍 جستجو..."
+                            class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400">
+                    </div>
+
+                    <!-- فیلترها -->
+                    <select id="acc-ftype" onchange="AccountingUI.onFilterType(this.value)"
+                        class="bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none">
+                        <option value="" ${!_fType?'selected':''}>همه نوع‌ها</option>
+                        <option value="income"  ${_fType==='income' ?'selected':''}>درآمد</option>
+                        <option value="expense" ${_fType==='expense'?'selected':''}>هزینه</option>
+                        <option value="debt"    ${_fType==='debt'   ?'selected':''}>بدهی</option>
+                        <option value="credit"  ${_fType==='credit' ?'selected':''}>بستانکاری</option>
+                    </select>
+
+                    <select id="acc-fperson" onchange="AccountingUI.onFilterPerson(this.value)"
+                        class="bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none">
+                        <option value="">همه اشخاص</option>
+                        ${personsOpts}
+                    </select>
+
+                    <input type="date" id="acc-ffrom" value="${_fFrom}"
+                        onchange="AccountingUI.onFilterFrom(this.value)"
+                        class="bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none">
+                    <input type="date" id="acc-fto" value="${_fTo}"
+                        onchange="AccountingUI.onFilterTo(this.value)"
+                        class="bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none">
+
+                    ${(_fType||_fSearch||_fPerson||_fFrom||_fTo) ? `
+                    <button onclick="AccountingUI.clearFilters()"
+                        class="text-gray-400 hover:text-red-500 text-sm px-2 py-2 transition-all" title="پاک کردن فیلترها">
+                        <i class="fas fa-times"></i>
+                    </button>` : ''}
                 </div>
             </div>
-            <div class="transaction-meta">
-                <span class="description-text" title="${escapeHtml(description)}">
-                    <i class="fas fa-comment-alt"></i> ${escapeHtml(shortDesc)}
-                </span>
-                <span><i class="fas fa-calendar"></i> ${new Date(t.date).toLocaleDateString('fa-IR')}</span>
-            </div>
-            <div class="transaction-actions">
-                <button type="button" onclick="AccountingUI.showEditTransactionModal('${t.id}')" title="ویرایش">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button type="button" onclick="AccountingUI.confirmDeleteTransaction('${t.id}')" title="حذف">
-                    <i class="fas fa-trash"></i>
-                </button>
+
+            <!-- جدول تراکنش‌ها -->
+            <div id="acc-table-container">
+                ${renderTable(filtered)}
             </div>
         </div>`;
     }
 
-    function getCategoryOptions(type) {
-        const categories = AccountingModule.getCategories(type);
-        return categories.map(cat => `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join('') +
-            '<option value="__custom__">سایر (دسته‌بندی جدید)</option>';
-    }
+    // ── event handlers فیلتر ────────────────────────────────
+    function onSearchInput(v) { _fSearch = v.trim(); _renderTable(); }
+    function onFilterType(v)   { _fType   = v;        _renderTable(); _renderDash(); }
+    function onFilterPerson(v) { _fPerson = v;        _renderTable(); _renderDash(); }
+    function onFilterFrom(v)   { _fFrom   = v;        _renderTable(); _renderDash(); }
+    function onFilterTo(v)     { _fTo     = v;        _renderTable(); _renderDash(); }
+    function clearFilters()    { _fType=_fSearch=_fPerson=_fFrom=_fTo=''; render(); }
 
-    function toggleCustomCategory() {
-        const select = document.getElementById('acc-category');
-        const group = document.getElementById('custom-category-group');
-        const input = document.getElementById('acc-custom-category');
-        if (!select || !group) return;
-        const show = select.value === '__custom__';
-        group.style.display = show ? 'block' : 'none';
-        if (show && input) input.focus();
-        else if (input) input.value = '';
+    function _renderTable() {
+        const el = document.getElementById('acc-table-container');
+        if (el) el.innerHTML = renderTable(applyFilters());
     }
-
-    function updateCategoryOptions() {
-        const typeSelect = document.getElementById('acc-type');
-        const categorySelect = document.getElementById('acc-category');
-        if (!typeSelect || !categorySelect) return;
-        categorySelect.innerHTML = getCategoryOptions(typeSelect.value);
-        toggleCustomCategory();
-    }
-
-    function showAddTransactionModal() {
-        showTransactionModal(null);
-    }
-
-    function showEditTransactionModal(id) {
-        const tx = AccountingModule.getTransactions().find(t => t.id === id);
-        if (!tx) {
-            notify('تراکنش یافت نشد', 'error');
-            return;
+    function _renderDash() {
+        // dashboard در بالای صفحه — re-render کل
+        const el = document.getElementById('accounting-app');
+        if (el) {
+            const dash = el.querySelector('.grid');
+            if (dash) dash.outerHTML = renderDashboard(applyFilters());
         }
-        showTransactionModal(tx);
     }
 
-    function showTransactionModal(existing) {
-        closeModal();
-        const persons = AccountingModule.getPersons();
-        const currencies = AccountingModule.getCurrencies();
-        const isEdit = !!existing;
-        const type = existing?.type || 'income';
+    // ── مودال افزودن/ویرایش تراکنش ──────────────────────────
+    function showAddModal()      { _showTxModal(null); }
+    function showEditModal(id)   { _showTxModal(_txns.find(t=>t.id===id)||null); }
 
-        const modal = `
-        <div class="modal-backdrop" onclick="AccountingUI.closeModal(event)">
-            <div class="modal accounting-modal" onclick="event.stopPropagation()">
-                <h3>${isEdit ? 'ویرایش تراکنش' : 'افزودن تراکنش جدید'}</h3>
-                <input type="hidden" id="acc-edit-id" value="${existing?.id || ''}">
-                <div class="form-group">
-                    <label>نوع تراکنش</label>
-                    <select id="acc-type" onchange="AccountingUI.updateCategoryOptions()">
-                        ${Object.entries(TYPE_LABELS).map(([val, label]) =>
-                            `<option value="${val}" ${type === val ? 'selected' : ''}>${label}</option>`
-                        ).join('')}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>شخص (اختیاری)</label>
-                    <select id="acc-person">
-                        <option value="">بدون شخص</option>
-                        ${persons.map(p => `<option value="${p.id}" ${existing?.personId === p.id ? 'selected' : ''}>${escapeHtml(p.name)}</option>`).join('')}
-                    </select>
-                </div>
-                <div class="form-row">
-                    <div class="form-group flex-2">
-                        <label>مبلغ</label>
-                        <input id="acc-amount" type="number" min="0" step="1" value="${existing?.amount || ''}" placeholder="مبلغ">
-                    </div>
-                    <div class="form-group flex-1">
-                        <label>واحد پول</label>
-                        <select id="acc-currency">
-                            ${currencies.map(c => `
-                                <option value="${c.code}" ${(existing?.currency || 'تومان') === c.code ? 'selected' : ''}>${escapeHtml(c.code)}</option>
-                            `).join('')}
+    function _buildPersonOptions(selId) {
+        return `<option value="">بدون شخص</option>` +
+            _persons.map(p=>`<option value="${p.id}" ${selId===p.id?'selected':''}>${esc(p.name)}</option>`).join('');
+    }
+
+    function _showTxModal(tx) {
+        document.getElementById('acc-modal')?.remove();
+        const isEdit = !!tx;
+        const today = new Date().toISOString().split('T')[0];
+        const amts  = tx ? parseAmounts(tx) : [{ amount:'', currency:'تومان' }];
+
+        const amtRows = amts.map((a,i) => `
+            <div class="flex gap-2 items-center amt-row" data-idx="${i}">
+                <input type="number" min="0" step="1" placeholder="مبلغ" value="${a.amount||''}"
+                    class="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 amt-input">
+                <select class="bg-gray-50 border border-gray-300 rounded-lg px-2 py-2 text-xs focus:outline-none cur-select" style="min-width:60px">
+                    <option value="تومان" ${(a.currency||'تومان')==='تومان'?'selected':''}>تومان</option>
+                    <option value="دلار"  ${a.currency==='دلار' ?'selected':''}>$ دلار</option>
+                    <option value="دینار" ${a.currency==='دینار'?'selected':''}>دینار</option>
+                </select>
+                <button type="button" onclick="this.closest('.amt-row').remove()"
+                    class="text-red-400 hover:text-red-600 text-lg px-1">×</button>
+            </div>`).join('');
+
+        const modal = document.createElement('div');
+        modal.id = 'acc-modal';
+        modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+        modal.innerHTML = `
+        <div class="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-auto" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="text-gray-800 text-lg font-bold">${isEdit?'ویرایش تراکنش':'تراکنش جدید'}</h3>
+                <button onclick="document.getElementById('acc-modal').remove()" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="space-y-3 text-sm">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-gray-600 text-xs mb-1 block">نوع تراکنش *</label>
+                        <select id="tx-type" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 focus:outline-none">
+                            <option value="income"  ${tx?.type==='income' ?'selected':''}>درآمد</option>
+                            <option value="expense" ${tx?.type==='expense'?'selected':''}>هزینه</option>
+                            <option value="debt"    ${tx?.type==='debt'   ?'selected':''}>بدهی</option>
+                            <option value="credit"  ${tx?.type==='credit' ?'selected':''}>بستانکاری</option>
                         </select>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label>دسته‌بندی</label>
-                    <select id="acc-category" onchange="AccountingUI.toggleCustomCategory()">
-                        ${getCategoryOptions(type)}
-                    </select>
-                </div>
-                <div class="form-group" id="custom-category-group" style="display:none;">
-                    <label>دسته‌بندی سفارشی</label>
-                    <input id="acc-custom-category" type="text" placeholder="نام دسته‌بندی جدید">
-                </div>
-                <div class="form-group">
-                    <label>توضیحات (اختیاری)</label>
-                    <textarea id="acc-desc" rows="3" placeholder="توضیحات">${escapeHtml(existing?.description || '')}</textarea>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-success" onclick="AccountingUI.submitTransaction()">
-                        <i class="fas fa-check"></i> ${isEdit ? 'ذخیره تغییرات' : 'ثبت تراکنش'}
-                    </button>
-                    <button type="button" class="btn btn-secondary" onclick="AccountingUI.closeModal()">انصراف</button>
-                </div>
-            </div>
-        </div>`;
-        document.body.insertAdjacentHTML('beforeend', modal);
-
-        const catSelect = document.getElementById('acc-category');
-        if (existing?.category && catSelect) {
-            const exists = Array.from(catSelect.options).some(o => o.value === existing.category);
-            if (!exists) {
-                const opt = document.createElement('option');
-                opt.value = existing.category;
-                opt.textContent = existing.category;
-                catSelect.insertBefore(opt, catSelect.lastElementChild);
-            }
-            catSelect.value = existing.category;
-        }
-    }
-
-    function submitTransaction() {
-        const editId = document.getElementById('acc-edit-id')?.value;
-        const type = document.getElementById('acc-type').value;
-        const amount = parseFloat(document.getElementById('acc-amount').value);
-        const currency = document.getElementById('acc-currency').value;
-        const categorySelect = document.getElementById('acc-category').value;
-        const customCategory = document.getElementById('acc-custom-category')?.value.trim() || '';
-        const description = document.getElementById('acc-desc').value.trim();
-        const personId = document.getElementById('acc-person').value || null;
-
-        let category = categorySelect;
-        if (categorySelect === '__custom__') {
-            if (!customCategory) {
-                notify('نام دسته‌بندی جدید را وارد کنید', 'error');
-                return;
-            }
-            category = customCategory;
-            AccountingModule.addCustomCategory(type, customCategory);
-        }
-
-        if (!category || isNaN(amount) || amount <= 0) {
-            notify('مبلغ و دسته‌بندی الزامی است', 'error');
-            return;
-        }
-
-        const payload = { type, amount, currency, category, description, personId };
-
-        if (editId) {
-            AccountingModule.updateTransaction(editId, payload);
-            notify('تراکنش ویرایش شد', 'success');
-        } else {
-            AccountingModule.addTransaction(payload);
-            notify('تراکنش ثبت شد', 'success');
-        }
-
-        closeModal();
-        refresh();
-    }
-
-    function confirmDeleteTransaction(id) {
-        if (confirm('آیا از حذف این تراکنش مطمئن هستید؟')) {
-            AccountingModule.deleteTransaction(id);
-            notify('تراکنش حذف شد', 'success');
-            refresh();
-        }
-    }
-
-    function showAddPersonModal() {
-        closeModal();
-        const modal = `
-        <div class="modal-backdrop" onclick="AccountingUI.closeModal(event)">
-            <div class="modal accounting-modal" onclick="event.stopPropagation()">
-                <h3>افزودن شخص جدید</h3>
-                <div class="form-group">
-                    <label>نام شخص</label>
-                    <input id="person-name" type="text" placeholder="نام کامل">
-                </div>
-                <div class="form-group">
-                    <label>نوع شخص</label>
-                    <select id="person-type">
-                        <option value="student">دانشجو</option>
-                        <option value="writer">نویسنده</option>
-                        <option value="freelance">آزاد</option>
-                        <option value="other">سایر</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>شماره تماس (اختیاری)</label>
-                    <input id="person-phone" type="text" placeholder="شماره تماس">
-                </div>
-                <div class="form-group">
-                    <label>توضیحات (اختیاری)</label>
-                    <textarea id="person-notes" rows="3" placeholder="توضیحات"></textarea>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-success" onclick="AccountingUI.submitPerson()">ثبت شخص</button>
-                    <button type="button" class="btn btn-secondary" onclick="AccountingUI.closeModal()">انصراف</button>
-                </div>
-            </div>
-        </div>`;
-        document.body.insertAdjacentHTML('beforeend', modal);
-    }
-
-    function submitPerson() {
-        const name = document.getElementById('person-name')?.value.trim();
-        if (!name) {
-            notify('نام شخص الزامی است', 'error');
-            return;
-        }
-
-        AccountingModule.addPerson({
-            name,
-            type: document.getElementById('person-type')?.value || 'other',
-            phone: document.getElementById('person-phone')?.value.trim() || '',
-            notes: document.getElementById('person-notes')?.value.trim() || ''
-        });
-
-        notify('شخص اضافه شد', 'success');
-        closeModal();
-        refresh();
-    }
-
-    function showPersonsReport() {
-        closeModal();
-        const persons = AccountingModule.getPersons();
-        const rows = persons.map(p => {
-            const b = AccountingModule.calculateBalance(p.id, displayCurrency);
-            return `
-            <div class="person-report-card">
-                <div class="person-info">
-                    <h4><i class="fas fa-user"></i> ${escapeHtml(p.name)}</h4>
-                    ${p.phone ? `<p class="text-sm"><i class="fas fa-phone"></i> ${escapeHtml(p.phone)}</p>` : ''}
-                </div>
-                <div class="person-balance">
-                    <div class="balance-item"><span>درآمد:</span><strong class="text-green">${AccountingModule.formatCurrency(b.totalIncome, displayCurrency)}</strong></div>
-                    <div class="balance-item"><span>هزینه:</span><strong class="text-red">${AccountingModule.formatCurrency(b.totalExpense, displayCurrency)}</strong></div>
-                    <div class="balance-item"><span>بدهی:</span><strong class="text-orange">${AccountingModule.formatCurrency(b.totalDebt, displayCurrency)}</strong></div>
-                    <div class="balance-item"><span>بستانکاری:</span><strong class="text-blue">${AccountingModule.formatCurrency(b.totalCredit, displayCurrency)}</strong></div>
-                    <div class="balance-item net-balance"><span>خالص:</span><strong>${AccountingModule.formatCurrency(Math.abs(b.netWorth), displayCurrency)}${b.netWorth < 0 ? ' (منفی)' : ''}</strong></div>
-                </div>
-                <div class="person-actions">
-                    <button type="button" class="btn btn-sm btn-primary" onclick="AccountingUI.filterByPerson('${p.id}'); AccountingUI.closeModal();">
-                        <i class="fas fa-filter"></i> فیلتر
-                    </button>
-                    <button type="button" class="btn btn-sm btn-info" onclick="AccountingUI.showPersonDetails('${p.id}')">
-                        <i class="fas fa-eye"></i> جزئیات
-                    </button>
-                    <button type="button" class="btn btn-sm btn-danger" onclick="AccountingUI.deletePerson('${p.id}')">
-                        <i class="fas fa-trash"></i> حذف
-                    </button>
-                </div>
-            </div>`;
-        }).join('');
-
-        const modal = `
-        <div class="modal-backdrop" onclick="AccountingUI.closeModal(event)">
-            <div class="modal accounting-modal large-modal" onclick="event.stopPropagation()">
-                <h3><i class="fas fa-chart-bar"></i> گزارش مالی اشخاص (${escapeHtml(displayCurrency)})</h3>
-                <div class="persons-report">
-                    ${persons.length ? rows : '<p class="text-center empty-text">هیچ شخصی ثبت نشده است</p>'}
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="AccountingUI.closeModal()">بستن</button>
-                </div>
-            </div>
-        </div>`;
-        document.body.insertAdjacentHTML('beforeend', modal);
-    }
-
-    function deletePerson(personId) {
-        if (!confirm('آیا از حذف این شخص مطمئن هستید؟ تراکنش‌های مرتبط حذف نمی‌شوند.')) return;
-        AccountingModule.deletePerson(personId);
-        if (currentPerson === personId) currentPerson = 'all';
-        notify('شخص حذف شد', 'success');
-        closeModal();
-        refresh();
-    }
-
-    function showAllPersonsList() {
-        closeModal();
-        const persons = AccountingModule.getPersons();
-        const grouped = { student: [], writer: [], freelance: [], other: [] };
-        persons.forEach(p => {
-            const key = grouped[p.type] ? p.type : 'other';
-            grouped[key].push(p);
-        });
-
-        const sections = Object.keys(grouped).map(type => {
-            const list = grouped[type];
-            if (!list.length) return '';
-            return `
-            <div class="person-type-section">
-                <h4 class="person-type-header">${PERSON_TYPE_LABELS[type]} (${list.length})</h4>
-                <div class="person-type-list">
-                    ${list.map(p => {
-                        const b = AccountingModule.calculateBalance(p.id, displayCurrency);
-                        return `
-                        <div class="person-list-item">
-                            <div class="person-list-info">
-                                <h5><i class="fas fa-user"></i> ${escapeHtml(p.name)}</h5>
-                                ${p.phone ? `<p class="text-sm"><i class="fas fa-phone"></i> ${escapeHtml(p.phone)}</p>` : ''}
-                            </div>
-                            <div class="person-list-balance">
-                                <span class="balance-badge income">درآمد: ${AccountingModule.formatCurrency(b.totalIncome, displayCurrency)}</span>
-                                <span class="balance-badge expense">هزینه: ${AccountingModule.formatCurrency(b.totalExpense, displayCurrency)}</span>
-                            </div>
-                            <div class="person-list-actions">
-                                <button type="button" class="btn btn-sm btn-primary" onclick="AccountingUI.filterByPerson('${p.id}'); AccountingUI.closeModal();">فیلتر</button>
-                                <button type="button" class="btn btn-sm btn-info" onclick="AccountingUI.showPersonDetails('${p.id}')">جزئیات</button>
-                            </div>
-                        </div>`;
-                    }).join('')}
-                </div>
-            </div>`;
-        }).join('');
-
-        const modal = `
-        <div class="modal-backdrop" onclick="AccountingUI.closeModal(event)">
-            <div class="modal accounting-modal large-modal" onclick="event.stopPropagation()">
-                <h3><i class="fas fa-users"></i> لیست اشخاص</h3>
-                <div class="persons-list-by-type">
-                    ${persons.length ? sections : '<p class="text-center empty-text">هیچ شخصی ثبت نشده است</p>'}
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="AccountingUI.closeModal()">بستن</button>
-                </div>
-            </div>
-        </div>`;
-        document.body.insertAdjacentHTML('beforeend', modal);
-    }
-
-    function showPersonDetails(personId) {
-        closeModal();
-        const person = AccountingModule.getPerson(personId);
-        if (!person) {
-            notify('شخص یافت نشد', 'error');
-            return;
-        }
-
-        const balance = AccountingModule.calculateBalance(personId, displayCurrency);
-        const transactions = AccountingModule.getTransactions({ personId });
-
-        const modal = `
-        <div class="modal-backdrop" onclick="AccountingUI.closeModal(event)">
-            <div class="modal accounting-modal large-modal" onclick="event.stopPropagation()">
-                <div class="person-details-header">
                     <div>
-                        <h3><i class="fas fa-user"></i> ${escapeHtml(person.name)}</h3>
-                        <p class="text-sm">
-                            <span class="badge">${PERSON_TYPE_LABELS[person.type] || 'سایر'}</span>
-                            ${person.phone ? `<i class="fas fa-phone ml-2"></i> ${escapeHtml(person.phone)}` : ''}
-                        </p>
+                        <label class="text-gray-600 text-xs mb-1 block">تاریخ</label>
+                        <input type="date" id="tx-date" value="${tx?.tx_date||today}"
+                            class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 focus:outline-none">
                     </div>
-                    <button type="button" class="btn btn-sm btn-primary" onclick="AccountingUI.filterByPerson('${personId}'); AccountingUI.closeModal();">
-                        <i class="fas fa-filter"></i> فیلتر در صفحه اصلی
+                </div>
+                <div>
+                    <label class="text-gray-600 text-xs mb-1 block">دسته‌بندی</label>
+                    <input type="text" id="tx-category" value="${esc(tx?.category||'')}" placeholder="مثال: اجاره، حقوق، فروش..."
+                        class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 focus:outline-none">
+                </div>
+                <div>
+                    <label class="text-gray-600 text-xs mb-1 block">مبلغ(ها) *</label>
+                    <div id="tx-amounts" class="space-y-2">${amtRows}</div>
+                    <button type="button" onclick="AccountingUI._addAmountRow()"
+                        class="mt-2 text-blue-600 hover:text-blue-500 text-xs flex items-center gap-1">
+                        <i class="fas fa-plus"></i>افزودن مبلغ با ارز دیگر
                     </button>
                 </div>
-                <div class="person-balance-summary">
-                    ${['income', 'expense', 'debt', 'credit'].map(type => {
-                        const labels = { income: 'کل درآمد', expense: 'کل هزینه', debt: 'بدهی', credit: 'طلب' };
-                        const icons = { income: 'fa-arrow-up', expense: 'fa-arrow-down', debt: 'fa-hand-holding-usd', credit: 'fa-coins' };
-                        const keys = { income: 'totalIncome', expense: 'totalExpense', debt: 'totalDebt', credit: 'totalCredit' };
-                        return `
-                        <div class="balance-summary-item ${type}">
-                            <i class="fas ${icons[type]}"></i>
-                            <div><span>${labels[type]}</span><strong>${AccountingModule.formatCurrency(balance[keys[type]], displayCurrency)}</strong></div>
-                        </div>`;
-                    }).join('')}
+                <div>
+                    <label class="text-gray-600 text-xs mb-1 block">شخص (اختیاری)</label>
+                    <div class="flex gap-2">
+                        <select id="tx-person-sel" class="flex-1 bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none"
+                            onchange="AccountingUI._onPersonSelChange(this)">
+                            ${_buildPersonOptions(tx?.person_acc_id||'')}
+                            <option value="__new__">+ شخص جدید...</option>
+                        </select>
+                    </div>
+                    <input type="text" id="tx-person-text" value="${esc(tx?.person_free_text||tx?.person_name||'')}"
+                        placeholder="یا نام شخص را بنویسید (به لیست اضافه می‌شود)"
+                        class="w-full mt-1 bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none">
+                    <p class="text-gray-400 text-xs mt-0.5">اگر نام بنویسید به لیست اشخاص اضافه می‌شود</p>
                 </div>
-                <div class="person-transactions">
-                    <h4><i class="fas fa-list"></i> تراکنش‌ها (${transactions.length})</h4>
-                    ${transactions.length ? `
-                    <div class="transactions-table">
-                        ${transactions.map(t => {
-                            const converted = AccountingModule.convertAmount(t.amount, t.currency || 'تومان', displayCurrency);
-                            return `
-                            <div class="transaction-row ${t.type}">
-                                <div class="transaction-info">
-                                    <span class="transaction-type-badge ${t.type}">${TYPE_LABELS[t.type]}</span>
-                                    <span class="transaction-desc">${escapeHtml(t.description || t.category)}</span>
-                                    <span class="transaction-date">${new Date(t.date).toLocaleDateString('fa-IR')}</span>
-                                </div>
-                                <div class="transaction-amount ${t.type}">
-                                    ${AccountingModule.formatCurrency(t.amount, t.currency || 'تومان')}
-                                    ${(t.currency || 'تومان') !== displayCurrency ? `<span class="text-sm">(${AccountingModule.formatCurrency(converted, displayCurrency)})</span>` : ''}
-                                </div>
-                            </div>`;
-                        }).join('')}
-                    </div>` : '<p class="text-center empty-text">تراکنشی ثبت نشده</p>'}
+                <div>
+                    <label class="text-gray-600 text-xs mb-1 block">توضیحات</label>
+                    <textarea id="tx-desc" rows="2" placeholder="توضیحات تراکنش..."
+                        class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 focus:outline-none resize-none">${esc(tx?.description||tx?.note||'')}</textarea>
                 </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="AccountingUI.closeModal()">بستن</button>
+                <div>
+                    <label class="text-gray-600 text-xs mb-1 block">رسید / پیوست</label>
+                    ${tx?.receipt_url ? `<a href="${esc(tx.receipt_url)}" target="_blank" class="text-blue-500 text-xs mb-1 block"><i class="fas fa-paperclip ml-1"></i>رسید موجود</a>` : ''}
+                    <input type="file" id="tx-receipt" accept="image/*,application/pdf"
+                        class="w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                 </div>
             </div>
+            <div class="flex gap-3 mt-5">
+                <button onclick="AccountingUI._submitTx('${tx?.id||''}')"
+                    class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl transition-all">
+                    <i class="fas fa-save ml-1"></i>${isEdit?'ذخیره تغییرات':'ثبت تراکنش'}
+                </button>
+                <button onclick="document.getElementById('acc-modal').remove()"
+                    class="px-5 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl">انصراف</button>
+            </div>
         </div>`;
-        document.body.insertAdjacentHTML('beforeend', modal);
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target===modal) modal.remove(); });
     }
 
+    function _addAmountRow() {
+        const c = document.getElementById('tx-amounts');
+        if (!c) return;
+        const div = document.createElement('div');
+        div.className = 'flex gap-2 items-center amt-row';
+        div.innerHTML = `
+            <input type="number" min="0" step="1" placeholder="مبلغ"
+                class="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 amt-input">
+            <select class="bg-gray-50 border border-gray-300 rounded-lg px-2 py-2 text-xs focus:outline-none cur-select" style="min-width:60px">
+                <option value="تومان">تومان</option>
+                <option value="دلار">$ دلار</option>
+                <option value="دینار">دینار</option>
+            </select>
+            <button type="button" onclick="this.closest('.amt-row').remove()" class="text-red-400 hover:text-red-600 text-lg px-1">×</button>`;
+        c.appendChild(div);
+    }
+
+    function _onPersonSelChange(sel) {
+        if (sel.value === '__new__') {
+            sel.value = '';
+            showAddPersonModal();
+        }
+    }
+
+    // ── submit تراکنش ────────────────────────────────────────
+    async function _submitTx(editId) {
+        const client = sb();
+        if (!client) { alert('اتصال به Supabase برقرار نیست'); return; }
+
+        const type     = document.getElementById('tx-type')?.value;
+        const txDate   = document.getElementById('tx-date')?.value;
+        const category = document.getElementById('tx-category')?.value.trim() || '';
+        const desc     = document.getElementById('tx-desc')?.value.trim() || '';
+        const personSel = document.getElementById('tx-person-sel')?.value || '';
+        const personTxt = document.getElementById('tx-person-text')?.value.trim() || '';
+
+        // جمع‌آوری مبالغ
+        const amounts = [];
+        document.querySelectorAll('#tx-amounts .amt-row').forEach(row => {
+            const amt = parseFloat(row.querySelector('.amt-input')?.value || 0);
+            const cur = row.querySelector('.cur-select')?.value || 'تومان';
+            if (amt > 0) amounts.push({ amount: amt, currency: cur });
+        });
+        if (!amounts.length) { alert('حداقل یک مبلغ وارد کنید'); return; }
+
+        // مدیریت شخص
+        let personAccId   = personSel || null;
+        let personName    = '';
+        let personFreeText = '';
+
+        if (personTxt && !personSel) {
+            // شخص جدید — اضافه به accounting_persons
+            const { data: np } = await client.from(PTBL)
+                .insert({ name: personTxt, type: 'other' }).select().single();
+            if (np) {
+                personAccId = np.id;
+                personName  = np.name;
+                _persons.push(np);
+            } else {
+                personFreeText = personTxt;
+            }
+        } else if (personSel) {
+            const p = _persons.find(p=>p.id===personSel);
+            personName = p?.name || '';
+        }
+        
+        // آپلود رسید
+        let receiptUrl = editId ? (_txns.find(t=>t.id===editId)?.receipt_url || null) : null;
+        const fileInput = document.getElementById('tx-receipt');
+        if (fileInput?.files?.length) {
+            const file = fileInput.files[0];
+            const path = `receipts/${Date.now()}_${file.name.replace(/\s/g,'_')}`;
+            const { error: upErr } = await client.storage.from(BUCKET).upload(path, file, { upsert: true });
+            if (!upErr) {
+                const { data: urlData } = client.storage.from(BUCKET).getPublicUrl(path);
+                receiptUrl = urlData?.publicUrl || null;
+            }
+        }
+
+        // مبلغ اول برای فیلد scalar (backward compat)
+        const firstAmt = amounts[0];
+
+        const payload = {
+            type,
+            tx_date:         txDate || new Date().toISOString().split('T')[0],
+            category,
+            description:     desc,
+            amounts:         amounts,
+            amount:          firstAmt.amount,
+            currency:        firstAmt.currency,
+            person_acc_id:   personAccId,
+            person_name:     personName,
+            person_free_text: personFreeText,
+            receipt_url:     receiptUrl,
+        };
+
+        let err;
+        if (editId) {
+            ({ error: err } = await client.from(TBL).update(payload).eq('id', editId));
+        } else {
+            ({ error: err } = await client.from(TBL).insert([payload]));
+        }
+
+        if (err) { alert('خطا: ' + err.message); return; }
+
+        document.getElementById('acc-modal')?.remove();
+        // realtime خودکار reload می‌کند — اگر نه، دستی:
+        await loadAll();
+    }
+
+    // ── حذف تراکنش ──────────────────────────────────────────
+    async function deleteTransaction(id) {
+        if (!confirm('این تراکنش حذف شود؟')) return;
+        const client = sb();
+        if (!client) return;
+        await client.from(TBL).delete().eq('id', id);
+        await loadAll();
+    }
+
+    // ── افزودن شخص ──────────────────────────────────────────
+    function showAddPersonModal() {
+        document.getElementById('acc-person-modal')?.remove();
+        const modal = document.createElement('div');
+        modal.id = 'acc-person-modal';
+        modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4';
+        modal.innerHTML = `
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-gray-800 font-bold">شخص جدید</h3>
+                <button onclick="document.getElementById('acc-person-modal').remove()" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="space-y-3 text-sm">
+                <div>
+                    <label class="text-gray-600 text-xs mb-1 block">نام *</label>
+                    <input type="text" id="np-name" placeholder="نام کامل"
+                        class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 focus:outline-none">
+                </div>
+                <div>
+                    <label class="text-gray-600 text-xs mb-1 block">نوع</label>
+                    <select id="np-type" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 focus:outline-none">
+                        <option value="other">سایر</option>
+                        <option value="student">دانشجو</option>
+                        <option value="supplier">تأمین‌کننده</option>
+                        <option value="partner">شریک</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-gray-600 text-xs mb-1 block">شماره تماس</label>
+                    <input type="text" id="np-phone" placeholder="شماره تماس"
+                        class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 focus:outline-none">
+                </div>
+                <div>
+                    <label class="text-gray-600 text-xs mb-1 block">توضیحات</label>
+                    <textarea id="np-notes" rows="2"
+                        class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 focus:outline-none resize-none"></textarea>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-5">
+                <button onclick="AccountingUI._submitPerson()"
+                    class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl">ثبت شخص</button>
+                <button onclick="document.getElementById('acc-person-modal').remove()"
+                    class="px-5 bg-gray-100 text-gray-700 py-2.5 rounded-xl">انصراف</button>
+            </div>
+        </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target===modal) modal.remove(); });
+    }
+
+    async function _submitPerson() {
+        const client = sb();
+        if (!client) { alert('اتصال برقرار نیست'); return; }
+        const name = document.getElementById('np-name')?.value.trim();
+        if (!name) { alert('نام الزامی است'); return; }
+        const { data, error } = await client.from(PTBL).insert([{
+            name,
+            type:  document.getElementById('np-type')?.value || 'other',
+            phone: document.getElementById('np-phone')?.value.trim() || '',
+            notes: document.getElementById('np-notes')?.value.trim() || ''
+        }]).select().single();
+        if (error) { alert('خطا: ' + error.message); return; }
+        _persons.push(data);
+        document.getElementById('acc-person-modal')?.remove();
+        render();
+    }
+
+    // ── لیست اشخاص ──────────────────────────────────────────
+    function showPersonsList() {
+        document.getElementById('acc-plist-modal')?.remove();
+
+        const rows = _persons.length
+            ? _persons.map(p => {
+                const txCount = _txns.filter(t => t.person_acc_id===p.id).length;
+                return `
+                <div class="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+                    <div>
+                        <p class="font-medium text-gray-800 text-sm">${esc(p.name)}</p>
+                        <p class="text-gray-400 text-xs">${p.phone||''} ${txCount ? `· ${txCount} تراکنش` : ''}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="AccountingUI.onFilterPerson('${p.id}'); document.getElementById('acc-plist-modal').remove(); AccountingUI.render();"
+                            class="text-blue-500 hover:text-blue-700 text-xs px-2 py-1 bg-blue-50 rounded-lg">فیلتر</button>
+                        <button onclick="AccountingUI._deletePerson('${p.id}')"
+                            class="text-red-400 hover:text-red-600 text-xs px-2 py-1 bg-red-50 rounded-lg">حذف</button>
+                    </div>
+                </div>`;
+            }).join('')
+            : '<p class="text-gray-400 text-center py-8 text-sm">هیچ شخصی ثبت نشده</p>';
+
+        const modal = document.createElement('div');
+        modal.id = 'acc-plist-modal';
+        modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+        modal.innerHTML = `
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl max-h-[80vh] flex flex-col" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-gray-800 font-bold flex items-center gap-2">
+                    <i class="fas fa-users text-blue-500"></i>لیست اشخاص (${_persons.length})
+                </h3>
+                <div class="flex gap-2">
+                    <button onclick="AccountingUI.showAddPersonModal()"
+                        class="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-xl hover:bg-blue-500">+ جدید</button>
+                    <button onclick="document.getElementById('acc-plist-modal').remove()" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            <div class="overflow-auto flex-1">${rows}</div>
+        </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target===modal) modal.remove(); });
+    }
+
+    async function _deletePerson(id) {
+        if (!confirm('این شخص حذف شود؟')) return;
+        const client = sb();
+        if (!client) return;
+        await client.from(PTBL).delete().eq('id', id);
+        _persons = _persons.filter(p=>p.id!==id);
+        document.getElementById('acc-plist-modal')?.remove();
+        render();
+    }
+
+    // ── مودال خروجی Excel ────────────────────────────────────
+    function showExportModal() {
+        document.getElementById('acc-export-modal')?.remove();
+        const today = new Date().toISOString().split('T')[0];
+        const pOpts = _persons.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+
+        const modal = document.createElement('div');
+        modal.id = 'acc-export-modal';
+        modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+        modal.innerHTML = `
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="text-gray-800 font-bold flex items-center gap-2">
+                    <i class="fas fa-file-excel text-green-600"></i>خروجی Excel
+                </h3>
+                <button onclick="document.getElementById('acc-export-modal').remove()" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="space-y-3 text-sm">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-gray-600 text-xs mb-1 block">از تاریخ</label>
+                        <input type="date" id="exp-from" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-gray-600 text-xs mb-1 block">تا تاریخ</label>
+                        <input type="date" id="exp-to" value="${today}" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-gray-600 text-xs mb-1 block">نوع تراکنش</label>
+                    <select id="exp-type" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 focus:outline-none">
+                        <option value="">همه</option>
+                        <option value="income">درآمد</option>
+                        <option value="expense">هزینه</option>
+                        <option value="debt">بدهی</option>
+                        <option value="credit">بستانکاری</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-gray-600 text-xs mb-1 block">اشخاص (چند انتخابی)</label>
+                    <select id="exp-persons" multiple size="4"
+                        class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none">
+                        ${pOpts}
+                    </select>
+                    <p class="text-gray-400 text-xs mt-0.5">Ctrl+کلیک — خالی = همه</p>
+                </div>
+                <div>
+                    <label class="text-gray-600 text-xs mb-1 block">ارز</label>
+                    <select id="exp-cur" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 focus:outline-none">
+                        <option value="">همه</option>
+                        <option value="تومان">تومان</option>
+                        <option value="دلار">دلار</option>
+                        <option value="دینار">دینار</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-5">
+                <button onclick="AccountingUI._doExport()"
+                    class="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 rounded-xl">
+                    <i class="fas fa-download ml-1"></i>دانلود CSV
+                </button>
+                <button onclick="document.getElementById('acc-export-modal').remove()"
+                    class="px-5 bg-gray-100 text-gray-700 py-2.5 rounded-xl">انصراف</button>
+            </div>
+        </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target===modal) modal.remove(); });
+    }
+
+    function _doExport() {
+        const from    = document.getElementById('exp-from')?.value || '';
+        const to      = document.getElementById('exp-to')?.value   || '';
+        const type    = document.getElementById('exp-type')?.value  || '';
+        const curFlt  = document.getElementById('exp-cur')?.value   || '';
+        const selP    = Array.from(document.getElementById('exp-persons')?.selectedOptions||[]).map(o=>o.value);
+
+        let data = [..._txns];
+        if (from)    data = data.filter(t=>(t.tx_date||t.created_at||'')>=from);
+        if (to)      data = data.filter(t=>(t.tx_date||t.created_at||'')<=to);
+        if (type)    data = data.filter(t=>t.type===type);
+        if (selP.length) data = data.filter(t=>selP.includes(t.person_acc_id||''));
+        if (curFlt)  data = data.filter(t=>parseAmounts(t).some(a=>a.currency===curFlt));
+
+        const BOM = '\uFEFF';
+        const headers = ['نوع','دسته‌بندی','مبلغ تومان','مبلغ دلار','مبلغ دینار','شخص','توضیحات','تاریخ'];
+        const rows = data.map(t => {
+            const amts = parseAmounts(t);
+            const byC  = { تومان:0, دلار:0, دینار:0 };
+            amts.forEach(a => { byC[a.currency] = (byC[a.currency]||0)+a.amount; });
+            const p = t.person_acc_id ? (_persons.find(p=>p.id===t.person_acc_id)?.name||'') : (t.person_free_text||t.person_name||'');
+            return [
+                TYPE_LABELS[t.type]||t.type,
+                t.category||'',
+                byC.تومان||0, byC.دلار||0, byC.دینار||0,
+                p, t.description||t.note||'',
+                (t.tx_date||t.created_at||'').substring(0,10)
+            ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',');
+        });
+
+        const csv = BOM + [headers.join(','), ...rows].join('\n');
+        const a   = document.createElement('a');
+        a.href    = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+        a.download = `accounting_${new Date().toISOString().substring(0,10)}.csv`;
+        a.click();
+        setTimeout(()=>URL.revokeObjectURL(a.href),500);
+        document.getElementById('acc-export-modal')?.remove();
+    }
+
+    // ── init ─────────────────────────────────────────────────
+    function init() {
+        const container = document.getElementById('accounting-app');
+        if (!container) return;
+        container.innerHTML = `
+        <div class="flex items-center justify-center py-16">
+            <i class="fas fa-spinner fa-spin text-3xl text-blue-500"></i>
+        </div>`;
+        loadAll().then(() => subscribeRealtime());
+    }
+
+    // ── public API ───────────────────────────────────────────
     return {
-        init,
-        render,
-        refresh,
-        closeModal,
-        changeCurrency,
-        filterTransactions,
-        filterByPerson,
-        getCategoryOptions,
-        toggleCustomCategory,
-        updateCategoryOptions,
-        showAddTransactionModal,
-        showEditTransactionModal,
-        showTransactionModal,
-        submitTransaction,
-        confirmDeleteTransaction,
-        showAddPersonModal,
-        submitPerson,
-        showPersonsReport,
-        deletePerson,
-        showAllPersonsList,
-        showPersonDetails
+        init, render, loadAll,
+        onSearchInput, onFilterType, onFilterPerson, onFilterFrom, onFilterTo, clearFilters,
+        showAddModal, showEditModal, deleteTransaction,
+        showAddPersonModal, _submitPerson, showPersonsList, _deletePerson,
+        showExportModal, _doExport,
+        _addAmountRow, _onPersonSelChange, _submitTx,
     };
+
 })();
+
+// ── تابع global برای index.html ──────────────────────────────
+function getAccountingContent() {
+    setTimeout(() => AccountingUI.init(), 50);
+    return '<div id="accounting-app" dir="rtl" class="p-4 md:p-6"></div>';
+}

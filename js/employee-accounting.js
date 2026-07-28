@@ -261,8 +261,8 @@ const EmployeeAccountingExport = (function() {
             'نام کارمند',
             'نرخ ساعتی (تومان)',
             'جمع ساعات ارسالی',
-            'ساعات تأیید شده',
-            'جمع هزینه‌های تأیید (تومان)',
+            'ساعات تأیید شده شده',
+            'جمع هزینه‌های تأیید شده (تومان)',
             'مبلغ ساعات (تومان)',
             'جمع مبلغ کل (تومان)',
             'جمع هدایا (تومان)',
@@ -393,7 +393,7 @@ const EmployeeAccountingUI = (function() {
 
     function renderEntriesList(entries, isManagerView = false) {
         const statusColors = {
-            pending:  'bg-blue-500/20 text-blue-300 border border-blue-400/30',
+            pending:  'bg-blue-500/20 text-black-300 border border-blue-400/30',
             approved: 'bg-green-500/20 text-green-300 border border-green-400/30',
             rejected: 'bg-red-500/20 text-red-300 border border-red-400/30'
         };
@@ -407,7 +407,7 @@ const EmployeeAccountingUI = (function() {
             const isExpense = entry.type === 'expense';
             const valueCell = isExpense
                 ? `<span class="text-orange-400 font-bold">${EmployeeAccountingModule.formatCurrency(entry.amount || 0)}</span>`
-                : `<span class="text-blue-400 font-bold">${entry.totalHours || 0} ساعت</span>`;
+                : `<span class="text-black-400 font-bold">${entry.totalHours || 0} ساعت</span>`;
 
             // ستون نوع + badge وضعیت رنگی
             const statusDot = entry.status === 'approved'
@@ -422,12 +422,12 @@ const EmployeeAccountingUI = (function() {
                     <span class="${statusColors[entry.status]||statusColors.pending} px-2 py-0.5 rounded text-xs inline-flex items-center">${statusDot}${statusTexts[entry.status]||entry.status}</span>
                   </div>`
                 : `<div class="flex flex-col gap-1">
-                    <span class="bg-blue-500/20 text-blue-400 px-2 py-1 rounded text-xs inline-flex items-center"><i class="fas fa-clock ml-1"></i>ساعت کاری</span>
+                    <span class="bg-blue-500/20 text-black-400 px-2 py-1 rounded text-xs inline-flex items-center"><i class="fas fa-clock ml-1"></i>ساعت کاری</span>
                     <span class="${statusColors[entry.status]||statusColors.pending} px-2 py-0.5 rounded text-xs inline-flex items-center">${statusDot}${statusTexts[entry.status]||entry.status}</span>
                   </div>`;
 
             const timeRange = !isExpense && entry.startTime && entry.endTime
-                ? `<span class="text-blue-300/60 text-xs block">${entry.startTime} — ${entry.endTime}</span>` : '';
+                ? `<span class="text-black-300/60 text-xs block">${entry.startTime} — ${entry.endTime}</span>` : '';
 
             // ستون وضعیت: مدیر → دو دکمه تیک/ضربدر | کارمند → فقط نمایش
             const actionCell = isManagerView
@@ -502,12 +502,12 @@ const EmployeeAccountingUI = (function() {
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                         <div class="flex items-center gap-4">
                             <div class="w-14 h-14 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                                <i class="fas fa-clock text-2xl text-blue-400"></i>
+                                <i class="fas fa-clock text-2xl text-black-400"></i>
                             </div>
                             <div>
                                 <p class="text-black-400 text-sm">جمع ساعات ارسالی</p>
                                 <p class="text-3xl font-bold text-white">${summary.totalHours}</p>
-                                <p class="text-blue-300 text-xs">${summary.hoursCount} گزارش · ${summary.workDays} روز</p>
+                                <p class="text-black-300 text-xs">${summary.hoursCount} گزارش · ${summary.workDays} روز</p>
                             </div>
                         </div>
                     </div>
@@ -520,7 +520,7 @@ const EmployeeAccountingUI = (function() {
                             <div>
                                 <p class="text-black-400 text-sm">جمع هزینه‌های ارسالی</p>
                                 <p class="text-xl font-bold text-white">${EmployeeAccountingModule.formatCurrency(summary.totalExpenses)}</p>
-                                <p class="text-blue-300 text-xs">${summary.expensesCount} مورد</p>
+                                <p class="text-black-300 text-xs">${summary.expensesCount} مورد</p>
                             </div>
                         </div>
                     </div>
@@ -533,7 +533,7 @@ const EmployeeAccountingUI = (function() {
                             <div>
                                 <p class="text-black-400 text-sm">نرخ ساعتی (مدیر)</p>
                                 <p class="text-xl font-bold text-white">${EmployeeAccountingModule.formatCurrency(summary.hourlyRate)}</p>
-                                <p class="text-blue-300 text-xs">هر ساعت کار</p>
+                                <p class="text-black-300 text-xs">هر ساعت کار</p>
                             </div>
                         </div>
                     </div>
@@ -587,20 +587,20 @@ const EmployeeAccountingUI = (function() {
                         </div>
                         <div class="bg-white/10 rounded-xl p-4">
                             <p class="text-yellow-200 text-sm mb-1">حقوق ساعات (تأیید × نرخ)</p>
-                            <p class="text-2xl font-bold text-blue-400">${EmployeeAccountingModule.formatCurrency(hoursPayment)}</p>
+                            <p class="text-2xl font-bold text-black-400">${EmployeeAccountingModule.formatCurrency(hoursPayment)}</p>
                             <p class="text-yellow-300 text-xs mt-1">${monthlySummary.totalHoursApproved} ساعت تأیید × ${EmployeeAccountingModule.formatCurrency(monthlySummary.hourlyRate)}</p>
                         </div>
                         <div class="bg-white/10 rounded-xl p-4">
                             <p class="text-yellow-200 text-sm mb-1">جمع کل این ماه</p>
                             <p class="text-2xl font-bold text-emerald-400">${EmployeeAccountingModule.formatCurrency(monthlySummary.grandTotal)}</p>
-                            <p class="text-yellow-300 text-xs mt-1">حقوق ساعات + هزینه‌های تأیید</p>
+                            <p class="text-yellow-300 text-xs mt-1">حقوق ساعات + هزینه‌های تأیید شده</p>
                         </div>
                     </div>
                 </div>
 
                 <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                     <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                        <i class="fas fa-list text-blue-400"></i>
+                        <i class="fas fa-list text-black-400"></i>
                         جزئیات سوابق
                     </h3>
                     <div class="overflow-x-auto">
@@ -621,12 +621,12 @@ const EmployeeAccountingUI = (function() {
 
                 <div class="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
                     <h4 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
-                        <i class="fas fa-info-circle text-blue-400"></i>
+                        <i class="fas fa-info-circle text-black-400"></i>
                         راهنما
                     </h4>
                     <ul class="text-black-400 text-sm space-y-2">
                         <li><i class="fas fa-check text-green-400 ml-2"></i>گزارش‌های روزانه ساعات کاری و هزینه‌ها در این صفحه جمع می‌شوند</li>
-                        <li><i class="fas fa-check text-green-400 ml-2"></i>مبلغ حقوق = (ساعات تأیید شده × نرخ ساعتی) + هزینه‌های تأیید شده</li>
+                        <li><i class="fas fa-check text-green-400 ml-2"></i>مبلغ حقوق = (ساعات تأیید شده شده × نرخ ساعتی) + هزینه‌های تأیید شده شده</li>
                         <li><i class="fas fa-check text-green-400 ml-2"></i>نرخ ساعتی توسط مدیر در بخش «حسابداری کارمندان» تعیین می‌شود</li>
                         <li><i class="fas fa-clock text-indigo-400 ml-2"></i>در صورت فراموشی ثبت، از دکمه «درخواست مهلت مجدد» استفاده کنید</li>
                     </ul>
@@ -643,11 +643,11 @@ const EmployeeAccountingUI = (function() {
                     const statusCls = { pending:'bg-yellow-500/20 text-yellow-300', approved:'bg-green-500/20 text-green-300', rejected:'bg-red-500/20 text-red-300' };
                     const rows = myReqs.slice().reverse().map(r=>`
                         <tr class="border-b border-white/5 hover:bg-white/5 text-sm">
-                            <td class="py-2 px-3 text-blue-300">${r.requestedDate||'—'}</td>
+                            <td class="py-2 px-3 text-black-300">${r.requestedDate||'—'}</td>
                             <td class="py-2 px-3">
                                 ${r.entryType==='expense'
                                     ? '<span class="bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded text-xs">هزینه</span>'
-                                    : '<span class="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded text-xs">ساعت کاری</span>'}
+                                    : '<span class="bg-blue-500/20 text-black-400 px-2 py-0.5 rounded text-xs">ساعت کاری</span>'}
                             </td>
                             <td class="py-2 px-3 text-white">
                                 ${r.entryType==='expense'
@@ -692,7 +692,7 @@ const EmployeeAccountingUI = (function() {
             ? employeesSummary.map(emp => {
                 const hasPending = emp.pendingHours > 0 || emp.pendingExpenses > 0;
                 const statusBadge = hasPending
-                    ? `<span class="bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full text-xs">${emp.pendingHours + emp.pendingExpenses} در انتظار</span>`
+                    ? `<span class="bg-blue-500/20 text-black-400 px-2 py-1 rounded-full text-xs">${emp.pendingHours + emp.pendingExpenses} در انتظار</span>`
                     : '<span class="bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs"><i class="fas fa-check ml-1"></i>تأیید</span>';
 
                 const safeName = (emp.employeeName || '').replace(/'/g, "\\'");
@@ -709,22 +709,22 @@ const EmployeeAccountingUI = (function() {
                         </td>
                         <td class="text-center py-4 px-4">
                             <button onclick="EmployeeAccountingUI.showEditRateModal('${emp.employeeId}', '${safeName}', ${emp.hourlyRate})"
-                                    class="px-3 py-1 bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 rounded-lg text-sm transition-all">
+                                    class="px-3 py-1 bg-blue-500/20 hover:bg-blue-500/40 text-black-400 rounded-lg text-sm transition-all">
                                 ${EmployeeAccountingModule.formatCurrency(emp.hourlyRate)}/ساعت
                                 <i class="fas fa-edit mr-1"></i>
                             </button>
                         </td>
                         <td class="text-center py-4 px-4">
-                            <span class="text-xl font-bold text-blue-400">${emp.totalHoursApproved}</span>
-                            <span class="text-blue-300 text-sm"> ساعت</span>
-                            <p class="text-blue-400/60 text-xs">${emp.hoursCount} گزارش</p>
+                            <span class="text-xl font-bold text-black-400">${emp.totalHoursApproved}</span>
+                            <span class="text-black-300 text-sm"> ساعت</span>
+                            <p class="text-black-400/60 text-xs">${emp.hoursCount} گزارش</p>
                         </td>
                         <td class="text-center py-4 px-4">
                             <span class="text-orange-400 font-bold">${EmployeeAccountingModule.formatCurrency(emp.totalExpensesApproved)}</span>
                         </td>
                         <td class="text-center py-4 px-4">
                             <span class="text-emerald-400 font-bold text-lg">${EmployeeAccountingModule.formatCurrency(emp.grandTotal)}</span>
-                            <p class="text-blue-300/60 text-xs mt-0.5">(ساعات × نرخ) + هزینه‌ها</p>
+                            <p class="text-black-300/60 text-xs mt-0.5">(ساعات × نرخ) + هزینه‌ها</p>
                         </td>
                     <td class="text-center py-4 px-4">${statusBadge}</td>
                     <td class="text-center py-4 px-4">
@@ -753,7 +753,7 @@ const EmployeeAccountingUI = (function() {
                 <td colspan="7" class="text-center py-12">
                     <i class="fas fa-users text-5xl text-yellow-400/30 mb-4 block"></i>
                     <p class="text-black-400">هیچ کارمندی در سیستم ثبت نشده است</p>
-                    <p class="text-blue-300/60 text-sm mt-2">کارمندان را از بخش «کاربران» اضافه کنید</p>
+                    <p class="text-black-300/60 text-sm mt-2">کارمندان را از بخش «کاربران» اضافه کنید</p>
                 </td>
             </tr>`;
 
@@ -774,16 +774,16 @@ const EmployeeAccountingUI = (function() {
                 <!-- ۷ کارت متریک -->
                 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-blue-400/20">
-                        <i class="fas fa-paper-plane text-blue-400 mb-2 block"></i>
+                        <i class="fas fa-paper-plane text-black-400 mb-2 block"></i>
                         <p class="text-black-400 text-xs mb-1">ساعات ارسال‌شده</p>
-                        <p class="text-lg font-bold text-blue-400">${employeesSummary.reduce((s,e)=>s+parseFloat(e.totalHours||0),0).toFixed(1)}</p>
-                        <p class="text-blue-300/60 text-xs">ساعت</p>
+                        <p class="text-lg font-bold text-black-400">${employeesSummary.reduce((s,e)=>s+parseFloat(e.totalHours||0),0).toFixed(1)}</p>
+                        <p class="text-black-300/60 text-xs">ساعت</p>
                     </div>
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-emerald-400/20">
                         <i class="fas fa-check-circle text-emerald-400 mb-2 block"></i>
-                        <p class="text-black-400 text-xs mb-1">ساعات تأییدشده</p>
+                        <p class="text-black-400 text-xs mb-1">ساعات تأیید شدهشده</p>
                         <p class="text-lg font-bold text-emerald-400">${totalHours.toFixed(1)}</p>
-                        <p class="text-blue-300/60 text-xs">ساعت</p>
+                        <p class="text-black-300/60 text-xs">ساعت</p>
                     </div>
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-orange-400/20">
                         <i class="fas fa-receipt text-orange-400 mb-2 block"></i>
@@ -794,7 +794,7 @@ const EmployeeAccountingUI = (function() {
                     </div>
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-cyan-400/20">
                         <i class="fas fa-check-double text-cyan-400 mb-2 block"></i>
-                        <p class="text-black-400 text-xs mb-1">هزینه‌های تأییدشده</p>
+                        <p class="text-black-400 text-xs mb-1">هزینه‌های تأیید شدهشده</p>
                         <p class="text-sm font-bold text-cyan-400">${EmployeeAccountingModule.formatCurrency(totalExpenses)}</p>
                     </div>
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-red-400/20">
@@ -836,13 +836,19 @@ const EmployeeAccountingUI = (function() {
                 <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                     <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
                         <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                            <i class="fas fa-table text-blue-400"></i>
+                            <i class="fas fa-table text-black-400"></i>
                             خلاصه کاری کارمندان
                         </h3>
-                        <button onclick="EmployeeAccountingUI.showWorkCalendarModal()"
-                            class="px-4 py-2 bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 border border-indigo-400/30 rounded-xl text-sm transition-all flex items-center gap-2">
-                            <i class="fas fa-calendar-alt"></i>تقویم کاری
-                        </button>
+                        <div class="flex gap-2 flex-wrap">
+                            <button onclick="EmployeeAccountingUI.showWorkCalendarModal()"
+                                class="px-4 py-2 bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 border border-indigo-400/30 rounded-xl text-sm transition-all flex items-center gap-2">
+                                <i class="fas fa-calendar-alt"></i>تقویم کاری
+                            </button>
+                            <button onclick="EmployeeAccountingUI.showExportEmployeesModal()"
+                                class="px-4 py-2 bg-green-500/20 hover:bg-green-500/40 text-green-300 border border-green-400/30 rounded-xl text-sm transition-all flex items-center gap-2">
+                                <i class="fas fa-file-excel"></i>خروجی Excel
+                            </button>
+                        </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full">
@@ -874,7 +880,7 @@ const EmployeeAccountingUI = (function() {
                         const pending = reqs.filter(r => r.status === 'pending');
                         const others  = reqs.filter(r => r.status !== 'pending');
                         if (!reqs.length) return `
-                            <div class="text-center py-8 text-blue-300">
+                            <div class="text-center py-8 text-black-300">
                                 <i class="fas fa-inbox text-3xl mb-3 block opacity-40"></i>
                                 <p class="text-sm">هیچ درخواستی وجود ندارد</p>
                             </div>`;
@@ -884,16 +890,16 @@ const EmployeeAccountingUI = (function() {
                             const statusTxt = r.status==='approved' ? 'تأیید شد' : r.status==='rejected' ? 'رد شد' : 'در انتظار';
                             return `<tr class="border-b border-white/5 hover:bg-white/5">
                                 <td class="py-3 px-3 text-white text-sm font-medium">${r.employeeName||'—'}</td>
-                                <td class="py-3 px-3 text-blue-300 text-sm">${r.requestedDate||'—'}</td>
+                                <td class="py-3 px-3 text-black-300 text-sm">${r.requestedDate||'—'}</td>
                                 <td class="py-3 px-3">
                                     ${r.entryType==='expense'
                                         ? `<span class="bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded text-xs">هزینه</span>`
-                                        : `<span class="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded text-xs">ساعت کاری</span>`}
+                                        : `<span class="bg-blue-500/20 text-black-400 px-2 py-0.5 rounded text-xs">ساعت کاری</span>`}
                                 </td>
                                 <td class="py-3 px-3">
                                     ${r.entryType==='expense'
                                         ? `<span class="text-orange-400 font-bold text-sm">${Number(r.amount||0).toLocaleString('fa-IR')} ت</span>`
-                                        : `<span class="text-blue-400 font-bold text-sm">${r.startTime||'?'} — ${r.endTime||'?'}</span>`}
+                                        : `<span class="text-black-400 font-bold text-sm">${r.startTime||'?'} — ${r.endTime||'?'}</span>`}
                                 </td>
                                 <td class="py-3 px-3 text-black-400 text-xs max-w-xs">${r.reason||'—'}</td>
                                 <td class="py-3 px-3 text-center">
@@ -951,7 +957,7 @@ const EmployeeAccountingUI = (function() {
                 <td class="py-1.5 px-3 text-white">${s.date||'—'}</td>
                 <td class="py-1.5 px-3 text-purple-300 font-bold">${Number(s.amount||0).toLocaleString('fa-IR')} ت</td>
                 <td class="py-1.5 px-3 text-black-400">${s.note||'—'}</td>
-            </tr>`).join('') : `<tr><td colspan="3" class="text-center py-3 text-blue-300 text-xs">تسویه‌ای ثبت نشده</td></tr>`;
+            </tr>`).join('') : `<tr><td colspan="3" class="text-center py-3 text-black-300 text-xs">تسویه‌ای ثبت نشده</td></tr>`;
 
         const modal = document.createElement('div');
         modal.id = 'settlement-modal';
@@ -1028,7 +1034,7 @@ const EmployeeAccountingUI = (function() {
                     </h4>
                     <div class="overflow-auto max-h-40">
                         <table class="w-full">
-                            <thead><tr class="text-blue-300 text-xs border-b border-white/10">
+                            <thead><tr class="text-black-300 text-xs border-b border-white/10">
                                 <th class="text-right py-1 px-3">تاریخ</th>
                                 <th class="text-right py-1 px-3">مبلغ</th>
                                 <th class="text-right py-1 px-3">یادداشت</th>
@@ -1301,7 +1307,7 @@ const EmployeeAccountingUI = (function() {
                 <div class="bg-slate-800 rounded-2xl p-6 max-w-md w-full mx-4" onclick="event.stopPropagation()">
                     <div class="flex items-center justify-between mb-6">
                         <h3 class="text-xl font-bold text-white">
-                            <i class="fas fa-cog text-blue-400 ml-2"></i>
+                            <i class="fas fa-cog text-black-400 ml-2"></i>
                             تنظیمات حسابداری
                         </h3>
                         <button onclick="document.getElementById('settings-modal').remove()" class="text-gray-400 hover:text-white">
@@ -1313,7 +1319,7 @@ const EmployeeAccountingUI = (function() {
                         <input type="number" id="default-hourly-rate" value="${settings.defaultHourlyRate}"
                                class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400"
                                placeholder="مثال: 100000">
-                        <p class="text-blue-300/60 text-xs mt-2">برای کارمندانی که نرخ اختصاصی ندارند</p>
+                        <p class="text-black-300/60 text-xs mt-2">برای کارمندانی که نرخ اختصاصی ندارند</p>
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
                         <button onclick="document.getElementById('settings-modal').remove()" class="px-4 py-2 text-gray-400 hover:text-white">انصراف</button>
@@ -1343,7 +1349,7 @@ const EmployeeAccountingUI = (function() {
                 <div class="bg-slate-800 rounded-2xl p-6 max-w-md w-full mx-4" onclick="event.stopPropagation()">
                     <div class="flex items-center justify-between mb-6">
                         <h3 class="text-xl font-bold text-white">
-                            <i class="fas fa-edit text-blue-400 ml-2"></i>
+                            <i class="fas fa-edit text-black-400 ml-2"></i>
                             تنظیم نرخ ساعتی
                         </h3>
                         <button onclick="document.getElementById('edit-rate-modal').remove()" class="text-gray-400 hover:text-white">
@@ -1400,14 +1406,14 @@ const EmployeeAccountingUI = (function() {
             <td class="py-2 px-3 text-center">
                 <button onclick="EmployeeAccountingUI.deleteDeduction('${d.id}')" class="text-red-400 hover:text-red-300 text-xs"><i class="fas fa-trash"></i></button>
             </td>
-        </tr>`).join('') : `<tr><td colspan="4" class="text-center py-3 text-blue-300 text-xs">کسوراتی ثبت نشده</td></tr>`;
+        </tr>`).join('') : `<tr><td colspan="4" class="text-center py-3 text-black-300 text-xs">کسوراتی ثبت نشده</td></tr>`;
 
         const giftBlock = gifts.length ? gifts.map(g=>`
         <tr class="border-b border-white/5">
             <td class="py-2 px-3 text-white text-xs">${g.date||'—'}</td>
             <td class="py-2 px-3 text-green-300 font-bold text-xs">${Number(g.amount||0).toLocaleString('fa-IR')} ت</td>
             <td class="py-2 px-3 text-black-400 text-xs">${g.reason||'—'}</td>
-        </tr>`).join('') : `<tr><td colspan="3" class="text-center py-3 text-blue-300 text-xs">هدیه‌ای ثبت نشده</td></tr>`;
+        </tr>`).join('') : `<tr><td colspan="3" class="text-center py-3 text-black-300 text-xs">هدیه‌ای ثبت نشده</td></tr>`;
 
         const modal = document.createElement('div');
         modal.id = 'employee-details-modal';
@@ -1434,11 +1440,11 @@ const EmployeeAccountingUI = (function() {
                 <!-- کارت‌های خلاصه -->
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
                     <div class="bg-white/10 rounded-xl p-3 text-center">
-                        <p class="text-black-400 text-xs mb-1">ساعات تأیید</p>
-                        <p class="text-xl font-bold text-blue-400">${summary.totalHoursApproved}</p>
+                        <p class="text-black-400 text-xs mb-1">ساعات تأیید شده</p>
+                        <p class="text-xl font-bold text-black-400">${summary.totalHoursApproved}</p>
                     </div>
                     <div class="bg-white/10 rounded-xl p-3 text-center">
-                        <p class="text-black-400 text-xs mb-1">هزینه‌های تأیید</p>
+                        <p class="text-black-400 text-xs mb-1">هزینه‌های تأیید شده</p>
                         <p class="text-sm font-bold text-orange-400">${EmployeeAccountingModule.formatCurrency(summary.totalExpensesApproved)}</p>
                     </div>
                     <div class="bg-white/10 rounded-xl p-3 text-center">
@@ -1457,7 +1463,7 @@ const EmployeeAccountingUI = (function() {
 
                 <!-- سوابق کاری — با دکمه‌های تأیید/رد inline -->
                 <h4 class="text-white font-semibold mb-3 flex items-center gap-2 text-sm">
-                    <i class="fas fa-list text-blue-400"></i>سوابق کاری
+                    <i class="fas fa-list text-black-400"></i>سوابق کاری
                     <span class="text-black-400 text-xs font-normal">(تیک = تأیید | ضربدر = رد)</span>
                 </h4>
                 <div class="overflow-x-auto mb-5">
@@ -1504,6 +1510,197 @@ const EmployeeAccountingUI = (function() {
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
     }
 
+    // ── modal خروجی Excel کارمندان ──────────────────────────
+    function showExportEmployeesModal() {
+        document.getElementById('emp-export-modal')?.remove();
+
+        const allSummary = EmployeeAccountingModule.getAllEmployeesSummary();
+        const empOpts = allSummary
+            .map(e => `<option value="${e.employeeId}">${e.employeeName}</option>`)
+            .join('');
+
+        const today = new Date().toISOString().split('T')[0];
+        const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+            .toISOString().split('T')[0];
+
+        const modal = document.createElement('div');
+        modal.id = 'emp-export-modal';
+        modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4';
+        modal.innerHTML = `
+            <div class="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-green-500/30 shadow-2xl" onclick="event.stopPropagation()">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="text-white text-lg font-bold flex items-center gap-2">
+                        <i class="fas fa-file-excel text-green-400"></i>خروجی Excel کارمندان
+                    </h3>
+                    <button onclick="document.getElementById('emp-export-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="space-y-3 text-sm">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-gray-400 text-xs mb-1 block">از تاریخ</label>
+                            <input type="date" id="emp-exp-from" value="${firstOfMonth}"
+                                class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
+                        </div>
+                        <div>
+                            <label class="text-gray-400 text-xs mb-1 block">تا تاریخ</label>
+                            <input type="date" id="emp-exp-to" value="${today}"
+                                class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-xs mb-1 block">کارمندان (چند انتخابی)</label>
+                        <select id="emp-exp-names" multiple size="6"
+                            class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                            ${empOpts}
+                        </select>
+                        <p class="text-gray-500 text-xs mt-1">Ctrl+کلیک برای چند انتخاب — خالی = همه</p>
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-xs mb-1 block">وضعیت</label>
+                        <select id="emp-exp-status"
+                            class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                            <option value="">همه</option>
+                            <option value="has_pending">دارای موارد در انتظار</option>
+                            <option value="no_pending">بدون موارد در انتظار</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-xs mb-1 block">شامل جزئیات سوابق</label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="emp-exp-details" class="accent-green-500 w-4 h-4">
+                            <span class="text-gray-300 text-sm">اضافه کردن ردیف جزئیات هر سابقه</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-5">
+                    <button onclick="EmployeeAccountingUI.doExportEmployeesCSV()"
+                        class="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 rounded-xl transition-all">
+                        <i class="fas fa-download ml-1"></i>دانلود CSV
+                    </button>
+                    <button onclick="document.getElementById('emp-export-modal').remove()"
+                        class="px-5 bg-gray-600 hover:bg-gray-500 text-white py-2.5 rounded-xl">انصراف</button>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    }
+
+    function doExportEmployeesCSV() {
+        const from       = document.getElementById('emp-exp-from')?.value    || '';
+        const to         = document.getElementById('emp-exp-to')?.value      || '';
+        const statusFlt  = document.getElementById('emp-exp-status')?.value  || '';
+        const inclDet    = document.getElementById('emp-exp-details')?.checked || false;
+        const selIds     = Array.from(document.getElementById('emp-exp-names')?.selectedOptions || [])
+                               .map(o => o.value);
+
+        const BOM = '\uFEFF';
+        const settlements = (() => { try { return JSON.parse(localStorage.getItem('work_settlements')||'[]'); } catch { return []; } })();
+        const deductions  = (() => { try { return JSON.parse(localStorage.getItem('work_deductions')||'[]'); } catch { return []; } })();
+        const gifts       = (() => { try { return JSON.parse(localStorage.getItem('work_gifts')||'[]'); } catch { return []; } })();
+
+        let summary = EmployeeAccountingModule.getAllEmployeesSummary(from || null, to || null);
+
+        // فیلتر کارمندان انتخابی
+        if (selIds.length) summary = summary.filter(e => selIds.includes(e.employeeId));
+
+        // فیلتر وضعیت
+        if (statusFlt === 'has_pending') summary = summary.filter(e => (e.pendingHours + e.pendingExpenses) > 0);
+        if (statusFlt === 'no_pending')  summary = summary.filter(e => (e.pendingHours + e.pendingExpenses) === 0);
+
+        // header ردیف خلاصه
+        const summaryHeaders = [
+            'نام کارمند','نرخ ساعتی','جمع ساعات ارسالی','ساعات تأیید شده',
+            'هزینه‌های تأیید (تومان)','مبلغ ساعات (تومان)','جمع مبلغ کل (تومان)',
+            'جمع هدایا (تومان)','جمع کسورات (تومان)','تسویه شده (تومان)','مانده طلب (تومان)',
+            'در انتظار (ساعت)','در انتظار (هزینه)'
+        ];
+
+        const rows = [];
+        rows.push(summaryHeaders.map(h => `"${h}"`).join(','));
+
+        summary.forEach(emp => {
+            const paid = settlements.filter(s=>s.employeeId===emp.employeeId).reduce((s,r)=>s+Number(r.amount||0),0);
+            const ded  = deductions.filter(d=>d.employeeId===emp.employeeId).reduce((s,d)=>s+Number(d.amount||0),0);
+            const gift = gifts.filter(g=>g.employeeId===emp.employeeId).reduce((s,g)=>s+Number(g.amount||0),0);
+            const remaining = emp.grandTotal + gift - ded - paid;
+
+            rows.push([
+                emp.employeeName,
+                emp.hourlyRate,
+                emp.totalHours,
+                emp.totalHoursApproved,
+                Math.round(emp.totalExpensesApproved),
+                Math.round(emp.totalAmount),
+                Math.round(emp.grandTotal),
+                Math.round(gift),
+                Math.round(ded),
+                Math.round(paid),
+                Math.round(remaining),
+                emp.pendingHours,
+                emp.pendingExpenses
+            ].map(v => `"${v}"`).join(','));
+
+            // جزئیات سوابق کاری
+            if (inclDet) {
+                const entries = WorkHoursModule.getAllEntriesByEmployee(emp.employeeId);
+                let filteredEnt = entries;
+                if (from) filteredEnt = filteredEnt.filter(e => e.date >= from);
+                if (to)   filteredEnt = filteredEnt.filter(e => e.date <= to);
+
+                if (filteredEnt.length) {
+                    rows.push(['"--- جزئیات سوابق ---"','نوع','تاریخ','ساعت شروع','ساعت پایان','ساعت کل','مبلغ (تومان)','شرح','وضعیت'].join(','));
+                    const statusMap = { pending:'در انتظار', approved:'تأیید شده', rejected:'رد شده' };
+                    filteredEnt.forEach(e => {
+                        rows.push([
+                            `"${emp.employeeName}"`,
+                            `"${e.type==='expense'?'هزینه':'ساعت کاری'}"`,
+                            `"${e.date||''}"`,
+                            `"${e.startTime||''}"`,
+                            `"${e.endTime||''}"`,
+                            `"${e.totalHours||''}"`,
+                            `"${e.type==='expense'?Math.round(e.amount||0):''}"`,
+                            `"${(e.description||'').replace(/"/g,'""')}"`,
+                            `"${statusMap[e.status]||e.status||''}"`
+                        ].join(','));
+                    });
+                    rows.push(''); // خط خالی جدا کننده
+                }
+
+                // کسورات این کارمند
+                const empDeds = deductions.filter(d => d.employeeId === emp.employeeId);
+                if (empDeds.length) {
+                    rows.push(['"--- کسورات ---"','تاریخ','مبلغ (تومان)','علت'].join(','));
+                    empDeds.forEach(d => rows.push([
+                        `"${emp.employeeName}"`,`"${d.date||''}"`,
+                        `"${Math.round(d.amount||0)}"`,`"${(d.reason||'').replace(/"/g,'""')}"`
+                    ].join(',')));
+                    rows.push('');
+                }
+
+                // هدایا این کارمند
+                const empGifts = gifts.filter(g => g.employeeId === emp.employeeId);
+                if (empGifts.length) {
+                    rows.push(['"--- هدایا ---"','تاریخ','مبلغ (تومان)','توضیح'].join(','));
+                    empGifts.forEach(g => rows.push([
+                        `"${emp.employeeName}"`,`"${g.date||''}"`,
+                        `"${Math.round(g.amount||0)}"`,`"${(g.reason||'').replace(/"/g,'""')}"`
+                    ].join(',')));
+                    rows.push('');
+                }
+            }
+        });
+
+        const csv = BOM + rows.join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `employees_${new Date().toISOString().substring(0,10)}.csv`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 500);
+        document.getElementById('emp-export-modal')?.remove();
+        showNotification('فایل CSV دانلود شد ✓', 'success');
+    }
+
     // ── تقویم کاری (فیلتر بازه تاریخ) ──────────────────────
     function showWorkCalendarModal() {
         document.getElementById('work-calendar-modal')?.remove();
@@ -1521,7 +1718,7 @@ const EmployeeAccountingUI = (function() {
                     </h3>
                     <button onclick="document.getElementById('work-calendar-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
                 </div>
-                <p class="text-blue-300 text-sm mb-4">بازه تاریخ را انتخاب کنید تا سوابق کاری، هزینه‌ها و کسورات نمایش داده شوند.</p>
+                <p class="text-black-300 text-sm mb-4">بازه تاریخ را انتخاب کنید تا سوابق کاری، هزینه‌ها و کسورات نمایش داده شوند.</p>
                 <div class="grid grid-cols-2 gap-4 mb-5">
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">از تاریخ</label>
@@ -1567,7 +1764,7 @@ const EmployeeAccountingUI = (function() {
                         <span class="text-white font-semibold">${emp.employeeName}</span>
                     </div>
                     <div class="flex gap-4 flex-wrap text-sm">
-                        <span class="text-blue-400"><i class="fas fa-clock ml-1"></i>${emp.totalHours} ساعت ارسالی</span>
+                        <span class="text-black-400"><i class="fas fa-clock ml-1"></i>${emp.totalHours} ساعت ارسالی</span>
                         <span class="text-emerald-400"><i class="fas fa-check ml-1"></i>${emp.totalHoursApproved} ساعت تأیید</span>
                         <span class="text-orange-400"><i class="fas fa-receipt ml-1"></i>${EmployeeAccountingModule.formatCurrency(emp.totalExpenses)} هزینه</span>
                         <span class="text-indigo-400 font-bold"><i class="fas fa-wallet ml-1"></i>${EmployeeAccountingModule.formatCurrency(emp.grandTotal)} جمع کل</span>
@@ -1581,7 +1778,7 @@ const EmployeeAccountingUI = (function() {
                 <span class="text-black-400 text-xs">${d.date}</span>
                 <span class="text-red-400 font-bold">${Number(d.amount||0).toLocaleString('fa-IR')} ت</span>
                 <span class="text-black-400 text-xs">${d.reason||'—'}</span>
-            </div>`).join('') : '<p class="text-blue-300 text-xs text-center py-2">کسوراتی در این بازه ثبت نشده</p>';
+            </div>`).join('') : '<p class="text-black-300 text-xs text-center py-2">کسوراتی در این بازه ثبت نشده</p>';
 
         const resultEl = document.getElementById('cal-result');
         if (resultEl) {
@@ -1591,7 +1788,7 @@ const EmployeeAccountingUI = (function() {
                         <i class="fas fa-chart-bar text-indigo-400"></i>
                         گزارش بازه ${from} تا ${to}
                     </h4>
-                    ${rows || '<p class="text-blue-300 text-sm text-center py-4">رکوردی در این بازه یافت نشد</p>'}
+                    ${rows || '<p class="text-black-300 text-sm text-center py-4">رکوردی در این بازه یافت نشد</p>'}
                     <div class="mt-4 bg-red-500/10 border border-red-400/20 rounded-xl p-3">
                         <h5 class="text-red-300 text-sm font-semibold mb-2 flex items-center gap-1">
                             <i class="fas fa-minus-circle text-xs"></i>کسورات این بازه
@@ -1619,7 +1816,7 @@ const EmployeeAccountingUI = (function() {
                     </h3>
                     <button onclick="document.getElementById('late-request-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
                 </div>
-                <p class="text-blue-300 text-sm mb-4">اگر ثبت ساعت کاری یا هزینه‌ای را فراموش کرده‌اید، اینجا درخواست دهید.</p>
+                <p class="text-black-300 text-sm mb-4">اگر ثبت ساعت کاری یا هزینه‌ای را فراموش کرده‌اید، اینجا درخواست دهید.</p>
                 <div class="space-y-3">
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">تاریخ فراموش‌شده <span class="text-red-400">*</span></label>
@@ -1787,5 +1984,7 @@ const EmployeeAccountingUI = (function() {
         saveLateRequest,
         approveLateRequest,
         rejectLateRequest,
+        showExportEmployeesModal,
+        doExportEmployeesCSV,
     };
 })();

@@ -117,7 +117,7 @@
         <nav class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-2">
             <!-- Dashboard -->
             <button @click="currentPage = 'dashboard'"
-                    :class="currentPage === 'dashboard' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                    :class="currentPage === 'dashboard' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
                     class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                 <i class="fas fa-tachometer-alt text-lg"></i>
                 <span class="font-medium">داشبورد</span>
@@ -126,7 +126,7 @@
             <!-- مدیریت وظایف - فقط مدیر -->
             <template x-if="currentUser.role === 'manager'">
                 <button @click="currentPage = 'tasks'"
-                        :class="currentPage === 'tasks' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                        :class="currentPage === 'tasks' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
                         class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                     <i class="fas fa-tasks text-lg"></i>
                     <span class="font-medium">مدیریت کارمندان</span>
@@ -136,7 +136,7 @@
             <!-- دانشجویان - مدیر و همکار-->
             <template x-if="currentUser.role === 'manager' || currentUser.role === 'employee'">
                 <button @click="currentPage = 'students'"
-                        :class="currentPage === 'students' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                        :class="currentPage === 'students' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
                         class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                     <i class="fas fa-user-graduate text-lg"></i>
                     <span class="font-medium">دانشجویان</span>
@@ -146,7 +146,7 @@
             <!-- وظایف من - فقط همکار-->
             <template x-if="currentUser.role === 'employee'">
                 <button @click="currentPage = 'myTasks'"
-                        :class="currentPage === 'myTasks' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                        :class="currentPage === 'myTasks' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
                         class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                     <i class="fas fa-clipboard-check text-lg"></i>
                     <span class="font-medium">وظایف من</span>
@@ -156,7 +156,7 @@
             <!-- وظایف عامل‌ها - فقط همکار-->
             <template x-if="currentUser.role === 'employee'">
                 <button @click="currentPage = 'agentTasksManagement'"
-                        :class="currentPage === 'agentTasksManagement' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                        :class="currentPage === 'agentTasksManagement' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
                         class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                     <i class="fas fa-tasks text-lg"></i>
                     <span class="font-medium">وظایف عامل‌ها</span>
@@ -167,7 +167,7 @@
 
             <!-- گفتگو شخصی - همه نقش‌ها -->
             <button @click="currentPage = 'personalChat'"
-                    :class="currentPage === 'personalChat' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                    :class="currentPage === 'personalChat' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
                     class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                 <i class="fas fa-comments text-lg"></i>
                 <span class="font-medium">گفتگو شخصی</span>
@@ -176,7 +176,7 @@
             <!-- گفتگو مدیریت - مدیر و کارمند  -->
             <template x-if="currentUser.role === 'manager' || currentUser.role === 'employee'">
                 <button @click="currentPage = 'managementChat'"
-                        :class="currentPage === 'managementChat' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                        :class="currentPage === 'managementChat' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
                         class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                     <i class="fas fa-users text-lg"></i>
                     <span class="font-medium">گفتگو مدیریت</span>
@@ -186,7 +186,7 @@
             <!-- ساعات کاری - فقط کارمند (مدیر از طریق حسابداری دسترسی دارد) -->
             <template x-if="currentUser.role === 'employee'">
                 <button @click="currentPage = 'workHours'"
-                        :class="currentPage === 'workHours' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                        :class="currentPage === 'workHours' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
                         class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                     <i class="fas fa-clock text-lg"></i>
                     <span class="font-medium">ساعات کاری</span>
@@ -196,7 +196,7 @@
             <!-- چک‌لیست کاری - فقط کارمند -->
             <template x-if="currentUser.role === 'employee'">
                 <button @click="currentPage = 'workChecklist'"
-                        :class="currentPage === 'workChecklist' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                        :class="currentPage === 'workChecklist' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
                         class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                     <i class="fas fa-check-square text-lg"></i>
                     <span class="font-medium">چک‌لیست کاری</span>
@@ -206,7 +206,7 @@
             <!-- وظایف من - فقط عامل -->
             <template x-if="currentUser.role === 'agent'">
                 <button @click="currentPage = 'agentTasks'"
-                        :class="currentPage === 'agentTasks' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                        :class="currentPage === 'agentTasks' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
                         class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                     <i class="fas fa-clipboard-check text-lg"></i>
                     <span class="font-medium">وظایف من</span>
@@ -216,7 +216,7 @@
             <!-- حسابداری من - فقط عامل -->
             <template x-if="currentUser.role === 'agent'">
                 <button @click="currentPage = 'agentAccounting'"
-                        :class="currentPage === 'agentAccounting' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                        :class="currentPage === 'agentAccounting' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
                         class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                     <i class="fas fa-wallet text-lg"></i>
                     <span class="font-medium">حسابداری من</span>
@@ -226,7 +226,7 @@
             <!-- سفارت - مدیر و کارمند -->
             <template x-if="currentUser.role === 'manager' || currentUser.role === 'employee'">
                 <button @click="currentPage = 'embassy'"
-                        :class="currentPage === 'embassy' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                        :class="currentPage === 'embassy' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
                         class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                     <i class="fas fa-landmark text-lg"></i>
                     <span class="font-medium">سفارت</span>
@@ -236,7 +236,7 @@
             <!-- مدیریت کاربران - فقط مدیر -->
             <template x-if="currentUser.role === 'manager'">
                 <button @click="currentPage = 'users'"
-                        :class="currentPage === 'users' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                        :class="currentPage === 'users' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
                         class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                     <i class="fas fa-users text-lg"></i>
                     <span class="font-medium">مدیریت کاربران</span>
@@ -249,14 +249,14 @@
                     <p class="text-black-400 text-xs font-semibold px-4 mb-2">میانبرها</p>
                     
                     <button @click="currentPage = 'orders'"
-                            :class="currentPage === 'orders' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                            :class="currentPage === 'orders' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
                             class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                         <i class="fas fa-clipboard-list text-lg"></i>
                         <span class="font-medium">سفارشات</span>
                     </button>
 
                     <a href="archive.html"
-                       class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl text-blue-100 hover:bg-white hover:bg-opacity-10 transition-all duration-200">
+                       class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl text-black-100 hover:bg-white hover:bg-opacity-10 transition-all duration-200">
                         <i class="fas fa-archive text-lg"></i>
                         <span class="font-medium">بایگانی فایل‌ها</span>
                     </a>
@@ -266,7 +266,7 @@
                         <div>
                             <!-- دکمه اصلی حسابداری با arrow -->
                             <button @click="accMenuOpen = !accMenuOpen"
-                                    :class="currentPage === 'accounting' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                                    :class="currentPage === 'accounting' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
                                     class="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200">
                                 <div class="flex items-center space-x-3 space-x-reverse">
                                     <i class="fas fa-calculator text-lg"></i>
@@ -302,7 +302,7 @@
                     <!-- حسابداری - فقط کارمند (بدون dropdown) -->
                     <template x-if="currentUser.role === 'employee'">
                         <button @click="currentPage = 'accounting'; accPage = 'main'; empAccPage = 'main'"
-                                :class="currentPage === 'accounting' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                                :class="currentPage === 'accounting' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
                                 class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                             <i class="fas fa-calculator text-lg"></i>
                             <span class="font-medium">حسابداری من</span>
@@ -313,7 +313,7 @@
                     <!-- <template x-if="currentUser.role === 'manager'">...</template> -->
 
                     <button @click="currentPage = 'profile'"
-                            :class="currentPage === 'profile' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                            :class="currentPage === 'profile' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
                             class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                         <i class="fas fa-cog text-lg"></i>
                         <span class="font-medium">تنظیمات</span>
@@ -420,7 +420,7 @@
 
             <!-- Orders Page -->
             <div x-show="currentPage === 'orders'">
-                <div x-html="ordersContent || '<div class=\'text-center py-8\'><i class=\'fas fa-spinner fa-spin text-4xl text-blue-500\'></i><p class=\'mt-4 text-white\'>در حال بارگذاری...</p></div>'"></div>
+                <div x-html="ordersContent || '<div class=\'text-center py-8\'><i class=\'fas fa-spinner fa-spin text-4xl text-black-500\'></i><p class=\'mt-4 text-white\'>در حال بارگذاری...</p></div>'"></div>
             </div>
             
             <!-- Accounting Page (Manager and Employee) -->
@@ -451,7 +451,7 @@
                                             <h3 class="text-xl font-bold text-white mb-2">حسابداری شخصی</h3>
                                             <p class="text-black-400 text-sm">مشاهده درآمد، هزینه و سابقه مالی</p>
                                         </div>
-                                        <i class="fas fa-chevron-left text-blue-300 group-hover:text-white transition-colors"></i>
+                                        <i class="fas fa-chevron-left text-black-300 group-hover:text-white transition-colors"></i>
                                     </div>
                                 </button>
                                 <button @click="accPage = 'employees'; empAccPage = 'main'"
@@ -464,7 +464,7 @@
                                             <h3 class="text-xl font-bold text-white mb-2">حسابداری کارمندان</h3>
                                             <p class="text-black-400 text-sm">مدیریت ساعات، هزینه‌ها و کسورات</p>
                                         </div>
-                                        <i class="fas fa-chevron-left text-blue-300 group-hover:text-white transition-colors"></i>
+                                        <i class="fas fa-chevron-left text-black-300 group-hover:text-white transition-colors"></i>
                                     </div>
                                 </button>
                                 <button @click="accPage = 'embassy'"
@@ -477,7 +477,7 @@
                                             <h3 class="text-xl font-bold text-white mb-2">حسابداری سفارت</h3>
                                             <p class="text-black-400 text-sm">تسویه‌حساب، بیعانه و درآمد سفارتی</p>
                                         </div>
-                                        <i class="fas fa-chevron-left text-blue-300 group-hover:text-white transition-colors"></i>
+                                        <i class="fas fa-chevron-left text-black-300 group-hover:text-white transition-colors"></i>
                                     </div>
                                 </button>
                             </div>
@@ -490,7 +490,7 @@
 
                         <!-- سطح ۱: حسابداری سفارت — مدیر -->
                         <div x-show="accPage === 'embassy'">
-                            <button @click="accPage = 'main'" class="mb-4 flex items-center gap-2 text-blue-300 hover:text-white text-sm">
+                            <button @click="accPage = 'main'" class="mb-4 flex items-center gap-2 text-black-300 hover:text-white text-sm">
                                 <i class="fas fa-arrow-right"></i> بازگشت به حسابداری
                             </button>
                             <div x-html="getEmbassyAccountingContent()"></div>
@@ -569,7 +569,7 @@
             
             content.innerHTML = debugLog.slice(-20).reverse().map(entry => {
                 const typeColors = {
-                    info: 'text-blue-400',
+                    info: 'text-black-400',
                     success: 'text-green-400',
                     warning: 'text-yellow-400',
                     error: 'text-red-400'

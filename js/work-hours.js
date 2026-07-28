@@ -475,12 +475,12 @@ const WorkHoursUI = (function() {
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                         <div class="flex items-center gap-4">
                             <div class="w-14 h-14 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                                <i class="fas fa-clock text-2xl text-blue-400"></i>
+                                <i class="fas fa-clock text-2xl text-black-400"></i>
                             </div>
                             <div>
-                                <p class="text-black-400 text-sm">کل ساعات تأیید شده</p>
+                                <p class="text-black-400 text-sm">کل ساعات تأیید شده شده</p>
                                 <p class="text-3xl font-bold text-white">${totalHours}</p>
-                                <p class="text-blue-300 text-xs">ساعت</p>
+                                <p class="text-black-300 text-xs">ساعت</p>
                             </div>
                         </div>
                     </div>
@@ -493,7 +493,7 @@ const WorkHoursUI = (function() {
                             <div>
                                 <p class="text-black-400 text-sm">در انتظار تأیید</p>
                                 <p class="text-3xl font-bold text-white">${workHours.filter(h => h.status === 'pending').length}</p>
-                                <p class="text-blue-300 text-xs">ثبت</p>
+                                <p class="text-black-300 text-xs">ثبت</p>
                             </div>
                         </div>
                     </div>
@@ -506,7 +506,7 @@ const WorkHoursUI = (function() {
                             <div>
                                 <p class="text-black-400 text-sm">تأیید شده</p>
                                 <p class="text-3xl font-bold text-white">${workHours.filter(h => h.status === 'approved').length}</p>
-                                <p class="text-blue-300 text-xs">ثبت</p>
+                                <p class="text-black-300 text-xs">ثبت</p>
                             </div>
                         </div>
                     </div>
@@ -524,17 +524,17 @@ const WorkHoursUI = (function() {
                             <label class="block text-black-400 text-sm mb-2">تاریخ</label>
                             <div class="space-y-2">
                                 <div class="flex gap-2">
+                                    <button type="button" onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp',-2)"
+                                        class="flex-1 text-xs py-2 rounded-xl bg-white/10 hover:bg-blue-500/30 text-black-400 hover:text-white border border-white/10 transition-all">پریروز</button>
                                     <button type="button" onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp',-1)"
-                                        class="flex-1 text-xs py-2 rounded-xl bg-white/10 hover:bg-blue-500/30 text-black-400 hover:text-white border border-white/10 transition-all">دیروز</button>
-                                    <button type="button" onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp',0)"
-                                        class="flex-1 text-xs py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white border border-blue-500 transition-all font-bold">امروز</button>
+                                        class="flex-1 text-xs py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white border border-blue-500 transition-all font-bold">دیروز</button>
                                 </div>
                                 <input type="hidden" id="workDate" value="${today}">
                                 <button type="button" id="workDate-disp"
                                     onclick="WorkHoursUI.openJalaliPicker('workDate','workDate-disp')"
                                     class="w-full text-right bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-black-400 text-sm flex items-center justify-between hover:bg-white/15 transition-all">
                                     <span id="workDate-disp-text">${today}</span>
-                                    <i class="fas fa-calendar-alt text-blue-400"></i>
+                                    <i class="fas fa-calendar-alt text-black-400"></i>
                                 </button>
                             </div>
                         </div>
@@ -603,10 +603,10 @@ const WorkHoursUI = (function() {
                                 <label class="block text-black-400 text-sm mb-2">تاریخ کسر <span class="text-red-400">*</span></label>
                                 <div class="space-y-2">
                                     <div class="flex gap-2">
+                                        <button type="button" onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp',-2)"
+                                            class="flex-1 text-xs py-2 rounded-xl bg-white/10 hover:bg-red-500/30 text-black-400 hover:text-white border border-white/10 transition-all">پریروز</button>
                                         <button type="button" onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp',-1)"
-                                            class="flex-1 text-xs py-2 rounded-xl bg-white/10 hover:bg-red-500/30 text-black-400 hover:text-white border border-white/10 transition-all">دیروز</button>
-                                        <button type="button" onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp',0)"
-                                            class="flex-1 text-xs py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white border border-red-500 transition-all font-bold">امروز</button>
+                                            class="flex-1 text-xs py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white border border-red-500 transition-all font-bold">دیروز</button>
                                     </div>
                                     <input type="hidden" id="deductionDate">
                                     <button type="button" id="deductionDate-disp"
@@ -656,10 +656,10 @@ const WorkHoursUI = (function() {
                             <label class="block text-black-400 text-sm mb-2">تاریخ</label>
                             <div class="space-y-2">
                                 <div class="flex gap-2">
+                                    <button type="button" onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp',-2)"
+                                        class="flex-1 text-xs py-2 rounded-xl bg-white/10 hover:bg-orange-500/30 text-black-400 hover:text-white border border-white/10 transition-all">پریروز</button>
                                     <button type="button" onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp',-1)"
-                                        class="flex-1 text-xs py-2 rounded-xl bg-white/10 hover:bg-orange-500/30 text-black-400 hover:text-white border border-white/10 transition-all">دیروز</button>
-                                    <button type="button" onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp',0)"
-                                        class="flex-1 text-xs py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white border border-orange-500 transition-all font-bold">امروز</button>
+                                        class="flex-1 text-xs py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white border border-orange-500 transition-all font-bold">دیروز</button>
                                 </div>
                                 <input type="hidden" id="expenseDate" value="${today}">
                                 <button type="button" id="expenseDate-disp"
@@ -703,7 +703,7 @@ const WorkHoursUI = (function() {
                 <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                     <div class="flex items-center justify-between mb-6">
                         <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                            <i class="fas fa-list text-blue-400"></i>
+                            <i class="fas fa-list text-black-400"></i>
                             سوابق کاری
                         </h3>
                         
@@ -747,15 +747,95 @@ const WorkHoursUI = (function() {
                     
                     ${allEntries.length === 0 ? `
                         <div class="text-center py-12">
-                            <i class="fas fa-clock text-5xl text-blue-400/30 mb-4"></i>
+                            <i class="fas fa-clock text-5xl text-black-400/30 mb-4"></i>
                             <p class="text-black-400">هنوز رکوردی ثبت نشده است</p>
                         </div>
                     ` : ''}
                 </div>
             </div>
+
+            <!-- پیام‌های رد از مدیر -->
+            ${_renderRejectMessagesForEmployee(currentUser.id)}
         `;
     }
-    
+    /**
+     * رندر پیام‌های رد برای کارمند
+     */
+    function _renderRejectMessagesForEmployee(employeeId) {
+        const msgs = (() => {
+            try { return JSON.parse(localStorage.getItem('work_reject_messages')||'[]'); } catch { return []; }
+        })().filter(m => m.employeeId === employeeId && m.canResubmit && !m.resubmitted);
+
+        if (!msgs.length) return '';
+
+        const rows = msgs.map(m => `
+            <div class="bg-red-500/10 border border-red-400/30 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="bg-red-500/20 text-red-300 text-xs px-2 py-0.5 rounded-full font-bold">رد شده</span>
+                        <span class="text-white text-sm font-medium">
+                            ${m.entryType==='expense'?'هزینه':'ساعت کاری'} — تاریخ ${m.entryDate||''}
+                        </span>
+                    </div>
+                    <p class="text-red-200 text-sm"><i class="fas fa-comment-alt ml-1"></i>${m.reason||'—'}</p>
+                    <p class="text-gray-400 text-xs mt-1">لطفاً با توجه به توضیحات مدیر، ثبت مجدد کنید</p>
+                </div>
+                <button onclick="WorkHoursUI.resubmitEntry('${m.id}', '${m.entryType}', '${m.entryDate}')"
+                    class="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 border border-blue-400/30 rounded-xl text-sm transition-all flex-shrink-0">
+                    <i class="fas fa-redo ml-1"></i>ارسال مجدد
+                </button>
+            </div>`).join('');
+
+        return `
+        <div class="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-red-400/20">
+            <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fas fa-exclamation-circle text-red-400"></i>
+                پیام‌های مدیر — نیاز به اصلاح
+                <span class="bg-red-500/20 text-red-300 text-sm px-2 py-0.5 rounded-full">${msgs.length}</span>
+            </h3>
+            <div class="space-y-3">${rows}</div>
+        </div>`;
+    }
+
+    /**
+     * ارسال مجدد ورودی رد شده
+     */
+    function resubmitEntry(msgId, entryType, entryDate) {
+        // علامت‌گذاری پیام به عنوان resubmitted
+        const msgs = (() => {
+            try { return JSON.parse(localStorage.getItem('work_reject_messages')||'[]'); } catch { return []; }
+        })();
+        const msg = msgs.find(m => m.id === msgId);
+        if (msg) {
+            msg.resubmitted = true;
+            localStorage.setItem('work_reject_messages', JSON.stringify(msgs));
+        }
+
+        // پر کردن فرم با تاریخ مورد نظر و اسکرول
+        if (entryType === 'expense') {
+            const expDateEl = document.getElementById('expenseDate');
+            if (expDateEl) {
+                expDateEl.value = entryDate || '';
+                const dispText = document.getElementById('expenseDate-disp-text');
+                if (dispText) dispText.textContent = entryDate || '';
+            }
+            // اسکرول به فرم هزینه
+            document.getElementById('expenseForm')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            showNotification('تاریخ فرم هزینه تنظیم شد — اطلاعات را ویرایش و ارسال کنید', 'info');
+        } else {
+            const workDateEl = document.getElementById('workDate');
+            if (workDateEl) {
+                workDateEl.value = entryDate || '';
+                const dispText = document.getElementById('workDate-disp-text');
+                if (dispText) dispText.textContent = entryDate || '';
+            }
+            document.getElementById('workHoursForm')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            showNotification('تاریخ فرم ساعت کاری تنظیم شد — اطلاعات را ویرایش و ارسال کنید', 'info');
+        }
+
+        refreshContent();
+    }
+
     /**
      * محتوای صفحه مدیر
      */
@@ -807,7 +887,7 @@ const WorkHoursUI = (function() {
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                         <div class="flex items-center gap-4">
                             <div class="w-14 h-14 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                                <i class="fas fa-clock text-2xl text-blue-400"></i>
+                                <i class="fas fa-clock text-2xl text-black-400"></i>
                             </div>
                             <div>
                                 <p class="text-black-400 text-sm">کل ساعات</p>
@@ -830,12 +910,12 @@ const WorkHoursUI = (function() {
                                 <div class="bg-white/5 rounded-xl p-4 border border-white/10 flex items-center justify-between">
                                     <div class="flex items-center gap-4">
                                         <div class="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
-                                            <i class="fas fa-user text-blue-400"></i>
+                                            <i class="fas fa-user text-black-400"></i>
                                         </div>
                                         <div>
                                             <p class="text-white font-medium">${entry.employeeName}</p>
                                             <p class="text-black-400 text-sm">${typeof Jalali!=='undefined' ? Jalali.displayDate(entry.date) : entry.date} | ${entry.startTime || '-'} - ${entry.endTime || '-'}</p>
-                                            <p class="text-blue-300 text-xs">${entry.totalHours || 0} ساعت</p>
+                                            <p class="text-black-300 text-xs">${entry.totalHours || 0} ساعت</p>
                                         </div>
                                     </div>
                                     
@@ -881,7 +961,7 @@ const WorkHoursUI = (function() {
                                             <p class="text-white font-medium">${entry.employeeName}</p>
                                             <p class="text-black-400 text-sm">${typeof Jalali!=='undefined' ? Jalali.displayDate(entry.date) : entry.date}</p>
                                             <p class="text-orange-400 text-lg font-bold">${entry.amount ? entry.amount.toLocaleString('fa-IR') : 0} تومان</p>
-                                            ${entry.description ? `<p class="text-blue-300 text-xs mt-1">${entry.description}</p>` : ''}
+                                            ${entry.description ? `<p class="text-black-300 text-xs mt-1">${entry.description}</p>` : ''}
                                         </div>
                                     </div>
                                     
@@ -907,7 +987,7 @@ const WorkHoursUI = (function() {
                 <!-- جدول ساعات کارمندان -->
                 <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                     <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                        <i class="fas fa-table text-blue-400"></i>
+                        <i class="fas fa-table text-black-400"></i>
                         خلاصه ساعات کارمندان
                     </h3>
                     
@@ -930,14 +1010,14 @@ const WorkHoursUI = (function() {
                                         <td class="py-4 px-4">
                                             <div class="flex items-center gap-3">
                                                 <div class="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
-                                                    <i class="fas fa-user text-blue-400"></i>
+                                                    <i class="fas fa-user text-black-400"></i>
                                                 </div>
                                                 <span class="text-white font-medium">${emp.employeeName}</span>
                                             </div>
                                         </td>
                                         <td class="text-center py-4 px-4">
                                             <span class="text-2xl font-bold text-emerald-400">${emp.totalHours.toFixed(1)}</span>
-                                            <span class="text-blue-300 text-sm"> ساعت</span>
+                                            <span class="text-black-300 text-sm"> ساعت</span>
                                         </td>
                                         <td class="text-center py-4 px-4 text-white">${emp.entries}</td>
                                         <td class="text-center py-4 px-4">
@@ -951,7 +1031,7 @@ const WorkHoursUI = (function() {
                                         </td>
                                         <td class="text-center py-4 px-4">
                                             <button onclick="WorkHoursUI.viewEmployeeDetails('${emp.employeeId}')"
-                                                    class="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 rounded-lg text-sm transition-all">
+                                                    class="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/40 text-black-400 rounded-lg text-sm transition-all">
                                                 <i class="fas fa-eye ml-1"></i>مشاهده
                                             </button>
                                         </td>
@@ -959,7 +1039,7 @@ const WorkHoursUI = (function() {
                                 `).join('') : `
                                     <tr>
                                         <td colspan="7" class="text-center py-12">
-                                            <i class="fas fa-users text-5xl text-blue-400/30 mb-4"></i>
+                                            <i class="fas fa-users text-5xl text-black-400/30 mb-4"></i>
                                             <p class="text-black-400">هنوز ساعتی ثبت نشده است</p>
                                         </td>
                                     </tr>
@@ -1056,7 +1136,7 @@ const WorkHoursUI = (function() {
                 <td class="py-4 px-4 text-white">${typeof Jalali!=='undefined' ? Jalali.displayDate(expense.date) : expense.date}</td>
                 <td class="py-4 px-4">
                     <span class="text-xl font-bold text-orange-400">${expense.amount ? expense.amount.toLocaleString('fa-IR') : 0}</span>
-                    <span class="text-blue-300 text-sm"> تومان</span>
+                    <span class="text-black-300 text-sm"> تومان</span>
                 </td>
                 <td class="py-4 px-4 text-black-400 max-w-xs" title="${expense.description || '-'}">
                     ${expense.description || '-'}
@@ -1112,7 +1192,7 @@ const WorkHoursUI = (function() {
                     <td class="py-3 px-4">
                         ${isExpense ? 
                             '<span class="bg-orange-500/20 text-orange-400 px-2 py-1 rounded text-xs"><i class="fas fa-dollar-sign ml-1"></i>هزینه</span>' : 
-                            '<span class="bg-blue-500/20 text-blue-400 px-2 py-1 rounded text-xs"><i class="fas fa-clock ml-1"></i>ساعت کاری</span>'
+                            '<span class="bg-blue-500/20 text-black-400 px-2 py-1 rounded text-xs"><i class="fas fa-clock ml-1"></i>ساعت کاری</span>'
                         }
                     </td>
                     <td class="py-3 px-4 text-white">${typeof Jalali!=='undefined' ? Jalali.displayDate(entry.date) : entry.date}</td>
@@ -1230,28 +1310,32 @@ const WorkHoursUI = (function() {
         const startTime = document.getElementById('startTime').value;
         const endTime = document.getElementById('endTime').value;
         const description = (document.getElementById('workDescription')?.value || '').trim();
-        
+
         if (!date || !startTime || !endTime) {
             showNotification('لطفاً تمام فیلدها را پر کنید', 'error');
             return;
         }
-        
+
         if (startTime >= endTime) {
             showNotification('ساعت پایان باید بزرگتر از ساعت شروع باشد', 'error');
             return;
         }
-        
+
+        // بررسی یک‌بار ارسال در روز برای ساعت کاری
+        const existing = WorkHoursModule.getAllEntriesByEmployee(currentUser.id)
+            .filter(e => (e.type === 'work' || !e.type) && e.date === date && e.status !== 'rejected');
+        if (existing.length > 0) {
+            showNotification('برای این تاریخ قبلاً ساعت کاری ارسال شده است. فقط یک ارسال در هر روز مجاز است.', 'error');
+            return;
+        }
+
         const entry = {
-            employeeId: currentUser.id,
+            employeeId:   currentUser.id,
             employeeName: currentUser.name || currentUser.username || 'کارمند',
-            date,
-            startTime,
-            endTime,
-            description
+            date, startTime, endTime, description
         };
-        
+
         const result = WorkHoursModule.addWorkHour(entry);
-        
         if (result) {
             showNotification('ساعت کاری با موفقیت ثبت شد', 'success');
             resetForm();
@@ -1260,30 +1344,35 @@ const WorkHoursUI = (function() {
             showNotification('خطا در ثبت ساعت کاری', 'error');
         }
     }
-    
+
     /**
      * ثبت فرم هزینه‌ها
      */
     function submitExpenseForm() {
-        const date = document.getElementById('expenseDate').value;
+        const date   = document.getElementById('expenseDate').value;
         const amount = parseFloat(document.getElementById('expenseAmount').value);
         const description = document.getElementById('expenseDescription').value;
-        
+
         if (!date || !amount || amount <= 0) {
             showNotification('لطفاً تمام فیلدها را به درستی پر کنید', 'error');
             return;
         }
-        
+
+        // بررسی یک‌بار ارسال در روز برای هزینه
+        const existingExp = WorkHoursModule.getAllEntriesByEmployee(currentUser.id)
+            .filter(e => e.type === 'expense' && e.date === date && e.status !== 'rejected');
+        if (existingExp.length > 0) {
+            showNotification('برای این تاریخ قبلاً هزینه ارسال شده است. فقط یک ارسال در هر روز مجاز است.', 'error');
+            return;
+        }
+
         const entry = {
-            employeeId: currentUser.id,
+            employeeId:   currentUser.id,
             employeeName: currentUser.name || currentUser.username || 'کارمند',
-            date,
-            amount,
-            description
+            date, amount, description
         };
-        
+
         const result = WorkHoursModule.addExpense(entry);
-        
         if (result) {
             showNotification('هزینه با موفقیت ثبت شد', 'success');
             resetExpenseForm();
@@ -1372,15 +1461,85 @@ const WorkHoursUI = (function() {
     }
     
     /**
-     * رد ورودی (مدیر)
+     * رد ورودی (مدیر) — با دریافت دلیل و ارسال پیام به کارمند
      */
     function rejectEntry(id) {
-        const reason = prompt('دلیل رد را وارد کنید:');
-        if (reason !== null) {
-            WorkHoursModule.rejectWorkHour(id, reason);
-            showNotification('ساعت کاری رد شد', 'warning');
-            refreshContent();
+        // مودال دریافت دلیل رد
+        const existing = document.getElementById('__reject-modal');
+        if (existing) existing.remove();
+
+        const entry = WorkHoursModule.getWorkHours().find(e => e.id === id);
+        if (!entry) { showNotification('ورودی یافت نشد', 'error'); return; }
+
+        const isExpense = entry.type === 'expense';
+        const entryDesc = isExpense
+            ? `هزینه: ${Number(entry.amount||0).toLocaleString('fa-IR')} تومان`
+            : `ساعت کاری: ${entry.totalHours||0} ساعت — ${entry.date||''}`;
+
+        const modal = document.createElement('div');
+        modal.id = '__reject-modal';
+        modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4';
+        modal.innerHTML = `
+            <div class="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-red-500/30 shadow-2xl" onclick="event.stopPropagation()">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-white font-bold flex items-center gap-2">
+                        <i class="fas fa-times-circle text-red-400"></i>رد ورودی
+                    </h3>
+                    <button onclick="document.getElementById('__reject-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="bg-white/5 rounded-xl p-3 mb-4 text-sm text-blue-300">
+                    <p class="font-semibold text-white mb-1">${entry.employeeName||'کارمند'}</p>
+                    <p>${entryDesc}</p>
+                    ${entry.description ? `<p class="text-gray-400 text-xs mt-1">${entry.description}</p>` : ''}
+                </div>
+                <div class="mb-4">
+                    <label class="text-gray-400 text-sm mb-2 block">دلیل رد (برای کارمند ارسال می‌شود) <span class="text-red-400">*</span></label>
+                    <textarea id="__reject-reason" rows="3" placeholder="مثال: ساعت‌ها اشتباه است، لطفاً اصلاح و مجدداً ارسال کنید..."
+                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-400 resize-none"></textarea>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="WorkHoursUI._confirmReject('${id}')"
+                        class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl transition-all">
+                        <i class="fas fa-times ml-1"></i>رد و ارسال پیام
+                    </button>
+                    <button onclick="document.getElementById('__reject-modal').remove()"
+                        class="px-5 bg-gray-600 hover:bg-gray-500 text-white py-2.5 rounded-xl">انصراف</button>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target===modal) modal.remove(); });
+        document.getElementById('__reject-reason')?.focus();
+    }
+
+    function _confirmReject(id) {
+        const reason = document.getElementById('__reject-reason')?.value.trim();
+        if (!reason) { alert('لطفاً دلیل رد را وارد کنید'); return; }
+
+        // ذخیره رد با دلیل
+        WorkHoursModule.rejectWorkHour(id, reason);
+
+        // ذخیره پیام رد در لیست پیام‌های کارمند
+        const entry = WorkHoursModule.getWorkHours().find(e => e.id === id);
+        if (entry) {
+            const msgs = (() => { try { return JSON.parse(localStorage.getItem('work_reject_messages')||'[]'); } catch { return []; } })();
+            msgs.push({
+                id:           'rej_' + Date.now(),
+                entryId:      id,
+                employeeId:   entry.employeeId,
+                employeeName: entry.employeeName,
+                entryType:    entry.type || 'work',
+                entryDate:    entry.date || '',
+                reason,
+                canResubmit:  true,
+                resubmitted:  false,
+                createdAt:    new Date().toISOString()
+            });
+            localStorage.setItem('work_reject_messages', JSON.stringify(msgs));
         }
+
+        document.getElementById('__reject-modal')?.remove();
+        showNotification('ورودی رد شد و پیام برای کارمند ثبت شد', 'warning');
+        refreshContent();
     }
     
     /**
@@ -1396,7 +1555,7 @@ const WorkHoursUI = (function() {
                 <div class="bg-slate-800 rounded-2xl p-6 max-w-4xl w-full max-h-[80vh] overflow-auto" onclick="event.stopPropagation()">
                     <div class="flex items-center justify-between mb-6">
                         <h3 class="text-xl font-bold text-white">
-                            <i class="fas fa-user text-blue-400 ml-2"></i>
+                            <i class="fas fa-user text-black-400 ml-2"></i>
                             ساعات کاری ${employee}
                         </h3>
                         <button onclick="this.closest('.fixed').remove()" class="text-white hover:text-red-400">
@@ -1405,7 +1564,7 @@ const WorkHoursUI = (function() {
                     </div>
                     
                     <div class="bg-white/10 rounded-xl p-4 mb-6">
-                        <p class="text-black-400">کل ساعات تأیید شده: <span class="text-2xl font-bold text-emerald-400">${totalHours}</span> ساعت</p>
+                        <p class="text-black-400">کل ساعات تأیید شده شده: <span class="text-2xl font-bold text-emerald-400">${totalHours}</span> ساعت</p>
                     </div>
                     
                     <table class="w-full">
@@ -1527,7 +1686,7 @@ const WorkHoursUI = (function() {
     function _renderManagerDeductions() {
         try {
             const list = JSON.parse(localStorage.getItem('work_deductions') || '[]');
-            if (!list.length) return '<p class="text-blue-300 text-sm text-center py-6">هیچ کسوراتی ثبت نشده</p>';
+            if (!list.length) return '<p class="text-black-300 text-sm text-center py-6">هیچ کسوراتی ثبت نشده</p>';
 
             // گروه‌بندی بر اساس کارمند
             const grouped = {};
@@ -1562,7 +1721,7 @@ const WorkHoursUI = (function() {
                         </span>
                     </div>
                     <table class="w-full text-sm">
-                        <thead><tr class="text-blue-300 text-xs border-b border-white/10">
+                        <thead><tr class="text-black-300 text-xs border-b border-white/10">
                             <th class="text-right py-1 px-3">تاریخ</th>
                             <th class="text-right py-1 px-3">مبلغ</th>
                             <th class="text-right py-1 px-3">علت</th>
@@ -1691,7 +1850,7 @@ const WorkHoursUI = (function() {
         const u    = (() => { try { return JSON.parse(localStorage.getItem('currentUser') || '{}'); } catch { return {}; } })();
         const role = u.role || '';
         const list = _getDeductions().filter(d => role === 'manager' || d.employeeId === u.id);
-        if (!list.length) return '<p class="text-blue-300 text-sm text-center py-4">کسوراتی ثبت نشده</p>';
+        if (!list.length) return '<p class="text-black-300 text-sm text-center py-4">کسوراتی ثبت نشده</p>';
         const rows = list.slice().reverse().map(d => `
             <tr class="border-b border-white/5 hover:bg-white/5">
                 <td class="py-2 px-3 text-white text-sm">${d.employeeName || '—'}</td>
@@ -1705,7 +1864,7 @@ const WorkHoursUI = (function() {
             </tr>`).join('');
         return `
             <table class="w-full text-sm mt-2">
-                <thead><tr class="text-blue-300 text-xs border-b border-white/10">
+                <thead><tr class="text-black-300 text-xs border-b border-white/10">
                     <th class="text-right py-2 px-3">کارمند</th>
                     <th class="text-right py-2 px-3">تاریخ</th>
                     <th class="text-right py-2 px-3">مبلغ</th>
@@ -1738,7 +1897,7 @@ const WorkHoursUI = (function() {
         if (hidden) hidden.value = jStr;
         var dispBtn = document.getElementById(dispBtnId);
         if (dispBtn) {
-            var label = offset === 0 ? 'امروز' : 'دیروز';
+            var label = offset === -1 ? 'دیروز' : offset === -2 ? 'پریروز' : 'امروز';
             var display = (typeof Jalali !== 'undefined') ? Jalali.toJalaliDisplay(d) : jStr;
             var textSpan = document.getElementById(hiddenId + '-disp-text');
             if (textSpan) textSpan.textContent = display + ' (' + label + ')';
@@ -1815,7 +1974,8 @@ const WorkHoursUI = (function() {
             html+='<button type="button" onclick="WorkHoursUI._pickWhDate(\''+hiddenId+'\',\''+dispBtnId+'\','+jy+','+jm+','+day+')" style="background:'+bg+';color:'+col+';border:'+brd+';border-radius:6px;padding:5px 0;font-size:12px;cursor:pointer;text-align:center;">'+day+'</button>';
         }
         html+='</div><div style="display:flex;gap:4px;margin-top:8px;">';
-        html+='<button type="button" onclick="WorkHoursUI.setQuickDate(\''+hiddenId+'\',\''+dispBtnId+'\',0);document.getElementById(\'__wh-cal-popup\').remove();" style="flex:1;background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:5px;font-size:11px;cursor:pointer;">امروز</button>';
+        html+='<button type="button" onclick="WorkHoursUI.setQuickDate(\''+hiddenId+'\',\''+dispBtnId+'\',-2);document.getElementById(\'__wh-cal-popup\').remove();" style="flex:1;background:#6b7280;color:#fff;border:none;border-radius:8px;padding:5px;font-size:11px;cursor:pointer;">پریروز</button>';
+        html+='<button type="button" onclick="WorkHoursUI.setQuickDate(\''+hiddenId+'\',\''+dispBtnId+'\',-1);document.getElementById(\'__wh-cal-popup\').remove();" style="flex:1;background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:5px;font-size:11px;cursor:pointer;">دیروز</button>';
         html+='<button type="button" onclick="document.getElementById(\'__wh-cal-popup\').remove();" style="flex:1;background:#374151;color:#9ca3af;border:none;border-radius:8px;padding:5px;font-size:11px;cursor:pointer;">بستن</button>';
         html+='</div>';
         popup.innerHTML=html;
@@ -1847,6 +2007,8 @@ const WorkHoursUI = (function() {
         deleteEntry,
         approveEntry,
         rejectEntry,
+        _confirmReject,
+        resubmitEntry,
         viewEmployeeDetails,
         refreshContent,
         showNotification,

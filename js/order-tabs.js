@@ -21,7 +21,7 @@ const OrderTabsModule = {
                             <p class="text-sm text-gray-500">${universityDisplay} ${degreeDisplay ? '- ' + degreeDisplay : ''} ${fieldDisplay !== '---' ? '- ' + fieldDisplay : ''}</p>
                         </div>
                         <div class="text-left">
-                            <span class="px-3 py-1 rounded-full text-sm font-medium ${typeof OrdersModule !== 'undefined' ? OrdersModule.getStatusClass(order.status) : 'bg-blue-100 text-blue-800'}">
+                            <span class="px-3 py-1 rounded-full text-sm font-medium ${typeof OrdersModule !== 'undefined' ? OrdersModule.getStatusClass(order.status) : 'bg-blue-100 text-black-800'}">
                                 ${typeof OrdersModule !== 'undefined' ? OrdersModule.getStatusText(order.status) : order.status}
                             </span>
                             <p class="text-lg font-bold text-green-600 mt-2">${costDisplay}</p>
@@ -84,7 +84,7 @@ const OrderTabsModule = {
                             </span>
                             ${order.hasAttachment ? `
                                 <button onclick="window.downloadOrderFile('${order.id}', '${order.attachmentName}')"
-                                        class="text-blue-600 hover:underline text-sm">
+                                        class="text-black-600 hover:underline text-sm">
                                     <i class="fas fa-download ml-1"></i>دانلود
                                 </button>
                             ` : '<span class="text-xs text-gray-400">(فایل در دسترس نیست)</span>'}
@@ -181,7 +181,7 @@ const OrderTabsModule = {
                                             <h5 class="font-bold text-gray-800 text-lg mb-2">${work}</h5>
                                             <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                                                 <div class="flex items-center">
-                                                    <i class="fas fa-calendar-alt text-blue-600 ml-2"></i>
+                                                    <i class="fas fa-calendar-alt text-black-600 ml-2"></i>
                                                     <div>
                                                         <p class="text-gray-600 text-xs">زمان تحویل</p>
                                                         <p class="font-medium text-gray-800">${deadline || 'تعیین نشده'}</p>
@@ -237,9 +237,9 @@ const OrderTabsModule = {
                 <!-- Work Statistics -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                        <i class="fas fa-list-ol text-3xl text-blue-600 mb-2"></i>
-                        <p class="text-sm text-blue-700">تعداد کل کارها</p>
-                        <p class="text-2xl font-bold text-blue-900">${workList.length}</p>
+                        <i class="fas fa-list-ol text-3xl text-black-600 mb-2"></i>
+                        <p class="text-sm text-black-700">تعداد کل کارها</p>
+                        <p class="text-2xl font-bold text-black-900">${workList.length}</p>
                     </div>
                     <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
                         <i class="fas fa-check-double text-3xl text-green-600 mb-2"></i>
@@ -316,7 +316,7 @@ const OrderTabsModule = {
                             ${files.map(file => `
                                 <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                                     <div class="flex items-center flex-1">
-                                        <i class="fas fa-file text-xl text-blue-600 ml-3"></i>
+                                        <i class="fas fa-file text-xl text-black-600 ml-3"></i>
                                         <div class="flex-1 min-w-0">
                                             <p class="font-medium text-gray-800 truncate">${file.name}</p>
                                             <div class="flex items-center space-x-2 space-x-reverse text-xs text-gray-500 mt-1">
@@ -329,7 +329,7 @@ const OrderTabsModule = {
                                     </div>
                                     <div class="flex space-x-2 space-x-reverse">
                                         <button onclick="downloadFile('${file.id}')" 
-                                                class="text-blue-600 hover:text-blue-800 p-2" title="دانلود">
+                                                class="text-black-600 hover:text-black-800 p-2" title="دانلود">
                                             <i class="fas fa-download"></i>
                                         </button>
                                         ${canUploadFiles ? `
@@ -391,7 +391,7 @@ const OrderTabsModule = {
                             ${files.map(file => `
                                 <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                     <div class="flex items-center">
-                                        <i class="fas fa-file text-2xl text-blue-600 ml-3"></i>
+                                        <i class="fas fa-file text-2xl text-black-600 ml-3"></i>
                                         <div>
                                             <p class="font-medium">${file.name}</p>
                                             <p class="text-sm text-gray-500">
@@ -401,7 +401,7 @@ const OrderTabsModule = {
                                     </div>
                                     <div class="flex space-x-2 space-x-reverse">
                                         <button onclick="downloadFile('${file.id}')" 
-                                                class="text-blue-600 hover:text-blue-800 p-1" title="دانلود">
+                                                class="text-black-600 hover:text-black-800 p-1" title="دانلود">
                                             <i class="fas fa-download"></i>
                                         </button>
                                         ${canUploadFiles ? `
@@ -419,8 +419,8 @@ const OrderTabsModule = {
                 
                 ${canUploadFiles ? `
                     <div class="bg-blue-50 p-4 rounded-lg">
-                        <h5 class="font-semibold text-blue-800 mb-2">راهنمای آپلود فایل</h5>
-                        <ul class="text-sm text-blue-700 space-y-1">
+                        <h5 class="font-semibold text-black-800 mb-2">راهنمای آپلود فایل</h5>
+                        <ul class="text-sm text-black-700 space-y-1">
                             <li>• فرمت‌های مجاز: PDF, DOC, DOCX, TXT, JPG, PNG, GIF</li>
                             <li>• حداکثر حجم فایل: 10 مگابایت</li>
                             <li>• نام فایل‌ها را به صورت توصیفی انتخاب کنید</li>
@@ -595,7 +595,7 @@ const OrderTabsModule = {
                             ${workLog.map(log => `
                                 <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
                                     <div class="flex-shrink-0">
-                                        <i class="fas fa-${this.getLogIcon(log.type)} text-blue-600"></i>
+                                        <i class="fas fa-${this.getLogIcon(log.type)} text-black-600"></i>
                                     </div>
                                     <div class="flex-1">
                                         <p class="text-sm font-medium text-gray-800">${log.message}</p>

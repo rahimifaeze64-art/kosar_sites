@@ -23,7 +23,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
             <div class="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg max-w-6xl w-full max-h-[95vh] overflow-y-auto">
                 <div class="p-6 border-b border-blue-200 sticky top-0 bg-gradient-to-r from-blue-100 to-indigo-100 z-10">
                     <div class="flex items-center justify-between">
-                        <h3 class="text-xl font-bold text-blue-900">
+                        <h3 class="text-xl font-bold text-black-900">
                             <i class="fas fa-user-edit text-indigo-600 ml-2"></i>
                             ویرایش پروفایل دانشجو - ${student.name}
                         </h3>

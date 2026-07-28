@@ -161,7 +161,7 @@ const AgentAccountingModule = {
                 </div>
                 <div class="bg-slate-800 rounded-lg p-4 text-center">
                     <p class="text-gray-400 text-sm mb-1">در حال انجام</p>
-                    <p class="text-3xl font-bold text-blue-400">${summary.inProgressOrders}</p>
+                    <p class="text-3xl font-bold text-black-400">${summary.inProgressOrders}</p>
                 </div>
                 <div class="bg-slate-800 rounded-lg p-4 text-center">
                     <p class="text-gray-400 text-sm mb-1">شروع نشده</p>
@@ -308,7 +308,7 @@ const AgentAccountingModule = {
         const currency = order.currency || 'تومان';
         const statusMap = {
             'pending': { text: 'شروع نشده', cls: 'bg-yellow-900 text-yellow-300' },
-            'in_progress': { text: 'در حال انجام', cls: 'bg-blue-900 text-blue-300' },
+            'in_progress': { text: 'در حال انجام', cls: 'bg-blue-900 text-black-300' },
             'completed': { text: 'تکمیل شده', cls: 'bg-green-900 text-green-300' },
             'approved': { text: 'تایید شده', cls: 'bg-yellow-900 text-yellow-300' },
         };

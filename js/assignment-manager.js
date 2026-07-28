@@ -36,7 +36,7 @@ const AssignmentManagerModule = {
                 
                 <!-- Quick Actions -->
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h5 class="font-semibold text-blue-800 mb-3">عملیات سریع</h5>
+                    <h5 class="font-semibold text-black-800 mb-3">عملیات سریع</h5>
                     <div class="flex space-x-3 space-x-reverse">
                         <select id="bulk-assign-doctor" class="form-control flex-1">
                             <option value="">انتخاب عامل...</option>
@@ -165,7 +165,7 @@ const AssignmentManagerModule = {
                 ${assignmentLogs.map(log => `
                     <div class="flex items-start space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg">
                         <div class="flex-shrink-0">
-                            <i class="fas fa-user-plus text-blue-600"></i>
+                            <i class="fas fa-user-plus text-black-600"></i>
                         </div>
                         <div class="flex-1">
                             <p class="text-sm font-medium text-gray-800">${log.message}</p>

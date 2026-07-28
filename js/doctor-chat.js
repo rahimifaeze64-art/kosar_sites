@@ -394,9 +394,9 @@ class DoctorChat {
             case 'file':
                 return `
                     <div class="flex items-center gap-3 bg-slate-700 bg-opacity-50 rounded-lg p-2">
-                        <i class="fas fa-file text-2xl text-blue-400"></i>
+                        <i class="fas fa-file text-2xl text-black-400"></i>
                         <div class="flex-1">
-                            <a href="${msg.fileData}" download="${msg.fileName}" class="text-blue-300 hover:text-black-400 hover:underline">
+                            <a href="${msg.fileData}" download="${msg.fileName}" class="text-black-300 hover:text-black-400 hover:underline">
                                 ${msg.fileName}
                             </a>
                         </div>
@@ -492,7 +492,7 @@ class DoctorChat {
             <div class="py-2">
                 <button onclick="window.doctorChatInstance.editMessage('${messageId}')" 
                         class="w-full text-right px-4 py-2 hover:bg-slate-700 text-white flex items-center gap-3">
-                    <i class="fas fa-edit text-blue-400"></i>
+                    <i class="fas fa-edit text-black-400"></i>
                     <span>ویرایش</span>
                 </button>
                 <button onclick="window.doctorChatInstance.deleteMessage('${messageId}')" 
@@ -544,7 +544,7 @@ class DoctorChat {
         modal.innerHTML = `
             <div class="bg-slate-800 rounded-2xl p-6 max-w-md w-11/12">
                 <h3 class="text-xl font-bold text-white mb-4">
-                    <i class="fas fa-edit text-blue-400 ml-2"></i>
+                    <i class="fas fa-edit text-black-400 ml-2"></i>
                     ویرایش پیام
                 </h3>
                 <textarea id="edit-message-text" 
@@ -688,7 +688,7 @@ class DoctorChat {
                     </button>
                     <button onclick="window.doctorChatInstance.forwardToChat('${messageId}'); this.closest('.fixed').remove();" 
                             class="w-full text-right px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg flex items-center gap-3">
-                        <i class="fas fa-comments text-blue-400"></i>
+                        <i class="fas fa-comments text-black-400"></i>
                         <span>گفتگوی شخصی</span>
                     </button>
                 </div>

@@ -184,10 +184,10 @@ const EnhancedDashboardModule = {
                         <div class="bg-white rounded-xl shadow p-5 border-r-4 border-blue-500 flex items-center justify-between">
                             <div>
                                 <p class="text-sm text-gray-500 mb-1">سفارشات فعال</p>
-                                <p class="text-3xl font-bold text-blue-600">${stats.in_progress_orders || 0}</p>
+                                <p class="text-3xl font-bold text-black-600">${stats.in_progress_orders || 0}</p>
                                 <p class="text-xs text-gray-400 mt-1">${stats.pending_orders || 0} در انتظار</p>
                             </div>
-                            <div class="bg-blue-50 rounded-full p-3"><i class="fas fa-tasks text-blue-500 text-2xl"></i></div>
+                            <div class="bg-blue-50 rounded-full p-3"><i class="fas fa-tasks text-black-500 text-2xl"></i></div>
                         </div>
 
                         <div class="bg-white rounded-xl shadow p-5 border-r-4 border-green-500 flex items-center justify-between">
@@ -285,7 +285,7 @@ const EnhancedDashboardModule = {
                                     </div>
                                     <span class="px-3 py-1 rounded-full text-xs font-medium ${
                                         order.status === 'pending'     ? 'bg-yellow-100 text-yellow-800' :
-                                        order.status === 'in_progress' ? 'bg-blue-100   text-blue-800'   :
+                                        order.status === 'in_progress' ? 'bg-blue-100   text-black-800'   :
                                         order.status === 'completed'   ? 'bg-green-100  text-green-800'  :
                                         'bg-gray-100 text-gray-800'}">
                                         ${order.status === 'pending'     ? 'در انتظار'    :
@@ -376,10 +376,10 @@ const EnhancedDashboardModule = {
                         <div class="bg-white rounded-xl shadow p-4 border-r-4 border-blue-500 flex items-center justify-between">
                             <div>
                                 <p class="text-xs text-gray-500">در حال انجام</p>
-                                <p class="text-3xl font-bold text-blue-600">${stats.in_progress_orders || 0}</p>
+                                <p class="text-3xl font-bold text-black-600">${stats.in_progress_orders || 0}</p>
                                 <p class="text-xs text-gray-400 mt-1">سفارش</p>
                             </div>
-                            <div class="bg-blue-50 rounded-full p-2"><i class="fas fa-tasks text-blue-400 text-xl"></i></div>
+                            <div class="bg-blue-50 rounded-full p-2"><i class="fas fa-tasks text-black-400 text-xl"></i></div>
                         </div>
 
                         <div class="bg-white rounded-xl shadow p-4 border-r-4 border-green-500 flex items-center justify-between">
@@ -496,7 +496,7 @@ const EnhancedDashboardModule = {
                         <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-blue-100">سفارشات من</p>
+                                    <p class="text-black-100">سفارشات من</p>
                                     <p class="text-3xl font-bold">${myOrders.length}</p>
                                 </div>
                                 <i class="fas fa-user-md text-4xl text-black-400"></i>
@@ -541,7 +541,7 @@ const EnhancedDashboardModule = {
                                         <div class="text-left">
                                             <div class="flex items-center space-x-2 space-x-reverse mb-2">
                                                 <span class="px-2 py-1 rounded-full text-xs font-medium ${
-                                                    order.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                                    order.status === 'in_progress' ? 'bg-blue-100 text-black-800' :
                                                     order.status === 'completed' ? 'bg-green-100 text-green-800' :
                                                     'bg-gray-100 text-gray-800'
                                                 }">
@@ -618,13 +618,13 @@ const EnhancedDashboardModule = {
                                             <p class="text-sm text-gray-300">${order.university} - ${order.field}</p>
                                             <p class="text-xs text-gray-400 mt-1">${order.stage || 'در حال بررسی'}</p>
                                             ${order.assignedDoctor || order.assigned_doctor_name ? 
-                                                `<p class="text-xs text-blue-400 mt-1">عامل مسئول: ${order.assignedDoctor || order.assigned_doctor_name}</p>` : ''
+                                                `<p class="text-xs text-black-400 mt-1">عامل مسئول: ${order.assignedDoctor || order.assigned_doctor_name}</p>` : ''
                                             }
                                         </div>
                                         <div class="text-left">
                                             <span class="px-3 py-1 rounded-full text-xs font-medium ${
                                                 order.status === 'pending'     ? 'bg-yellow-100 text-yellow-800' :
-                                                order.status === 'in_progress' ? 'bg-blue-100   text-blue-800'   :
+                                                order.status === 'in_progress' ? 'bg-blue-100   text-black-800'   :
                                                 order.status === 'completed'   ? 'bg-green-100  text-green-800'  :
                                                 'bg-gray-100 text-gray-800'
                                             }">
@@ -752,7 +752,7 @@ const EnhancedDashboardModule = {
                                         </div>
                                         <div class="text-left">
                                             <span class="px-2 py-1 rounded-full text-xs font-medium ${
-                                                order.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                                order.status === 'in_progress' ? 'bg-blue-100 text-black-800' :
                                                 order.status === 'completed' ? 'bg-green-100 text-green-800' :
                                                 'bg-gray-100 text-gray-800'
                                             }">

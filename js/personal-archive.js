@@ -187,8 +187,8 @@ const PersonalArchiveModule = {
     getFileIcon(type) {
         const icons = {
             'pdf': 'fas fa-file-pdf text-red-400',
-            'doc': 'fas fa-file-word text-blue-400',
-            'docx': 'fas fa-file-word text-blue-400',
+            'doc': 'fas fa-file-word text-black-400',
+            'docx': 'fas fa-file-word text-black-400',
             'xls': 'fas fa-file-excel text-green-400',
             'xlsx': 'fas fa-file-excel text-green-400',
             'ppt': 'fas fa-file-powerpoint text-orange-400',

@@ -22,7 +22,7 @@ const AgentModule = {
                 <!-- Header -->
                 <div class="flex justify-between items-center">
                     <h2 class="text-2xl font-bold text-white">
-                        <i class="fas fa-clipboard-check text-blue-400 ml-2"></i>
+                        <i class="fas fa-clipboard-check text-black-400 ml-2"></i>
                         وظایف من
                     </h2>
                 </div>
@@ -35,7 +35,7 @@ const AgentModule = {
                                 <p class="text-gray-400 text-sm">کل وظایف</p>
                                 <p class="text-2xl font-bold text-white">${tasks.length}</p>
                             </div>
-                            <i class="fas fa-tasks text-3xl text-blue-400"></i>
+                            <i class="fas fa-tasks text-3xl text-black-400"></i>
                         </div>
                     </div>
                     <div class="bg-slate-800 rounded-lg p-4">
@@ -51,9 +51,9 @@ const AgentModule = {
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-gray-400 text-sm">در حال انجام</p>
-                                <p class="text-2xl font-bold text-blue-400">${tasks.filter(t => t.status === 'in_progress').length}</p>
+                                <p class="text-2xl font-bold text-black-400">${tasks.filter(t => t.status === 'in_progress').length}</p>
                             </div>
-                            <i class="fas fa-spinner text-3xl text-blue-400"></i>
+                            <i class="fas fa-spinner text-3xl text-black-400"></i>
                         </div>
                     </div>
                     <div class="bg-slate-800 rounded-lg p-4">
@@ -70,7 +70,7 @@ const AgentModule = {
                 <!-- Tasks Grid -->
                 <div class="bg-slate-800 rounded-lg shadow-md p-4">
                     <h3 class="text-lg font-bold text-white mb-4">
-                        <i class="fas fa-list text-blue-400 ml-2"></i>
+                        <i class="fas fa-list text-black-400 ml-2"></i>
                         لیست وظایف تخصیص داده شده
                     </h3>
                     
@@ -156,7 +156,7 @@ const AgentModule = {
         const attachedFileHTML = task.attachedFile ? `
             <div class="mt-3 bg-slate-600 rounded-lg p-2">
                 <div class="flex items-center space-x-2 space-x-reverse">
-                    <i class="fas fa-paperclip text-blue-400"></i>
+                    <i class="fas fa-paperclip text-black-400"></i>
                     <div class="flex-1 min-w-0">
                         <p class="text-xs text-white truncate">${task.attachedFile.name}</p>
                     </div>

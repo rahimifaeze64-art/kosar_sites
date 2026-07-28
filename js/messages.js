@@ -306,7 +306,7 @@ const MessagesModule = {
                     ${contentHTML}
                     <div class="flex items-center justify-between mt-2 text-xs ${isMe ? 'text-yellow-200' : 'text-gray-400'}">
                         <span>${this.formatTime(message.timestamp)}</span>
-                        ${isMe ? `<i class="fas fa-check-double mr-2 ${message.read ? 'text-blue-300' : ''}"></i>` : ''}
+                        ${isMe ? `<i class="fas fa-check-double mr-2 ${message.read ? 'text-black-300' : ''}"></i>` : ''}
                     </div>
                 </div>
             </div>
@@ -581,8 +581,8 @@ const MessagesModule = {
         const ext = fileName.split('.').pop().toLowerCase();
         const iconMap = {
             'pdf': 'fa-file-pdf text-red-400',
-            'doc': 'fa-file-word text-blue-400',
-            'docx': 'fa-file-word text-blue-400',
+            'doc': 'fa-file-word text-black-400',
+            'docx': 'fa-file-word text-black-400',
             'xls': 'fa-file-excel text-green-400',
             'xlsx': 'fa-file-excel text-green-400',
             'ppt': 'fa-file-powerpoint text-orange-400',

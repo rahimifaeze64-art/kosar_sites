@@ -113,11 +113,11 @@ const DashboardModule = {
                     <div class="bg-white rounded-xl shadow p-5 border-r-4 border-blue-500 flex items-center justify-between">
                         <div>
                             <p class="text-sm text-gray-500 mb-1">سفارشات فعال</p>
-                            <p class="text-3xl font-bold text-blue-600">${inProgress}</p>
+                            <p class="text-3xl font-bold text-black-600">${inProgress}</p>
                             <p class="text-xs text-gray-400 mt-1">${pendingOrders} در انتظار</p>
                         </div>
                         <div class="bg-blue-50 rounded-full p-3">
-                            <i class="fas fa-tasks text-blue-500 text-2xl"></i>
+                            <i class="fas fa-tasks text-black-500 text-2xl"></i>
                         </div>
                     </div>
 
@@ -286,8 +286,8 @@ const DashboardModule = {
                 <!-- Welcome Message -->
                 <div class="bg-gradient-to-r from-blue-500 to-yellow-600 text-white rounded-lg p-6">
                     <h2 class="text-2xl font-bold mb-2">خوش آمدید ${currentUser.name}</h2>
-                    <p class="text-blue-100">دانشگاه: ${currentUser.university}</p>
-                    <p class="text-blue-100">رشته: ${currentUser.field}</p>
+                    <p class="text-black-100">دانشگاه: ${currentUser.university}</p>
+                    <p class="text-black-100">رشته: ${currentUser.field}</p>
                 </div>
                 
                 <!-- Stats Cards -->
@@ -296,9 +296,9 @@ const DashboardModule = {
                         <div class="flex items-center justify-between">
                             <div>
                                 <h3 class="text-lg font-semibold text-gray-700">کل سفارشات</h3>
-                                <p class="text-3xl font-bold text-blue-600">${stats.totalOrders}</p>
+                                <p class="text-3xl font-bold text-black-600">${stats.totalOrders}</p>
                             </div>
-                            <i class="fas fa-clipboard-list text-blue-500 text-3xl"></i>
+                            <i class="fas fa-clipboard-list text-black-500 text-3xl"></i>
                         </div>
                     </div>
                     
@@ -426,7 +426,7 @@ const DashboardModule = {
                 case CONFIG.ORDER_STATUS.IN_PROGRESS:
                     statusMessage = `عامل در حال نوشتن ${order.type === 'نوشتن رساله' ? 'رساله' : order.type === 'نوشتن مقاله' ? 'مقاله' : 'سفارش'} شما است`;
                     statusIcon = 'fa-pen';
-                    statusColor = 'text-blue-600';
+                    statusColor = 'text-black-600';
                     break;
                 case CONFIG.ORDER_STATUS.COMPLETED:
                     statusMessage = 'سفارش تکمیل شده است';
@@ -474,7 +474,7 @@ const DashboardModule = {
                 <div class="flex justify-between items-center">
                     <p class="text-sm text-gray-600">مهلت: ${UTILS.formatDate(order.deadline)}</p>
                     <button onclick="window.viewOrder('${order.id}')" 
-                            class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                            class="text-black-600 hover:text-black-800 text-sm font-medium">
                         مشاهده جزئیات
                     </button>
                 </div>
@@ -485,7 +485,7 @@ const DashboardModule = {
     getStatusClass(status) {
         const classes = {
             [CONFIG.ORDER_STATUS.PENDING]:     'bg-yellow-100 text-yellow-800',
-            [CONFIG.ORDER_STATUS.IN_PROGRESS]: 'bg-blue-100 text-blue-800',
+            [CONFIG.ORDER_STATUS.IN_PROGRESS]: 'bg-blue-100 text-black-800',
             [CONFIG.ORDER_STATUS.COMPLETED]:   'bg-green-100 text-green-800'
         };
         return classes[status] || 'bg-gray-100 text-gray-800';
@@ -567,11 +567,11 @@ const DashboardModule = {
                         <div class="bg-white rounded-xl shadow p-4 border-r-4 border-blue-500 flex items-center justify-between">
                             <div>
                                 <p class="text-xs text-gray-500">در حال انجام</p>
-                                <p class="text-3xl font-bold text-blue-600">${inProgressOrders.length}</p>
+                                <p class="text-3xl font-bold text-black-600">${inProgressOrders.length}</p>
                                 <p class="text-xs text-gray-400 mt-1">سفارش</p>
                             </div>
                             <div class="bg-blue-50 rounded-full p-2">
-                                <i class="fas fa-tasks text-blue-400 text-xl"></i>
+                                <i class="fas fa-tasks text-black-400 text-xl"></i>
                             </div>
                         </div>
 
@@ -689,7 +689,7 @@ const DashboardModule = {
                         <div class="dashboard-card blue">
                             <div class="text-center">
                                 <h3 class="text-lg font-semibold text-gray-700">وظایف من</h3>
-                                <p class="text-3xl font-bold text-blue-600">${myOrders.length}</p>
+                                <p class="text-3xl font-bold text-black-600">${myOrders.length}</p>
                             </div>
                         </div>
                         <div class="dashboard-card yellow">
@@ -770,7 +770,7 @@ const DashboardModule = {
                         <div class="dashboard-card blue">
                             <div class="text-center">
                                 <h3 class="text-lg font-semibold text-gray-700">وظایف من</h3>
-                                <p class="text-3xl font-bold text-blue-600">${myOrders.length}</p>
+                                <p class="text-3xl font-bold text-black-600">${myOrders.length}</p>
                             </div>
                         </div>
                         <div class="dashboard-card yellow">
@@ -848,7 +848,7 @@ const DashboardModule = {
                         <div class="dashboard-card blue">
                             <div class="text-center">
                                 <h3 class="text-lg font-semibold text-gray-700">درآمد</h3>
-                                <p class="text-2xl font-bold text-blue-600">${this.formatCurrency(translationOrders.reduce((sum, o) => sum + (o.doctorShare || 0), 0))}</p>
+                                <p class="text-2xl font-bold text-black-600">${this.formatCurrency(translationOrders.reduce((sum, o) => sum + (o.doctorShare || 0), 0))}</p>
                             </div>
                         </div>
                     </div>

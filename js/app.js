@@ -499,14 +499,14 @@ function appController() {
     // Load orders page asynchronously
     async loadOrdersPage() {
       this.ordersContent =
-        '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i><p class="mt-4 text-white">در حال بارگذاری...</p></div>';
+        '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-4xl text-black-500"></i><p class="mt-4 text-white">در حال بارگذاری...</p></div>';
       this.ordersContent = await this.getOrdersContent();
     },
 
     // Load orders page with retry mechanism (حرفه‌ای)
     async loadOrdersPageWithRetry(maxRetries = 10) {
       this.ordersContent =
-        '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i><p class="mt-4 text-white">در حال بارگذاری...</p></div>';
+        '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-4xl text-black-500"></i><p class="mt-4 text-white">در حال بارگذاری...</p></div>';
 
       console.log("🔍 Checking OrdersModule availability:");
       console.log("  - typeof window.OrdersModule:", typeof window.OrdersModule);
@@ -611,7 +611,7 @@ function appController() {
         AccountingUI.init();
         return `<div>
             <button onclick="window._accPage='main'; document.querySelector('[x-show*=\"currentPage === \'accounting\'\"]').innerHTML=window.__alpineApp.getAccountingContent();"
-                class="mb-4 flex items-center gap-2 text-blue-300 hover:text-white text-sm"><i class="fas fa-arrow-right"></i> بازگشت</button>
+                class="mb-4 flex items-center gap-2 text-black-300 hover:text-white text-sm"><i class="fas fa-arrow-right"></i> بازگشت</button>
             ${AccountingUI.render()}</div>`;
       }
 
@@ -638,7 +638,7 @@ function appController() {
                             <h3 class="text-xl font-bold text-white mb-2">حسابداری شخصی</h3>
                             <p class="text-black-400 text-sm">مشاهده درآمد، هزینه و سابقه مالی</p>
                         </div>
-                        <i class="fas fa-chevron-left text-blue-300 group-hover:text-white transition-colors"></i>
+                        <i class="fas fa-chevron-left text-black-300 group-hover:text-white transition-colors"></i>
                     </div>
                 </div>
                 <!-- کارت ۲: حسابداری کارمندان -->
@@ -652,7 +652,7 @@ function appController() {
                             <h3 class="text-xl font-bold text-white mb-2">حسابداری کارمندان</h3>
                             <p class="text-black-400 text-sm">مدیریت ساعات، هزینه‌ها و کسورات کارمندان</p>
                         </div>
-                        <i class="fas fa-chevron-left text-blue-300 group-hover:text-white transition-colors"></i>
+                        <i class="fas fa-chevron-left text-black-300 group-hover:text-white transition-colors"></i>
                     </div>
                 </div>
             </div>
@@ -663,7 +663,7 @@ function appController() {
       if (!window._empAccPage) window._empAccPage = 'main';
       const page = window._empAccPage;
       const backToMain = `<button onclick="window._accPage='main'; window._empAccPage='main'; document.querySelector('[x-show*=\\"currentPage === \\'accounting\\'\\"]').innerHTML=document.querySelector('[x-data]').__x.$data.getAccountingContent();"
-          class="mb-4 flex items-center gap-2 text-blue-300 hover:text-white text-sm"><i class="fas fa-arrow-right"></i> بازگشت به حسابداری</button>`;
+          class="mb-4 flex items-center gap-2 text-black-300 hover:text-white text-sm"><i class="fas fa-arrow-right"></i> بازگشت به حسابداری</button>`;
 
       if (page === 'emp_accounting') {
         if (typeof EmployeeAccountingUI === 'undefined') return backToMain + '<p class="text-red-400">ماژول یافت نشد</p>';
@@ -678,7 +678,7 @@ function appController() {
       }
 
       const backBtn = `<button onclick="window._accPage='main'; window._empAccPage='main'; document.querySelector('[x-show*=\\"currentPage === \\'accounting\\'\\"]').innerHTML=document.querySelector('[x-data]').__x.$data.getAccountingContent();"
-          class="mb-4 flex items-center gap-2 text-blue-300 hover:text-white text-sm"><i class="fas fa-arrow-right"></i> بازگشت</button>`;
+          class="mb-4 flex items-center gap-2 text-black-300 hover:text-white text-sm"><i class="fas fa-arrow-right"></i> بازگشت</button>`;
 
       return `
         <div class="space-y-6">
@@ -692,13 +692,13 @@ function appController() {
                      onclick="window._empAccPage='emp_accounting'; document.querySelector('[x-show*=\\"currentPage === \\'accounting\\'\\"]').innerHTML=document.querySelector('[x-data]').__x.$data.getAccountingContent();">
                     <div class="flex flex-col items-center text-center gap-4">
                         <div class="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <i class="fas fa-calculator text-3xl text-blue-400"></i>
+                            <i class="fas fa-calculator text-3xl text-black-400"></i>
                         </div>
                         <div>
                             <h3 class="text-xl font-bold text-white mb-2">حسابداری کارمندان</h3>
                             <p class="text-black-400 text-sm">نرخ ساعتی، هزینه‌ها و کسورات</p>
                         </div>
-                        <i class="fas fa-chevron-left text-blue-300 group-hover:text-white transition-colors"></i>
+                        <i class="fas fa-chevron-left text-black-300 group-hover:text-white transition-colors"></i>
                     </div>
                 </div>
                 <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 cursor-pointer hover:bg-white/15 transition-all group"
@@ -711,7 +711,7 @@ function appController() {
                             <h3 class="text-xl font-bold text-white mb-2">ساعات کاری کارمندان</h3>
                             <p class="text-black-400 text-sm">تأیید ساعات، هزینه‌ها و کسورات</p>
                         </div>
-                        <i class="fas fa-chevron-left text-blue-300 group-hover:text-white transition-colors"></i>
+                        <i class="fas fa-chevron-left text-black-300 group-hover:text-white transition-colors"></i>
                     </div>
                 </div>
             </div>
@@ -1553,9 +1553,9 @@ window.getAgentTaskCard = function (task, userId) {
   const orderInfoHTML = task.isOrderTask
     ? `
         <div class="mt-2 bg-slate-700 rounded p-2 text-xs text-gray-300 space-y-1">
-            ${task.studentName ? `<div><i class="fas fa-user-graduate ml-1 text-blue-400"></i>دانشجو: <span class="text-white">${task.studentName}</span></div>` : ""}
-            ${task.university ? `<div><i class="fas fa-university ml-1 text-blue-400"></i>دانشگاه: <span class="text-white">${task.university}</span></div>` : ""}
-            ${task.orderType ? `<div><i class="fas fa-file-alt ml-1 text-blue-400"></i>نوع: <span class="text-white">${task.orderType}</span></div>` : ""}
+            ${task.studentName ? `<div><i class="fas fa-user-graduate ml-1 text-black-400"></i>دانشجو: <span class="text-white">${task.studentName}</span></div>` : ""}
+            ${task.university ? `<div><i class="fas fa-university ml-1 text-black-400"></i>دانشگاه: <span class="text-white">${task.university}</span></div>` : ""}
+            ${task.orderType ? `<div><i class="fas fa-file-alt ml-1 text-black-400"></i>نوع: <span class="text-white">${task.orderType}</span></div>` : ""}
         </div>
     `
     : "";
@@ -1771,9 +1771,9 @@ window.getMyAgentTasksContent = function () {
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-gray-400 text-sm">در حال انجام</p>
-                                <p class="text-2xl font-bold text-blue-400">${inProgressTasksCount}</p>
+                                <p class="text-2xl font-bold text-black-400">${inProgressTasksCount}</p>
                             </div>
-                            <i class="fas fa-spinner text-3xl text-blue-400"></i>
+                            <i class="fas fa-spinner text-3xl text-black-400"></i>
                         </div>
                     </div>
                     <div class="bg-slate-800 rounded-lg p-4">
@@ -1790,7 +1790,7 @@ window.getMyAgentTasksContent = function () {
                 <!-- Tasks from Orders Section -->
                 <div class="bg-slate-800 rounded-lg p-4">
                     <h3 class="text-lg font-bold text-white mb-4">
-                        <i class="fas fa-shopping-bag text-blue-400 ml-2"></i>
+                        <i class="fas fa-shopping-bag text-black-400 ml-2"></i>
                         وظایف تخصیص‌یافته از سفارشات
                         <span class="text-sm font-normal text-gray-400 mr-2">(${orderTasksCount} وظیفه)</span>
                     </h3>
@@ -1924,7 +1924,7 @@ window.getAgentOrderCard = function (order, index) {
                         </p>
                         <div class="grid grid-cols-2 gap-2" id="timer-container-${order.id}">
                             <div class="bg-slate-700 rounded-lg p-3 text-center ${isExpired ? "border-2 border-red-500" : ""}">
-                                <div class="text-2xl font-bold ${isExpired ? "text-red-400" : "text-blue-400"}" id="timer-days-${order.id}">
+                                <div class="text-2xl font-bold ${isExpired ? "text-red-400" : "text-black-400"}" id="timer-days-${order.id}">
                                     --
                                 </div>
                                 <div class="text-xs text-gray-400 mt-1">روز</div>
@@ -2095,12 +2095,12 @@ window.updateOrderTimer = function (orderId, deadlineDateTime) {
 
   // Add warning colors for urgent deadlines
   if (days === 0 && hours < 6) {
-    daysElement.classList.remove("text-blue-400");
+    daysElement.classList.remove("text-black-400");
     daysElement.classList.add("text-red-400");
     hoursElement.classList.remove("text-green-400");
     hoursElement.classList.add("text-red-400");
   } else if (days === 0) {
-    daysElement.classList.remove("text-blue-400");
+    daysElement.classList.remove("text-black-400");
     daysElement.classList.add("text-yellow-400");
     hoursElement.classList.remove("text-green-400");
     hoursElement.classList.add("text-yellow-400");
@@ -2315,7 +2315,7 @@ window.getMyIncomeContent = function () {
                                                       order.status === "completed"
                                                         ? "bg-green-100 text-green-700 border border-green-200"
                                                         : order.status === "in_progress"
-                                                          ? "bg-blue-100 text-blue-700 border border-blue-200"
+                                                          ? "bg-blue-100 text-black-700 border border-blue-200"
                                                           : "bg-amber-100 text-amber-700 border border-amber-200"
                                                     }">
                                                         ${

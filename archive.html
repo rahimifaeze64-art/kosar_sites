@@ -73,7 +73,7 @@
             
             <template x-for="category in categories" :key="category.id">
                 <button @click="selectedCategory = category.id"
-                        :class="selectedCategory === category.id ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
+                        :class="selectedCategory === category.id ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
                         class="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200">
                     <div class="flex items-center space-x-3 space-x-reverse">
                         <i :class="category.icon" class="text-lg"></i>
@@ -87,7 +87,7 @@
             <!-- Back to Main -->
             <div class="pt-4 mt-4 border-t border-white border-opacity-20">
                 <a href="index.html"
-                   class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl text-blue-100 hover:bg-white hover:bg-opacity-10 transition-all duration-200">
+                   class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl text-black-100 hover:bg-white hover:bg-opacity-10 transition-all duration-200">
                     <i class="fas fa-arrow-right text-lg"></i>
                     <span class="font-medium">بازگشت به داشبورد</span>
                 </a>
@@ -272,7 +272,7 @@
             <!-- Empty State -->
             <div x-show="getFilteredFiles().length === 0" 
                  class="text-center py-12">
-                <i class="fas fa-folder-open text-6xl text-blue-300 mb-4"></i>
+                <i class="fas fa-folder-open text-6xl text-black-300 mb-4"></i>
                 <p class="text-white text-lg font-medium mb-2">فایلی یافت نشد</p>
                 <p class="text-black-400 text-sm">در این دسته‌بندی هنوز فایلی آپلود نشده است</p>
             </div>

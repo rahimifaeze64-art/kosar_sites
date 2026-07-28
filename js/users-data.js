@@ -66,6 +66,16 @@ const HARDCODED_USERS = [
         department: 'هماهنگی عمومی',
         active: true
     },
+    {
+        id: 'emp006',
+        name: 'سید محمد فاضلی',
+        username: 'fazeli',
+        password: 'fazeli1403',
+        role: 'employee',
+        email: 'fazeli@alkawsar.com',
+        department: 'هماهنگی عمومی',
+        active: true
+    },
     // عامل‌ها
     {
         id: 'doc001',

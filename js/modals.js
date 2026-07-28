@@ -431,7 +431,7 @@ const ModalsModule = {
                         </div>
                         <div>
                             <span class="text-gray-600">سهم مدیر:</span>
-                            <span class="font-bold text-blue-600" x-text="formatCurrency((newOrder.totalAmount || 0) * 0.4)"></span>
+                            <span class="font-bold text-black-600" x-text="formatCurrency((newOrder.totalAmount || 0) * 0.4)"></span>
                         </div>
                     </div>
                 </div>
@@ -481,14 +481,14 @@ const ModalsModule = {
     return `
             <div class="p-6 border-b">
                 <h3 class="text-lg font-bold text-gray-800">
-                    <i class="fas fa-user-plus text-blue-600 ml-2"></i>
+                    <i class="fas fa-user-plus text-black-600 ml-2"></i>
                     افزودن کاربر جدید
                 </h3>
             </div>
             <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto" x-data="{ newUser: { role: '' }, showStudentFields: false }">
                 <!-- Basic Info -->
                 <div class="bg-blue-50 p-4 rounded-lg">
-                    <h4 class="font-semibold text-blue-800 mb-3"><i class="fas fa-info-circle ml-1"></i> اطلاعات پایه</h4>
+                    <h4 class="font-semibold text-black-800 mb-3"><i class="fas fa-info-circle ml-1"></i> اطلاعات پایه</h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">نقش <span class="text-red-500">*</span></label>
@@ -645,14 +645,14 @@ const ModalsModule = {
     return `
             <div class="p-6 border-b">
                 <h3 class="text-lg font-bold text-gray-800">
-                    <i class="fas fa-user-edit text-blue-600 ml-2"></i>
+                    <i class="fas fa-user-edit text-black-600 ml-2"></i>
                     ویرایش کاربر
                 </h3>
             </div>
             <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto" x-data='{ editUser: ${JSON.stringify(userData)}, showStudentFields: ${isStudent} }'>
                 <!-- Basic Info -->
                 <div class="bg-blue-50 p-4 rounded-lg">
-                    <h4 class="font-semibold text-blue-800 mb-3"><i class="fas fa-info-circle ml-1"></i> اطلاعات پایه</h4>
+                    <h4 class="font-semibold text-black-800 mb-3"><i class="fas fa-info-circle ml-1"></i> اطلاعات پایه</h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">نقش <span class="text-red-500">*</span></label>
@@ -785,7 +785,7 @@ const ModalsModule = {
                                 <span class="px-2 py-1 rounded-full text-xs font-medium"
                                       :class="notification.type === 'success' ? 'bg-green-100 text-green-800' :
                                              notification.type === 'error' ? 'bg-red-100 text-red-800' :
-                                             'bg-blue-100 text-blue-800'">
+                                             'bg-blue-100 text-black-800'">
                                     <i :class="notification.type === 'success' ? 'fas fa-check' :
                                               notification.type === 'error' ? 'fas fa-times' :
                                               'fas fa-info'"></i>
@@ -924,7 +924,7 @@ const ModalsModule = {
 
                 <!-- Student Selection -->
                 <div class="bg-blue-50 p-4 rounded-lg">
-                    <h4 class="font-semibold text-blue-800 mb-3">
+                    <h4 class="font-semibold text-black-800 mb-3">
                         <i class="fas fa-user-graduate ml-1"></i> انتخاب دانشجو
                     </h4>
                     <div class="grid grid-cols-1 gap-3">
@@ -941,14 +941,14 @@ const ModalsModule = {
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center">
                                         <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center ml-3">
-                                            <i class="fas fa-user text-blue-600"></i>
+                                            <i class="fas fa-user text-black-600"></i>
                                         </div>
                                         <div>
                                             <p class="font-semibold text-gray-800">${student.name}</p>
                                             <p class="text-sm text-gray-500">${student.university || "دانشگاه نامشخص"} - ${student.field || "رشته نامشخص"}</p>
                                         </div>
                                     </div>
-                                    <div x-show="selectedStudent === '${student.id}'" class="text-blue-600">
+                                    <div x-show="selectedStudent === '${student.id}'" class="text-black-600">
                                         <i class="fas fa-check-circle text-xl"></i>
                                     </div>
                                 </div>
@@ -1056,7 +1056,7 @@ const ModalsModule = {
                         </div>
                         <div>
                             <span class="text-gray-600">سهم مدیر:</span>
-                            <span class="font-bold text-blue-600" x-text="formatCurrency((newProject.totalAmount || 0) * 0.4)"></span>
+                            <span class="font-bold text-black-600" x-text="formatCurrency((newProject.totalAmount || 0) * 0.4)"></span>
                         </div>
                     </div>
                 </div>
@@ -1085,7 +1085,7 @@ const ModalsModule = {
     return `
             <div class="p-6 border-b">
                 <h3 class="text-lg font-bold text-gray-800">
-                    <i class="fas fa-plus text-blue-600 ml-2"></i>
+                    <i class="fas fa-plus text-black-600 ml-2"></i>
                     درخواست پروژه جدید
                 </h3>
                 <p class="text-sm text-gray-600 mt-1">درخواست پروژه جدید خود را ثبت کنید</p>
@@ -1101,7 +1101,7 @@ const ModalsModule = {
 
                 <!-- Student Info (Read-only) -->
                 <div class="bg-blue-50 p-4 rounded-lg">
-                    <h4 class="font-semibold text-blue-800 mb-3">
+                    <h4 class="font-semibold text-black-800 mb-3">
                         <i class="fas fa-user ml-1"></i> اطلاعات دانشجو
                     </h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -48,7 +48,7 @@ const OrderPagesModule = {
                 <div class="bg-white rounded-lg max-w-7xl w-full max-h-[90vh] overflow-hidden">
                     <div class="p-6 border-b flex justify-between items-center">
                         <h3 class="text-lg font-bold text-gray-800">
-                            <i class="fas fa-clipboard-list text-blue-600 ml-2"></i>
+                            <i class="fas fa-clipboard-list text-black-600 ml-2"></i>
                             جزئیات سفارش
                         </h3>
                         <button type="button" onclick="document.getElementById('order-page-modal').style.display='none';if(typeof ModalsModule!=='undefined')ModalsModule.closeModal();"

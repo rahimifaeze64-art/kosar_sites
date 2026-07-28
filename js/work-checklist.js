@@ -176,7 +176,7 @@ const WorkChecklistModule = {
                 <div class="col-span-full text-center py-16 bg-white/5 rounded-2xl border border-white/10">
                     <i class="fas fa-layer-group text-5xl text-purple-400/50 mb-4 block"></i>
                     <p class="text-black-400 text-lg mb-2">هنوز دسته‌بندی ندارید</p>
-                    <p class="text-blue-300/60 text-sm">با کلیک روی «دسته‌بندی جدید» شروع کنید</p>
+                    <p class="text-black-300/60 text-sm">با کلیک روی «دسته‌بندی جدید» شروع کنید</p>
                 </div>`;
             return;
         }
@@ -197,7 +197,7 @@ const WorkChecklistModule = {
             pink:   'border-pink-500/40 bg-pink-900/20',
         };
         const iconColors = {
-            purple: 'text-purple-400', blue: 'text-blue-400',
+            purple: 'text-purple-400', blue: 'text-black-400',
             green:  'text-green-400',  yellow: 'text-yellow-400',
             red:    'text-red-400',    pink:   'text-pink-400',
         };
@@ -215,7 +215,7 @@ const WorkChecklistModule = {
                         <i class="fas fa-plus text-xs"></i> آیتم
                     </button>
                     <button onclick="WorkChecklistModule.showEditCategoryModal('${cat.id}')"
-                            class="text-blue-300 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-all" title="ویرایش">
+                            class="text-black-300 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-all" title="ویرایش">
                         <i class="fas fa-edit text-sm"></i>
                     </button>
                     <button onclick="WorkChecklistModule.confirmDeleteCategory('${cat.id}')"
@@ -236,7 +236,7 @@ const WorkChecklistModule = {
         if (!container) return;
         const items = await this.getItems(categoryId);
         if (!items.length) {
-            container.innerHTML = `<p class="text-blue-300/50 text-sm text-center py-2 italic">آیتمی وجود ندارد — یک آیتم اضافه کنید</p>`;
+            container.innerHTML = `<p class="text-black-300/50 text-sm text-center py-2 italic">آیتمی وجود ندارد — یک آیتم اضافه کنید</p>`;
             return;
         }
         container.innerHTML = items.map(item => this._buildItemCard(item)).join('');
@@ -248,14 +248,14 @@ const WorkChecklistModule = {
             <div class="flex items-center justify-between px-4 py-3 border-b border-white/10 cursor-pointer"
                  onclick="WorkChecklistModule.toggleItemExpand('${item.id}')">
                 <div class="flex items-center gap-3">
-                    <i class="fas fa-chevron-left text-xs text-blue-300 transition-transform duration-200" id="wc-chevron-${item.id}"></i>
-                    <i class="${item.icon || 'fas fa-list-check'} text-blue-300 text-sm"></i>
+                    <i class="fas fa-chevron-left text-xs text-black-300 transition-transform duration-200" id="wc-chevron-${item.id}"></i>
+                    <i class="${item.icon || 'fas fa-list-check'} text-black-300 text-sm"></i>
                     <span class="text-white font-medium">${this._esc(item.name)}</span>
                     <span class="bg-purple-500/20 text-purple-300 text-xs px-2 py-0.5 rounded-full" id="wc-item-count-${item.id}">...</span>
                 </div>
                 <div class="flex items-center gap-1" onclick="event.stopPropagation()">
                     <button onclick="WorkChecklistModule.showEditItemModal('${item.id}')"
-                            class="text-blue-300 hover:text-white p-1 rounded hover:bg-white/10 transition-all" title="ویرایش">
+                            class="text-black-300 hover:text-white p-1 rounded hover:bg-white/10 transition-all" title="ویرایش">
                         <i class="fas fa-edit text-xs"></i>
                     </button>
                     <button onclick="WorkChecklistModule.confirmDeleteItem('${item.id}')"
@@ -302,7 +302,7 @@ const WorkChecklistModule = {
             countBadge.textContent = done + '/' + tasks.length;
         }
         if (!tasks.length) {
-            container.innerHTML = `<p class="text-blue-300/50 text-sm italic py-1">هنوز وظیفه‌ای تعریف نشده</p>`;
+            container.innerHTML = `<p class="text-black-300/50 text-sm italic py-1">هنوز وظیفه‌ای تعریف نشده</p>`;
             return;
         }
         container.innerHTML = tasks.map(t => this._buildTaskRow(t)).join('');
@@ -316,11 +316,11 @@ const WorkChecklistModule = {
                    onchange="WorkChecklistModule.toggleTask('${task.id}', this.checked)"
                    class="w-4 h-4 accent-purple-500 cursor-pointer flex-shrink-0"/>
             <span id="wc-task-text-${task.id}"
-                  class="flex-1 text-sm ${done ? 'line-through text-blue-300/50' : 'text-white'}">${this._esc(task.title)}</span>
+                  class="flex-1 text-sm ${done ? 'line-through text-black-300/50' : 'text-white'}">${this._esc(task.title)}</span>
             ${task.note ? `<i class="fas fa-sticky-note text-yellow-400/60 text-xs" title="${this._esc(task.note)}"></i>` : ''}
             <div class="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-all flex-shrink-0">
                 <button onclick="WorkChecklistModule.showEditTaskModal('${task.id}')"
-                        class="text-blue-400 hover:text-white p-1 rounded transition-all" title="ویرایش">
+                        class="text-black-400 hover:text-white p-1 rounded transition-all" title="ویرایش">
                     <i class="fas fa-edit text-xs"></i>
                 </button>
                 <button onclick="WorkChecklistModule.deleteTask('${task.id}', '${task.item_id}')"
@@ -370,7 +370,7 @@ const WorkChecklistModule = {
         // update UI without full re-render
         const span = document.getElementById('wc-task-text-' + taskId);
         if (span) {
-            span.className = 'flex-1 text-sm ' + (isDone ? 'line-through text-blue-300/50' : 'text-white');
+            span.className = 'flex-1 text-sm ' + (isDone ? 'line-through text-black-300/50' : 'text-white');
         }
         const badge = document.getElementById('wc-item-count-' + task.item_id);
         if (badge) {
@@ -412,7 +412,7 @@ const WorkChecklistModule = {
             <div class="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-white/10 shadow-2xl">
                 <div class="flex justify-between items-center mb-5">
                     <h3 class="text-white font-bold text-lg">${isEdit ? 'ویرایش دسته‌بندی' : 'دسته‌بندی جدید'}</h3>
-                    <button onclick="WorkChecklistModule.closeModal()" class="text-blue-300 hover:text-white">
+                    <button onclick="WorkChecklistModule.closeModal()" class="text-black-300 hover:text-white">
                         <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>
@@ -532,7 +532,7 @@ const WorkChecklistModule = {
             <div class="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-white/10 shadow-2xl">
                 <div class="flex justify-between items-center mb-5">
                     <h3 class="text-white font-bold text-lg">${isEdit ? 'ویرایش آیتم' : 'آیتم جدید'}</h3>
-                    <button onclick="WorkChecklistModule.closeModal()" class="text-blue-300 hover:text-white">
+                    <button onclick="WorkChecklistModule.closeModal()" class="text-black-300 hover:text-white">
                         <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>
@@ -636,7 +636,7 @@ const WorkChecklistModule = {
             <div class="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-white/10 shadow-2xl">
                 <div class="flex justify-between items-center mb-5">
                     <h3 class="text-white font-bold text-lg">ویرایش وظیفه</h3>
-                    <button onclick="WorkChecklistModule.closeModal()" class="text-blue-300 hover:text-white">
+                    <button onclick="WorkChecklistModule.closeModal()" class="text-black-300 hover:text-white">
                         <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>

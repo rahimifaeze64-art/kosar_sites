@@ -181,7 +181,7 @@ const EmbassyModule = (function () {
                         <i class="fas fa-scale-balanced ml-1"></i>وکالت ندارند
                     </button>
                     <button onclick="EmbassyModule.applyQuickFilter('')" id="qf-all"
-                        class="quick-filter-btn text-xs px-3 py-1.5 rounded-full border border-blue-400 text-blue-600 bg-blue-50 hover:bg-blue-100 transition-all">
+                        class="quick-filter-btn text-xs px-3 py-1.5 rounded-full border border-blue-400 text-black-600 bg-blue-50 hover:bg-blue-100 transition-all">
                         <i class="fas fa-list ml-1"></i>همه
                     </button>
                 </div>
@@ -260,7 +260,7 @@ const EmbassyModule = (function () {
                                             <div class="flex gap-1">
                                                 <button type="button" data-status="ترجمه"
                                                     onclick="EmbassyModule._setStatus(this,'${key}','ترجمه')"
-                                                    class="status-btn flex-1 text-xs py-1.5 rounded-lg bg-blue-100 text-blue-700 border border-blue-300 hover:bg-blue-200 transition-all">
+                                                    class="status-btn flex-1 text-xs py-1.5 rounded-lg bg-blue-100 text-black-700 border border-blue-300 hover:bg-blue-200 transition-all">
                                                     ترجمه
                                                 </button>
                                                 <button type="button" data-status="تصدیق"
@@ -291,11 +291,11 @@ const EmbassyModule = (function () {
                                     <!-- دکمه‌های سریع -->
                                     <div class="flex gap-1">
                                         <button type="button" onclick="EmbassyModule._setQuickDate('f-receiveDate','f-receiveDate-disp',-1)"
-                                            class="flex-1 text-xs py-1.5 rounded-lg bg-gray-100 hover:bg-blue-100 text-gray-600 hover:text-blue-700 border border-gray-200 transition-all">دیروز</button>
+                                            class="flex-1 text-xs py-1.5 rounded-lg bg-gray-100 hover:bg-blue-100 text-gray-600 hover:text-black-700 border border-gray-200 transition-all">دیروز</button>
                                         <button type="button" onclick="EmbassyModule._setQuickDate('f-receiveDate','f-receiveDate-disp',0)"
                                             class="flex-1 text-xs py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white border border-blue-500 transition-all font-bold">امروز</button>
                                         <button type="button" onclick="EmbassyModule._setQuickDate('f-receiveDate','f-receiveDate-disp',1)"
-                                            class="flex-1 text-xs py-1.5 rounded-lg bg-gray-100 hover:bg-blue-100 text-gray-600 hover:text-blue-700 border border-gray-200 transition-all">فردا</button>
+                                            class="flex-1 text-xs py-1.5 rounded-lg bg-gray-100 hover:bg-blue-100 text-gray-600 hover:text-black-700 border border-gray-200 transition-all">فردا</button>
                                     </div>
                                     <!-- نمایش تاریخ انتخاب‌شده + باز کردن تقویم -->
                                     <div class="relative">
@@ -324,11 +324,11 @@ const EmbassyModule = (function () {
                                 <div class="space-y-2">
                                     <div class="flex gap-1">
                                         <button type="button" onclick="EmbassyModule._setQuickDate('f-sendDate','f-sendDate-disp',-1)"
-                                            class="flex-1 text-xs py-1.5 rounded-lg bg-gray-100 hover:bg-blue-100 text-gray-600 hover:text-blue-700 border border-gray-200 transition-all">دیروز</button>
+                                            class="flex-1 text-xs py-1.5 rounded-lg bg-gray-100 hover:bg-blue-100 text-gray-600 hover:text-black-700 border border-gray-200 transition-all">دیروز</button>
                                         <button type="button" onclick="EmbassyModule._setQuickDate('f-sendDate','f-sendDate-disp',0)"
                                             class="flex-1 text-xs py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white border border-blue-500 transition-all font-bold">امروز</button>
                                         <button type="button" onclick="EmbassyModule._setQuickDate('f-sendDate','f-sendDate-disp',1)"
-                                            class="flex-1 text-xs py-1.5 rounded-lg bg-gray-100 hover:bg-blue-100 text-gray-600 hover:text-blue-700 border border-gray-200 transition-all">فردا</button>
+                                            class="flex-1 text-xs py-1.5 rounded-lg bg-gray-100 hover:bg-blue-100 text-gray-600 hover:text-black-700 border border-gray-200 transition-all">فردا</button>
                                     </div>
                                     <div class="relative">
                                         <input type="hidden" id="f-sendDate">
@@ -429,7 +429,7 @@ const EmbassyModule = (function () {
                                 <div class="grid grid-cols-2 gap-2 mb-2">
                                     <div>
                                         <label class="text-gray-600 text-xs font-medium block mb-1">
-                                            <i class="fas fa-envelope ml-1 text-blue-500"></i>ایمیل سجاد
+                                            <i class="fas fa-envelope ml-1 text-black-500"></i>ایمیل سجاد
                                         </label>
                                         <input type="email" id="f-sajadEmail"
                                             class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
@@ -574,7 +574,7 @@ const EmbassyModule = (function () {
         if (!records.length) {
             container.innerHTML = `
                 <div class="text-center py-16 bg-blue-900 bg-opacity-20 rounded-2xl border border-blue-700 border-opacity-30">
-                    <i class="fas fa-folder-open text-5xl text-blue-400 mb-4 opacity-40"></i>
+                    <i class="fas fa-folder-open text-5xl text-black-400 mb-4 opacity-40"></i>
                     <p class="text-black-400 text-lg">هیچ رکوردی ثبت نشده</p>
                     <p class="text-gray-400 text-sm mt-1">روی «ثبت مدرک جدید» کلیک کنید</p>
                 </div>`;
@@ -586,7 +586,7 @@ const EmbassyModule = (function () {
                 <td class="px-3 py-3 text-gray-500 text-xs text-center font-medium">${i + 1}</td>
                 <td class="px-3 py-3 font-semibold text-gray-900">${r.student_name}</td>
                 <td class="px-3 py-3">
-                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-lg font-medium">${r.work_type}</span>
+                    <span class="bg-blue-100 text-black-800 text-xs px-2 py-1 rounded-lg font-medium">${r.work_type}</span>
                 </td>
                 <td class="px-3 py-3 text-gray-700 text-sm">${r.receive_date ? (typeof Jalali !== 'undefined' ? Jalali.displayDate(r.receive_date) : r.receive_date) : '—'}</td>
                 <td class="px-3 py-3 text-gray-700 text-sm">${r.send_method || '—'}</td>
@@ -665,10 +665,10 @@ const EmbassyModule = (function () {
 
                 <td class="px-3 py-3 text-gray-500 text-xs">
                     <div>${r.updated_at ? (typeof Jalali!=='undefined' ? Jalali.toJalaliDateTime(r.updated_at) : new Date(r.updated_at).toLocaleDateString('fa-IR')) : '—'}</div>
-                    ${r.updated_by_name ? `<div class="text-blue-600 text-xs mt-0.5">توسط: ${r.updated_by_name}</div>` : ''}
+                    ${r.updated_by_name ? `<div class="text-black-600 text-xs mt-0.5">توسط: ${r.updated_by_name}</div>` : ''}
                     ${r.last_action ? `<div class="text-gray-400 text-xs">${r.last_action}</div>` : ''}
                     <button onclick="EmbassyModule.showActivityLog('${r.id}')"
-                        class="mt-1 text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full border border-blue-200 transition-all">
+                        class="mt-1 text-xs bg-blue-50 hover:bg-blue-100 text-black-600 px-2 py-0.5 rounded-full border border-blue-200 transition-all">
                         <i class="fas fa-history ml-1"></i>جزئیات
                     </button>
                 </td>
@@ -746,7 +746,7 @@ const EmbassyModule = (function () {
                 var defaultBtn = statusDiv.querySelector('[data-status="هردو"]');
                 if (defaultBtn) defaultBtn.classList.add('active-status', 'border-2');
             }
-            if (chkCircle) chkCircle.innerHTML = '<i class="fas fa-check text-xs text-blue-400"></i>';
+            if (chkCircle) chkCircle.innerHTML = '<i class="fas fa-check text-xs text-black-400"></i>';
             var cb2 = card.querySelector('.doc-type-check');
             if (cb2) cb2.checked = true;
         }
@@ -1055,10 +1055,10 @@ const EmbassyModule = (function () {
     // ── تغییر واحد پولی ──────────────────────────────────────
     function _setCurrency(btn) {
         document.querySelectorAll('.currency-btn').forEach(b => {
-            b.classList.remove('active-currency','border-2','border-blue-500','text-blue-700','bg-blue-50','font-bold');
+            b.classList.remove('active-currency','border-2','border-blue-500','text-black-700','bg-blue-50','font-bold');
             b.classList.add('border','border-gray-300','text-gray-600','bg-white');
         });
-        btn.classList.add('active-currency','border-2','border-blue-500','text-blue-700','bg-blue-50','font-bold');
+        btn.classList.add('active-currency','border-2','border-blue-500','text-black-700','bg-blue-50','font-bold');
         btn.classList.remove('border','border-gray-300','text-gray-600','bg-white');
         const currency = btn.dataset.currency;
         document.getElementById('f-currency').value = currency;
@@ -1121,14 +1121,14 @@ const EmbassyModule = (function () {
         _activeQuickFilter = filterKey;
         // هایلایت دکمه
         document.querySelectorAll('.quick-filter-btn').forEach(b => {
-            b.classList.remove('bg-red-100','border-red-400','text-red-700','bg-blue-50','border-blue-400','text-blue-600');
+            b.classList.remove('bg-red-100','border-red-400','text-red-700','bg-blue-50','border-blue-400','text-black-600');
             b.classList.add('border-gray-300','text-gray-600');
         });
         const activeBtn = document.getElementById('qf-' + (filterKey || 'all'));
         if (activeBtn) {
             activeBtn.classList.remove('border-gray-300','text-gray-600');
             if (filterKey) activeBtn.classList.add('bg-red-100','border-red-400','text-red-700');
-            else activeBtn.classList.add('bg-blue-50','border-blue-400','text-blue-600');
+            else activeBtn.classList.add('bg-blue-50','border-blue-400','text-black-600');
         }
         applyFilter();
     }
@@ -1276,7 +1276,7 @@ const EmbassyModule = (function () {
                     card.style.borderColor = '#3b82f6';
                     card.style.background = 'rgba(59,130,246,0.15)';
                     var chk = document.getElementById('chk-' + cardKey);
-                    if (chk) chk.innerHTML = '<i class="fas fa-check text-xs text-blue-400"></i>';
+                    if (chk) chk.innerHTML = '<i class="fas fa-check text-xs text-black-400"></i>';
                     var cb = card.querySelector('.doc-type-check');
                     if (cb) cb.checked = true;
 
@@ -1376,8 +1376,8 @@ const EmbassyModule = (function () {
             const div = document.createElement('div');
             div.className = 'relative group';
             div.innerHTML = `
-                <div class="flex items-center gap-1 bg-blue-50 border border-blue-200 px-2 py-1 rounded-lg text-xs text-blue-700 relative">
-                    <i class="fas ${isImg ? 'fa-image' : 'fa-file'} text-blue-500"></i>
+                <div class="flex items-center gap-1 bg-blue-50 border border-blue-200 px-2 py-1 rounded-lg text-xs text-black-700 relative">
+                    <i class="fas ${isImg ? 'fa-image' : 'fa-file'} text-black-500"></i>
                     <span class="max-w-28 truncate" title="${name}">${name}</span>
                     <button type="button"
                             onclick="EmbassyModule._removeExistingFile(${idx})"
@@ -1650,7 +1650,7 @@ const EmbassyModule = (function () {
             const time = log.created_at ? new Date(log.created_at).toLocaleTimeString('fa-IR') : '';
             const actionIcon = {
                 'create':      'fa-plus-circle text-green-500',
-                'update':      'fa-edit text-blue-500',
+                'update':      'fa-edit text-black-500',
                 'file_upload': 'fa-upload text-purple-500',
                 'file_delete': 'fa-trash text-red-500',
             }[log.action] || 'fa-circle text-gray-400';
@@ -1677,9 +1677,9 @@ const EmbassyModule = (function () {
             <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
                 <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
                     <h3 class="font-bold text-gray-800 flex items-center gap-2">
-                        <i class="fas fa-history text-blue-500"></i>
+                        <i class="fas fa-history text-black-500"></i>
                         تاریخچه فعالیت‌ها
-                        ${name ? `<span class="text-blue-600 font-semibold">— ${name}</span>` : ''}
+                        ${name ? `<span class="text-black-600 font-semibold">— ${name}</span>` : ''}
                     </h3>
                     <button onclick="document.getElementById('__embassy-activity-modal').remove()"
                         class="text-gray-400 hover:text-gray-700 text-xl"><i class="fas fa-times"></i></button>

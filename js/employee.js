@@ -54,9 +54,9 @@ const EmployeeModule = {
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-gray-400 text-sm">در حال انجام</p>
-                                <p class="text-2xl font-bold text-blue-400">${tasks.filter(t => t.status === 'in_progress').length}</p>
+                                <p class="text-2xl font-bold text-black-400">${tasks.filter(t => t.status === 'in_progress').length}</p>
                             </div>
-                            <i class="fas fa-spinner text-3xl text-blue-400"></i>
+                            <i class="fas fa-spinner text-3xl text-black-400"></i>
                         </div>
                     </div>
                     <div class="bg-slate-800 rounded-lg p-4">
@@ -249,7 +249,7 @@ const EmployeeModule = {
         const additionalTextHTML = task.additionalText ? `
             <div class="mt-3 bg-slate-600 rounded-lg p-3">
                 <div class="flex items-start space-x-2 space-x-reverse">
-                    <i class="fas fa-align-left text-blue-400 mt-1"></i>
+                    <i class="fas fa-align-left text-black-400 mt-1"></i>
                     <div class="flex-1">
                         <p class="text-xs text-gray-300 mb-1">متن اضافی:</p>
                         <p class="text-sm text-white">${task.additionalText}</p>
@@ -625,7 +625,7 @@ const EmployeeModule = {
                                 <i class="fas fa-shield-alt ml-1"></i>
                                 گردش دفاع
                             </span>
-                            <span class="text-xs font-bold text-blue-400">${Math.round(defenseProgress)}%</span>
+                            <span class="text-xs font-bold text-black-400">${Math.round(defenseProgress)}%</span>
                         </div>
                         <div class="w-full bg-slate-600 rounded-full h-1.5 mb-1">
                             <div class="bg-blue-500 h-1.5 rounded-full" style="width: ${defenseProgress}%"></div>
@@ -633,10 +633,10 @@ const EmployeeModule = {
                         ${currentDefenseStep ? `
                             <p class="text-xs text-gray-400">
                                 <i class="fas fa-arrow-left ml-1"></i>
-                                مرحله فعلی: <span class="text-blue-400 font-medium">${currentDefenseStep.name}</span>
+                                مرحله فعلی: <span class="text-black-400 font-medium">${currentDefenseStep.name}</span>
                             </p>
                         ` : `
-                            <p class="text-xs text-blue-400 font-medium">
+                            <p class="text-xs text-black-400 font-medium">
                                 <i class="fas fa-check-circle ml-1"></i>
                                 تکمیل شده
                             </p>
@@ -1021,7 +1021,7 @@ const EmployeeModule = {
                         <!-- Action Buttons -->
                         <div class="flex-shrink-0 flex space-x-2 space-x-reverse opacity-0 group-hover:opacity-100 transition-opacity">
                             <button onclick="employeeModule.editEducationalStepName('${student.id}', ${index})" 
-                                    class="text-blue-600 hover:text-blue-700 p-2" title="ویرایش نام">
+                                    class="text-black-600 hover:text-black-700 p-2" title="ویرایش نام">
                                 <i class="fas fa-edit"></i>
                             </button>
                             <button onclick="employeeModule.moveEducationalStepUp('${student.id}', ${index})" 
@@ -1087,7 +1087,7 @@ const EmployeeModule = {
                         
                         <!-- Step Info -->
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-bold ${step.completed ? 'text-blue-600' : 'text-gray-700'} leading-tight">
+                            <p class="text-sm font-bold ${step.completed ? 'text-black-600' : 'text-gray-700'} leading-tight">
                                 ${step.name}
                             </p>
                             ${step.date ? `
@@ -1113,7 +1113,7 @@ const EmployeeModule = {
                                 </button>
                             ` : ''}
                             <button onclick="employeeModule.editDefenseStepName('${student.id}', ${index})" 
-                                    class="text-blue-600 hover:text-blue-700 p-2" title="ویرایش نام">
+                                    class="text-black-600 hover:text-black-700 p-2" title="ویرایش نام">
                                 <i class="fas fa-edit"></i>
                             </button>
                             <button onclick="employeeModule.moveDefenseStepUp('${student.id}', ${index})" 
@@ -1240,7 +1240,7 @@ const EmployeeModule = {
             <div class="bg-slate-700 rounded-lg p-6">
                 <div class="flex items-center justify-between mb-6">
                     <h4 class="font-bold text-white text-lg">
-                        <i class="fas fa-shield-alt text-blue-400 ml-2"></i>
+                        <i class="fas fa-shield-alt text-black-400 ml-2"></i>
                         گردش دفاع
                     </h4>
                     <div class="text-left">
@@ -1529,7 +1529,7 @@ const EmployeeModule = {
                     <div class="p-6 border-b border-slate-700">
                         <div class="flex items-center justify-between">
                             <h3 class="text-lg font-bold text-white">
-                                <i class="fas fa-shield-alt text-blue-400 ml-2"></i>
+                                <i class="fas fa-shield-alt text-black-400 ml-2"></i>
                                 ${step.name}
                             </h3>
                             <button onclick="employeeModule.closeModal('defense-step-details-modal')" 
@@ -1556,7 +1556,7 @@ const EmployeeModule = {
                             <div class="flex items-center justify-between bg-slate-700 rounded-lg p-4">
                                 <span class="text-gray-300">تاریخ تکمیل:</span>
                                 <span class="text-white font-bold">
-                                    <i class="fas fa-calendar ml-2 text-blue-400"></i>
+                                    <i class="fas fa-calendar ml-2 text-black-400"></i>
                                     ${step.date}
                                 </span>
                             </div>
@@ -1565,7 +1565,7 @@ const EmployeeModule = {
                         <!-- یادداشت -->
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <i class="fas fa-edit text-blue-400 ml-1"></i>
+                                <i class="fas fa-edit text-black-400 ml-1"></i>
                                 یادداشت (اختیاری)
                             </label>
                             <textarea id="defense-step-notes-input" 
@@ -1952,9 +1952,9 @@ const EmployeeModule = {
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-gray-400 text-sm">در حال انجام</p>
-                                <p class="text-2xl font-bold text-blue-400">${inProgressTasks.length}</p>
+                                <p class="text-2xl font-bold text-black-400">${inProgressTasks.length}</p>
                             </div>
-                            <i class="fas fa-spinner text-3xl text-blue-400"></i>
+                            <i class="fas fa-spinner text-3xl text-black-400"></i>
                         </div>
                     </div>
                     <div class="bg-slate-800 rounded-lg p-4">
@@ -2079,7 +2079,7 @@ const EmployeeModule = {
         
         // Status change notification
         const statusChangeHTML = task.statusChangedAt ? `
-            <div class="mt-2 text-xs ${task.status === 'completed' ? 'text-green-400' : 'text-blue-400'}">
+            <div class="mt-2 text-xs ${task.status === 'completed' ? 'text-green-400' : 'text-black-400'}">
                 <i class="fas fa-info-circle ml-1"></i>
                 ${task.status === 'in_progress' ? 'عامل کار را شروع کرد' : 'عامل وظیفه را تکمیل کرد'}
                 - ${new Date(task.statusChangedAt).toLocaleString('fa-IR')}
@@ -2762,8 +2762,8 @@ const EmployeeModule = {
     getFileCard(file) {
         const iconMap = {
             'pdf': 'fa-file-pdf text-red-400',
-            'doc': 'fa-file-word text-blue-400',
-            'docx': 'fa-file-word text-blue-400',
+            'doc': 'fa-file-word text-black-400',
+            'docx': 'fa-file-word text-black-400',
             'xls': 'fa-file-excel text-green-400',
             'xlsx': 'fa-file-excel text-green-400',
             'jpg': 'fa-file-image text-yellow-400',
@@ -3133,8 +3133,8 @@ const EmployeeModule = {
         const ext = fileName.split('.').pop().toLowerCase();
         const iconMap = {
             'pdf': 'fa-file-pdf text-red-400',
-            'doc': 'fa-file-word text-blue-400',
-            'docx': 'fa-file-word text-blue-400',
+            'doc': 'fa-file-word text-black-400',
+            'docx': 'fa-file-word text-black-400',
             'xls': 'fa-file-excel text-green-400',
             'xlsx': 'fa-file-excel text-green-400',
             'jpg': 'fa-file-image text-yellow-400',
@@ -3213,7 +3213,7 @@ const EmployeeModule = {
                     <div class="p-6 border-b border-slate-700 sticky top-0 bg-slate-800 z-10">
                         <div class="flex items-center justify-between">
                             <h3 class="text-lg font-bold text-white">
-                                <i class="fas fa-plus-circle text-blue-400 ml-2"></i>
+                                <i class="fas fa-plus-circle text-black-400 ml-2"></i>
                                 تعریف وظیفه برای عامل
                             </h3>
                             <button onclick="employeeModule.closeCreateAgentTaskModal()" 
@@ -3516,7 +3516,7 @@ const EmployeeModule = {
         const attachedFileHTML = task.attachedFile ? `
             <div class="mt-3 bg-slate-600 rounded-lg p-3">
                 <div class="flex items-center space-x-3 space-x-reverse">
-                    <i class="fas fa-paperclip text-blue-400 text-xl"></i>
+                    <i class="fas fa-paperclip text-black-400 text-xl"></i>
                     <div class="flex-1">
                         <p class="text-xs text-gray-300 mb-1">فایل ضمیمه:</p>
                         <p class="text-sm text-white">${task.attachedFile.name}</p>
@@ -3731,7 +3731,7 @@ EmployeeModule.showAddStudentModal = function() {
                 <div class="p-6 border-b border-slate-700 sticky top-0 bg-slate-800 z-10">
                     <div class="flex items-center justify-between">
                         <h3 class="text-lg font-bold text-white">
-                            <i class="fas fa-user-plus text-blue-400 ml-2"></i>
+                            <i class="fas fa-user-plus text-black-400 ml-2"></i>
                             اضافه کردن دانشجوی جدید
                         </h3>
                         <button onclick="employeeModule.closeModal('add-student-modal')" 
@@ -3950,7 +3950,7 @@ EmployeeModule.showStepsManagementModal = function() {
                     </button>
                     <!-- Edit -->
                     <button onclick="employeeModule.editStep('${type}', ${index})" 
-                            class="text-blue-400 hover:text-blue-300 p-1.5 rounded transition-all" title="ویرایش">
+                            class="text-black-400 hover:text-black-300 p-1.5 rounded transition-all" title="ویرایش">
                         <i class="fas fa-edit text-xs"></i>
                     </button>
                     <!-- Delete (all steps deletable) -->
@@ -3985,7 +3985,7 @@ EmployeeModule.showStepsManagementModal = function() {
                     <div class="flex space-x-2 space-x-reverse mb-6 border-b border-slate-600 overflow-x-auto">
                         <button onclick="employeeModule.switchStepsTab('defense')" 
                                 id="steps-tab-defense"
-                                class="px-5 py-3 font-medium border-b-2 border-blue-500 text-blue-400 transition-all whitespace-nowrap">
+                                class="px-5 py-3 font-medium border-b-2 border-blue-500 text-black-400 transition-all whitespace-nowrap">
                             <i class="fas fa-shield-alt ml-1"></i>
                             گردش دفاع
                         </button>
@@ -4007,7 +4007,7 @@ EmployeeModule.showStepsManagementModal = function() {
                     <div id="steps-content-defense">
                         <div class="mb-4 flex items-center justify-between">
                             <p class="text-gray-300 text-sm">
-                                <i class="fas fa-info-circle text-blue-400 ml-1"></i>
+                                <i class="fas fa-info-circle text-black-400 ml-1"></i>
                                 دانشجو ابتدا در این مسیر قرار می‌گیرد. پس از تکمیل همه مراحل به فارغ‌التحصیلی منتقل می‌شود.
                             </p>
                             <button onclick="employeeModule.addCustomDefenseStep()" 
@@ -4088,7 +4088,7 @@ EmployeeModule.showStepsManagementModal = function() {
 EmployeeModule.switchStepsTab = function(tabName) {
     const tabColors = {
         'educational': { border: 'border-green-500', text: 'text-green-400' },
-        'defense': { border: 'border-blue-500', text: 'text-blue-400' },
+        'defense': { border: 'border-blue-500', text: 'text-black-400' },
         'requirements': { border: 'border-emerald-500', text: 'text-emerald-400' }
     };
     ['educational', 'defense', 'requirements'].forEach(tab => {
@@ -4955,7 +4955,7 @@ EmployeeModule.editDefenseStepDetails = function(studentId, stepIndex) {
         <div id="defense-details-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div class="bg-white rounded-lg max-w-md w-full p-6">
                 <h3 class="text-xl font-bold text-gray-800 mb-4">
-                    <i class="fas fa-edit text-blue-600 ml-2"></i>
+                    <i class="fas fa-edit text-black-600 ml-2"></i>
                     ویرایش جزئیات ${step.name}
                 </h3>
                 

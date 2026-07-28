@@ -12,8 +12,8 @@ const ProfileModule = {
                         </div>
                         <div>
                             <h2 class="text-2xl font-bold">${user.name}</h2>
-                            <p class="text-blue-100">${this.getRoleText(user.role)}</p>
-                            <p class="text-blue-100 text-sm">عضو از: ${UTILS.formatDate(user.createdAt)}</p>
+                            <p class="text-black-100">${this.getRoleText(user.role)}</p>
+                            <p class="text-black-100 text-sm">عضو از: ${UTILS.formatDate(user.createdAt)}</p>
                         </div>
                     </div>
                 </div>
@@ -123,7 +123,7 @@ const ProfileModule = {
                 return `
                     <!-- Basic Academic Info -->
                     <div class="border-b pb-4 mb-4">
-                        <h4 class="font-semibold text-gray-700 mb-3"><i class="fas fa-graduation-cap ml-1 text-blue-500"></i> اطلاعات تحصیلی</h4>
+                        <h4 class="font-semibold text-gray-700 mb-3"><i class="fas fa-graduation-cap ml-1 text-black-500"></i> اطلاعات تحصیلی</h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">دانشگاه</label>
@@ -265,7 +265,7 @@ const ProfileModule = {
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     ${Object.entries(stats).map(([key, value]) => `
                         <div class="text-center">
-                            <p class="text-2xl font-bold text-blue-600">${typeof value === 'number' && key.includes('total') ? UTILS.formatCurrency(value) : value}</p>
+                            <p class="text-2xl font-bold text-black-600">${typeof value === 'number' && key.includes('total') ? UTILS.formatCurrency(value) : value}</p>
                             <p class="text-sm text-gray-600">${this.getStatLabel(key)}</p>
                         </div>
                     `).join('')}
@@ -360,7 +360,7 @@ const ProfileModule = {
             >
                 <span class="text-4xl mb-2">${theme.icon}</span>
                 <span class="text-sm font-medium text-gray-700">${theme.name}</span>
-                ${currentTheme === theme.id ? '<i class="fas fa-check text-blue-600 mt-1"></i>' : ''}
+                ${currentTheme === theme.id ? '<i class="fas fa-check text-black-600 mt-1"></i>' : ''}
             </button>
         `).join('');
     },

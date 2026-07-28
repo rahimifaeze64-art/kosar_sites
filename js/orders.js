@@ -18,7 +18,7 @@ const OrdersModule = (function () {
 
     const STATUS_CLASSES = {
         pending: 'bg-yellow-100 text-yellow-800',
-        in_progress: 'bg-blue-100 text-blue-800',
+        in_progress: 'bg-blue-100 text-black-800',
         completed: 'bg-green-100 text-green-800'
     };
 
@@ -309,7 +309,7 @@ const OrdersModule = (function () {
         const safeId = escapeHtml(order.id);
         let html = `
             <button type="button" onclick="OrdersModule.viewDetails('${safeId}')"
-                    class="text-blue-600 hover:text-blue-900" title="مشاهده جزئیات">
+                    class="text-black-600 hover:text-black-900" title="مشاهده جزئیات">
                 <i class="fas fa-eye"></i>
             </button>`;
 

@@ -33,7 +33,7 @@ const UsersModule = {
                     <div class="dashboard-card blue">
                         <div class="text-center">
                             <h3 class="text-lg font-semibold text-gray-700">کل کاربران</h3>
-                            <p class="text-2xl font-bold text-blue-600">${users.length}</p>
+                            <p class="text-2xl font-bold text-black-600">${users.length}</p>
                         </div>
                     </div>
                     <div class="dashboard-card green">
@@ -118,7 +118,7 @@ const UsersModule = {
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div class="flex space-x-2 space-x-reverse">
                         <button onclick="window.editUser('${user.id}')" 
-                                class="text-blue-600 hover:text-blue-900">
+                                class="text-black-600 hover:text-black-900">
                             <i class="fas fa-edit"></i>
                         </button>
                         <button onclick="window.toggleUserStatus('${user.id}')" 
@@ -217,7 +217,7 @@ const UsersModule = {
     getRoleClass(role) {
         const classes = {
             [CONFIG.ROLES.MANAGER]: 'bg-red-100 text-red-800',
-            [CONFIG.ROLES.employee]: 'bg-blue-100 text-blue-800',
+            [CONFIG.ROLES.employee]: 'bg-blue-100 text-black-800',
             [CONFIG.ROLES.AGENT]: 'bg-yellow-100 text-yellow-800',
             [CONFIG.ROLES.STUDENT]: 'bg-green-100 text-green-800'
         };
@@ -256,7 +256,7 @@ const UsersModule = {
             <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
                 <div class="p-6 border-b flex justify-between items-center">
                     <h3 class="text-lg font-bold text-gray-800">
-                        <i class="fas fa-user-plus text-blue-600 ml-2"></i>
+                        <i class="fas fa-user-plus text-black-600 ml-2"></i>
                         ${title}
                     </h3>
                     <button onclick="document.getElementById('add-person-modal').remove()"

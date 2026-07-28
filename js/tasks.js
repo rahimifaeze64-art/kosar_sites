@@ -283,7 +283,7 @@ const TasksModule = {
         const additionalTextHTML = task.additionalText ? `
             <div class="mt-3 bg-slate-600 rounded-lg p-3">
                 <div class="flex items-start space-x-2 space-x-reverse">
-                    <i class="fas fa-align-left text-blue-400 mt-1"></i>
+                    <i class="fas fa-align-left text-black-400 mt-1"></i>
                     <div class="flex-1">
                         <p class="text-xs text-gray-300 mb-1">متن اضافی:</p>
                         <p class="text-sm text-white">${task.additionalText}</p>
@@ -350,8 +350,8 @@ const TasksModule = {
         const ext = fileName.split('.').pop().toLowerCase();
         const iconMap = {
             'pdf': 'fa-file-pdf text-red-400',
-            'doc': 'fa-file-word text-blue-400',
-            'docx': 'fa-file-word text-blue-400',
+            'doc': 'fa-file-word text-black-400',
+            'docx': 'fa-file-word text-black-400',
             'xls': 'fa-file-excel text-green-400',
             'xlsx': 'fa-file-excel text-green-400',
             'jpg': 'fa-file-image text-yellow-400',
@@ -494,8 +494,8 @@ const TasksModule = {
     getFileCard(file) {
         const iconMap = {
             'pdf': 'fa-file-pdf text-red-400',
-            'doc': 'fa-file-word text-blue-400',
-            'docx': 'fa-file-word text-blue-400',
+            'doc': 'fa-file-word text-black-400',
+            'docx': 'fa-file-word text-black-400',
             'xls': 'fa-file-excel text-green-400',
             'xlsx': 'fa-file-excel text-green-400',
             'jpg': 'fa-file-image text-yellow-400',
@@ -1160,8 +1160,8 @@ const TasksModule = {
         const ext = this.selectedVoiceTaskFile.name.split('.').pop().toLowerCase();
         const iconMap = {
             'pdf': 'fa-file-pdf text-red-400',
-            'doc': 'fa-file-word text-blue-400',
-            'docx': 'fa-file-word text-blue-400',
+            'doc': 'fa-file-word text-black-400',
+            'docx': 'fa-file-word text-black-400',
             'xls': 'fa-file-excel text-green-400',
             'xlsx': 'fa-file-excel text-green-400',
             'jpg': 'fa-file-image text-yellow-400',

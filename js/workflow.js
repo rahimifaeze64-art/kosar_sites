@@ -163,7 +163,7 @@ const WorkflowModule = {
                     <div class="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
                         <div class="p-6 border-b">
                             <h3 class="text-lg font-bold text-gray-800">
-                                <i class="fas fa-edit text-blue-600 ml-2"></i>
+                                <i class="fas fa-edit text-black-600 ml-2"></i>
                                 ویرایش لیست کارها
                             </h3>
                         </div>
