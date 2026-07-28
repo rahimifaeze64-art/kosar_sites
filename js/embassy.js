@@ -426,6 +426,24 @@ const EmbassyModule = (function () {
                                 <input type="text" id="f-sajadCode"
                                     class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:border-green-500 mb-2"
                                     placeholder="کد سجاد دانشجو">
+                                <div class="grid grid-cols-2 gap-2 mb-2">
+                                    <div>
+                                        <label class="text-gray-600 text-xs font-medium block mb-1">
+                                            <i class="fas fa-envelope ml-1 text-blue-500"></i>ایمیل سجاد
+                                        </label>
+                                        <input type="email" id="f-sajadEmail"
+                                            class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                                            placeholder="email@example.com" dir="ltr">
+                                    </div>
+                                    <div>
+                                        <label class="text-gray-600 text-xs font-medium block mb-1">
+                                            <i class="fas fa-lock ml-1 text-orange-500"></i>رمز عبور سجاد
+                                        </label>
+                                        <input type="text" id="f-sajadPassword"
+                                            class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500"
+                                            placeholder="رمز عبور" dir="ltr">
+                                    </div>
+                                </div>
                                 <div class="flex items-center gap-2 mb-3">
                                     <label class="cursor-pointer bg-green-600 hover:bg-green-500 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all">
                                         <i class="fas fa-id-card"></i> تصویر سجاد
@@ -1297,6 +1315,10 @@ const EmbassyModule = (function () {
         _loadPayments('deposit-list', r.settlement_deposit_list, r.settlement_deposit, cur);
         _loadPayments('final-list',   r.settlement_final_list,   r.settlement_final,   cur);
         document.getElementById('f-sajadCode').value        = r.sajad_code         || '';
+        const sajadEmailEl = document.getElementById('f-sajadEmail');
+        const sajadPassEl  = document.getElementById('f-sajadPassword');
+        if (sajadEmailEl) sajadEmailEl.value    = r.sajad_email    || '';
+        if (sajadPassEl)  sajadPassEl.value     = r.sajad_password || '';
         // وکالت
         const vekalatVal = r.vekalat || 'ندارد';
         const vRadio = document.querySelector(`input[name="f-vekalat"][value="${vekalatVal}"]`);
@@ -1481,6 +1503,8 @@ const EmbassyModule = (function () {
             settlement_deposit_list: _getPayments('deposit-list'),
             settlement_final_list:   _getPayments('final-list'),
             sajad_code:          document.getElementById('f-sajadCode').value.trim() || null,
+            sajad_email:         document.getElementById('f-sajadEmail')?.value.trim() || null,
+            sajad_password:      document.getElementById('f-sajadPassword')?.value.trim() || null,
             vekalat:             document.querySelector('input[name="f-vekalat"]:checked')?.value || 'ندارد',
             send_status:         document.querySelector('input[name="f-send-status"]:checked')?.value || 'ارسال نشده',
             receive_status:      document.querySelector('input[name="f-receive-status"]:checked')?.value || 'نشده',
@@ -1510,6 +1534,8 @@ const EmbassyModule = (function () {
             settlement_final:   'تسویه نهایی',
             settlement:         'واحد ارز',
             sajad_code:         'کد سجاد',
+            sajad_email:        'ایمیل سجاد',
+            sajad_password:     'رمز عبور سجاد',
             vekalat:            'وکالت‌نامه',
             send_status:        'وضعیت ارسال',
             receive_status:     'وضعیت دریافت',

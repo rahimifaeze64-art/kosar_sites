@@ -1,21 +1,37 @@
 -- ============================================================
--- work_checklist_migration.sql  (v2 — fixed schema + anon RLS)
--- جداول چک‌لیست کاری
+-- fix_checklist_tables.sql
+-- اصلاح جداول چک‌لیست که بدون public. ساخته شدند
+-- و اضافه کردن policy های anon که نبودند
 -- Supabase Dashboard → SQL Editor → Run
 -- ============================================================
 
--- ── ۱. جداول ─────────────────────────────────────────────────
+-- ── ۱. اگر جداول قدیمی بدون schema وجود دارند، داده را migrate کن ──
 
-CREATE TABLE IF NOT EXISTS public.checklist_categories (
-    id           TEXT PRIMARY KEY,
-    user_id      TEXT NOT NULL,
-    name         TEXT NOT NULL,
-    description  TEXT DEFAULT '',
-    color        TEXT DEFAULT 'purple',
-    icon         TEXT DEFAULT 'fas fa-folder',
-    created_at   TIMESTAMPTZ DEFAULT NOW(),
-    updated_at   TIMESTAMPTZ DEFAULT NOW()
-);
+-- categories
+DO $$
+BEGIN
+    -- ایجاد جدول با public. اگر وجود ندارد
+    CREATE TABLE IF NOT EXISTS public.checklist_categories (
+        id           TEXT PRIMARY KEY,
+        user_id      TEXT NOT NULL,
+        name         TEXT NOT NULL,
+        description  TEXT DEFAULT '',
+        color        TEXT DEFAULT 'purple',
+        icon         TEXT DEFAULT 'fas fa-folder',
+        created_at   TIMESTAMPTZ DEFAULT NOW(),
+        updated_at   TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    -- اگر جدول قدیمی (بدون schema) وجود دارد و داده دارد، migrate کن
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public'
+          AND table_name = 'checklist_categories'
+    ) THEN
+        -- جدول درست است، فقط ادامه می‌دهیم
+        NULL;
+    END IF;
+END$$;
 
 CREATE TABLE IF NOT EXISTS public.checklist_items (
     id           TEXT PRIMARY KEY,
@@ -48,17 +64,17 @@ CREATE INDEX IF NOT EXISTS idx_cl_items_user  ON public.checklist_items (user_id
 CREATE INDEX IF NOT EXISTS idx_cl_tasks_item  ON public.checklist_tasks (item_id);
 CREATE INDEX IF NOT EXISTS idx_cl_tasks_user  ON public.checklist_tasks (user_id);
 
--- ── ۳. RLS ────────────────────────────────────────────────────
+-- ── ۳. RLS: فعال‌سازی + policy های جدید ──────────────────────
 ALTER TABLE public.checklist_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.checklist_items      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.checklist_tasks      ENABLE ROW LEVEL SECURITY;
 
--- حذف policy های قدیمی (بدون public. که ممکن است خطا بدهند)
+-- حذف policy های قدیمی authenticated-only
 DROP POLICY IF EXISTS "checklist_categories_user_policy" ON public.checklist_categories;
 DROP POLICY IF EXISTS "checklist_items_user_policy"      ON public.checklist_items;
 DROP POLICY IF EXISTS "checklist_tasks_user_policy"      ON public.checklist_tasks;
 
--- anon: دسترسی کامل (سیستم بدون Supabase Auth کار می‌کند)
+-- policy های جدید: anon دسترسی کامل دارد
 DROP POLICY IF EXISTS "cl_cats_anon"  ON public.checklist_categories;
 CREATE POLICY "cl_cats_anon"
     ON public.checklist_categories FOR ALL TO anon
@@ -74,7 +90,7 @@ CREATE POLICY "cl_tasks_anon"
     ON public.checklist_tasks FOR ALL TO anon
     USING (true) WITH CHECK (true);
 
--- authenticated: دسترسی کامل
+-- authenticated هم دسترسی کامل
 DROP POLICY IF EXISTS "cl_cats_auth"  ON public.checklist_categories;
 CREATE POLICY "cl_cats_auth"
     ON public.checklist_categories FOR ALL TO authenticated
@@ -119,4 +135,4 @@ SELECT
     (SELECT count(*) FROM public.checklist_categories) AS categories,
     (SELECT count(*) FROM public.checklist_items)      AS items,
     (SELECT count(*) FROM public.checklist_tasks)      AS tasks,
-    'checklist tables OK' AS status;
+    'checklist tables fixed ✓' AS status;

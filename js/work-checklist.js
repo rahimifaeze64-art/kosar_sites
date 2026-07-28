@@ -8,8 +8,11 @@ const WorkChecklistModule = {
     // ─── Init ─────────────────────────────────────────────────────
     async init(user) {
         this.currentUser = user;
-        // Try Supabase first
-        if (window.supabaseClient) {
+        // از همان getSupabaseClient که بقیه سیستم استفاده می‌کند
+        if (typeof getSupabaseClient === 'function') {
+            this.supabase = getSupabaseClient();
+        }
+        if (!this.supabase && window.supabaseClient) {
             this.supabase = window.supabaseClient;
         }
         await this.render();
