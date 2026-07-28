@@ -78,7 +78,7 @@
                     </div>
                     <h1 class="text-xl font-bold text-white">سیستم مدیریت</h1>
                 </div>
-                <button @click="sidebarOpen = false" class="lg:hidden text-white hover:text-blue-200">
+                <button @click="sidebarOpen = false" class="lg:hidden text-white hover:text-black-400">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
@@ -88,7 +88,7 @@
                 <input type="text" 
                        placeholder="جستجوی سریع..."
                        class="w-full bg-white bg-opacity-10 border border-white border-opacity-20 rounded-xl px-4 py-3 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-30">
-                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-200"></i>
+                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-black-400"></i>
             </div>
         </div>
 
@@ -125,7 +125,7 @@
 
             <!-- Shortcuts Section -->
             <div class="pt-4 mt-4 border-t border-white border-opacity-20">
-                <p class="text-blue-200 text-xs font-semibold px-4 mb-2">میانبرها</p>
+                <p class="text-black-400 text-xs font-semibold px-4 mb-2">میانبرها</p>
                 
                 <button @click="currentPage = 'orders'; sidebarOpen = false"
                         :class="currentPage === 'orders' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-blue-100 hover:bg-white hover:bg-opacity-10'"
@@ -158,9 +158,9 @@
                 </div>
                 <div class="flex-1">
                     <p class="text-white font-medium text-sm">دکتر محسن تقی زاده</p>
-                    <p class="text-blue-200 text-xs">مدیر سیستم</p>
+                    <p class="text-black-400 text-xs">مدیر سیستم</p>
                 </div>
-                <button class="text-white hover:text-blue-200">
+                <button class="text-white hover:text-black-400">
                     <i class="fas fa-sign-out-alt"></i>
                 </button>
             </div>
@@ -173,7 +173,7 @@
         <!-- Page Header -->
         <div class="mb-6">
             <h2 class="text-3xl font-bold text-white mb-2" x-text="currentPage === 'dashboard' ? 'داشبورد' : currentPage === 'tasks' ? 'مدیریت وظایف' : currentPage === 'orders' ? 'سفارشات' : 'صفحه'"></h2>
-            <p class="text-blue-200 text-sm">خوش آمدید به سیستم مدیریت تحصیلی</p>
+            <p class="text-black-400 text-sm">خوش آمدید به سیستم مدیریت تحصیلی</p>
         </div>
 
         <!-- Content Cards -->
@@ -187,7 +187,7 @@
                     <span class="text-white text-2xl font-bold">24</span>
                 </div>
                 <h3 class="text-white font-semibold mb-1">سفارشات فعال</h3>
-                <p class="text-blue-200 text-sm">در حال پردازش</p>
+                <p class="text-black-400 text-sm">در حال پردازش</p>
             </div>
 
             <!-- Card 2 -->
@@ -199,7 +199,7 @@
                     <span class="text-white text-2xl font-bold">156</span>
                 </div>
                 <h3 class="text-white font-semibold mb-1">تکمیل شده</h3>
-                <p class="text-blue-200 text-sm">این ماه</p>
+                <p class="text-black-400 text-sm">این ماه</p>
             </div>
 
             <!-- Card 3 -->
@@ -211,7 +211,7 @@
                     <span class="text-white text-2xl font-bold">8</span>
                 </div>
                 <h3 class="text-white font-semibold mb-1">در انتظار</h3>
-                <p class="text-blue-200 text-sm">نیاز به بررسی</p>
+                <p class="text-black-400 text-sm">نیاز به بررسی</p>
             </div>
         </div>
         

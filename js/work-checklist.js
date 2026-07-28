@@ -172,7 +172,7 @@ const WorkChecklistModule = {
             container.innerHTML = `
                 <div class="col-span-full text-center py-16 bg-white/5 rounded-2xl border border-white/10">
                     <i class="fas fa-layer-group text-5xl text-purple-400/50 mb-4 block"></i>
-                    <p class="text-blue-200 text-lg mb-2">هنوز دسته‌بندی ندارید</p>
+                    <p class="text-black-400 text-lg mb-2">هنوز دسته‌بندی ندارید</p>
                     <p class="text-blue-300/60 text-sm">با کلیک روی «دسته‌بندی جدید» شروع کنید</p>
                 </div>`;
             return;
@@ -221,7 +221,7 @@ const WorkChecklistModule = {
                     </button>
                 </div>
             </div>
-            ${cat.description ? `<p class="text-blue-200/70 text-sm">${this._esc(cat.description)}</p>` : ''}
+            ${cat.description ? `<p class="text-black-400/70 text-sm">${this._esc(cat.description)}</p>` : ''}
             <div id="wc-items-${cat.id}" class="space-y-3 min-h-[40px]">
                 <i class="fas fa-spinner fa-spin text-purple-400 text-sm block text-center py-2"></i>
             </div>
@@ -415,19 +415,19 @@ const WorkChecklistModule = {
                 </div>
                 <div class="space-y-4">
                     <div>
-                        <label class="text-blue-200 text-sm mb-1 block">نام دسته‌بندی *</label>
+                        <label class="text-black-400 text-sm mb-1 block">نام دسته‌بندی *</label>
                         <input id="wc-cat-name" value="${cat ? this._esc(cat.name) : ''}"
                                class="w-full bg-white/10 text-white placeholder-blue-300/50 px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-purple-500"
                                placeholder="مثال: مدیریت دانشجو"/>
                     </div>
                     <div>
-                        <label class="text-blue-200 text-sm mb-1 block">توضیح (اختیاری)</label>
+                        <label class="text-black-400 text-sm mb-1 block">توضیح (اختیاری)</label>
                         <input id="wc-cat-desc" value="${cat && cat.description ? this._esc(cat.description) : ''}"
                                class="w-full bg-white/10 text-white placeholder-blue-300/50 px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-purple-500"
                                placeholder="توضیح کوتاه..."/>
                     </div>
                     <div>
-                        <label class="text-blue-200 text-sm mb-2 block">رنگ</label>
+                        <label class="text-black-400 text-sm mb-2 block">رنگ</label>
                         <div class="flex gap-2">
                             ${colors.map(c => `
                             <label class="cursor-pointer">
@@ -439,14 +439,14 @@ const WorkChecklistModule = {
                         </div>
                     </div>
                     <div>
-                        <label class="text-blue-200 text-sm mb-2 block">آیکون</label>
+                        <label class="text-black-400 text-sm mb-2 block">آیکون</label>
                         <div class="grid grid-cols-6 gap-2">
                             ${icons.map(ic => `
                             <label class="cursor-pointer">
                                 <input type="radio" name="wc-cat-icon" value="${ic}" ${(!cat && ic==='fas fa-folder') || (cat && cat.icon===ic) ? 'checked' : ''} class="sr-only wc-icon-radio"/>
                                 <div class="w-10 h-10 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-all border border-transparent hover:border-purple-500 wc-icon-btn"
                                      onclick="WorkChecklistModule._selectIcon('${ic}')">
-                                    <i class="${ic} text-blue-200"></i>
+                                    <i class="${ic} text-black-400"></i>
                                 </div>
                             </label>`).join('')}
                         </div>
@@ -535,20 +535,20 @@ const WorkChecklistModule = {
                 </div>
                 <div class="space-y-4">
                     <div>
-                        <label class="text-blue-200 text-sm mb-1 block">نام آیتم *</label>
+                        <label class="text-black-400 text-sm mb-1 block">نام آیتم *</label>
                         <input id="wc-item-name" value="${item ? this._esc(item.name) : ''}"
                                class="w-full bg-white/10 text-white placeholder-blue-300/50 px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-purple-500"
                                placeholder="مثال: بررسی پرونده دانشجو"/>
                     </div>
                     <div>
-                        <label class="text-blue-200 text-sm mb-2 block">آیکون</label>
+                        <label class="text-black-400 text-sm mb-2 block">آیکون</label>
                         <div class="grid grid-cols-6 gap-2">
                             ${icons.map(ic => `
                             <label class="cursor-pointer">
                                 <input type="radio" name="wc-item-icon" value="${ic}" ${(!item && ic==='fas fa-list-check') || (item && item.icon===ic) ? 'checked' : ''} class="sr-only wc-item-icon-radio"/>
                                 <div class="w-10 h-10 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-all border border-transparent hover:border-blue-500 wc-item-icon-btn"
                                      onclick="WorkChecklistModule._selectItemIcon('${ic}')">
-                                    <i class="${ic} text-blue-200 text-sm"></i>
+                                    <i class="${ic} text-black-400 text-sm"></i>
                                 </div>
                             </label>`).join('')}
                         </div>
@@ -639,12 +639,12 @@ const WorkChecklistModule = {
                 </div>
                 <div class="space-y-4">
                     <div>
-                        <label class="text-blue-200 text-sm mb-1 block">عنوان وظیفه *</label>
+                        <label class="text-black-400 text-sm mb-1 block">عنوان وظیفه *</label>
                         <input id="wc-edit-task-title" value="${this._esc(task.title)}"
                                class="w-full bg-white/10 text-white px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-purple-500"/>
                     </div>
                     <div>
-                        <label class="text-blue-200 text-sm mb-1 block">یادداشت</label>
+                        <label class="text-black-400 text-sm mb-1 block">یادداشت</label>
                         <textarea id="wc-edit-task-note" rows="3"
                                   class="w-full bg-white/10 text-white px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-purple-500 resize-none"
                                   placeholder="یادداشت اضافی...">${task.note || ''}</textarea>

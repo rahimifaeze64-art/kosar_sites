@@ -122,7 +122,7 @@ const EmbassyModule = (function () {
                         </span>
                         سفارت - مدیریت مدارک دانشجویان
                     </h2>
-                    <p class="text-blue-200 text-sm mt-1">مدیریت مدارک سفارتخانه‌ای دانشجویان</p>
+                    <p class="text-black-400 text-sm mt-1">مدیریت مدارک سفارتخانه‌ای دانشجویان</p>
                 </div>
                 <button onclick="EmbassyModule.openAddModal()"
                     class="bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all shadow-lg">
@@ -190,7 +190,7 @@ const EmbassyModule = (function () {
             <!-- لودینگ -->
             <div id="embassy-loading" class="text-center py-12">
                 <i class="fas fa-spinner fa-spin text-3xl text-yellow-400"></i>
-                <p class="text-blue-200 mt-3">در حال بارگذاری...</p>
+                <p class="text-black-400 mt-3">در حال بارگذاری...</p>
             </div>
 
             <!-- جدول -->
@@ -531,7 +531,7 @@ const EmbassyModule = (function () {
                 <div class="bg-blue-900 rounded-2xl p-6 max-w-sm w-full border border-red-700 shadow-2xl text-center">
                     <i class="fas fa-exclamation-triangle text-4xl text-red-400 mb-4"></i>
                     <h3 class="text-white text-xl font-bold mb-2">تأیید حذف</h3>
-                    <p class="text-blue-200 mb-6" id="embassy-confirm-text">آیا مطمئن هستید؟</p>
+                    <p class="text-black-400 mb-6" id="embassy-confirm-text">آیا مطمئن هستید؟</p>
                     <div class="flex gap-3">
                         <button id="embassy-confirm-yes"
                             class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl transition-all">
@@ -557,7 +557,7 @@ const EmbassyModule = (function () {
             container.innerHTML = `
                 <div class="text-center py-16 bg-blue-900 bg-opacity-20 rounded-2xl border border-blue-700 border-opacity-30">
                     <i class="fas fa-folder-open text-5xl text-blue-400 mb-4 opacity-40"></i>
-                    <p class="text-blue-200 text-lg">هیچ رکوردی ثبت نشده</p>
+                    <p class="text-black-400 text-lg">هیچ رکوردی ثبت نشده</p>
                     <p class="text-gray-400 text-sm mt-1">روی «ثبت مدرک جدید» کلیک کنید</p>
                 </div>`;
             return;

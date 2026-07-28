@@ -48,10 +48,10 @@
                     </div>
                     <div class="flex flex-col">
                         <h1 class="text-lg font-bold text-white leading-tight">شرکت الکوثر</h1>
-                        <p class="text-xs text-blue-200">بایگانی فایل‌ها</p>
+                        <p class="text-xs text-black-400">بایگانی فایل‌ها</p>
                     </div>
                 </div>
-                <button @click="sidebarOpen = false" class="lg:hidden text-white hover:text-blue-200">
+                <button @click="sidebarOpen = false" class="lg:hidden text-white hover:text-black-400">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
@@ -63,13 +63,13 @@
                        @input="filterFiles()"
                        placeholder="جستجوی فایل..."
                        class="w-full bg-white bg-opacity-10 border border-white border-opacity-20 rounded-xl px-4 py-3 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-30">
-                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-200"></i>
+                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-black-400"></i>
             </div>
         </div>
 
         <!-- Archive Categories Navigation -->
         <nav class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-2">
-            <p class="text-blue-200 text-xs font-semibold px-4 mb-3">دسته‌بندی‌ها</p>
+            <p class="text-black-400 text-xs font-semibold px-4 mb-3">دسته‌بندی‌ها</p>
             
             <template x-for="category in categories" :key="category.id">
                 <button @click="selectedCategory = category.id"
@@ -110,7 +110,7 @@
         <!-- Page Header -->
         <div class="mb-6">
             <h2 class="text-3xl font-bold text-white mb-2">بایگانی فایل‌های دریافتی</h2>
-            <p class="text-blue-200 text-sm">مدیریت و دسترسی به تمام فایل‌های ارسالی از طرف نویسندگان</p>
+            <p class="text-black-400 text-sm">مدیریت و دسترسی به تمام فایل‌های ارسالی از طرف نویسندگان</p>
         </div>
 
         <!-- Upload Section -->
@@ -203,11 +203,11 @@
                                     <i :class="getFileIcon(file.type)" class="text-2xl ml-2" :style="`color: ${getFileColor(file.type)}`"></i>
                                     <h4 class="text-white font-medium text-sm truncate" x-text="file.name"></h4>
                                 </div>
-                                <p class="text-blue-200 text-xs mb-1">
+                                <p class="text-black-400 text-xs mb-1">
                                     <i class="fas fa-user ml-1"></i>
                                     <span x-text="file.author"></span>
                                 </p>
-                                <p class="text-blue-200 text-xs">
+                                <p class="text-black-400 text-xs">
                                     <i class="fas fa-calendar ml-1"></i>
                                     <span x-text="formatDate(file.uploadDate)"></span>
                                 </p>
@@ -243,7 +243,7 @@
                                 <i :class="getFileIcon(file.type)" class="text-2xl" :style="`color: ${getFileColor(file.type)}`"></i>
                                 <div class="flex-1">
                                     <h4 class="text-white font-medium" x-text="file.name"></h4>
-                                    <div class="flex items-center space-x-4 space-x-reverse text-blue-200 text-xs mt-1">
+                                    <div class="flex items-center space-x-4 space-x-reverse text-black-400 text-xs mt-1">
                                         <span><i class="fas fa-user ml-1"></i><span x-text="file.author"></span></span>
                                         <span><i class="fas fa-calendar ml-1"></i><span x-text="formatDate(file.uploadDate)"></span></span>
                                         <span><i class="fas fa-hdd ml-1"></i><span x-text="file.size"></span></span>
@@ -274,7 +274,7 @@
                  class="text-center py-12">
                 <i class="fas fa-folder-open text-6xl text-blue-300 mb-4"></i>
                 <p class="text-white text-lg font-medium mb-2">فایلی یافت نشد</p>
-                <p class="text-blue-200 text-sm">در این دسته‌بندی هنوز فایلی آپلود نشده است</p>
+                <p class="text-black-400 text-sm">در این دسته‌بندی هنوز فایلی آپلود نشده است</p>
             </div>
         </div>
     </main>

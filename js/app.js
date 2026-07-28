@@ -636,7 +636,7 @@ function appController() {
                         </div>
                         <div>
                             <h3 class="text-xl font-bold text-white mb-2">حسابداری شخصی</h3>
-                            <p class="text-blue-200 text-sm">مشاهده درآمد، هزینه و سابقه مالی</p>
+                            <p class="text-black-400 text-sm">مشاهده درآمد، هزینه و سابقه مالی</p>
                         </div>
                         <i class="fas fa-chevron-left text-blue-300 group-hover:text-white transition-colors"></i>
                     </div>
@@ -650,7 +650,7 @@ function appController() {
                         </div>
                         <div>
                             <h3 class="text-xl font-bold text-white mb-2">حسابداری کارمندان</h3>
-                            <p class="text-blue-200 text-sm">مدیریت ساعات، هزینه‌ها و کسورات کارمندان</p>
+                            <p class="text-black-400 text-sm">مدیریت ساعات، هزینه‌ها و کسورات کارمندان</p>
                         </div>
                         <i class="fas fa-chevron-left text-blue-300 group-hover:text-white transition-colors"></i>
                     </div>
@@ -696,7 +696,7 @@ function appController() {
                         </div>
                         <div>
                             <h3 class="text-xl font-bold text-white mb-2">حسابداری کارمندان</h3>
-                            <p class="text-blue-200 text-sm">نرخ ساعتی، هزینه‌ها و کسورات</p>
+                            <p class="text-black-400 text-sm">نرخ ساعتی، هزینه‌ها و کسورات</p>
                         </div>
                         <i class="fas fa-chevron-left text-blue-300 group-hover:text-white transition-colors"></i>
                     </div>
@@ -709,7 +709,7 @@ function appController() {
                         </div>
                         <div>
                             <h3 class="text-xl font-bold text-white mb-2">ساعات کاری کارمندان</h3>
-                            <p class="text-blue-200 text-sm">تأیید ساعات، هزینه‌ها و کسورات</p>
+                            <p class="text-black-400 text-sm">تأیید ساعات، هزینه‌ها و کسورات</p>
                         </div>
                         <i class="fas fa-chevron-left text-blue-300 group-hover:text-white transition-colors"></i>
                     </div>

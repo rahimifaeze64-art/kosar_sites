@@ -40,7 +40,7 @@ body[data-theme="dark"] aside nav button.bg-white {
     color: #e5e7eb !important;
 }
 
-body[data-theme="dark"] aside .text-blue-200,
+body[data-theme="dark"] aside .text-black-400,
 body[data-theme="dark"] aside p,
 body[data-theme="dark"] aside span {
     color: #9ca3af !important;

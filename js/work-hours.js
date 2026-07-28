@@ -478,7 +478,7 @@ const WorkHoursUI = (function() {
                                 <i class="fas fa-clock text-2xl text-blue-400"></i>
                             </div>
                             <div>
-                                <p class="text-blue-200 text-sm">کل ساعات تأیید شده</p>
+                                <p class="text-black-400 text-sm">کل ساعات تأیید شده</p>
                                 <p class="text-3xl font-bold text-white">${totalHours}</p>
                                 <p class="text-blue-300 text-xs">ساعت</p>
                             </div>
@@ -491,7 +491,7 @@ const WorkHoursUI = (function() {
                                 <i class="fas fa-hourglass-half text-2xl text-yellow-400"></i>
                             </div>
                             <div>
-                                <p class="text-blue-200 text-sm">در انتظار تأیید</p>
+                                <p class="text-black-400 text-sm">در انتظار تأیید</p>
                                 <p class="text-3xl font-bold text-white">${workHours.filter(h => h.status === 'pending').length}</p>
                                 <p class="text-blue-300 text-xs">ثبت</p>
                             </div>
@@ -504,7 +504,7 @@ const WorkHoursUI = (function() {
                                 <i class="fas fa-check-circle text-2xl text-green-400"></i>
                             </div>
                             <div>
-                                <p class="text-blue-200 text-sm">تأیید شده</p>
+                                <p class="text-black-400 text-sm">تأیید شده</p>
                                 <p class="text-3xl font-bold text-white">${workHours.filter(h => h.status === 'approved').length}</p>
                                 <p class="text-blue-300 text-xs">ثبت</p>
                             </div>
@@ -521,18 +521,18 @@ const WorkHoursUI = (function() {
                     
                     <form id="workHoursForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
-                            <label class="block text-blue-200 text-sm mb-2">تاریخ</label>
+                            <label class="block text-black-400 text-sm mb-2">تاریخ</label>
                             <div class="space-y-2">
                                 <div class="flex gap-2">
                                     <button type="button" onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp',-1)"
-                                        class="flex-1 text-xs py-2 rounded-xl bg-white/10 hover:bg-blue-500/30 text-blue-200 hover:text-white border border-white/10 transition-all">دیروز</button>
+                                        class="flex-1 text-xs py-2 rounded-xl bg-white/10 hover:bg-blue-500/30 text-black-400 hover:text-white border border-white/10 transition-all">دیروز</button>
                                     <button type="button" onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp',0)"
                                         class="flex-1 text-xs py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white border border-blue-500 transition-all font-bold">امروز</button>
                                 </div>
                                 <input type="hidden" id="workDate" value="${today}">
                                 <button type="button" id="workDate-disp"
                                     onclick="WorkHoursUI.openJalaliPicker('workDate','workDate-disp')"
-                                    class="w-full text-right bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-blue-200 text-sm flex items-center justify-between hover:bg-white/15 transition-all">
+                                    class="w-full text-right bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-black-400 text-sm flex items-center justify-between hover:bg-white/15 transition-all">
                                     <span id="workDate-disp-text">${today}</span>
                                     <i class="fas fa-calendar-alt text-blue-400"></i>
                                 </button>
@@ -540,7 +540,7 @@ const WorkHoursUI = (function() {
                         </div>
                         
                         <div>
-                            <label class="block text-blue-200 text-sm mb-2">ساعت شروع</label>
+                            <label class="block text-black-400 text-sm mb-2">ساعت شروع</label>
                             <input type="text" id="startTime"
                                    placeholder="مثال: 08:30"
                                    pattern="^([01]?[0-9]|2[0-3]):[0-5][0-9]$"
@@ -553,7 +553,7 @@ const WorkHoursUI = (function() {
                         </div>
                         
                         <div>
-                            <label class="block text-blue-200 text-sm mb-2">ساعت پایان</label>
+                            <label class="block text-black-400 text-sm mb-2">ساعت پایان</label>
                             <input type="text" id="endTime"
                                    placeholder="مثال: 17:00"
                                    pattern="^([01]?[0-9]|2[0-3]):[0-5][0-9]$"
@@ -566,14 +566,14 @@ const WorkHoursUI = (function() {
                         </div>
                         
                         <div class="md:col-span-2 lg:col-span-1">
-                            <label class="block text-blue-200 text-sm mb-2">ساعت کل</label>
+                            <label class="block text-black-400 text-sm mb-2">ساعت کل</label>
                             <div id="totalHoursDisplay" class="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-2xl font-bold text-emerald-400 text-center">
                                 0 ساعت
                             </div>
                         </div>
                         
                         <div class="md:col-span-2 lg:col-span-4">
-                            <label class="block text-blue-200 text-sm mb-2">شرح کار</label>
+                            <label class="block text-black-400 text-sm mb-2">شرح کار</label>
                             <textarea id="workDescription" rows="2" placeholder="توضیحاتی درباره کار انجام‌شده بنویسید..."
                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300/50 focus:outline-none focus:border-blue-400 resize-none"></textarea>
                         </div>
@@ -600,31 +600,31 @@ const WorkHoursUI = (function() {
                     <form id="deductionForm" onsubmit="WorkHoursUI.submitDeductionForm(event)">
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                             <div>
-                                <label class="block text-blue-200 text-sm mb-2">تاریخ کسر <span class="text-red-400">*</span></label>
+                                <label class="block text-black-400 text-sm mb-2">تاریخ کسر <span class="text-red-400">*</span></label>
                                 <div class="space-y-2">
                                     <div class="flex gap-2">
                                         <button type="button" onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp',-1)"
-                                            class="flex-1 text-xs py-2 rounded-xl bg-white/10 hover:bg-red-500/30 text-blue-200 hover:text-white border border-white/10 transition-all">دیروز</button>
+                                            class="flex-1 text-xs py-2 rounded-xl bg-white/10 hover:bg-red-500/30 text-black-400 hover:text-white border border-white/10 transition-all">دیروز</button>
                                         <button type="button" onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp',0)"
                                             class="flex-1 text-xs py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white border border-red-500 transition-all font-bold">امروز</button>
                                     </div>
                                     <input type="hidden" id="deductionDate">
                                     <button type="button" id="deductionDate-disp"
                                         onclick="WorkHoursUI.openJalaliPicker('deductionDate','deductionDate-disp')"
-                                        class="w-full text-right bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-blue-200 text-sm flex items-center justify-between hover:bg-white/15 transition-all">
+                                        class="w-full text-right bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-black-400 text-sm flex items-center justify-between hover:bg-white/15 transition-all">
                                         <span id="deductionDate-disp-text">انتخاب تاریخ</span>
                                         <i class="fas fa-calendar-alt text-red-400"></i>
                                     </button>
                                 </div>
                             </div>
                             <div>
-                                <label class="block text-blue-200 text-sm mb-2">مبلغ کسر (تومان) <span class="text-red-400">*</span></label>
+                                <label class="block text-black-400 text-sm mb-2">مبلغ کسر (تومان) <span class="text-red-400">*</span></label>
                                 <input type="number" id="deductionAmount" required min="0" step="1000"
                                     placeholder="مثال: 500000"
                                     class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300/50 focus:outline-none focus:border-red-400">
                             </div>
                             <div>
-                                <label class="block text-blue-200 text-sm mb-2">علت کسر <span class="text-red-400">*</span></label>
+                                <label class="block text-black-400 text-sm mb-2">علت کسر <span class="text-red-400">*</span></label>
                                 <input type="text" id="deductionReason" required
                                     placeholder="مثال: غیبت، تأخیر، جریمه..."
                                     class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300/50 focus:outline-none focus:border-red-400">
@@ -653,18 +653,18 @@ const WorkHoursUI = (function() {
                     
                     <form id="expenseForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                            <label class="block text-blue-200 text-sm mb-2">تاریخ</label>
+                            <label class="block text-black-400 text-sm mb-2">تاریخ</label>
                             <div class="space-y-2">
                                 <div class="flex gap-2">
                                     <button type="button" onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp',-1)"
-                                        class="flex-1 text-xs py-2 rounded-xl bg-white/10 hover:bg-orange-500/30 text-blue-200 hover:text-white border border-white/10 transition-all">دیروز</button>
+                                        class="flex-1 text-xs py-2 rounded-xl bg-white/10 hover:bg-orange-500/30 text-black-400 hover:text-white border border-white/10 transition-all">دیروز</button>
                                     <button type="button" onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp',0)"
                                         class="flex-1 text-xs py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white border border-orange-500 transition-all font-bold">امروز</button>
                                 </div>
                                 <input type="hidden" id="expenseDate" value="${today}">
                                 <button type="button" id="expenseDate-disp"
                                     onclick="WorkHoursUI.openJalaliPicker('expenseDate','expenseDate-disp')"
-                                    class="w-full text-right bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-blue-200 text-sm flex items-center justify-between hover:bg-white/15 transition-all">
+                                    class="w-full text-right bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-black-400 text-sm flex items-center justify-between hover:bg-white/15 transition-all">
                                     <span id="expenseDate-disp-text">${today}</span>
                                     <i class="fas fa-calendar-alt text-orange-400"></i>
                                 </button>
@@ -672,7 +672,7 @@ const WorkHoursUI = (function() {
                         </div>
                         
                         <div>
-                            <label class="block text-blue-200 text-sm mb-2">
+                            <label class="block text-black-400 text-sm mb-2">
                                 <i class="fas fa-dollar-sign ml-1"></i>
                                 مبلغ (تومان)
                             </label>
@@ -681,7 +681,7 @@ const WorkHoursUI = (function() {
                         </div>
                         
                         <div>
-                            <label class="block text-blue-200 text-sm mb-2">شرح هزینه</label>
+                            <label class="block text-black-400 text-sm mb-2">شرح هزینه</label>
                             <input type="text" id="expenseDescription" placeholder="مثال: بنزین، پارکینگ، غذا..."
                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300/50 focus:outline-none focus:border-blue-400">
                         </div>
@@ -728,15 +728,15 @@ const WorkHoursUI = (function() {
                         <table class="w-full">
                             <thead>
                                 <tr class="border-b border-white/10">
-                                    <th class="text-right text-blue-200 font-medium py-3 px-4">نوع</th>
-                                    <th class="text-right text-blue-200 font-medium py-3 px-4">تاریخ</th>
-                                    <th class="text-right text-blue-200 font-medium py-3 px-4">ساعت شروع</th>
-                                    <th class="text-right text-blue-200 font-medium py-3 px-4">ساعت پایان</th>
-                                    <th class="text-right text-blue-200 font-medium py-3 px-4">ساعت کل</th>
-                                    <th class="text-right text-blue-200 font-medium py-3 px-4">مبلغ</th>
-                                    <th class="text-right text-blue-200 font-medium py-3 px-4">شرح</th>
-                                    <th class="text-right text-blue-200 font-medium py-3 px-4">وضعیت</th>
-                                    <th class="text-right text-blue-200 font-medium py-3 px-4">عملیات</th>
+                                    <th class="text-right text-black-400 font-medium py-3 px-4">نوع</th>
+                                    <th class="text-right text-black-400 font-medium py-3 px-4">تاریخ</th>
+                                    <th class="text-right text-black-400 font-medium py-3 px-4">ساعت شروع</th>
+                                    <th class="text-right text-black-400 font-medium py-3 px-4">ساعت پایان</th>
+                                    <th class="text-right text-black-400 font-medium py-3 px-4">ساعت کل</th>
+                                    <th class="text-right text-black-400 font-medium py-3 px-4">مبلغ</th>
+                                    <th class="text-right text-black-400 font-medium py-3 px-4">شرح</th>
+                                    <th class="text-right text-black-400 font-medium py-3 px-4">وضعیت</th>
+                                    <th class="text-right text-black-400 font-medium py-3 px-4">عملیات</th>
                                 </tr>
                             </thead>
                             <tbody id="workHoursList">
@@ -748,7 +748,7 @@ const WorkHoursUI = (function() {
                     ${allEntries.length === 0 ? `
                         <div class="text-center py-12">
                             <i class="fas fa-clock text-5xl text-blue-400/30 mb-4"></i>
-                            <p class="text-blue-200">هنوز رکوردی ثبت نشده است</p>
+                            <p class="text-black-400">هنوز رکوردی ثبت نشده است</p>
                         </div>
                     ` : ''}
                 </div>
@@ -774,7 +774,7 @@ const WorkHoursUI = (function() {
                                 <i class="fas fa-users text-2xl text-yellow-400"></i>
                             </div>
                             <div>
-                                <p class="text-blue-200 text-sm">تعداد کارمندان</p>
+                                <p class="text-black-400 text-sm">تعداد کارمندان</p>
                                 <p class="text-3xl font-bold text-white">${summary.length}</p>
                             </div>
                         </div>
@@ -786,7 +786,7 @@ const WorkHoursUI = (function() {
                                 <i class="fas fa-hourglass-half text-2xl text-yellow-400"></i>
                             </div>
                             <div>
-                                <p class="text-blue-200 text-sm">در انتظار تأیید</p>
+                                <p class="text-black-400 text-sm">در انتظار تأیید</p>
                                 <p class="text-3xl font-bold text-white">${pendingHours.length + pendingExpenses.length}</p>
                             </div>
                         </div>
@@ -798,7 +798,7 @@ const WorkHoursUI = (function() {
                                 <i class="fas fa-check-circle text-2xl text-green-400"></i>
                             </div>
                             <div>
-                                <p class="text-blue-200 text-sm">تأیید شده</p>
+                                <p class="text-black-400 text-sm">تأیید شده</p>
                                 <p class="text-3xl font-bold text-white">${summary.reduce((sum, s) => sum + s.approved, 0)}</p>
                             </div>
                         </div>
@@ -810,7 +810,7 @@ const WorkHoursUI = (function() {
                                 <i class="fas fa-clock text-2xl text-blue-400"></i>
                             </div>
                             <div>
-                                <p class="text-blue-200 text-sm">کل ساعات</p>
+                                <p class="text-black-400 text-sm">کل ساعات</p>
                                 <p class="text-3xl font-bold text-white">${summary.reduce((sum, s) => sum + s.totalHours, 0).toFixed(1)}</p>
                             </div>
                         </div>
@@ -834,14 +834,14 @@ const WorkHoursUI = (function() {
                                         </div>
                                         <div>
                                             <p class="text-white font-medium">${entry.employeeName}</p>
-                                            <p class="text-blue-200 text-sm">${typeof Jalali!=='undefined' ? Jalali.displayDate(entry.date) : entry.date} | ${entry.startTime || '-'} - ${entry.endTime || '-'}</p>
+                                            <p class="text-black-400 text-sm">${typeof Jalali!=='undefined' ? Jalali.displayDate(entry.date) : entry.date} | ${entry.startTime || '-'} - ${entry.endTime || '-'}</p>
                                             <p class="text-blue-300 text-xs">${entry.totalHours || 0} ساعت</p>
                                         </div>
                                     </div>
                                     
                                     <div class="flex items-center gap-3">
                                         <div class="text-left max-w-xs">
-                                            <p class="text-blue-200 text-sm truncate">${entry.description || '-'}</p>
+                                            <p class="text-black-400 text-sm truncate">${entry.description || '-'}</p>
                                         </div>
                                         
                                         <button onclick="WorkHoursUI.approveEntry('${entry.id}')"
@@ -879,7 +879,7 @@ const WorkHoursUI = (function() {
                                         </div>
                                         <div>
                                             <p class="text-white font-medium">${entry.employeeName}</p>
-                                            <p class="text-blue-200 text-sm">${typeof Jalali!=='undefined' ? Jalali.displayDate(entry.date) : entry.date}</p>
+                                            <p class="text-black-400 text-sm">${typeof Jalali!=='undefined' ? Jalali.displayDate(entry.date) : entry.date}</p>
                                             <p class="text-orange-400 text-lg font-bold">${entry.amount ? entry.amount.toLocaleString('fa-IR') : 0} تومان</p>
                                             ${entry.description ? `<p class="text-blue-300 text-xs mt-1">${entry.description}</p>` : ''}
                                         </div>
@@ -915,13 +915,13 @@ const WorkHoursUI = (function() {
                         <table class="w-full">
                             <thead>
                                 <tr class="border-b border-white/10">
-                                    <th class="text-right text-blue-200 font-medium py-3 px-4">نام کارمند</th>
-                                    <th class="text-center text-blue-200 font-medium py-3 px-4">کل ساعات</th>
-                                    <th class="text-center text-blue-200 font-medium py-3 px-4">تعداد ثبت</th>
-                                    <th class="text-center text-blue-200 font-medium py-3 px-4">تأیید شده</th>
-                                    <th class="text-center text-blue-200 font-medium py-3 px-4">در انتظار</th>
-                                    <th class="text-center text-blue-200 font-medium py-3 px-4">رد شده</th>
-                                    <th class="text-center text-blue-200 font-medium py-3 px-4">عملیات</th>
+                                    <th class="text-right text-black-400 font-medium py-3 px-4">نام کارمند</th>
+                                    <th class="text-center text-black-400 font-medium py-3 px-4">کل ساعات</th>
+                                    <th class="text-center text-black-400 font-medium py-3 px-4">تعداد ثبت</th>
+                                    <th class="text-center text-black-400 font-medium py-3 px-4">تأیید شده</th>
+                                    <th class="text-center text-black-400 font-medium py-3 px-4">در انتظار</th>
+                                    <th class="text-center text-black-400 font-medium py-3 px-4">رد شده</th>
+                                    <th class="text-center text-black-400 font-medium py-3 px-4">عملیات</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -960,7 +960,7 @@ const WorkHoursUI = (function() {
                                     <tr>
                                         <td colspan="7" class="text-center py-12">
                                             <i class="fas fa-users text-5xl text-blue-400/30 mb-4"></i>
-                                            <p class="text-blue-200">هنوز ساعتی ثبت نشده است</p>
+                                            <p class="text-black-400">هنوز ساعتی ثبت نشده است</p>
                                         </td>
                                     </tr>
                                 `}
@@ -980,12 +980,12 @@ const WorkHoursUI = (function() {
                         <table class="w-full">
                             <thead>
                                 <tr class="border-b border-white/10">
-                                    <th class="text-right text-blue-200 font-medium py-3 px-4">نام کارمند</th>
-                                    <th class="text-right text-blue-200 font-medium py-3 px-4">تاریخ</th>
-                                    <th class="text-right text-blue-200 font-medium py-3 px-4">مبلغ</th>
-                                    <th class="text-right text-blue-200 font-medium py-3 px-4">شرح</th>
-                                    <th class="text-center text-blue-200 font-medium py-3 px-4">وضعیت</th>
-                                    <th class="text-center text-blue-200 font-medium py-3 px-4">عملیات</th>
+                                    <th class="text-right text-black-400 font-medium py-3 px-4">نام کارمند</th>
+                                    <th class="text-right text-black-400 font-medium py-3 px-4">تاریخ</th>
+                                    <th class="text-right text-black-400 font-medium py-3 px-4">مبلغ</th>
+                                    <th class="text-right text-black-400 font-medium py-3 px-4">شرح</th>
+                                    <th class="text-center text-black-400 font-medium py-3 px-4">وضعیت</th>
+                                    <th class="text-center text-black-400 font-medium py-3 px-4">عملیات</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1025,7 +1025,7 @@ const WorkHoursUI = (function() {
                 <tr>
                     <td colspan="6" class="text-center py-12">
                         <i class="fas fa-money-bill-wave text-5xl text-orange-400/30 mb-4"></i>
-                        <p class="text-blue-200">هنوز هزینه‌ای ثبت نشده است</p>
+                        <p class="text-black-400">هنوز هزینه‌ای ثبت نشده است</p>
                     </td>
                 </tr>
             `;
@@ -1058,7 +1058,7 @@ const WorkHoursUI = (function() {
                     <span class="text-xl font-bold text-orange-400">${expense.amount ? expense.amount.toLocaleString('fa-IR') : 0}</span>
                     <span class="text-blue-300 text-sm"> تومان</span>
                 </td>
-                <td class="py-4 px-4 text-blue-200 max-w-xs" title="${expense.description || '-'}">
+                <td class="py-4 px-4 text-black-400 max-w-xs" title="${expense.description || '-'}">
                     ${expense.description || '-'}
                 </td>
                 <td class="text-center py-4 px-4">
@@ -1126,7 +1126,7 @@ const WorkHoursUI = (function() {
                             </div>
                         ` : '<span class="text-gray-500">-</span>'}
                     </td>
-                    <td class="py-3 px-4 text-blue-200 max-w-xs truncate" title="${entry.description || '-'}">${entry.description || '-'}</td>
+                    <td class="py-3 px-4 text-black-400 max-w-xs truncate" title="${entry.description || '-'}">${entry.description || '-'}</td>
                     <td class="py-3 px-4">
                         <span class="${statusColors[entry.status]} px-3 py-1 rounded-full text-sm">
                             ${statusTexts[entry.status]}
@@ -1173,7 +1173,7 @@ const WorkHoursUI = (function() {
                             ${statusTexts[entry.status]}
                         </span>
                     </td>
-                    <td class="py-3 px-4 text-blue-200 max-w-xs truncate">${entry.description || '-'}</td>
+                    <td class="py-3 px-4 text-black-400 max-w-xs truncate">${entry.description || '-'}</td>
                 </tr>
             `;
         }).join('');
@@ -1405,18 +1405,18 @@ const WorkHoursUI = (function() {
                     </div>
                     
                     <div class="bg-white/10 rounded-xl p-4 mb-6">
-                        <p class="text-blue-200">کل ساعات تأیید شده: <span class="text-2xl font-bold text-emerald-400">${totalHours}</span> ساعت</p>
+                        <p class="text-black-400">کل ساعات تأیید شده: <span class="text-2xl font-bold text-emerald-400">${totalHours}</span> ساعت</p>
                     </div>
                     
                     <table class="w-full">
                         <thead>
                             <tr class="border-b border-white/10">
-                                <th class="text-right text-blue-200 py-2">تاریخ</th>
-                                <th class="text-right text-blue-200 py-2">از</th>
-                                <th class="text-right text-blue-200 py-2">تا</th>
-                                <th class="text-right text-blue-200 py-2">ساعت</th>
-                                <th class="text-right text-blue-200 py-2">وضعیت</th>
-                                <th class="text-right text-blue-200 py-2">شرح</th>
+                                <th class="text-right text-black-400 py-2">تاریخ</th>
+                                <th class="text-right text-black-400 py-2">از</th>
+                                <th class="text-right text-black-400 py-2">تا</th>
+                                <th class="text-right text-black-400 py-2">ساعت</th>
+                                <th class="text-right text-black-400 py-2">وضعیت</th>
+                                <th class="text-right text-black-400 py-2">شرح</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1542,9 +1542,9 @@ const WorkHoursUI = (function() {
                 var empName = entry[0], info = entry[1];
                 var rows = info.items.map(function(d) {
                     return `<tr class="border-b border-white/5 hover:bg-white/5">
-                        <td class="py-2 px-3 text-blue-200 text-sm">${typeof Jalali !== 'undefined' ? Jalali.displayDate(d.date) : d.date}</td>
+                        <td class="py-2 px-3 text-black-400 text-sm">${typeof Jalali !== 'undefined' ? Jalali.displayDate(d.date) : d.date}</td>
                         <td class="py-2 px-3 text-red-300 font-bold text-sm">${Number(d.amount||0).toLocaleString('fa-IR')} ت</td>
-                        <td class="py-2 px-3 text-blue-200 text-sm">${d.reason || '—'}</td>
+                        <td class="py-2 px-3 text-black-400 text-sm">${d.reason || '—'}</td>
                         <td class="py-2 px-3">
                             <button onclick="WorkHoursUI._deleteManagerDeduction('${d.id}')"
                                 class="text-red-400 hover:text-red-300 text-xs"><i class="fas fa-trash"></i></button>
@@ -1606,24 +1606,24 @@ const WorkHoursUI = (function() {
                 </div>
                 <div class="space-y-3">
                     <div>
-                        <label class="text-blue-200 text-sm mb-1 block">کارمند <span class="text-red-400">*</span></label>
+                        <label class="text-black-400 text-sm mb-1 block">کارمند <span class="text-red-400">*</span></label>
                         <select id="mgr-ded-emp" class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none">
                             <option value="">انتخاب کارمند...</option>${opts}
                         </select>
                     </div>
                     <div>
-                        <label class="text-blue-200 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
+                        <label class="text-black-400 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
                         <div class="relative">
                             <input type="date" id="mgr-ded-date" required
                                 class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none">
                         </div>
                     </div>
                     <div>
-                        <label class="text-blue-200 text-sm mb-1 block">مبلغ (تومان) <span class="text-red-400">*</span></label>
+                        <label class="text-black-400 text-sm mb-1 block">مبلغ (تومان) <span class="text-red-400">*</span></label>
                         <input type="number" id="mgr-ded-amount" min="0" step="1000" placeholder="مثال: 500000" class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none">
                     </div>
                     <div>
-                        <label class="text-blue-200 text-sm mb-1 block">علت <span class="text-red-400">*</span></label>
+                        <label class="text-black-400 text-sm mb-1 block">علت <span class="text-red-400">*</span></label>
                         <input type="text" id="mgr-ded-reason" placeholder="مثال: غیبت، تأخیر..." class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none">
                     </div>
                 </div>

@@ -466,7 +466,7 @@ class ManagesChat {
                     <div class="flex items-center gap-3 bg-slate-700 bg-opacity-50 rounded-lg p-2">
                         <i class="fas fa-file text-2xl text-blue-400"></i>
                         <div class="flex-1">
-                            <a href="${msg.fileData}" download="${msg.fileName}" class="text-blue-300 hover:text-blue-200 hover:underline">
+                            <a href="${msg.fileData}" download="${msg.fileName}" class="text-blue-300 hover:text-black-400 hover:underline">
                                 ${msg.fileName}
                             </a>
                         </div>

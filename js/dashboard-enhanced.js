@@ -499,7 +499,7 @@ const EnhancedDashboardModule = {
                                     <p class="text-blue-100">سفارشات من</p>
                                     <p class="text-3xl font-bold">${myOrders.length}</p>
                                 </div>
-                                <i class="fas fa-user-md text-4xl text-blue-200"></i>
+                                <i class="fas fa-user-md text-4xl text-black-400"></i>
                             </div>
                         </div>
                         

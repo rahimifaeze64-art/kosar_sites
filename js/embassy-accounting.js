@@ -73,7 +73,7 @@ const EmbassyAccountingModule = (function () {
                         </span>
                         حسابداری سفارت
                     </h2>
-                    <p class="text-blue-200 text-sm mt-1">گزارش مالی پرونده‌های سفارتی</p>
+                    <p class="text-black-400 text-sm mt-1">گزارش مالی پرونده‌های سفارتی</p>
                 </div>
                 <button onclick="EmbassyAccountingModule.exportCSV()"
                     class="bg-green-600 hover:bg-green-500 text-white font-bold px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all shadow-lg">
@@ -111,7 +111,7 @@ const EmbassyAccountingModule = (function () {
             <!-- لودینگ -->
             <div id="eacc-loading" class="text-center py-12">
                 <i class="fas fa-spinner fa-spin text-3xl text-orange-400"></i>
-                <p class="text-blue-200 mt-3">در حال بارگذاری...</p>
+                <p class="text-black-400 mt-3">در حال بارگذاری...</p>
             </div>
 
             <!-- خلاصه مالی -->

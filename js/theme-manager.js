@@ -13,7 +13,7 @@ const ThemeManager = {
                 gradient: 'from-blue-900 via-indigo-900 to-blue-800',
                 sidebar: 'from-blue-600 via-blue-700 to-blue-800',
                 button: 'bg-blue-600 hover:bg-blue-700',
-                text: 'text-blue-200',
+                text: 'text-black-400',
                 border: 'border-blue-500'
             }
         },
