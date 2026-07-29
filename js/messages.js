@@ -355,7 +355,7 @@ const MessagesModule = {
 
         const isOnline = typeof SupabaseConnection !== 'undefined' && SupabaseConnection.isOnline;
         UTILS.showNotification(
-            isOnline ? '✅ پیام در ابر ذخیره شد' : '📴 پیام در حافظه محلی ذخیره شد',
+            isOnline ? '✅' : '📴   ',
             'success'
         );
     },

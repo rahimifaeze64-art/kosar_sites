@@ -1,10 +1,21 @@
 // ============================================================
 // embassy-accounting.js  v3 — حسابداری سفارت
-// - خواندن _list columns برای دلار/دینار/تومان
-// - جمع‌بندی جداگانه هر ارز
-// - فیلتر real-time + خروجی CSV با فیلتر
-// - حذف دکمه برگشت به حسابداری
 // ============================================================
+
+// تابع مشترک RTL Excel (اگر از employee-accounting.js لود نشده باشد)
+if (typeof _downloadRtlExcel === 'undefined') {
+    window._downloadRtlExcel = function(headers, rows, filename) {
+        const esc = v => String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        const th = headers.map(h=>`<th style="background:#1a56db;color:#fff;padding:6px 10px;border:1px solid #ddd;">${esc(h)}</th>`).join('');
+        const td = rows.map(r=>'<tr>'+r.map(c=>`<td style="padding:5px 10px;border:1px solid #ddd;">${esc(c)}</td>`).join('')+'</tr>').join('');
+        const html = `<!DOCTYPE html><html dir="rtl" lang="fa"><head><meta charset="UTF-8"><style>body{font-family:Tahoma,Arial,sans-serif;direction:rtl}table{border-collapse:collapse;width:100%;direction:rtl}th,td{text-align:right}</style></head><body><table><thead><tr>${th}</tr></thead><tbody>${td}</tbody></table></body></html>`;
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob(['\uFEFF'+html],{type:'application/vnd.ms-excel;charset=utf-8;'}));
+        a.download = filename.replace(/\.csv$/i,'.xls');
+        document.body.appendChild(a); a.click();
+        setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+    };
+}
 
 const EmbassyAccountingModule = (function () {
     'use strict';
@@ -532,16 +543,10 @@ const EmbassyAccountingModule = (function () {
                 d.isSettled ? 'تسویه' : 'در انتظار',
                 r.created_by_name||'',
                 (r.created_at||'').substring(0,10)
-            ].map(v => `"${v}"`).join(',');
+            ];
         });
 
-        const csv = BOM + [headers.join(','), ...rows].join('\n');
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `embassy_${new Date().toISOString().substring(0,10)}.csv`;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(a.href), 500);
+        _downloadRtlExcel(headers, rows, `embassy_${new Date().toISOString().substring(0,10)}.xls`);
         document.getElementById('eacc-export-modal')?.remove();
     }
 

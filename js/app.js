@@ -150,7 +150,7 @@ function appController() {
                     }
                 }
                 // اگر هنوز صفحه اصلی است و سفارش جدید در localStorage آمد — نمایش بده
-                UTILS.showNotification('✅ داده‌ها از ابر بارگذاری شدند', 'success', 3000);
+                
             } catch (e) {
                 console.warn('⚠️ supabase:dataready refresh خطا:', e.message);
             }
