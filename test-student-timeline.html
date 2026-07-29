@@ -16,7 +16,7 @@
 <body class="bg-slate-900 text-white p-8">
     <div class="max-w-7xl mx-auto">
         <h1 class="text-3xl font-bold mb-8 text-center">
-            <i class="fas fa-graduation-cap text-indigo-400 ml-2"></i>
+            <i class="fas fa-graduation-cap text-yellow-400 ml-2"></i>
             تست Timeline مراحل تحصیلی - صفحه ویرایش دانشجو
         </h1>
         
@@ -31,10 +31,10 @@
             <h3 class="text-lg font-bold mb-4">راهنما:</h3>
             <ul class="space-y-2 text-gray-300">
                 <li><i class="fas fa-mouse-pointer text-black-400 ml-2"></i> روی دکمه "ویرایش پروفایل" کلیک کنید</li>
-                <li><i class="fas fa-route text-indigo-400 ml-2"></i> Timeline مراحل تحصیلی در بالای صفحه نمایش داده می‌شود</li>
+                <li><i class="fas fa-route text-yellow-400 ml-2"></i> Timeline مراحل تحصیلی در بالای صفحه نمایش داده می‌شود</li>
                 <li><i class="fas fa-check text-green-400 ml-2"></i> روی هر مرحله کلیک کنید تا تیک بخورد</li>
                 <li><i class="fas fa-undo text-yellow-400 ml-2"></i> دوباره کلیک کنید تا تیک برداشته شود</li>
-                <li><i class="fas fa-chart-line text-purple-400 ml-2"></i> نوار پیشرفت به صورت خودکار به‌روز می‌شود</li>
+                <li><i class="fas fa-chart-line text-yellow-400 ml-2"></i> نوار پیشرفت به صورت خودکار به‌روز می‌شود</li>
                 <li><i class="fas fa-save text-emerald-400 ml-2"></i> تغییرات به صورت خودکار ذخیره می‌شوند</li>
             </ul>
         </div>
@@ -95,7 +95,7 @@
                 <div class="bg-slate-700 rounded-lg p-4 hover:bg-slate-600 transition-all">
                     <div class="flex items-start justify-between mb-3">
                         <div class="flex items-center">
-                            <div class="w-12 h-12 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-lg ml-3">
+                            <div class="w-12 h-12 rounded-full bg-yellow-500 flex items-center justify-center text-white font-bold text-lg ml-3">
                                 ${student.name.charAt(0)}
                             </div>
                             <div>
@@ -108,17 +108,17 @@
                     
                     <div class="space-y-2 text-sm text-gray-300 mb-4">
                         <div class="flex items-center">
-                            <i class="fas fa-university text-indigo-400 w-5 ml-2"></i>
+                            <i class="fas fa-university text-yellow-400 w-5 ml-2"></i>
                             <span>${student.university}</span>
                         </div>
                         <div class="flex items-center">
-                            <i class="fas fa-graduation-cap text-indigo-400 w-5 ml-2"></i>
+                            <i class="fas fa-graduation-cap text-yellow-400 w-5 ml-2"></i>
                             <span>${student.degree} - ${student.field}</span>
                         </div>
                     </div>
                     
                     <button onclick="openEditModal('${student.id}')" 
-                            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                            class="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all">
                         <i class="fas fa-edit ml-2"></i>
                         ویرایش پروفایل
                     </button>

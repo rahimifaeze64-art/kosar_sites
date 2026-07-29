@@ -133,16 +133,16 @@ body[data-theme="dark"] .text-white {
 /* Buttons - keep colors but slightly muted */
 body[data-theme="dark"] .btn,
 body[data-theme="dark"] button[class*="bg-blue"],
-body[data-theme="dark"] button[class*="bg-indigo"],
-body[data-theme="dark"] button[class*="bg-purple"] {
+body[data-theme="dark"] button[class*="bg-yellow"],
+body[data-theme="dark"] button[class*="bg-yellow"] {
     background-color: #4b5563 !important;
     color: white !important;
 }
 
 body[data-theme="dark"] .btn:hover,
 body[data-theme="dark"] button[class*="bg-blue"]:hover,
-body[data-theme="dark"] button[class*="bg-indigo"]:hover,
-body[data-theme="dark"] button[class*="bg-purple"]:hover {
+body[data-theme="dark"] button[class*="bg-yellow"]:hover,
+body[data-theme="dark"] button[class*="bg-yellow"]:hover {
     background-color: #374151 !important;
 }
 

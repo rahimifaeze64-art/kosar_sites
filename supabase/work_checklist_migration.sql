@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS public.checklist_categories (
     user_id      TEXT NOT NULL,
     name         TEXT NOT NULL,
     description  TEXT DEFAULT '',
-    color        TEXT DEFAULT 'purple',
+    color        TEXT DEFAULT 'yellow',
     icon         TEXT DEFAULT 'fas fa-folder',
     created_at   TIMESTAMPTZ DEFAULT NOW(),
     updated_at   TIMESTAMPTZ DEFAULT NOW()

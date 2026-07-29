@@ -1651,7 +1651,7 @@ const EmbassyModule = (function () {
             const actionIcon = {
                 'create':      'fa-plus-circle text-green-500',
                 'update':      'fa-edit text-black-500',
-                'file_upload': 'fa-upload text-purple-500',
+                'file_upload': 'fa-upload text-yellow-500',
                 'file_delete': 'fa-trash text-red-500',
             }[log.action] || 'fa-circle text-gray-400';
 

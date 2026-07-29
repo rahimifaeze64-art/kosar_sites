@@ -10,7 +10,7 @@ const ThemeManager = {
                 primary: '#1e40af',
                 secondary: '#3b82f6',
                 accent: '#60a5fa',
-                gradient: 'from-blue-900 via-indigo-900 to-blue-800',
+                gradient: 'from-blue-900 via-yellow-900 to-blue-800',
                 sidebar: 'from-blue-600 via-blue-700 to-blue-800',
                 button: 'bg-blue-600 hover:bg-blue-700',
                 text: 'text-black-400',
@@ -171,7 +171,7 @@ const ThemeManager = {
     // حذف تمام کلاس‌های تم
     removeAllThemeClasses(element) {
         const gradientClasses = [
-            'from-blue-900', 'via-indigo-900', 'to-blue-800',
+            'from-blue-900', 'via-yellow-900', 'to-blue-800',
             'from-blue-600', 'via-blue-700', 'to-blue-800',
             'from-green-900', 'via-emerald-900', 'to-green-800',
             'from-green-600', 'via-green-700', 'to-green-800',

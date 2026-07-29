@@ -42,7 +42,7 @@ const UsersModule = {
                             <p class="text-2xl font-bold text-green-600">${users.filter(u => u.role === CONFIG.ROLES.STUDENT).length}</p>
                         </div>
                     </div>
-                    <div class="dashboard-card purple">
+                    <div class="dashboard-card yellow">
                         <div class="text-center">
                             <h3 class="text-lg font-semibold text-gray-700">عامل‌ها</h3>
                             <p class="text-2xl font-bold text-yellow-600">${users.filter(u => u.role === CONFIG.ROLES.AGENT).length}</p>

@@ -294,7 +294,7 @@ class AgentChat {
                                 <p class="text-white font-medium">${p.name}</p>
                                 <p class="text-gray-400 text-sm">@${p.username}</p>
                             </div>
-                            <span class="px-2 py-1 rounded-full text-xs font-semibold ${p.role === 'manager' ? 'bg-purple-600 text-white' : 'bg-amber-600 text-white'}">
+                            <span class="px-2 py-1 rounded-full text-xs font-semibold ${p.role === 'manager' ? 'bg-yellow-600 text-white' : 'bg-amber-600 text-white'}">
                                 ${this.getRoleName(p.role)}
                             </span>
                         </div>
@@ -576,7 +576,7 @@ class AgentChat {
                     </button>
                     <button onclick="window.agentChatInstance.shareToApp('${messageId}')" 
                             class="w-full text-right px-4 py-2 hover:bg-slate-700 text-white flex items-center gap-3">
-                        <i class="fas fa-share-alt text-indigo-400"></i>
+                        <i class="fas fa-share-alt text-yellow-400"></i>
                         <span>اشتراک‌گذاری</span>
                     </button>
                 ` : ''}

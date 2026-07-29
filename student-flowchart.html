@@ -112,7 +112,7 @@
                     </a>
                     <div>
                         <h1 class="text-2xl font-bold text-white">
-                            <i class="fas fa-chart-line text-indigo-400 ml-2"></i>
+                            <i class="fas fa-chart-line text-yellow-400 ml-2"></i>
                             گرافیک پیشرفته مسیر تحصیلی
                         </h1>
                         <p class="text-sm text-gray-400">نمایش گرافیکی مراحل تحصیلی دانشجویان</p>
@@ -122,7 +122,7 @@
                 <!-- Student Selector -->
                 <div class="flex items-center space-x-4 space-x-reverse">
                     <select id="student-selector" onchange="updateFlowchart()" 
-                            class="bg-slate-800 text-white border border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            class="bg-slate-800 text-white border border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                         <option value="">انتخاب دانشجو...</option>
                     </select>
                     
@@ -141,13 +141,13 @@
         <!-- Path Type Selector -->
         <div class="bg-slate-800 bg-opacity-50 backdrop-blur-lg rounded-xl p-6 mb-6 border border-slate-700">
             <h2 class="text-lg font-bold text-white mb-4">
-                <i class="fas fa-route text-indigo-400 ml-2"></i>
+                <i class="fas fa-route text-yellow-400 ml-2"></i>
                 انتخاب مسیر تحصیلی
             </h2>
             
             <div class="flex flex-wrap gap-4">
                 <div onclick="selectPathType('educational')" id="path-btn-educational"
-                     class="path-selector active flex-1 min-w-[200px] bg-slate-700 rounded-lg p-4 border-2 border-indigo-500">
+                     class="path-selector active flex-1 min-w-[200px] bg-slate-700 rounded-lg p-4 border-2 border-yellow-500">
                     <div class="flex items-center justify-center space-x-3 space-x-reverse">
                         <i class="fas fa-graduation-cap text-3xl"></i>
                         <div>
@@ -185,7 +185,7 @@
         <div id="progress-overview" class="bg-slate-800 bg-opacity-50 backdrop-blur-lg rounded-xl p-6 mb-6 border border-slate-700">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div class="bg-slate-700 rounded-lg p-4 text-center">
-                    <i class="fas fa-user-graduate text-4xl text-indigo-400 mb-2"></i>
+                    <i class="fas fa-user-graduate text-4xl text-yellow-400 mb-2"></i>
                     <p class="text-2xl font-bold text-white" id="student-name-display">-</p>
                     <p class="text-sm text-gray-400">دانشجو</p>
                 </div>
@@ -200,7 +200,7 @@
                     <p class="text-sm text-gray-400">مرحله فعلی</p>
                 </div>
                 <div class="bg-slate-700 rounded-lg p-4 text-center">
-                    <i class="fas fa-percentage text-4xl text-purple-400 mb-2"></i>
+                    <i class="fas fa-percentage text-4xl text-yellow-400 mb-2"></i>
                     <p class="text-2xl font-bold text-white" id="progress-percent">0%</p>
                     <p class="text-sm text-gray-400">پیشرفت کلی</p>
                 </div>
@@ -213,7 +213,7 @@
                     <span>پایان</span>
                 </div>
                 <div class="w-full bg-slate-700 rounded-full h-4">
-                    <div id="main-progress-bar" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    <div id="main-progress-bar" class="bg-gradient-to-r from-yellow-500 to-yellow-500 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
                 </div>
             </div>
         </div>
@@ -234,7 +234,7 @@
         <!-- Legend -->
         <div class="bg-slate-800 bg-opacity-50 backdrop-blur-lg rounded-xl p-6 mt-6 border border-slate-700">
             <h3 class="text-lg font-bold text-white mb-4">
-                <i class="fas fa-info-circle text-indigo-400 ml-2"></i>
+                <i class="fas fa-info-circle text-yellow-400 ml-2"></i>
                 راهنما
             </h3>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -388,7 +388,7 @@
             // Update button styles
             document.querySelectorAll('.path-selector').forEach(btn => {
                 btn.classList.remove('active');
-                btn.classList.remove('border-indigo-500', 'border-blue-500', 'border-emerald-500');
+                btn.classList.remove('border-yellow-500', 'border-blue-500', 'border-emerald-500');
                 btn.classList.add('border-transparent');
             });
             
@@ -396,7 +396,7 @@
             activeBtn.classList.add('active');
             
             const borderColors = {
-                educational: 'border-indigo-500',
+                educational: 'border-yellow-500',
                 defense: 'border-blue-500',
                 requirements: 'border-emerald-500'
             };
@@ -489,7 +489,7 @@
             };
             
             const iconColors = {
-                educational: 'text-indigo-400',
+                educational: 'text-yellow-400',
                 defense: 'text-black-400',
                 requirements: 'text-emerald-400'
             };
@@ -587,7 +587,7 @@
                                     <div class="pt-3 border-t border-slate-700 space-y-2">
                                         ${step.date ? `
                                             <div class="flex items-center text-sm text-gray-400">
-                                                <i class="fas fa-calendar ml-2 text-indigo-400"></i>
+                                                <i class="fas fa-calendar ml-2 text-yellow-400"></i>
                                                 <span>${step.date}</span>
                                             </div>
                                         ` : ''}
@@ -618,7 +618,7 @@
             html += `
                 <div class="mt-8 bg-slate-800/50 rounded-xl p-6 border border-slate-700">
                     <h3 class="text-lg font-bold text-white mb-4">
-                        <i class="fas fa-chart-pie text-indigo-400 ml-2"></i>
+                        <i class="fas fa-chart-pie text-yellow-400 ml-2"></i>
                         خلاصه وضعیت
                     </h3>
                     <div class="grid grid-cols-3 gap-4">

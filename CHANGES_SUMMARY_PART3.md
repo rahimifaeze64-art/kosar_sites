@@ -23,7 +23,7 @@
 - **تغییرات:**
   - همه دکمه‌های آبی، بنفش، سبز، قرمز و زرد به سبز زیتونی تغییر یافتند
   - اضافه شدن سلکتورهای بیشتر برای پوشش کامل:
-    - `button[class*="bg-indigo"]`
+    - `button[class*="bg-yellow"]`
     - `button[class*="bg-emerald"]`
     - `button[class*="bg-red"]`
     - `button[class*="bg-yellow"]`

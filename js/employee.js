@@ -151,7 +151,7 @@ const EmployeeModule = {
     getStepTaskCard(task, userId, num) {
         const typeColors = { defense: 'blue', educational: 'green', requirements: 'emerald' };
         const typeNames  = { defense: 'گردش دفاع', educational: 'فارغ‌التحصیلی', requirements: 'ملزومات' };
-        const color = typeColors[task.stepType] || 'indigo';
+        const color = typeColors[task.stepType] || 'yellow';
         const typeName = typeNames[task.stepType] || task.stepType || '';
 
         const statusMap = {

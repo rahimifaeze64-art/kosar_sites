@@ -463,7 +463,7 @@ const EmployeeAccountingUI = (function() {
                             <p class="text-emerald-200 mt-2">جمع ساعات و هزینه‌های ارسالی شما</p>
                         </div>
                         <button onclick="EmployeeAccountingUI.showLateRequestModal()"
-                            class="px-4 py-2 bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 border border-indigo-400/30 rounded-xl text-sm transition-all flex items-center gap-2">
+                            class="px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-300 border border-yellow-400/30 rounded-xl text-sm transition-all flex items-center gap-2">
                             <i class="fas fa-clock"></i>درخواست مهلت مجدد
                         </button>
                     </div>
@@ -599,7 +599,7 @@ const EmployeeAccountingUI = (function() {
                         <li><i class="fas fa-check text-green-400 ml-2"></i>گزارش‌های روزانه ساعات کاری و هزینه‌ها در این صفحه جمع می‌شوند</li>
                         <li><i class="fas fa-check text-green-400 ml-2"></i>مبلغ حقوق = (ساعات تأیید شده شده × نرخ ساعتی) + هزینه‌های تأیید شده شده</li>
                         <li><i class="fas fa-check text-green-400 ml-2"></i>نرخ ساعتی توسط مدیر در بخش «حسابداری کارمندان» تعیین می‌شود</li>
-                        <li><i class="fas fa-clock text-indigo-400 ml-2"></i>در صورت فراموشی ثبت، از دکمه «درخواست مهلت مجدد» استفاده کنید</li>
+                        <li><i class="fas fa-clock text-yellow-400 ml-2"></i>در صورت فراموشی ثبت، از دکمه «درخواست مهلت مجدد» استفاده کنید</li>
                     </ul>
                 </div>
 
@@ -631,9 +631,9 @@ const EmployeeAccountingUI = (function() {
                             </td>
                         </tr>`).join('');
                     return `
-                    <div class="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-indigo-400/20">
+                    <div class="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-yellow-400/20">
                         <h4 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
-                            <i class="fas fa-clock text-indigo-400"></i>درخواست‌های مهلت مجدد من
+                            <i class="fas fa-clock text-yellow-400"></i>درخواست‌های مهلت مجدد من
                         </h4>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
@@ -713,7 +713,7 @@ const EmployeeAccountingUI = (function() {
                                 <i class="fas fa-minus ml-1"></i>کسر
                             </button>
                             <button onclick="EmployeeAccountingUI.showSettlementModal('${emp.employeeId}', '${safeName}', ${emp.grandTotal})"
-                                    class="px-2 py-1 bg-purple-500/20 hover:bg-purple-500/40 text-purple-400 rounded-lg text-xs transition-all">
+                                    class="px-2 py-1 bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400 rounded-lg text-xs transition-all">
                                 <i class="fas fa-hand-holding-usd ml-1"></i>تسویه
                             </button>
                         </div>
@@ -812,7 +812,7 @@ const EmployeeAccountingUI = (function() {
                         </h3>
                         <div class="flex gap-2 flex-wrap">
                             <button onclick="EmployeeAccountingUI.showWorkCalendarModal()"
-                                class="px-4 py-2 bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 border border-indigo-400/30 rounded-xl text-sm transition-all flex items-center gap-2">
+                                class="px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-300 border border-yellow-400/30 rounded-xl text-sm transition-all flex items-center gap-2">
                                 <i class="fas fa-calendar-alt"></i>تقویم کاری
                             </button>
                             <button onclick="EmployeeAccountingUI.showExportEmployeesModal()"
@@ -840,9 +840,9 @@ const EmployeeAccountingUI = (function() {
                 </div>
 
                 <!-- ── درخواست‌های مهلت مجدد ── -->
-                <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-indigo-400/20">
+                <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-yellow-400/20">
                     <h3 class="text-xl font-bold text-white mb-5 flex items-center gap-2">
-                        <i class="fas fa-clock text-indigo-400"></i>
+                        <i class="fas fa-clock text-yellow-400"></i>
                         درخواست‌های مهلت مجدد
                         <span class="text-black-400 text-sm font-normal mr-2">— درخواست ثبت سوابق فراموش‌شده</span>
                     </h3>
@@ -926,7 +926,7 @@ const EmployeeAccountingUI = (function() {
         const historyRows = history.length ? history.map(s=>`
             <tr class="border-b border-white/5 text-xs">
                 <td class="py-1.5 px-3 text-white">${s.date||'—'}</td>
-                <td class="py-1.5 px-3 text-purple-300 font-bold">${Number(s.amount||0).toLocaleString('fa-IR')} ت</td>
+                <td class="py-1.5 px-3 text-yellow-300 font-bold">${Number(s.amount||0).toLocaleString('fa-IR')} ت</td>
                 <td class="py-1.5 px-3 text-black-400">${s.note||'—'}</td>
             </tr>`).join('') : `<tr><td colspan="3" class="text-center py-3 text-black-300 text-xs">تسویه‌ای ثبت نشده</td></tr>`;
 
@@ -934,17 +934,17 @@ const EmployeeAccountingUI = (function() {
         modal.id = 'settlement-modal';
         modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4';
         modal.innerHTML = `
-            <div class="bg-blue-900 rounded-2xl p-6 max-w-md w-full border border-purple-500/30 shadow-2xl" onclick="event.stopPropagation()">
+            <div class="bg-blue-900 rounded-2xl p-6 max-w-md w-full border border-yellow-500/30 shadow-2xl" onclick="event.stopPropagation()">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-white text-lg font-bold flex items-center gap-2">
-                        <i class="fas fa-hand-holding-usd text-purple-400"></i>تسویه حساب
+                        <i class="fas fa-hand-holding-usd text-yellow-400"></i>تسویه حساب
                     </h3>
                     <button onclick="document.getElementById('settlement-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
                 </div>
                 <p class="text-yellow-300 font-semibold mb-4">${employeeName}</p>
 
                 <!-- مانده -->
-                <div class="bg-purple-500/10 border border-purple-400/20 rounded-xl p-4 mb-5">
+                <div class="bg-yellow-500/10 border border-yellow-400/20 rounded-xl p-4 mb-5">
                     <div class="flex justify-between items-center">
                         <span class="text-black-400 text-sm">جمع طلب کارمند</span>
                         <span class="text-emerald-400 font-bold">${EmployeeAccountingModule.formatCurrency(grandTotal + gift)}</span>
@@ -955,7 +955,7 @@ const EmployeeAccountingUI = (function() {
                     </div>
                     <div class="flex justify-between items-center mt-1">
                         <span class="text-black-400 text-sm">تسویه‌های قبلی</span>
-                        <span class="text-purple-400 font-bold">- ${EmployeeAccountingModule.formatCurrency(paid)}</span>
+                        <span class="text-yellow-400 font-bold">- ${EmployeeAccountingModule.formatCurrency(paid)}</span>
                     </div>
                     <hr class="border-white/10 my-2">
                     <div class="flex justify-between items-center">
@@ -968,16 +968,16 @@ const EmployeeAccountingUI = (function() {
                 <div class="space-y-3 mb-5">
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
-                        <input type="date" id="settle-date" class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-400">
+                        <input type="date" id="settle-date" class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-yellow-400">
                     </div>
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">مبلغ تسویه (تومان) <span class="text-red-400">*</span></label>
                         <div class="relative">
                             <input type="number" id="settle-amount" min="0" step="1000"
                                 placeholder="${remaining > 0 ? 'مانده: ' + remaining.toLocaleString('fa-IR') : '0'}"
-                                class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-400">
+                                class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-yellow-400">
                             ${remaining > 0 ? `<button type="button" onclick="document.getElementById('settle-amount').value='${remaining}'"
-                                class="absolute left-2 top-1/2 -translate-y-1/2 text-purple-400 hover:text-purple-300 text-xs px-2 py-0.5 bg-purple-500/20 rounded">
+                                class="absolute left-2 top-1/2 -translate-y-1/2 text-yellow-400 hover:text-yellow-300 text-xs px-2 py-0.5 bg-yellow-500/20 rounded">
                                 تسویه کامل
                             </button>` : ''}
                         </div>
@@ -985,12 +985,12 @@ const EmployeeAccountingUI = (function() {
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">یادداشت</label>
                         <input type="text" id="settle-note" placeholder="مثال: پرداخت نقدی، کارت..."
-                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-400">
+                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-yellow-400">
                     </div>
                 </div>
                 <div class="flex gap-3 mb-5">
                     <button onclick="EmployeeAccountingUI.saveSettlement('${employeeId}', '${employeeName}')"
-                        class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 rounded-xl transition-all">
+                        class="flex-1 bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2.5 rounded-xl transition-all">
                         <i class="fas fa-save ml-1"></i>ثبت تسویه
                     </button>
                     <button onclick="document.getElementById('settlement-modal').remove()"
@@ -1001,7 +1001,7 @@ const EmployeeAccountingUI = (function() {
                 ${history.length > 0 ? `
                 <div>
                     <h4 class="text-white text-sm font-semibold mb-2 flex items-center gap-1">
-                        <i class="fas fa-history text-purple-400 text-xs"></i>تاریخچه تسویه‌ها
+                        <i class="fas fa-history text-yellow-400 text-xs"></i>تاریخچه تسویه‌ها
                     </h4>
                     <div class="overflow-auto max-h-40">
                         <table class="w-full">
@@ -1628,10 +1628,10 @@ const EmployeeAccountingUI = (function() {
         modal.id = 'work-calendar-modal';
         modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4';
         modal.innerHTML = `
-            <div class="bg-slate-800 rounded-2xl p-6 max-w-2xl w-full border border-indigo-500/30 shadow-2xl" onclick="event.stopPropagation()">
+            <div class="bg-slate-800 rounded-2xl p-6 max-w-2xl w-full border border-yellow-500/30 shadow-2xl" onclick="event.stopPropagation()">
                 <div class="flex items-center justify-between mb-5">
                     <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                        <i class="fas fa-calendar-alt text-indigo-400"></i>تقویم کاری
+                        <i class="fas fa-calendar-alt text-yellow-400"></i>تقویم کاری
                     </h3>
                     <button onclick="document.getElementById('work-calendar-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
                 </div>
@@ -1640,17 +1640,17 @@ const EmployeeAccountingUI = (function() {
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">از تاریخ</label>
                         <input type="date" id="cal-from" value="${firstOfMonth}"
-                            class="w-full bg-slate-700 text-white border border-white/20 rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-400">
+                            class="w-full bg-slate-700 text-white border border-white/20 rounded-xl px-3 py-2 focus:outline-none focus:border-yellow-400">
                     </div>
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">تا تاریخ</label>
                         <input type="date" id="cal-to" value="${today}"
-                            class="w-full bg-slate-700 text-white border border-white/20 rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-400">
+                            class="w-full bg-slate-700 text-white border border-white/20 rounded-xl px-3 py-2 focus:outline-none focus:border-yellow-400">
                     </div>
                 </div>
                 <div class="flex gap-3 mb-5">
                     <button onclick="EmployeeAccountingUI.applyCalendarFilter()"
-                        class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl transition-all">
+                        class="flex-1 bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2.5 rounded-xl transition-all">
                         <i class="fas fa-search ml-1"></i>نمایش گزارش
                     </button>
                     <button onclick="document.getElementById('work-calendar-modal').remove()"
@@ -1684,7 +1684,7 @@ const EmployeeAccountingUI = (function() {
                         <span class="text-black-400"><i class="fas fa-clock ml-1"></i>${emp.totalHours} ساعت ارسالی</span>
                         <span class="text-emerald-400"><i class="fas fa-check ml-1"></i>${emp.totalHoursApproved} ساعت تأیید</span>
                         <span class="text-orange-400"><i class="fas fa-receipt ml-1"></i>${EmployeeAccountingModule.formatCurrency(emp.totalExpenses)} هزینه</span>
-                        <span class="text-indigo-400 font-bold"><i class="fas fa-wallet ml-1"></i>${EmployeeAccountingModule.formatCurrency(emp.grandTotal)} جمع کل</span>
+                        <span class="text-yellow-400 font-bold"><i class="fas fa-wallet ml-1"></i>${EmployeeAccountingModule.formatCurrency(emp.grandTotal)} جمع کل</span>
                     </div>
                 </div>
             </div>`).join('');
@@ -1702,7 +1702,7 @@ const EmployeeAccountingUI = (function() {
             resultEl.innerHTML = `
                 <div class="border-t border-white/10 pt-4">
                     <h4 class="text-white font-semibold mb-3 text-sm flex items-center gap-2">
-                        <i class="fas fa-chart-bar text-indigo-400"></i>
+                        <i class="fas fa-chart-bar text-yellow-400"></i>
                         گزارش بازه ${from} تا ${to}
                     </h4>
                     ${rows || '<p class="text-black-300 text-sm text-center py-4">رکوردی در این بازه یافت نشد</p>'}
@@ -1726,10 +1726,10 @@ const EmployeeAccountingUI = (function() {
         modal.id = 'late-request-modal';
         modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4';
         modal.innerHTML = `
-            <div class="bg-blue-900 rounded-2xl p-6 max-w-lg w-full border border-indigo-500/30 shadow-2xl" onclick="event.stopPropagation()">
+            <div class="bg-blue-900 rounded-2xl p-6 max-w-lg w-full border border-yellow-500/30 shadow-2xl" onclick="event.stopPropagation()">
                 <div class="flex items-center justify-between mb-5">
                     <h3 class="text-white text-lg font-bold flex items-center gap-2">
-                        <i class="fas fa-clock text-indigo-400"></i>درخواست مهلت مجدد
+                        <i class="fas fa-clock text-yellow-400"></i>درخواست مهلت مجدد
                     </h3>
                     <button onclick="document.getElementById('late-request-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
                 </div>
@@ -1738,12 +1738,12 @@ const EmployeeAccountingUI = (function() {
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">تاریخ فراموش‌شده <span class="text-red-400">*</span></label>
                         <input type="date" id="lr-date" value="${today}"
-                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-400">
+                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-yellow-400">
                     </div>
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">نوع ثبت <span class="text-red-400">*</span></label>
                         <select id="lr-type" onchange="EmployeeAccountingUI._toggleLateRequestFields()"
-                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-400">
+                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-yellow-400">
                             <option value="work">ساعت کاری</option>
                             <option value="expense">هزینه</option>
                         </select>
@@ -1753,29 +1753,29 @@ const EmployeeAccountingUI = (function() {
                             <label class="text-black-400 text-sm mb-1 block">ساعت شروع</label>
                             <input type="text" id="lr-start" placeholder="08:00" maxlength="5"
                                 oninput="this.value=this.value.replace(/[^0-9:]/g,''); if(this.value.length===2&&!this.value.includes(':'))this.value+=':';"
-                                class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-400 font-mono" dir="ltr">
+                                class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-yellow-400 font-mono" dir="ltr">
                         </div>
                         <div>
                             <label class="text-black-400 text-sm mb-1 block">ساعت پایان</label>
                             <input type="text" id="lr-end" placeholder="17:00" maxlength="5"
                                 oninput="this.value=this.value.replace(/[^0-9:]/g,''); if(this.value.length===2&&!this.value.includes(':'))this.value+=':';"
-                                class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-400 font-mono" dir="ltr">
+                                class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-yellow-400 font-mono" dir="ltr">
                         </div>
                     </div>
                     <div id="lr-expense-fields" class="hidden">
                         <label class="text-black-400 text-sm mb-1 block">مبلغ هزینه (تومان)</label>
                         <input type="number" id="lr-amount" min="0" step="1000" placeholder="مثال: 200000"
-                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-400">
+                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-yellow-400">
                     </div>
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">دلیل فراموشی <span class="text-red-400">*</span></label>
                         <textarea id="lr-reason" rows="2" placeholder="مثال: مشغله کاری زیاد بود، اینترنت قطع بود..."
-                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-400 resize-none"></textarea>
+                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-yellow-400 resize-none"></textarea>
                     </div>
                 </div>
                 <div class="flex gap-3 mt-5">
                     <button onclick="EmployeeAccountingUI.saveLateRequest()"
-                        class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl transition-all">
+                        class="flex-1 bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2.5 rounded-xl transition-all">
                         <i class="fas fa-paper-plane ml-1"></i>ارسال درخواست
                     </button>
                     <button onclick="document.getElementById('late-request-modal').remove()"

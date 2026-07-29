@@ -8,7 +8,7 @@
     <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
     <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
 </head>
-<body class="bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-800 min-h-screen p-6">
+<body class="bg-gradient-to-br from-blue-900 via-yellow-900 to-blue-800 min-h-screen p-6">
     <div class="max-w-4xl mx-auto">
         <h1 class="text-3xl font-bold text-white mb-6">
             <i class="fas fa-vial text-yellow-400 ml-2"></i>
@@ -43,7 +43,7 @@
                 </button>
                 
                 <button onclick="createCustomOrder()" 
-                        class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg">
+                        class="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-3 rounded-lg">
                     <i class="fas fa-star ml-2"></i>
                     ایجاد سفارش سفارشی با تایمر
                 </button>
@@ -191,11 +191,11 @@
                     <div class="flex justify-between items-start">
                         <div class="flex-1">
                             <div class="flex items-center space-x-2 space-x-reverse mb-2">
-                                <span class="bg-indigo-600 text-white px-2 py-1 rounded text-xs">
+                                <span class="bg-yellow-600 text-white px-2 py-1 rounded text-xs">
                                     #${index + 1}
                                 </span>
                                 ${order.isCustomOrder ? `
-                                    <span class="bg-purple-600 text-white px-2 py-1 rounded text-xs">
+                                    <span class="bg-yellow-600 text-white px-2 py-1 rounded text-xs">
                                         سفارش سفارشی
                                     </span>
                                 ` : ''}

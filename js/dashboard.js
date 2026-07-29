@@ -322,7 +322,7 @@ const DashboardModule = {
                         </div>
                     </div>
                     
-                    <div class="dashboard-card purple">
+                    <div class="dashboard-card yellow">
                         <div class="flex items-center justify-between">
                             <div>
                                 <h3 class="text-lg font-semibold text-gray-700">هزینه پرداختی</h3>
@@ -698,7 +698,7 @@ const DashboardModule = {
                                 <p class="text-3xl font-bold text-yellow-600">${myOrders.filter(o => o.status === CONFIG.ORDER_STATUS.IN_PROGRESS).length}</p>
                             </div>
                         </div>
-                        <div class="dashboard-card purple">
+                        <div class="dashboard-card yellow">
                             <div class="text-center">
                                 <h3 class="text-lg font-semibold text-gray-700">درآمد</h3>
                                 <p class="text-2xl font-bold text-yellow-600">${this.formatCurrency(myOrders.reduce((sum, o) => sum + (o.doctorShare || 0), 0))}</p>
@@ -779,7 +779,7 @@ const DashboardModule = {
                                 <p class="text-3xl font-bold text-yellow-600">${myOrders.filter(o => o.status === CONFIG.ORDER_STATUS.IN_PROGRESS).length}</p>
                             </div>
                         </div>
-                        <div class="dashboard-card purple">
+                        <div class="dashboard-card yellow">
                             <div class="text-center">
                                 <h3 class="text-lg font-semibold text-gray-700">درآمد</h3>
                                 <p class="text-2xl font-bold text-yellow-600">${this.formatCurrency(myOrders.reduce((sum, o) => sum + (o.doctorShare || 0), 0))}</p>
