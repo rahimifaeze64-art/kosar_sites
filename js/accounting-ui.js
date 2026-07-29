@@ -832,8 +832,6 @@ const AccountingUI = (function () {
         </div>`;
         loadAll().then(() => subscribeRealtime());
     }
-
-    // ── public API ───────────────────────────────────────────
     return {
         init, render, loadAll,
         onSearchInput, onFilterType, onFilterPerson, onFilterFrom, onFilterTo, clearFilters,
@@ -847,6 +845,19 @@ const AccountingUI = (function () {
 
 // ── تابع global برای index.html ──────────────────────────────
 function getAccountingContent() {
-    setTimeout(() => AccountingUI.init(), 50);
-    return '<div id="accounting-app" dir="rtl" class="p-4 md:p-6"></div>';
+    // Alpine x-html این را یک‌بار رندر می‌کند؛ init پس از رندر اجرا می‌شود
+    setTimeout(() => {
+        if (document.getElementById('accounting-app')) {
+            AccountingUI.init();
+        }
+    }, 80);
+    // اسکلت اولیه با loading indicator — بعد از init پر می‌شود
+    return `<div id="accounting-app" dir="rtl" class="p-4 md:p-6">
+        <div class="flex items-center justify-center py-20">
+            <div class="text-center">
+                <i class="fas fa-spinner fa-spin text-3xl text-blue-500 mb-3 block"></i>
+                <p class="text-gray-400 text-sm">در حال بارگذاری حسابداری...</p>
+            </div>
+        </div>
+    </div>`;
 }

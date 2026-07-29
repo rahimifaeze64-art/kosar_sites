@@ -428,7 +428,13 @@
 
                 <!-- کارمند: حسابداری شخصی -->
                 <template x-if="currentUser.role === 'employee'">
-                    <div x-html="getAccountingContent()"></div>
+                    <div x-effect="if(currentPage==='accounting') { $nextTick(() => { if(typeof AccountingUI!=='undefined') AccountingUI.init(); }); }">
+                        <div id="accounting-app" dir="rtl" class="p-4 md:p-6">
+                            <div class="flex items-center justify-center py-20">
+                                <i class="fas fa-spinner fa-spin text-3xl text-blue-500"></i>
+                            </div>
+                        </div>
+                    </div>
                 </template>
 
                 <!-- مدیر: Hub سطح ۱ -->
@@ -483,9 +489,13 @@
                             </div>
                         </div>
 
-                        <!-- سطح ۱: حسابداری شخصی مدیر -->
-                        <div x-show="accPage === 'personal'">
-                            <div x-html="getAccountingContent()"></div>
+        <!-- سطح ۱: حسابداری شخصی مدیر -->
+                        <div x-show="accPage === 'personal'" x-effect="if(accPage==='personal') { $nextTick(() => { if(typeof AccountingUI!=='undefined') AccountingUI.init(); }); }">
+                            <div id="accounting-app" dir="rtl" class="p-4 md:p-6">
+                                <div class="flex items-center justify-center py-20">
+                                    <i class="fas fa-spinner fa-spin text-3xl text-blue-500"></i>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- سطح ۱: حسابداری سفارت — مدیر -->
