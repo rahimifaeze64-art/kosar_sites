@@ -617,7 +617,7 @@ const AccountingUI = (function () {
                     <select id="np-type" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 focus:outline-none">
                         <option value="other">سایر</option>
                         <option value="student">دانشجو</option>
-                        <option value="supplier">تأمین‌کننده</option>
+                        <option value="supplier">بازار</option>
                         <option value="partner">شریک</option>
                     </select>
                 </div>
