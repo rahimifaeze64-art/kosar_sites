@@ -8,7 +8,7 @@
     <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
     <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
 </head>
-<body class="bg-gradient-to-br from-blue-900 via-yellow-900 to-blue-800 min-h-screen p-6">
+<body class="bg-gradient-to-br from-blue-900 via-lime-900 to-blue-800 min-h-screen p-6">
     <div class="max-w-6xl mx-auto">
         <h1 class="text-3xl font-bold text-white mb-6">
             <i class="fas fa-bug text-red-400 ml-2"></i>
@@ -19,7 +19,7 @@
         <div class="bg-slate-800 rounded-lg p-6 mb-6">
             <h2 class="text-xl font-bold text-white mb-4">تغییر کاربر</h2>
             <button onclick="switchToAgent()" 
-                    class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-lg">
+                    class="bg-lime-600 hover:bg-lime-700 text-white px-6 py-3 rounded-lg">
                 <i class="fas fa-user-md ml-2"></i>
                 ورود به عنوان عامل معصومی (عامل)
             </button>
@@ -89,7 +89,7 @@
                     </div>
                 `;
             } else {
-                info.innerHTML = '<p class="text-yellow-400">هیچ کاربری وارد نشده است</p>';
+                info.innerHTML = '<p class="text-lime-400">هیچ کاربری وارد نشده است</p>';
             }
         }
         
@@ -138,7 +138,7 @@
                     <div class="bg-slate-700 rounded-lg p-4">
                         <h3 class="font-bold mb-2">سفارشات من</h3>
                         ${myOrders.length === 0 ? 
-                            '<p class="text-yellow-400">هیچ سفارشی یافت نشد!</p>' :
+                            '<p class="text-lime-400">هیچ سفارشی یافت نشد!</p>' :
                             `<div class="space-y-2">
                                 ${myOrders.map(order => `
                                     <div class="text-sm bg-green-900 bg-opacity-30 p-2 rounded">

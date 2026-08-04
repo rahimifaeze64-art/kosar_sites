@@ -17,7 +17,7 @@ const OrdersModule = (function () {
     };
 
     const STATUS_CLASSES = {
-        pending: 'bg-yellow-100 text-yellow-800',
+        pending: 'bg-lime-100 text-lime-800',
         in_progress: 'bg-blue-100 text-black-800',
         completed: 'bg-green-100 text-green-800'
     };
@@ -284,7 +284,7 @@ const OrdersModule = (function () {
         if (userRole === R.MANAGER) {
             return `
                 <button type="button" onclick="OrdersModule.openModal('createProject')"
-                        class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg font-medium btn">
+                        class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-4 py-2 rounded-lg font-medium btn">
                     <i class="fas fa-plus-circle ml-2"></i> ایجاد سفارش جدید
                 </button>`;
         }
@@ -359,7 +359,7 @@ const OrdersModule = (function () {
             <tr class="hover:bg-gray-50">
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     ${safeId.slice(-8)}
-                    ${order.isCustomOrder ? '<span class="mr-1 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">سفارشی</span>' : ''}
+                    ${order.isCustomOrder ? '<span class="mr-1 text-xs bg-lime-100 text-lime-700 px-2 py-0.5 rounded-full">سفارشی</span>' : ''}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-medium text-gray-900">${escapeHtml(order.studentName)}</div>
@@ -404,7 +404,7 @@ const OrdersModule = (function () {
             if (counts[s] !== undefined) counts[s]++;
         });
         const items = [
-            { key: 'pending',     label: 'در انتظار',    cls: 'border-yellow-400' },
+            { key: 'pending',     label: 'در انتظار',    cls: 'border-lime-400' },
             { key: 'in_progress', label: 'در حال انجام', cls: 'border-blue-400' },
             { key: 'completed',   label: 'تکمیل',        cls: 'border-green-400' }
         ];

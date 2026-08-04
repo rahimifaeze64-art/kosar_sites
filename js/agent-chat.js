@@ -279,7 +279,7 @@ class AgentChat {
         modal.innerHTML = `
             <div class="bg-slate-800 rounded-2xl p-6 max-w-md w-11/12 max-h-[80vh] overflow-y-auto">
                 <h3 class="text-xl font-bold text-white mb-4">
-                    <i class="fas fa-at text-yellow-400 ml-2"></i>
+                    <i class="fas fa-at text-lime-400 ml-2"></i>
                     انتخاب کاربر برای منشن
                 </h3>
                 <div class="space-y-2 mb-4">
@@ -294,7 +294,7 @@ class AgentChat {
                                 <p class="text-white font-medium">${p.name}</p>
                                 <p class="text-gray-400 text-sm">@${p.username}</p>
                             </div>
-                            <span class="px-2 py-1 rounded-full text-xs font-semibold ${p.role === 'manager' ? 'bg-yellow-600 text-white' : 'bg-amber-600 text-white'}">
+                            <span class="px-2 py-1 rounded-full text-xs font-semibold ${p.role === 'manager' ? 'bg-lime-600 text-white' : 'bg-amber-600 text-white'}">
                                 ${this.getRoleName(p.role)}
                             </span>
                         </div>
@@ -477,7 +477,7 @@ class AgentChat {
     }
 
     highlightMentions(text) {
-        return text.replace(/@(\w+)/g, '<span class="bg-yellow-400 text-slate-900 px-1.5 py-0.5 rounded font-semibold">@$1</span>');
+        return text.replace(/@(\w+)/g, '<span class="bg-lime-400 text-slate-900 px-1.5 py-0.5 rounded font-semibold">@$1</span>');
     }
 
     getRoleName(role) {
@@ -576,7 +576,7 @@ class AgentChat {
                     </button>
                     <button onclick="window.agentChatInstance.shareToApp('${messageId}')" 
                             class="w-full text-right px-4 py-2 hover:bg-slate-700 text-white flex items-center gap-3">
-                        <i class="fas fa-share-alt text-yellow-400"></i>
+                        <i class="fas fa-share-alt text-lime-400"></i>
                         <span>اشتراک‌گذاری</span>
                     </button>
                 ` : ''}

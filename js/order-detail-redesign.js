@@ -801,7 +801,7 @@ const OrderDetailRedesign = (function () {
     const logTypeConfig = {
       assignment:    { icon:'fa-user-check',   color:'text-blue-500',  bg:'bg-blue-50'  },
       payment:       { icon:'fa-coins',         color:'text-green-600', bg:'bg-green-50' },
-      status_change: { icon:'fa-exchange-alt',  color:'text-yellow-500',bg:'bg-yellow-50'},
+      status_change: { icon:'fa-exchange-alt',  color:'text-lime-500',bg:'bg-lime-50'},
       note:          { icon:'fa-sticky-note',   color:'text-amber-500', bg:'bg-amber-50' },
       rejection:     { icon:'fa-ban',           color:'text-red-500',   bg:'bg-red-50'   },
       file_upload:   { icon:'fa-paperclip',     color:'text-teal-500',  bg:'bg-teal-50'  },

@@ -8,7 +8,7 @@
     <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
     <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
 </head>
-<body class="bg-gradient-to-br from-blue-900 via-yellow-900 to-blue-800 min-h-screen p-6">
+<body class="bg-gradient-to-br from-blue-900 via-lime-900 to-blue-800 min-h-screen p-6">
     <div class="max-w-6xl mx-auto">
         <h1 class="text-3xl font-bold text-white mb-6">
             <i class="fas fa-bug text-red-400 ml-2"></i>
@@ -20,7 +20,7 @@
             <h2 class="text-xl font-bold text-white mb-4">انتخاب نقش</h2>
             <div class="grid grid-cols-2 gap-4">
                 <button onclick="switchRole('employee')" 
-                        class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-3 rounded-lg">
+                        class="bg-lime-600 hover:bg-lime-700 text-white px-4 py-3 rounded-lg">
                     <i class="fas fa-user-tie ml-2"></i>
                     کارمند (زهرا)
                 </button>
@@ -48,12 +48,12 @@
                     تست getMyTasksContent() - کارمند
                 </button>
                 <button onclick="testGetMyAgentTasksContent()" 
-                        class="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-3 rounded-lg text-left">
+                        class="w-full bg-lime-600 hover:bg-lime-700 text-white px-4 py-3 rounded-lg text-left">
                     <i class="fas fa-play ml-2"></i>
                     تست getMyAgentTasksContent() - عامل
                 </button>
                 <button onclick="testEmployeeModule()" 
-                        class="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-3 rounded-lg text-left">
+                        class="w-full bg-lime-600 hover:bg-lime-700 text-white px-4 py-3 rounded-lg text-left">
                     <i class="fas fa-cog ml-2"></i>
                     بررسی EmployeeModule
                 </button>
@@ -94,7 +94,7 @@
                 info: 'text-black-400',
                 success: 'text-green-400',
                 error: 'text-red-400',
-                warning: 'text-yellow-400'
+                warning: 'text-lime-400'
             };
             
             const time = new Date().toLocaleTimeString('fa-IR');
@@ -162,7 +162,7 @@
                     </div>
                 `;
             } else {
-                info.innerHTML = '<p class="text-yellow-400">هیچ کاربری وارد نشده است. لطفا یک نقش انتخاب کنید.</p>';
+                info.innerHTML = '<p class="text-lime-400">هیچ کاربری وارد نشده است. لطفا یک نقش انتخاب کنید.</p>';
             }
         }
         

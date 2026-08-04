@@ -200,20 +200,20 @@ const WorkChecklistModule = {
             <div class="space-y-6" id="wc-wrapper">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <h2 class="text-2xl font-bold text-white flex items-center gap-3">
-                        <span class="bg-yellow-500/20 p-2 rounded-xl">
-                            <i class="fas fa-check-square text-yellow-400"></i>
+                        <span class="bg-lime-500/20 p-2 rounded-xl">
+                            <i class="fas fa-check-square text-lime-400"></i>
                         </span>
                         چک‌لیست کاری
                     </h2>
                     <button onclick="WorkChecklistModule.showAddCategoryModal()"
-                            class="bg-yellow-600 hover:bg-yellow-700 text-white px-5 py-2.5 rounded-xl font-medium transition-all flex items-center gap-2 shadow-lg">
+                            class="bg-lime-600 hover:bg-lime-700 text-white px-5 py-2.5 rounded-xl font-medium transition-all flex items-center gap-2 shadow-lg">
                         <i class="fas fa-plus"></i>
                         دسته‌بندی جدید
                     </button>
                 </div>
                 <div id="wc-categories-container" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="col-span-full flex items-center justify-center py-16">
-                        <i class="fas fa-spinner fa-spin text-3xl text-yellow-400"></i>
+                        <i class="fas fa-spinner fa-spin text-3xl text-lime-400"></i>
                     </div>
                 </div>
             </div>`;
@@ -227,7 +227,7 @@ const WorkChecklistModule = {
         if (!cats.length) {
             container.innerHTML = `
                 <div class="col-span-full text-center py-16 bg-white/5 rounded-2xl border border-white/10">
-                    <i class="fas fa-layer-group text-5xl text-yellow-400/50 mb-4 block"></i>
+                    <i class="fas fa-layer-group text-5xl text-lime-400/50 mb-4 block"></i>
                     <p class="text-black-400 text-lg mb-2">هنوز دسته‌بندی ندارید</p>
                     <p class="text-black-300/60 text-sm">با کلیک روی «دسته‌بندی جدید» شروع کنید</p>
                 </div>`;
@@ -242,24 +242,24 @@ const WorkChecklistModule = {
 
     _buildCategoryCard(cat) {
         const colors = {
-            yellow: 'border-yellow-500/40 bg-yellow-900/20',
+            lime: 'border-lime-500/40 bg-lime-900/20',
             blue:   'border-blue-500/40 bg-blue-900/20',
             green:  'border-green-500/40 bg-green-900/20',
-            yellow: 'border-yellow-500/40 bg-yellow-900/20',
+            lime: 'border-lime-500/40 bg-lime-900/20',
             red:    'border-red-500/40 bg-red-900/20',
             pink:   'border-pink-500/40 bg-pink-900/20',
         };
         const iconColors = {
-            yellow: 'text-yellow-400', blue: 'text-black-400',
-            green:  'text-green-400',  yellow: 'text-yellow-400',
+            lime: 'text-lime-400', blue: 'text-black-400',
+            green:  'text-green-400',  lime: 'text-lime-400',
             red:    'text-red-400',    pink:   'text-pink-400',
         };
-        const clr = cat.color || 'yellow';
+        const clr = cat.color || 'lime';
         return `
-        <div class="rounded-2xl border ${colors[clr] || colors.yellow} p-5 space-y-4 backdrop-blur-sm" id="wc-cat-${cat.id}">
+        <div class="rounded-2xl border ${colors[clr] || colors.lime} p-5 space-y-4 backdrop-blur-sm" id="wc-cat-${cat.id}">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <i class="${cat.icon || 'fas fa-folder'} text-xl ${iconColors[clr] || iconColors.yellow}"></i>
+                    <i class="${cat.icon || 'fas fa-folder'} text-xl ${iconColors[clr] || iconColors.lime}"></i>
                     <h3 class="text-white font-bold text-lg">${this._esc(cat.name)}</h3>
                 </div>
                 <div class="flex items-center gap-2">
@@ -279,7 +279,7 @@ const WorkChecklistModule = {
             </div>
             ${cat.description ? `<p class="text-black-400/70 text-sm">${this._esc(cat.description)}</p>` : ''}
             <div id="wc-items-${cat.id}" class="space-y-3 min-h-[40px]">
-                <i class="fas fa-spinner fa-spin text-yellow-400 text-sm block text-center py-2"></i>
+                <i class="fas fa-spinner fa-spin text-lime-400 text-sm block text-center py-2"></i>
             </div>
         </div>`;
     },
@@ -304,7 +304,7 @@ const WorkChecklistModule = {
                     <i class="fas fa-chevron-left text-xs text-black-300 transition-transform duration-200" id="wc-chevron-${item.id}"></i>
                     <i class="${item.icon || 'fas fa-list-check'} text-black-300 text-sm"></i>
                     <span class="text-white font-medium">${this._esc(item.name)}</span>
-                    <span class="bg-yellow-500/20 text-yellow-300 text-xs px-2 py-0.5 rounded-full" id="wc-item-count-${item.id}">...</span>
+                    <span class="bg-lime-500/20 text-lime-300 text-xs px-2 py-0.5 rounded-full" id="wc-item-count-${item.id}">...</span>
                 </div>
                 <div class="flex items-center gap-1" onclick="event.stopPropagation()">
                     <button onclick="WorkChecklistModule.showEditItemModal('${item.id}')"
@@ -319,15 +319,15 @@ const WorkChecklistModule = {
             </div>
             <div class="hidden px-4 py-3 space-y-2" id="wc-tasks-panel-${item.id}">
                 <div id="wc-tasks-list-${item.id}" class="space-y-2">
-                    <i class="fas fa-spinner fa-spin text-xs text-yellow-400"></i>
+                    <i class="fas fa-spinner fa-spin text-xs text-lime-400"></i>
                 </div>
                 <div class="flex gap-2 mt-3">
                     <input type="text" id="wc-new-task-input-${item.id}"
                            placeholder="وظیفه جدید را بنویسید..."
                            onkeydown="if(event.key==='Enter') WorkChecklistModule.addTask('${item.id}')"
-                           class="flex-1 bg-white/10 text-white placeholder-blue-300/50 text-sm px-3 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-yellow-500"/>
+                           class="flex-1 bg-white/10 text-white placeholder-blue-300/50 text-sm px-3 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-lime-500"/>
                     <button onclick="WorkChecklistModule.addTask('${item.id}')"
-                            class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded-lg text-sm transition-all">
+                            class="bg-lime-600 hover:bg-lime-700 text-white px-3 py-2 rounded-lg text-sm transition-all">
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
@@ -367,10 +367,10 @@ const WorkChecklistModule = {
         <div class="flex items-center gap-3 group py-1 px-2 rounded-lg hover:bg-white/5 transition-all" id="wc-task-row-${task.id}">
             <input type="checkbox" ${done ? 'checked' : ''}
                    onchange="WorkChecklistModule.toggleTask('${task.id}', this.checked)"
-                   class="w-4 h-4 accent-yellow-500 cursor-pointer flex-shrink-0"/>
+                   class="w-4 h-4 accent-lime-500 cursor-pointer flex-shrink-0"/>
             <span id="wc-task-text-${task.id}"
                   class="flex-1 text-sm ${done ? 'line-through text-black-300/50' : 'text-white'}">${this._esc(task.title)}</span>
-            ${task.note ? `<i class="fas fa-sticky-note text-yellow-400/60 text-xs" title="${this._esc(task.note)}"></i>` : ''}
+            ${task.note ? `<i class="fas fa-sticky-note text-lime-400/60 text-xs" title="${this._esc(task.note)}"></i>` : ''}
             <div class="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-all flex-shrink-0">
                 <button onclick="WorkChecklistModule.showEditTaskModal('${task.id}')"
                         class="text-black-400 hover:text-white p-1 rounded transition-all" title="ویرایش">
@@ -451,7 +451,7 @@ const WorkChecklistModule = {
 
     _showCategoryModal(cat) {
         const isEdit = !!cat;
-        const colors = ['yellow','blue','green','yellow','red','pink'];
+        const colors = ['lime','blue','green','lime','red','pink'];
         const icons  = [
             'fas fa-folder','fas fa-briefcase','fas fa-star','fas fa-bell',
             'fas fa-fire','fas fa-rocket','fas fa-heart','fas fa-book',
@@ -470,13 +470,13 @@ const WorkChecklistModule = {
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">نام دسته‌بندی *</label>
                         <input id="wc-cat-name" value="${cat ? this._esc(cat.name) : ''}"
-                               class="w-full bg-white/10 text-white placeholder-blue-300/50 px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-yellow-500"
+                               class="w-full bg-white/10 text-white placeholder-blue-300/50 px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-lime-500"
                                placeholder="مثال: مدیریت دانشجو"/>
                     </div>
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">توضیح (اختیاری)</label>
                         <input id="wc-cat-desc" value="${cat && cat.description ? this._esc(cat.description) : ''}"
-                               class="w-full bg-white/10 text-white placeholder-blue-300/50 px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-yellow-500"
+                               class="w-full bg-white/10 text-white placeholder-blue-300/50 px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-lime-500"
                                placeholder="توضیح کوتاه..."/>
                     </div>
                     <div>
@@ -484,7 +484,7 @@ const WorkChecklistModule = {
                         <div class="flex gap-2">
                             ${colors.map(c => `
                             <label class="cursor-pointer">
-                                <input type="radio" name="wc-cat-color" value="${c}" ${(!cat && c==='yellow') || (cat && cat.color===c) ? 'checked' : ''} class="sr-only"/>
+                                <input type="radio" name="wc-cat-color" value="${c}" ${(!cat && c==='lime') || (cat && cat.color===c) ? 'checked' : ''} class="sr-only"/>
                                 <div class="w-8 h-8 rounded-full bg-${c}-500 ring-2 ring-offset-2 ring-offset-slate-800 ring-transparent peer-checked:ring-white transition-all"
                                      onclick="document.querySelectorAll('[name=wc-cat-color]').forEach(r=>r.value==='${c}'?r.click():null)"
                                      id="wc-color-dot-${c}"></div>
@@ -497,7 +497,7 @@ const WorkChecklistModule = {
                             ${icons.map(ic => `
                             <label class="cursor-pointer">
                                 <input type="radio" name="wc-cat-icon" value="${ic}" ${(!cat && ic==='fas fa-folder') || (cat && cat.icon===ic) ? 'checked' : ''} class="sr-only wc-icon-radio"/>
-                                <div class="w-10 h-10 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-all border border-transparent hover:border-yellow-500 wc-icon-btn"
+                                <div class="w-10 h-10 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-all border border-transparent hover:border-lime-500 wc-icon-btn"
                                      onclick="WorkChecklistModule._selectIcon('${ic}')">
                                     <i class="${ic} text-black-400"></i>
                                 </div>
@@ -507,7 +507,7 @@ const WorkChecklistModule = {
                 </div>
                 <div class="flex gap-3 mt-6">
                     <button onclick="WorkChecklistModule.saveCategoryFromModal('${cat ? cat.id : ''}')"
-                            class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white py-2.5 rounded-xl font-medium transition-all">
+                            class="flex-1 bg-lime-600 hover:bg-lime-700 text-white py-2.5 rounded-xl font-medium transition-all">
                         <i class="fas fa-save ml-2"></i>${isEdit ? 'ذخیره تغییرات' : 'ایجاد دسته‌بندی'}
                     </button>
                     <button onclick="WorkChecklistModule.closeModal()"
@@ -525,9 +525,9 @@ const WorkChecklistModule = {
             const btn = r.nextElementSibling;
             if (r.value === ic) {
                 r.checked = true;
-                if (btn) btn.classList.add('border-yellow-500', 'bg-yellow-500/20');
+                if (btn) btn.classList.add('border-lime-500', 'bg-lime-500/20');
             } else {
-                if (btn) btn.classList.remove('border-yellow-500', 'bg-yellow-500/20');
+                if (btn) btn.classList.remove('border-lime-500', 'bg-lime-500/20');
             }
         });
     },
@@ -543,7 +543,7 @@ const WorkChecklistModule = {
             user_id: this.currentUser.id,
             name,
             description: desc,
-            color: colorRadio ? colorRadio.value : 'yellow',
+            color: colorRadio ? colorRadio.value : 'lime',
             icon: iconRadio  ? iconRadio.value  : 'fas fa-folder',
             created_at: new Date().toISOString(),
         };
@@ -590,7 +590,7 @@ const WorkChecklistModule = {
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">نام آیتم *</label>
                         <input id="wc-item-name" value="${item ? this._esc(item.name) : ''}"
-                               class="w-full bg-white/10 text-white placeholder-blue-300/50 px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-yellow-500"
+                               class="w-full bg-white/10 text-white placeholder-blue-300/50 px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-lime-500"
                                placeholder="مثال: بررسی پرونده دانشجو"/>
                     </div>
                     <div>
@@ -694,18 +694,18 @@ const WorkChecklistModule = {
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">عنوان وظیفه *</label>
                         <input id="wc-edit-task-title" value="${this._esc(task.title)}"
-                               class="w-full bg-white/10 text-white px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-yellow-500"/>
+                               class="w-full bg-white/10 text-white px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-lime-500"/>
                     </div>
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">یادداشت</label>
                         <textarea id="wc-edit-task-note" rows="3"
-                                  class="w-full bg-white/10 text-white px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-yellow-500 resize-none"
+                                  class="w-full bg-white/10 text-white px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-lime-500 resize-none"
                                   placeholder="یادداشت اضافی...">${task.note || ''}</textarea>
                     </div>
                 </div>
                 <div class="flex gap-3 mt-6">
                     <button onclick="WorkChecklistModule.saveEditedTask('${task.id}', '${task.item_id}')"
-                            class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white py-2.5 rounded-xl font-medium transition-all">
+                            class="flex-1 bg-lime-600 hover:bg-lime-700 text-white py-2.5 rounded-xl font-medium transition-all">
                         <i class="fas fa-save ml-2"></i>ذخیره
                     </button>
                     <button onclick="WorkChecklistModule.closeModal()"
@@ -758,7 +758,7 @@ const WorkChecklistModule = {
         return `
         <div id="work-checklist-root" class="min-h-[60vh]">
             <div class="flex items-center justify-center py-16">
-                <i class="fas fa-spinner fa-spin text-3xl text-yellow-400"></i>
+                <i class="fas fa-spinner fa-spin text-3xl text-lime-400"></i>
             </div>
         </div>`;
     },

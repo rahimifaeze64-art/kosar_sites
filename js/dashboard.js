@@ -143,14 +143,14 @@ const DashboardModule = {
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-xl shadow p-5 border-r-4 border-yellow-500 flex items-center justify-between">
+                    <div class="bg-white rounded-xl shadow p-5 border-r-4 border-lime-500 flex items-center justify-between">
                         <div>
                             <p class="text-sm text-gray-500 mb-1">دانشجویان</p>
-                            <p class="text-3xl font-bold text-yellow-600">${activeStudents}</p>
+                            <p class="text-3xl font-bold text-lime-600">${activeStudents}</p>
                             <p class="text-xs text-gray-400 mt-1">از ${users.length} کاربر کل</p>
                         </div>
-                        <div class="bg-yellow-50 rounded-full p-3">
-                            <i class="fas fa-user-graduate text-yellow-500 text-2xl"></i>
+                        <div class="bg-lime-50 rounded-full p-3">
+                            <i class="fas fa-user-graduate text-lime-500 text-2xl"></i>
                         </div>
                     </div>
 
@@ -170,14 +170,14 @@ const DashboardModule = {
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-xl shadow p-5 border-r-4 border-yellow-400 flex items-center justify-between">
+                    <div class="bg-white rounded-xl shadow p-5 border-r-4 border-lime-400 flex items-center justify-between">
                         <div>
                             <p class="text-sm text-gray-500 mb-1">نرخ تکمیل سفارشات</p>
-                            <p class="text-3xl font-bold text-yellow-600">${totalOrders > 0 ? Math.round((completedOrders/totalOrders)*100) : 0}%</p>
+                            <p class="text-3xl font-bold text-lime-600">${totalOrders > 0 ? Math.round((completedOrders/totalOrders)*100) : 0}%</p>
                             <p class="text-xs text-gray-400 mt-1">${completedOrders} از ${totalOrders} سفارش</p>
                         </div>
-                        <div class="bg-yellow-50 rounded-full p-3">
-                            <i class="fas fa-chart-pie text-yellow-400 text-2xl"></i>
+                        <div class="bg-lime-50 rounded-full p-3">
+                            <i class="fas fa-chart-pie text-lime-400 text-2xl"></i>
                         </div>
                     </div>
 
@@ -218,7 +218,7 @@ const DashboardModule = {
                             <i class="fas fa-bolt"></i> سفارش سریع
                         </button>
                         <button @click="showModal = 'createProject'"
-                                class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2">
+                                class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2">
                             <i class="fas fa-plus-circle"></i> سفارش جدید
                         </button>
                         <button @click="currentPage = 'orders'"
@@ -302,13 +302,13 @@ const DashboardModule = {
                         </div>
                     </div>
                     
-                    <div class="dashboard-card yellow">
+                    <div class="dashboard-card lime">
                         <div class="flex items-center justify-between">
                             <div>
                                 <h3 class="text-lg font-semibold text-gray-700">در حال انجام</h3>
-                                <p class="text-3xl font-bold text-yellow-600">${stats.inProgress}</p>
+                                <p class="text-3xl font-bold text-lime-600">${stats.inProgress}</p>
                             </div>
-                            <i class="fas fa-spinner text-yellow-500 text-3xl"></i>
+                            <i class="fas fa-spinner text-lime-500 text-3xl"></i>
                         </div>
                     </div>
                     
@@ -322,13 +322,13 @@ const DashboardModule = {
                         </div>
                     </div>
                     
-                    <div class="dashboard-card yellow">
+                    <div class="dashboard-card lime">
                         <div class="flex items-center justify-between">
                             <div>
                                 <h3 class="text-lg font-semibold text-gray-700">هزینه پرداختی</h3>
-                                <p class="text-2xl font-bold text-yellow-600">${this.formatCurrency(stats.totalSpent)}</p>
+                                <p class="text-2xl font-bold text-lime-600">${this.formatCurrency(stats.totalSpent)}</p>
                             </div>
-                            <i class="fas fa-dollar-sign text-yellow-500 text-3xl"></i>
+                            <i class="fas fa-dollar-sign text-lime-500 text-3xl"></i>
                         </div>
                     </div>
 
@@ -421,7 +421,7 @@ const DashboardModule = {
                 case CONFIG.ORDER_STATUS.PENDING:
                     statusMessage = 'در انتظار شروع کار';
                     statusIcon = 'fa-clock';
-                    statusColor = 'text-yellow-600';
+                    statusColor = 'text-lime-600';
                     break;
                 case CONFIG.ORDER_STATUS.IN_PROGRESS:
                     statusMessage = `عامل در حال نوشتن ${order.type === 'نوشتن رساله' ? 'رساله' : order.type === 'نوشتن مقاله' ? 'مقاله' : 'سفارش'} شما است`;
@@ -484,7 +484,7 @@ const DashboardModule = {
     
     getStatusClass(status) {
         const classes = {
-            [CONFIG.ORDER_STATUS.PENDING]:     'bg-yellow-100 text-yellow-800',
+            [CONFIG.ORDER_STATUS.PENDING]:     'bg-lime-100 text-lime-800',
             [CONFIG.ORDER_STATUS.IN_PROGRESS]: 'bg-blue-100 text-black-800',
             [CONFIG.ORDER_STATUS.COMPLETED]:   'bg-green-100 text-green-800'
         };
@@ -546,21 +546,21 @@ const DashboardModule = {
 
             return `
                 <div class="space-y-6">
-                    <div class="bg-gradient-to-r from-yellow-500 to-blue-600 text-gray-900 rounded-xl p-6">
+                    <div class="bg-gradient-to-r from-lime-500 to-blue-600 text-gray-900 rounded-xl p-6">
                         <h2 class="text-2xl font-bold mb-1">پنل کارمند</h2>
-                        <p class="text-yellow-100 text-sm">مدیریت و هماهنگی سفارشات</p>
+                        <p class="text-lime-100 text-sm">مدیریت و هماهنگی سفارشات</p>
                     </div>
 
                     <!-- Row 1: سفارشات -->
                     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div class="bg-white rounded-xl shadow p-4 border-r-4 border-yellow-400 flex items-center justify-between">
+                        <div class="bg-white rounded-xl shadow p-4 border-r-4 border-lime-400 flex items-center justify-between">
                             <div>
                                 <p class="text-xs text-gray-500">در انتظار</p>
-                                <p class="text-3xl font-bold text-yellow-500">${pendingOrders.length}</p>
+                                <p class="text-3xl font-bold text-lime-500">${pendingOrders.length}</p>
                                 <p class="text-xs text-gray-400 mt-1">سفارش</p>
                             </div>
-                            <div class="bg-yellow-50 rounded-full p-2">
-                                <i class="fas fa-clock text-yellow-400 text-xl"></i>
+                            <div class="bg-lime-50 rounded-full p-2">
+                                <i class="fas fa-clock text-lime-400 text-xl"></i>
                             </div>
                         </div>
 
@@ -622,14 +622,14 @@ const DashboardModule = {
                             </div>
                         </div>
 
-                        <div class="bg-white rounded-xl shadow p-4 border-r-4 border-yellow-500 flex items-center justify-between">
+                        <div class="bg-white rounded-xl shadow p-4 border-r-4 border-lime-500 flex items-center justify-between">
                             <div>
                                 <p class="text-xs text-gray-500">دانشجویان</p>
-                                <p class="text-3xl font-bold text-yellow-600">${students}</p>
+                                <p class="text-3xl font-bold text-lime-600">${students}</p>
                                 <p class="text-xs text-gray-400 mt-1">تعداد کل</p>
                             </div>
-                            <div class="bg-yellow-50 rounded-full p-2">
-                                <i class="fas fa-user-graduate text-yellow-400 text-xl"></i>
+                            <div class="bg-lime-50 rounded-full p-2">
+                                <i class="fas fa-user-graduate text-lime-400 text-xl"></i>
                             </div>
                         </div>
                     </div>
@@ -647,7 +647,7 @@ const DashboardModule = {
                                             <p class="text-sm text-gray-500">${order.type}</p>
                                         </div>
                                         <button onclick="window.assignOrder('${order.id}')"
-                                                class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">
+                                                class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">
                                             تخصیص
                                         </button>
                                     </div>
@@ -680,9 +680,9 @@ const DashboardModule = {
             
             return `
                 <div class="space-y-6">
-                    <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 text-gray-900 rounded-lg p-6">
+                    <div class="bg-gradient-to-r from-lime-500 to-lime-600 text-gray-900 rounded-lg p-6">
                         <h2 class="text-2xl font-bold mb-2">پنل عامل</h2>
-                        <p class="text-yellow-100">وظایف محول شده</p>
+                        <p class="text-lime-100">وظایف محول شده</p>
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -692,16 +692,16 @@ const DashboardModule = {
                                 <p class="text-3xl font-bold text-black-600">${myOrders.length}</p>
                             </div>
                         </div>
-                        <div class="dashboard-card yellow">
+                        <div class="dashboard-card lime">
                             <div class="text-center">
                                 <h3 class="text-lg font-semibold text-gray-700">در حال انجام</h3>
-                                <p class="text-3xl font-bold text-yellow-600">${myOrders.filter(o => o.status === CONFIG.ORDER_STATUS.IN_PROGRESS).length}</p>
+                                <p class="text-3xl font-bold text-lime-600">${myOrders.filter(o => o.status === CONFIG.ORDER_STATUS.IN_PROGRESS).length}</p>
                             </div>
                         </div>
-                        <div class="dashboard-card yellow">
+                        <div class="dashboard-card lime">
                             <div class="text-center">
                                 <h3 class="text-lg font-semibold text-gray-700">درآمد</h3>
-                                <p class="text-2xl font-bold text-yellow-600">${this.formatCurrency(myOrders.reduce((sum, o) => sum + (o.doctorShare || 0), 0))}</p>
+                                <p class="text-2xl font-bold text-lime-600">${this.formatCurrency(myOrders.reduce((sum, o) => sum + (o.doctorShare || 0), 0))}</p>
                             </div>
                         </div>
                     </div>
@@ -761,9 +761,9 @@ const DashboardModule = {
             
             return `
                 <div class="space-y-6">
-                    <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 text-gray-900 rounded-lg p-6">
+                    <div class="bg-gradient-to-r from-lime-500 to-lime-600 text-gray-900 rounded-lg p-6">
                         <h2 class="text-2xl font-bold mb-2">پنل عامل</h2>
-                        <p class="text-yellow-100">وظایف محول شده</p>
+                        <p class="text-lime-100">وظایف محول شده</p>
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -773,16 +773,16 @@ const DashboardModule = {
                                 <p class="text-3xl font-bold text-black-600">${myOrders.length}</p>
                             </div>
                         </div>
-                        <div class="dashboard-card yellow">
+                        <div class="dashboard-card lime">
                             <div class="text-center">
                                 <h3 class="text-lg font-semibold text-gray-700">در حال انجام</h3>
-                                <p class="text-3xl font-bold text-yellow-600">${myOrders.filter(o => o.status === CONFIG.ORDER_STATUS.IN_PROGRESS).length}</p>
+                                <p class="text-3xl font-bold text-lime-600">${myOrders.filter(o => o.status === CONFIG.ORDER_STATUS.IN_PROGRESS).length}</p>
                             </div>
                         </div>
-                        <div class="dashboard-card yellow">
+                        <div class="dashboard-card lime">
                             <div class="text-center">
                                 <h3 class="text-lg font-semibold text-gray-700">درآمد</h3>
-                                <p class="text-2xl font-bold text-yellow-600">${this.formatCurrency(myOrders.reduce((sum, o) => sum + (o.doctorShare || 0), 0))}</p>
+                                <p class="text-2xl font-bold text-lime-600">${this.formatCurrency(myOrders.reduce((sum, o) => sum + (o.doctorShare || 0), 0))}</p>
                             </div>
                         </div>
                     </div>

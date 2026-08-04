@@ -5,7 +5,7 @@ const ProfileModule = {
         return `
             <div class="space-y-6">
                 <!-- Profile Header -->
-                <div class="bg-gradient-to-r from-blue-500 to-yellow-600 text-white rounded-lg p-6">
+                <div class="bg-gradient-to-r from-blue-500 to-lime-600 text-white rounded-lg p-6">
                     <div class="flex items-center space-x-4 space-x-reverse">
                         <div class="h-20 w-20 rounded-full bg-white bg-opacity-20 flex items-center justify-center">
                             <span class="text-3xl font-bold">${user.name.charAt(0)}</span>
@@ -62,7 +62,7 @@ const ProfileModule = {
                 <!-- Theme Settings -->
                 <div class="bg-white rounded-lg shadow-md p-6">
                     <h3 class="text-lg font-bold mb-4 text-gray-800">
-                        <i class="fas fa-palette ml-2 text-yellow-500"></i>
+                        <i class="fas fa-palette ml-2 text-lime-500"></i>
                         تنظیمات ظاهری
                     </h3>
                     <label class="block text-sm font-medium text-gray-600 mb-3">انتخاب تم رنگی</label>
@@ -101,7 +101,7 @@ const ProfileModule = {
                             ذخیره تغییرات
                         </button>
                         <button onclick="window.showModal = 'changePassword'" 
-                                class="bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg font-medium btn">
+                                class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-4 py-2 rounded-lg font-medium btn">
                             <i class="fas fa-key ml-2"></i>
                             تغییر رمز عبور
                         </button>

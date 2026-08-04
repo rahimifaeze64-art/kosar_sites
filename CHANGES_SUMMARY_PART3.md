@@ -23,11 +23,11 @@
 - **تغییرات:**
   - همه دکمه‌های آبی، بنفش، سبز، قرمز و زرد به سبز زیتونی تغییر یافتند
   - اضافه شدن سلکتورهای بیشتر برای پوشش کامل:
-    - `button[class*="bg-yellow"]`
+    - `button[class*="bg-lime"]`
     - `button[class*="bg-emerald"]`
     - `button[class*="bg-red"]`
-    - `button[class*="bg-yellow"]`
-  - استثنا برای رنگ‌های پس‌زمینه روشن (bg-red-50, bg-yellow-100 و...)
+    - `button[class*="bg-lime"]`
+  - استثنا برای رنگ‌های پس‌زمینه روشن (bg-red-50, bg-lime-100 و...)
 
 #### 4. دکمه خروج از حساب ✅
 - **فایل تغییر یافته:** `index.html`, `js/app.js`

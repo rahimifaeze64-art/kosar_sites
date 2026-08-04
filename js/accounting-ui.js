@@ -157,8 +157,8 @@ const AccountingUI = (function () {
                 ? `<span class="text-orange-700 font-bold text-sm">${empUnsettled.toLocaleString('fa-IR')} ت</span><p class="text-gray-400 text-xs">تسویه‌نشده</p>`
                 : '<span class="text-gray-400 text-xs">در دسترس نیست</span>',
                 'bg-orange-50','border-orange-200','fa-users','text-orange-500')}
-            ${card('حساب سفارت', '<span class="text-yellow-700 text-xs">→ حسابداری سفارت</span>',
-                'bg-yellow-50','border-yellow-200','fa-landmark','text-yellow-500')}
+            ${card('حساب سفارت', '<span class="text-lime-700 text-xs">→ حسابداری سفارت</span>',
+                'bg-lime-50','border-lime-200','fa-landmark','text-lime-500')}
         </div>`;
     }
 
@@ -295,7 +295,7 @@ const AccountingUI = (function () {
                     </button>
                     <button onclick="AccountingUI.showPersonsList()"
                         class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl text-sm flex items-center gap-1.5 transition-all">
-                        <i class="fas fa-users text-yellow-500"></i>اشخاص
+                        <i class="fas fa-users text-lime-500"></i>اشخاص
                     </button>
                     <button onclick="AccountingUI.showExportModal()"
                         class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl text-sm flex items-center gap-1.5 transition-all">

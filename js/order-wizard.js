@@ -32,7 +32,7 @@ const OrderWizardModule = {
     getWizardModal() {
         return `
             <div x-data="orderWizardData()">
-                <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-yellow-600 to-yellow-600 relative">
+                <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-lime-600 to-lime-600 relative">
                     <button @click="$dispatch('close-modal')" 
                             class="absolute left-4 top-4 text-white hover:text-gray-200 text-2xl"
                             type="button">
@@ -50,22 +50,22 @@ const OrderWizardModule = {
                         <!-- 1. نام دانشجو -->
                         <div>
                             <label class="block text-lg font-bold text-gray-800 mb-2">
-                                <i class="fas fa-user text-yellow-500 ml-2"></i>
+                                <i class="fas fa-user text-lime-500 ml-2"></i>
                                 نام دانشجو <span class="text-red-500">*</span>
                             </label>
                             <input type="text" x-model="newOrder.studentName" 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-lg"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 text-lg"
                                    required placeholder="نام و نام خانوادگی دانشجو">
                         </div>
                         
                         <!-- 2. نوع کار -->
                         <div>
                             <label class="block text-lg font-bold text-gray-800 mb-2">
-                                <i class="fas fa-tasks text-yellow-500 ml-2"></i>
+                                <i class="fas fa-tasks text-lime-500 ml-2"></i>
                                 نوع کار <span class="text-red-500">*</span>
                             </label>
                             <select x-model="newOrder.workType" 
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-lg"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 text-lg"
                                     required>
                                 <option value="">انتخاب نوع کار...</option>
                                 ${this.workTypes.map(w => `<option value="${w}">${w}</option>`).join('')}
@@ -75,12 +75,12 @@ const OrderWizardModule = {
                         <!-- 3. دانشگاه -->
                         <div>
                             <label class="block text-lg font-bold text-gray-800 mb-2">
-                                <i class="fas fa-university text-yellow-500 ml-2"></i>
+                                <i class="fas fa-university text-lime-500 ml-2"></i>
                                 دانشگاه <span class="text-red-500">*</span>
                             </label>
                             <div class="flex space-x-2 space-x-reverse">
                                 <select x-model="newOrder.universitySelect" 
-                                        class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-lg"
+                                        class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 text-lg"
                                         required
                                         @change="showCustomUniversity = (newOrder.universitySelect === 'سایر'); 
                                                  if(!showCustomUniversity) newOrder.university = newOrder.universitySelect;">
@@ -89,19 +89,19 @@ const OrderWizardModule = {
                                 </select>
                             </div>
                             <input x-show="showCustomUniversity" type="text" x-model="newOrder.university" 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-lg"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 text-lg"
                                    placeholder="نام دانشگاه را وارد کنید">
                         </div>
                         
                         <!-- 4. رشته -->
                         <div>
                             <label class="block text-lg font-bold text-gray-800 mb-2">
-                                <i class="fas fa-graduation-cap text-yellow-500 ml-2"></i>
+                                <i class="fas fa-graduation-cap text-lime-500 ml-2"></i>
                                 رشته تحصیلی <span class="text-red-500">*</span>
                             </label>
                             <div class="flex space-x-2 space-x-reverse">
                                 <select x-model="newOrder.fieldSelect" 
-                                        class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-lg"
+                                        class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 text-lg"
                                         required
                                         @change="showCustomField = (newOrder.fieldSelect === 'سایر'); 
                                                  if(!showCustomField) newOrder.field = newOrder.fieldSelect;">
@@ -110,27 +110,27 @@ const OrderWizardModule = {
                                 </select>
                             </div>
                             <input x-show="showCustomField" type="text" x-model="newOrder.field" 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-lg"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 text-lg"
                                    placeholder="نام رشته را وارد کنید">
                         </div>
                         
                         <!-- 5. مهلت تحویل - روز و ساعت -->
                         <div>
                             <label class="block text-lg font-bold text-gray-800 mb-2">
-                                <i class="fas fa-calendar-alt text-yellow-500 ml-2"></i>
+                                <i class="fas fa-calendar-alt text-lime-500 ml-2"></i>
                                 مهلت تحویل <span class="text-red-500">*</span>
                             </label>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-sm text-gray-600 mb-1">تاریخ</label>
                                     <input type="date" x-model="newOrder.deadlineDate" 
-                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
                                            required>
                                 </div>
                                 <div>
                                     <label class="block text-sm text-gray-600 mb-1">ساعت</label>
                                     <input type="time" x-model="newOrder.deadlineTime" 
-                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
                                            required>
                                 </div>
                             </div>
@@ -139,7 +139,7 @@ const OrderWizardModule = {
                         <!-- 6. فایل پیوست -->
                         <div>
                             <label class="block text-lg font-bold text-gray-800 mb-2">
-                                <i class="fas fa-paperclip text-yellow-500 ml-2"></i>
+                                <i class="fas fa-paperclip text-lime-500 ml-2"></i>
                                 فایل پیوست
                                 <span class="text-sm text-gray-500 font-normal">(اختیاری)</span>
                             </label>
@@ -152,14 +152,14 @@ const OrderWizardModule = {
                                     <p class="text-gray-500 mb-2">فایل را آپلود کنید</p>
                                     <button type="button" 
                                             onclick="document.getElementById('order-attachment-input').click()"
-                                            class="px-4 py-2 bg-yellow-600 text-gray-900 rounded-lg hover:bg-yellow-700">
+                                            class="px-4 py-2 bg-lime-600 text-gray-900 rounded-lg hover:bg-lime-700">
                                         <i class="fas fa-upload ml-2"></i>
                                         انتخاب فایل
                                     </button>
                                 </div>
                                 <div id="order-file-selected" style="display:none;" class="flex items-center justify-between bg-white rounded-lg p-3 border">
                                     <div class="flex items-center">
-                                        <i class="fas fa-file text-2xl text-yellow-500 ml-3"></i>
+                                        <i class="fas fa-file text-2xl text-lime-500 ml-3"></i>
                                         <span id="order-file-name" class="text-gray-700"></span>
                                     </div>
                                     <button type="button" 
@@ -174,22 +174,22 @@ const OrderWizardModule = {
                         <!-- 7. توضیحات -->
                         <div>
                             <label class="block text-lg font-bold text-gray-800 mb-2">
-                                <i class="fas fa-comment text-yellow-500 ml-2"></i>
+                                <i class="fas fa-comment text-lime-500 ml-2"></i>
                                 توضیحات
                             </label>
                             <textarea x-model="newOrder.description" rows="3"
-                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
                                       placeholder="توضیحات و جزئیات کار..."></textarea>
                         </div>
                         
                         <!-- 8. تخصیص به عامل -->
                         <div>
                             <label class="block text-lg font-bold text-gray-800 mb-2">
-                                <i class="fas fa-user-tie text-yellow-500 ml-2"></i>
+                                <i class="fas fa-user-tie text-lime-500 ml-2"></i>
                                 تخصیص به عامل
                             </label>
                             <select x-model="newOrder.assignedAgent" 
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-lg">
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 text-lg">
                                 <option value="">بدون تخصیص</option>
                                 <option value="doc001">دکتر معصومی</option>
                                 <option value="doc002">دکتر ذوقی</option>
@@ -201,15 +201,15 @@ const OrderWizardModule = {
                         <!-- 9. هزینه کار -->
                         <div>
                             <label class="block text-lg font-bold text-gray-800 mb-2">
-                                <i class="fas fa-money-bill-wave text-yellow-500 ml-2"></i>
+                                <i class="fas fa-money-bill-wave text-lime-500 ml-2"></i>
                                 هزینه کار <span class="text-red-500">*</span>
                             </label>
                             <div class="flex space-x-2 space-x-reverse">
                                 <input type="number" x-model="newOrder.cost" 
-                                       class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-lg"
+                                       class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 text-lg"
                                        required placeholder="مبلغ" min="0">
                                 <select x-model="newOrder.currency"
-                                        class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-lg bg-white">
+                                        class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 text-lg bg-white">
                                     <option value="تومان">تومان</option>
                                     <option value="دلار">دلار</option>
                                 </select>
@@ -219,7 +219,7 @@ const OrderWizardModule = {
                         <!-- Submit Button -->
                         <div class="pt-4 border-t">
                             <button type="submit" 
-                                    class="w-full py-4 bg-gradient-to-r from-yellow-600 to-yellow-600 text-gray-900 rounded-lg font-bold text-lg hover:from-yellow-700 hover:to-yellow-700 transition-all shadow-lg">
+                                    class="w-full py-4 bg-gradient-to-r from-lime-600 to-lime-600 text-gray-900 rounded-lg font-bold text-lg hover:from-lime-700 hover:to-lime-700 transition-all shadow-lg">
                                 <i class="fas fa-check-circle ml-2"></i>
                                 ثبت سفارش
                             </button>

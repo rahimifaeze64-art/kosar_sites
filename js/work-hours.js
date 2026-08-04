@@ -487,8 +487,8 @@ const WorkHoursUI = (function() {
                     
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                         <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 bg-yellow-500/20 rounded-xl flex items-center justify-center">
-                                <i class="fas fa-hourglass-half text-2xl text-yellow-400"></i>
+                            <div class="w-14 h-14 bg-lime-500/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-hourglass-half text-2xl text-lime-400"></i>
                             </div>
                             <div>
                                 <p class="text-black-400 text-sm">در انتظار تأیید</p>
@@ -850,8 +850,8 @@ const WorkHoursUI = (function() {
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                         <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 bg-yellow-500/20 rounded-xl flex items-center justify-center">
-                                <i class="fas fa-users text-2xl text-yellow-400"></i>
+                            <div class="w-14 h-14 bg-lime-500/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-users text-2xl text-lime-400"></i>
                             </div>
                             <div>
                                 <p class="text-black-400 text-sm">تعداد کارمندان</p>
@@ -862,8 +862,8 @@ const WorkHoursUI = (function() {
                     
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                         <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 bg-yellow-500/20 rounded-xl flex items-center justify-center">
-                                <i class="fas fa-hourglass-half text-2xl text-yellow-400"></i>
+                            <div class="w-14 h-14 bg-lime-500/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-hourglass-half text-2xl text-lime-400"></i>
                             </div>
                             <div>
                                 <p class="text-black-400 text-sm">در انتظار تأیید</p>
@@ -901,7 +901,7 @@ const WorkHoursUI = (function() {
                 ${pendingHours.length > 0 ? `
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                         <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                            <i class="fas fa-clock text-yellow-400"></i>
+                            <i class="fas fa-clock text-lime-400"></i>
                             ساعات کاری در انتظار تأیید
                         </h3>
                         
@@ -1024,7 +1024,7 @@ const WorkHoursUI = (function() {
                                             <span class="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm">${emp.approved}</span>
                                         </td>
                                         <td class="text-center py-4 px-4">
-                                            <span class="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-sm">${emp.pending}</span>
+                                            <span class="bg-lime-500/20 text-lime-400 px-3 py-1 rounded-full text-sm">${emp.pending}</span>
                                         </td>
                                         <td class="text-center py-4 px-4">
                                             <span class="bg-red-500/20 text-red-400 px-3 py-1 rounded-full text-sm">${emp.rejected}</span>
@@ -1112,7 +1112,7 @@ const WorkHoursUI = (function() {
         }
         
         const statusColors = {
-            pending: 'bg-yellow-500/20 text-yellow-400',
+            pending: 'bg-lime-500/20 text-lime-400',
             approved: 'bg-green-500/20 text-green-400',
             rejected: 'bg-red-500/20 text-red-400'
         };
@@ -1174,7 +1174,7 @@ const WorkHoursUI = (function() {
     function renderAllEntriesList(entries) {
         return entries.map(entry => {
             const statusColors = {
-                pending: 'bg-yellow-500/20 text-yellow-400',
+                pending: 'bg-lime-500/20 text-lime-400',
                 approved: 'bg-green-500/20 text-green-400',
                 rejected: 'bg-red-500/20 text-red-400'
             };
@@ -1231,7 +1231,7 @@ const WorkHoursUI = (function() {
     function renderWorkHoursList(hours) {
         return hours.map(entry => {
             const statusColors = {
-                pending: 'bg-yellow-500/20 text-yellow-400',
+                pending: 'bg-lime-500/20 text-lime-400',
                 approved: 'bg-green-500/20 text-green-400',
                 rejected: 'bg-red-500/20 text-red-400'
             };
@@ -1632,7 +1632,7 @@ const WorkHoursUI = (function() {
         const colors = {
             success: 'bg-green-500',
             error: 'bg-red-500',
-            warning: 'bg-yellow-500',
+            warning: 'bg-lime-500',
             info: 'bg-blue-500'
         };
         
@@ -1714,7 +1714,7 @@ const WorkHoursUI = (function() {
                 return `<div class="mb-4">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-white font-semibold flex items-center gap-2">
-                            <i class="fas fa-user text-yellow-400 text-xs"></i>${empName}
+                            <i class="fas fa-user text-lime-400 text-xs"></i>${empName}
                         </span>
                         <span class="bg-red-500/20 text-red-300 text-xs px-3 py-1 rounded-full font-bold">
                             جمع: ${info.total.toLocaleString('fa-IR')} ت

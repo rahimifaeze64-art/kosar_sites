@@ -161,7 +161,7 @@ const EmbassyAccountingModule = (function () {
                 <p class="text-2xl font-bold text-red-600">${s.pendingCount.toLocaleString('fa-IR')}</p>
             </div>
             ${multiCurCard(s.agreedAll,  'جمع مبالغ توافق',     'bg-orange-50 border-orange-200', 'text-orange-700')}
-            ${multiCurCard(s.depositAll, 'جمع بیعانه‌ها',       'bg-yellow-50 border-yellow-200', 'text-yellow-700')}
+            ${multiCurCard(s.depositAll, 'جمع بیعانه‌ها',       'bg-lime-50 border-lime-200', 'text-lime-700')}
             ${multiCurCard(s.finalAll,   'جمع دریافتی‌ها',      'bg-blue-50   border-blue-200',   'text-black-700')}
         </div>
         <!-- تسویه نشده به تفکیک ارز -->
@@ -247,7 +247,7 @@ const EmbassyAccountingModule = (function () {
                 <td class="px-3 py-3 text-center">
                     ${d.isSettled
                         ? '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">✓ تسویه</span>'
-                        : '<span class="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded-full">در انتظار</span>'}
+                        : '<span class="bg-lime-100 text-lime-700 text-xs px-2 py-1 rounded-full">در انتظار</span>'}
                 </td>
                 <td class="px-3 py-3 text-gray-500 text-xs">${r.created_by_name || '—'}</td>
             </tr>`;

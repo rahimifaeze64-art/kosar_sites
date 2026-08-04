@@ -139,7 +139,7 @@ const AgentAccountingModule = {
             <!-- Header -->
             <div class="flex items-center justify-between">
                 <h2 class="text-2xl font-bold text-white">
-                    <i class="fas fa-wallet text-yellow-400 ml-2"></i>
+                    <i class="fas fa-wallet text-lime-400 ml-2"></i>
                     حسابداری شخصی من
                 </h2>
                 <button onclick="AgentAccountingModule.showAddPaymentModal('${agentId}')"
@@ -165,16 +165,16 @@ const AgentAccountingModule = {
                 </div>
                 <div class="bg-slate-800 rounded-lg p-4 text-center">
                     <p class="text-gray-400 text-sm mb-1">شروع نشده</p>
-                    <p class="text-3xl font-bold text-yellow-400">${summary.pendingOrders}</p>
+                    <p class="text-3xl font-bold text-lime-400">${summary.pendingOrders}</p>
                 </div>
             </div>
 
             <!-- خلاصه مالی -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- تومان -->
-                <div class="bg-gradient-to-br from-amber-50 to-yellow-100 rounded-xl p-5 border border-yellow-200">
+                <div class="bg-gradient-to-br from-amber-50 to-lime-100 rounded-xl p-5 border border-lime-200">
                     <h3 class="text-gray-800 font-bold text-lg mb-4 flex items-center">
-                        <i class="fas fa-coins text-yellow-500 ml-2"></i>
+                        <i class="fas fa-coins text-lime-500 ml-2"></i>
                         خلاصه مالی (تومان)
                     </h3>
                     <div class="space-y-3">
@@ -219,7 +219,7 @@ const AgentAccountingModule = {
             <!-- لیست سفارشات -->
             <div class="bg-slate-800 rounded-xl p-5">
                 <h3 class="text-white font-bold text-lg mb-4 flex items-center">
-                    <i class="fas fa-list text-yellow-400 ml-2"></i>
+                    <i class="fas fa-list text-lime-400 ml-2"></i>
                     سفارشات من
                     <span class="mr-2 text-sm font-normal text-gray-400">(${orders.length} سفارش)</span>
                 </h3>
@@ -248,7 +248,7 @@ const AgentAccountingModule = {
                                 <tr class="border-t-2 border-slate-500">
                                     <td colspan="3" class="py-3 px-3 text-gray-400 font-bold">جمع کل</td>
                                     <td class="py-3 px-3">
-                                        ${summary.totalCostToman > 0 ? `<span class="text-yellow-400 font-bold block">${summary.totalCostToman.toLocaleString()} تومان</span>` : ''}
+                                        ${summary.totalCostToman > 0 ? `<span class="text-lime-400 font-bold block">${summary.totalCostToman.toLocaleString()} تومان</span>` : ''}
                                         ${summary.totalCostDollar > 0 ? `<span class="text-green-400 font-bold block">$ ${summary.totalCostDollar.toLocaleString()}</span>` : ''}
                                     </td>
                                     <td></td>
@@ -307,10 +307,10 @@ const AgentAccountingModule = {
         const cost = parseFloat(order.cost) || parseFloat(order.totalAmount) || 0;
         const currency = order.currency || 'تومان';
         const statusMap = {
-            'pending': { text: 'شروع نشده', cls: 'bg-yellow-900 text-yellow-300' },
+            'pending': { text: 'شروع نشده', cls: 'bg-lime-900 text-lime-300' },
             'in_progress': { text: 'در حال انجام', cls: 'bg-blue-900 text-black-300' },
             'completed': { text: 'تکمیل شده', cls: 'bg-green-900 text-green-300' },
-            'approved': { text: 'تایید شده', cls: 'bg-yellow-900 text-yellow-300' },
+            'approved': { text: 'تایید شده', cls: 'bg-lime-900 text-lime-300' },
         };
         const st = statusMap[order.status] || { text: order.status, cls: 'bg-gray-700 text-gray-300' };
         const deadline = order.deadline ? new Date(order.deadline).toLocaleDateString('fa-IR') : '---';
@@ -321,7 +321,7 @@ const AgentAccountingModule = {
                 <td class="py-3 px-3 text-gray-300">${order.type || '---'}</td>
                 <td class="py-3 px-3 text-gray-400 text-xs">${deadline}</td>
                 <td class="py-3 px-3">
-                    ${cost > 0 ? `<span class="font-bold ${currency === 'دلار' ? 'text-green-400' : 'text-yellow-400'}">${cost.toLocaleString()} ${currency}</span>` : '<span class="text-gray-500">---</span>'}
+                    ${cost > 0 ? `<span class="font-bold ${currency === 'دلار' ? 'text-green-400' : 'text-lime-400'}">${cost.toLocaleString()} ${currency}</span>` : '<span class="text-gray-500">---</span>'}
                 </td>
                 <td class="py-3 px-3">
                     <span class="px-2 py-1 rounded-full text-xs ${st.cls}">${st.text}</span>

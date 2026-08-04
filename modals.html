@@ -121,7 +121,7 @@
                     <div class="flex items-center p-3 border rounded-lg" 
                          :class="task.status === 'completed' ? 'bg-green-50 border-green-200' : 
                                 task.status === 'rejected' ? 'bg-red-50 border-red-200' : 
-                                'bg-yellow-50 border-yellow-200'">
+                                'bg-lime-50 border-lime-200'">
                         <div class="flex-1">
                             <p class="font-medium" x-text="task.title"></p>
                             <p class="text-sm text-gray-600">
@@ -217,7 +217,7 @@
                 انصراف
             </button>
             <button @click="assignTaskToDoctor(assignment.orderId, assignment.doctorId, assignment.description); showModal = null" 
-                    class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">
+                    class="px-4 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700">
                 تخصیص وظیفه
             </button>
         </div>

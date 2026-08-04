@@ -19,7 +19,7 @@
             <button onclick="checkLocalStorage()" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg">
                 بررسی localStorage
             </button>
-            <button onclick="checkStudentsData()" class="bg-yellow-600 hover:bg-yellow-700 px-6 py-3 rounded-lg">
+            <button onclick="checkStudentsData()" class="bg-lime-600 hover:bg-lime-700 px-6 py-3 rounded-lg">
                 بررسی students_data
             </button>
             <button onclick="forceUpdate()" class="bg-red-600 hover:bg-red-700 px-6 py-3 rounded-lg">
@@ -60,13 +60,13 @@
             log(`👥 تعداد دانشجویان: ${students.length}`, 'green');
             log('');
             
-            log('📋 لیست دانشجویان:', 'yellow');
+            log('📋 لیست دانشجویان:', 'lime');
             students.forEach((s, i) => {
                 log(`${i + 1}. ${s.id} - ${s.name} (${s.username})`, 'white');
             });
             
             log('');
-            log('🔍 بررسی فیلدهای دانشجوی اول:', 'yellow');
+            log('🔍 بررسی فیلدهای دانشجوی اول:', 'lime');
             const first = students[0];
             log(JSON.stringify(first, null, 2), 'gray');
         }
@@ -88,7 +88,7 @@
             log(`👥 تعداد دانشجویان در localStorage: ${students.length}`, 'green');
             log('');
             
-            log('📋 لیست دانشجویان:', 'yellow');
+            log('📋 لیست دانشجویان:', 'lime');
             students.forEach((s, i) => {
                 log(`${i + 1}. ${s.id} - ${s.name} (${s.username})`, 'white');
             });
@@ -101,7 +101,7 @@
             const stored = localStorage.getItem('students_data');
             if (!stored) {
                 log('❌ students_data خالی است!', 'red');
-                log('💡 برای مقداردهی اولیه، دکمه "به‌روزرسانی اجباری" را کلیک کنید', 'yellow');
+                log('💡 برای مقداردهی اولیه، دکمه "به‌روزرسانی اجباری" را کلیک کنید', 'lime');
                 return;
             }
             
@@ -111,7 +111,7 @@
             log(`✅ تعداد دانشجویان در students_data: ${studentIds.length}`, 'green');
             log('');
             
-            log('📋 لیست دانشجویان:', 'yellow');
+            log('📋 لیست دانشجویان:', 'lime');
             studentIds.forEach((id, i) => {
                 const s = studentsData[id];
                 const hasSteps = s.educationalSteps ? '✅' : '❌';
@@ -119,7 +119,7 @@
             });
             
             log('');
-            log('🔍 بررسی دانشجوی اول:', 'yellow');
+            log('🔍 بررسی دانشجوی اول:', 'lime');
             const first = studentsData[studentIds[0]];
             log(`نام: ${first.name}`, 'white');
             log(`educationalSteps: ${first.educationalSteps ? 'موجود (' + first.educationalSteps.length + ' مرحله)' : 'ندارد'}`, first.educationalSteps ? 'green' : 'red');
@@ -129,7 +129,7 @@
         function forceUpdate() {
             clear();
             log('=== به‌روزرسانی اجباری ===', 'blue');
-            log('🔄 در حال به‌روزرسانی...', 'yellow');
+            log('🔄 در حال به‌روزرسانی...', 'lime');
             
             try {
                 // Get all default users
@@ -162,7 +162,7 @@
                 
                 log('');
                 log('🎉 به‌روزرسانی با موفقیت انجام شد!', 'green');
-                log('💡 حالا به صفحه اصلی بروید و صفحه را رفرش کنید', 'yellow');
+                log('💡 حالا به صفحه اصلی بروید و صفحه را رفرش کنید', 'lime');
                 
             } catch (error) {
                 log(`❌ خطا: ${error.message}`, 'red');

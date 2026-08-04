@@ -13,12 +13,12 @@ const PersonalArchiveModule = {
                 <!-- Header -->
                 <div class="flex justify-between items-center">
                     <h2 class="text-2xl font-bold text-white">
-                        <i class="fas fa-folder-open text-yellow-400 ml-2"></i>
+                        <i class="fas fa-folder-open text-lime-400 ml-2"></i>
                         بایگانی شخصی من
                     </h2>
                     <div class="flex space-x-3 space-x-reverse">
                         <button onclick="PersonalArchiveModule.showNewFolderModal()" 
-                                class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-medium">
+                                class="bg-lime-600 hover:bg-lime-700 text-white px-4 py-2 rounded-lg font-medium">
                             <i class="fas fa-folder-plus ml-2"></i>
                             پوشه جدید
                         </button>
@@ -38,7 +38,7 @@ const PersonalArchiveModule = {
                                 <p class="text-gray-400 text-sm">تعداد پوشه‌ها</p>
                                 <p class="text-2xl font-bold text-white">${folders.length}</p>
                             </div>
-                            <i class="fas fa-folder text-3xl text-yellow-400"></i>
+                            <i class="fas fa-folder text-3xl text-lime-400"></i>
                         </div>
                     </div>
                     <div class="bg-slate-800 rounded-lg p-4">
@@ -56,7 +56,7 @@ const PersonalArchiveModule = {
                                 <p class="text-gray-400 text-sm">حجم کل</p>
                                 <p class="text-2xl font-bold text-white">${this.getTotalSize(files)}</p>
                             </div>
-                            <i class="fas fa-database text-3xl text-yellow-400"></i>
+                            <i class="fas fa-database text-3xl text-lime-400"></i>
                         </div>
                     </div>
                 </div>
@@ -67,7 +67,7 @@ const PersonalArchiveModule = {
                     <div class="lg:col-span-1">
                         <div class="bg-slate-800 rounded-lg shadow-md p-4">
                             <h3 class="text-lg font-bold text-white mb-4">
-                                <i class="fas fa-folder text-yellow-400 ml-2"></i>
+                                <i class="fas fa-folder text-lime-400 ml-2"></i>
                                 پوشه‌ها
                             </h3>
                             <div class="space-y-2" id="folders-list">
@@ -115,10 +115,10 @@ const PersonalArchiveModule = {
         
         return `
             <div onclick="PersonalArchiveModule.selectFolder('${folder.id}')" 
-                 class="p-3 rounded-lg cursor-pointer transition-colors ${isSelected ? 'bg-yellow-600' : 'bg-slate-700 hover:bg-slate-600'}">
+                 class="p-3 rounded-lg cursor-pointer transition-colors ${isSelected ? 'bg-lime-600' : 'bg-slate-700 hover:bg-slate-600'}">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-2 space-x-reverse">
-                        <i class="fas fa-folder text-yellow-400"></i>
+                        <i class="fas fa-folder text-lime-400"></i>
                         <span class="text-white font-medium">${folder.name}</span>
                     </div>
                     <span class="text-gray-400 text-sm">${files.length}</span>
@@ -193,16 +193,16 @@ const PersonalArchiveModule = {
             'xlsx': 'fas fa-file-excel text-green-400',
             'ppt': 'fas fa-file-powerpoint text-orange-400',
             'pptx': 'fas fa-file-powerpoint text-orange-400',
-            'jpg': 'fas fa-file-image text-yellow-400',
-            'jpeg': 'fas fa-file-image text-yellow-400',
-            'png': 'fas fa-file-image text-yellow-400',
-            'gif': 'fas fa-file-image text-yellow-400',
+            'jpg': 'fas fa-file-image text-lime-400',
+            'jpeg': 'fas fa-file-image text-lime-400',
+            'png': 'fas fa-file-image text-lime-400',
+            'gif': 'fas fa-file-image text-lime-400',
             'mp3': 'fas fa-file-audio text-pink-400',
             'wav': 'fas fa-file-audio text-pink-400',
-            'mp4': 'fas fa-file-video text-yellow-400',
-            'avi': 'fas fa-file-video text-yellow-400',
-            'zip': 'fas fa-file-archive text-yellow-400',
-            'rar': 'fas fa-file-archive text-yellow-400',
+            'mp4': 'fas fa-file-video text-lime-400',
+            'avi': 'fas fa-file-video text-lime-400',
+            'zip': 'fas fa-file-archive text-lime-400',
+            'rar': 'fas fa-file-archive text-lime-400',
             'txt': 'fas fa-file-alt text-gray-400'
         };
         return icons[type] || 'fas fa-file text-gray-400';
@@ -267,7 +267,7 @@ const PersonalArchiveModule = {
                 <div class="bg-slate-800 rounded-lg p-6 w-full max-w-md">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-xl font-bold text-white">
-                            <i class="fas fa-folder-plus text-yellow-400 ml-2"></i>
+                            <i class="fas fa-folder-plus text-lime-400 ml-2"></i>
                             پوشه جدید
                         </h3>
                         <button onclick="PersonalArchiveModule.closeModal('newFolderModal')" 
@@ -280,21 +280,21 @@ const PersonalArchiveModule = {
                         <div>
                             <label class="block text-gray-300 mb-2">نام پوشه</label>
                             <input type="text" id="folderName" 
-                                   class="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                   class="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-lime-500"
                                    placeholder="نام پوشه را وارد کنید">
                         </div>
                         
                         <div>
                             <label class="block text-gray-300 mb-2">توضیحات (اختیاری)</label>
                             <textarea id="folderDescription" 
-                                      class="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                      class="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-lime-500"
                                       rows="3"
                                       placeholder="توضیحات پوشه را وارد کنید"></textarea>
                         </div>
                         
                         <div class="flex space-x-3 space-x-reverse">
                             <button onclick="PersonalArchiveModule.createFolder()" 
-                                    class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-medium">
+                                    class="flex-1 bg-lime-600 hover:bg-lime-700 text-white px-4 py-2 rounded-lg font-medium">
                                 <i class="fas fa-check ml-2"></i>
                                 ایجاد پوشه
                             </button>

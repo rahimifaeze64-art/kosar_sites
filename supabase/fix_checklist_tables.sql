@@ -16,7 +16,7 @@ BEGIN
         user_id      TEXT NOT NULL,
         name         TEXT NOT NULL,
         description  TEXT DEFAULT '',
-        color        TEXT DEFAULT 'yellow',
+        color        TEXT DEFAULT 'lime',
         icon         TEXT DEFAULT 'fas fa-folder',
         created_at   TIMESTAMPTZ DEFAULT NOW(),
         updated_at   TIMESTAMPTZ DEFAULT NOW()

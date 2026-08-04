@@ -42,9 +42,9 @@ const AgentModule = {
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-gray-400 text-sm">در انتظار</p>
-                                <p class="text-2xl font-bold text-yellow-400">${tasks.filter(t => t.status === 'pending').length}</p>
+                                <p class="text-2xl font-bold text-lime-400">${tasks.filter(t => t.status === 'pending').length}</p>
                             </div>
-                            <i class="fas fa-clock text-3xl text-yellow-400"></i>
+                            <i class="fas fa-clock text-3xl text-lime-400"></i>
                         </div>
                     </div>
                     <div class="bg-slate-800 rounded-lg p-4">
@@ -140,7 +140,7 @@ const AgentModule = {
     // Get task card
     getTaskCard(task, userId, taskNumber) {
         const statusColors = {
-            'pending': 'bg-yellow-500',
+            'pending': 'bg-lime-500',
             'in_progress': 'bg-blue-500',
             'completed': 'bg-green-500'
         };
@@ -161,7 +161,7 @@ const AgentModule = {
                         <p class="text-xs text-white truncate">${task.attachedFile.name}</p>
                     </div>
                     <button onclick="AgentModule.downloadTaskFile('${task.id}')" 
-                            class="text-yellow-400 hover:text-yellow-300 p-1" title="دانلود">
+                            class="text-lime-400 hover:text-lime-300 p-1" title="دانلود">
                         <i class="fas fa-download text-sm"></i>
                     </button>
                 </div>
@@ -194,7 +194,7 @@ const AgentModule = {
                 
                 <!-- Student Info -->
                 <div class="flex items-center text-xs text-gray-400 mb-3 pb-3 border-b border-slate-600">
-                    <i class="fas fa-user-graduate text-yellow-400 ml-1"></i>
+                    <i class="fas fa-user-graduate text-lime-400 ml-1"></i>
                     <span>${task.studentName}</span>
                 </div>
                 
@@ -240,7 +240,7 @@ const AgentModule = {
                         </button>
                     ` : task.status === 'in_progress' ? `
                         <button onclick="AgentModule.updateTaskStatus('${task.id}', '${userId}', event)" 
-                                class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-3 py-2 rounded-lg text-sm font-medium transition-all">
+                                class="flex-1 bg-lime-600 hover:bg-lime-700 text-gray-900 px-3 py-2 rounded-lg text-sm font-medium transition-all">
                             <i class="fas fa-check ml-1"></i>
                             تکمیل
                         </button>
@@ -352,7 +352,7 @@ const AgentModule = {
             userTasks[taskIndex].statusChangedAt = new Date().toISOString();
             if (buttonElement) {
                 buttonElement.classList.remove('bg-green-600', 'hover:bg-green-700');
-                buttonElement.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
+                buttonElement.classList.add('bg-lime-600', 'hover:bg-lime-700');
                 buttonElement.innerHTML = '<i class="fas fa-check ml-1"></i>تکمیل';
             }
             UTILS.showNotification('وظیفه شروع شد', 'success');
@@ -361,7 +361,7 @@ const AgentModule = {
             userTasks[taskIndex].completedAt = new Date().toISOString();
             userTasks[taskIndex].statusChangedAt = new Date().toISOString();
             if (buttonElement) {
-                buttonElement.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
+                buttonElement.classList.remove('bg-lime-600', 'hover:bg-lime-700');
                 buttonElement.classList.add('bg-green-600', 'hover:bg-green-700');
                 buttonElement.innerHTML = '<i class="fas fa-check-double ml-1"></i>تکمیل شده';
                 buttonElement.disabled = true;
@@ -384,10 +384,10 @@ const AgentModule = {
         
         if (status === 'in_progress') {
             buttonElement.classList.remove('bg-green-600', 'hover:bg-green-700');
-            buttonElement.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
+            buttonElement.classList.add('bg-lime-600', 'hover:bg-lime-700');
             buttonElement.innerHTML = '<i class="fas fa-check ml-1"></i>تکمیل';
         } else if (status === 'completed') {
-            buttonElement.classList.remove('bg-yellow-600', 'hover:bg-yellow-700', 'bg-green-600', 'hover:bg-green-700');
+            buttonElement.classList.remove('bg-lime-600', 'hover:bg-lime-700', 'bg-green-600', 'hover:bg-green-700');
             buttonElement.classList.add('bg-green-500', 'cursor-not-allowed', 'opacity-75');
             buttonElement.innerHTML = '<i class="fas fa-check-double ml-1"></i>تکمیل شده';
             buttonElement.disabled = true;

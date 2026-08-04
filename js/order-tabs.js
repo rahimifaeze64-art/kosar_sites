@@ -13,7 +13,7 @@ const OrderTabsModule = {
         return `
             <div class="space-y-6">
                 <!-- Order Header -->
-                <div class="bg-gradient-to-r from-blue-50 to-yellow-50 p-6 rounded-lg">
+                <div class="bg-gradient-to-r from-blue-50 to-lime-50 p-6 rounded-lg">
                     <div class="flex justify-between items-start">
                         <div>
                             <h4 class="text-xl font-bold text-gray-800">${order.studentName || '---'}</h4>
@@ -43,8 +43,8 @@ const OrderTabsModule = {
                 
                 <!-- Assignment Info -->
                 ${agentDisplay ? `
-                    <div class="bg-yellow-50 p-4 rounded-lg">
-                        <h5 class="font-semibold text-yellow-800 mb-2">
+                    <div class="bg-lime-50 p-4 rounded-lg">
+                        <h5 class="font-semibold text-lime-800 mb-2">
                             <i class="fas fa-user-md ml-1"></i>
                             اطلاعات تخصیص
                         </h5>
@@ -80,7 +80,7 @@ const OrderTabsModule = {
                         <div class="mt-4">
                             <strong>فایل پیوست:</strong>
                             <span class="mr-2 text-gray-700">
-                                <i class="fas fa-paperclip ml-1 text-yellow-500"></i>${order.attachmentName}
+                                <i class="fas fa-paperclip ml-1 text-lime-500"></i>${order.attachmentName}
                             </span>
                             ${order.hasAttachment ? `
                                 <button onclick="window.downloadOrderFile('${order.id}', '${order.attachmentName}')"
@@ -167,14 +167,14 @@ const OrderTabsModule = {
                                     statusText = 'تاخیر دارد';
                                     statusIcon = 'exclamation-circle';
                                 } else if (daysRemaining !== null && daysRemaining <= 3) {
-                                    statusColor = 'bg-yellow-100 border-yellow-200';
+                                    statusColor = 'bg-lime-100 border-lime-200';
                                     statusText = 'نزدیک به موعد';
                                     statusIcon = 'clock';
                                 }
                                 
                                 return `
-                                    <div class="flex items-start bg-gradient-to-r from-blue-50 to-yellow-50 rounded-lg p-4 border ${statusColor}">
-                                        <div class="flex-shrink-0 w-12 h-12 rounded-full bg-yellow-600 text-gray-900 flex items-center justify-center font-bold text-lg ml-4">
+                                    <div class="flex items-start bg-gradient-to-r from-blue-50 to-lime-50 rounded-lg p-4 border ${statusColor}">
+                                        <div class="flex-shrink-0 w-12 h-12 rounded-full bg-lime-600 text-gray-900 flex items-center justify-center font-bold text-lg ml-4">
                                             ${index + 1}
                                         </div>
                                         <div class="flex-1">
@@ -195,10 +195,10 @@ const OrderTabsModule = {
                                                     </div>
                                                 </div>
                                                 <div class="flex items-center">
-                                                    <i class="fas fa-${statusIcon} ${delayed ? 'text-red-600' : daysRemaining <= 3 ? 'text-yellow-600' : 'text-green-600'} ml-2"></i>
+                                                    <i class="fas fa-${statusIcon} ${delayed ? 'text-red-600' : daysRemaining <= 3 ? 'text-lime-600' : 'text-green-600'} ml-2"></i>
                                                     <div>
                                                         <p class="text-gray-600 text-xs">وضعیت</p>
-                                                        <p class="font-medium ${delayed ? 'text-red-600' : daysRemaining <= 3 ? 'text-yellow-600' : 'text-green-600'}">
+                                                        <p class="font-medium ${delayed ? 'text-red-600' : daysRemaining <= 3 ? 'text-lime-600' : 'text-green-600'}">
                                                             ${statusText}
                                                             ${daysRemaining !== null ? `(${daysRemaining > 0 ? daysRemaining + ' روز مانده' : Math.abs(daysRemaining) + ' روز تاخیر'})` : ''}
                                                         </p>
@@ -207,7 +207,7 @@ const OrderTabsModule = {
                                             </div>
                                         </div>
                                         <div class="flex-shrink-0">
-                                            <span class="px-3 py-1 ${delayed ? 'bg-red-100 text-red-800' : daysRemaining <= 3 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'} rounded-full text-sm font-medium">
+                                            <span class="px-3 py-1 ${delayed ? 'bg-red-100 text-red-800' : daysRemaining <= 3 ? 'bg-lime-100 text-lime-800' : 'bg-green-100 text-green-800'} rounded-full text-sm font-medium">
                                                 <i class="fas fa-${statusIcon} ml-1"></i>
                                                 ${statusText}
                                             </span>
@@ -249,10 +249,10 @@ const OrderTabsModule = {
                             return d && !isDelayed(d) && getDaysRemaining(d) > 3;
                         }).length}</p>
                     </div>
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-                        <i class="fas fa-clock text-3xl text-yellow-600 mb-2"></i>
-                        <p class="text-sm text-yellow-700">نزدیک به موعد</p>
-                        <p class="text-2xl font-bold text-yellow-900">${workList.filter(w => {
+                    <div class="bg-lime-50 border border-lime-200 rounded-lg p-4 text-center">
+                        <i class="fas fa-clock text-3xl text-lime-600 mb-2"></i>
+                        <p class="text-sm text-lime-700">نزدیک به موعد</p>
+                        <p class="text-2xl font-bold text-lime-900">${workList.filter(w => {
                             const d = workDetails[w]?.deadline;
                             const days = d ? getDaysRemaining(d) : null;
                             return days !== null && days <= 3 && days >= 0;
@@ -320,7 +320,7 @@ const OrderTabsModule = {
                                         <div class="flex-1 min-w-0">
                                             <p class="font-medium text-gray-800 truncate">${file.name}</p>
                                             <div class="flex items-center space-x-2 space-x-reverse text-xs text-gray-500 mt-1">
-                                                ${file.fileType ? `<span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">${file.fileType}</span>` : ''}
+                                                ${file.fileType ? `<span class="bg-lime-100 text-lime-700 px-2 py-0.5 rounded">${file.fileType}</span>` : ''}
                                                 <span>${file.uploadedByName || 'نامشخص'}</span>
                                                 <span>•</span>
                                                 <span>${file.uploadedAt}</span>
@@ -486,8 +486,8 @@ const OrderTabsModule = {
                         </div>
                     </div>
                 ` : `
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <p class="text-yellow-800 text-center">
+                    <div class="bg-lime-50 border border-lime-200 rounded-lg p-4">
+                        <p class="text-lime-800 text-center">
                             <i class="fas fa-lock ml-2"></i>
                             شما مجاز به ارسال پیام در این گفتگو نیستید
                         </p>
@@ -542,7 +542,7 @@ const OrderTabsModule = {
                 </div>
                 
                 <!-- هزینه کار -->
-                <div class="bg-gradient-to-br from-blue-600 to-yellow-700 rounded-lg p-8 text-white shadow-lg text-center">
+                <div class="bg-gradient-to-br from-blue-600 to-lime-700 rounded-lg p-8 text-white shadow-lg text-center">
                     <i class="fas fa-money-bill-wave text-5xl mb-4 opacity-80"></i>
                     <h5 class="text-lg font-semibold mb-2 opacity-90">هزینه پروژه</h5>
                     <p class="text-4xl font-bold mb-2">
@@ -552,7 +552,7 @@ const OrderTabsModule = {
                 </div>
                 
                 ${amount == 0 ? `
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center text-yellow-700">
+                    <div class="bg-lime-50 border border-lime-200 rounded-lg p-4 text-center text-lime-700">
                         <i class="fas fa-info-circle ml-2"></i>
                         هزینه‌ای برای این سفارش ثبت نشده است
                     </div>

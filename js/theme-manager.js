@@ -10,7 +10,7 @@ const ThemeManager = {
                 primary: '#1e40af',
                 secondary: '#3b82f6',
                 accent: '#60a5fa',
-                gradient: 'from-blue-900 via-yellow-900 to-blue-800',
+                gradient: 'from-blue-900 via-lime-900 to-blue-800',
                 sidebar: 'from-blue-600 via-blue-700 to-blue-800',
                 button: 'bg-blue-600 hover:bg-blue-700',
                 text: 'text-black-400',
@@ -45,18 +45,18 @@ const ThemeManager = {
                 border: 'border-orange-500'
             }
         },
-        yellow: {
+        lime: {
             name: 'زرد ',
             icon: '🟡',
             colors: {
                 primary: '#cec022ff',
                 secondary: '#ccf755ff',
                 accent: '#f4fc84ff',
-                gradient: 'from-yellow-900 via-yellow-800 to-yellow-900',
-                sidebar: 'from-yellow-600 via-yellow-700 to-yellow-800',
-                button: 'bg-yellow-600 hover:bg-yellow-700',
-                text: 'text-yellow-200',
-                border: 'border-yellow-500'
+                gradient: 'from-lime-900 via-lime-800 to-lime-900',
+                sidebar: 'from-lime-600 via-lime-700 to-lime-800',
+                button: 'bg-lime-600 hover:bg-lime-700',
+                text: 'text-lime-200',
+                border: 'border-lime-500'
             }
         },
         teal: {
@@ -171,14 +171,14 @@ const ThemeManager = {
     // حذف تمام کلاس‌های تم
     removeAllThemeClasses(element) {
         const gradientClasses = [
-            'from-blue-900', 'via-yellow-900', 'to-blue-800',
+            'from-blue-900', 'via-lime-900', 'to-blue-800',
             'from-blue-600', 'via-blue-700', 'to-blue-800',
             'from-green-900', 'via-emerald-900', 'to-green-800',
             'from-green-600', 'via-green-700', 'to-green-800',
             'from-orange-900', 'via-red-900', 'to-orange-800',
             'from-orange-600', 'via-orange-700', 'to-orange-800',
-            'from-yellow-900', 'via-yellow-800', 'to-yellow-900',
-            'from-yellow-600', 'via-yellow-700', 'to-yellow-800',
+            'from-lime-900', 'via-lime-800', 'to-lime-900',
+            'from-lime-600', 'via-lime-700', 'to-lime-800',
             'from-teal-900', 'via-cyan-900', 'to-teal-800',
             'from-teal-600', 'via-teal-700', 'to-teal-800',
             'from-gray-100', 'via-gray-50', 'to-gray-100',

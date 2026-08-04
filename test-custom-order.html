@@ -9,10 +9,10 @@
     <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
     <link href="css/agent-tasks.css" rel="stylesheet">
 </head>
-<body class="bg-gradient-to-br from-blue-900 via-yellow-900 to-blue-800 min-h-screen p-6">
+<body class="bg-gradient-to-br from-blue-900 via-lime-900 to-blue-800 min-h-screen p-6">
     <div class="max-w-6xl mx-auto">
         <h1 class="text-3xl font-bold text-white mb-6">
-            <i class="fas fa-vial text-yellow-400 ml-2"></i>
+            <i class="fas fa-vial text-lime-400 ml-2"></i>
             تست سیستم سفارش سفارشی
         </h1>
         
@@ -36,7 +36,7 @@
                     ایجاد سفارش منقضی شده
                 </button>
                 <button onclick="clearTestOrders()" 
-                        class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-3 rounded-lg">
+                        class="bg-lime-600 hover:bg-lime-700 text-white px-4 py-3 rounded-lg">
                     <i class="fas fa-trash ml-2"></i>
                     پاک کردن همه سفارشات تست
                 </button>
@@ -143,10 +143,10 @@
                     <div class="flex justify-between items-start mb-3">
                         <div class="flex-1">
                             <div class="flex items-center space-x-2 space-x-reverse mb-2">
-                                <span class="bg-yellow-600 text-white px-2 py-1 rounded text-xs font-bold">
+                                <span class="bg-lime-600 text-white px-2 py-1 rounded text-xs font-bold">
                                     #${index + 1}
                                 </span>
-                                <span class="bg-yellow-600 text-white px-2 py-1 rounded text-xs font-medium">
+                                <span class="bg-lime-600 text-white px-2 py-1 rounded text-xs font-medium">
                                     <i class="fas fa-star ml-1"></i>
                                     سفارش سفارشی
                                 </span>
@@ -163,12 +163,12 @@
                     <div class="mb-3 p-3 rounded-lg timer-container ${isExpired ? 'bg-red-900 bg-opacity-30' : 'bg-slate-600'}">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-2 space-x-reverse">
-                                <i class="fas fa-clock ${isExpired ? 'text-red-400' : isUrgent ? 'text-yellow-400' : 'text-black-400'} text-xl"></i>
+                                <i class="fas fa-clock ${isExpired ? 'text-red-400' : isUrgent ? 'text-lime-400' : 'text-black-400'} text-xl"></i>
                                 <div>
                                     <p class="text-xs ${isExpired ? 'text-red-300' : 'text-gray-300'}">
                                         ${isExpired ? 'زمان تحویل گذشته!' : 'زمان باقی‌مانده تا تحویل:'}
                                     </p>
-                                    <p class="text-lg font-bold countdown-text ${isExpired ? 'text-red-400' : isUrgent ? 'text-yellow-400 timer-urgent' : 'text-white'}" 
+                                    <p class="text-lg font-bold countdown-text ${isExpired ? 'text-red-400' : isUrgent ? 'text-lime-400 timer-urgent' : 'text-white'}" 
                                        id="timer-${order.id}">
                                         محاسبه...
                                     </p>
@@ -198,7 +198,7 @@
                             از: ${order.createdByName}
                         </span>
                         <button onclick="alert('جزئیات سفارش: ' + '${order.id}')" 
-                                class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm">
+                                class="bg-lime-600 hover:bg-lime-700 text-white px-4 py-2 rounded-lg text-sm">
                             <i class="fas fa-eye ml-1"></i>
                             مشاهده جزئیات
                         </button>

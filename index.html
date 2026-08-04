@@ -62,7 +62,7 @@
     <link href="css/theme-olive.css" rel="stylesheet">
     <link href="css/theme-dark.css" rel="stylesheet">
 </head>
-<body class="bg-gradient-to-br from-blue-900 via-yellow-900 to-blue-800 min-h-screen" x-data="appController()">
+<body class="bg-gradient-to-br from-blue-900 via-lime-900 to-blue-800 min-h-screen" x-data="appController()">
     <!-- Auto-apply theme script -->
     <script src="js/theme-auto-apply.js"></script>
     
@@ -286,7 +286,7 @@
                                 <button @click="currentPage = 'accounting'; accPage = 'employees'; empAccPage = 'main'; accMenuOpen = false"
                                         :class="currentPage === 'accounting' && accPage === 'employees' ? 'bg-white bg-opacity-20 text-white' : 'text-black-400 hover:bg-white hover:bg-opacity-10'"
                                         class="w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm">
-                                    <i class="fas fa-users-cog text-yellow-400 text-xs"></i>
+                                    <i class="fas fa-users-cog text-lime-400 text-xs"></i>
                                     <span>حسابداری کارمندان</span>
                                 </button>
                                 <button @click="currentPage = 'accounting'; accPage = 'embassy'; accMenuOpen = false"
@@ -354,10 +354,10 @@
             <button onclick="clearDebugLog()" class="bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-xs">
                 Clear Log
             </button>
-            <button onclick="exportDebugLog()" class="bg-yellow-600 hover:bg-yellow-700 px-2 py-1 rounded text-xs ml-2">
+            <button onclick="exportDebugLog()" class="bg-lime-600 hover:bg-lime-700 px-2 py-1 rounded text-xs ml-2">
                 Export
             </button>
-            <button onclick="resetAllData()" class="bg-yellow-600 hover:bg-yellow-700 px-2 py-1 rounded text-xs ml-2">
+            <button onclick="resetAllData()" class="bg-lime-600 hover:bg-lime-700 px-2 py-1 rounded text-xs ml-2">
                 Reset Data
             </button>
         </div>
@@ -443,7 +443,7 @@
                         <!-- سطح ۱: انتخاب حسابداری شخصی یا کارمندان -->
                         <div x-show="accPage === 'main'" class="space-y-6">
                             <h2 class="text-2xl font-bold text-white flex items-center gap-3">
-                                <span class="bg-yellow-500/20 p-2 rounded-xl"><i class="fas fa-calculator text-yellow-400"></i></span>
+                                <span class="bg-lime-500/20 p-2 rounded-xl"><i class="fas fa-calculator text-lime-400"></i></span>
                                 حسابداری
                             </h2>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -463,8 +463,8 @@
                                 <button @click="accPage = 'employees'; empAccPage = 'main'"
                                     class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 cursor-pointer hover:bg-white/15 transition-all group text-right">
                                     <div class="flex flex-col items-center text-center gap-4">
-                                        <div class="w-16 h-16 bg-yellow-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                                            <i class="fas fa-users-cog text-3xl text-yellow-400"></i>
+                                        <div class="w-16 h-16 bg-lime-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                            <i class="fas fa-users-cog text-3xl text-lime-400"></i>
                                         </div>
                                         <div>
                                             <h3 class="text-xl font-bold text-white mb-2">حسابداری کارمندان</h3>
@@ -581,7 +581,7 @@
                 const typeColors = {
                     info: 'text-black-400',
                     success: 'text-green-400',
-                    warning: 'text-yellow-400',
+                    warning: 'text-lime-400',
                     error: 'text-red-400'
                 };
                 

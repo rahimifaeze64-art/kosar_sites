@@ -117,15 +117,15 @@ const EmbassyModule = (function () {
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <h2 class="text-2xl font-bold text-white flex items-center gap-3">
-                        <span class="bg-yellow-500 bg-opacity-20 p-2 rounded-xl">
-                            <i class="fas fa-landmark text-yellow-400"></i>
+                        <span class="bg-lime-500 bg-opacity-20 p-2 rounded-xl">
+                            <i class="fas fa-landmark text-lime-400"></i>
                         </span>
                         سفارت - مدیریت مدارک دانشجویان
                     </h2>
                     <p class="text-black-400 text-sm mt-1">مدیریت مدارک سفارتخانه‌ای دانشجویان</p>
                 </div>
                 <button onclick="EmbassyModule.openAddModal()"
-                    class="bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all shadow-lg">
+                    class="bg-lime-500 hover:bg-lime-400 text-gray-900 font-bold px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all shadow-lg">
                     <i class="fas fa-plus"></i> ثبت مدرک جدید
                 </button>
             </div>
@@ -189,7 +189,7 @@ const EmbassyModule = (function () {
 
             <!-- لودینگ -->
             <div id="embassy-loading" class="text-center py-12">
-                <i class="fas fa-spinner fa-spin text-3xl text-yellow-400"></i>
+                <i class="fas fa-spinner fa-spin text-3xl text-lime-400"></i>
                 <p class="text-black-400 mt-3">در حال بارگذاری...</p>
             </div>
 
@@ -265,7 +265,7 @@ const EmbassyModule = (function () {
                                                 </button>
                                                 <button type="button" data-status="تصدیق"
                                                     onclick="EmbassyModule._setStatus(this,'${key}','تصدیق')"
-                                                    class="status-btn flex-1 text-xs py-1.5 rounded-lg bg-yellow-100 text-yellow-700 border border-yellow-300 hover:bg-yellow-200 transition-all">
+                                                    class="status-btn flex-1 text-xs py-1.5 rounded-lg bg-lime-100 text-lime-700 border border-lime-300 hover:bg-lime-200 transition-all">
                                                     تصدیق
                                                 </button>
                                                 <button type="button" data-status="هردو"
@@ -389,11 +389,11 @@ const EmbassyModule = (function () {
                                     <!-- ۲. بیعانه -->
                                     <div>
                                         <div class="flex items-center justify-between mb-1">
-                                            <label class="text-yellow-600 text-xs font-semibold">
+                                            <label class="text-lime-600 text-xs font-semibold">
                                                 <i class="fas fa-money-bill ml-1"></i>۲. بیعانه
                                             </label>
                                             <button type="button" onclick="EmbassyModule._addPaymentRow('deposit-list','deposit')"
-                                                class="text-xs text-yellow-600 hover:text-yellow-800 flex items-center gap-1">
+                                                class="text-xs text-lime-600 hover:text-lime-800 flex items-center gap-1">
                                                 <i class="fas fa-plus-circle"></i>افزودن مرحله
                                             </button>
                                         </div>
@@ -582,7 +582,7 @@ const EmbassyModule = (function () {
         }
 
         const rows = records.map((r, i) => `
-            <tr class="border-b border-gray-200 hover:bg-yellow-50 transition-colors bg-white">
+            <tr class="border-b border-gray-200 hover:bg-lime-50 transition-colors bg-white">
                 <td class="px-3 py-3 text-gray-500 text-xs text-center font-medium">${i + 1}</td>
                 <td class="px-3 py-3 font-semibold text-gray-900">${r.student_name}</td>
                 <td class="px-3 py-3">
@@ -676,7 +676,7 @@ const EmbassyModule = (function () {
                 <td class="px-3 py-3">
                     <div class="flex gap-2">
                         <button onclick="EmbassyModule.openEditModal('${r.id}')"
-                            class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-3 py-1.5 rounded-lg transition-colors">
+                            class="bg-lime-500 hover:bg-lime-600 text-white text-xs px-3 py-1.5 rounded-lg transition-colors">
                             <i class="fas fa-edit"></i>
                         </button>
                         <button onclick="EmbassyModule.confirmDelete('${r.id}','${(r.student_name||'').replace(/'/g,"\\'")}')"
@@ -1651,7 +1651,7 @@ const EmbassyModule = (function () {
             const actionIcon = {
                 'create':      'fa-plus-circle text-green-500',
                 'update':      'fa-edit text-black-500',
-                'file_upload': 'fa-upload text-yellow-500',
+                'file_upload': 'fa-upload text-lime-500',
                 'file_delete': 'fa-trash text-red-500',
             }[log.action] || 'fa-circle text-gray-400';
 

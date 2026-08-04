@@ -45,7 +45,7 @@
             </div>
             
             <!-- Test Results -->
-            <div class="p-4 bg-yellow-50 rounded-lg">
+            <div class="p-4 bg-lime-50 rounded-lg">
                 <h3 class="font-bold mb-2">نتایج تست:</h3>
                 <div id="test-results" class="space-y-2 text-sm"></div>
             </div>
@@ -63,7 +63,7 @@
                 div.className = `p-2 rounded ${
                     type === 'error' ? 'bg-red-100 text-red-800' : 
                     type === 'success' ? 'bg-green-100 text-green-800' : 
-                    type === 'warning' ? 'bg-yellow-100 text-yellow-800' : 
+                    type === 'warning' ? 'bg-lime-100 text-lime-800' : 
                     'bg-blue-100 text-black-800'
                 }`;
                 div.innerHTML = `<strong>[${type}]</strong> ${message}`;

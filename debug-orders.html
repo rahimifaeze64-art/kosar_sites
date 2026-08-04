@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="assets/libs/fontawesome/css/all.min.css">
     <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
 </head>
-<body class="bg-gradient-to-br from-blue-900 via-yellow-900 to-blue-800 min-h-screen p-6">
+<body class="bg-gradient-to-br from-blue-900 via-lime-900 to-blue-800 min-h-screen p-6">
     <!-- Debug Panel -->
     <div id="debug-panel" class="fixed top-4 left-4 bg-slate-800 bg-opacity-95 text-white p-4 rounded-lg z-50 max-w-md text-xs border border-slate-600"
           style="display: none; max-height: 80vh; overflow-y: auto;">
@@ -21,7 +21,7 @@
             <button onclick="clearDebugLog()" class="bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-xs">
                 Clear Log
             </button>
-            <button onclick="exportDebugLog()" class="bg-yellow-600 hover:bg-yellow-700 px-2 py-1 rounded text-xs ml-2">
+            <button onclick="exportDebugLog()" class="bg-lime-600 hover:bg-lime-700 px-2 py-1 rounded text-xs ml-2">
                 Export
             </button>
         </div>
@@ -63,27 +63,27 @@
         </div>
         
         <!-- Custom Orders Debug -->
-        <div class="bg-yellow-900 bg-opacity-30 rounded-lg p-6 mb-6 border-2 border-yellow-500">
+        <div class="bg-lime-900 bg-opacity-30 rounded-lg p-6 mb-6 border-2 border-lime-500">
             <h2 class="text-xl font-bold text-white mb-4">
-                <i class="fas fa-star text-yellow-400 ml-2"></i>
+                <i class="fas fa-star text-lime-400 ml-2"></i>
                 دیباگ سفارشات سفارشی
             </h2>
             
             <!-- Custom Orders Only -->
             <div class="bg-slate-800 rounded-lg p-4 mb-4">
-                <h3 class="text-lg font-bold text-yellow-300 mb-3">سفارشات سفارشی (isCustomOrder: true)</h3>
+                <h3 class="text-lg font-bold text-lime-300 mb-3">سفارشات سفارشی (isCustomOrder: true)</h3>
                 <div id="customOrdersOnly" class="text-white font-mono text-sm"></div>
             </div>
             
             <!-- All Agents -->
             <div class="bg-slate-800 rounded-lg p-4 mb-4">
-                <h3 class="text-lg font-bold text-yellow-300 mb-3">لیست عامل‌ها</h3>
+                <h3 class="text-lg font-bold text-lime-300 mb-3">لیست عامل‌ها</h3>
                 <div id="allAgents" class="text-white font-mono text-sm"></div>
             </div>
             
             <!-- Orders by Agent -->
             <div class="bg-slate-800 rounded-lg p-4">
-                <h3 class="text-lg font-bold text-yellow-300 mb-3">سفارشات گروه‌بندی شده بر اساس عامل</h3>
+                <h3 class="text-lg font-bold text-lime-300 mb-3">سفارشات گروه‌بندی شده بر اساس عامل</h3>
                 <div id="ordersByAgent" class="space-y-3"></div>
             </div>
         </div>
@@ -147,7 +147,7 @@
                 const typeColors = {
                     info: 'text-black-400',
                     success: 'text-green-400',
-                    warning: 'text-yellow-400',
+                    warning: 'text-lime-400',
                     error: 'text-red-400'
                 };
                 
@@ -301,7 +301,7 @@
         const customOrders = orders.filter(o => o.isCustomOrder === true);
         document.getElementById('customOrdersOnly').innerHTML = `
             <p class="mb-2"><strong>تعداد سفارشات سفارشی:</strong> ${customOrders.length}</p>
-            ${customOrders.length > 0 ? `<pre class="max-h-64 overflow-y-auto">${JSON.stringify(customOrders, null, 2)}</pre>` : '<p class="text-yellow-400">هیچ سفارش سفارشی یافت نشد!</p>'}
+            ${customOrders.length > 0 ? `<pre class="max-h-64 overflow-y-auto">${JSON.stringify(customOrders, null, 2)}</pre>` : '<p class="text-lime-400">هیچ سفارش سفارشی یافت نشد!</p>'}
         `;
         
         // Display all agents
@@ -326,7 +326,7 @@
         
         const ordersByAgentContainer = document.getElementById('ordersByAgent');
         if (agents.length === 0) {
-            ordersByAgentContainer.innerHTML = '<p class="text-yellow-400">هیچ دکتری در سیستم یافت نشد!</p>';
+            ordersByAgentContainer.innerHTML = '<p class="text-lime-400">هیچ دکتری در سیستم یافت نشد!</p>';
         } else {
             agents.forEach(agent => {
                 const agentOrders = ordersByAgent[agent.id] || [];
@@ -343,20 +343,20 @@
                         <div class="text-right">
                             <p class="text-2xl font-bold text-white">${agentOrders.length}</p>
                             <p class="text-xs text-gray-400">کل سفارشات</p>
-                            ${customCount > 0 ? `<p class="text-xs text-yellow-400 mt-1"><i class="fas fa-star"></i> ${customCount} سفارشی</p>` : ''}
+                            ${customCount > 0 ? `<p class="text-xs text-lime-400 mt-1"><i class="fas fa-star"></i> ${customCount} سفارشی</p>` : ''}
                         </div>
                     </div>
                     ${agentOrders.length > 0 ? `
                         <div class="space-y-2">
                             ${agentOrders.map((order, idx) => `
-                                <div class="bg-slate-800 p-2 rounded text-xs ${order.isCustomOrder ? 'border-l-4 border-yellow-500' : ''}">
+                                <div class="bg-slate-800 p-2 rounded text-xs ${order.isCustomOrder ? 'border-l-4 border-lime-500' : ''}">
                                     <div class="flex justify-between items-start">
                                         <div class="flex-1">
                                             <p class="text-white font-medium">${idx + 1}. ${order.title || order.type}</p>
                                             <p class="text-gray-400">دانشجو: ${order.studentName}</p>
                                             <p class="text-gray-400">وضعیت: ${order.status}</p>
                                         </div>
-                                        ${order.isCustomOrder ? '<span class="text-yellow-400 text-xs"><i class="fas fa-star"></i> سفارشی</span>' : ''}
+                                        ${order.isCustomOrder ? '<span class="text-lime-400 text-xs"><i class="fas fa-star"></i> سفارشی</span>' : ''}
                                     </div>
                                 </div>
                             `).join('')}

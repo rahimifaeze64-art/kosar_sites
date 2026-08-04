@@ -280,7 +280,7 @@ const OrdersRedesign = (function () {
     <tr class="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0" id="ord-row-${sid}">
       <td class="px-4 py-3 text-right">
         <span class="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded">#${shortId}</span>
-        ${order.isCustomOrder ? '<span class="mr-1 text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full">سفارشی</span>' : ''}
+        ${order.isCustomOrder ? '<span class="mr-1 text-[10px] bg-lime-100 text-lime-700 px-1.5 py-0.5 rounded-full">سفارشی</span>' : ''}
       </td>
       <td class="px-4 py-3">
         <div class="font-semibold text-gray-800 text-sm">${esc(order.studentName || '---')}</div>
@@ -588,12 +588,12 @@ const OrdersRedesign = (function () {
           <p class="text-sm text-gray-700">${esc(order.description)}</p>
         </div>` : ''}
         ${order.attachmentName ? `
-        <div class="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-          <i class="fas fa-paperclip text-yellow-500"></i>
+        <div class="flex items-center gap-2 bg-lime-50 border border-lime-200 rounded-lg p-3">
+          <i class="fas fa-paperclip text-lime-500"></i>
           <span class="text-sm text-gray-700 flex-1">${esc(order.attachmentName)}</span>
           ${order.hasAttachment ? `
           <button onclick="window.downloadOrderFile && downloadOrderFile('${sid}','${esc(order.attachmentName)}')"
-            class="text-xs bg-white border border-yellow-300 text-yellow-700 px-2 py-1 rounded hover:bg-yellow-50">
+            class="text-xs bg-white border border-lime-300 text-lime-700 px-2 py-1 rounded hover:bg-lime-50">
             <i class="fas fa-download ml-1"></i>دانلود
           </button>` : `<span class="text-xs text-gray-400">در دسترس نیست</span>`}
         </div>` : ''}
@@ -682,7 +682,7 @@ const OrdersRedesign = (function () {
           </div>
         </div>` : ''}
         <div class="bg-gray-50 rounded-xl p-4">
-          <p class="text-sm font-semibold text-gray-700 mb-3"><i class="fas fa-sliders-h ml-2 text-yellow-500"></i>درصد تقسیم</p>
+          <p class="text-sm font-semibold text-gray-700 mb-3"><i class="fas fa-sliders-h ml-2 text-lime-500"></i>درصد تقسیم</p>
           ${canEdit ? `
           <div class="grid grid-cols-2 gap-3">
             <div>
@@ -699,7 +699,7 @@ const OrdersRedesign = (function () {
             </div>
           </div>
           <button onclick="OrdersRedesign.saveRevenueSplit('${sid}')"
-            class="mt-3 w-full bg-yellow-600 hover:bg-yellow-700 text-white py-2 rounded-lg text-sm font-medium transition-colors">
+            class="mt-3 w-full bg-lime-600 hover:bg-lime-700 text-white py-2 rounded-lg text-sm font-medium transition-colors">
             <i class="fas fa-save ml-2"></i>ذخیره درصدها
           </button>` : `
           <div class="flex gap-4 text-sm">

@@ -20,11 +20,11 @@ EmployeeModule.editStudentProfile = function(studentId) {
     
     const modalHTML = `
         <div id="edit-student-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div class="bg-gradient-to-br from-blue-50 to-yellow-100 rounded-lg max-w-6xl w-full max-h-[95vh] overflow-y-auto">
-                <div class="p-6 border-b border-blue-200 sticky top-0 bg-gradient-to-r from-blue-100 to-yellow-100 z-10">
+            <div class="bg-gradient-to-br from-blue-50 to-lime-100 rounded-lg max-w-6xl w-full max-h-[95vh] overflow-y-auto">
+                <div class="p-6 border-b border-blue-200 sticky top-0 bg-gradient-to-r from-blue-100 to-lime-100 z-10">
                     <div class="flex items-center justify-between">
                         <h3 class="text-xl font-bold text-black-900">
-                            <i class="fas fa-user-edit text-yellow-600 ml-2"></i>
+                            <i class="fas fa-user-edit text-lime-600 ml-2"></i>
                             ویرایش پروفایل دانشجو - ${student.name}
                         </h3>
                         <button onclick="employeeModule.finishStudentWork('${studentId}')" 
@@ -40,7 +40,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                     <!-- اطلاعات شخصی -->
                     <div class="bg-white rounded-lg p-5 shadow-sm border border-blue-200">
                         <h4 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
-                            <i class="fas fa-user text-yellow-600 ml-2"></i>
+                            <i class="fas fa-user text-lime-600 ml-2"></i>
                             اطلاعات شخصی
                         </h4>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -82,7 +82,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                     <!-- اطلاعات تحصیلی -->
                     <div class="bg-white rounded-lg p-5 shadow-sm border border-blue-200">
                         <h4 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
-                            <i class="fas fa-graduation-cap text-yellow-600 ml-2"></i>
+                            <i class="fas fa-graduation-cap text-lime-600 ml-2"></i>
                             اطلاعات تحصیلی
                         </h4>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -133,7 +133,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                     <!-- اطلاعات تخصصی -->
                     <div class="bg-white rounded-lg p-5 shadow-sm border border-blue-200">
                         <h4 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
-                            <i class="fas fa-briefcase text-yellow-600 ml-2"></i>
+                            <i class="fas fa-briefcase text-lime-600 ml-2"></i>
                             اطلاعات تخصصی
                         </h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -158,7 +158,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                     <!-- مدارک و تصاویر -->
                     <div class="bg-white rounded-lg p-5 shadow-sm border border-blue-200">
                         <h4 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
-                            <i class="fas fa-file-image text-yellow-600 ml-2"></i>
+                            <i class="fas fa-file-image text-lime-600 ml-2"></i>
                             مدارک و تصاویر
                         </h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -167,7 +167,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">تصویر امر اداری</label>
                                     <button type="button" onclick="employeeModule.uploadImage('admin-order-image', '${studentId}')"
-                                            class="w-10 h-10 bg-yellow-100 hover:bg-yellow-200 rounded-lg flex items-center justify-center text-yellow-600">
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
                                         <i class="fas fa-camera text-lg"></i>
                                     </button>
                                 </div>
@@ -181,7 +181,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">کد رهگیری سائورگ</label>
                                     <button type="button" onclick="employeeModule.uploadImage('savorg-code', '${studentId}')"
-                                            class="w-10 h-10 bg-yellow-100 hover:bg-yellow-200 rounded-lg flex items-center justify-center text-yellow-600">
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
                                         <i class="fas fa-camera text-lg"></i>
                                     </button>
                                 </div>
@@ -195,7 +195,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">نتیجه سامانه سجاد</label>
                                     <button type="button" onclick="employeeModule.uploadImage('sajad-result', '${studentId}')"
-                                            class="w-10 h-10 bg-yellow-100 hover:bg-yellow-200 rounded-lg flex items-center justify-center text-yellow-600">
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
                                         <i class="fas fa-camera text-lg"></i>
                                     </button>
                                 </div>
@@ -209,7 +209,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">گواهی همانند جویی</label>
                                     <button type="button" onclick="employeeModule.uploadImage('similarity-cert', '${studentId}')"
-                                            class="w-10 h-10 bg-yellow-100 hover:bg-yellow-200 rounded-lg flex items-center justify-center text-yellow-600">
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
                                         <i class="fas fa-camera text-lg"></i>
                                     </button>
                                 </div>
@@ -223,7 +223,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">تصویر پاسپورت</label>
                                     <button type="button" onclick="employeeModule.uploadImage('passport-image', '${studentId}')"
-                                            class="w-10 h-10 bg-yellow-100 hover:bg-yellow-200 rounded-lg flex items-center justify-center text-yellow-600">
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
                                         <i class="fas fa-camera text-lg"></i>
                                     </button>
                                 </div>
@@ -237,7 +237,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">تنضید</label>
                                     <button type="button" onclick="employeeModule.uploadImage('typesetting-doc', '${studentId}')"
-                                            class="w-10 h-10 bg-yellow-100 hover:bg-yellow-200 rounded-lg flex items-center justify-center text-yellow-600">
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
                                         <i class="fas fa-camera text-lg"></i>
                                     </button>
                                 </div>
@@ -251,7 +251,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">تجلید</label>
                                     <button type="button" onclick="employeeModule.uploadImage('binding-doc', '${studentId}')"
-                                            class="w-10 h-10 bg-yellow-100 hover:bg-yellow-200 rounded-lg flex items-center justify-center text-yellow-600">
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
                                         <i class="fas fa-camera text-lg"></i>
                                     </button>
                                 </div>
@@ -265,7 +265,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">استلال</label>
                                     <button type="button" onclick="employeeModule.uploadImage('estelal-doc', '${studentId}')"
-                                            class="w-10 h-10 bg-yellow-100 hover:bg-yellow-200 rounded-lg flex items-center justify-center text-yellow-600">
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
                                         <i class="fas fa-camera text-lg"></i>
                                     </button>
                                 </div>
@@ -279,7 +279,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">مدرک لغت</label>
                                     <button type="button" onclick="employeeModule.uploadImage('language-cert', '${studentId}')"
-                                            class="w-10 h-10 bg-yellow-100 hover:bg-yellow-200 rounded-lg flex items-center justify-center text-yellow-600">
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
                                         <i class="fas fa-camera text-lg"></i>
                                     </button>
                                 </div>
@@ -293,7 +293,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">بارگزاری لغت</label>
                                     <button type="button" onclick="employeeModule.uploadImage('language-upload', '${studentId}')"
-                                            class="w-10 h-10 bg-yellow-100 hover:bg-yellow-200 rounded-lg flex items-center justify-center text-yellow-600">
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
                                         <i class="fas fa-camera text-lg"></i>
                                     </button>
                                 </div>
@@ -307,7 +307,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">آزفا</label>
                                     <button type="button" onclick="employeeModule.uploadImage('azfa-doc', '${studentId}')"
-                                            class="w-10 h-10 bg-yellow-100 hover:bg-yellow-200 rounded-lg flex items-center justify-center text-yellow-600">
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
                                         <i class="fas fa-camera text-lg"></i>
                                     </button>
                                 </div>
@@ -321,7 +321,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">تصدیق</label>
                                     <button type="button" onclick="employeeModule.uploadImage('tasdiq-doc', '${studentId}')"
-                                            class="w-10 h-10 bg-yellow-100 hover:bg-yellow-200 rounded-lg flex items-center justify-center text-yellow-600">
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
                                         <i class="fas fa-camera text-lg"></i>
                                     </button>
                                 </div>
@@ -335,7 +335,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">وثیقه</label>
                                     <button type="button" onclick="employeeModule.uploadImage('vasiqe-doc', '${studentId}')"
-                                            class="w-10 h-10 bg-yellow-100 hover:bg-yellow-200 rounded-lg flex items-center justify-center text-yellow-600">
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
                                         <i class="fas fa-camera text-lg"></i>
                                     </button>
                                 </div>
@@ -349,7 +349,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">ایران داک خطه</label>
                                     <button type="button" onclick="employeeModule.uploadImage('irandoc-khate', '${studentId}')"
-                                            class="w-10 h-10 bg-yellow-100 hover:bg-yellow-200 rounded-lg flex items-center justify-center text-yellow-600">
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
                                         <i class="fas fa-camera text-lg"></i>
                                     </button>
                                 </div>
@@ -363,12 +363,12 @@ EmployeeModule.editStudentProfile = function(studentId) {
                     <!-- وضعیت -->
                     <div class="bg-white rounded-lg p-5 shadow-sm border border-blue-200">
                         <h4 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
-                            <i class="fas fa-toggle-on text-yellow-600 ml-2"></i>
+                            <i class="fas fa-toggle-on text-lime-600 ml-2"></i>
                             وضعیت حساب
                         </h4>
                         <label class="flex items-center cursor-pointer">
                             <input type="checkbox" id="edit-active" ${student.active ? 'checked' : ''}
-                                   class="w-6 h-6 text-yellow-600 bg-white border-gray-300 rounded">
+                                   class="w-6 h-6 text-lime-600 bg-white border-gray-300 rounded">
                             <span class="mr-3 text-lg text-gray-800 font-medium">دانشجو فعال است</span>
                         </label>
                     </div>
@@ -380,7 +380,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                         انصراف
                     </button>
                     <button onclick="employeeModule.saveStudentProfile('${studentId}')" 
-                            class="px-6 py-3 text-lg bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-medium">
+                            class="px-6 py-3 text-lg bg-lime-600 hover:bg-lime-700 text-white rounded-lg font-medium">
                         <i class="fas fa-save ml-2"></i>
                         ذخیره تغییرات
                     </button>
@@ -485,7 +485,7 @@ EmployeeModule.uploadImage = function(fieldId, studentId) {
             if (previewDiv) {
                 previewDiv.innerHTML = `
                     <div class="relative inline-block">
-                        <img src="${imageData}" class="h-20 w-20 object-cover rounded-lg border-2 border-yellow-300">
+                        <img src="${imageData}" class="h-20 w-20 object-cover rounded-lg border-2 border-lime-300">
                         <button type="button" onclick="employeeModule.removeImage('${fieldId}')"
                                 class="absolute -top-2 -left-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600">
                             <i class="fas fa-times text-xs"></i>

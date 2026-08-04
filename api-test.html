@@ -55,7 +55,7 @@
                     <button onclick="testUsers()" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
                         تست کاربران
                     </button>
-                    <button onclick="testOrders()" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded">
+                    <button onclick="testOrders()" class="w-full bg-lime-600 hover:bg-lime-700 text-white py-2 px-4 rounded">
                         تست سفارشات
                     </button>
                     <button onclick="testStudents()" class="w-full bg-orange-600 hover:bg-orange-700 text-white py-2 px-4 rounded">
@@ -87,7 +87,7 @@
                 info: 'text-black-600',
                 success: 'text-green-600',
                 error: 'text-red-600',
-                warning: 'text-yellow-600'
+                warning: 'text-lime-600'
             };
             
             const logEntry = document.createElement('div');
@@ -105,7 +105,7 @@
             const colors = {
                 success: 'text-green-600',
                 error: 'text-red-600',
-                warning: 'text-yellow-600'
+                warning: 'text-lime-600'
             };
             
             statusElement.className = `mr-auto ${colors[status] || 'text-gray-600'}`;
@@ -276,10 +276,10 @@
                     document.getElementById('status').className = 'mb-6 p-4 rounded-lg bg-green-100';
                 } else {
                     document.getElementById('status').innerHTML = `
-                        <i class="fas fa-exclamation-triangle text-yellow-600 ml-2"></i>
-                        <span class="text-yellow-800">API در دسترس نیست - بررسی کنید که Django server فعال باشد</span>
+                        <i class="fas fa-exclamation-triangle text-lime-600 ml-2"></i>
+                        <span class="text-lime-800">API در دسترس نیست - بررسی کنید که Django server فعال باشد</span>
                     `;
-                    document.getElementById('status').className = 'mb-6 p-4 rounded-lg bg-yellow-100';
+                    document.getElementById('status').className = 'mb-6 p-4 rounded-lg bg-lime-100';
                 }
             } else {
                 document.getElementById('status').innerHTML = `

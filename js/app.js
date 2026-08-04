@@ -417,7 +417,7 @@ function appController() {
         } else {
           debugLogger("Using fallback dashboard", "warning");
           this.dashboardContent =
-            '<div class="text-yellow-500">داشبورد در حال بارگذاری...</div>';
+            '<div class="text-lime-500">داشبورد در حال بارگذاری...</div>';
         }
       } catch (error) {
         debugLogger("Error loading dashboard content", "error", error);
@@ -623,7 +623,7 @@ function appController() {
       return `
         <div class="space-y-6">
             <h2 class="text-2xl font-bold text-white flex items-center gap-3">
-                <span class="bg-yellow-500/20 p-2 rounded-xl"><i class="fas fa-calculator text-yellow-400"></i></span>
+                <span class="bg-lime-500/20 p-2 rounded-xl"><i class="fas fa-calculator text-lime-400"></i></span>
                 حسابداری
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -645,8 +645,8 @@ function appController() {
                 <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 cursor-pointer hover:bg-white/15 transition-all group"
                      onclick="window._accPage='employees'; window.__alpineApp=document.querySelector('[x-data]').__x.$data; document.querySelector('[x-show*=\\'currentPage === \\'accounting\\'\\']').innerHTML=window.__alpineApp.getAccountingContent();">
                     <div class="flex flex-col items-center text-center gap-4">
-                        <div class="w-16 h-16 bg-yellow-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <i class="fas fa-users-cog text-3xl text-yellow-400"></i>
+                        <div class="w-16 h-16 bg-lime-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <i class="fas fa-users-cog text-3xl text-lime-400"></i>
                         </div>
                         <div>
                             <h3 class="text-xl font-bold text-white mb-2">حسابداری کارمندان</h3>
@@ -684,7 +684,7 @@ function appController() {
         <div class="space-y-6">
             ${backBtn}
             <h2 class="text-2xl font-bold text-white flex items-center gap-3">
-                <span class="bg-yellow-500/20 p-2 rounded-xl"><i class="fas fa-users-cog text-yellow-400"></i></span>
+                <span class="bg-lime-500/20 p-2 rounded-xl"><i class="fas fa-users-cog text-lime-400"></i></span>
                 حسابداری کارمندان
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -724,7 +724,7 @@ function appController() {
         debugLogger("Loading employee accounting content...", "info");
 
         if (this.currentUser.role !== "manager") {
-          return '<div class="text-yellow-500">دسترسی محدود: فقط مدیر</div>';
+          return '<div class="text-lime-500">دسترسی محدود: فقط مدیر</div>';
         }
 
         if (typeof EmployeeAccountingUI === "undefined") {
@@ -778,7 +778,7 @@ function appController() {
         // TEST MODE: Temporarily disabled access check
         // if (this.currentUser.role !== CONFIG.ROLES.MANAGER) {
         //     debugLogger('Access denied: not manager', 'warning');
-        //     return '<div class="text-yellow-500">دسترسی محدود: فقط مدیر</div>';
+        //     return '<div class="text-lime-500">دسترسی محدود: فقط مدیر</div>';
         // }
         if (!UsersModule) {
           debugLogger("UsersModule not found", "error");
@@ -802,7 +802,7 @@ function appController() {
         // TEST MODE: Temporarily disabled access check
         // if (this.currentUser.role !== CONFIG.ROLES.MANAGER) {
         //     debugLogger('Access denied: not manager', 'warning');
-        //     return '<div class="text-yellow-500">دسترسی محدود: فقط مدیر</div>';
+        //     return '<div class="text-lime-500">دسترسی محدود: فقط مدیر</div>';
         // }
         if (!TasksModule) {
           debugLogger("TasksModule not found", "error");
@@ -826,7 +826,7 @@ function appController() {
         // TEST MODE: Temporarily disabled access check
         // if (this.currentUser.role !== CONFIG.ROLES.employee) {
         //     debugLogger('Access denied: not employee', 'warning');
-        //     return '<div class="text-yellow-500">دسترسی محدود: فقط کارمند</div>';
+        //     return '<div class="text-lime-500">دسترسی محدود: فقط کارمند</div>';
         // }
         if (!EmployeeModule) {
           debugLogger("EmployeeModule not found", "error");
@@ -850,7 +850,7 @@ function appController() {
         // TEST MODE: Temporarily disabled access check
         // if (this.currentUser.role !== CONFIG.ROLES.employee) {
         //     debugLogger('Access denied: not employee', 'warning');
-        //     return '<div class="text-yellow-500">دسترسی محدود: فقط کارمند</div>';
+        //     return '<div class="text-lime-500">دسترسی محدود: فقط کارمند</div>';
         // }
         if (!EmployeeModule) {
           debugLogger("EmployeeModule not found", "error");
@@ -895,7 +895,7 @@ function appController() {
         // TEST MODE: Temporarily disabled access check
         // if (this.currentUser.role !== CONFIG.ROLES.MANAGER && this.currentUser.role !== CONFIG.ROLES.employee) {
         //     debugLogger('Access denied: not manager or employee', 'warning');
-        //     return '<div class="text-yellow-500">دسترسی محدود: فقط مدیر و کارمند‌ها</div>';
+        //     return '<div class="text-lime-500">دسترسی محدود: فقط مدیر و کارمند‌ها</div>';
         // }
         if (!ManagementChatModule) {
           debugLogger("ManagementChatModule not found", "error");
@@ -963,7 +963,7 @@ function appController() {
         // TEST MODE: Temporarily disabled access check
         // if (this.currentUser.role !== CONFIG.ROLES.AGENT) {
         //     debugLogger('Access denied: not agent', 'warning');
-        //     return '<div class="text-yellow-500">دسترسی محدود: فقط عامل‌ها</div>';
+        //     return '<div class="text-lime-500">دسترسی محدود: فقط عامل‌ها</div>';
         // }
         if (!AgentChatModule) {
           debugLogger("AgentChatModule not found", "error");
@@ -1523,7 +1523,7 @@ window.downloadProfile = function () {
 // Agent task card - نمایش کارت وظیفه برای عامل
 window.getAgentTaskCard = function (task, userId) {
   const statusColors = {
-    pending: "border-yellow-500 bg-yellow-500/10",
+    pending: "border-lime-500 bg-lime-500/10",
     in_progress: "border-blue-500 bg-blue-500/10",
     completed: "border-green-500 bg-green-500/10",
   };
@@ -1533,7 +1533,7 @@ window.getAgentTaskCard = function (task, userId) {
     completed: "تکمیل شده",
   };
   const statusBadgeColors = {
-    pending: "bg-yellow-500",
+    pending: "bg-lime-500",
     in_progress: "bg-blue-500",
     completed: "bg-green-500",
   };
@@ -1605,12 +1605,12 @@ window.getAgentTaskCard = function (task, userId) {
                 ? `
             <div class="mt-3 bg-slate-700 rounded p-2 flex items-center space-x-2 space-x-reverse">
                 <button onclick="agentPlayVoice('${task.id}')"
-                        class="w-8 h-8 rounded-full bg-yellow-500 hover:bg-yellow-600 flex items-center justify-center text-gray-900 flex-shrink-0">
+                        class="w-8 h-8 rounded-full bg-lime-500 hover:bg-lime-600 flex items-center justify-center text-gray-900 flex-shrink-0">
                     <i class="fas fa-play text-xs" id="agent-play-icon-${task.id}"></i>
                 </button>
                 <div class="flex-1">
                     <div class="w-full bg-slate-600 rounded-full h-1">
-                        <div class="bg-yellow-400 h-1 rounded-full" style="width:0%" id="agent-progress-${task.id}"></div>
+                        <div class="bg-lime-400 h-1 rounded-full" style="width:0%" id="agent-progress-${task.id}"></div>
                     </div>
                     <span class="text-xs text-gray-400">${task.voiceDuration || "0:00"}</span>
                 </div>
@@ -1695,7 +1695,7 @@ window.getMyAgentTasksContent = function () {
     }
 
     if (!currentUser || !currentUser.id) {
-      return '<div class="text-yellow-500">لطفاً وارد سیستم شوید</div>';
+      return '<div class="text-lime-500">لطفاً وارد سیستم شوید</div>';
     }
 
     // وظایف از employee_tasks (شامل وظایف تخصیص سفارش)
@@ -1742,7 +1742,7 @@ window.getMyAgentTasksContent = function () {
                 <!-- Header -->
                 <div class="flex justify-between items-center">
                     <h2 class="text-2xl font-bold text-white">
-                        <i class="fas fa-clipboard-list text-yellow-400 ml-2"></i>
+                        <i class="fas fa-clipboard-list text-lime-400 ml-2"></i>
                         وظایف من (${currentUser.name})
                     </h2>
                 </div>
@@ -1755,16 +1755,16 @@ window.getMyAgentTasksContent = function () {
                                 <p class="text-gray-400 text-sm">کل وظایف</p>
                                 <p class="text-2xl font-bold text-white">${myTasks.length}</p>
                             </div>
-                            <i class="fas fa-tasks text-3xl text-yellow-400"></i>
+                            <i class="fas fa-tasks text-3xl text-lime-400"></i>
                         </div>
                     </div>
                     <div class="bg-slate-800 rounded-lg p-4">
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-gray-400 text-sm">در انتظار</p>
-                                <p class="text-2xl font-bold text-yellow-400">${pendingTasksCount}</p>
+                                <p class="text-2xl font-bold text-lime-400">${pendingTasksCount}</p>
                             </div>
-                            <i class="fas fa-clock text-3xl text-yellow-400"></i>
+                            <i class="fas fa-clock text-3xl text-lime-400"></i>
                         </div>
                     </div>
                     <div class="bg-slate-800 rounded-lg p-4">
@@ -1822,7 +1822,7 @@ window.getMyAgentTasksContent = function () {
                     ? `
                 <div class="bg-slate-800 rounded-lg p-4">
                     <h3 class="text-lg font-bold text-white mb-4">
-                        <i class="fas fa-list-check text-yellow-400 ml-2"></i>
+                        <i class="fas fa-list-check text-lime-400 ml-2"></i>
                         سایر وظایف
                         <span class="text-sm font-normal text-gray-400 mr-2">(${myTasks.filter((t) => !t.isOrderTask).length} وظیفه)</span>
                     </h3>
@@ -1845,7 +1845,7 @@ window.getMyAgentTasksContent = function () {
                     ? `
                 <div>
                     <h3 class="text-lg font-bold text-white mb-4">
-                        <i class="fas fa-layer-group text-yellow-400 ml-2"></i>
+                        <i class="fas fa-layer-group text-lime-400 ml-2"></i>
                         سفارشات مستقیم
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1873,7 +1873,7 @@ window.getAgentOrderCard = function (order, index) {
   return `
         <div class="bg-slate-800 rounded-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <!-- Card Header -->
-            <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 p-3">
+            <div class="bg-gradient-to-r from-lime-500 to-lime-600 p-3">
                 <div class="flex items-center justify-between mb-2">
                     <span class="bg-white bg-opacity-20 text-white px-2 py-1 rounded text-xs font-bold">
                         #${index + 1}
@@ -1883,7 +1883,7 @@ window.getAgentOrderCard = function (order, index) {
                         ? "bg-green-500 text-white"
                         : order.status === "in_progress"
                           ? "bg-blue-500 text-white"
-                          : "bg-yellow-500 text-gray-900"
+                          : "bg-lime-500 text-gray-900"
                     }">
                         ${
                           order.status === "completed"
@@ -1902,7 +1902,7 @@ window.getAgentOrderCard = function (order, index) {
                 <!-- Student Info -->
                 <div class="mb-3">
                     <p class="text-gray-400 text-sm flex items-center">
-                        <i class="fas fa-user-graduate ml-2 text-yellow-400"></i>
+                        <i class="fas fa-user-graduate ml-2 text-lime-400"></i>
                         ${order.studentName}
                     </p>
                     ${
@@ -1954,7 +1954,7 @@ window.getAgentOrderCard = function (order, index) {
 
                 <!-- Action Button -->
                 <button onclick="viewOrderDetails('${order.id}')"
-                        class="w-full bg-yellow-600 hover:bg-yellow-700 text-gray-900 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        class="w-full bg-lime-600 hover:bg-lime-700 text-gray-900 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                     <i class="fas fa-eye ml-1"></i>
                     مشاهده جزئیات
                 </button>
@@ -2101,9 +2101,9 @@ window.updateOrderTimer = function (orderId, deadlineDateTime) {
     hoursElement.classList.add("text-red-400");
   } else if (days === 0) {
     daysElement.classList.remove("text-black-400");
-    daysElement.classList.add("text-yellow-400");
+    daysElement.classList.add("text-lime-400");
     hoursElement.classList.remove("text-green-400");
-    hoursElement.classList.add("text-yellow-400");
+    hoursElement.classList.add("text-lime-400");
   }
 };
 
@@ -2125,11 +2125,11 @@ window.getMyIncomeContent = function () {
 
     // TEST MODE: Temporarily disabled access check
     // if (!currentUser || !currentUser.id || currentUser.role !== 'agent') {
-    //     return '<div class="text-yellow-500">دسترسی محدود: فقط عامل‌ها</div>';
+    //     return '<div class="text-lime-500">دسترسی محدود: فقط عامل‌ها</div>';
     // }
 
     if (!currentUser || !currentUser.id) {
-      return '<div class="text-yellow-500">لطفاً وارد سیستم شوید</div>';
+      return '<div class="text-lime-500">لطفاً وارد سیستم شوید</div>';
     }
 
     // Get all orders assigned to this agent
@@ -2206,7 +2206,7 @@ window.getMyIncomeContent = function () {
                 <!-- Income by Work Type -->
                 <div class="bg-slate-800 rounded-lg shadow-md p-4">
                     <h3 class="text-lg font-bold text-white mb-4">
-                        <i class="fas fa-chart-bar text-yellow-400 ml-2"></i>
+                        <i class="fas fa-chart-bar text-lime-400 ml-2"></i>
                         درآمد بر اساس نوع کار
                     </h3>
 
@@ -2246,7 +2246,7 @@ window.getMyIncomeContent = function () {
                 <!-- Detailed Orders List -->
                 <div class="bg-white rounded-lg shadow-md p-4 border border-gray-200">
                     <h3 class="text-lg font-bold text-gray-800 mb-4">
-                        <i class="fas fa-list-ul text-yellow-500 ml-2"></i>
+                        <i class="fas fa-list-ul text-lime-500 ml-2"></i>
                         جزئیات سفارشات و درآمد
                     </h3>
 
@@ -2261,14 +2261,14 @@ window.getMyIncomeContent = function () {
                         : `
                         <div class="overflow-x-auto">
                             <table class="w-full">
-                                <thead class="bg-yellow-50 border-b-2 border-yellow-100">
+                                <thead class="bg-lime-50 border-b-2 border-lime-100">
                                     <tr>
-                                        <th class="px-4 py-3 text-right text-sm font-semibold text-yellow-700">دانشجو</th>
-                                        <th class="px-4 py-3 text-right text-sm font-semibold text-yellow-700">نوع سفارش</th>
-                                        <th class="px-4 py-3 text-right text-sm font-semibold text-yellow-700">لیست کارها</th>
-                                        <th class="px-4 py-3 text-right text-sm font-semibold text-yellow-700">قیمت هر کار</th>
-                                        <th class="px-4 py-3 text-right text-sm font-semibold text-yellow-700">درآمد من</th>
-                                        <th class="px-4 py-3 text-right text-sm font-semibold text-yellow-700">وضعیت</th>
+                                        <th class="px-4 py-3 text-right text-sm font-semibold text-lime-700">دانشجو</th>
+                                        <th class="px-4 py-3 text-right text-sm font-semibold text-lime-700">نوع سفارش</th>
+                                        <th class="px-4 py-3 text-right text-sm font-semibold text-lime-700">لیست کارها</th>
+                                        <th class="px-4 py-3 text-right text-sm font-semibold text-lime-700">قیمت هر کار</th>
+                                        <th class="px-4 py-3 text-right text-sm font-semibold text-lime-700">درآمد من</th>
+                                        <th class="px-4 py-3 text-right text-sm font-semibold text-lime-700">وضعیت</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
@@ -2281,7 +2281,7 @@ window.getMyIncomeContent = function () {
                                           order.currency || "تومان";
 
                                         return `
-                                            <tr class="hover:bg-yellow-50 transition-colors">
+                                            <tr class="hover:bg-lime-50 transition-colors">
                                                 <td class="px-4 py-3 text-sm font-medium text-gray-800">${order.studentName}</td>
                                                 <td class="px-4 py-3 text-sm text-gray-600">${order.type}</td>
                                                 <td class="px-4 py-3 text-sm text-gray-600">
@@ -2351,11 +2351,11 @@ window.getPersonalArchiveContent = function () {
 
     // TEST MODE: Temporarily disabled access check
     // if (!currentUser || currentUser.role !== 'agent') {
-    //     return '<div class="text-yellow-500">دسترسی محدود: فقط عامل‌ها</div>';
+    //     return '<div class="text-lime-500">دسترسی محدود: فقط عامل‌ها</div>';
     // }
 
     if (!currentUser) {
-      return '<div class="text-yellow-500">لطفاً وارد سیستم شوید</div>';
+      return '<div class="text-lime-500">لطفاً وارد سیستم شوید</div>';
     }
 
     if (typeof PersonalArchiveModule === "undefined") {

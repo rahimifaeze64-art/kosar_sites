@@ -72,19 +72,19 @@ aside .border-t {
 body[data-theme="olive"] .btn,
 body[data-theme="olive"] button[class*="bg-blue"],
 body[data-theme="olive"] button[class*="bg-green"],
-body[data-theme="olive"] button[class*="bg-yellow"],
-body[data-theme="olive"] button[class*="bg-yellow"],
+body[data-theme="olive"] button[class*="bg-lime"],
+body[data-theme="olive"] button[class*="bg-lime"],
 body[data-theme="olive"] button[class*="bg-emerald"],
 body[data-theme="olive"] button[class*="bg-red"],
-body[data-theme="olive"] button[class*="bg-yellow"],
+body[data-theme="olive"] button[class*="bg-lime"],
 .btn,
 button[class*="bg-blue"],
 button[class*="bg-green"],
-button[class*="bg-yellow"],
-button[class*="bg-yellow"],
+button[class*="bg-lime"],
+button[class*="bg-lime"],
 button[class*="bg-emerald"],
 button[class*="bg-red"]:not([class*="bg-red-50"]):not([class*="bg-red-100"]),
-button[class*="bg-yellow"]:not([class*="bg-yellow-50"]):not([class*="bg-yellow-100"]) {
+button[class*="bg-lime"]:not([class*="bg-lime-50"]):not([class*="bg-lime-100"]) {
     background-color: var(--olive-primary) !important;
     color: white !important;
     border: none;
@@ -96,19 +96,19 @@ button[class*="bg-yellow"]:not([class*="bg-yellow-50"]):not([class*="bg-yellow-1
 body[data-theme="olive"] .btn:hover,
 body[data-theme="olive"] button[class*="bg-blue"]:hover,
 body[data-theme="olive"] button[class*="bg-green"]:hover,
-body[data-theme="olive"] button[class*="bg-yellow"]:hover,
-body[data-theme="olive"] button[class*="bg-yellow"]:hover,
+body[data-theme="olive"] button[class*="bg-lime"]:hover,
+body[data-theme="olive"] button[class*="bg-lime"]:hover,
 body[data-theme="olive"] button[class*="bg-emerald"]:hover,
 body[data-theme="olive"] button[class*="bg-red"]:not([class*="bg-red-50"]):not([class*="bg-red-100"]):hover,
-body[data-theme="olive"] button[class*="bg-yellow"]:not([class*="bg-yellow-50"]):not([class*="bg-yellow-100"]):hover,
+body[data-theme="olive"] button[class*="bg-lime"]:not([class*="bg-lime-50"]):not([class*="bg-lime-100"]):hover,
 .btn:hover,
 button[class*="bg-blue"]:hover,
 button[class*="bg-green"]:hover,
-button[class*="bg-yellow"]:hover,
-button[class*="bg-yellow"]:hover,
+button[class*="bg-lime"]:hover,
+button[class*="bg-lime"]:hover,
 button[class*="bg-emerald"]:hover,
 button[class*="bg-red"]:not([class*="bg-red-50"]):not([class*="bg-red-100"]):hover,
-button[class*="bg-yellow"]:not([class*="bg-yellow-50"]):not([class*="bg-yellow-100"]):hover {
+button[class*="bg-lime"]:not([class*="bg-lime-50"]):not([class*="bg-lime-100"]):hover {
     background-color: var(--olive-primary-hover) !important;
 }
 
