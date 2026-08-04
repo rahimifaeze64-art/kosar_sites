@@ -349,11 +349,11 @@ const EnhancedDashboardModule = {
 
             return `
                 <div class="space-y-6">
-                    <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 text-gray-900 rounded-xl p-6">
+                    <div class="bg-gradient-to-r from-lime-600 to-lime-700 text-white rounded-xl p-6">
                         <div class="flex justify-between items-center">
                             <div>
                                 <h2 class="text-2xl font-bold mb-1">پنل کارمند</h2>
-                                <p class="text-yellow-100 text-sm">مدیریت و هماهنگی سفارشات</p>
+                                <p class="text-lime-100 text-sm">مدیریت و هماهنگی سفارشات</p>
                             </div>
                             <button onclick="location.reload()"
                                     class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all">
@@ -513,15 +513,15 @@ const EnhancedDashboardModule = {
                             </div>
                         </div>
                         
-                        <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg p-6 text-gray-900">
+                        <div class="bg-gradient-to-r from-lime-600 to-lime-700 rounded-lg p-6 text-white">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-yellow-100">درآمد تخمینی</p>
+                                    <p class="text-lime-100">درآمد تخمینی</p>
                                     <p class="text-2xl font-bold">${this.formatCurrency(
                                         myOrders.reduce((sum, o) => sum + (o.doctorShare || o.doctor_share || 0), 0)
                                     )}</p>
                                 </div>
-                                <i class="fas fa-dollar-sign text-4xl text-yellow-200"></i>
+                                <i class="fas fa-dollar-sign text-4xl text-lime-200"></i>
                             </div>
                         </div>
                     </div>
@@ -725,15 +725,15 @@ const EnhancedDashboardModule = {
                             </div>
                         </div>
                         
-                        <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg p-6 text-gray-900">
+                        <div class="bg-gradient-to-r from-lime-600 to-lime-700 rounded-lg p-6 text-white">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-yellow-100">درآمد تخمینی</p>
+                                    <p class="text-lime-100">درآمد تخمینی</p>
                                     <p class="text-2xl font-bold">${this.formatCurrency(
                                         translationOrders.reduce((sum, o) => sum + (o.doctorShare || o.doctor_share || 0), 0)
                                     )}</p>
                                 </div>
-                                <i class="fas fa-dollar-sign text-4xl text-yellow-200"></i>
+                                <i class="fas fa-dollar-sign text-4xl text-lime-200"></i>
                             </div>
                         </div>
                     </div>

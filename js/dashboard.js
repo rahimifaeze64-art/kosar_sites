@@ -284,10 +284,10 @@ const DashboardModule = {
         return `
             <div class="space-y-6">
                 <!-- Welcome Message -->
-                <div class="bg-gradient-to-r from-blue-500 to-yellow-600 text-white rounded-lg p-6">
+                <div class="bg-gradient-to-r from-lime-600 to-lime-700 text-white rounded-lg p-6">
                     <h2 class="text-2xl font-bold mb-2">خوش آمدید ${currentUser.name}</h2>
-                    <p class="text-black-100">دانشگاه: ${currentUser.university}</p>
-                    <p class="text-black-100">رشته: ${currentUser.field}</p>
+                    <p class="text-lime-100">دانشگاه: ${currentUser.university}</p>
+                    <p class="text-lime-100">رشته: ${currentUser.field}</p>
                 </div>
                 
                 <!-- Stats Cards -->

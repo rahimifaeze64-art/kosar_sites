@@ -186,6 +186,35 @@ async function _pullDataFromSupabase() {
     }
 
     try {
+        // ── داده‌های چک‌لیست ─────────────────────────────────
+        const client = getSupabaseClient();
+        const currentUser = (() => {
+            try { return JSON.parse(localStorage.getItem('currentUser') || 'null'); } catch { return null; }
+        })();
+        if (client && currentUser && currentUser.id) {
+            const [{ data: cats }, { data: items }, { data: tasks }] = await Promise.all([
+                client.from('checklist_categories').select('*').eq('user_id', currentUser.id),
+                client.from('checklist_items').select('*').eq('user_id', currentUser.id),
+                client.from('checklist_tasks').select('*').eq('user_id', currentUser.id),
+            ]);
+            if (cats && cats.length > 0) {
+                localStorage.setItem('wc_categories_' + currentUser.id, JSON.stringify(cats));
+                console.log(`✅ ${cats.length} دسته‌بندی چک‌لیست از Supabase بارگذاری شد`);
+            }
+            if (items && items.length > 0) {
+                localStorage.setItem('wc_items_' + currentUser.id, JSON.stringify(items));
+                console.log(`✅ ${items.length} آیتم چک‌لیست از Supabase بارگذاری شد`);
+            }
+            if (tasks && tasks.length > 0) {
+                localStorage.setItem('wc_tasks_' + currentUser.id, JSON.stringify(tasks));
+                console.log(`✅ ${tasks.length} تسک چک‌لیست از Supabase بارگذاری شد`);
+            }
+        }
+    } catch (e) {
+        console.warn('⚠️ pull checklist خطا:', e.message);
+    }
+
+    try {
         // ── نرخ‌های ساعتی کارمندان ───────────────────────────
         const client = getSupabaseClient();
         if (client) {

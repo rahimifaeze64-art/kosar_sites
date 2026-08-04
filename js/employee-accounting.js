@@ -541,9 +541,9 @@ const EmployeeAccountingUI = (function() {
                     </div>
                 </div>
 
-                <div class="bg-gradient-to-r from-yellow-500/20 to-yellow-500/20 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+                <div class="bg-gradient-to-r from-green-500/20 to-green-500/20 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                     <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                        <i class="fas fa-calendar-alt text-yellow-400"></i>
+                        <i class="fas fa-calendar-alt text-green-400"></i>
                         خلاصه ماه جاری
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -730,14 +730,14 @@ const EmployeeAccountingUI = (function() {
 
         return `
             <div class="space-y-6">
-                <div class="bg-gradient-to-r from-yellow-500/20 to-yellow-500/20 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+                <div class="bg-gradient-to-r from-green-500/20 to-green-500/20 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                     <div class="flex items-center justify-between flex-wrap gap-4">
                         <div>
                             <h2 class="text-2xl font-bold text-white flex items-center gap-3">
-                                <i class="fas fa-users-cog text-yellow-400"></i>
+                                <i class="fas fa-users-cog text-green-400"></i>
                                 حسابداری کارمندان
                             </h2>
-                            <p class="text-yellow-200 mt-2">تأیید ساعات، مدیریت هزینه‌ها و تسویه حساب کارمندان</p>
+                            <p class="text-green-200 mt-2">تأیید ساعات، مدیریت هزینه‌ها و تسویه حساب کارمندان</p>
                         </div>
                     </div>
                 </div>

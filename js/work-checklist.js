@@ -26,7 +26,13 @@ const WorkChecklistModule = {
                 .select('*')
                 .eq('user_id', this.currentUser.id)
                 .order('created_at', { ascending: true });
-            if (!error && data) return data;
+            if (error) {
+                console.error('❌ خطا در دریافت دسته‌بندی‌ها از Supabase:', error.message);
+            } else if (data) {
+                // cache در localStorage به‌روز کن
+                this._localSet('wc_categories_' + this.currentUser.id, data);
+                return data;
+            }
         }
         return this._localGet('wc_categories_' + this.currentUser.id) || [];
     },
@@ -38,8 +44,18 @@ const WorkChecklistModule = {
                 .upsert(cat)
                 .select()
                 .single();
-            if (!error && data) return data;
+            if (error) {
+                console.error('❌ خطا در ذخیره دسته‌بندی در Supabase:', error.message);
+            } else if (data) {
+                // بروزرسانی localStorage به عنوان cache
+                const all = this._localGet('wc_categories_' + this.currentUser.id) || [];
+                const idx = all.findIndex(c => c.id === data.id);
+                if (idx >= 0) all[idx] = data; else all.push(data);
+                this._localSet('wc_categories_' + this.currentUser.id, all);
+                return data;
+            }
         }
+        // fallback به localStorage (آفلاین یا خطا)
         const all = this._localGet('wc_categories_' + this.currentUser.id) || [];
         const idx = all.findIndex(c => c.id === cat.id);
         if (idx >= 0) all[idx] = cat; else all.push(cat);
@@ -49,14 +65,19 @@ const WorkChecklistModule = {
 
     async deleteCategory(id) {
         if (this.supabase) {
-            await this.supabase.from('checklist_items').delete().eq('category_id', id);
-            await this.supabase.from('checklist_tasks').delete().eq('category_id', id);
-            await this.supabase.from('checklist_categories').delete().eq('id', id);
+            const { error: e1 } = await this.supabase.from('checklist_items').delete().eq('category_id', id);
+            if (e1) console.error('❌ خطا در حذف آیتم‌های دسته از Supabase:', e1.message);
+            const { error: e2 } = await this.supabase.from('checklist_tasks').delete().eq('category_id', id);
+            if (e2) console.error('❌ خطا در حذف تسک‌های دسته از Supabase:', e2.message);
+            const { error: e3 } = await this.supabase.from('checklist_categories').delete().eq('id', id);
+            if (e3) console.error('❌ خطا در حذف دسته‌بندی از Supabase:', e3.message);
         }
         const cats = (this._localGet('wc_categories_' + this.currentUser.id) || []).filter(c => c.id !== id);
         this._localSet('wc_categories_' + this.currentUser.id, cats);
         const items = (this._localGet('wc_items_' + this.currentUser.id) || []).filter(i => i.category_id !== id);
         this._localSet('wc_items_' + this.currentUser.id, items);
+        const tasks = (this._localGet('wc_tasks_' + this.currentUser.id) || []).filter(t => t.category_id !== id);
+        this._localSet('wc_tasks_' + this.currentUser.id, tasks);
     },
 
     async getItems(categoryId) {
@@ -66,7 +87,11 @@ const WorkChecklistModule = {
                 .select('*')
                 .eq('category_id', categoryId)
                 .order('created_at', { ascending: true });
-            if (!error && data) return data;
+            if (error) {
+                console.error('❌ خطا در دریافت آیتم‌ها از Supabase:', error.message);
+            } else if (data) {
+                return data;
+            }
         }
         return (this._localGet('wc_items_' + this.currentUser.id) || []).filter(i => i.category_id === categoryId);
     },
@@ -78,8 +103,18 @@ const WorkChecklistModule = {
                 .upsert(item)
                 .select()
                 .single();
-            if (!error && data) return data;
+            if (error) {
+                console.error('❌ خطا در ذخیره آیتم در Supabase:', error.message);
+            } else if (data) {
+                // بروزرسانی localStorage به عنوان cache
+                const all = this._localGet('wc_items_' + this.currentUser.id) || [];
+                const idx = all.findIndex(i => i.id === data.id);
+                if (idx >= 0) all[idx] = data; else all.push(data);
+                this._localSet('wc_items_' + this.currentUser.id, all);
+                return data;
+            }
         }
+        // fallback به localStorage (آفلاین یا خطا)
         const all = this._localGet('wc_items_' + this.currentUser.id) || [];
         const idx = all.findIndex(i => i.id === item.id);
         if (idx >= 0) all[idx] = item; else all.push(item);
@@ -89,8 +124,10 @@ const WorkChecklistModule = {
 
     async deleteItem(id) {
         if (this.supabase) {
-            await this.supabase.from('checklist_tasks').delete().eq('item_id', id);
-            await this.supabase.from('checklist_items').delete().eq('id', id);
+            const { error: e1 } = await this.supabase.from('checklist_tasks').delete().eq('item_id', id);
+            if (e1) console.error('❌ خطا در حذف تسک‌های آیتم از Supabase:', e1.message);
+            const { error: e2 } = await this.supabase.from('checklist_items').delete().eq('id', id);
+            if (e2) console.error('❌ خطا در حذف آیتم از Supabase:', e2.message);
         }
         const items = (this._localGet('wc_items_' + this.currentUser.id) || []).filter(i => i.id !== id);
         this._localSet('wc_items_' + this.currentUser.id, items);
@@ -105,7 +142,11 @@ const WorkChecklistModule = {
                 .select('*')
                 .eq('item_id', itemId)
                 .order('sort_order', { ascending: true });
-            if (!error && data) return data;
+            if (error) {
+                console.error('❌ خطا در دریافت تسک‌ها از Supabase:', error.message);
+            } else if (data) {
+                return data;
+            }
         }
         return (this._localGet('wc_tasks_' + this.currentUser.id) || []).filter(t => t.item_id === itemId);
     },
@@ -117,8 +158,18 @@ const WorkChecklistModule = {
                 .upsert(task)
                 .select()
                 .single();
-            if (!error && data) return data;
+            if (error) {
+                console.error('❌ خطا در ذخیره تسک در Supabase:', error.message);
+            } else if (data) {
+                // بروزرسانی localStorage به عنوان cache
+                const all = this._localGet('wc_tasks_' + this.currentUser.id) || [];
+                const idx = all.findIndex(t => t.id === data.id);
+                if (idx >= 0) all[idx] = data; else all.push(data);
+                this._localSet('wc_tasks_' + this.currentUser.id, all);
+                return data;
+            }
         }
+        // fallback به localStorage (آفلاین یا خطا)
         const all = this._localGet('wc_tasks_' + this.currentUser.id) || [];
         const idx = all.findIndex(t => t.id === task.id);
         if (idx >= 0) all[idx] = task; else all.push(task);
@@ -126,9 +177,11 @@ const WorkChecklistModule = {
         return task;
     },
 
-    async deleteTask(id) {
+    // ذخیره حذف تسک در Supabase + localStorage
+    async _deleteTaskById(id) {
         if (this.supabase) {
-            await this.supabase.from('checklist_tasks').delete().eq('id', id);
+            const { error } = await this.supabase.from('checklist_tasks').delete().eq('id', id);
+            if (error) console.error('❌ خطا در حذف تسک از Supabase:', error.message);
         }
         const tasks = (this._localGet('wc_tasks_' + this.currentUser.id) || []).filter(t => t.id !== id);
         this._localSet('wc_tasks_' + this.currentUser.id, tasks);
@@ -352,9 +405,6 @@ const WorkChecklistModule = {
     },
 
     async toggleTask(taskId, isDone) {
-        const all = this.supabase
-            ? await this.getTasks('__') // won't be used below
-            : (this._localGet('wc_tasks_' + this.currentUser.id) || []);
         let task;
         if (this.supabase) {
             const { data } = await this.supabase
@@ -367,7 +417,7 @@ const WorkChecklistModule = {
         task.is_done = isDone;
         task.done_at = isDone ? new Date().toISOString() : null;
         await this.saveTask(task);
-        // update UI without full re-render
+        // بروزرسانی UI بدون re-render کامل
         const span = document.getElementById('wc-task-text-' + taskId);
         if (span) {
             span.className = 'flex-1 text-sm ' + (isDone ? 'line-through text-black-300/50' : 'text-white');
@@ -382,7 +432,7 @@ const WorkChecklistModule = {
 
     async deleteTask(taskId, itemId) {
         if (!confirm('این وظیفه حذف شود؟')) return;
-        await this.deleteTask(taskId);
+        await this._deleteTaskById(taskId);
         const row = document.getElementById('wc-task-row-' + taskId);
         if (row) row.remove();
         await this.renderTasks(itemId);
