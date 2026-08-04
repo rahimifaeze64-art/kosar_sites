@@ -1772,7 +1772,6 @@ const EmbassyModule = (function () {
         _loadPayments,
         openTranslationOffice,
         goToTranslationOffice,
-        toggleTranslationDropdown,
     };
 
 })(); // end EmbassyModule

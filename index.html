@@ -233,6 +233,15 @@
                 </button>
             </template>
 
+            <!-- دارالترجمه - مدیر و کارمند -->
+            <template x-if="currentUser.role === 'manager' || currentUser.role === 'employee'">
+                <a href="daroltarjome.html" target="_blank"
+                   class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl text-black-100 hover:bg-white hover:bg-opacity-10 transition-all duration-200">
+                    <i class="fas fa-language text-lg"></i>
+                    <span class="font-medium">دارالترجمه</span>
+                </a>
+            </template>
+
             <!-- مدیریت کاربران - فقط مدیر -->
             <template x-if="currentUser.role === 'manager'">
                 <button @click="currentPage = 'users'"
@@ -715,11 +724,11 @@
     <script src="js/work-hours.js?v=20250726"></script>
     <script src="js/personal-chat.js?v=20250725"></script>
     <script src="js/employee-accounting.js?v=20250731"></script>
-    <script src="js/embassy.js?v=20250802_red_fix"></script>
+    <script src="js/embassy.js?v=20250804_fix"></script>
     <script src="js/embassy-accounting.js?v=20250726"></script>
     <script src="js/jalali-picker.js?v=20250725"></script>
     <script src="js/work-checklist.js?v=20250725"></script>
-    <script src="js/agent-orders.js?v=20250804"></script>
+    <script src="js/agent-orders.js?v=20250804_fix"></script>
     <script src="js/app.js?v=20250725"></script>
     <script src="js/supabase-init.js?v=20250725"></script>
     
