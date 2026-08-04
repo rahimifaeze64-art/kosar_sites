@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دارالترجمه — پنل مدیریت مدارک</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link rel="stylesheet" href="assets/libs/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="assets/fonts/vazirmatn/vazirmatn.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <style>
+        body { font-family:'Vazirmatn',sans-serif; background:#f1f5f9; }
+        .tbl th { background:#f8fafc; color:#475569; font-size:11px; font-weight:700; padding:9px 12px; text-align:right; border-bottom:2px solid #e2e8f0; white-space:nowrap; }
+        .tbl td { padding:9px 12px; border-bottom:1px solid #f1f5f9; vertical-align:middle; font-size:13px; color:#334155; }
+        .tbl tr:last-child td { border-bottom:none; }
+        .tbl tr:hover td { background:#f8fafc; }
+        .badge-ready    { background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; border-radius:8px; padding:2px 8px; font-size:11px; }
+        .badge-notready { background:#fef2f2; color:#dc2626; border:1px solid #fecaca; border-radius:8px; padding:2px 8px; font-size:11px; }
+        .badge-pending  { background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; border-radius:8px; padding:2px 8px; font-size:11px; }
+        .badge-recv     { background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; border-radius:8px; padding:2px 8px; font-size:11px; }
+        .file-btn { display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#2563eb;background:#eff6ff;border:1px solid #bfdbfe;border-radius:5px;padding:2px 7px;cursor:pointer; }
+        .file-btn:hover { background:#dbeafe; }
+        .recv-cb { width:17px;height:17px;accent-color:#16a34a;cursor:pointer; }
+        .st-sel { font-size:12px;border:1px solid #e2e8f0;border-radius:7px;padding:3px 7px;background:#fff; }
+        .cost-inp { width:85px;font-size:12px;border:1px solid #e2e8f0;border-radius:7px;padding:3px 7px; }
+        .notes-ta { width:120px;font-size:12px;border:1px solid #e2e8f0;border-radius:7px;padding:3px 7px;resize:none; }
+        .save-btn { font-size:11px;background:#2563eb;color:#fff;border:none;border-radius:7px;padding:4px 10px;cursor:pointer; }
+        .save-btn:hover { background:#1d4ed8; }
+        .save-btn:disabled { opacity:.4;cursor:default; }
+        .group-header { background:linear-gradient(135deg,#1e293b,#334155); }
+        .invoice-upload { display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#7c3aed;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:7px;padding:3px 9px;cursor:pointer; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+<header class="bg-white border-b border-gray-200 px-5 py-3 flex items-center justify-between sticky top-0 z-40 shadow-sm">
+    <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center">
+            <i class="fas fa-language text-blue-600 text-sm"></i>
+        </div>
+        <div>
+            <h1 class="text-gray-800 font-bold text-base">پنل دارالترجمه</h1>
+            <p class="text-gray-400 text-xs" id="hdr-sub">در حال بارگذاری...</p>
+        </div>
+    </div>
+    <button onclick="location.reload()" class="text-gray-400 hover:text-gray-700 text-sm px-3 py-2 rounded-lg hover:bg-gray-100">
+        <i class="fas fa-sync-alt ml-1"></i>بازخوانی
+    </button>
+</header>
+
+<main class="p-4 space-y-4" id="main">
+    <div id="loading" class="text-center py-24">
+        <i class="fas fa-spinner fa-spin text-3xl text-blue-400 mb-3 block"></i>
+        <p class="text-gray-400">در حال بارگذاری...</p>
+    </div>
+    <div id="error-state" class="hidden text-center py-24">
+        <i class="fas fa-exclamation-triangle text-4xl text-red-400 mb-3 block"></i>
+        <p class="text-red-500 font-bold" id="err-msg">خطا</p>
+    </div>
+</main>
+
+<script src="js/supabase-config.js"></script>
+<script>
+(async () => {
+'use strict';
+
+const toast = (msg, type='info') => {
+    const c = {success:'#16a34a',error:'#dc2626',info:'#2563eb'};
+    const t = document.createElement('div');
+    t.textContent = msg;
+    Object.assign(t.style, {
+        position:'fixed', bottom:'18px', left:'50%', transform:'translateX(-50%)',
+        background: c[type]||c.info, color:'#fff', padding:'9px 20px',
+        borderRadius:'10px', fontSize:'13px', zIndex:'9999',
+        boxShadow:'0 4px 12px rgba(0,0,0,.2)', fontFamily:'Vazirmatn,sans-serif'
+    });
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),350); }, 3000);
+};
+
+function showErr(msg) {
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('error-state').classList.remove('hidden');
+    document.getElementById('err-msg').textContent = msg;
+}
+
+const client = getSupabaseClient();
+if (!client) { showErr('Supabase SDK بارگذاری نشده'); return; }
+
+const { data: records, error } = await client
+    .from('embassy_records').select('*').order('send_date', { ascending: true, nullsFirst: false });
+if (error) { showErr('خطا: ' + error.message); return; }
+
+// بارگذاری فاکتورها
+const { data: invoices } = await client.from('daroltarjome_invoices').select('*');
+const invoicesByDate = {};
+(invoices || []).forEach(inv => {
+    if (!invoicesByDate[inv.send_date]) invoicesByDate[inv.send_date] = [];
+    invoicesByDate[inv.send_date].push(inv);
+});
+
+document.getElementById('loading').classList.add('hidden');
+document.getElementById('hdr-sub').textContent = `${records?.length || 0} دانشجو`;
+
+if (!records?.length) {
+    document.getElementById('main').insertAdjacentHTML('beforeend',
+        '<div class="text-center py-24 text-gray-400"><i class="fas fa-inbox text-5xl mb-4 block"></i><p>هیچ رکوردی ثبت نشده</p></div>');
+    return;
+}
+
+// ── گروه‌بندی بر اساس send_date ─────────────────────────────
+const groups = {};
+records.forEach(r => {
+    const key = r.send_date || '__nodate__';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(r);
+});
+
+// رندر هر گروه
+Object.entries(groups).forEach(([dateKey, recs]) => {
+    renderGroup(dateKey, recs, invoicesByDate[dateKey] || []);
+});
+
+// چت عمومی
+renderChat();
+
+// ── رندر یک گروه تاریخی ─────────────────────────────────────
+function renderGroup(dateKey, recs, groupInvoices) {
+    const dateLabel = dateKey === '__nodate__' ? 'بدون تاریخ ارسال' : `ارسالی تاریخ ${dateKey}`;
+    const readyCount   = recs.filter(r => r.translation_status === 'ready').length;
+    const total        = recs.length;
+
+    const rows = recs.map((r,i) => buildRow(r, i)).join('');
+
+    // فاکتورهای این گروه
+    const invItems = groupInvoices.map(inv =>
+        `<button class="file-btn" onclick="dlFile('${inv.file_path}')">
+            <i class="fas fa-receipt text-xs"></i>فاکتور${inv.note ? ' — '+inv.note : ''}
+        </button>`
+    ).join('');
+
+    const safeDate = dateKey.replace(/\//g, '_').replace(/\s/g,'_');
+
+    document.getElementById('main').insertAdjacentHTML('beforeend', `
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+
+        <!-- هدر گروه -->
+        <div class="group-header px-5 py-3 flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-calendar-alt text-slate-300 text-sm"></i>
+                <span class="text-white font-bold text-sm">${dateLabel}</span>
+                <span class="text-slate-300 text-xs">${total} رکورد</span>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-white/10 text-slate-200">
+                    ${readyCount}/${total} آماده
+                </span>
+            </div>
+            <!-- فاکتور گروه -->
+            <div class="flex items-center gap-2 flex-wrap">
+                <div id="inv-list-${safeDate}" class="flex gap-1 flex-wrap">${invItems}</div>
+                ${dateKey !== '__nodate__' ? `
+                <label class="invoice-upload">
+                    <i class="fas fa-upload text-xs"></i>بارگذاری فاکتور
+                    <input type="file" class="hidden" accept=".pdf,.jpg,.png"
+                        onchange="uploadGroupInvoice(this,'${dateKey}','${safeDate}')">
+                </label>` : ''}
+            </div>
+        </div>
+
+        <!-- جدول -->
+        <div class="overflow-x-auto">
+            <table class="tbl w-full" style="min-width:950px">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>نام دانشجو</th>
+                        <th>نوع کار</th>
+                        <th>وکالت</th>
+                        <th>مدارک</th>
+                        <th>پاسپورت</th>
+                        <th class="text-center">دریافت شد ✓</th>
+                        <th>وضعیت</th>
+                        <th>هزینه (ت)</th>
+                        <th>توضیحات</th>
+                        <th>ذخیره</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+    </div>`);
+}
+
+// ── ساخت ردیف ────────────────────────────────────────────────
+function buildRow(r, i) {
+    const st   = r.translation_status || 'pending';
+    const recv = st !== 'pending';
+
+    const docs = (r.file_paths||[]).map((p,pi) =>
+        `<button class="file-btn" onclick="dlFile('${p}')"><i class="fas fa-file text-xs"></i>${pi+1}</button>`
+    ).join('') || '<span class="text-gray-300 text-xs">—</span>';
+
+    const passports = (r.passport_paths||[]).map((p,pi) =>
+        `<button class="file-btn" onclick="dlFile('${p}')"><i class="fas fa-passport text-xs"></i>${pi+1}</button>`
+    ).join('') || '<span class="text-gray-300 text-xs">—</span>';
+
+    const stBadge = { ready:'badge-ready', not_ready:'badge-notready', received:'badge-recv', pending:'badge-pending' };
+    const stLabel = { ready:'آماده شده', not_ready:'آماده نشده', received:'دریافت شده', pending:'در انتظار' };
+
+    return `<tr id="row-${r.id}">
+        <td class="text-gray-400 text-xs text-center w-8">${i+1}</td>
+        <td class="font-medium text-gray-800 whitespace-nowrap">${r.student_name||'---'}</td>
+        <td class="text-xs text-gray-500 max-w-xs"><div class="truncate" title="${r.work_type||''}">${r.work_type||'---'}</div></td>
+        <td class="text-center whitespace-nowrap">
+            <span class="text-xs px-2 py-0.5 rounded-full ${r.vekalat==='دارد'?'bg-green-100 text-green-700':'bg-red-50 text-red-500'}">
+                ${r.vekalat||'ندارد'}
+            </span>
+        </td>
+        <td class="whitespace-nowrap">${docs}</td>
+        <td class="whitespace-nowrap">${passports}</td>
+        <td class="text-center">
+            <input type="checkbox" class="recv-cb" id="recv-${r.id}" ${recv?'checked':''}
+                onchange="onRecvChange('${r.id}',this.checked)">
+        </td>
+        <td id="st-cell-${r.id}">
+            ${recv ? buildStSelect(r.id, st) : '<span class="text-gray-300 text-xs">—</span>'}
+        </td>
+        <td>
+            <input type="number" class="cost-inp" id="cost-${r.id}"
+                value="${r.translation_cost||''}" placeholder="مبلغ" ${!recv?'disabled':''}>
+        </td>
+        <td>
+            <textarea class="notes-ta" id="notes-${r.id}" rows="2"
+                placeholder="توضیحات..." ${!recv?'disabled':''}>${r.translation_notes||''}</textarea>
+        </td>
+        <td>
+            <button class="save-btn" id="save-${r.id}" onclick="saveRow('${r.id}')" ${!recv?'disabled':''}>
+                <i class="fas fa-save ml-1"></i>ذخیره
+            </button>
+        </td>
+    </tr>`;
+}
+
+function buildStSelect(id, current) {
+    // پیش‌فرض: اگر received بود (تازه تیک خورده) → not_ready
+    const val = (current === 'received' || current === 'pending') ? 'not_ready' : current;
+    return `<select class="st-sel" id="st-${id}">
+        <option value="not_ready" ${val==='not_ready'?'selected':''}>آماده نشده</option>
+        <option value="ready"     ${val==='ready'?'selected':''}>آماده شده</option>
+    </select>`;
+}
+
+// ── تیک دریافت ───────────────────────────────────────────────
+window.onRecvChange = async function(id, checked) {
+    const newStatus = checked ? 'not_ready' : 'pending'; // پیش‌فرض: آماده نشده
+    const { error } = await client.from('embassy_records').update({
+        translation_status: newStatus,
+        translation_updated_at: new Date().toISOString()
+    }).eq('id', id);
+    if (error) { toast('خطا در ذخیره', 'error'); document.getElementById('recv-'+id).checked = !checked; return; }
+
+    const stCell   = document.getElementById('st-cell-'+id);
+    const costInp  = document.getElementById('cost-'+id);
+    const notesInp = document.getElementById('notes-'+id);
+    const saveBtn  = document.getElementById('save-'+id);
+
+    if (checked) {
+        stCell.innerHTML = buildStSelect(id, 'not_ready');
+        costInp.disabled = false; notesInp.disabled = false; saveBtn.disabled = false;
+        toast('دریافت شد ثبت گردید', 'success');
+    } else {
+        stCell.innerHTML = '<span class="text-gray-300 text-xs">—</span>';
+        costInp.disabled = true; notesInp.disabled = true; saveBtn.disabled = true;
+    }
+};
+
+// ── ذخیره ردیف ───────────────────────────────────────────────
+window.saveRow = async function(id) {
+    const status = document.getElementById('st-'+id)?.value || 'not_ready';
+    const cost   = parseFloat(document.getElementById('cost-'+id)?.value) || 0;
+    const notes  = document.getElementById('notes-'+id)?.value.trim() || '';
+
+    if (status === 'not_ready' && !notes) {
+        toast('برای وضعیت "آماده نشده" توضیح الزامی است', 'error'); return;
+    }
+
+    const { error } = await client.from('embassy_records').update({
+        translation_status: status,
+        translation_cost: cost,
+        translation_notes: notes,
+        translation_updated_at: new Date().toISOString()
+    }).eq('id', id);
+
+    if (error) { toast('خطا: '+error.message, 'error'); return; }
+    toast('✅ ذخیره شد', 'success');
+};
+
+// ── آپلود فاکتور گروه ────────────────────────────────────────
+window.uploadGroupInvoice = async function(input, dateKey, safeDate) {
+    const file = input.files[0];
+    if (!file) return;
+    const path = `group-invoices/${dateKey.replace(/\//g,'-')}/${Date.now()}_${file.name}`;
+    const { error: upErr } = await client.storage.from('embassy-files').upload(path, file, { upsert:false });
+    if (upErr) { toast('خطا در آپلود: '+upErr.message, 'error'); return; }
+
+    const { error: dbErr } = await client.from('daroltarjome_invoices').insert([{
+        send_date: dateKey, file_path: path
+    }]);
+    if (dbErr) { toast('خطا در ثبت فاکتور', 'error'); return; }
+
+    document.getElementById('inv-list-'+safeDate).insertAdjacentHTML('beforeend',
+        `<button class="file-btn" onclick="dlFile('${path}')"><i class="fas fa-receipt text-xs"></i>فاکتور جدید</button>`);
+    toast('✅ فاکتور آپلود شد', 'success');
+    input.value = '';
+};
+
+// ── دانلود فایل ──────────────────────────────────────────────
+window.dlFile = async function(path) {
+    const { data } = await client.storage.from('embassy-files').createSignedUrl(path, 3600);
+    if (data?.signedUrl) window.open(data.signedUrl, '_blank');
+    else toast('خطا در دسترسی به فایل', 'error');
+};
+
+// ── چت عمومی ─────────────────────────────────────────────────
+function renderChat() {
+    document.getElementById('main').insertAdjacentHTML('beforeend', `
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
+            <i class="fas fa-comments text-blue-500"></i>
+            <h2 class="font-bold text-gray-700 text-base">گفتگو با دفتر</h2>
+        </div>
+        <div id="chat-msgs" class="h-64 overflow-y-auto p-4 space-y-3 bg-gray-50">
+            <p class="text-center text-gray-300 text-sm py-8">در حال بارگذاری...</p>
+        </div>
+        <form id="chat-form" class="flex gap-2 p-4 border-t border-gray-100">
+            <input type="text" id="chat-input" placeholder="پیام خود را بنویسید..." autocomplete="off"
+                class="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-400">
+            <button type="submit"
+                class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium">
+                <i class="fas fa-paper-plane ml-1 text-xs"></i>ارسال
+            </button>
+        </form>
+    </div>`);
+
+    loadChat();
+    document.getElementById('chat-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        const inp = document.getElementById('chat-input');
+        const msg = inp.value.trim(); if (!msg) return; inp.value = '';
+        await client.from('daroltarjome_chat').insert([{
+            record_id:'general', sender_role:'translator', sender_name:'دارالترجمه', message:msg
+        }]);
+    });
+
+    client.channel('dt-chat-general')
+        .on('postgres_changes',
+            { event:'INSERT', schema:'public', table:'daroltarjome_chat', filter:'record_id=eq.general' },
+            p => appendMsg(p.new))
+        .subscribe();
+}
+
+async function loadChat() {
+    const { data } = await client.from('daroltarjome_chat')
+        .select('*').eq('record_id','general').order('created_at',{ascending:true});
+    const c = document.getElementById('chat-msgs');
+    if (!data?.length) { c.innerHTML = '<p class="text-center text-gray-300 text-sm py-8">هنوز پیامی ارسال نشده</p>'; return; }
+    c.innerHTML = '';
+    data.forEach(m => appendMsg(m));
+}
+
+function appendMsg(m) {
+    const c = document.getElementById('chat-msgs'); if (!c) return;
+    const ph = c.querySelector('p.text-center'); if (ph) ph.remove();
+    const isTr = m.sender_role === 'translator';
+    const time = new Date(m.created_at).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});
+    c.insertAdjacentHTML('beforeend',`
+    <div class="flex ${isTr?'justify-end':'justify-start'}">
+        <div class="max-w-[70%] ${isTr?'bg-green-100':'bg-blue-100'} rounded-2xl px-4 py-2.5">
+            <p class="text-xs font-semibold mb-1 ${isTr?'text-green-700':'text-blue-700'}">
+                ${isTr?'🏢 دارالترجمه':'👤 '+(m.sender_name||'دفتر')}
+            </p>
+            <p class="text-gray-800 text-sm">${m.message}</p>
+            <p class="text-gray-400 text-[10px] mt-0.5">${time}</p>
+        </div>
+    </div>`);
+    c.scrollTop = c.scrollHeight;
+}
+
+})();
+</script>
+</body>
+</html>

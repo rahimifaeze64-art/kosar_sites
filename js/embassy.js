@@ -124,10 +124,16 @@ const EmbassyModule = (function () {
                     </h2>
                     <p class="text-black-400 text-sm mt-1">مدیریت مدارک سفارتخانه‌ای دانشجویان</p>
                 </div>
+                <div class="flex gap-3 items-center">
                 <button onclick="EmbassyModule.openAddModal()"
                     class="bg-lime-500 hover:bg-lime-400 text-gray-900 font-bold px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all shadow-lg">
                     <i class="fas fa-plus"></i> ثبت مدرک جدید
                 </button>
+                <button onclick="EmbassyModule.goToTranslationOffice()"
+                    class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all shadow-lg">
+                    <i class="fas fa-language"></i> دارالترجمه
+                </button>
+                </div>
             </div>
 
             <!-- جستجو و فیلتر -->
@@ -526,6 +532,22 @@ const EmbassyModule = (function () {
                             </label>
                             <!-- فایل‌های جدید انتخاب‌شده -->
                             <div id="f-files-preview" class="flex gap-2 flex-wrap"></div>
+                        </div>
+
+                        <!-- آپلود پاسپورت (توسط کارمند) -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+                            <h4 class="text-gray-700 text-sm font-bold flex items-center gap-2">
+                                <i class="fas fa-passport text-blue-600"></i>
+                                پاسپورت دانشجو
+                                <span class="text-xs text-blue-500 font-normal">(توسط کارمند بارگذاری می‌شود)</span>
+                            </h4>
+                            <div id="f-passport-existing" class="flex gap-2 flex-wrap min-h-[4px]"></div>
+                            <label class="cursor-pointer inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs px-4 py-2 rounded-lg transition-all">
+                                <i class="fas fa-upload"></i> بارگذاری پاسپورت
+                                <input type="file" id="f-passport" accept=".pdf,.jpg,.jpeg,.png" class="hidden" multiple
+                                    onchange="EmbassyModule.previewPassport(this)">
+                            </label>
+                            <div id="f-passport-preview" class="flex gap-2 flex-wrap"></div>
                         </div>
 
                         <!-- دکمه‌ها -->
@@ -1707,6 +1729,17 @@ const EmbassyModule = (function () {
         setTimeout(() => load(), 100);
     }
 
+    // ── رفتن مستقیم به صفحه دارالترجمه ─────────────────────
+    function goToTranslationOffice() {
+        const baseUrl = location.origin + location.pathname.replace(/\/[^/]*$/, '/') + 'daroltarjome.html';
+        window.open(baseUrl, '_blank');
+    }
+
+    // ── باز کردن صفحه دارالترجمه ────────────────────────────
+    function openTranslationOffice(recordId) {
+        EmbassyModule._openTranslationOfficeAsync(recordId);
+    }
+
     // ── Public API ───────────────────────────────────────────
     return {
         getContent,
@@ -1737,6 +1770,72 @@ const EmbassyModule = (function () {
         showActivityLog,
         _addPaymentRow,
         _loadPayments,
+        openTranslationOffice,
+        goToTranslationOffice,
+        toggleTranslationDropdown,
     };
 
 })(); // end EmbassyModule
+
+// ── تابع باز کردن صفحه دارالترجمه ──────────────────────────
+// مدیر/کارمند: مستقیم با record_id وارد میشن
+// بقیه: از طریق share_token (لینک)
+EmbassyModule._openTranslationOfficeAsync = async function(recordId) {
+    const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+    if (!client) { alert('اتصال به سرور برقرار نیست'); return; }
+
+    const user = (() => { try { return JSON.parse(localStorage.getItem('currentUser') || '{}'); } catch { return {}; } })();
+    const isStaff = user.role === 'manager' || user.role === 'employee';
+    const baseUrl = location.origin + location.pathname.replace(/\/[^/]*$/, '/') + 'daroltarjome.html';
+
+    // ── مدیر / کارمند: مستقیم با record_id ──────────────────
+    if (isStaff) {
+        window.open(baseUrl + '?record_id=' + recordId, '_blank');
+        return;
+    }
+
+    // ── سایر کاربران: از طریق share_token ───────────────────
+    const { data: rec } = await client
+        .from('embassy_records')
+        .select('share_token, student_name')
+        .eq('id', recordId).single();
+
+    let token = rec?.share_token;
+    if (!token) {
+        token = 'dt_' + recordId + '_' + Math.random().toString(36).substr(2, 12);
+        await client.from('embassy_records').update({ share_token: token }).eq('id', recordId);
+    }
+
+    const url = baseUrl + '?token=' + token;
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black/70 z-[9999] flex items-center justify-center p-4';
+    modal.id = 'dt-link-modal';
+    modal.innerHTML = `
+        <div class="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-600 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-white font-bold text-lg flex items-center gap-2">
+                    <i class="fas fa-language text-blue-400"></i> دارالترجمه
+                </h3>
+                <button onclick="document.getElementById('dt-link-modal').remove()"
+                        class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <p class="text-gray-300 text-sm">
+                <span class="font-medium text-white">${rec?.student_name || ''}</span> —
+                لینک زیر را برای دارالترجمه ارسال کنید:
+            </p>
+            <div class="bg-slate-700/50 rounded-xl p-3 flex items-center gap-2">
+                <input type="text" value="${url}" readonly id="dt-link-input"
+                       class="flex-1 bg-transparent text-blue-300 text-xs outline-none font-mono truncate">
+                <button onclick="navigator.clipboard.writeText(document.getElementById('dt-link-input').value);this.textContent='✅ کپی شد'"
+                        class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-lg transition-all flex-shrink-0">
+                    کپی لینک
+                </button>
+            </div>
+            <a href="${url}" target="_blank"
+               class="w-full bg-green-600 hover:bg-green-500 text-white py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all">
+                <i class="fas fa-external-link-alt"></i> باز کردن صفحه دارالترجمه
+            </a>
+        </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+};
