@@ -9,29 +9,30 @@
     <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
     <style>
         * { font-family: 'Vazirmatn', sans-serif; box-sizing: border-box; }
-        body { margin: 0; background: #0f172a; color: white; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+        body { margin: 0; background: #f1f5f9; color: #1e293b; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
 
         /* ── Header ── */
         #app-header {
-            background: #1e293b;
-            border-bottom: 2px solid #334155;
+            background: #ffffff;
+            border-bottom: 2px solid #e2e8f0;
             padding: 10px 18px;
             display: flex;
             align-items: center;
             gap: 12px;
             z-index: 100;
             flex-shrink: 0;
+            box-shadow: 0 1px 4px rgba(0,0,0,.08);
         }
-        #app-header h1 { font-size: 16px; font-weight: 800; color: #e2e8f0; margin: 0; }
+        #app-header h1 { font-size: 16px; font-weight: 800; color: #1e293b; margin: 0; }
         #app-header p  { font-size: 11px; color: #64748b; margin: 0; }
 
         /* ── Path Tabs ── */
         #path-tabs {
-            background: #1e293b;
+            background: #ffffff;
             display: flex;
             gap: 4px;
             padding: 8px 18px 0;
-            border-bottom: 2px solid #334155;
+            border-bottom: 2px solid #e2e8f0;
             flex-shrink: 0;
         }
         .path-tab {
@@ -43,11 +44,11 @@
             border: 2px solid transparent;
             border-bottom: none;
             transition: all 0.2s;
-            color: #94a3b8;
-            background: #0f172a;
+            color: #64748b;
+            background: #f1f5f9;
         }
-        .path-tab:hover { color: #e2e8f0; background: #1e3a5f; }
-        .path-tab.active { background: #0f172a; border-color: #3b82f6; color: #60a5fa; border-bottom: 2px solid #0f172a; }
+        .path-tab:hover { color: #1e293b; background: #e2e8f0; }
+        .path-tab.active { background: #ffffff; border-color: #3b82f6; color: #2563eb; border-bottom: 2px solid #ffffff; }
 
         /* ── Toolbar ── */
         #toolbar {
@@ -55,29 +56,30 @@
             top: 50%;
             right: 16px;
             transform: translateY(-50%);
-            background: #1e293b;
-            border: 1px solid #334155;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
             border-radius: 14px;
             padding: 10px 8px;
             display: flex;
             flex-direction: column;
             gap: 6px;
             z-index: 200;
+            box-shadow: 0 4px 16px rgba(0,0,0,.1);
         }
         .tb-btn {
             width: 42px; height: 42px;
             border-radius: 10px;
-            border: 1.5px solid #334155;
-            background: #0f172a;
-            color: #94a3b8;
+            border: 1.5px solid #e2e8f0;
+            background: #f8fafc;
+            color: #64748b;
             font-size: 15px;
             cursor: pointer;
             display: flex; align-items: center; justify-content: center;
             transition: all 0.2s;
         }
-        .tb-btn:hover { background: #1e3a5f; color: #60a5fa; border-color: #3b82f6; }
-        .tb-btn.active { background: #1d4ed8; color: white; border-color: #3b82f6; }
-        .tb-sep { height: 1px; background: #334155; margin: 2px 0; }
+        .tb-btn:hover { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+        .tb-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
+        .tb-sep { height: 1px; background: #e2e8f0; margin: 2px 0; }
 
         /* ── Canvas area ── */
         #canvas-wrap {
@@ -97,14 +99,15 @@
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: #1e293b;
-            border: 1px solid #334155;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
             border-radius: 20px;
             padding: 5px 14px;
             font-size: 12px;
-            color: #94a3b8;
+            color: #64748b;
             z-index: 200;
             pointer-events: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
         }
 
         /* ── Student selector ── */
@@ -112,8 +115,8 @@
             position: fixed;
             bottom: 20px;
             right: 80px;
-            background: #1e293b;
-            border: 1px solid #334155;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
             border-radius: 10px;
             padding: 6px 12px;
             display: flex;
@@ -121,11 +124,12 @@
             gap: 8px;
             z-index: 200;
             font-size: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
         }
         #student-bar select {
-            background: #0f172a;
-            color: #e2e8f0;
-            border: 1px solid #475569;
+            background: #f8fafc;
+            color: #1e293b;
+            border: 1px solid #cbd5e1;
             border-radius: 6px;
             padding: 4px 8px;
             font-size: 12px;
@@ -136,29 +140,29 @@
         /* ── Context menu ── */
         #ctx-menu {
             position: fixed;
-            background: #1e293b;
-            border: 1px solid #475569;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
             border-radius: 10px;
             padding: 6px;
             z-index: 9999;
             display: none;
             min-width: 170px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 8px 30px rgba(0,0,0,.15);
         }
         .ctx-item {
             padding: 8px 12px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 13px;
-            color: #e2e8f0;
+            color: #1e293b;
             display: flex;
             align-items: center;
             gap: 8px;
         }
-        .ctx-item:hover { background: #334155; }
-        .ctx-item.danger { color: #f87171; }
-        .ctx-item.danger:hover { background: #450a0a; }
-        .ctx-sep { height: 1px; background: #334155; margin: 4px 0; }
+        .ctx-item:hover { background: #f1f5f9; }
+        .ctx-item.danger { color: #dc2626; }
+        .ctx-item.danger:hover { background: #fef2f2; }
+        .ctx-sep { height: 1px; background: #e2e8f0; margin: 4px 0; }
     </style>
 </head>
 <body>
@@ -481,7 +485,7 @@ function drawGrid() {
     const step = 30 * zoom;
     const offX = ((panX % step) + step) % step;
     const offY = ((panY % step) + step) % step;
-    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.strokeStyle = 'rgba(0,0,0,0.06)';
     ctx.lineWidth = 1;
     for (let x = offX; x < canvas.width; x += step) {
         ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
@@ -563,7 +567,7 @@ function drawNode(node) {
 
     // label
     ctx.save();
-    ctx.fillStyle = '#f1f5f9';
+    ctx.fillStyle = node.type === NT_RECT ? '#f8fafc' : '#f1f5f9';
     ctx.font = `bold ${Math.max(10, 13) / zoom}px Vazirmatn, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';

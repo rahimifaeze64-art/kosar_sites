@@ -655,55 +655,54 @@ const EmployeeModule = {
     
     // Get all students
     getAllStudents() {
-        // اول سعی کن از students_data در localStorage بگیری (شامل مراحل تحصیلی)
+        // ۱. ابتدا از DataModule (edu_system_users) بگیر — منبع اصلی
+        if (typeof DataModule !== 'undefined' && DataModule.getUsers) {
+            try {
+                const users = DataModule.getUsers().filter(u => u.role === 'student');
+                if (users && users.length > 0) {
+                    console.log(`📊 Loaded ${users.length} students from DataModule`);
+
+                    // students_data را برای ادغام اطلاعات تکمیلی بخوان
+                    let storedData = {};
+                    try {
+                        const raw = localStorage.getItem('students_data');
+                        if (raw) storedData = JSON.parse(raw);
+                    } catch (e) {}
+
+                    return users.map(student => {
+                        // اطلاعات ویرایش‌شده از students_data را ادغام کن
+                        const stored = storedData[student.id];
+                        const merged = stored ? { ...student, ...stored } : student;
+
+                        if (!merged.educationalSteps) merged.educationalSteps = this.getDefaultEducationalSteps();
+                        if (!merged.defenseSteps)     merged.defenseSteps     = this.getDefaultDefenseSteps2();
+                        return merged;
+                    });
+                }
+            } catch (error) {
+                console.warn('⚠️ Error loading from DataModule:', error);
+            }
+        }
+
+        // ۲. fallback — فقط از students_data بگیر
         try {
             const studentsData = localStorage.getItem('students_data');
             if (studentsData) {
                 const parsedData = JSON.parse(studentsData);
-                const studentsArray = Object.values(parsedData);
-                if (studentsArray && studentsArray.length > 0) {
-                    console.log(`✅ Loaded ${studentsArray.length} students from students_data`);
-                    return studentsArray;
+                const studentsArray = Object.values(parsedData).filter(s => s.role === 'student');
+                if (studentsArray.length > 0) {
+                    console.log(`✅ Loaded ${studentsArray.length} students from students_data (fallback)`);
+                    return studentsArray.map(student => {
+                        if (!student.educationalSteps) student.educationalSteps = this.getDefaultEducationalSteps();
+                        if (!student.defenseSteps)     student.defenseSteps     = this.getDefaultDefenseSteps2();
+                        return student;
+                    });
                 }
             }
         } catch (error) {
             console.warn('⚠️ Error loading from students_data:', error);
         }
-        
-        // اگر students_data خالی بود، از DataModule بگیر
-        if (typeof DataModule !== 'undefined' && DataModule.getUsers) {
-            const users = DataModule.getUsers().filter(u => u.role === 'student');
-            if (users && users.length > 0) {
-                console.log(`📊 Loaded ${users.length} students from DataModule`);
-                // اگر دانشجویان مراحل تحصیلی ندارن، اضافه کن
-                return users.map(student => {
-                    if (!student.educationalSteps) {
-                        student.educationalSteps = this.getDefaultEducationalSteps();
-                    }
-                    if (!student.defenseSteps) {
-                        student.defenseSteps = this.getDefaultDefenseSteps2();
-                    }
-                    return student;
-                });
-            }
-        }
-        
-        // اگر DataModule موجود نبود، از دانشجویان نمونه استفاده کن
-        if (typeof SampleStudentsData !== 'undefined') {
-            const sampleStudents = SampleStudentsData.getSampleStudents();
-            console.log(`📝 Loaded ${sampleStudents.length} sample students`);
-            return sampleStudents.map(student => {
-                if (!student.educationalSteps) {
-                    student.educationalSteps = this.getDefaultEducationalSteps();
-                }
-                if (!student.defenseSteps) {
-                    student.defenseSteps = this.getDefaultDefenseSteps2();
-                }
-                return student;
-            });
-        }
-        
-        // در صورت عدم دسترسی به هر دو، آرایه خالی برگردان
+
         console.warn('⚠️ No students found from any source');
         return [];
     },
@@ -3889,10 +3888,32 @@ EmployeeModule.saveNewStudent = function() {
         studentsData[newId] = newStudent;
         localStorage.setItem('students_data', JSON.stringify(studentsData));
         
-        // Also add to users in DataModule
+        // Also add to users in DataModule (localStorage + Supabase sync)
         const users = DataModule.getUsers();
         users.push(newStudent);
-        DataModule.saveUsers(users);
+        DataModule.saveUsers(users); // این خودش Supabase رو هم sync می‌کنه
+
+        // ذخیره مستقیم در Supabase (profiles جدول)
+        const _sbClient = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+        if (_sbClient) {
+            _sbClient.from('profiles').upsert([{
+                id:          newId,
+                name:        newStudent.name,
+                username:    newStudent.username,
+                role:        'student',
+                email:       newStudent.email || null,
+                phone:       newStudent.phone || null,
+                university:  newStudent.university || null,
+                student_id:  newStudent.studentId || null,
+                field:       newStudent.field || null,
+                degree:      newStudent.degree || null,
+                active:      true,
+                created_at:  newStudent.createdAt
+            }]).then(({ error }) => {
+                if (error) console.warn('⚠️ upsert student:', error.message);
+                else console.log('✅ دانشجو در  ذخیره شد:', newStudent.name);
+            });
+        }
         
         UTILS.showNotification('دانشجوی جدید با موفقیت اضافه شد', 'success');
         
