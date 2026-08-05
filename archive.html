@@ -281,6 +281,15 @@
 
     <!-- Scripts -->
     <script src="js/config.js"></script>
-    <script src="js/archive.js"></script>
+    <!-- Supabase SDK + config -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/supabase-auth.js"></script>
+    <script src="js/supabase-data.js"></script>
+    <script>
+        // SupabaseConnection ساده — فقط برای سازگاری با archive.js
+        window.SupabaseConnection = { isOnline: !!(typeof getSupabaseClient === 'function' && getSupabaseClient()) };
+    </script>
+    <script src="js/archive.js?v=20250805"></script>
 </body>
 </html>

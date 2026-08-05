@@ -618,7 +618,7 @@ const AccountingUI = (function () {
                         <option value="other">سایر</option>
                         <option value="student">دانشجو</option>
                         <option value="supplier">بازار</option>
-                        <option value="partner">شریک</option>
+                        <option value="partner">همکار</option>
                     </select>
                 </div>
                 <div>

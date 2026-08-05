@@ -231,17 +231,19 @@ const OrderDetailRedesign = (function () {
 
   // ── تب‌بار ───────────────────────────────────────────────────
   const TABS = [
-    { id:'overview',    icon:'fa-info-circle',    label:'مشخصات'       },
-    { id:'financial',   icon:'fa-coins',          label:'مالی'         },
-    { id:'assignment',  icon:'fa-user-tie',       label:'تخصیص'        },
-    { id:'files',       icon:'fa-paperclip',      label:'فایل‌ها'      },
-    { id:'history',     icon:'fa-history',        label:'تاریخچه'      },
+    { id:'overview',    icon:'fa-info-circle',    label:'مشخصات',   roles:['manager','employee','agent','student'] },
+    { id:'mywork',      icon:'fa-tasks',          label:'کار من',   roles:['agent'] },
+    { id:'files',       icon:'fa-paperclip',      label:'فایل‌ها',  roles:['manager','employee','agent'] },
+    { id:'history',     icon:'fa-history',        label:'تاریخچه',  roles:['manager','employee','agent'] },
+    { id:'financial',   icon:'fa-coins',          label:'مالی',     roles:['manager','employee'] },
+    { id:'assignment',  icon:'fa-user-tie',       label:'تخصیص',    roles:['manager','employee'] },
   ];
 
-  function renderTabBar(activeTab) {
+  function renderTabBar(activeTab, userRole) {
+    const visibleTabs = TABS.filter(t => !t.roles || t.roles.includes(userRole));
     return `
     <div class="flex border-b border-gray-200 bg-white overflow-x-auto px-4 flex-shrink-0" id="odr-tabbar">
-      ${TABS.map(t => `
+      ${visibleTabs.map(t => `
         <button id="odr-tab-btn-${t.id}"
           onclick="OrderDetailRedesign.switchTab('${t.id}')"
           class="flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors
@@ -865,7 +867,7 @@ const OrderDetailRedesign = (function () {
       </div>
 
       <!-- افزودن یادداشت -->
-      ${canManage(userRole) ? `
+      ${(canManage(userRole) || userRole === 'agent') ? `
       <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
         <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
           <h4 class="text-sm font-bold text-gray-700 flex items-center gap-2">
@@ -896,7 +898,7 @@ const OrderDetailRedesign = (function () {
         <!-- Header -->
         ${renderHeader(order, userRole)}
         <!-- Tab Bar -->
-        ${renderTabBar(activeTab)}
+        ${renderTabBar(activeTab, userRole)}
         <!-- Content -->
         <div class="flex-1 overflow-y-auto p-5 bg-gray-50" id="odr-tab-content">
           ${tabContent}
@@ -916,9 +918,175 @@ const OrderDetailRedesign = (function () {
     </div>`;
   }
 
+  // ── تب «کار من» — فقط برای عامل ──────────────────────────
+  function renderMyWorkTab(order, userRole) {
+    const user = currentUser();
+    const prog = parseInt(order.progress) || 0;
+    const files = (Array.isArray(order.files) ? order.files : [])
+      .filter(f => f.uploadedBy === user.id);
+    const allFiles = Array.isArray(order.files) ? order.files : [];
+    const myNotes = (Array.isArray(order.workLog) ? order.workLog : [])
+      .filter(l => l.type === 'note' && l.by === user.id)
+      .sort((a,b) => new Date(b.timestamp||0) - new Date(a.timestamp||0));
+
+    const fileTypeOpts = FILE_TYPES.map(t =>
+      `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+
+    const fileIcon = (name) => {
+      const ext = (name || '').split('.').pop().toLowerCase();
+      if (['jpg','jpeg','png','gif','webp'].includes(ext)) return 'fa-file-image text-pink-500';
+      if (['pdf'].includes(ext)) return 'fa-file-pdf text-red-500';
+      if (['doc','docx'].includes(ext)) return 'fa-file-word text-blue-500';
+      return 'fa-file text-gray-400';
+    };
+
+    const fmtSize = (bytes) => {
+      if (!bytes) return '';
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1048576) return (bytes/1024).toFixed(1) + ' KB';
+      return (bytes/1048576).toFixed(1) + ' MB';
+    };
+
+    return `
+    <div class="space-y-5 p-4">
+
+      <!-- اطلاعات سفارش -->
+      <div class="bg-gradient-to-l from-[#f3f9e8] to-[#eaf4d6] rounded-xl border border-[#c5e08a] p-4">
+        <div class="flex items-start gap-4">
+          <div class="w-12 h-12 rounded-xl bg-[#8FBF3F] flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-clipboard-list text-white text-lg"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h3 class="font-bold text-gray-800 text-base">${esc(order.studentName || '---')}</h3>
+            <p class="text-sm text-gray-600 mt-0.5">${esc(order.type || order.workType || '---')}</p>
+            <div class="flex items-center gap-2 mt-2 flex-wrap">
+              <span class="text-xs bg-white border border-[#c5e08a] text-[#5a7a28] px-2 py-0.5 rounded-full">
+                ${esc(order.university || '---')}
+              </span>
+              ${order.deadlineDateTime ? `
+              <span class="text-xs bg-amber-50 border border-amber-200 text-amber-700 px-2 py-0.5 rounded-full">
+                <i class="fas fa-clock ml-1 text-[10px]"></i>مهلت: ${fmtDate(order.deadlineDateTime)}
+              </span>` : ''}
+            </div>
+          </div>
+        </div>
+        <!-- پیشرفت -->
+        <div class="mt-4">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-medium text-gray-600">پیشرفت کار</span>
+            <span class="text-xs font-bold text-[#5a7a28]" id="mw-prog-val">${prog}%</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <input type="range" min="0" max="100" value="${prog}"
+              class="flex-1 accent-[#8FBF3F]"
+              oninput="document.getElementById('mw-prog-val').textContent=this.value+'%'"
+              onchange="OrderDetailRedesign.updateProgress('${esc(order.id)}',this.value)">
+            <button onclick="OrderDetailRedesign.updateProgress('${esc(order.id)}',document.querySelector('#mw-prog-val').textContent.replace('%',''))"
+              class="bg-[#8FBF3F] hover:bg-[#7aac2e] text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex-shrink-0">
+              <i class="fas fa-save ml-1"></i>ذخیره
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- آپلود فایل کار -->
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+        <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+          <h4 class="text-sm font-bold text-gray-700 flex items-center gap-2">
+            <i class="fas fa-upload text-[#8FBF3F]"></i>آپلود فایل کار
+          </h4>
+          <span class="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">${allFiles.length} فایل کل</span>
+        </div>
+        <div class="p-4 space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">نوع فایل</label>
+              <select id="mw-file-type"
+                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#8FBF3F] outline-none">
+                <option value="">انتخاب نوع...</option>
+                ${fileTypeOpts}
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">انتخاب فایل</label>
+              <input type="file" id="mw-file-input"
+                accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
+                class="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-[#8FBF3F] outline-none bg-white">
+            </div>
+          </div>
+          <button onclick="OrderDetailRedesign.uploadMyFile('${esc(order.id)}')"
+            class="w-full bg-[#8FBF3F] hover:bg-[#7aac2e] text-white py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2">
+            <i class="fas fa-cloud-upload-alt"></i>آپلود فایل
+          </button>
+        </div>
+        <!-- لیست فایل‌های من -->
+        ${allFiles.length > 0 ? `
+        <div class="border-t border-gray-100 p-4">
+          <p class="text-xs font-semibold text-gray-500 mb-3">فایل‌های آپلود شده:</p>
+          <div class="space-y-2">
+            ${allFiles.map(f => `
+            <div class="flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 transition-colors group">
+              <i class="fas ${fileIcon(f.name)} text-xl flex-shrink-0"></i>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-800 truncate">${esc(f.name || '')}</p>
+                <div class="flex items-center gap-2 flex-wrap">
+                  ${f.fileType ? `<span class="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">${esc(f.fileType)}</span>` : ''}
+                  ${f.size ? `<span class="text-[10px] text-gray-400">${fmtSize(f.size)}</span>` : ''}
+                  <span class="text-[10px] text-gray-400">${esc(f.uploadedByName || '')}</span>
+                </div>
+              </div>
+              ${f.url ? `
+              <a href="${esc(f.url)}" download="${esc(f.name)}"
+                class="p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 opacity-0 group-hover:opacity-100 transition-all" title="دانلود">
+                <i class="fas fa-download text-xs"></i>
+              </a>` : ''}
+            </div>`).join('')}
+          </div>
+        </div>` : ''}
+      </div>
+
+      <!-- یادداشت‌های من -->
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+        <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+          <h4 class="text-sm font-bold text-gray-700 flex items-center gap-2">
+            <i class="fas fa-sticky-note text-[#8FBF3F]"></i>یادداشت‌های من
+          </h4>
+        </div>
+        <div class="p-4 space-y-3">
+          <div class="flex gap-3">
+            <textarea id="mw-note" rows="3" placeholder="یادداشت یا گزارش پیشرفت..."
+              class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#8FBF3F] outline-none resize-none"></textarea>
+            <button onclick="OrderDetailRedesign.addMyNote('${esc(order.id)}')"
+              class="bg-[#8FBF3F] hover:bg-[#7aac2e] text-white px-4 rounded-xl text-sm font-medium transition-colors self-end py-2 flex-shrink-0">
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+          ${myNotes.length > 0 ? `
+          <div class="space-y-2 max-h-48 overflow-y-auto">
+            ${myNotes.map(n => `
+            <div class="bg-[#f9fdf0] border border-[#daf0a0] rounded-xl p-3">
+              <p class="text-sm text-gray-700">${esc(n.message || '')}</p>
+              <p class="text-[10px] text-gray-400 mt-1.5">${fmtDate(n.timestamp)}</p>
+            </div>`).join('')}
+          </div>` : `
+          <p class="text-sm text-gray-400 text-center py-3">هنوز یادداشتی ثبت نشده</p>`}
+        </div>
+      </div>
+
+      <!-- اعلام تکمیل کار -->
+      ${order.status === 'in_progress' ? `
+      <button onclick="OrderDetailRedesign.quickAction('${esc(order.id)}','completed')"
+        class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-sm">
+        <i class="fas fa-check-double"></i>اعلام تکمیل کار
+      </button>` : ''}
+
+    </div>`;
+  }
+
   function getTabContent(order, userRole, tab) {
     switch (tab) {
       case 'overview':   return renderOverviewTab(order, userRole);
+      case 'mywork':     return renderMyWorkTab(order, userRole);
       case 'financial':  return renderFinancialTab(order, userRole);
       case 'assignment': return renderAssignmentTab(order, userRole);
       case 'files':      return renderFilesTab(order, userRole);
@@ -933,7 +1101,7 @@ const OrderDetailRedesign = (function () {
     const order = orders.find(o => o.id === orderId);
     if (!order) { notify('سفارش یافت نشد', 'error'); return; }
     _orderId = orderId;
-    _activeTab = 'overview';
+    _activeTab = (user.role === 'agent') ? 'mywork' : 'overview';
     const user = currentUser();
     // حذف overlay قدیمی اگر وجود داشت
     const old = document.getElementById('odr-modal-overlay');
@@ -1232,6 +1400,76 @@ const OrderDetailRedesign = (function () {
     win.document.close();
   }
 
+  // ── آپلود فایل توسط عامل ────────────────────────────────────
+  function uploadMyFile(orderId) {
+    const fileInput = document.getElementById('mw-file-input');
+    const fileType  = document.getElementById('mw-file-type')?.value || 'سایر';
+    const file = fileInput?.files?.[0];
+    if (!file) { notify('لطفاً فایل انتخاب کنید', 'error'); return; }
+
+    const user = currentUser();
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const orders = getOrders();
+      const idx = orders.findIndex(o => o.id === orderId);
+      if (idx === -1) { notify('سفارش یافت نشد', 'error'); return; }
+
+      const newFile = {
+        id: 'f_' + Date.now(),
+        name: file.name,
+        fileType,
+        size: file.size,
+        url: ev.target.result,
+        uploadedBy: user.id,
+        uploadedByName: user.name || 'عامل',
+        uploadedAt: new Date().toISOString(),
+        isAgentFile: true,
+      };
+
+      orders[idx].files = [...(orders[idx].files || []), newFile];
+      orders[idx].workLog = [...(orders[idx].workLog || []), {
+        id: Date.now().toString(36), type: 'file_upload',
+        message: `فایل آپلود شد: ${file.name}`,
+        by: user.id, byName: user.name || 'عامل',
+        timestamp: new Date().toISOString()
+      }];
+      orders[idx].updatedAt = new Date().toISOString();
+
+      if (typeof DataModule !== 'undefined') DataModule.saveOrders(orders);
+      notify('✅ فایل آپلود شد', 'success');
+
+      // ریفرش تب
+      if (fileInput) fileInput.value = '';
+      switchTab('mywork');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ── افزودن یادداشت توسط عامل ─────────────────────────────
+  function addMyNote(orderId) {
+    const ta = document.getElementById('mw-note');
+    const msg = ta?.value?.trim();
+    if (!msg) { notify('یادداشت خالی است', 'error'); return; }
+
+    const user = currentUser();
+    const orders = getOrders();
+    const idx = orders.findIndex(o => o.id === orderId);
+    if (idx === -1) return;
+
+    orders[idx].workLog = [...(orders[idx].workLog || []), {
+      id: Date.now().toString(36), type: 'note',
+      message: msg,
+      by: user.id, byName: user.name || 'عامل',
+      timestamp: new Date().toISOString()
+    }];
+    orders[idx].updatedAt = new Date().toISOString();
+
+    if (typeof DataModule !== 'undefined') DataModule.saveOrders(orders);
+    if (ta) ta.value = '';
+    notify('✅ یادداشت ثبت شد', 'success');
+    switchTab('mywork');
+  }
+
   // ── بستن IIFE و Export ──────────────────────────────────────
   return {
     show, close, switchTab,
@@ -1239,6 +1477,7 @@ const OrderDetailRedesign = (function () {
     addPayment, saveRevenueSplit,
     assignAgent, saveAssignmentNotes,
     addNote, uploadFile, handleFileDrop, deleteFile,
+    uploadMyFile, addMyNote,
     openEdit, printOrder,
   };
 

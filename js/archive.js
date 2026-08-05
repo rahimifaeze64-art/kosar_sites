@@ -5,10 +5,14 @@ function archiveController() {
 
     // ── Helper: Supabase در دسترس است؟ ──────────────────────
     function _sb() {
-        return typeof SupabaseDataModule !== 'undefined' &&
-               typeof SupabaseConnection !== 'undefined' &&
-               SupabaseConnection.isOnline === true
-               ? SupabaseDataModule : null;
+        if (typeof SupabaseDataModule === 'undefined') return null;
+        // اگر client آماده باشه کافیه — isOnline ممکنه هنوز set نشده باشه
+        const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+        if (client) return SupabaseDataModule;
+        // fallback: چک قدیمی
+        if (typeof SupabaseConnection !== 'undefined' && SupabaseConnection.isOnline === true)
+            return SupabaseDataModule;
+        return null;
     }
 
     function _currentUser() {
@@ -42,6 +46,7 @@ function archiveController() {
             { id: 'thesis-post-defense-edit', name: 'رساله - تعدیل بعد مناقشه', icon: 'fas fa-file-signature' },
             { id: 'thesis-iraqi-citation', name: 'رساله - استلال عراقی', icon: 'fas fa-quote-right' },
             { id: 'thesis-irandoc', name: 'رساله - تنضید ایران داک', icon: 'fas fa-file-pdf' },
+            { id: 'thesis-translated', name: 'رساله ترجمه شده', icon: 'fas fa-language' },
             { id: 'articles', name: 'مقاله‌ها', icon: 'fas fa-newspaper' },
             { id: 'binding', name: 'تجلید', icon: 'fas fa-book-reader' },
             { id: 'files', name: 'فایل‌ها', icon: 'fas fa-folder' },
