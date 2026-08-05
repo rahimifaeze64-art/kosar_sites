@@ -12,19 +12,19 @@ const ManagementChatModule = {
 
             <!-- هدر -->
             <div class="flex items-center justify-between px-5 py-4 text-white"
-                 style="background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);">
+                 style="background:linear-gradient(135deg,#22c55e 0%,#16a34a 100%);">
                 <div>
                     <h2 class="text-lg font-bold flex items-center gap-2">
                         <i class="fas fa-users-cog"></i> گفتگو مدیریت
                     </h2>
-                    <p class="text-indigo-200 text-xs mt-0.5">چت مشترک مدیر و کارمندان</p>
+                    <p class="text-green-100 text-xs mt-0.5">چت مشترک مدیر و کارمندان</p>
                 </div>
                 <!-- جستجو -->
                 <div class="relative">
                     <input type="text" id="mgmt-search-input" placeholder="جستجو..."
                         oninput="if(window.managesChatInstance) window.managesChatInstance.setSearchQuery(this.value)"
-                        class="bg-white/20 border border-white/30 rounded-xl px-3 py-1.5 text-white placeholder-indigo-200 text-sm focus:outline-none focus:bg-white/30 w-36">
-                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-indigo-200 text-xs pointer-events-none"></i>
+                        class="bg-white/20 border border-white/30 rounded-xl px-3 py-1.5 text-white placeholder-green-100 text-sm focus:outline-none focus:bg-white/30 w-36">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-green-100 text-xs pointer-events-none"></i>
                 </div>
             </div>
 
@@ -55,7 +55,7 @@ const ManagementChatModule = {
                 <div class="flex items-end gap-2">
                     <textarea id="managesChatInput" rows="1"
                         placeholder="پیام بنویسید... (Enter = ارسال، Shift+Enter = خط جدید)"
-                        class="flex-1 bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-gray-800 text-sm resize-none focus:outline-none focus:border-indigo-400 transition-colors"
+                        class="flex-1 bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-gray-800 text-sm resize-none focus:outline-none focus:border-green-400 transition-colors"
                         style="min-height:42px;max-height:120px;"
                         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();if(window.managesChatInstance)window.managesChatInstance.sendMessage();}"
                         oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';"></textarea>
@@ -71,7 +71,7 @@ const ManagementChatModule = {
                         <button onclick="if(window.managesChatInstance)window.managesChatInstance.attachFile();"
                             title="پیوست فایل"
                             class="w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:opacity-90"
-                            style="background:#8b5cf6;color:white;">
+                            style="background:#22c55e;color:white;">
                             <i class="fas fa-paperclip text-sm"></i>
                         </button>
                         <!-- ضبط صوت -->
@@ -86,7 +86,7 @@ const ManagementChatModule = {
                         <button onclick="if(window.managesChatInstance)window.managesChatInstance.sendMessage();"
                             title="ارسال"
                             class="w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:opacity-90"
-                            style="background:#6366f1;color:white;">
+                            style="background:#16a34a;color:white;">
                             <i class="fas fa-paper-plane text-sm"></i>
                         </button>
                     </div>
@@ -100,7 +100,7 @@ const ManagementChatModule = {
             #managesChatMessages::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:3px; }
             #managesChatMessages::-webkit-scrollbar-thumb:hover { background:#94a3b8; }
             #mgmt-participants-bar::-webkit-scrollbar { height:3px; }
-            #mgmt-participants-bar::-webkit-scrollbar-thumb { background:#c7d2fe; border-radius:2px; }
+            #mgmt-participants-bar::-webkit-scrollbar-thumb { background:#bbf7d0; border-radius:2px; }
             @keyframes mgmt-slideIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
             #managesChatMessages > div { animation: mgmt-slideIn .2s ease; }
         </style>

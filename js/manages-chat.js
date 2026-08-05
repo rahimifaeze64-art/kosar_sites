@@ -405,14 +405,14 @@ class ManagesChat {
                           document.getElementById('managesChatInput').focus();
                           document.getElementById('mgmt-mention-modal').remove();">
                 <div class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-sm flex-shrink-0"
-                     style="background:${p.role === 'manager' ? '#7c3aed' : '#3b82f6'}">
+                     style="background:${p.role === 'manager' ? '#16a34a' : '#3b82f6'}">
                     ${(p.name || '؟').charAt(0)}
                 </div>
                 <div class="flex-1 min-w-0">
                     <p class="font-medium text-gray-800 text-sm truncate">${this._esc(p.name)}</p>
                     <p class="text-gray-400 text-xs">@${this._esc(p.username)}</p>
                 </div>
-                <span class="text-xs px-2 py-0.5 rounded-full font-semibold ${p.role === 'manager' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}">
+                <span class="text-xs px-2 py-0.5 rounded-full font-semibold ${p.role === 'manager' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}">
                     ${p.role === 'manager' ? 'مدیر' : 'کارمند'}
                 </span>
             </div>`).join('');
@@ -517,16 +517,16 @@ class ManagesChat {
                 : '';
             lastDate = dateStr;
 
-            const avatarBg = msg.senderRole === 'manager' ? '#7c3aed' : '#3b82f6';
+            const avatarBg = msg.senderRole === 'manager' ? '#75a55fff' : '#3b82f6';
             const roleBadge = msg.senderRole === 'manager'
-                ? '<span class="text-xs px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-semibold">مدیر</span>'
+                ? '<span class="text-xs px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold">مدیر</span>'
                 : '<span class="text-xs px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold">کارمند</span>';
             const pendingDot = msg._pending
                 ? '<span class="text-gray-400 text-xs mr-1" title="در حال ارسال..."><i class="fas fa-clock"></i></span>' : '';
             const editedNote = msg.edited
                 ? '<span class="text-gray-400 text-xs mr-1">(ویرایش شده)</span>' : '';
             const bubbleBg = isOwn
-                ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;'
+                ? 'background:linear-gradient(135deg,#22c55e,#16a34a);color:white;'
                 : 'background:#f1f5f9;color:#1e293b;';
 
             return `${dateDiv}
@@ -604,7 +604,7 @@ class ManagesChat {
         if (!bar) return;
         bar.innerHTML = this.participants.map(p => `
             <div class="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm whitespace-nowrap flex-shrink-0"
-                 style="${p.role === 'manager' ? 'background:#7c3aed;color:white;' : 'background:#e0e7ff;color:#3730a3;'}">
+                 style="${p.role === 'manager' ? 'background:#16a34a;color:white;' : 'background:#dcfce7;color:#15803d;'}">
                 <i class="fas ${p.role === 'manager' ? 'fa-crown' : 'fa-user'} text-xs"></i>
                 <span>${this._esc(p.name)}</span>
             </div>`).join('');
