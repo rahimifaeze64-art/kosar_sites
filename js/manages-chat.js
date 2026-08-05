@@ -1,863 +1,640 @@
-﻿// مدیریت چت مدیریتی برای کارمند ها
+﻿// ============================================================
+// manages-chat.js  v2 — گفتگوی گروهی مدیریت
+// ذخیره: Supabase (management_messages) + Storage (فایل‌ها)
+// Realtime: Supabase Realtime subscription
+// شرکت‌کنندگان: مدیر + همه کارمندان از profiles
+// ============================================================
 class ManagesChat {
     constructor() {
-        this.messages = [];
+        this.messages     = [];
         this.participants = [];
+        this.isRecording  = false;
         this.audioRecorder = null;
-        this.isRecording = false;
-        this.initialized = false;
-        this.contextMenuVisible = false;
-        this.selectedMessageId = null;
-        this.longPressTimer = null;
-        this.searchQuery = '';
+        this.audioChunks  = [];
+        this._realtimeSub = null;
+        this._initialized = false;
+        this._sending     = false;
+        this.searchQuery  = '';
         this.init();
     }
 
-    init() {
-        // Prevent double initialization
-        if (this.initialized) {
-            console.log('ManagesChat already initialized, re-rendering messages');
+    // ── راه‌اندازی ────────────────────────────────────────────
+    async init() {
+        if (this._initialized) {
             this.renderMessages();
             return;
         }
-        
-        this.loadMessages();
-        this.loadParticipants();
-        this.setupEventListeners();
-        this.setupAudioRecorder();
+        this._initialized = true;
+        await this.loadParticipants();
+        await this.loadMessages();
         this.renderMessages();
-        this.initialized = true;
-        console.log('ManagesChat initialized successfully');
-
-        // بارگذاری از ابر در پس‌زمینه
-        this.loadMessagesFromCloud().then(() => this.renderMessages()).catch(() => {});
+        this.scrollToBottom();
+        this.setupAudioRecorder();
+        this.subscribeRealtime();
     }
 
-    loadMessages() {
-        const saved = localStorage.getItem('managesChat_messages');
-        this.messages = saved ? JSON.parse(saved) : [];
-    }
-
-    saveMessages() {
-        localStorage.setItem('managesChat_messages', JSON.stringify(this.messages));
-        this._syncLastMessageToSupabase();
-    }
-
-    _syncLastMessageToSupabase() {
-        if (typeof SupabaseDataModule === 'undefined' ||
-            typeof SupabaseConnection === 'undefined' ||
-            !SupabaseConnection.isOnline) return;
-
-        const lastMsg = this.messages[this.messages.length - 1];
-        if (!lastMsg) return;
-
-        const sbMsg = {
-            id:         String(lastMsg.id),
-            senderId:   lastMsg.senderId   || null,
-            receiverId: null,
-            content:    lastMsg.text       || lastMsg.audioData || '[voice]',
-            isSystem:   false
-        };
-
-        SupabaseDataModule.sendMessage(sbMsg)
-            .then(ok => { if (ok) console.log('✅ managesChat پیام در Supabase:', sbMsg.id); })
-            .catch(e  => console.warn('⚠️ managesChat sync خطا:', e.message));
-    }
-
-    async loadMessagesFromCloud() {
-        if (typeof SupabaseDataModule === 'undefined' ||
-            typeof SupabaseConnection === 'undefined' ||
-            !SupabaseConnection.isOnline) return;
+    // ── بارگذاری شرکت‌کنندگان از Supabase ────────────────────
+    async loadParticipants() {
         try {
-            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-            if (!currentUser.id) return;
-
-            const cloudMsgs = await SupabaseDataModule.getMessages(currentUser.id);
-            if (!cloudMsgs || cloudMsgs.length === 0) return;
-
-            const converted = cloudMsgs.map(m => ({
-                id:         m.id,
-                senderId:   m.senderId,
-                senderName: m.senderId,
-                senderRole: 'employee',
-                text:       m.content || m.text || '',
-                type:       'text',
-                timestamp:  m.createdAt || m.created_at,
-                mentions:   [],
-                readBy:     []
-            }));
-            const local = JSON.parse(localStorage.getItem('managesChat_messages') || '[]');
-            const allIds = new Set(local.map(m => String(m.id)));
-            converted.forEach(m => { if (!allIds.has(String(m.id))) local.push(m); });
-            local.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-            this.messages = local;
-            localStorage.setItem('managesChat_messages', JSON.stringify(this.messages));
+            if (typeof SupabaseDataModule !== 'undefined') {
+                this.participants = await SupabaseDataModule.getManagementChatParticipants();
+            }
         } catch (e) {
-            console.warn('⚠️ managesChat loadFromCloud خطا:', e.message);
+            console.warn('⚠️ loadParticipants خطا:', e.message);
+        }
+        // اگر خالی بود fallback به localStorage
+        if (!this.participants.length) {
+            const users = JSON.parse(localStorage.getItem('edu_system_users') || localStorage.getItem('users') || '[]');
+            this.participants = users.filter(u => u.role === 'manager' || u.role === 'employee');
         }
     }
 
-    loadParticipants() {
-        // بارگذاری لیست کارمند ها و مدیر
-        const users = JSON.parse(localStorage.getItem('users') || '[]');
-        
-        // لیست ثابت کارمند ها
-        const fixedemployees = [
-            { id: 'mgr001', name: 'مدیر سیستم', username: 'manager', role: 'manager' },
-            { id: 'emp001', name: 'سارا سادات حسینی', username: 'zahra', role: 'employee' },
-            { id: 'emp002', name: 'زینب بتول محمدی', username: 'fatemeh', role: 'employee' },
-            { id: 'emp003', name: 'علیرضا غلامی فرزاد', username: 'farzad', role: 'employee' },
-            { id: 'emp004', name: 'زینب سخایی م', username: 'sakhaei', role: 'employee' }
-        ];
-        
-        // ترکیب لیست ثابت با کاربران جدید
-        const dynamicParticipants = users.filter(u => u.role === 'employee' || u.role === 'manager');
-        this.participants = [...fixedemployees];
-        
-        dynamicParticipants.forEach(user => {
-            if (!this.participants.find(p => p.username === user.username)) {
-                this.participants.push(user);
+    // ── بارگذاری پیام‌ها ──────────────────────────────────────
+    async loadMessages() {
+        try {
+            if (typeof SupabaseDataModule !== 'undefined') {
+                this.messages = await SupabaseDataModule.getManagementMessages(150);
+                return;
+            }
+        } catch (e) {
+            console.warn('⚠️ loadMessages خطا:', e.message);
+        }
+        // fallback localStorage
+        const raw = localStorage.getItem('mgmt_chat_messages');
+        this.messages = raw ? JSON.parse(raw) : [];
+    }
+
+    // ── Realtime subscription ─────────────────────────────────
+    subscribeRealtime() {
+        if (typeof SupabaseDataModule === 'undefined') return;
+        this._realtimeSub = SupabaseDataModule.subscribeToManagementChat((event, msg) => {
+            const currentUser = this._currentUser();
+            if (event === 'INSERT') {
+                // جلوگیری از دوبار نشان دادن پیام خودم
+                if (msg.senderId === currentUser?.id) {
+                    // فقط _pending رو false کن
+                    const idx = this.messages.findIndex(m => m._pending && m.senderId === msg.senderId);
+                    if (idx >= 0) { this.messages[idx] = { ...msg }; this.renderMessages(); return; }
+                }
+                const exists = this.messages.find(m => m.id === msg.id);
+                if (!exists) {
+                    this.messages.push(msg);
+                    this.renderMessages();
+                    this.scrollToBottom();
+                }
+            } else if (event === 'UPDATE') {
+                const idx = this.messages.findIndex(m => m.id === msg.id);
+                if (idx >= 0) {
+                    if (msg.deleted) { this.messages.splice(idx, 1); }
+                    else { this.messages[idx] = msg; }
+                    this.renderMessages();
+                }
             }
         });
     }
 
-    setupEventListeners() {
-        // Note: Event listeners are now handled inline in the HTML for better compatibility
-        // This method is kept for backward compatibility with standalone page
-        const sendBtn = document.getElementById('sendManagesChatBtn');
-        const messageInput = document.getElementById('managesChatInput');
-        
-        // Only add listeners if they don't have onclick attributes (standalone page)
-        if (sendBtn && !sendBtn.hasAttribute('onclick')) {
-            sendBtn.addEventListener('click', () => this.sendMessage());
-        }
-        
-        if (messageInput && !messageInput.hasAttribute('onkeypress')) {
-            messageInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    this.sendMessage();
-                }
-            });
-        }
-
-        // ضبط صوت
-        const voiceBtn = document.getElementById('recordVoiceBtn');
-        if (voiceBtn && !voiceBtn.hasAttribute('onclick')) {
-            voiceBtn.addEventListener('click', () => this.toggleVoiceRecording());
-        }
-
-        // منشن کردن
-        const mentionBtn = document.getElementById('mentionBtn');
-        if (mentionBtn && !mentionBtn.hasAttribute('onclick')) {
-            mentionBtn.addEventListener('click', () => this.showMentionList());
-        }
-
-        // پیوست فایل
-        const attachBtn = document.getElementById('attachFileBtn');
-        if (attachBtn && !attachBtn.hasAttribute('onclick')) {
-            attachBtn.addEventListener('click', () => this.attachFile());
-        }
-    }
-
-    setupAudioRecorder() {
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(stream => {
-                    this.audioRecorder = new MediaRecorder(stream);
-                    this.setupRecorderEvents();
-                })
-                .catch(err => console.log('خطا در دسترسی به میکروفون:', err));
-        }
-    }
-
-    setupRecorderEvents() {
-        if (!this.audioRecorder) return;
-
-        const audioChunks = [];
-        
-        this.audioRecorder.ondataavailable = (event) => {
-            audioChunks.push(event.data);
-        };
-
-        this.audioRecorder.onstop = () => {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-            this.sendVoiceMessage(audioBlob);
-            audioChunks.length = 0;
-        };
-    }
-
-    sendMessage() {
+    // ── ارسال پیام متنی ───────────────────────────────────────
+    async sendMessage() {
+        if (this._sending) return;
         const input = document.getElementById('managesChatInput');
-        const text = input.value.trim();
-        
+        const text  = input?.value?.trim();
         if (!text) return;
 
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        
-        const message = {
-            id: Date.now(),
-            senderId: currentUser.id,
-            senderName: currentUser.name,
-            senderRole: currentUser.role,
-            text: text,
-            type: 'text',
-            timestamp: new Date().toISOString(),
-            mentions: this.extractMentions(text),
-            relatedTaskId: this.getRelatedTaskId()
+        this._sending = true;
+        const user = this._currentUser();
+        const msgId = 'mgmt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+
+        const msg = {
+            id:         msgId,
+            senderId:   user.id,
+            senderName: user.name,
+            senderRole: user.role,
+            msgType:    'text',
+            content:    text,
+            text,
+            mentions:   this._extractMentions(text),
+            createdAt:  new Date().toISOString(),
+            _pending:   true
         };
 
-        this.messages.push(message);
-        this.saveMessages();
-        this.renderMessages();
-        
+        // نمایش فوری (optimistic)
+        this.messages.push(msg);
         input.value = '';
-        this.notifyMentionedUsers(message);
-    }
+        input.style.height = 'auto';
+        this.renderMessages();
+        this.scrollToBottom();
 
-    sendVoiceMessage(audioBlob) {
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        const reader = new FileReader();
-        
-        reader.onloadend = () => {
-            const message = {
-                id: Date.now(),
-                senderId: currentUser.id,
-                senderName: currentUser.name,
-                senderRole: currentUser.role,
-                audioData: reader.result,
-                type: 'voice',
-                timestamp: new Date().toISOString(),
-                duration: 0
-            };
-
-            this.messages.push(message);
-            this.saveMessages();
-            this.renderMessages();
-        };
-        
-        reader.readAsDataURL(audioBlob);
-    }
-
-    toggleVoiceRecording() {
-        if (!this.audioRecorder) {
-            alert('دسترسی به میکروفون امکان‌پذیر نیست');
-            return;
+        try {
+            if (typeof SupabaseDataModule !== 'undefined') {
+                await SupabaseDataModule.sendManagementMessage(msg);
+            }
+        } catch (e) {
+            console.warn('⚠️ sendMessage خطا:', e.message);
         }
-
-        const btn = document.getElementById('recordVoiceBtn');
-        
-        if (this.isRecording) {
-            this.audioRecorder.stop();
-            this.isRecording = false;
-            btn.innerHTML = '<i class="fas fa-microphone"></i>';
-            btn.classList.remove('recording');
-        } else {
-            this.audioRecorder.start();
-            this.isRecording = true;
-            btn.innerHTML = '<i class="fas fa-stop"></i>';
-            btn.classList.add('recording');
-        }
+        this._sending = false;
     }
 
-    extractMentions(text) {
-        const mentionRegex = /@(\w+)/g;
-        const mentions = [];
-        let match;
-        
-        while ((match = mentionRegex.exec(text)) !== null) {
-            mentions.push(match[1]);
-        }
-        
-        return mentions;
-    }
-
-    showMentionList() {
-        const modal = document.createElement('div');
-        modal.className = 'fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50';
-        modal.innerHTML = `
-            <div class="bg-slate-800 rounded-2xl p-6 max-w-md w-11/12 max-h-[80vh] overflow-y-auto">
-                <h3 class="text-xl font-bold text-white mb-4">
-                    <i class="fas fa-at text-lime-400 ml-2"></i>
-                    انتخاب کاربر برای منشن
-                </h3>
-                <div class="space-y-2 mb-4">
-                    ${this.participants.map(p => `
-                        <div class="flex items-center gap-3 p-3 bg-slate-700 hover:bg-slate-600 rounded-lg cursor-pointer transition-all hover:translate-x-[-4px]" 
-                             data-username="${p.username}"
-                             onclick="document.getElementById('managesChatInput').value += '@${p.username} '; document.getElementById('managesChatInput').focus(); this.closest('.fixed').remove();">
-                            <div class="w-10 h-10 rounded-full bg-lime-500 flex items-center justify-center text-gray-900 font-bold">
-                                ${p.name.charAt(0)}
-                            </div>
-                            <div class="flex-1">
-                                <p class="text-white font-medium">${p.name}</p>
-                                <p class="text-gray-400 text-sm">@${p.username}</p>
-                            </div>
-                            <span class="px-2 py-1 rounded-full text-xs font-semibold ${p.role === 'manager' ? 'bg-lime-600 text-gray-900' : 'bg-blue-600 text-white'}">
-                                ${this.getRoleName(p.role)}
-                            </span>
-                        </div>
-                    `).join('')}
-                </div>
-                <button onclick="this.closest('.fixed').remove()" 
-                        class="w-full py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors">
-                    بستن
-                </button>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-    }
-
+    // ── پیوست فایل ───────────────────────────────────────────
     attachFile() {
         const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/*,.pdf,.doc,.docx';
-        
-        input.onchange = (e) => {
+        input.type   = 'file';
+        input.accept = 'image/*,.pdf,.doc,.docx,.zip,.rar';
+        input.onchange = async (e) => {
             const file = e.target.files[0];
-            if (file) {
-                this.sendFileMessage(file);
-            }
+            if (!file) return;
+            if (file.size > 20 * 1024 * 1024) { alert('حداکثر حجم فایل ۲۰ مگابایت است'); return; }
+            await this._sendFileMessage(file);
         };
-        
         input.click();
     }
 
-    sendFileMessage(file) {
-        const reader = new FileReader();
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        
-        reader.onloadend = () => {
-            const message = {
-                id: Date.now(),
-                senderId: currentUser.id,
-                senderName: currentUser.name,
-                senderRole: currentUser.role,
-                fileName: file.name,
-                fileData: reader.result,
-                fileType: file.type,
-                type: 'file',
-                timestamp: new Date().toISOString()
-            };
+    // ── ارسال پیام فایل/تصویر ────────────────────────────────
+    async _sendFileMessage(file) {
+        const user  = this._currentUser();
+        const msgId = 'mgmt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+        const isImage = file.type.startsWith('image/');
+        const isVoice = file.type.startsWith('audio/');
+        const msgType = isVoice ? 'voice' : (isImage ? 'image' : 'file');
 
-            this.messages.push(message);
-            this.saveMessages();
-            this.renderMessages();
+        // نمایش موقت با previewURL
+        const previewUrl = URL.createObjectURL(file);
+        const msg = {
+            id:         msgId,
+            senderId:   user.id,
+            senderName: user.name,
+            senderRole: user.role,
+            msgType,
+            content:    file.name,
+            fileUrl:    previewUrl,
+            fileName:   file.name,
+            fileType:   file.type,
+            fileSize:   file.size,
+            mentions:   [],
+            createdAt:  new Date().toISOString(),
+            _pending:   true,
+            _localFile: true
         };
-        
-        reader.readAsDataURL(file);
+        this.messages.push(msg);
+        this.renderMessages();
+        this.scrollToBottom();
+
+        try {
+            let finalUrl = previewUrl;
+            let filePath = null;
+
+            if (typeof SupabaseDataModule !== 'undefined') {
+                const uploaded = await SupabaseDataModule.uploadManagementChatFile(file, msgId);
+                if (uploaded) {
+                    finalUrl = uploaded.url;
+                    filePath = uploaded.path;
+                }
+            }
+
+            // آپدیت URL واقعی در پیام
+            const idx = this.messages.findIndex(m => m.id === msgId);
+            if (idx >= 0) {
+                this.messages[idx].fileUrl   = finalUrl;
+                this.messages[idx].filePath  = filePath;
+                this.messages[idx]._pending  = false;
+                this.messages[idx]._localFile = false;
+            }
+
+            const finalMsg = { ...msg, fileUrl: finalUrl, filePath };
+            if (typeof SupabaseDataModule !== 'undefined') {
+                await SupabaseDataModule.sendManagementMessage(finalMsg);
+            }
+            this.renderMessages();
+        } catch (e) {
+            console.warn('⚠️ _sendFileMessage خطا:', e.message);
+        }
     }
 
-    renderMessages() {
-        const container = document.getElementById('managesChatMessages');
-        if (!container) {
-            console.warn('managesChatMessages container not found');
-            return;
-        }
+    // ── ضبط صوت ──────────────────────────────────────────────
+    setupAudioRecorder() {
+        if (!navigator.mediaDevices?.getUserMedia) return;
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                this.audioRecorder = new MediaRecorder(stream);
+                this.audioRecorder.ondataavailable = e => { if (e.data.size > 0) this.audioChunks.push(e.data); };
+                this.audioRecorder.onstop = () => {
+                    const blob = new Blob(this.audioChunks, { type: 'audio/webm' });
+                    this.audioChunks = [];
+                    const voiceFile = new File([blob], `voice-${Date.now()}.webm`, { type: 'audio/webm' });
+                    this._sendFileMessage(voiceFile);
+                };
+            })
+            .catch(() => {});
+    }
 
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        
-        // Filter messages by search query
-        let displayMessages = this.messages;
-        if (this.searchQuery.trim()) {
-            displayMessages = this.messages.filter(msg => 
-                (msg.text && msg.text.toLowerCase().includes(this.searchQuery.toLowerCase())) ||
-                (msg.senderName && msg.senderName.toLowerCase().includes(this.searchQuery.toLowerCase())) ||
-                (msg.fileName && msg.fileName.toLowerCase().includes(this.searchQuery.toLowerCase()))
-            );
+    toggleVoiceRecording() {
+        if (!this.audioRecorder) { alert('دسترسی به میکروفون ممکن نیست'); return; }
+        const btn = document.getElementById('recordVoiceBtn');
+        if (this.isRecording) {
+            this.audioRecorder.stop();
+            this.isRecording = false;
+            if (btn) { btn.innerHTML = '<i class="fas fa-microphone"></i>'; btn.style.background = '#ef4444'; }
+        } else {
+            this.audioChunks = [];
+            this.audioRecorder.start();
+            this.isRecording = true;
+            if (btn) { btn.innerHTML = '<i class="fas fa-stop"></i>'; btn.style.background = '#dc2626'; }
         }
-        
-        if (displayMessages.length === 0) {
-            container.innerHTML = `
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
-                    <i class="fas fa-comments" style="font-size: 4rem; color: #4b5563; margin-bottom: 1rem;"></i>
-                    <p style="color: #9ca3af; font-size: 1.125rem;">${this.searchQuery ? 'پیامی یافت نشد' : 'هنوز پیامی ارسال نشده است'}</p>
-                    <p style="color: #6b7280; font-size: 0.875rem; margin-top: 0.5rem;">${this.searchQuery ? 'جستجوی دیگری امتحان کنید' : 'اولین پیام را ارسال کنید'}</p>
+    }
+
+    // ── ویرایش پیام ──────────────────────────────────────────
+    editMessage(msgId) {
+        const msg = this.messages.find(m => m.id === msgId);
+        if (!msg || msg.msgType !== 'text') { alert('فقط پیام‌های متنی قابل ویرایش هستند'); return; }
+        this._closeContextMenu();
+
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] p-4';
+        modal.innerHTML = `
+            <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl" onclick="event.stopPropagation()">
+                <h3 class="text-gray-800 font-bold text-lg mb-4 flex items-center gap-2">
+                    <i class="fas fa-edit text-blue-500"></i> ویرایش پیام
+                </h3>
+                <textarea id="edit-msg-text" rows="4"
+                    class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-gray-800 resize-none focus:outline-none focus:border-blue-400"
+                    >${this._esc(msg.content || msg.text || '')}</textarea>
+                <div class="flex gap-3 mt-4">
+                    <button onclick="window.managesChatInstance._saveEdit('${msgId}'); this.closest('.fixed').remove();"
+                        class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl font-bold">ذخیره</button>
+                    <button onclick="this.closest('.fixed').remove()"
+                        class="px-5 bg-gray-100 text-gray-700 py-2.5 rounded-xl">انصراف</button>
                 </div>
-            `;
-            return;
+            </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        document.getElementById('edit-msg-text')?.focus();
+    }
+
+    async _saveEdit(msgId) {
+        const newText = document.getElementById('edit-msg-text')?.value?.trim();
+        if (!newText) { alert('متن خالی نیست'); return; }
+        const idx = this.messages.findIndex(m => m.id === msgId);
+        if (idx >= 0) {
+            this.messages[idx].content = newText;
+            this.messages[idx].text    = newText;
+            this.messages[idx].edited  = true;
+            this.messages[idx].editedAt = new Date().toISOString();
+            this.renderMessages();
         }
-        
-        container.innerHTML = displayMessages.map(msg => {
-            const isOwn = msg.senderId === currentUser.id;
-            const time = new Date(msg.timestamp).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
-            const date = (typeof Jalali !== 'undefined') ? Jalali.toJalaliDisplay(new Date(msg.timestamp)) : new Date(msg.timestamp).toLocaleDateString('fa-IR');
-            
-            return `
-                <div style="display: flex; justify-content: flex-start; margin-bottom: 1rem; animation: slideIn 0.3s ease; direction: rtl;" class="message-group">
-                    <div style="max-width: 70%; display: flex; flex-direction: column; align-items: flex-start;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; font-size: 0.75rem;">
-                            <span style="font-weight: 600; color: #8b9dbbff;">${msg.senderName}</span>
-                            <span style="padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.625rem; font-weight: 600; ${msg.senderRole === 'manager' ? 'background: #b1a1ceff; color: white;' : 'background: #3b82f6; color: white;'}">
-                                ${this.getRoleName(msg.senderRole)}
-                            </span>
-                            <span style="color: #364157ff;">${time}</span>
-                            <span style="color: #95a8c4ff; font-size: 0.625rem;">${date}</span>
-                        </div>
-                        <div style="position: relative; border-radius: 0.75rem; padding: 0.75rem 1rem; ${isOwn ? 'background: #8e8fccff; color: white;' : 'background: #e2e8f0; color: #03070eff;'}"
-                             oncontextmenu="event.preventDefault(); if(window.managesChatInstance) window.managesChatInstance.showContextMenu(event, '${msg.id}'); return false;"
-                             ontouchstart="if(window.managesChatInstance) window.managesChatInstance.handleLongPressStart(event, '${msg.id}')"
-                             ontouchend="if(window.managesChatInstance) window.managesChatInstance.handleLongPressEnd()"
-                             ontouchmove="if(window.managesChatInstance) window.managesChatInstance.handleLongPressEnd()">
-                            ${this.renderMessageContent(msg)}
-                        </div>
-                        ${msg.relatedTaskId ? `<div style="margin-top: 0.25rem; font-size: 0.75rem; color: #9ca3af; background: #334155; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">مرتبط با وظیفه #${msg.relatedTaskId}</div>` : ''}
-                    </div>
+        if (typeof SupabaseDataModule !== 'undefined') {
+            await SupabaseDataModule.editManagementMessage(msgId, newText);
+        }
+    }
+
+    // ── حذف پیام ─────────────────────────────────────────────
+    async deleteMessage(msgId) {
+        if (!confirm('این پیام حذف شود؟')) return;
+        this._closeContextMenu();
+        this.messages = this.messages.filter(m => m.id !== msgId);
+        this.renderMessages();
+        if (typeof SupabaseDataModule !== 'undefined') {
+            await SupabaseDataModule.deleteManagementMessage(msgId);
+        }
+    }
+
+    // ── ذخیره فایل در بایگانی ────────────────────────────────
+    saveToArchive(msgId) {
+        const msg = this.messages.find(m => m.id === msgId);
+        if (!msg || (msg.msgType === 'text')) { alert('فقط فایل‌ها و صداها ذخیره می‌شوند'); return; }
+        this._closeContextMenu();
+
+        const cats = [
+            { id:'form1', name:'استماره 1' }, { id:'form2', name:'استماره 2' },
+            { id:'correspondence', name:'همانندجویی‌ها' }, { id:'administrative', name:'امر اداری‌ها' },
+            { id:'thesis-original', name:'رساله - فایل اولیه' }, { id:'thesis-edited', name:'رساله - تعدیل شده' },
+            { id:'thesis-pre-defense', name:'رساله - فایل منضده قبل مناقشه' },
+            { id:'thesis-post-defense-edit', name:'رساله - تعدیل بعد مناقشه' },
+            { id:'thesis-translated', name:'رساله ترجمه شده' },
+            { id:'thesis-iraqi-citation', name:'رساله - استلال عراقی' },
+            { id:'thesis-irandoc', name:'رساله - تنضید ایران داک' },
+            { id:'articles', name:'مقاله‌ها' }, { id:'binding', name:'تجلید' }, { id:'other', name:'سایر' }
+        ];
+        const opts = cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] p-4';
+        modal.innerHTML = `
+            <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl" onclick="event.stopPropagation()">
+                <h3 class="text-gray-800 font-bold text-lg mb-4 flex items-center gap-2">
+                    <i class="fas fa-archive text-green-600"></i> ذخیره در بایگانی
+                </h3>
+                <label class="text-gray-600 text-sm mb-1 block">دسته‌بندی</label>
+                <select id="archive-cat-sel" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 mb-4 focus:outline-none">${opts}</select>
+                <div class="flex gap-3">
+                    <button onclick="window.managesChatInstance._confirmArchive('${msgId}'); this.closest('.fixed').remove();"
+                        class="flex-1 bg-green-600 hover:bg-green-500 text-white py-2.5 rounded-xl font-bold">ذخیره</button>
+                    <button onclick="this.closest('.fixed').remove()"
+                        class="px-5 bg-gray-100 text-gray-700 py-2.5 rounded-xl">انصراف</button>
                 </div>
-            `;
-        }).join('');
+            </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    }
 
-        // Add styles
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from {
-                    opacity: 0;
-                    transform: translateY(10px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-            .message-group:hover .delete-btn {
-                opacity: 1 !important;
-            }
-            .delete-btn:hover {
-                background: #dc2626 !important;
-            }
-        `;
-        if (!document.getElementById('chat-animation-style')) {
-            style.id = 'chat-animation-style';
-            document.head.appendChild(style);
+    async _confirmArchive(msgId) {
+        const msg = this.messages.find(m => m.id === msgId);
+        const category = document.getElementById('archive-cat-sel')?.value || 'other';
+        if (!msg) return;
+
+        const fileRecord = {
+            id:          'arch_' + Date.now(),
+            name:        msg.fileName || `voice-${Date.now()}.webm`,
+            category,
+            author:      msg.senderName,
+            type:        (msg.fileName || '').split('.').pop().toLowerCase() || 'file',
+            size:        msg.fileSize ? Math.round(msg.fileSize / 1024) + ' KB' : '',
+            url:         msg.fileUrl || '#',
+            storagePath: msg.filePath || null,
+            uploadDate:  new Date().toISOString(),
+            uploadedById: this._currentUser()?.id || null
+        };
+
+        if (typeof SupabaseDataModule !== 'undefined') {
+            await SupabaseDataModule.saveArchiveFile(fileRecord);
+        } else {
+            const existing = JSON.parse(localStorage.getItem('archiveFiles') || '[]');
+            existing.unshift(fileRecord);
+            localStorage.setItem('archiveFiles', JSON.stringify(existing));
         }
+        alert('✅ فایل در بایگانی ذخیره شد');
+    }
 
-        // Scroll to bottom
+    // ── منشن ─────────────────────────────────────────────────
+    showMentionList() {
+        document.getElementById('mgmt-mention-modal')?.remove();
+        const modal = document.createElement('div');
+        modal.id = 'mgmt-mention-modal';
+        modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4';
+        const rows = this.participants.map(p => `
+            <div class="flex items-center gap-3 p-3 bg-gray-50 hover:bg-blue-50 rounded-xl cursor-pointer transition-all border border-transparent hover:border-blue-200"
+                 onclick="document.getElementById('managesChatInput').value += '@${this._esc(p.username)} ';
+                          document.getElementById('managesChatInput').focus();
+                          document.getElementById('mgmt-mention-modal').remove();">
+                <div class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-sm flex-shrink-0"
+                     style="background:${p.role === 'manager' ? '#7c3aed' : '#3b82f6'}">
+                    ${(p.name || '؟').charAt(0)}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="font-medium text-gray-800 text-sm truncate">${this._esc(p.name)}</p>
+                    <p class="text-gray-400 text-xs">@${this._esc(p.username)}</p>
+                </div>
+                <span class="text-xs px-2 py-0.5 rounded-full font-semibold ${p.role === 'manager' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}">
+                    ${p.role === 'manager' ? 'مدیر' : 'کارمند'}
+                </span>
+            </div>`).join('');
+        modal.innerHTML = `
+            <div class="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl max-h-[70vh] flex flex-col" onclick="event.stopPropagation()">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fas fa-at text-blue-500"></i> منشن کردن
+                    </h3>
+                    <button onclick="document.getElementById('mgmt-mention-modal').remove()"
+                        class="text-gray-400 hover:text-gray-700 text-xl leading-none">&times;</button>
+                </div>
+                <div class="space-y-2 overflow-y-auto flex-1">${rows}</div>
+            </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    }
+
+    // ── context menu (راست‌کلیک / long‌press) ────────────────
+    showContextMenu(e, msgId) {
+        e.preventDefault();
+        this._closeContextMenu();
+        const msg  = this.messages.find(m => m.id === msgId);
+        const user = this._currentUser();
+        if (!msg) return;
+        const isOwn = msg.senderId === user?.id;
+        const isFile = msg.msgType !== 'text';
+
+        const menu = document.createElement('div');
+        menu.id = 'mgmt-ctx-menu';
+        menu.className = 'fixed bg-white rounded-xl shadow-2xl border border-gray-200 z-[9999] py-1 min-w-[180px]';
+        menu.style.cssText = `left:${Math.min(e.clientX, window.innerWidth - 200)}px;top:${Math.min(e.clientY, window.innerHeight - 200)}px`;
+        menu.innerHTML = `
+            ${isOwn && !isFile ? `<button onclick="window.managesChatInstance.editMessage('${msgId}')"
+                class="w-full text-right px-4 py-2.5 hover:bg-gray-50 text-gray-700 flex items-center gap-3 text-sm">
+                <i class="fas fa-edit text-blue-400 w-4"></i> ویرایش</button>` : ''}
+            ${isOwn ? `<button onclick="window.managesChatInstance.deleteMessage('${msgId}')"
+                class="w-full text-right px-4 py-2.5 hover:bg-red-50 text-red-600 flex items-center gap-3 text-sm">
+                <i class="fas fa-trash w-4"></i> حذف</button>` : ''}
+            ${isFile ? `<button onclick="window.managesChatInstance.saveToArchive('${msgId}')"
+                class="w-full text-right px-4 py-2.5 hover:bg-green-50 text-green-700 flex items-center gap-3 text-sm">
+                <i class="fas fa-archive text-green-500 w-4"></i> ذخیره در بایگانی</button>` : ''}
+            ${isFile && msg.fileUrl ? `<a href="${this._esc(msg.fileUrl)}" download="${this._esc(msg.fileName || 'file')}" target="_blank"
+                class="block w-full text-right px-4 py-2.5 hover:bg-blue-50 text-blue-700 flex items-center gap-3 text-sm">
+                <i class="fas fa-download text-blue-400 w-4"></i> دانلود</a>` : ''}`;
+
+        document.body.appendChild(menu);
         setTimeout(() => {
-            container.scrollTop = container.scrollHeight;
+            document.addEventListener('click', this._ctxClose = () => this._closeContextMenu(), { once: true });
         }, 50);
     }
 
-    deleteMessage(messageId) {
-        if (!confirm('آیا مطمئن هستید که می‌خواهید این پیام را حذف کنید؟')) {
-            return;
-        }
-        
-        this.messages = this.messages.filter(msg => msg.id != messageId);
-        this.saveMessages();
-        this.renderMessages();
+    _closeContextMenu() {
+        document.getElementById('mgmt-ctx-menu')?.remove();
+        if (this._ctxClose) { document.removeEventListener('click', this._ctxClose); this._ctxClose = null; }
     }
 
-    renderMessageContent(msg) {
-        switch (msg.type) {
-            case 'text':
-                return `<p class="whitespace-pre-wrap break-words">${this.highlightMentions(msg.text)}</p>`;
-            case 'voice':
-                return `
-                    <div class="flex items-center gap-3 min-w-[250px]">
-                        <audio controls src="${msg.audioData}" class="w-full" style="height: 32px;">
-                            مرورگر شما از پخش صوت پشتیبانی نمی‌کند
-                        </audio>
-                    </div>
-                `;
-            case 'file':
-                return `
-                    <div class="flex items-center gap-3 bg-slate-700 bg-opacity-50 rounded-lg p-2">
-                        <i class="fas fa-file text-2xl text-black-400"></i>
-                        <div class="flex-1">
-                            <a href="${msg.fileData}" download="${msg.fileName}" class="text-black-300 hover:text-black-400 hover:underline">
-                                ${msg.fileName}
-                            </a>
-                        </div>
-                        <i class="fas fa-download text-gray-400"></i>
-                    </div>
-                `;
-            default:
-                return '';
-        }
+    handleLongPressStart(e, msgId) {
+        this._longPressTimer = setTimeout(() => this.showContextMenu(e, msgId), 600);
     }
 
-    highlightMentions(text) {
-        return text.replace(/@(\w+)/g, '<span class="bg-lime-400 text-slate-900 px-1.5 py-0.5 rounded font-semibold">@$1</span>');
-    }
-
-    getRoleName(role) {
-        const roles = {
-            'manager': 'مدیر',
-            'employee': 'کارمند'
-        };
-        return roles[role] || role;
-    }
-
-    getRelatedTaskId() {
-        // اگر از صفحه وظایف آمده، شناسه وظیفه را برمی‌گرداند
-        const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get('taskId');
-    }
-
-    notifyMentionedUsers(message) {
-        if (message.mentions.length === 0) return;
-
-        message.mentions.forEach(username => {
-            const user = this.participants.find(p => p.username === username);
-            if (user) {
-                // ارسال نوتیفیکیشن
-                this.sendNotification(user.id, {
-                    type: 'mention',
-                    message: `${message.senderName} شما را در چت مدیریتی منشن کرد`,
-                    messageId: message.id
-                });
-            }
-        });
-    }
-
-    sendNotification(userId, notification) {
-        const notifications = JSON.parse(localStorage.getItem(`notifications_${userId}`) || '[]');
-        notifications.push({
-            ...notification,
-            id: Date.now(),
-            timestamp: new Date().toISOString(),
-            read: false
-        });
-        localStorage.setItem(`notifications_${userId}`, JSON.stringify(notifications));
-    }
-
-    filterMessagesByTask(taskId) {
-        return this.messages.filter(msg => msg.relatedTaskId === taskId);
-    }
-
-    searchMessages(query) {
-        return this.messages.filter(msg => 
-            msg.text && msg.text.toLowerCase().includes(query.toLowerCase())
-        );
-    }
-    
-    // Context Menu Functions
-    handleLongPressStart(event, messageId) {
-        this.longPressTimer = setTimeout(() => {
-            this.showContextMenu(event, messageId);
-        }, 3000); // 3 seconds
-    }
-    
     handleLongPressEnd() {
-        if (this.longPressTimer) {
-            clearTimeout(this.longPressTimer);
-            this.longPressTimer = null;
+        clearTimeout(this._longPressTimer);
+    }
+
+    // ── رندر پیام‌ها ──────────────────────────────────────────
+    renderMessages() {
+        const container = document.getElementById('managesChatMessages');
+        if (!container) return;
+        const user = this._currentUser();
+
+        let list = this.messages.filter(m => !m.deleted);
+        if (this.searchQuery.trim()) {
+            const q = this.searchQuery.toLowerCase();
+            list = list.filter(m =>
+                (m.content || m.text || '').toLowerCase().includes(q) ||
+                (m.senderName || '').toLowerCase().includes(q) ||
+                (m.fileName || '').toLowerCase().includes(q));
+        }
+
+        if (!list.length) {
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full text-center py-16">
+                    <i class="fas fa-comments text-5xl text-gray-300 mb-3"></i>
+                    <p class="text-gray-400">${this.searchQuery ? 'پیامی یافت نشد' : 'هنوز پیامی ارسال نشده است'}</p>
+                </div>`;
+            return;
+        }
+
+        // گروه‌بندی بر اساس تاریخ
+        let lastDate = '';
+        container.innerHTML = list.map(msg => {
+            const isOwn    = msg.senderId === user?.id;
+            const dateStr  = this._formatDate(msg.createdAt);
+            const timeStr  = this._formatTime(msg.createdAt);
+            const dateDiv  = dateStr !== lastDate
+                ? `<div class="flex items-center gap-3 my-3">
+                       <div class="flex-1 h-px bg-gray-200"></div>
+                       <span class="text-gray-400 text-xs px-2">${dateStr}</span>
+                       <div class="flex-1 h-px bg-gray-200"></div>
+                   </div>`
+                : '';
+            lastDate = dateStr;
+
+            const avatarBg = msg.senderRole === 'manager' ? '#7c3aed' : '#3b82f6';
+            const roleBadge = msg.senderRole === 'manager'
+                ? '<span class="text-xs px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-semibold">مدیر</span>'
+                : '<span class="text-xs px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold">کارمند</span>';
+            const pendingDot = msg._pending
+                ? '<span class="text-gray-400 text-xs mr-1" title="در حال ارسال..."><i class="fas fa-clock"></i></span>' : '';
+            const editedNote = msg.edited
+                ? '<span class="text-gray-400 text-xs mr-1">(ویرایش شده)</span>' : '';
+            const bubbleBg = isOwn
+                ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;'
+                : 'background:#f1f5f9;color:#1e293b;';
+
+            return `${dateDiv}
+            <div class="flex items-end gap-2 mb-3 ${isOwn ? 'flex-row-reverse' : ''} group">
+                <!-- آواتار -->
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${isOwn ? 'ml-1' : 'mr-1'}"
+                     style="background:${avatarBg}">${(msg.senderName || '؟').charAt(0)}</div>
+                <!-- حباب -->
+                <div class="max-w-[70%] flex flex-col ${isOwn ? 'items-end' : 'items-start'}">
+                    <!-- اطلاعات فرستنده -->
+                    <div class="flex items-center gap-1.5 mb-1 ${isOwn ? 'flex-row-reverse' : ''}">
+                        <span class="text-xs font-semibold text-gray-600">${this._esc(msg.senderName)}</span>
+                        ${roleBadge}
+                        <span class="text-gray-400 text-xs">${timeStr}</span>
+                        ${editedNote}${pendingDot}
+                    </div>
+                    <!-- محتوا -->
+                    <div class="rounded-2xl px-4 py-2.5 relative cursor-pointer select-text"
+                         style="${bubbleBg}max-width:100%;"
+                         oncontextmenu="event.preventDefault();window.managesChatInstance.showContextMenu(event,'${msg.id}');"
+                         ontouchstart="window.managesChatInstance.handleLongPressStart(event,'${msg.id}')"
+                         ontouchend="window.managesChatInstance.handleLongPressEnd()"
+                         ontouchmove="window.managesChatInstance.handleLongPressEnd()">
+                        ${this._renderContent(msg)}
+                    </div>
+                    <!-- منشن‌ها -->
+                    ${msg.mentions?.length ? `<div class="mt-1 flex flex-wrap gap-1">${msg.mentions.map(m=>`<span class="text-xs px-1.5 py-0.5 rounded-full bg-yellow-100 text-yellow-700">@${this._esc(m)}</span>`).join('')}</div>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // ── رندر محتوای یک پیام ──────────────────────────────────
+    _renderContent(msg) {
+        switch (msg.msgType) {
+            case 'image':
+                return `<img src="${this._esc(msg.fileUrl)}" alt="${this._esc(msg.fileName)}"
+                    class="max-w-full rounded-xl cursor-pointer max-h-64 object-cover"
+                    onclick="window.open('${this._esc(msg.fileUrl)}','_blank')"
+                    onerror="this.src='';this.alt='تصویر قابل نمایش نیست'">`;
+            case 'voice':
+                return `<div class="flex items-center gap-3 min-w-[220px]">
+                    <i class="fas fa-microphone text-lg opacity-70"></i>
+                    <audio controls src="${this._esc(msg.fileUrl)}" class="flex-1" style="height:32px;max-width:240px;">
+                        مرورگر شما پخش صوت را پشتیبانی نمی‌کند
+                    </audio>
+                </div>`;
+            case 'file':
+                return `<div class="flex items-center gap-3 py-1">
+                    <i class="fas fa-file text-2xl opacity-70"></i>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium truncate">${this._esc(msg.fileName || msg.content)}</p>
+                        ${msg.fileSize ? `<p class="text-xs opacity-60">${Math.round(msg.fileSize/1024)} KB</p>` : ''}
+                    </div>
+                    ${msg.fileUrl && msg.fileUrl !== '#' ? `<a href="${this._esc(msg.fileUrl)}" download="${this._esc(msg.fileName || 'file')}" target="_blank"
+                        class="opacity-70 hover:opacity-100 transition-opacity"><i class="fas fa-download"></i></a>` : ''}
+                </div>`;
+            default:
+                return `<p class="whitespace-pre-wrap break-words text-sm leading-relaxed">${this._highlightMentions(this._esc(msg.content || msg.text || ''))}</p>`;
         }
     }
-    
-    showContextMenu(event, messageId) {
-        // Remove existing context menu
-        const existing = document.getElementById('message-context-menu');
-        if (existing) existing.remove();
-        
-        this.selectedMessageId = messageId;
-        const message = this.messages.find(m => m.id == messageId);
-        if (!message) return;
-        
-        const menu = document.createElement('div');
-        menu.id = 'message-context-menu';
-        menu.className = 'fixed bg-slate-800 rounded-lg shadow-2xl border border-slate-600 z-[9999] min-w-[200px]';
-        menu.style.left = event.pageX + 'px';
-        menu.style.top = event.pageY + 'px';
-        
-        menu.innerHTML = `
-            <div class="py-2">
-                <button onclick="window.managesChatInstance.editMessage('${messageId}')" 
-                        class="w-full text-right px-4 py-2 hover:bg-slate-700 text-white flex items-center gap-3">
-                    <i class="fas fa-edit text-black-400"></i>
-                    <span>ویرایش</span>
-                </button>
-                <button onclick="window.managesChatInstance.deleteMessage('${messageId}')" 
-                        class="w-full text-right px-4 py-2 hover:bg-slate-700 text-white flex items-center gap-3">
-                    <i class="fas fa-trash text-red-400"></i>
-                    <span>حذف</span>
-                </button>
-                ${message.type === 'file' || message.type === 'voice' ? `
-                    <button onclick="window.managesChatInstance.saveToArchive('${messageId}')" 
-                            class="w-full text-right px-4 py-2 hover:bg-slate-700 text-white flex items-center gap-3">
-                        <i class="fas fa-save text-green-400"></i>
-                        <span>ذخیره در بایگانی</span>
-                    </button>
-                    <button onclick="window.managesChatInstance.forwardFile('${messageId}')" 
-                            class="w-full text-right px-4 py-2 hover:bg-slate-700 text-white flex items-center gap-3">
-                        <i class="fas fa-share text-lime-400"></i>
-                        <span>فوروارد</span>
-                    </button>
-                    <button onclick="window.managesChatInstance.shareToApp('${messageId}')" 
-                            class="w-full text-right px-4 py-2 hover:bg-slate-700 text-white flex items-center gap-3">
-                        <i class="fas fa-share-alt text-lime-400"></i>
-                        <span>اشتراک‌گذاری</span>
-                    </button>
-                ` : ''}
-            </div>
-        `;
-        
-        document.body.appendChild(menu);
-        
-        // Close menu on click outside
+
+    scrollToBottom() {
         setTimeout(() => {
-            document.addEventListener('click', function closeMenu(e) {
-                if (!menu.contains(e.target)) {
-                    menu.remove();
-                    document.removeEventListener('click', closeMenu);
-                }
-            });
-        }, 100);
+            const c = document.getElementById('managesChatMessages');
+            if (c) c.scrollTop = c.scrollHeight;
+        }, 80);
     }
-    
-    editMessage(messageId) {
-        const message = this.messages.find(m => m.id == messageId);
-        if (!message || message.type !== 'text') {
-            alert('فقط پیام‌های متنی قابل ویرایش هستند');
-            return;
+
+    setSearchQuery(q) { this.searchQuery = q; this.renderMessages(); }
+
+    // ── رندر نوار شرکت‌کنندگان ───────────────────────────────
+    renderParticipantsBar() {
+        const bar = document.getElementById('mgmt-participants-bar');
+        if (!bar) return;
+        bar.innerHTML = this.participants.map(p => `
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm whitespace-nowrap flex-shrink-0"
+                 style="${p.role === 'manager' ? 'background:#7c3aed;color:white;' : 'background:#e0e7ff;color:#3730a3;'}">
+                <i class="fas ${p.role === 'manager' ? 'fa-crown' : 'fa-user'} text-xs"></i>
+                <span>${this._esc(p.name)}</span>
+            </div>`).join('');
+    }
+
+    // ── helpers ───────────────────────────────────────────────
+    _currentUser() {
+        try {
+            return JSON.parse(localStorage.getItem('currentUser') ||
+                              localStorage.getItem('edu_system_current_user') || 'null');
+        } catch { return null; }
+    }
+
+    _extractMentions(text) {
+        const matches = [];
+        const re = /@(\S+)/g;
+        let m;
+        while ((m = re.exec(text)) !== null) matches.push(m[1]);
+        return matches;
+    }
+
+    _highlightMentions(text) {
+        return text.replace(/@(\S+)/g,
+            '<span class="px-1 py-0.5 rounded font-semibold" style="background:rgba(250,204,21,0.3);color:#92400e;">@$1</span>');
+    }
+
+    _esc(s) {
+        return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    _formatDate(iso) {
+        if (!iso) return '';
+        try {
+            const d = new Date(iso);
+            if (typeof Jalali !== 'undefined') return Jalali.toJalaliDisplay(d);
+            return d.toLocaleDateString('fa-IR');
+        } catch { return ''; }
+    }
+
+    _formatTime(iso) {
+        if (!iso) return '';
+        try { return new Date(iso).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }); }
+        catch { return ''; }
+    }
+
+    // ── destroy — برای حذف subscription هنگام خروج ───────────
+    destroy() {
+        if (typeof SupabaseDataModule !== 'undefined') {
+            SupabaseDataModule.unsubscribeManagementChat();
         }
-        
-        const modal = document.createElement('div');
-        modal.className = 'fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[9999]';
-        modal.innerHTML = `
-            <div class="bg-slate-800 rounded-2xl p-6 max-w-md w-11/12">
-                <h3 class="text-xl font-bold text-white mb-4">
-                    <i class="fas fa-edit text-black-400 ml-2"></i>
-                    ویرایش پیام
-                </h3>
-                <textarea id="edit-message-text" 
-                          class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white resize-none"
-                          rows="4">${message.text}</textarea>
-                <div class="flex gap-3 mt-4">
-                    <button onclick="window.managesChatInstance.saveEditedMessage('${messageId}'); this.closest('.fixed').remove();" 
-                            class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
-                        ذخیره
-                    </button>
-                    <button onclick="this.closest('.fixed').remove()" 
-                            class="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg">
-                        انصراف
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-        document.getElementById('edit-message-text').focus();
-        
-        // Remove context menu
-        const contextMenu = document.getElementById('message-context-menu');
-        if (contextMenu) contextMenu.remove();
-    }
-    
-    saveEditedMessage(messageId) {
-        const newText = document.getElementById('edit-message-text').value.trim();
-        if (!newText) {
-            alert('متن پیام نمی‌تواند خالی باشد');
-            return;
-        }
-        
-        const messageIndex = this.messages.findIndex(m => m.id == messageId);
-        if (messageIndex !== -1) {
-            this.messages[messageIndex].text = newText;
-            this.messages[messageIndex].edited = true;
-            this.messages[messageIndex].editedAt = new Date().toISOString();
-            this.saveMessages();
-            this.renderMessages();
-        }
-    }
-    
-    saveToArchive(messageId) {
-        const message = this.messages.find(m => m.id == messageId);
-        if (!message || (message.type !== 'file' && message.type !== 'voice')) {
-            alert('فقط فایل‌ها و پیام‌های صوتی قابل ذخیره هستند');
-            return;
-        }
-        
-        // Show category selection modal
-        const modal = document.createElement('div');
-        modal.className = 'fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[9999]';
-        modal.innerHTML = `
-            <div class="bg-slate-800 rounded-2xl p-6 max-w-md w-11/12">
-                <h3 class="text-xl font-bold text-white mb-4">
-                    <i class="fas fa-save text-green-400 ml-2"></i>
-                    ذخیره در بایگانی
-                </h3>
-                <div class="mb-4">
-                    <label class="block text-white text-sm font-medium mb-2">دسته‌بندی</label>
-                    <select id="archive-category" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white">
-                        <option value="form1">استمارة 1</option>
-                        <option value="form2">استمارة 2</option>
-                        <option value="correspondence">همانندجویی‌ها</option>
-                        <option value="administrative">امر اداری‌ها</option>
-                        <option value="thesis-original">رساله - فایل اولیه</option>
-                        <option value="thesis-edited">رساله - تعدیل شده</option>
-                        <option value="thesis-pre-defense">رساله - فایل منضده قبل مناقشه</option>
-                        <option value="thesis-pre-defense-edit">رساله - تعدیل قبل مناقشه</option>
-                        <option value="thesis-post-defense-edit">رساله - تعدیل بعد مناقشه</option>
-                        <option value="thesis-iraqi-citation">رساله - استلال عراقی</option>
-                        <option value="thesis-irandoc">رساله - تنضید ایران داک</option>
-                        <option value="articles">مقاله‌ها</option>
-                        <option value="binding">تجلید</option>
-                        <option value="document">مدرک</option>
-                        <option value="translation">ترجمه</option>
-                        <option value="other">سایر</option>
-                    </select>
-                </div>
-                <div class="flex gap-3">
-                    <button onclick="window.managesChatInstance.confirmSaveToArchive('${messageId}'); this.closest('.fixed').remove();" 
-                            class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
-                        ذخیره
-                    </button>
-                    <button onclick="this.closest('.fixed').remove()" 
-                            class="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg">
-                        انصراف
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-        
-        // Remove context menu
-        const contextMenu = document.getElementById('message-context-menu');
-        if (contextMenu) contextMenu.remove();
-    }
-    
-    confirmSaveToArchive(messageId) {
-        const message = this.messages.find(m => m.id == messageId);
-        const category = document.getElementById('archive-category').value;
-        
-        if (!message) return;
-        
-        // Get archive files from localStorage
-        let archiveFiles = JSON.parse(localStorage.getItem('archive_files') || '[]');
-        
-        const archiveFile = {
-            id: Date.now(),
-            name: message.fileName || `voice-${Date.now()}.webm`,
-            type: message.type === 'voice' ? 'audio' : message.fileType,
-            category: category,
-            author: message.senderName,
-            uploadDate: new Date().toISOString(),
-            data: message.fileData || message.audioData,
-            source: 'management_chat',
-            sourceMessageId: message.id
-        };
-        
-        archiveFiles.push(archiveFile);
-        localStorage.setItem('archive_files', JSON.stringify(archiveFiles));
-        
-        alert('فایل با موفقیت در بایگانی ذخیره شد');
-    }
-    
-    forwardFile(messageId) {
-        const message = this.messages.find(m => m.id == messageId);
-        if (!message) return;
-        
-        const modal = document.createElement('div');
-        modal.className = 'fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[9999]';
-        modal.innerHTML = `
-            <div class="bg-slate-800 rounded-2xl p-6 max-w-md w-11/12">
-                <h3 class="text-xl font-bold text-white mb-4">
-                    <i class="fas fa-share text-lime-400 ml-2"></i>
-                    فوروارد به
-                </h3>
-                <div class="space-y-2 mb-4">
-                    <button onclick="window.managesChatInstance.forwardToArchive('${messageId}'); this.closest('.fixed').remove();" 
-                            class="w-full text-right px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg flex items-center gap-3">
-                        <i class="fas fa-archive text-green-400"></i>
-                        <span>بایگانی فایل‌ها</span>
-                    </button>
-                    <button onclick="window.managesChatInstance.forwardToChat('${messageId}'); this.closest('.fixed').remove();" 
-                            class="w-full text-right px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg flex items-center gap-3">
-                        <i class="fas fa-comments text-black-400"></i>
-                        <span>گفتگوی شخصی</span>
-                    </button>
-                </div>
-                <button onclick="this.closest('.fixed').remove()" 
-                        class="w-full bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg">
-                    انصراف
-                </button>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-        
-        // Remove context menu
-        const contextMenu = document.getElementById('message-context-menu');
-        if (contextMenu) contextMenu.remove();
-    }
-    
-    forwardToArchive(messageId) {
-        this.saveToArchive(messageId);
-    }
-    
-    forwardToChat(messageId) {
-        alert('فوروارد به گفتگوی شخصی در نسخه بعدی اضافه خواهد شد');
-    }
-    
-    shareToApp(messageId) {
-        const message = this.messages.find(m => m.id == messageId);
-        if (!message) return;
-        
-        const fileData = message.fileData || message.audioData;
-        const fileName = message.fileName || `voice-${Date.now()}.webm`;
-        
-        // Check if Web Share API is available
-        if (navigator.share) {
-            // Convert base64 to blob
-            fetch(fileData)
-                .then(res => res.blob())
-                .then(blob => {
-                    const file = new File([blob], fileName, { type: blob.type });
-                    
-                    navigator.share({
-                        title: 'اشتراک‌گذاری فایل',
-                        text: `فایل از گفتگو مدیریت: ${fileName}`,
-                        files: [file]
-                    })
-                    .then(() => console.log('Share successful'))
-                    .catch(err => console.log('Share failed:', err));
-                })
-                .catch(err => {
-                    console.error('Error converting file:', err);
-                    this.fallbackShare(fileData, fileName);
-                });
-        } else {
-            this.fallbackShare(fileData, fileName);
-        }
-        
-        // Remove context menu
-        const contextMenu = document.getElementById('message-context-menu');
-        if (contextMenu) contextMenu.remove();
-    }
-    
-    fallbackShare(fileData, fileName) {
-        // Fallback: Download file
-        const link = document.createElement('a');
-        link.href = fileData;
-        link.download = fileName;
-        link.click();
-        
-        alert('فایل دانلود شد. می‌توانید آن را در اپلیکیشن‌های دیگر به اشتراک بگذارید.');
-    }
-    
-    // Search functionality
-    setSearchQuery(query) {
-        this.searchQuery = query;
-        this.renderMessages();
+        this._initialized = false;
     }
 }
 
-// راه‌اندازی
-let managesChatInstance;
+// ── expose global ─────────────────────────────────────────────
+window.ManagesChat = ManagesChat;
 
-// Initialize on DOMContentLoaded for standalone page
+// راه‌اندازی خودکار در صفحه مستقل
 document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('managesChatMessages') && !window.managesChatInstance) {
         window.managesChatInstance = new ManagesChat();
-        console.log('ManagesChat initialized on DOMContentLoaded');
     }
 });
-
-// Also expose as global for sidebar usage
-if (typeof window !== 'undefined') {
-    window.ManagesChat = ManagesChat;
-}

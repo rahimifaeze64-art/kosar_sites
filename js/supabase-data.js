@@ -778,6 +778,305 @@ const SupabaseDataModule = {
     },
 
     // ════════════════════════════════════════════════════════
+    // MANAGEMENT CHAT — گفتگوی گروهی مدیریت
+    // جدول: management_messages + management_message_reads
+    // Storage bucket: management-chat-files
+    // ════════════════════════════════════════════════════════
+
+    // بارگذاری پیام‌ها (۱۰۰ پیام آخر)
+    async getManagementMessages(limit = 100) {
+        const LOCAL_KEY = 'mgmt_chat_messages';
+        if (!this._online()) {
+            const raw = localStorage.getItem(LOCAL_KEY);
+            return raw ? JSON.parse(raw) : [];
+        }
+        try {
+            const { data, error } = await this._db()
+                .from('management_messages')
+                .select('*')
+                .eq('deleted', false)
+                .order('created_at', { ascending: true })
+                .limit(limit);
+            if (error) throw error;
+            const msgs = data.map(r => this._dbToMgmtMsg(r));
+            localStorage.setItem(LOCAL_KEY, JSON.stringify(msgs));
+            return msgs;
+        } catch (e) {
+            console.warn('⚠️ getManagementMessages خطا:', e.message);
+            const raw = localStorage.getItem(LOCAL_KEY);
+            return raw ? JSON.parse(raw) : [];
+        }
+    },
+
+    // ارسال پیام متنی
+    async sendManagementMessage(msg) {
+        // ذخیره محلی اول
+        const LOCAL_KEY = 'mgmt_chat_messages';
+        const local = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]');
+        const localMsg = { ...msg, _pending: true };
+        local.push(localMsg);
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(local));
+
+        if (!this._online()) return { id: msg.id, _offline: true };
+        try {
+            const row = this._mgmtMsgToDb(msg);
+            const { data, error } = await this._db()
+                .from('management_messages')
+                .insert([row])
+                .select('id')
+                .single();
+            if (error) throw error;
+            // حذف pending از local و جایگزین با ID واقعی
+            const updated = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]');
+            const idx = updated.findIndex(m => m.id === msg.id);
+            if (idx >= 0) { updated[idx]._pending = false; updated[idx].id = data.id; }
+            localStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
+            return data;
+        } catch (e) {
+            console.warn('⚠️ sendManagementMessage خطا:', e.message);
+            return null;
+        }
+    },
+
+    // آپلود فایل (تصویر، PDF، صوت) به Storage
+    async uploadManagementChatFile(file, msgId) {
+        if (!this._online()) return null;
+        try {
+            const ext  = file.name.split('.').pop().toLowerCase();
+            const path = `${msgId}.${ext}`;
+            const { data, error } = await this._db()
+                .storage
+                .from('management-chat-files')
+                .upload(path, file, { upsert: true, contentType: file.type });
+            if (error) throw error;
+            const { data: urlData } = this._db()
+                .storage
+                .from('management-chat-files')
+                .getPublicUrl(data.path);
+            return { url: urlData?.publicUrl || null, path: data.path };
+        } catch (e) {
+            console.warn('⚠️ uploadManagementChatFile خطا:', e.message);
+            return null;
+        }
+    },
+
+    // ارسال پیام فایل/تصویر/صوت
+    async sendManagementFileMessage(file, sender) {
+        const msgId = 'mgmt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+        const ext   = file.name.split('.').pop().toLowerCase();
+        const isVoice = file.type.startsWith('audio/');
+        const isImage = file.type.startsWith('image/');
+        const msgType = isVoice ? 'voice' : (isImage ? 'image' : 'file');
+
+        // آپلود به Storage
+        let fileUrl  = null;
+        let filePath = null;
+        const uploaded = await this.uploadManagementChatFile(file, msgId);
+        if (uploaded) { fileUrl = uploaded.url; filePath = uploaded.path; }
+
+        const msg = {
+            id:          msgId,
+            senderId:    sender.id,
+            senderName:  sender.name,
+            senderRole:  sender.role,
+            msgType,
+            content:     file.name,
+            fileUrl,
+            filePath,
+            fileName:    file.name,
+            fileType:    file.type,
+            fileSize:    file.size,
+            mentions:    [],
+            createdAt:   new Date().toISOString()
+        };
+        return this.sendManagementMessage(msg);
+    },
+
+    // ویرایش پیام
+    async editManagementMessage(msgId, newContent) {
+        // محلی
+        const LOCAL_KEY = 'mgmt_chat_messages';
+        const local = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]');
+        const idx = local.findIndex(m => m.id === msgId);
+        if (idx >= 0) {
+            local[idx].content  = newContent;
+            local[idx].edited   = true;
+            local[idx].editedAt = new Date().toISOString();
+            localStorage.setItem(LOCAL_KEY, JSON.stringify(local));
+        }
+
+        if (!this._online()) return true;
+        try {
+            const { error } = await this._db()
+                .from('management_messages')
+                .update({ content: newContent, edited: true, edited_at: new Date().toISOString() })
+                .eq('id', msgId);
+            if (error) throw error;
+            return true;
+        } catch (e) {
+            console.warn('⚠️ editManagementMessage خطا:', e.message);
+            return false;
+        }
+    },
+
+    // حذف منطقی پیام
+    async deleteManagementMessage(msgId) {
+        // محلی
+        const LOCAL_KEY = 'mgmt_chat_messages';
+        const local = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]');
+        const updated = local.filter(m => m.id !== msgId);
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
+
+        if (!this._online()) return true;
+        try {
+            const { error } = await this._db()
+                .from('management_messages')
+                .update({ deleted: true })
+                .eq('id', msgId);
+            if (error) throw error;
+            return true;
+        } catch (e) {
+            console.warn('⚠️ deleteManagementMessage خطا:', e.message);
+            return false;
+        }
+    },
+
+    // ثبت خوانده شدن پیام‌ها توسط کاربر
+    async markManagementMessagesRead(userId, messageIds) {
+        if (!this._online() || !messageIds.length) return true;
+        try {
+            const rows = messageIds.map(mid => ({
+                message_id: mid,
+                user_id:    userId,
+                read_at:    new Date().toISOString()
+            }));
+            const { error } = await this._db()
+                .from('management_message_reads')
+                .upsert(rows, { onConflict: 'message_id,user_id', ignoreDuplicates: true });
+            if (error) throw error;
+            return true;
+        } catch (e) {
+            console.warn('⚠️ markManagementMessagesRead خطا:', e.message);
+            return false;
+        }
+    },
+
+    // تعداد پیام‌های خوانده‌نشده
+    async getUnreadManagementCount(userId) {
+        if (!this._online()) return 0;
+        try {
+            const { data, error } = await this._db()
+                .rpc('get_unread_management_messages', { p_user_id: userId });
+            if (error) throw error;
+            return data || 0;
+        } catch (e) {
+            return 0;
+        }
+    },
+
+    // Realtime subscription برای پیام‌های جدید
+    subscribeToManagementChat(callback) {
+        if (!this._online()) return null;
+        // اگر قبلاً subscribe شده، همان رو برمی‌گردانیم
+        if (this._channels['mgmt_chat']) return this._channels['mgmt_chat'];
+        try {
+            const channel = this._db()
+                .channel('mgmt_chat_rt')
+                .on('postgres_changes',
+                    { event: 'INSERT', schema: 'public', table: 'management_messages' },
+                    payload => { if (!payload.new?.deleted) callback('INSERT', this._dbToMgmtMsg(payload.new)); })
+                .on('postgres_changes',
+                    { event: 'UPDATE', schema: 'public', table: 'management_messages' },
+                    payload => { callback('UPDATE', this._dbToMgmtMsg(payload.new)); })
+                .subscribe();
+            this._channels['mgmt_chat'] = channel;
+            return channel;
+        } catch (e) {
+            console.warn('⚠️ subscribeToManagementChat خطا:', e.message);
+            return null;
+        }
+    },
+
+    unsubscribeManagementChat() {
+        const client = this._db();
+        if (!client || !this._channels['mgmt_chat']) return;
+        client.removeChannel(this._channels['mgmt_chat']);
+        delete this._channels['mgmt_chat'];
+    },
+
+    // بارگذاری شرکت‌کنندگان واقعی (manager + employee) از profiles
+    async getManagementChatParticipants() {
+        if (!this._online()) {
+            // fallback به localStorage
+            const users = this._localGetUsers();
+            return users.filter(u => u.role === 'manager' || u.role === 'employee');
+        }
+        try {
+            const { data, error } = await this._db()
+                .from('profiles')
+                .select('id, name, username, role')
+                .in('role', ['manager', 'employee'])
+                .eq('active', true)
+                .order('role')
+                .order('name');
+            if (error) throw error;
+            return data.map(r => ({
+                id:       r.id,
+                name:     r.name     || 'کاربر',
+                username: r.username || r.id,
+                role:     r.role
+            }));
+        } catch (e) {
+            console.warn('⚠️ getManagementChatParticipants خطا:', e.message);
+            const users = this._localGetUsers();
+            return users.filter(u => u.role === 'manager' || u.role === 'employee');
+        }
+    },
+
+    // ── management chat transformers ─────────────────────────
+    _mgmtMsgToDb(m) {
+        return {
+            // اگر id از نوع UUID است همان را بفرست، در غیر این صورت DB خودش تولید می‌کند
+            ...(m.id && /^[0-9a-f-]{36}$/i.test(m.id) ? { id: m.id } : {}),
+            sender_id:       String(m.senderId   || ''),
+            sender_name:     String(m.senderName || ''),
+            sender_role:     (m.senderRole === 'manager' ? 'manager' : 'employee'),
+            msg_type:        m.msgType    || 'text',
+            content:         m.content   || m.text || null,
+            file_url:        m.fileUrl   || null,
+            file_name:       m.fileName  || null,
+            file_type:       m.fileType  || null,
+            file_size:       m.fileSize  ? parseInt(m.fileSize) : null,
+            mentions:        Array.isArray(m.mentions) ? m.mentions : [],
+            related_task_id: m.relatedTaskId || null,
+            edited:          m.edited    || false,
+            edited_at:       m.editedAt  || null
+        };
+    },
+
+    _dbToMgmtMsg(r) {
+        return {
+            id:            r.id,
+            senderId:      r.sender_id,
+            senderName:    r.sender_name  || '',
+            senderRole:    r.sender_role  || 'employee',
+            msgType:       r.msg_type     || 'text',
+            content:       r.content      || '',
+            text:          r.content      || '',
+            fileUrl:       r.file_url     || null,
+            fileName:      r.file_name    || null,
+            fileType:      r.file_type    || null,
+            fileSize:      r.file_size    || null,
+            mentions:      r.mentions     || [],
+            relatedTaskId: r.related_task_id || null,
+            edited:        r.edited       || false,
+            editedAt:      r.edited_at    || null,
+            deleted:       r.deleted      || false,
+            createdAt:     r.created_at
+        };
+    },
+
+    // ════════════════════════════════════════════════════════
     // TRANSFORMERS — اپ ↔ Supabase
     // ════════════════════════════════════════════════════════
 
