@@ -28,6 +28,16 @@ const ManagementChatModule = {
                 </div>
             </div>
 
+            <!-- بنر هشدار migration نشده -->
+            <div id="mgmt-migration-banner" class="hidden items-center gap-3 px-4 py-3 text-sm font-medium"
+                 style="display:none;background:#fef3c7;color:#92400e;border-bottom:1px solid #fde68a;">
+                <i class="fas fa-exclamation-triangle text-amber-500"></i>
+                <span>جدول چت مدیریت هنوز ایجاد نشده — فایل
+                    <code class="bg-amber-100 px-1 rounded text-xs">supabase/management_chat_migration.sql</code>
+                    را در Supabase SQL Editor اجرا کنید تا چت‌ها برای همه ذخیره شوند.
+                </span>
+            </div>
+
             <!-- نوار شرکت‌کنندگان -->
             <div id="mgmt-participants-bar"
                  class="flex items-center gap-2 px-4 py-2 overflow-x-auto border-b border-gray-200"
@@ -103,7 +113,7 @@ const ManagementChatModule = {
                     window.managesChatInstance = null;
                 }
                 // ایجاد نمونه جدید بعد از mount شدن DOM
-                setTimeout(() => {
+                setTimeout(async () => {
                     window.managesChatInstance = new ManagesChat();
                     // رندر شرکت‌کنندگان بعد از load
                     setTimeout(() => {
@@ -111,6 +121,19 @@ const ManagementChatModule = {
                             window.managesChatInstance.renderParticipantsBar();
                         }
                     }, 800);
+
+                    // بررسی وجود جدول — نمایش بنر هشدار اگر migration اجرا نشده
+                    setTimeout(async () => {
+                        try {
+                            const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+                            if (!client) return;
+                            const { error } = await client.from('management_messages').select('id').limit(1);
+                            if (error && (error.code === '42P01' || error.message?.includes('does not exist'))) {
+                                const banner = document.getElementById('mgmt-migration-banner');
+                                if (banner) banner.style.display = 'flex';
+                            }
+                        } catch {}
+                    }, 1500);
                 }, 100);
             })();
         </script>`;

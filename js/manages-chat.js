@@ -25,6 +25,10 @@ class ManagesChat {
             return;
         }
         this._initialized = true;
+
+        // صبر برای آماده شدن SupabaseDataModule (حداکثر ۳ ثانیه)
+        await this._waitForSupabase();
+
         await this.loadParticipants();
         await this.loadMessages();
         this.renderMessages();
@@ -33,10 +37,34 @@ class ManagesChat {
         this.subscribeRealtime();
     }
 
+    // ── صبر برای آماده شدن Supabase ──────────────────────────
+    _waitForSupabase() {
+        return new Promise(resolve => {
+            if (typeof SupabaseDataModule !== 'undefined' &&
+                typeof SupabaseDataModule.getManagementMessages === 'function') {
+                return resolve();
+            }
+            let tries = 0;
+            const check = setInterval(() => {
+                tries++;
+                if (typeof SupabaseDataModule !== 'undefined' &&
+                    typeof SupabaseDataModule.getManagementMessages === 'function') {
+                    clearInterval(check);
+                    resolve();
+                } else if (tries >= 30) { // max 3s
+                    clearInterval(check);
+                    console.warn('⚠️ ManagesChat: Supabase timeout — fallback به localStorage');
+                    resolve();
+                }
+            }, 100);
+        });
+    }
+
     // ── بارگذاری شرکت‌کنندگان از Supabase ────────────────────
     async loadParticipants() {
         try {
-            if (typeof SupabaseDataModule !== 'undefined') {
+            if (typeof SupabaseDataModule !== 'undefined' &&
+                typeof SupabaseDataModule.getManagementChatParticipants === 'function') {
                 this.participants = await SupabaseDataModule.getManagementChatParticipants();
             }
         } catch (e) {
@@ -52,7 +80,8 @@ class ManagesChat {
     // ── بارگذاری پیام‌ها ──────────────────────────────────────
     async loadMessages() {
         try {
-            if (typeof SupabaseDataModule !== 'undefined') {
+            if (typeof SupabaseDataModule !== 'undefined' &&
+                typeof SupabaseDataModule.getManagementMessages === 'function') {
                 this.messages = await SupabaseDataModule.getManagementMessages(150);
                 return;
             }
@@ -66,7 +95,8 @@ class ManagesChat {
 
     // ── Realtime subscription ─────────────────────────────────
     subscribeRealtime() {
-        if (typeof SupabaseDataModule === 'undefined') return;
+        if (typeof SupabaseDataModule === 'undefined' ||
+            typeof SupabaseDataModule.subscribeToManagementChat !== 'function') return;
         this._realtimeSub = SupabaseDataModule.subscribeToManagementChat((event, msg) => {
             const currentUser = this._currentUser();
             if (event === 'INSERT') {

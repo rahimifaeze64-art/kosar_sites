@@ -797,7 +797,12 @@ const SupabaseDataModule = {
                 .eq('deleted', false)
                 .order('created_at', { ascending: true })
                 .limit(limit);
-            if (error) throw error;
+            if (error) {
+                if (error.code === '42P01' || error.message?.includes('does not exist')) {
+                    console.error('❌ جدول management_messages وجود ندارد! فایل supabase/management_chat_migration.sql را در Supabase اجرا کنید.');
+                }
+                throw error;
+            }
             const msgs = data.map(r => this._dbToMgmtMsg(r));
             localStorage.setItem(LOCAL_KEY, JSON.stringify(msgs));
             return msgs;
@@ -825,7 +830,13 @@ const SupabaseDataModule = {
                 .insert([row])
                 .select('id')
                 .single();
-            if (error) throw error;
+            if (error) {
+                // جدول هنوز ساخته نشده
+                if (error.code === '42P01' || error.message?.includes('does not exist')) {
+                    console.error('❌ جدول management_messages وجود ندارد! فایل supabase/management_chat_migration.sql را در Supabase اجرا کنید.');
+                }
+                throw error;
+            }
             // حذف pending از local و جایگزین با ID واقعی
             const updated = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]');
             const idx = updated.findIndex(m => m.id === msg.id);
