@@ -6,6 +6,14 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <!-- Service Worker را غیرفعال می‌کنیم تا cache قدیمی مشکل نسازه -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                registrations.forEach(function(reg) { reg.unregister(); });
+            });
+        }
+    </script>
     <title>سیستم مدیریت تحصیلی دانشجویان بین‌المللی</title>
 
     <!-- اگر لاگین نیست → صفحه اصلی سایت -->
@@ -39,15 +47,78 @@
     
     <!-- Styles - Local Version for Offline Support -->
     <script src="assets/libs/tailwindcss.js"></script>
-    <!-- Supabase SDK — باید قبل از همه JS های دیگر بارگذاری شود -->
+    <!-- ═══ Cache Buster — بارگذاری همیشه آخرین نسخه ═══ -->
+    <script>
+        (function() {
+            // timestamp یکتا برای این session — هر بار page load عوض می‌شه
+            var ts = Date.now();
+            var scripts = [
+                'js/supabase-config.js',
+                'js/supabase-auth.js',
+                'js/supabase-data.js',
+                'js/students-sync.js',
+                'js/hardcoded-users.js',
+                'js/config.js',
+                'js/jalali.js',
+                'js/data.js',
+                'js/orders.js',
+                'js/theme-manager.js',
+                'js/api.js',
+                'js/api-orders.js',
+                'js/auth.js',
+                'js/dashboard.js',
+                'js/dashboard-enhanced.js',
+                'js/users.js',
+                'js/profile.js',
+                'js/order-wizard.js',
+                'js/modals.js',
+                'js/workflow.js',
+                'js/assignment.js',
+                'js/assignment-manager.js',
+                'js/order-tabs.js',
+                'js/order-pages.js',
+                'js/orders-redesign.js',
+                'js/order-detail-redesign.js',
+                'js/chat.js',
+                'js/file-manager.js',
+                'js/progress.js',
+                'js/tasks.js',
+                'js/sample-students.js',
+                'js/employee.js',
+                'js/step-assignment.js',
+                'js/agent.js',
+                'js/agent-accounting.js',
+                'js/employee-student-edit.js',
+                'js/init-students-data.js',
+                'js/force-update-students.js',
+                'js/randomize-student-progress.js',
+                'js/manages-chat.js',
+                'js/management-chat-module.js',
+                'js/thesis-progress-ui.js',
+                'js/realtime-events.js',
+                'js/ui-refresh.js',
+                'js/accounting.js',
+                'js/accounting-ui.js',
+                'js/work-hours.js',
+                'js/personal-chat.js',
+                'js/employee-accounting.js',
+                'js/embassy.js',
+                'js/embassy-accounting.js',
+                'js/jalali-picker.js',
+                'js/work-checklist.js',
+                'js/agent-orders.js',
+                'js/app.js',
+                'js/supabase-init.js',
+                'js/theme-auto-apply.js',
+            ];
+            // ذخیره ts در window تا سایر فایل‌ها هم دسترسی داشته باشن
+            window._APP_TS = ts;
+            // ثبت لیست برای استفاده بعدی
+            window._APP_SCRIPTS = scripts;
+        })();
+    </script>
+    <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-    <script src="js/supabase-config.js?v=20250805"></script>
-    <script src="js/supabase-auth.js?v=20250805"></script>
-    <script src="js/supabase-data.js?v=20250805"></script>
-    <!-- students_data → Supabase sync bridge -->
-    <script src="js/students-sync.js?v=20250805"></script>
-    <!-- کاربران هاردکد -->
-    <script src="js/hardcoded-users.js?v=20250805"></script>
     <!-- offline-mode.js disabled — Supabase is the backend now -->
     <!-- <script src="js/offline-mode.js"></script> -->
     <!-- accounting.js is loaded later in the correct order -->
@@ -64,7 +135,7 @@
 </head>
 <body class="bg-gradient-to-br from-blue-900 via-lime-900 to-blue-800 min-h-screen" x-data="appController()">
     <!-- Auto-apply theme script -->
-    <script src="js/theme-auto-apply.js"></script>
+    <script src="js/theme-auto-apply.js" id="theme-auto-apply-script"></script>
     
     <!-- Sidebar Toggle Button (Mobile) -->
     <button @click="sidebarOpen = !sidebarOpen" 
@@ -675,61 +746,17 @@
         // Initial debug message
         debugLogger('Debug system initialized', 'success');
     </script>
-    <script src="js/config.js?v=20250805"></script>
-    <script src="js/jalali.js?v=20250805"></script>
-    <script src="js/data.js?v=20250805"></script>
-    <script src="js/orders.js?v=20250805"></script>
-    <script src="js/theme-manager.js?v=20250805"></script>
-    <!-- persian-date-simple.js و persian-date-auto.js و passport-ocr.js حذف شدند (404) -->
-    <script src="js/api.js?v=20250805"></script>
-    <script src="js/api-orders.js?v=20250805"></script>
-    <script src="js/auth.js?v=20250805"></script>
-    <script src="js/dashboard.js?v=20250805"></script>
-    <script src="js/dashboard-enhanced.js?v=20250805"></script>
-    <script src="js/users.js?v=20250805"></script>
-    <script src="js/profile.js?v=20250805"></script>
-    <script src="js/order-wizard.js?v=20250805"></script>
-    <script src="js/modals.js?v=20250805"></script>
-    <script src="js/workflow.js?v=20250805"></script>
-    <script src="js/assignment.js?v=20250805"></script>
-    <script src="js/assignment-manager.js?v=20250805"></script>
-    <script src="js/order-tabs.js?v=20250805"></script>
-    <script src="js/order-pages.js?v=20250805"></script>
-    <script src="js/orders-redesign.js?v=20250805"></script>
-    <script src="js/order-detail-redesign.js?v=20250805"></script>
-    <script src="js/chat.js?v=20250805"></script>
-    <script src="js/file-manager.js?v=20250805"></script>
-    <script src="js/progress.js?v=20250805"></script>
-    <script src="js/tasks.js?v=20250805"></script>
-    <script src="js/sample-students.js?v=20250805"></script>
-    <script src="js/employee.js?v=20250805"></script>
-    <script src="js/step-assignment.js?v=20250805"></script>
-    <script src="js/agent.js?v=20250805"></script>
-    <script src="js/agent-accounting.js?v=20250805"></script>
-    <script src="js/employee-student-edit.js?v=20250805"></script>
-    <script src="js/init-students-data.js?v=20250805"></script>
-    <script src="js/force-update-students.js?v=20250805"></script>
-    <script src="js/randomize-student-progress.js?v=20250805"></script>
-    <script src="js/manages-chat.js?v=20250805"></script>
-    <script src="js/management-chat-module.js?v=20250805"></script>
-    <!-- thesis-workflow.js removed - not in use -->
-    <!-- <script src="js/thesis-workflow.js"></script> -->
-    <script src="js/thesis-progress-ui.js?v=20250805"></script>
-    <!-- thesis-progress-integration.js removed - file not found -->
-    <script src="js/realtime-events.js?v=20250805"></script>
-    <script src="js/ui-refresh.js?v=20250805"></script>
-    <script src="js/accounting.js?v=20250805"></script>
-    <script src="js/accounting-ui.js?v=20250805"></script>
-    <script src="js/work-hours.js?v=20250805"></script>
-    <script src="js/personal-chat.js?v=20250805"></script>
-    <script src="js/employee-accounting.js?v=20250805"></script>
-    <script src="js/embassy.js?v=20250805"></script>
-    <script src="js/embassy-accounting.js?v=20250805"></script>
-    <script src="js/jalali-picker.js?v=20250805"></script>
-    <script src="js/work-checklist.js?v=20250805"></script>
-    <script src="js/agent-orders.js?v=20250805"></script>
-    <script src="js/app.js?v=20250805"></script>
-    <script src="js/supabase-init.js?v=20250805"></script>
+    <!-- ═══ Dynamic Script Loader — همیشه آخرین نسخه ═══ -->
+    <script>
+    (function() {
+        var ts = window._APP_TS || Date.now();
+        var scripts = window._APP_SCRIPTS || [];
+        // بارگذاری sync (document.write فقط قبل از DOMContentLoaded کار می‌کنه)
+        scripts.forEach(function(src) {
+            document.write('<script src="' + src + '?v=' + ts + '"><\/script>');
+        });
+    })();
+    </script>
     
     <!-- Verify Accounting Modules Loaded -->    <script>
         if (typeof AccountingModule === 'undefined') {
