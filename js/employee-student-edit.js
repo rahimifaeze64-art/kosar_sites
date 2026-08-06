@@ -374,14 +374,15 @@ EmployeeModule.editStudentProfile = function(studentId) {
                     </div>
                 </div>
                 
-                <div class="p-6 border-t border-blue-200 bg-gray-50 flex justify-end space-x-3 space-x-reverse sticky bottom-0">
-                    <button onclick="employeeModule.closeModal('edit-student-modal')" 
+                <div class="p-6 border-t border-blue-200 bg-gray-50 flex justify-end space-x-3 space-x-reverse sticky bottom-0" style="z-index:10;">
+                    <button type="button" onclick="employeeModule.closeModal('edit-student-modal')" 
                             class="px-6 py-3 text-lg text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100">
                         انصراف
                     </button>
-                    <button onclick="employeeModule.saveStudentProfile('${studentId}')" 
-                            class="px-6 py-3 text-lg bg-lime-600 hover:bg-lime-700 text-white rounded-lg font-medium">
-                        <i class="fas fa-save ml-2"></i>
+                    <button type="button" id="save-student-btn-${studentId}"
+                            onclick="employeeModule.saveStudentProfile('${studentId}')" 
+                            class="px-6 py-3 text-lg bg-lime-600 hover:bg-lime-700 text-white rounded-lg font-medium flex items-center gap-2">
+                        <i class="fas fa-save"></i>
                         ذخیره تغییرات
                     </button>
                 </div>
@@ -390,135 +391,324 @@ EmployeeModule.editStudentProfile = function(studentId) {
     `;
     
     document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // لود مدارک از Supabase و نمایش preview
+    EmployeeModule._loadStudentDocumentPreviews(studentId);
 };
 
 // جایگزین کردن تابع saveStudentProfile
-EmployeeModule.saveStudentProfile = function(studentId) {
-    // Get current student data to preserve educationalSteps and defenseSteps
+EmployeeModule.saveStudentProfile = async function(studentId) {
+    // disable دکمه ذخیره
+    const saveBtn = document.getElementById(`save-student-btn-${studentId}`) ||
+                    document.querySelector(`button[onclick*="saveStudentProfile('${studentId}')"]`);
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال ذخیره...'; }
+
+    // Get current student data to preserve steps
     const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
     const currentStudent = studentsData[studentId] || {};
-    
+
     const updatedData = {
-        name: document.getElementById('edit-student-name').value,
-        studentId: document.getElementById('edit-student-id').value,
-        passportNumber: document.getElementById('edit-passport').value,
-        birthDate: document.getElementById('edit-birthdate').value,
-        gender: document.getElementById('edit-gender').value,
-        phone: document.getElementById('edit-phone').value,
-        email: document.getElementById('edit-email').value,
-        university: document.getElementById('edit-university').value,
-        systemPassword: document.getElementById('edit-system-password').value,
-        field: document.getElementById('edit-field').value,
-        degree: document.getElementById('edit-degree').value,
-        researchInterest: document.getElementById('edit-research-interest').value,
-        supervisor: document.getElementById('edit-supervisor').value,
-        writer: document.getElementById('edit-writer').value,
-        deliveryDate: document.getElementById('edit-delivery-date').value,
-        orderType: document.getElementById('edit-order-type').value,
-        committeeStatus: document.getElementById('edit-committee-status').value,
-        irandocStatus: document.getElementById('edit-irandoc-status').value,
-        secretariatStatus: document.getElementById('edit-secretariat-status').value,
-        typesettingStatus: document.getElementById('edit-typesetting-status').value,
-        summaryStatus: document.getElementById('edit-summary-status').value,
-        similarityStatus: document.getElementById('edit-similarity-status').value,
-        article1Status: document.getElementById('edit-article1-status').value,
-        article2Status: document.getElementById('edit-article2-status').value,
-        // مدارک و تصاویر
-        adminOrderImage: document.getElementById('edit-admin-order-image').value,
-        savorgCode: document.getElementById('edit-savorg-code').value,
-        sajadResult: document.getElementById('edit-sajad-result').value,
-        similarityCert: document.getElementById('edit-similarity-cert').value,
-        passportImage: document.getElementById('edit-passport-image').value,
-        typesettingDoc: document.getElementById('edit-typesetting-doc').value,
-        bindingDoc: document.getElementById('edit-binding-doc').value,
-        estelalDoc: document.getElementById('edit-estelal-doc').value,
-        languageCert: document.getElementById('edit-language-cert').value,
-        languageUpload: document.getElementById('edit-language-upload').value,
-        azfaDoc: document.getElementById('edit-azfa-doc').value,
-        tasdiqDoc: document.getElementById('edit-tasdiq-doc').value,
-        vasiqeDoc: document.getElementById('edit-vasiqe-doc').value,
-        irandocKhate: document.getElementById('edit-irandoc-khate').value,
-        active: document.getElementById('edit-active').checked,
-        // Preserve educational steps, defense steps, and requirements steps
-        educationalSteps: currentStudent.educationalSteps || this.getDefaultEducationalSteps(),
-        defenseSteps: currentStudent.defenseSteps || this.getDefaultDefenseSteps2(),
-        requirementsSteps: currentStudent.requirementsSteps || this.getDefaultRequirementsSteps()
+        name:               document.getElementById('edit-student-name')?.value      || '',
+        studentId:          document.getElementById('edit-student-id')?.value        || '',
+        passportNumber:     document.getElementById('edit-passport')?.value          || '',
+        birthDate:          document.getElementById('edit-birthdate')?.value         || '',
+        gender:             document.getElementById('edit-gender')?.value            || '',
+        phone:              document.getElementById('edit-phone')?.value             || '',
+        email:              document.getElementById('edit-email')?.value             || '',
+        university:         document.getElementById('edit-university')?.value        || '',
+        systemPassword:     document.getElementById('edit-system-password')?.value  || '',
+        field:              document.getElementById('edit-field')?.value             || '',
+        degree:             document.getElementById('edit-degree')?.value            || '',
+        researchInterest:   document.getElementById('edit-research-interest')?.value|| '',
+        supervisor:         document.getElementById('edit-supervisor')?.value        || '',
+        writer:             document.getElementById('edit-writer')?.value            || '',
+        deliveryDate:       document.getElementById('edit-delivery-date')?.value     || '',
+        orderType:          document.getElementById('edit-order-type')?.value        || '',
+        committeeStatus:    document.getElementById('edit-committee-status')?.value  || '',
+        irandocStatus:      document.getElementById('edit-irandoc-status')?.value    || '',
+        secretariatStatus:  document.getElementById('edit-secretariat-status')?.value|| '',
+        typesettingStatus:  document.getElementById('edit-typesetting-status')?.value|| '',
+        summaryStatus:      document.getElementById('edit-summary-status')?.value    || '',
+        similarityStatus:   document.getElementById('edit-similarity-status')?.value || '',
+        article1Status:     document.getElementById('edit-article1-status')?.value   || '',
+        article2Status:     document.getElementById('edit-article2-status')?.value   || '',
+        active:             document.getElementById('edit-active')?.checked          ?? true,
+        educationalSteps:   currentStudent.educationalSteps  || this.getDefaultEducationalSteps?.() || [],
+        defenseSteps:       currentStudent.defenseSteps      || this.getDefaultDefenseSteps2?.()    || [],
+        requirementsSteps:  currentStudent.requirementsSteps || this.getDefaultRequirementsSteps?.()|| [],
     };
-    
+
+    // مدارک — path های ذخیره‌شده در inputs
+    const documents = {
+        admin_order_image:  document.getElementById('edit-admin-order-image')?.value  || null,
+        savorg_code:        document.getElementById('edit-savorg-code')?.value         || null,
+        sajad_result:       document.getElementById('edit-sajad-result')?.value        || null,
+        similarity_cert:    document.getElementById('edit-similarity-cert')?.value     || null,
+        passport_image:     document.getElementById('edit-passport-image')?.value      || null,
+        typesetting_doc:    document.getElementById('edit-typesetting-doc')?.value     || null,
+        binding_doc:        document.getElementById('edit-binding-doc')?.value         || null,
+        estelal_doc:        document.getElementById('edit-estelal-doc')?.value         || null,
+        language_cert:      document.getElementById('edit-language-cert')?.value       || null,
+        language_upload:    document.getElementById('edit-language-upload')?.value     || null,
+        azfa_doc:           document.getElementById('edit-azfa-doc')?.value            || null,
+        tasdiq_doc:         document.getElementById('edit-tasdiq-doc')?.value          || null,
+        vasiqe_doc:         document.getElementById('edit-vasiqe-doc')?.value          || null,
+        irandoc_khate:      document.getElementById('edit-irandoc-khate')?.value       || null,
+    };
+    // همگام‌سازی با updatedData برای localStorage
+    Object.assign(updatedData, {
+        adminOrderImage: documents.admin_order_image,
+        savorgCode:      documents.savorg_code,
+        sajadResult:     documents.sajad_result,
+        similarityCert:  documents.similarity_cert,
+        passportImage:   documents.passport_image,
+        typesettingDoc:  documents.typesetting_doc,
+        bindingDoc:      documents.binding_doc,
+        estelalDoc:      documents.estelal_doc,
+        languageCert:    documents.language_cert,
+        languageUpload:  documents.language_upload,
+        azfaDoc:         documents.azfa_doc,
+        tasdiqDoc:       documents.tasdiq_doc,
+        vasiqeDoc:       documents.vasiqe_doc,
+        irandocKhate:    documents.irandoc_khate,
+    });
+
     // Validation
     if (!updatedData.name || !updatedData.studentId) {
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="fas fa-save ml-2"></i>ذخیره تغییرات'; }
         UTILS.showNotification('لطفاً نام و شماره دانشجویی را وارد کنید', 'error');
         return;
     }
-    
-    // Update in DataModule if available
+
+    // ── ۱. ذخیره اطلاعات پایه در profiles (Supabase) ──────────
+    try {
+        const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+        if (client) {
+            const profilePayload = {
+                name:            updatedData.name,
+                phone:           updatedData.phone       || null,
+                email:           updatedData.email       || null,
+                university:      updatedData.university  || null,
+                student_id:      updatedData.studentId   || null,
+                field:           updatedData.field       || null,
+                degree:          updatedData.degree      || null,
+                passport_number: updatedData.passportNumber || null,
+                active:          updatedData.active,
+            };
+            const { error: profileErr } = await client
+                .from('profiles')
+                .update(profilePayload)
+                .eq('id', studentId);
+            if (profileErr) console.warn('profiles update:', profileErr.message);
+        }
+    } catch(e) { console.warn('profiles update error:', e); }
+
+    // ── ۲. ذخیره مدارک در student_documents (Supabase) ────────
+    try {
+        const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+        if (client) {
+            const cu = (() => { try { return JSON.parse(localStorage.getItem('currentUser') || '{}'); } catch { return {}; } })();
+            const docPayload = {
+                student_id:     studentId,
+                updated_by:     cu.id   || null,
+                updated_by_name:cu.name || null,
+                ...documents
+            };
+            // null ها رو حذف کن تا مقادیر قبلی رو overwrite نکنه
+            Object.keys(docPayload).forEach(k => {
+                if (docPayload[k] === null || docPayload[k] === '') delete docPayload[k];
+            });
+            docPayload.student_id = studentId; // همیشه باید باشه
+
+            const { error: docErr } = await client
+                .from('student_documents')
+                .upsert(docPayload, { onConflict: 'student_id' });
+            if (docErr) console.warn('student_documents upsert:', docErr.message);
+        }
+    } catch(e) { console.warn('student_documents error:', e); }
+
+    // ── ۳. ذخیره در localStorage ──────────────────────────────
     if (typeof DataModule !== 'undefined' && DataModule.updateUser) {
         DataModule.updateUser(studentId, updatedData);
     }
-    
-    // Save to localStorage as backup
     studentsData[studentId] = { ...studentsData[studentId], ...updatedData, updatedAt: new Date().toISOString() };
     localStorage.setItem('students_data', JSON.stringify(studentsData));
-    
+
     this.closeModal('edit-student-modal');
-    this.refreshStudents();
-    UTILS.showNotification('پروفایل دانشجو با موفقیت به‌روزرسانی شد', 'success');
+    this.refreshStudents?.();
+    UTILS.showNotification('پروفایل دانشجو با موفقیت ذخیره شد ✓', 'success');
 };
 
 
-// تابع آپلود تصویر
+// ── helper: آپلود به Supabase Storage ─────────────────────────
+EmployeeModule._uploadToStorage = async function(file, studentId, fieldId) {
+    try {
+        const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+        if (!client) return null;
+        const ext  = file.name.split('.').pop();
+        const path = `${studentId}/${fieldId}_${Date.now()}.${ext}`;
+        const { data, error } = await client.storage
+            .from('student-documents')
+            .upload(path, file, { cacheControl: '3600', upsert: true });
+        if (error) { console.error('uploadToStorage:', error.message); return null; }
+        return data.path;
+    } catch(e) {
+        console.error('uploadToStorage exception:', e);
+        return null;
+    }
+};
+
+// ── helper: signed URL برای نمایش ──────────────────────────────
+EmployeeModule._getStorageUrl = async function(path) {
+    try {
+        const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+        if (!client || !path) return null;
+        const { data } = await client.storage
+            .from('student-documents')
+            .createSignedUrl(path, 3600);
+        return data?.signedUrl || null;
+    } catch { return null; }
+};
+
+// تابع آپلود تصویر — با Supabase Storage
 EmployeeModule.uploadImage = function(fieldId, studentId) {
     const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = 'image/*';
-    
-    fileInput.onchange = (event) => {
+    fileInput.type   = 'file';
+    fileInput.accept = 'image/*,.pdf';
+
+    fileInput.onchange = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const imageData = e.target.result;
-            
-            // نمایش پیش‌نمایش
-            const previewDiv = document.getElementById(`preview-${fieldId}`);
-            if (previewDiv) {
-                previewDiv.innerHTML = `
-                    <div class="relative inline-block">
-                        <img src="${imageData}" class="h-20 w-20 object-cover rounded-lg border-2 border-lime-300">
-                        <button type="button" onclick="employeeModule.removeImage('${fieldId}')"
-                                class="absolute -top-2 -left-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600">
-                            <i class="fas fa-times text-xs"></i>
-                        </button>
-                    </div>
-                `;
-            }
-            
-            // ذخیره در input
-            const input = document.getElementById(`edit-${fieldId}`);
-            if (input) {
-                input.value = imageData;
-            }
-            
-            UTILS.showNotification('تصویر آپلود شد', 'success');
-        };
-        reader.readAsDataURL(file);
+
+        // نمایش loading
+        const previewDiv = document.getElementById(`preview-${fieldId}`);
+        if (previewDiv) {
+            previewDiv.innerHTML = `<div class="flex items-center gap-2 text-gray-500 text-sm">
+                <i class="fas fa-spinner fa-spin text-lime-500"></i> در حال آپلود...</div>`;
+        }
+
+        // ۱. آپلود به Supabase Storage
+        const storagePath = await EmployeeModule._uploadToStorage(file, studentId, fieldId);
+
+        // ۲. گرفتن signed URL برای نمایش
+        let displayUrl = null;
+        if (storagePath) {
+            displayUrl = await EmployeeModule._getStorageUrl(storagePath);
+        }
+
+        // ۳. fallback: اگر Storage نبود، base64 بساز
+        if (!storagePath) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const b64 = e.target.result;
+                _applyImageResult(fieldId, b64, b64, file.name);
+                // برگرداندن focus به modal
+                document.getElementById(`save-student-btn-${studentId}`)?.focus();
+            };
+            reader.readAsDataURL(file);
+            return;
+        }
+
+        _applyImageResult(fieldId, storagePath, displayUrl || storagePath, file.name);
+        // برگرداندن focus به modal تا دکمه ذخیره کلیک‌پذیر باشه
+        document.getElementById(`save-student-btn-${studentId}`)?.focus();
+        UTILS.showNotification('تصویر آپلود شد ✓', 'success');
     };
-    
+
     fileInput.click();
 };
+
+// اعمال نتیجه آپلود به فرم
+function _applyImageResult(fieldId, storageValue, displayUrl, fileName) {
+    // ذخیره path در hidden input
+    const input = document.getElementById(`edit-${fieldId}`);
+    if (input) input.value = storageValue;
+
+    // نمایش preview
+    const previewDiv = document.getElementById(`preview-${fieldId}`);
+    if (!previewDiv) return;
+    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName) || displayUrl?.startsWith('data:image');
+    if (isImage) {
+        previewDiv.innerHTML = `
+            <div class="relative inline-block">
+                <img src="${displayUrl}" alt="${fileName}"
+                     class="h-20 w-20 object-cover rounded-lg border-2 border-lime-300 cursor-pointer"
+                     onclick="window.open('${displayUrl}','_blank')"
+                     onerror="this.src='';this.alt='خطا در نمایش'">
+                <button type="button" onclick="employeeModule.removeImage('${fieldId}')"
+                        class="absolute -top-2 -left-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            </div>`;
+    } else {
+        previewDiv.innerHTML = `
+            <div class="relative inline-flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-lg text-sm text-gray-700">
+                <i class="fas fa-file text-lime-500"></i>
+                <span class="max-w-32 truncate">${fileName}</span>
+                <button type="button" onclick="employeeModule.removeImage('${fieldId}')"
+                        class="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 text-xs">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>`;
+    }
+}
 
 // تابع حذف تصویر
 EmployeeModule.removeImage = function(fieldId) {
     const previewDiv = document.getElementById(`preview-${fieldId}`);
-    if (previewDiv) {
-        previewDiv.innerHTML = '';
-    }
-    
+    if (previewDiv) previewDiv.innerHTML = '';
     const input = document.getElementById(`edit-${fieldId}`);
-    if (input) {
-        input.value = '';
+    if (input) input.value = '';
+    UTILS.showNotification('تصویر حذف شد', 'info');
+};
+
+// ── لود مدارک از Supabase و نمایش preview ──────────────────────
+EmployeeModule._loadStudentDocumentPreviews = async function(studentId) {
+    try {
+        const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+        if (!client) return;
+
+        const { data, error } = await client
+            .from('student_documents')
+            .select('*')
+            .eq('student_id', studentId)
+            .single();
+
+        if (error || !data) return;
+
+        // نقشه fieldId → مقدار ذخیره‌شده
+        const fieldMap = {
+            'admin-order-image': data.admin_order_image,
+            'savorg-code':       data.savorg_code,
+            'sajad-result':      data.sajad_result,
+            'similarity-cert':   data.similarity_cert,
+            'passport-image':    data.passport_image,
+            'typesetting-doc':   data.typesetting_doc,
+            'binding-doc':       data.binding_doc,
+            'estelal-doc':       data.estelal_doc,
+            'language-cert':     data.language_cert,
+            'language-upload':   data.language_upload,
+            'azfa-doc':          data.azfa_doc,
+            'tasdiq-doc':        data.tasdiq_doc,
+            'vasiqe-doc':        data.vasiqe_doc,
+            'irandoc-khate':     data.irandoc_khate,
+        };
+
+        for (const [fieldId, storagePath] of Object.entries(fieldMap)) {
+            if (!storagePath) continue;
+
+            // مقدار رو در input بذار
+            const input = document.getElementById(`edit-${fieldId}`);
+            if (input) input.value = storagePath;
+
+            // signed URL بگیر و preview نشون بده
+            const url = await EmployeeModule._getStorageUrl(storagePath);
+            if (!url) continue;
+
+            const fileName = storagePath.split('/').pop() || fieldId;
+            _applyImageResult(fieldId, storagePath, url, fileName);
+        }
+    } catch(e) {
+        console.warn('_loadStudentDocumentPreviews:', e.message);
     }
-    
-    UTILS.showNotification('تصویر حذف شد', 'success');
 };
