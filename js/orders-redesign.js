@@ -25,7 +25,7 @@ const OrdersRedesign = (function () {
   const WORK_TYPES = [
     'عناوین رساله ارشد','عناوین رساله دکتری','عناوین مقاله',
     'پروپوزال رساله ارشد','پروپوزال رساله دکتری','پروپوزال مقاله',
-    'رساله ارشد','رساله دکتری','تعدیل','تنضید','ترجمه',
+    'رساله ارشد','رساله دکتری','مقاله','تعدیل','تنضید','ترجمه',
     'استلال عراقی','استلال ایرانی','علاج استلال ایرانی','علاج استلال عراقی',
     'ترجمه و تصدیق مباشره','ترجمه و تصدیق قبول نهایی','ترجمه و تصدیق دانشنامه',
     'ترجمه مدرک','تجلید','همانند جویی',
@@ -84,7 +84,53 @@ const OrdersRedesign = (function () {
     } catch(e) { return deadline; }
   }
 
-  function statusBadge(status) {
+  // ── هشدار مهلت: badge کوچک برای جدول/کارت ─────────────────
+  // برمی‌گرداند: { level: 'overdue'|'urgent'|'warning'|'ok'|'none', days, badge }
+  function deadlineInfo(deadline) {
+    if (!deadline) return { level: 'none', days: null, badge: '' };
+    try {
+      const diff = Math.ceil((new Date(deadline) - new Date()) / 86400000);
+      if (diff < 0)  return {
+        level: 'overdue',
+        days: Math.abs(diff),
+        badge: `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-600 text-white animate-pulse">
+                  <i class="fas fa-exclamation-circle text-[9px]"></i>متأخر ${Math.abs(diff)}ر
+                </span>`
+      };
+      if (diff === 0) return {
+        level: 'urgent',
+        days: 0,
+        badge: `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500 text-white">
+                  <i class="fas fa-fire text-[9px]"></i>امروز!
+                </span>`
+      };
+      if (diff <= 3)  return {
+        level: 'urgent',
+        days: diff,
+        badge: `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-400 text-white">
+                  <i class="fas fa-clock text-[9px]"></i>${diff}ر مانده
+                </span>`
+      };
+      if (diff <= 7)  return {
+        level: 'warning',
+        days: diff,
+        badge: `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-700 border border-amber-300">
+                  <i class="fas fa-clock text-[9px]"></i>${diff}ر مانده
+                </span>`
+      };
+      return { level: 'ok', days: diff, badge: '' };
+    } catch(e) { return { level: 'none', days: null, badge: '' }; }
+  }
+
+  // رنگ ردیف جدول بر اساس مهلت
+  function deadlineRowCls(deadline, status) {
+    if (status === 'completed' || status === 'cancelled') return '';
+    const { level } = deadlineInfo(deadline);
+    if (level === 'overdue') return 'bg-red-50 border-r-4 border-red-500';
+    if (level === 'urgent')  return 'bg-orange-50 border-r-4 border-orange-400';
+    if (level === 'warning') return 'bg-amber-50 border-r-4 border-amber-300';
+    return '';
+  }
     const s = STATUS[status] || { label: status || '---', cls: 'bg-gray-100 text-gray-700 border border-gray-200', icon: 'fa-circle', dot: 'bg-gray-400' };
     return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${s.cls}">
       <i class="fas ${s.icon} text-[10px]"></i>${s.label}</span>`;
@@ -172,9 +218,71 @@ const OrdersRedesign = (function () {
     </div>`;
   }
 
+  // ── بنر هشدار مهلت (بالای لیست سفارشات) ────────────────────
+  function renderDeadlineAlertBanner(orders) {
+    const active = orders.filter(o => o.status !== 'completed' && o.status !== 'cancelled');
+    const overdue  = active.filter(o => deadlineInfo(o.deadline||o.deadlineDateTime).level === 'overdue');
+    const urgent   = active.filter(o => deadlineInfo(o.deadline||o.deadlineDateTime).level === 'urgent');
+    const warning  = active.filter(o => deadlineInfo(o.deadline||o.deadlineDateTime).level === 'warning');
+
+    if (!overdue.length && !urgent.length && !warning.length) return '';
+
+    const makeList = (items, colorCls, icon) => items.slice(0, 3).map(o => {
+      const dl = deadlineInfo(o.deadline||o.deadlineDateTime);
+      return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg ${colorCls} text-xs cursor-pointer hover:opacity-80"
+        onclick="OrdersRedesign.openDetail('${esc(o.id)}')">
+        <i class="fas ${icon} text-[9px]"></i>
+        ${esc(o.studentName||'---')} — ${dl.days != null ? (dl.level==='overdue' ? dl.days+'ر تأخیر':'امروز / '+dl.days+'ر') : ''}
+      </span>`;
+    }).join('');
+
+    return `
+    <div class="rounded-2xl overflow-hidden border border-red-200 shadow-sm" id="deadline-alert-banner">
+      <div class="bg-gradient-to-l from-red-50 to-orange-50 px-4 py-3 flex items-center justify-between border-b border-red-100">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-exclamation-triangle text-red-500 text-sm animate-pulse"></i>
+          <span class="text-sm font-bold text-red-700">هشدار مهلت سفارشات</span>
+        </div>
+        <button onclick="document.getElementById('deadline-alert-banner').remove()"
+          class="text-gray-400 hover:text-gray-600 text-sm"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="bg-white px-4 py-3 space-y-2.5">
+        ${overdue.length ? `
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-bold text-red-600 w-20 flex-shrink-0">
+            <i class="fas fa-circle mr-1 text-red-500"></i>متأخر (${overdue.length}):
+          </span>
+          <div class="flex flex-wrap gap-1.5">
+            ${makeList(overdue,'bg-red-100 text-red-700 border border-red-200','fa-exclamation-circle')}
+            ${overdue.length > 3 ? `<span class="text-xs text-red-500">+${overdue.length-3} سفارش دیگر</span>` : ''}
+          </div>
+        </div>` : ''}
+        ${urgent.length ? `
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-bold text-orange-600 w-20 flex-shrink-0">
+            <i class="fas fa-circle mr-1 text-orange-400"></i>فوری (${urgent.length}):
+          </span>
+          <div class="flex flex-wrap gap-1.5">
+            ${makeList(urgent,'bg-orange-100 text-orange-700 border border-orange-200','fa-fire')}
+            ${urgent.length > 3 ? `<span class="text-xs text-orange-500">+${urgent.length-3} سفارش دیگر</span>` : ''}
+          </div>
+        </div>` : ''}
+        ${warning.length ? `
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-bold text-amber-600 w-20 flex-shrink-0">
+            <i class="fas fa-circle mr-1 text-amber-400"></i>این هفته (${warning.length}):
+          </span>
+          <div class="flex flex-wrap gap-1.5">
+            ${makeList(warning,'bg-amber-50 text-amber-700 border border-amber-200','fa-clock')}
+            ${warning.length > 3 ? `<span class="text-xs text-amber-500">+${warning.length-3} سفارش دیگر</span>` : ''}
+          </div>
+        </div>` : ''}
+      </div>
+    </div>`;
+  }
+
   // ── مرحله ۳: نوار فیلتر ─────────────────────────────────────
-  function renderFilterBar(userRole) {
-    const statusOpts = Object.entries(STATUS)
+  function renderFilterBar(userRole) {    const statusOpts = Object.entries(STATUS)
       .map(([v,s]) => `<option value="${v}">${s.label}</option>`).join('');
     const typeOpts = WORK_TYPES
       .map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
@@ -212,6 +320,11 @@ const OrdersRedesign = (function () {
           </select>
         </div>
         <div class="flex gap-2">
+          <button onclick="OrdersRedesign.toggleSort()" id="ord-sort-btn"
+            class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-1.5" title="مرتب‌سازی">
+            <i class="fas fa-sort-amount-down text-xs" id="ord-sort-icon"></i>
+            <span id="ord-sort-label">جدیدترین</span>
+          </button>
           <button onclick="OrdersRedesign.applyFilters()"
             class="bg-[#8FBF3F] hover:bg-[#7aac2e] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
             <i class="fas fa-filter text-xs"></i>اعمال
@@ -277,7 +390,7 @@ const OrdersRedesign = (function () {
     }
 
     return `
-    <tr class="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0" id="ord-row-${sid}">
+    <tr class="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0 ${deadlineRowCls(order.deadline||order.deadlineDateTime, order.status)}" id="ord-row-${sid}">
       <td class="px-4 py-3 text-right">
         <span class="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded">#${shortId}</span>
         ${order.isCustomOrder ? '<span class="mr-1 text-[10px] bg-lime-100 text-lime-700 px-1.5 py-0.5 rounded-full">سفارشی</span>' : ''}
@@ -310,7 +423,13 @@ const OrdersRedesign = (function () {
             </div>`
           : `<span class="text-xs text-gray-400 italic">تخصیص نشده</span>`}
       </td>
-      <td class="px-4 py-3 text-xs text-gray-500">${fmtDeadline(order.deadline || order.deadlineDateTime)}</td>
+      <td class="px-4 py-3 text-xs text-gray-500">
+        <div class="space-y-1">
+          <div>${fmtDeadline(order.deadline || order.deadlineDateTime)}</div>
+          ${deadlineInfo(order.deadline||order.deadlineDateTime).badge && order.status !== 'completed' && order.status !== 'cancelled'
+            ? deadlineInfo(order.deadline||order.deadlineDateTime).badge : ''}
+        </div>
+      </td>
       <td class="px-4 py-3">
         <div class="flex items-center gap-1">${actionBtns}</div>
       </td>
@@ -436,6 +555,8 @@ const OrdersRedesign = (function () {
       </div>
       <!-- Stats -->
       ${renderStats(orders)}
+      <!-- Deadline Alert Banner -->
+      ${renderDeadlineAlertBanner(orders)}
       <!-- Filters -->
       ${renderFilterBar(userRole)}
       <!-- Table -->
@@ -503,9 +624,11 @@ const OrdersRedesign = (function () {
             <span>${agentName}</span>
           </div>` : ''}
           ${o.deadline || o.deadlineDateTime ? `
-          <div class="text-xs border-t border-gray-100 pt-2">
-            <i class="fas fa-calendar-alt text-gray-400 ml-1"></i>
-            ${fmtDeadline(o.deadline || o.deadlineDateTime)}
+          <div class="text-xs border-t border-gray-100 pt-2 flex items-center justify-between">
+            <span><i class="fas fa-calendar-alt text-gray-400 ml-1"></i>
+            ${fmtDeadline(o.deadline || o.deadlineDateTime)}</span>
+            ${deadlineInfo(o.deadline||o.deadlineDateTime).badge && o.status !== 'completed' && o.status !== 'cancelled'
+              ? deadlineInfo(o.deadline||o.deadlineDateTime).badge : ''}
           </div>` : ''}
         </div>
         <div class="px-4 py-2.5 bg-gray-50 border-t border-gray-100 flex gap-2">
@@ -937,15 +1060,42 @@ const OrdersRedesign = (function () {
                 <i class="fas fa-coins ml-2 text-[#8FBF3F]"></i>مالی و تخصیص
               </p>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                ${field('frm-amount','مبلغ کل',`
-                  <div class="flex gap-2">
-                    ${inp('frm-amount','number',o.totalAmount||o.cost||'','مبلغ','min="0" step="0.01"')}
-                    <select id="frm-currency"
-                      class="border border-gray-200 rounded-lg px-2 py-2 text-sm bg-white focus:ring-2 focus:ring-[#8FBF3F] outline-none">
-                      <option ${(o.currency||'تومان')==='تومان'?'selected':''}>تومان</option>
-                      <option ${o.currency==='دلار'?'selected':''}>دلار</option>
-                    </select>
-                  </div>`,true)}
+                ${field('frm-amount','هزینه کار',`
+                  <div id="frm-cost-rows" class="space-y-2">
+                    <div class="flex gap-2 items-center cost-row">
+                      <input type="number" min="0" step="0.01" placeholder="مبلغ"
+                        class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#8FBF3F] outline-none cost-amount"
+                        value="${o.totalAmount||o.cost||''}">
+                      <select class="border border-gray-200 rounded-lg px-2 py-2 text-sm bg-white focus:ring-2 focus:ring-[#8FBF3F] outline-none cost-currency" style="min-width:72px">
+                        <option value="تومان" ${(o.currency||'تومان')==='تومان'?'selected':''}>تومان</option>
+                        <option value="دلار"  ${o.currency==='دلار'?'selected':''}>$ دلار</option>
+                        <option value="دینار" ${o.currency==='دینار'?'selected':''}>دینار</option>
+                      </select>
+                      <button type="button" onclick="this.closest('.cost-row').remove()"
+                        class="text-red-400 hover:text-red-600 px-1.5 text-sm" title="حذف">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                    ${(o.extraCosts||[]).map(ec=>`
+                    <div class="flex gap-2 items-center cost-row">
+                      <input type="number" min="0" step="0.01" placeholder="مبلغ"
+                        class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#8FBF3F] outline-none cost-amount"
+                        value="${ec.amount||''}">
+                      <select class="border border-gray-200 rounded-lg px-2 py-2 text-sm bg-white focus:ring-2 focus:ring-[#8FBF3F] outline-none cost-currency" style="min-width:72px">
+                        <option value="تومان" ${(ec.currency||'تومان')==='تومان'?'selected':''}>تومان</option>
+                        <option value="دلار"  ${ec.currency==='دلار'?'selected':''}>$ دلار</option>
+                        <option value="دینار" ${ec.currency==='دینار'?'selected':''}>دینار</option>
+                      </select>
+                      <button type="button" onclick="this.closest('.cost-row').remove()"
+                        class="text-red-400 hover:text-red-600 px-1.5 text-sm" title="حذف">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>`).join('')}
+                  </div>
+                  <button type="button" onclick="OrdersRedesign._addCostRow()"
+                    class="mt-2 text-[#5a7a28] hover:text-[#8FBF3F] text-xs flex items-center gap-1 font-medium">
+                    <i class="fas fa-plus-circle"></i>افزودن ارز دیگر
+                  </button>`,true)}
                 ${field('frm-paid','مبلغ پرداخت شده',
                   inp('frm-paid','number',o.paidAmount||'','','min="0" step="0.01"'))}
                 ${field('frm-pay-status','وضعیت پرداخت',`
@@ -993,6 +1143,7 @@ const OrdersRedesign = (function () {
   let _currentRole   = 'manager';
   let _currentUserId = '';
   let _currentView   = 'table'; // 'table' | 'cards'
+  let _sortDir       = 'desc';  // 'desc' = جدیدترین اول | 'asc' = قدیمی‌ترین اول
 
   function _getRoot()   { return document.getElementById('orders-redesign-root'); }
   function _getTbody()  { return document.getElementById('ord-tbody'); }
@@ -1011,7 +1162,13 @@ const OrdersRedesign = (function () {
 
   // اعمال فیلترها از نوار فیلتر
   function applyFilters() {
-    const filtered = applyUIFilters(_currentOrders);
+    let filtered = applyUIFilters(_currentOrders);
+    // مرتب‌سازی بر اساس _sortDir
+    filtered = filtered.slice().sort((a, b) => {
+      const da = new Date(a.createdAt || 0).getTime();
+      const db = new Date(b.createdAt || 0).getTime();
+      return _sortDir === 'desc' ? db - da : da - db;
+    });
     const tbody = _getTbody();
     if (tbody) tbody.innerHTML = renderTable(filtered, _currentRole);
     const cards = _getCards();
@@ -1020,6 +1177,16 @@ const OrdersRedesign = (function () {
     if (cnt) cnt.textContent = `${filtered.length} سفارش`;
     // live search — attach listeners
     _attachLiveSearch();
+  }
+
+  // تغییر جهت مرتب‌سازی
+  function toggleSort() {
+    _sortDir = _sortDir === 'desc' ? 'asc' : 'desc';
+    const icon  = document.getElementById('ord-sort-icon');
+    const label = document.getElementById('ord-sort-label');
+    if (icon)  icon.className  = _sortDir === 'desc' ? 'fas fa-sort-amount-down text-xs' : 'fas fa-sort-amount-up text-xs';
+    if (label) label.textContent = _sortDir === 'desc' ? 'جدیدترین' : 'قدیمی‌ترین';
+    applyFilters();
   }
 
   function clearFilters() {
@@ -1035,6 +1202,27 @@ const OrdersRedesign = (function () {
       s._reAttached = true;
       s.oninput = () => applyFilters();
     }
+  }
+
+  // افزودن ردیف هزینه جدید (چند ارزه)
+  function _addCostRow() {
+    const container = document.getElementById('frm-cost-rows');
+    if (!container) return;
+    const div = document.createElement('div');
+    div.className = 'flex gap-2 items-center cost-row';
+    div.innerHTML = `
+      <input type="number" min="0" step="0.01" placeholder="مبلغ"
+        class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#8FBF3F] outline-none cost-amount">
+      <select class="border border-gray-200 rounded-lg px-2 py-2 text-sm bg-white focus:ring-2 focus:ring-[#8FBF3F] outline-none cost-currency" style="min-width:72px">
+        <option value="تومان">تومان</option>
+        <option value="دلار">$ دلار</option>
+        <option value="دینار">دینار</option>
+      </select>
+      <button type="button" onclick="this.closest('.cost-row').remove()"
+        class="text-red-400 hover:text-red-600 px-1.5 text-sm" title="حذف">
+        <i class="fas fa-times"></i>
+      </button>`;
+    container.appendChild(div);
   }
 
   // تغییر نما
@@ -1124,8 +1312,18 @@ const OrdersRedesign = (function () {
     if (!studentName) { notify('نام دانشجو الزامی است', 'error'); return; }
     if (!type)        { notify('نوع کار را انتخاب کنید', 'error'); return; }
     if (!university)  { notify('دانشگاه را وارد کنید', 'error'); return; }
-    const totalAmount = parseFloat(document.getElementById('frm-amount')?.value) || 0;
-    if (!totalAmount) { notify('مبلغ سفارش الزامی است', 'error'); return; }
+
+    // خواندن هزینه‌های چند ارزه
+    const costRows = document.querySelectorAll('#frm-cost-rows .cost-row');
+    const allCosts = [];
+    costRows.forEach(row => {
+      const amount = parseFloat(row.querySelector('.cost-amount')?.value) || 0;
+      const currency = row.querySelector('.cost-currency')?.value || 'تومان';
+      if (amount > 0) allCosts.push({ amount, currency });
+    });
+    if (!allCosts.length) { notify('حداقل یک مبلغ وارد کنید', 'error'); return; }
+    const totalAmount = allCosts.reduce((s, c) => s + (c.currency === 'تومان' ? c.amount : 0), 0) || allCosts[0].amount;
+    const currency    = allCosts[0].currency;
 
     const deadlineDate = document.getElementById('frm-deadline')?.value || '';
     const deadlineTime = document.getElementById('frm-deadline-time')?.value || '00:00';
@@ -1147,7 +1345,8 @@ const OrdersRedesign = (function () {
       description:           document.getElementById('frm-description')?.value.trim() || '',
       totalAmount,
       cost:                  totalAmount,
-      currency:              document.getElementById('frm-currency')?.value || 'تومان',
+      currency,
+      extraCosts:            allCosts.length > 1 ? allCosts.slice(1) : [],
       paidAmount:            parseFloat(document.getElementById('frm-paid')?.value) || 0,
       paymentStatus:         document.getElementById('frm-pay-status')?.value || 'unpaid',
       assignedDoctorId:      agentId,
@@ -1189,24 +1388,39 @@ const OrdersRedesign = (function () {
 
   // تغییر وضعیت سفارش
   function changeStatus(orderId, newStatus) {
-    if (!confirm(`آیا از تغییر وضعیت به "${STATUS[newStatus]?.label || newStatus}" اطمینان دارید؟`)) return;
     const orders = getOrders();
     const idx = orders.findIndex(o => o.id === orderId);
     if (idx === -1) { notify('سفارش یافت نشد', 'error'); return; }
-    const user = currentUser();
+    const order = orders[idx];
+    const user  = currentUser();
+
+    // محدودیت: تغییر از "در انتظار" به "در حال انجام" فقط توسط عامل تخصیص‌یافته
+    if (order.status === 'pending' && newStatus === 'in_progress') {
+      const assignedId = order.assignedDoctorId || order.assignedAgentId;
+      if (assignedId && user.id !== assignedId) {
+        notify('فقط عامل تخصیص‌یافته می‌تواند کار را شروع کند', 'error');
+        return;
+      }
+      if (!assignedId) {
+        notify('ابتدا باید عامل به این سفارش تخصیص داده شود', 'error');
+        return;
+      }
+    }
+
+    if (!confirm(`آیا از تغییر وضعیت به "${STATUS[newStatus]?.label || newStatus}" اطمینان دارید؟`)) return;
     const logEntry = {
       id: Date.now().toString(36),
       type: 'status_change',
-      message: `وضعیت از "${STATUS[orders[idx].status]?.label || orders[idx].status}" به "${STATUS[newStatus]?.label || newStatus}" تغییر کرد`,
+      message: `وضعیت از "${STATUS[order.status]?.label || order.status}" به "${STATUS[newStatus]?.label || newStatus}" تغییر کرد`,
       timestamp: new Date().toISOString(),
       by: user.name || user.id || '',
     };
     orders[idx] = {
-      ...orders[idx],
+      ...order,
       status: newStatus,
       updatedAt: new Date().toISOString(),
       ...(newStatus === 'completed' ? { progress: 100, completedAt: new Date().toISOString() } : {}),
-      workLog: [...(orders[idx].workLog || []), logEntry],
+      workLog: [...(order.workLog || []), logEntry],
     };
     saveOrders(orders);
     notify(`وضعیت سفارش به "${STATUS[newStatus]?.label}" تغییر کرد`, 'success');
@@ -1455,6 +1669,7 @@ const OrdersRedesign = (function () {
     // public interface
     getOrdersContent,
     applyFilters,
+    toggleSort,
     clearFilters,
     setView,
     openDetail,

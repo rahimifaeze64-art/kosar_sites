@@ -69,11 +69,8 @@ function appData() {
         
         users: [
             { id: 1, name: 'عامل فتحی', role: 'doctor', specialization: 'مهندسی کامپیوتر', active: true },
-            { id: 2, name: 'عامل احمدی', role: 'doctor', specialization: 'مهندسی مکانیک', active: true },
-            { id: 3, name: 'مریم محمدی', role: 'employee', department: 'هماهنگی', active: true },
-            { id: 4, name: 'حسن ترجمان', role: 'translator', languages: ['عربی', 'انگلیسی'], active: true },
-            { id: 5, name: 'فتحی', role: 'agent', department: 'عملیات', active: true },
-            { id: 6, name: 'سجادی', role: 'agent', department: 'عملیات', active: true }
+            { id: 2, name: 'فتحی', role: 'agent', department: 'عملیات', active: true },
+            { id: 3, name: 'حمیدی', role: 'agent', department: 'عملیات', active: true }
         ],
 
         // Methods

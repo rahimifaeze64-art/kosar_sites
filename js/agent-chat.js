@@ -114,7 +114,7 @@ class AgentChat {
         const fixedAgents = [
             { id: 'mgr001', name: 'مدیر سیستم', username: 'manager', role: 'manager' },
             { id: 'agent001', name: 'فتحی', username: 'rezaei', role: 'agent' },
-            { id: 'agent002', name: 'سجادی', username: 'karimi', role: 'agent' },
+            { id: 'agent002', name: 'حمیدی', username: 'karimi', role: 'agent' },
             { id: 'agent003', name: 'احمدی', username: 'ahmadi', role: 'agent' }
         ];
         

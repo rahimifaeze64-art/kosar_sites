@@ -194,7 +194,7 @@ const OrderWizardModule = {
                                 <option value="doc001">دکتر معصومی</option>
                                 <option value="doc002">دکتر ذوقی</option>
                                 <option value="agent001">دکتر فتحی</option>
-                                <option value="agent002">دکتر سجادی</option>
+                                <option value="agent002">دکتر حمیدی</option>
                             </select>
                         </div>
                         

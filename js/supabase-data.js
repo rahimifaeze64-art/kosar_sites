@@ -463,10 +463,15 @@ const SupabaseDataModule = {
             const row = {
                 id:          tx.id          || undefined,
                 order_id:    tx.orderId     || tx.order_id    || null,
-                type:        tx.type,       // payment/refund/expense/income
+                type:        tx.type,       // payment/refund/expense/income/agent_payment
                 amount:      parseFloat(tx.amount) || 0,
+                currency:    tx.currency    || 'تومان',
                 description: tx.description || null,
-                created_by:  tx.createdBy   || tx.created_by  || null
+                // agent_id ذخیره می‌شود ولی FK نیست — created_by رو فقط اگر UUID معتبر باشه می‌فرستیم
+                agent_id:    tx.agentId     || tx.agent_id    || null,
+                created_by:  this._isUUID(tx.createdBy || tx.created_by)
+                             ? (tx.createdBy || tx.created_by)
+                             : null,
                 // agent_share و manager_share: توسط trigger پر می‌شوند — اینجا نمی‌فرستیم
             };
             const { error } = await this._db()
@@ -478,6 +483,12 @@ const SupabaseDataModule = {
             console.warn('⚠️ saveAccountingTransaction خطا:', e.message);
             return false;
         }
+    },
+
+    // بررسی فرمت UUID
+    _isUUID(val) {
+        if (!val) return false;
+        return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
     },
 
     // ════════════════════════════════════════════════════════
@@ -1192,6 +1203,7 @@ const SupabaseDataModule = {
             order_type_id:         o.orderTypeId      || null,
             revenue_agent_percent: o.revenueAgentPercent  != null ? o.revenueAgentPercent  : 60,
             revenue_manager_percent: o.revenueManagerPercent != null ? o.revenueManagerPercent : 40,
+            extra_costs:           JSON.stringify(o.extraCosts || []),
             updated_at:            new Date().toISOString()
         };
     },
@@ -1236,6 +1248,7 @@ const SupabaseDataModule = {
             orderTypeId:           r.order_type_id   || null,
             revenueAgentPercent:   r.revenue_agent_percent  != null ? parseFloat(r.revenue_agent_percent)  : 60,
             revenueManagerPercent: r.revenue_manager_percent != null ? parseFloat(r.revenue_manager_percent) : 40,
+            extraCosts:            this._parseJSON(r.extra_costs, []),
             createdAt:             r.created_at,
             updatedAt:             r.updated_at
         };

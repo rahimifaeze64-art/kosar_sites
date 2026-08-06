@@ -47,7 +47,7 @@ class DoctorChat {
             { id: 'doc001', name: 'عامل احمدی', username: 'ahmadi', role: 'doctor' },
             { id: 'doc002', name: 'عامل محمدی', username: 'mohammadi', role: 'doctor' },
             { id: 'doc003', name: 'عامل فتحی', username: 'rezaei', role: 'doctor' },
-            { id: 'doc004', name: 'عامل سجادی', username: 'karimi', role: 'doctor' }
+            { id: 'doc004', name: 'عامل حمیدی', username: 'karimi', role: 'doctor' }
         ];
         
         const dynamicParticipants = users.filter(u => u.role === 'doctor' || u.role === 'manager');

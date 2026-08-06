@@ -23,6 +23,7 @@ const EmbassyAccountingModule = (function () {
     const TABLE = 'embassy_records';
     let _all = [];      // همه رکوردها
     let _filtered = []; // رکوردهای بعد از فیلتر
+    let _sortDir  = 'desc'; // 'desc' = جدیدترین اول | 'asc' = قدیمی‌ترین اول
 
     function sb() {
         return (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
@@ -392,6 +393,7 @@ const EmbassyAccountingModule = (function () {
         _filtered = [..._all];
 
         if (loading) loading.classList.add('hidden');
+        _applySort();
         renderSummary(calcSummary(_filtered));
         renderTable(_filtered);
     }
@@ -417,8 +419,30 @@ const EmbassyAccountingModule = (function () {
             return matchName && matchType && matchSettled && matchCur;
         });
 
+        _applySort();
         renderSummary(calcSummary(_filtered));
         renderTable(_filtered);
+    }
+
+    // ── مرتب‌سازی جدیدترین/قدیمی‌ترین ───────────────────────
+    function toggleSort() {
+        _sortDir = _sortDir === 'desc' ? 'asc' : 'desc';
+        const icon  = document.getElementById('eacc-sort-icon');
+        const label = document.getElementById('eacc-sort-label');
+        if (icon)  icon.className  = _sortDir === 'desc'
+            ? 'fas fa-sort-amount-down text-xs'
+            : 'fas fa-sort-amount-up text-xs';
+        if (label) label.textContent = _sortDir === 'desc' ? 'جدیدترین' : 'قدیمی‌ترین';
+        _applySort();
+        renderTable(_filtered);
+    }
+
+    function _applySort() {
+        _filtered = _filtered.slice().sort((a, b) => {
+            const da = new Date(a.created_at || 0).getTime();
+            const db = new Date(b.created_at || 0).getTime();
+            return _sortDir === 'desc' ? db - da : da - db;
+        });
     }
 
     // ── خروجی CSV با فیلتر ───────────────────────────────────
@@ -612,6 +636,12 @@ const EmbassyAccountingModule = (function () {
                         class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-sm transition-all" title="پاک کردن فیلترها">
                         <i class="fas fa-times"></i>
                     </button>
+                    <!-- مرتب‌سازی -->
+                    <button onclick="EmbassyAccountingModule.toggleSort()"
+                        class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm flex items-center gap-1.5 transition-all" title="مرتب‌سازی">
+                        <i class="fas fa-sort-amount-down text-xs" id="eacc-sort-icon"></i>
+                        <span id="eacc-sort-label">جدیدترین</span>
+                    </button>
                 </div>
             </div>
 
@@ -638,6 +668,7 @@ const EmbassyAccountingModule = (function () {
                 if (el) el.value = '';
             });
         _filtered = [..._all];
+        _applySort();
         renderSummary(calcSummary(_filtered));
         renderTable(_filtered);
     }
@@ -675,8 +706,10 @@ const EmbassyAccountingModule = (function () {
         load,
         applyFilter,
         resetFilters,
+        toggleSort,
         showExportModal,
         doExportCSV,
+        getFilteredRecords: () => _filtered,
     };
 
 })();

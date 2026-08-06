@@ -132,7 +132,7 @@ const PersonalChatModule = {
             { id: 'doc001', name: 'دکتر معصومی', username: 'masoumi', role: 'agent' },
             { id: 'doc002', name: 'دکتر ذوقی', username: 'zoghi', role: 'agent' },
             { id: 'agent001', name: 'دکتر فتحی', username: 'fathi', role: 'agent' },
-            { id: 'agent002', name: 'دکتر سجادی', username: 'sajadi', role: 'agent' }
+            { id: 'agent002', name: 'دکتر حمیدی', username: 'sajadi', role: 'agent' }
         ];
         
         // Filter based on role

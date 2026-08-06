@@ -20,6 +20,7 @@ const AccountingUI = (function () {
     let _fPerson = '';
     let _fFrom   = '';
     let _fTo     = '';
+    let _accSortDir = 'desc'; // 'desc' = جدیدترین اول | 'asc' = قدیمی‌ترین اول
 
     // ── Supabase client ──────────────────────────────────────
     function sb() {
@@ -33,9 +34,10 @@ const AccountingUI = (function () {
     // ── فرمت عدد ────────────────────────────────────────────
     function fmtNum(n, cur) {
         const v = Math.abs(parseFloat(n) || 0);
-        if (cur === 'دلار')  return '$' + v.toLocaleString('en');
-        if (cur === 'دینار') return v.toLocaleString('fa-IR') + ' د';
-        return v.toLocaleString('fa-IR') + ' ت';
+        const formatted = v.toLocaleString('en-US');
+        if (cur === 'دلار')  return '$' + formatted;
+        if (cur === 'دینار') return formatted + ' د';
+        return formatted + ' ت';
     }
 
     // ── جمع مبالغ از آرایه amounts ─────────────────────────
@@ -128,7 +130,24 @@ const AccountingUI = (function () {
         const embUnsettled = (() => {
             try {
                 if (typeof EmbassyAccountingModule === 'undefined') return null;
-                return null; // از module واقعی می‌خوانیم
+                // جمع دریافتی‌های سفارت (finalAll)
+                const all = EmbassyAccountingModule.getFilteredRecords
+                    ? EmbassyAccountingModule.getFilteredRecords()
+                    : (EmbassyAccountingModule._filtered || []);
+                if (!all || all.length === 0) return null;
+                const totals = {};
+                all.forEach(r => {
+                    const finalList = r.settlement_final_list && Array.isArray(r.settlement_final_list)
+                        ? r.settlement_final_list
+                        : (parseFloat(r.settlement_final) > 0
+                            ? [{ amount: parseFloat(r.settlement_final), currency: r.settlement || 'تومان' }]
+                            : []);
+                    finalList.forEach(p => {
+                        const cur = p.currency || 'تومان';
+                        totals[cur] = (totals[cur] || 0) + parseFloat(p.amount || 0);
+                    });
+                });
+                return totals;
             } catch { return null; }
         })();
 
@@ -154,10 +173,19 @@ const AccountingUI = (function () {
                 : '<span class="text-gray-400 text-sm">—</span>',
                 'bg-blue-50','border-blue-200','fa-chart-line','text-blue-500')}
             ${card('حساب کارمندان', empUnsettled !== null
-                ? `<span class="text-orange-700 font-bold text-sm">${empUnsettled.toLocaleString('fa-IR')} ت</span><p class="text-gray-400 text-xs">تسویه‌نشده</p>`
+                ? `<span class="text-orange-700 font-bold text-sm">${empUnsettled.toLocaleString('en-US')} ت</span><p class="text-gray-400 text-xs">تسویه‌نشده</p>`
                 : '<span class="text-gray-400 text-xs">در دسترس نیست</span>',
                 'bg-orange-50','border-orange-200','fa-users','text-orange-500')}
-            ${card('حساب سفارت', '<span class="text-lime-700 text-xs">→ حسابداری سفارت</span>',
+            ${card('حساب سفارت', embUnsettled && Object.keys(embUnsettled).length
+                ? Object.entries(embUnsettled)
+                    .filter(([,v]) => v > 0)
+                    .map(([c, v]) => {
+                        const display = c === 'دلار'
+                            ? `<span class="font-bold text-sm text-lime-700">$${Number(v).toLocaleString('en-US')}</span>`
+                            : `<span class="font-bold text-sm text-lime-700">${Number(v).toLocaleString('en-US')} ${c === 'دینار' ? 'د' : 'ت'}</span>`;
+                        return display;
+                    }).join('<br>') + '<p class="text-gray-400 text-xs mt-0.5">جمع دریافتی‌ها</p>'
+                : '<span class="text-lime-700 text-xs">→ حسابداری سفارت</span>',
                 'bg-lime-50','border-lime-200','fa-landmark','text-lime-500')}
         </div>`;
     }
@@ -174,7 +202,22 @@ const AccountingUI = (function () {
         if (_fPerson) f = f.filter(t => t.person_acc_id === _fPerson || t.person_name === _fPerson || t.person_free_text === _fPerson);
         if (_fFrom)   f = f.filter(t => (t.tx_date||t.created_at||'') >= _fFrom);
         if (_fTo)     f = f.filter(t => (t.tx_date||t.created_at||'') <= _fTo);
+        // مرتب‌سازی
+        f = f.slice().sort((a, b) => {
+            const da = new Date(a.tx_date || a.created_at || 0).getTime();
+            const db = new Date(b.tx_date || b.created_at || 0).getTime();
+            return _accSortDir === 'desc' ? db - da : da - db;
+        });
         return f;
+    }
+
+    function toggleAccSort() {
+        _accSortDir = _accSortDir === 'desc' ? 'asc' : 'desc';
+        const icon  = document.getElementById('acc-sort-icon');
+        const label = document.getElementById('acc-sort-label');
+        if (icon)  icon.className  = _accSortDir === 'desc' ? 'fas fa-sort-amount-down text-xs' : 'fas fa-sort-amount-up text-xs';
+        if (label) label.textContent = _accSortDir === 'desc' ? 'جدیدترین' : 'قدیمی‌ترین';
+        _renderTable();
     }
 
     const TYPE_LABELS = { income:'درآمد', expense:'هزینه', debt:'بدهی', credit:'بستانکاری' };
@@ -301,6 +344,12 @@ const AccountingUI = (function () {
                         class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl text-sm flex items-center gap-1.5 transition-all">
                         <i class="fas fa-file-excel text-green-600"></i>خروجی Excel
                     </button>
+                    <!-- دکمه مرتب‌سازی -->
+                    <button onclick="AccountingUI.toggleAccSort()"
+                        class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-xl text-sm flex items-center gap-1.5 transition-all" title="مرتب‌سازی">
+                        <i class="fas fa-sort-amount-down text-xs" id="acc-sort-icon"></i>
+                        <span id="acc-sort-label">جدیدترین</span>
+                    </button>
 
                     <!-- جستجو -->
                     <div class="flex-1 min-w-40">
@@ -314,9 +363,7 @@ const AccountingUI = (function () {
                     <select id="acc-ftype" onchange="AccountingUI.onFilterType(this.value)"
                         class="bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none">
                         <option value="" ${!_fType?'selected':''}>همه نوع‌ها</option>
-                        <option value="income"  ${_fType==='income' ?'selected':''}>درآمد</option>
-                        <option value="expense" ${_fType==='expense'?'selected':''}>هزینه</option>
-                        <option value="debt"    ${_fType==='debt'   ?'selected':''}>بدهی</option>
+                        <option value="debt"    ${_fType==='debt'   ?'selected':''}>بدهکاری</option>
                         <option value="credit"  ${_fType==='credit' ?'selected':''}>بستانکاری</option>
                     </select>
 
@@ -411,9 +458,7 @@ const AccountingUI = (function () {
                     <div>
                         <label class="text-gray-600 text-xs mb-1 block">نوع تراکنش *</label>
                         <select id="tx-type" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 focus:outline-none">
-                            <option value="income"  ${tx?.type==='income' ?'selected':''}>درآمد</option>
-                            <option value="expense" ${tx?.type==='expense'?'selected':''}>هزینه</option>
-                            <option value="debt"    ${tx?.type==='debt'   ?'selected':''}>بدهی</option>
+                            <option value="debt"    ${(!tx || tx?.type==='debt'   )?'selected':''}>بدهکاری</option>
                             <option value="credit"  ${tx?.type==='credit' ?'selected':''}>بستانکاری</option>
                         </select>
                     </div>
@@ -439,10 +484,8 @@ const AccountingUI = (function () {
                 <div>
                     <label class="text-gray-600 text-xs mb-1 block">شخص (اختیاری)</label>
                     <div class="flex gap-2">
-                        <select id="tx-person-sel" class="flex-1 bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none"
-                            onchange="AccountingUI._onPersonSelChange(this)">
+                        <select id="tx-person-sel" class="flex-1 bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none">
                             ${_buildPersonOptions(tx?.person_acc_id||'')}
-                            <option value="__new__">+ شخص جدید...</option>
                         </select>
                     </div>
                     <input type="text" id="tx-person-text" value="${esc(tx?.person_free_text||tx?.person_name||'')}"
@@ -835,6 +878,7 @@ const AccountingUI = (function () {
     return {
         init, render, loadAll,
         onSearchInput, onFilterType, onFilterPerson, onFilterFrom, onFilterTo, clearFilters,
+        toggleAccSort,
         showAddModal, showEditModal, deleteTransaction,
         showAddPersonModal, _submitPerson, showPersonsList, _deletePerson,
         showExportModal, _doExport,

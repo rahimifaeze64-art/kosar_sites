@@ -154,6 +154,11 @@ const EmbassyModule = (function () {
                         <option value="وکالت‌نامه">وکالت‌نامه</option>
                         <option value="سایر">سایر</option>
                     </select>
+                    <button onclick="EmbassyModule.toggleSort()" id="emb-sort-btn"
+                        class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-1.5" title="مرتب‌سازی">
+                        <i class="fas fa-sort-amount-down text-xs" id="emb-sort-icon"></i>
+                        <span id="emb-sort-label">جدیدترین</span>
+                    </button>
                 </div>
                 <!-- فیلترهای فیلد خالی -->
                 <div class="flex flex-wrap gap-2">
@@ -1113,6 +1118,17 @@ const EmbassyModule = (function () {
 
     // ── state داده‌های کش‌شده برای فیلتر ────────────────────
     let _allRecords = [];
+    let _sortDir    = 'desc'; // 'desc' = جدیدترین اول | 'asc' = قدیمی‌ترین اول
+
+    // ── تغییر جهت مرتب‌سازی ─────────────────────────────────
+    function toggleSort() {
+        _sortDir = _sortDir === 'desc' ? 'asc' : 'desc';
+        const icon  = document.getElementById('emb-sort-icon');
+        const label = document.getElementById('emb-sort-label');
+        if (icon)  icon.className  = _sortDir === 'desc' ? 'fas fa-sort-amount-down text-xs' : 'fas fa-sort-amount-up text-xs';
+        if (label) label.textContent = _sortDir === 'desc' ? 'جدیدترین' : 'قدیمی‌ترین';
+        applyFilter();
+    }
 
     // ── بارگذاری و رندر ──────────────────────────────────────
     async function load() {
@@ -1153,6 +1169,13 @@ const EmbassyModule = (function () {
         } else if (_activeQuickFilter === 'no_vekalat') {
             filtered = filtered.filter(r => r.vekalat !== 'دارد');
         }
+
+        // مرتب‌سازی بر اساس تاریخ ثبت
+        filtered = filtered.slice().sort((a, b) => {
+            const da = new Date(a.created_at || 0).getTime();
+            const db = new Date(b.created_at || 0).getTime();
+            return _sortDir === 'desc' ? db - da : da - db;
+        });
 
         renderTable(filtered);
     }
@@ -1728,6 +1751,7 @@ const EmbassyModule = (function () {
         init,
         load,
         applyFilter,
+        toggleSort,
         applyQuickFilter,
         openAddModal,
         openEditModal,

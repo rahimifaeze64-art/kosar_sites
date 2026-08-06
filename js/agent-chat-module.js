@@ -56,7 +56,7 @@ const AgentChatModule = {
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px; background: #475569; padding: 6px 12px; border-radius: 20px; white-space: nowrap; font-size: 14px;">
                         <i class="fas fa-user-tie"></i>
-                        <span>سجادی</span>
+                        <span>حمیدی</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px; background: #475569; padding: 6px 12px; border-radius: 20px; white-space: nowrap; font-size: 14px;">
                         <i class="fas fa-user-tie"></i>

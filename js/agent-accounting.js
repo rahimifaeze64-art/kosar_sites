@@ -65,10 +65,12 @@ const AgentAccountingModule = {
         if (sb) {
             sb.saveAccountingTransaction({
                 id:          newEntry.id,
-                type:        'income',
+                type:        'agent_payment',
                 amount:      newEntry.amount,
+                currency:    newEntry.currency || 'تومان',
                 description: newEntry.description || 'دریافتی عامل',
-                createdBy:   agentId
+                agentId:     agentId,   // ذخیره در ستون agent_id (بدون FK)
+                createdBy:   null,      // created_by = null چون agentId ممکنه UUID نباشه
             })
             .then(ok => { if (ok) console.log('✅ پرداخت عامل در Supabase ذخیره شد'); })
             .catch(e  => console.warn('⚠️ savePayment Supabase خطا:', e.message));

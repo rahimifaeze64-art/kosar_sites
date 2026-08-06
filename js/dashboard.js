@@ -747,30 +747,115 @@ const DashboardModule = {
             
             // Filter orders assigned to this agent
             const myOrders = orders.filter(o => {
-                // Check multiple possible field names for assigned doctor
                 const isAssigned = 
                     o.assignedDoctorId === currentUser.id || 
-                    o.assigned_doctor === currentUser.id ||
-                    o.assignedDoctor === currentUser.id ||
-                    o.doctorId === currentUser.id ||
-                    o.doctor_id === currentUser.id;
+                    o.assigned_doctor  === currentUser.id ||
+                    o.assignedDoctor   === currentUser.id ||
+                    o.doctorId         === currentUser.id ||
+                    o.assignedAgentId  === currentUser.id;
                 return isAssigned;
             });
-            
-            const rejectedOrders_unused = []; // removed – only 3 statuses now
-            
+
+            // ── محاسبه مهلت‌ها ──────────────────────────────────
+            const activeOrders = myOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled');
+
+            function _dlInfo(deadline) {
+                if (!deadline) return { level: 'none', days: null };
+                try {
+                    const diff = Math.ceil((new Date(deadline) - new Date()) / 86400000);
+                    if (diff < 0)  return { level: 'overdue', days: Math.abs(diff) };
+                    if (diff === 0) return { level: 'urgent',  days: 0 };
+                    if (diff <= 3)  return { level: 'urgent',  days: diff };
+                    if (diff <= 7)  return { level: 'warning', days: diff };
+                    return { level: 'ok', days: diff };
+                } catch(e) { return { level: 'none', days: null }; }
+            }
+
+            const overdue = activeOrders.filter(o => _dlInfo(o.deadline||o.deadlineDateTime).level === 'overdue');
+            const urgent  = activeOrders.filter(o => _dlInfo(o.deadline||o.deadlineDateTime).level === 'urgent');
+            const warning = activeOrders.filter(o => _dlInfo(o.deadline||o.deadlineDateTime).level === 'warning');
+
+            // ── بنر هشدار مهلت ──────────────────────────────────
+            const alertBanner = (overdue.length || urgent.length || warning.length) ? `
+            <div class="rounded-2xl overflow-hidden border border-red-200 shadow-sm mb-2" id="agent-dl-banner">
+                <div class="bg-gradient-to-l from-red-50 to-orange-50 px-4 py-3 flex items-center justify-between border-b border-red-100">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-exclamation-triangle text-red-500 animate-pulse"></i>
+                        <span class="font-bold text-red-700 text-sm">هشدار مهلت سفارشات شما</span>
+                    </div>
+                    <button onclick="document.getElementById('agent-dl-banner').remove()"
+                        class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-sm"></i></button>
+                </div>
+                <div class="bg-white px-4 py-3 space-y-2">
+                    ${overdue.length ? `<div class="flex flex-wrap gap-2 items-center">
+                        <span class="text-xs font-bold text-red-600 w-20">متأخر (${overdue.length}):</span>
+                        ${overdue.slice(0,3).map(o => {
+                            const dl = _dlInfo(o.deadline||o.deadlineDateTime);
+                            return `<span class="bg-red-100 text-red-700 border border-red-200 text-xs px-2 py-0.5 rounded-lg">
+                                <i class="fas fa-exclamation-circle ml-1 text-[9px]"></i>${o.studentName||'---'} — ${dl.days}ر تأخیر
+                            </span>`;
+                        }).join('')}
+                        ${overdue.length > 3 ? `<span class="text-xs text-red-400">+${overdue.length-3} دیگر</span>` : ''}
+                    </div>` : ''}
+                    ${urgent.length ? `<div class="flex flex-wrap gap-2 items-center">
+                        <span class="text-xs font-bold text-orange-600 w-20">فوری (${urgent.length}):</span>
+                        ${urgent.slice(0,3).map(o => {
+                            const dl = _dlInfo(o.deadline||o.deadlineDateTime);
+                            return `<span class="bg-orange-100 text-orange-700 border border-orange-200 text-xs px-2 py-0.5 rounded-lg">
+                                <i class="fas fa-fire ml-1 text-[9px]"></i>${o.studentName||'---'} — ${dl.days === 0 ? 'امروز' : dl.days+'ر'}
+                            </span>`;
+                        }).join('')}
+                        ${urgent.length > 3 ? `<span class="text-xs text-orange-400">+${urgent.length-3} دیگر</span>` : ''}
+                    </div>` : ''}
+                    ${warning.length ? `<div class="flex flex-wrap gap-2 items-center">
+                        <span class="text-xs font-bold text-amber-600 w-20">این هفته (${warning.length}):</span>
+                        ${warning.slice(0,3).map(o => {
+                            const dl = _dlInfo(o.deadline||o.deadlineDateTime);
+                            return `<span class="bg-amber-50 text-amber-700 border border-amber-200 text-xs px-2 py-0.5 rounded-lg">
+                                <i class="fas fa-clock ml-1 text-[9px]"></i>${o.studentName||'---'} — ${dl.days}ر مانده
+                            </span>`;
+                        }).join('')}
+                        ${warning.length > 3 ? `<span class="text-xs text-amber-400">+${warning.length-3} دیگر</span>` : ''}
+                    </div>` : ''}
+                </div>
+            </div>` : '';
+
+            // ── رنگ کارت بر اساس مهلت ───────────────────────────
+            function _dlRowCls(order) {
+                if (order.status === 'completed' || order.status === 'cancelled') return '';
+                const lv = _dlInfo(order.deadline||order.deadlineDateTime).level;
+                if (lv === 'overdue') return 'border-r-4 border-red-500 bg-red-50';
+                if (lv === 'urgent')  return 'border-r-4 border-orange-400 bg-orange-50';
+                if (lv === 'warning') return 'border-r-4 border-amber-300 bg-amber-50';
+                return '';
+            }
+
+            function _dlBadge(order) {
+                if (order.status === 'completed' || order.status === 'cancelled') return '';
+                const dl = _dlInfo(order.deadline||order.deadlineDateTime);
+                if (dl.level === 'overdue') return `<span class="text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded-full font-bold animate-pulse">متأخر ${dl.days}ر</span>`;
+                if (dl.level === 'urgent' && dl.days === 0) return `<span class="text-[10px] bg-orange-500 text-white px-1.5 py-0.5 rounded-full font-bold">امروز!</span>`;
+                if (dl.level === 'urgent')  return `<span class="text-[10px] bg-orange-400 text-white px-1.5 py-0.5 rounded-full font-bold">${dl.days}ر مانده</span>`;
+                if (dl.level === 'warning') return `<span class="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full border border-amber-300">${dl.days}ر مانده</span>`;
+                return '';
+            }
+
+            const rejectedOrders_unused = [];
+
             return `
                 <div class="space-y-6">
                     <div class="bg-gradient-to-r from-lime-500 to-lime-600 text-gray-900 rounded-lg p-6">
                         <h2 class="text-2xl font-bold mb-2">پنل عامل</h2>
                         <p class="text-lime-100">وظایف محول شده</p>
                     </div>
+
+                    ${alertBanner}
                     
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div class="dashboard-card blue">
                             <div class="text-center">
-                                <h3 class="text-lg font-semibold text-gray-700">وظایف من</h3>
-                                <p class="text-3xl font-bold text-black-600">${myOrders.length}</p>
+                                <h3 class="text-lg font-semibold text-gray-700">کل سفارشات</h3>
+                                <p class="text-3xl font-bold text-blue-600">${myOrders.length}</p>
                             </div>
                         </div>
                         <div class="dashboard-card lime">
@@ -779,6 +864,10 @@ const DashboardModule = {
                                 <p class="text-3xl font-bold text-lime-600">${myOrders.filter(o => o.status === CONFIG.ORDER_STATUS.IN_PROGRESS).length}</p>
                             </div>
                         </div>
+                        <div class="rounded-xl p-4 text-center ${overdue.length ? 'bg-red-100 border-2 border-red-400' : 'bg-gray-100'}">
+                            <h3 class="text-sm font-semibold ${overdue.length ? 'text-red-700' : 'text-gray-600'}">متأخر / فوری</h3>
+                            <p class="text-3xl font-bold ${overdue.length ? 'text-red-600' : 'text-gray-500'}">${overdue.length + urgent.length}</p>
+                        </div>
                         <div class="dashboard-card lime">
                             <div class="text-center">
                                 <h3 class="text-lg font-semibold text-gray-700">درآمد</h3>
@@ -786,24 +875,28 @@ const DashboardModule = {
                             </div>
                         </div>
                     </div>
+
                     <div class="bg-white rounded-lg shadow-md p-6">
                         <h2 class="text-xl font-bold mb-4 text-gray-800">وظایف فعلی</h2>
                         <div class="space-y-3">
                             ${myOrders.filter(o => o.status === CONFIG.ORDER_STATUS.IN_PROGRESS).length > 0 ? 
                                 myOrders.filter(o => o.status === CONFIG.ORDER_STATUS.IN_PROGRESS).map(order => `
-                                <div class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                                <div class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors ${_dlRowCls(order)}">
                                     <div>
-                                        <h4 class="font-medium">${order.studentName}</h4>
-                                        <p class="text-sm text-gray-600">${order.type} - ${order.stage}</p>
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <h4 class="font-medium">${order.studentName||'---'}</h4>
+                                            ${_dlBadge(order)}
+                                        </div>
+                                        <p class="text-sm text-gray-600">${order.type||''} ${order.stage ? '— '+order.stage : ''}</p>
                                     </div>
                                     <div class="text-left">
                                         <span class="px-2 py-1 rounded-full text-xs font-medium ${this.getStatusClass(order.status)}">
                                             ${this.getStatusText(order.status)}
                                         </span>
                                         <div class="text-sm text-gray-500 mt-1">مهلت: ${UTILS.formatDate(order.deadlineDateTime || order.deadline)}</div>
-                                        <div class="text-sm text-gray-500">پیشرفت: ${order.progress}%</div>
+                                        <div class="text-sm text-gray-500">پیشرفت: ${order.progress||0}%</div>
                                         <div class="w-20 bg-gray-200 rounded-full h-2 mt-1">
-                                            <div class="bg-blue-600 h-2 rounded-full" style="width: ${order.progress}%"></div>
+                                            <div class="${(order.progress||0) < 30 ? 'bg-red-400' : (order.progress||0) < 70 ? 'bg-amber-400' : 'bg-lime-500'} h-2 rounded-full" style="width: ${order.progress||0}%"></div>
                                         </div>
                                     </div>
                                 </div>

@@ -88,6 +88,7 @@
                 'js/step-assignment.js',
                 'js/agent.js',
                 'js/agent-accounting.js',
+                'js/agents-accounting-manager.js',
                 'js/employee-student-edit.js',
                 'js/init-students-data.js',
                 'js/force-update-students.js',
@@ -375,6 +376,12 @@
                                     <i class="fas fa-landmark text-orange-400 text-xs"></i>
                                     <span>حسابداری سفارت</span>
                                 </button>
+                                <button @click="currentPage = 'accounting'; accPage = 'agents'; accMenuOpen = false"
+                                        :class="currentPage === 'accounting' && accPage === 'agents' ? 'bg-white bg-opacity-20 text-white' : 'text-black-400 hover:bg-white hover:bg-opacity-10'"
+                                        class="w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm">
+                                    <i class="fas fa-user-tie text-lime-400 text-xs"></i>
+                                    <span>حسابداری عامل‌ها</span>
+                                </button>
                             </div>
                         </div>
                     </template>
@@ -526,7 +533,7 @@
                                 <span class="bg-lime-500/20 p-2 rounded-xl"><i class="fas fa-calculator text-lime-400"></i></span>
                                 حسابداری
                             </h2>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                                 <button @click="accPage = 'personal'"
                                     class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 cursor-pointer hover:bg-white/15 transition-all group text-right">
                                     <div class="flex flex-col items-center text-center gap-4">
@@ -566,6 +573,19 @@
                                         <i class="fas fa-chevron-left text-black-300 group-hover:text-white transition-colors"></i>
                                     </div>
                                 </button>
+                                <button @click="accPage = 'agents'"
+                                    class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 cursor-pointer hover:bg-white/15 transition-all group text-right">
+                                    <div class="flex flex-col items-center text-center gap-4">
+                                        <div class="w-16 h-16 bg-lime-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                            <i class="fas fa-user-tie text-3xl text-lime-400"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-xl font-bold text-white mb-2">حسابداری عامل‌ها</h3>
+                                            <p class="text-black-400 text-sm">پرداخت، مانده و سهم هر عامل</p>
+                                        </div>
+                                        <i class="fas fa-chevron-left text-black-300 group-hover:text-white transition-colors"></i>
+                                    </div>
+                                </button>
                             </div>
                         </div>
 
@@ -588,6 +608,15 @@
                         <!-- حسابداری کارمندان — مستقیم (ادغام شده) -->
                         <div x-show="accPage === 'employees'">
                             <div x-html="getEmployeeAccountingContent()"></div>
+                        </div>
+
+                        <!-- حسابداری عامل‌ها -->
+                        <div x-show="accPage === 'agents'"
+                             x-effect="if(accPage==='agents'){ $nextTick(()=>{ if(typeof AgentsAccountingManager!=='undefined'){ const el=document.getElementById('agents-acc-root'); if(!el||el.innerHTML.trim()==='') document.getElementById('agents-acc-root') && (document.getElementById('agents-acc-root').innerHTML = ''); } }); }">
+                            <button @click="accPage = 'main'" class="mb-4 flex items-center gap-2 text-gray-400 hover:text-white text-sm transition-colors">
+                                <i class="fas fa-arrow-right"></i> بازگشت به حسابداری
+                            </button>
+                            <div x-html="typeof AgentsAccountingManager !== 'undefined' ? AgentsAccountingManager.getContent() : '<p class=\'text-red-400\'>ماژول بارگذاری نشده</p>'"></div>
                         </div>
                     </div>
                 </template>
