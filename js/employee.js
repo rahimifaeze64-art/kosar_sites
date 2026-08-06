@@ -3823,7 +3823,8 @@ EmployeeModule.showAddStudentModal = function() {
                         <i class="fas fa-times ml-2"></i>
                         انصراف
                     </button>
-                    <button onclick="employeeModule.saveNewStudent()" 
+                    <button type="button" onclick="employeeModule.saveNewStudent()" 
+                            id="save-new-student-btn"
                             class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium">
                         <i class="fas fa-save ml-2"></i>
                         ذخیره دانشجو
@@ -3837,94 +3838,119 @@ EmployeeModule.showAddStudentModal = function() {
 };
 
 // Save new student
-EmployeeModule.saveNewStudent = function() {
+EmployeeModule.saveNewStudent = async function() {
+    const saveBtn = document.getElementById('save-new-student-btn');
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> در حال ذخیره...'; }
+
     try {
         // Get form values
-        const name = document.getElementById('new-student-name').value.trim();
-        const studentId = document.getElementById('new-student-id').value.trim();
-        const passportNumber = document.getElementById('new-passport').value.trim();
-        const birthDate = document.getElementById('new-birthdate').value;
-        const gender = document.getElementById('new-gender').value;
-        const phone = document.getElementById('new-phone').value.trim();
-        const university = document.getElementById('new-university').value.trim();
-        const field = document.getElementById('new-field').value.trim();
-        const degree = document.getElementById('new-degree').value;
-        const email = document.getElementById('new-email').value.trim();
-        
+        const name           = document.getElementById('new-student-name')?.value.trim();
+        const studentId      = document.getElementById('new-student-id')?.value.trim();
+        const passportNumber = document.getElementById('new-passport')?.value.trim();
+        const birthDate      = document.getElementById('new-birthdate')?.value;
+        const gender         = document.getElementById('new-gender')?.value;
+        const phone          = document.getElementById('new-phone')?.value.trim();
+        const university     = document.getElementById('new-university')?.value.trim();
+        const field          = document.getElementById('new-field')?.value.trim();
+        const degree         = document.getElementById('new-degree')?.value;
+        const email          = document.getElementById('new-email')?.value.trim();
+
         // Validate required fields
-        if (!name || !phone || !university || !field || !degree) {
-            UTILS.showNotification('لطفاً فیلدهای ضروری را پر کنید', 'error');
+        if (!name) {
+            UTILS.showNotification('نام دانشجو الزامی است', 'error');
+            if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="fas fa-save ml-2"></i> ذخیره دانشجو'; }
             return;
         }
-        
-        // Generate new student ID
-        const newId = 'std' + String(Date.now()).slice(-6);
-        
-        // Create new student object
-        const newStudent = {
-            id: newId,
-            name: name,
-            username: name.split(' ')[0].toLowerCase(),
-            password: '123456',
-            role: 'student',
-            studentId: studentId || newId,
-            passportNumber: passportNumber,
-            birthDate: birthDate,
-            gender: gender,
-            phone: phone,
-            university: university,
-            field: field,
-            degree: degree,
-            email: email,
-            active: true,
-            createdAt: new Date().toISOString(),
-            educationalSteps: this.getDefaultEducationalSteps(),
-            defenseSteps: this.getDefaultDefenseSteps2(),
-            requirementsSteps: this.getDefaultRequirementsSteps()
-        };
-        
-        // Save to students_data
-        const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
-        studentsData[newId] = newStudent;
-        localStorage.setItem('students_data', JSON.stringify(studentsData));
-        
-        // Also add to users in DataModule (localStorage + Supabase sync)
-        const users = DataModule.getUsers();
-        users.push(newStudent);
-        DataModule.saveUsers(users); // این خودش Supabase رو هم sync می‌کنه
 
-        // ذخیره مستقیم در Supabase (profiles جدول)
-        const _sbClient = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
-        if (_sbClient) {
-            _sbClient.from('profiles').upsert([{
-                id:          newId,
-                name:        newStudent.name,
-                username:    newStudent.username,
-                role:        'student',
-                email:       newStudent.email || null,
-                phone:       newStudent.phone || null,
-                university:  newStudent.university || null,
-                student_id:  newStudent.studentId || null,
-                field:       newStudent.field || null,
-                degree:      newStudent.degree || null,
-                active:      true,
-                created_at:  newStudent.createdAt
-            }]).then(({ error }) => {
-                if (error) console.warn('⚠️ upsert student:', error.message);
-                else console.log('✅ دانشجو در  ذخیره شد:', newStudent.name);
-            });
+        // Generate unique UUID — Supabase به UUID نیاز دارد
+        const newId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+            ? crypto.randomUUID()
+            : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+                const r = Math.random() * 16 | 0;
+                return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+              });
+        // internal app ID برای localStorage (کوتاه‌تر)
+        const appId = 'std_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+
+        const newStudent = {
+            id:               appId,          // ID داخلی برای localStorage
+            _uuid:            newId,          // UUID برای Supabase
+            name:             name,
+            username:         'stu_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2,4),
+            password:         '123456',
+            role:             'student',
+            studentId:        studentId || appId,
+            passportNumber:   passportNumber || '',
+            birthDate:        birthDate || '',
+            gender:           gender || 'مرد',
+            phone:            phone || '',
+            university:       university || '',
+            field:            field || '',
+            degree:           degree || 'کارشناسی',
+            email:            email || '',
+            active:           true,
+            createdAt:        new Date().toISOString(),
+            educationalSteps: this.getDefaultEducationalSteps?.()  || [],
+            defenseSteps:     this.getDefaultDefenseSteps2?.()     || [],
+            requirementsSteps:this.getDefaultRequirementsSteps?.() || [],
+        };
+
+        // ── ۱. ذخیره مستقیم در Supabase profiles ──────────────
+        const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+        if (client) {
+            const profileRow = {
+                id:              appId,                    // TEXT — سازگار با ساختار جدول
+                name:            newStudent.name,
+                username:        newStudent.username,
+                role:            'student',
+                email:           newStudent.email          || null,
+                phone:           newStudent.phone          || null,
+                active:          true,
+                university:      newStudent.university     || null,
+                student_id:      newStudent.studentId      || null,
+                field:           newStudent.field          || null,
+                degree:          newStudent.degree         || null,
+                passport_number: newStudent.passportNumber || null,
+            };
+
+            console.log('📤 ارسال به Supabase:', profileRow);
+
+            const { data: inserted, error: sbErr } = await client
+                .from('profiles')
+                .upsert([profileRow], { onConflict: 'id' })
+                .select();
+
+            if (sbErr) {
+                console.error('❌ Supabase error:', JSON.stringify(sbErr));
+                UTILS.showNotification('خطا: ' + (sbErr.message || JSON.stringify(sbErr)), 'error');
+                if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="fas fa-save ml-2"></i> ذخیره دانشجو'; }
+                return;
+            }
+            console.log('✅ دانشجو در Supabase ذخیره شد:', inserted);
+        } else {
+            console.warn('⚠️ Supabase client در دسترس نیست — فقط localStorage');
         }
-        
-        UTILS.showNotification('دانشجوی جدید با موفقیت اضافه شد', 'success');
-        
-        // Close modal
+
+        // ── ۲. ذخیره در localStorage ───────────────────────────
+        const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
+        studentsData[appId] = newStudent;
+        localStorage.setItem('students_data', JSON.stringify(studentsData));
+
+        // sync با DataModule
+        try {
+            const users = DataModule.getUsers();
+            users.push(newStudent);
+            DataModule.saveUsers(users);
+        } catch(e) { console.warn('DataModule sync:', e.message); }
+
+        UTILS.showNotification('دانشجو با موفقیت ثبت شد ✓', 'success');
         this.closeModal('add-student-modal');
-        
-        // Refresh the page
-        this.refreshStudentsPage();
+        this.refreshStudentsPage?.();
+
     } catch (error) {
-        console.error('Error saving new student:', error);
-        UTILS.showNotification('خطا در ذخیره دانشجو', 'error');
+        console.error('saveNewStudent error:', error);
+        UTILS.showNotification('خطا در ذخیره دانشجو: ' + error.message, 'error');
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="fas fa-save ml-2"></i> ذخیره دانشجو'; }
     }
 };
 
