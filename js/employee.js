@@ -3872,9 +3872,24 @@ EmployeeModule.saveNewStudent = async function() {
         // internal app ID برای localStorage (کوتاه‌تر)
         const appId = 'std_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
 
+        // تبدیل degree فارسی به انگلیسی (سازگار با CHECK constraint دیتابیس)
+        function normDegree(d) {
+            const map = {
+                'کارشناسی':       'bachelor',
+                'کارشناسی ارشد':  'masters',
+                'ارشد':           'masters',
+                'دکتری':          'phd',
+                'دكتراه':         'phd',
+                'bachelor':       'bachelor',
+                'masters':        'masters',
+                'phd':            'phd',
+            };
+            return map[d] || 'bachelor';
+        }
+
         const newStudent = {
-            id:               appId,          // ID داخلی برای localStorage
-            _uuid:            newId,          // UUID برای Supabase
+            id:               appId,
+            _uuid:            newId,
             name:             name,
             username:         'stu_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2,4),
             password:         '123456',
@@ -3887,6 +3902,7 @@ EmployeeModule.saveNewStudent = async function() {
             university:       university || '',
             field:            field || '',
             degree:           degree || 'کارشناسی',
+            degreeDb:         normDegree(degree),
             email:            email || '',
             active:           true,
             createdAt:        new Date().toISOString(),
@@ -3899,7 +3915,7 @@ EmployeeModule.saveNewStudent = async function() {
         const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
         if (client) {
             const profileRow = {
-                id:              appId,                    // TEXT — سازگار با ساختار جدول
+                id:              appId,
                 name:            newStudent.name,
                 username:        newStudent.username,
                 role:            'student',
@@ -3909,7 +3925,7 @@ EmployeeModule.saveNewStudent = async function() {
                 university:      newStudent.university     || null,
                 student_id:      newStudent.studentId      || null,
                 field:           newStudent.field          || null,
-                degree:          newStudent.degree         || null,
+                degree:          newStudent.degreeDb,       // ← انگلیسی: bachelor/masters/phd
                 passport_number: newStudent.passportNumber || null,
             };
 
