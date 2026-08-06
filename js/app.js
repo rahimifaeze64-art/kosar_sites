@@ -20,6 +20,7 @@ function appController() {
     notifications: [],
     isLoading: false,
     apiMode: false, // Track if we're using API or localStorage
+    tasksRefreshKey: 0, // کلید refresh صفحه وظایف کارمند
     dashboardContent:
       '<div class="text-center text-gray-500">در حال بارگذاری...</div>',
     ordersContent: "",

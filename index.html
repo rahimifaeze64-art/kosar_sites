@@ -467,7 +467,7 @@
             <div x-show="currentPage === 'tasks' && currentUser.role === 'manager'" x-html="getTasksContent()"></div>
             
             <!-- My Tasks Page (employee Only) -->
-            <div x-show="currentPage === 'myTasks' && currentUser.role === 'employee'" x-html="getMyTasksContent()"></div>
+            <div x-show="currentPage === 'myTasks' && currentUser.role === 'employee'" x-html="tasksRefreshKey >= 0 && getMyTasksContent()"></div>
             
             <!-- Students Page (Manager and employee) -->
             <div x-show="currentPage === 'students' && (currentUser.role === 'manager' || currentUser.role === 'employee')" x-html="getStudentsContent()"></div>

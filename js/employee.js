@@ -1,7 +1,41 @@
 ﻿// Employee Module - ماژول کارمند
 const EmployeeModule = {
+    // flag برای جلوگیری از loop در fetch
+    _fetchingTasks: {},
+
     // Get my tasks content for employee
     getMyTasksContent(userId) {
+        // ── اگر Supabase آنلاین است و fetch در حال اجرا نیست، داده را sync کن ──
+        if (
+            !this._fetchingTasks[userId] &&
+            typeof SupabaseDataModule !== 'undefined' &&
+            typeof SupabaseDataModule._online === 'function' &&
+            SupabaseDataModule._online()
+        ) {
+            this._fetchingTasks[userId] = true;
+            SupabaseDataModule.getEmployeeTasks(userId)
+                .then(remoteTasks => {
+                    this._fetchingTasks[userId] = false;
+                    if (!remoteTasks || remoteTasks.length === 0) return;
+                    const all = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+                    const local = all[userId] || [];
+                    const merged = [...remoteTasks];
+                    local.forEach(lt => {
+                        if (!merged.find(rt => rt.id === lt.id)) merged.push(lt);
+                    });
+                    // فقط اگر تعداد وظایف تغییر کرده refresh کن
+                    if (merged.length !== local.length) {
+                        all[userId] = merged;
+                        localStorage.setItem('employee_tasks', JSON.stringify(all));
+                        this.refreshMyTasks(userId);
+                    }
+                })
+                .catch(e => {
+                    this._fetchingTasks[userId] = false;
+                    console.warn('⚠️ getMyTasksContent fetch خطا:', e.message);
+                });
+        }
+
         const tasks = this.getMyTasks(userId);
         const stepTasks = tasks.filter(t => t.isStepTask);
         const regularTasks = tasks.filter(t => !t.isStepTask);
@@ -2800,6 +2834,7 @@ const EmployeeModule = {
     },
     
     getMyTasks(userId) {
+        // فقط از localStorage می‌خونه (fetch اصلی در getMyTasksContent انجام می‌شه)
         const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
         return tasksData[userId] || [];
     },
@@ -3095,29 +3130,36 @@ const EmployeeModule = {
     },
     
     refreshMyTasks(userId) {
-        // روش اول: جستجوی المان با x-show و re-inject
-        const content = document.querySelector('[x-show="currentPage === \'myTasks\'"]');
-        if (content) {
+        // روش اول: Alpine reactive — tasksRefreshKey رو increment کن تا x-html دوباره evaluate بشه
+        try {
+            const alpineEl = document.querySelector('[x-data]');
+            if (alpineEl) {
+                // Alpine v3
+                const data = Alpine.$data ? Alpine.$data(alpineEl)
+                           : (alpineEl._x_dataStack ? alpineEl._x_dataStack[0] : null);
+                if (data && typeof data.tasksRefreshKey !== 'undefined') {
+                    data.tasksRefreshKey++;
+                    console.log('🔄 tasksRefreshKey =', data.tasksRefreshKey);
+                    return;
+                }
+            }
+        } catch (e) { /* fallback */ }
+
+        // روش دوم: مستقیم innerHTML
+        const content = document.querySelector('[x-show*="myTasks"]');
+        if (content && content.offsetParent !== null) {
             content.innerHTML = this.getMyTasksContent(userId);
             return;
         }
-        
-        // روش دوم: جستجوی المان با id
+
+        // روش سوم: main-content
         const mainContent = document.getElementById('main-content');
         if (mainContent) {
-            // بررسی اینکه آیا در صفحه وظایف هستیم
-            const tasksHeader = mainContent.querySelector('h2');
-            if (tasksHeader && tasksHeader.textContent.includes('وظایف من')) {
+            const h2 = mainContent.querySelector('h2');
+            if (h2 && h2.textContent.includes('وظایف من')) {
                 mainContent.innerHTML = this.getMyTasksContent(userId);
             }
         }
-
-        // روش سوم: تمام divهایی که innerHTML شامل "کارتابل" است را آپدیت کن
-        document.querySelectorAll('[x-show*="myTasks"]').forEach(el => {
-            if (el.innerHTML.includes('وظایف من') || el.innerHTML.includes('کارتابل')) {
-                el.innerHTML = this.getMyTasksContent(userId);
-            }
-        });
     },
     
     refreshChat(userId) {

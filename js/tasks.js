@@ -95,25 +95,40 @@ const TasksModule = {
     
     // Get employees list - فقط کارمندها
     getemployees() {
-        // لیست ثابت کارمند‌ها
-        const fixedemployees = [
-            { id: 'emp001', name: 'سارا سادات حسینی', username: 'zahra', email: 'zahra@edu-system.com', role: 'employee' },
-            { id: 'emp002', name: 'زینب بتول محمدی', username: 'fatemeh', email: 'fatemeh@edu-system.com', role: 'employee' },
-            { id: 'emp003', name: 'علیرضا غلامی فرزاد', username: 'farzad', email: 'farzad@edu-system.com', role: 'employee' },
-            { id: 'emp004', name: 'زینب سخایی م', username: 'sakhaei', email: 'sakhaei@edu-system.com', role: 'employee' }
-        ];
-        
-        // کارمند‌های جدید از دیتابیس (فقط نقش employee)
-        const users = DataModule.getUsers();
-        const newemployees = users.filter(u => u.role === 'employee' && u.active);
-        
+        // ابتدا از HARDCODED_USERS بخوان (منبع اصلی و معتبر)
+        const fixedemployees = (typeof HARDCODED_USERS !== 'undefined')
+            ? HARDCODED_USERS
+                .filter(u => u.role === 'employee' && u.active)
+                .map(u => ({
+                    id:       u.id,
+                    name:     u.name,
+                    username: u.username,
+                    email:    u.email,
+                    role:     u.role
+                }))
+            : [
+                // fallback در صورت نبود HARDCODED_USERS
+                { id: 'emp001', name: 'سارا سادات حسینی', username: 'sareh',   email: 'sareh@alkawsar.com',   role: 'employee' },
+                { id: 'emp002', name: 'زینب بتول محمدی',  username: 'zainab',  email: 'zainab@alkawsar.com',  role: 'employee' },
+                { id: 'emp003', name: 'علیرضا غلامی فرزاد', username: 'farzad', email: 'farzad@alkawsar.com', role: 'employee' },
+                { id: 'emp004', name: 'زینب سخایی',       username: 'sakhaei', email: 'sakhaei@alkawsar.com', role: 'employee' },
+                { id: 'emp005', name: 'مهدی خدایاری',     username: 'mahdi',   email: 'mahdi@alkawsar.com',   role: 'employee' }
+            ];
+
+        // کارمند‌های اضافه از DataModule (از دیتابیس) — بر اساس id چک می‌شود
         const allemployees = [...fixedemployees];
-        newemployees.forEach(emp => {
-            if (!allemployees.find(c => c.username === emp.username)) {
-                allemployees.push(emp);
-            }
-        });
-        
+        try {
+            const users = DataModule.getUsers();
+            const dbEmployees = users.filter(u => u.role === 'employee' && u.active);
+            dbEmployees.forEach(emp => {
+                if (!allemployees.find(c => c.id === emp.id)) {
+                    allemployees.push(emp);
+                }
+            });
+        } catch (e) {
+            console.warn('getemployees: DataModule خطا:', e.message);
+        }
+
         return allemployees;
     },
     
