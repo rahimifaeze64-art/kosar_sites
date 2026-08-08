@@ -423,11 +423,37 @@ const WorkChecklistModule = {
             span.className = 'flex-1 text-sm ' + (isDone ? 'line-through text-black-300/50' : 'text-white');
         }
         const badge = document.getElementById('wc-item-count-' + task.item_id);
+        const allTasks = await this.getTasks(task.item_id);
+        const doneCount = allTasks.filter(t => t.is_done).length;
         if (badge) {
-            const tasks = await this.getTasks(task.item_id);
-            const done = tasks.filter(t => t.is_done).length;
-            badge.textContent = done + '/' + tasks.length;
+            badge.textContent = doneCount + '/' + allTasks.length;
         }
+        // اگر همه وظایف کامل شدند، پس از یک لحظه ریست کن
+        if (isDone && allTasks.length > 0 && doneCount === allTasks.length) {
+            await this._resetItemTasks(task.item_id, allTasks);
+        }
+    },
+
+    async _resetItemTasks(itemId, tasks) {
+        // نمایش انیمیشن تکمیل
+        const panel = document.getElementById('wc-tasks-list-' + itemId);
+        if (panel) {
+            panel.insertAdjacentHTML('beforeend', `
+                <div id="wc-complete-anim-${itemId}" class="flex items-center justify-center gap-2 py-3 mt-2 bg-lime-500/20 rounded-xl border border-lime-500/30 text-lime-300 font-medium text-sm animate-pulse">
+                    <i class="fas fa-check-circle text-lime-400 text-lg"></i>
+                    آفرین! همه وظایف انجام شد — ریست می‌شود...
+                </div>`);
+        }
+        // یک ثانیه صبر کن بعد ریست
+        await new Promise(resolve => setTimeout(resolve, 1200));
+        // همه وظایف را به حالت انجام‌نشده برگردان
+        for (const t of tasks) {
+            t.is_done = false;
+            t.done_at = null;
+            await this.saveTask(t);
+        }
+        // re-render لیست وظایف
+        await this.renderTasks(itemId);
     },
 
     async deleteTask(taskId, itemId) {
