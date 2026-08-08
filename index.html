@@ -515,12 +515,7 @@
 
                 <!-- کارمند: حسابداری شخصی -->
                 <template x-if="currentUser.role === 'employee'">
-                    <div x-effect="if(currentPage==='accounting') { $nextTick(() => { if(typeof AccountingUI!=='undefined') AccountingUI.init(); }); }">
-                        <div id="accounting-app" dir="rtl" class="p-4 md:p-6">
-                            <div class="flex items-center justify-center py-20">
-                                <i class="fas fa-spinner fa-spin text-3xl text-blue-500"></i>
-                            </div>
-                        </div>
+                    <div x-html="typeof EmployeeAccountingUI !== 'undefined' ? EmployeeAccountingUI.getEmployeeContent() : '<div class=\'flex items-center justify-center py-20\'><i class=\'fas fa-spinner fa-spin text-3xl text-blue-500\'></i></div>'">
                     </div>
                 </template>
 

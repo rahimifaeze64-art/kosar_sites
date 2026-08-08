@@ -435,6 +435,9 @@ const EmployeeAccountingUI = (function() {
 
     function getEmployeeContent() {
         if (!currentUser) {
+            init();
+        }
+        if (!currentUser) {
             return '<p class="text-red-400">لطفاً وارد شوید</p>';
         }
 
