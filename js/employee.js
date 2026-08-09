@@ -19,15 +19,32 @@ const EmployeeModule = {
                     if (!remoteTasks || remoteTasks.length === 0) return;
                     const all = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
                     const local = all[userId] || [];
-                    const merged = [...remoteTasks];
-                    local.forEach(lt => {
-                        if (!merged.find(rt => rt.id === lt.id)) merged.push(lt);
+
+                    // merge: داده local اولویت دارد (وضعیتی که کارمند تغییر داده حفظ شود)
+                    const merged = remoteTasks.map(rt => {
+                        const lt = local.find(l => l.id === rt.id);
+                        // اگر نسخه local جدیدتر است یا وضعیت تغییر کرده، local را نگه دار
+                        if (lt) {
+                            const localNewer = lt.completedAt && (!rt.completedAt || lt.completedAt >= rt.completedAt);
+                            if (localNewer || lt.status !== rt.status) return lt;
+                        }
+                        return rt;
                     });
-                    // فقط اگر تعداد وظایف تغییر کرده refresh کن
-                    if (merged.length !== local.length) {
+                    // وظایف local که در remote نیستند را هم اضافه کن
+                    local.forEach(lt => {
+                        if (!merged.find(m => m.id === lt.id)) merged.push(lt);
+                    });
+
+                    // فقط اگر تغییر واقعی بوده localStorage را بروز کن
+                    const prevStr = JSON.stringify(local);
+                    const newStr  = JSON.stringify(merged);
+                    if (newStr !== prevStr) {
                         all[userId] = merged;
                         localStorage.setItem('employee_tasks', JSON.stringify(all));
-                        this.refreshMyTasks(userId);
+                        // فقط اگر وظیفه جدیدی اضافه شده refresh کن
+                        if (merged.length !== local.length) {
+                            this.refreshMyTasks(userId);
+                        }
                     }
                 })
                 .catch(e => {
@@ -2891,7 +2908,20 @@ const EmployeeModule = {
             }
         }
         
+        // ۱. ذخیره فوری در localStorage
         this.saveMyTasks(userId, tasks);
+
+        // ۲. sync وضعیت به Supabase
+        if (
+            typeof SupabaseDataModule !== 'undefined' &&
+            typeof SupabaseDataModule._online === 'function' &&
+            SupabaseDataModule._online()
+        ) {
+            SupabaseDataModule.saveEmployeeTask(userId, tasks[taskIndex])
+                .then(() => console.log('✅ وضعیت وظیفه در Supabase ذخیره شد:', taskId))
+                .catch(e => console.warn('⚠️ updateTaskStatus Supabase خطا:', e.message));
+        }
+
         this.refreshMyTasks(userId);
         
         // نمایش پیام مناسب
