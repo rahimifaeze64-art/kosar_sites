@@ -350,6 +350,10 @@ const TasksModule = {
                                 class="text-gray-400 hover:text-green-400 p-1" title="تغییر وضعیت">
                             <i class="fas fa-check-circle"></i>
                         </button>
+                        <button onclick="TasksModule.showEditTaskModal('${task.id}')" 
+                                class="text-gray-400 hover:text-lime-400 p-1" title="ویرایش وظیفه">
+                            <i class="fas fa-edit"></i>
+                        </button>
                         <button onclick="TasksModule.deleteTask('${task.id}')" 
                                 class="text-gray-400 hover:text-red-400 p-1" title="حذف">
                             <i class="fas fa-trash"></i>
@@ -1363,6 +1367,148 @@ const TasksModule = {
         debugLogger('Voice task created', 'success', newTask);
     },
     
+    // ─── مودال ویرایش وظیفه ───────────────────────────────────────
+    showEditTaskModal(taskId) {
+        if (!this.selectedemployee) return;
+        const tasks = this.getemployeeTasks(this.selectedemployee);
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) return;
+
+        const employees = this.getemployees();
+
+        const modalHTML = `
+            <div id="edit-task-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                <div class="bg-slate-800 rounded-lg max-w-md w-full p-6">
+                    <h3 class="text-lg font-bold text-white mb-4">
+                        <i class="fas fa-edit text-lime-400 ml-2"></i>
+                        ویرایش وظیفه
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">کارمند</label>
+                            <select id="edit-task-employee" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white">
+                                ${employees.map(c => `
+                                    <option value="${c.id}" ${c.id === this.selectedemployee ? 'selected' : ''}>${c.name}</option>
+                                `).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">عنوان وظیفه</label>
+                            <input type="text" id="edit-task-title"
+                                   value="${task.title.replace(/"/g, '&quot;')}"
+                                   class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white"
+                                   placeholder="عنوان وظیفه را وارد کنید">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">توضیحات</label>
+                            <textarea id="edit-task-description" rows="3"
+                                      class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white"
+                                      placeholder="توضیحات وظیفه...">${task.description || ''}</textarea>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-300 mb-1">مهلت انجام</label>
+                                <input type="date" id="edit-task-due-date"
+                                       value="${task.dueDate || ''}"
+                                       class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-300 mb-1">اولویت</label>
+                                <select id="edit-task-priority" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white">
+                                    <option value="low"   ${task.priority === 'low'    ? 'selected' : ''}>عادی</option>
+                                    <option value="medium"${task.priority === 'medium' ? 'selected' : ''}>متوسط</option>
+                                    <option value="high"  ${task.priority === 'high'   ? 'selected' : ''}>فوری</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">وضعیت</label>
+                            <select id="edit-task-status" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white">
+                                <option value="pending"    ${task.status === 'pending'     ? 'selected' : ''}>در انتظار</option>
+                                <option value="in_progress"${task.status === 'in_progress' ? 'selected' : ''}>در حال انجام</option>
+                                <option value="completed"  ${task.status === 'completed'   ? 'selected' : ''}>تکمیل شده</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3 space-x-reverse mt-6">
+                        <button onclick="TasksModule.closeModal('edit-task-modal')"
+                                class="px-4 py-2 text-gray-400 hover:text-white">
+                            انصراف
+                        </button>
+                        <button onclick="TasksModule.saveEditedTask('${taskId}')"
+                                class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-4 py-2 rounded-lg font-medium">
+                            <i class="fas fa-save ml-2"></i>
+                            ذخیره تغییرات
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    },
+
+    saveEditedTask(taskId) {
+        const newEmployeeId = document.getElementById('edit-task-employee').value;
+        const title       = document.getElementById('edit-task-title').value.trim();
+        const description = document.getElementById('edit-task-description').value.trim();
+        const dueDate     = document.getElementById('edit-task-due-date').value;
+        const priority    = document.getElementById('edit-task-priority').value;
+        const status      = document.getElementById('edit-task-status').value;
+
+        if (!title) {
+            UTILS.showNotification('لطفاً عنوان وظیفه را وارد کنید', 'error');
+            return;
+        }
+
+        const oldEmployeeId = this.selectedemployee;
+
+        // اگر کارمند عوض شده، وظیفه را از کارمند قدیم حذف و به جدید اضافه کن
+        if (newEmployeeId !== oldEmployeeId) {
+            // حذف از کارمند قدیم
+            const oldTasks = this.getemployeeTasks(oldEmployeeId);
+            const taskToMove = oldTasks.find(t => t.id === taskId);
+            if (!taskToMove) { UTILS.showNotification('وظیفه یافت نشد', 'error'); return; }
+
+            const updatedTask = { ...taskToMove, title, description, dueDate, priority, status, updatedAt: new Date().toISOString() };
+
+            const filteredOld = oldTasks.filter(t => t.id !== taskId);
+            const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+            tasksData[oldEmployeeId] = filteredOld;
+
+            // اضافه به کارمند جدید
+            const newTasks = this.getemployeeTasks(newEmployeeId);
+            newTasks.unshift(updatedTask);
+            tasksData[newEmployeeId] = newTasks;
+            localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
+
+            this.selectedemployee = newEmployeeId;
+        } else {
+            // همان کارمند — فقط به‌روزرسانی
+            const tasks = this.getemployeeTasks(oldEmployeeId);
+            const idx = tasks.findIndex(t => t.id === taskId);
+            if (idx === -1) { UTILS.showNotification('وظیفه یافت نشد', 'error'); return; }
+
+            tasks[idx] = { ...tasks[idx], title, description, dueDate, priority, status, updatedAt: new Date().toISOString() };
+
+            const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+            tasksData[oldEmployeeId] = tasks;
+            localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
+
+            // sync به Supabase
+            const sb = this._sb();
+            if (sb) {
+                sb.saveEmployeeTask(oldEmployeeId, tasks[idx])
+                  .catch(e => console.warn('⚠️ saveEditedTask Supabase خطا:', e.message));
+            }
+        }
+
+        this.closeModal('edit-task-modal');
+        this.refreshContent();
+        UTILS.showNotification('وظیفه با موفقیت ویرایش شد', 'success');
+        debugLogger('Task edited', 'success', { taskId, title, status });
+    },
+
     toggleTaskStatus(taskId) {
         if (!this.selectedemployee) return;
         
