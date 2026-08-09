@@ -544,6 +544,22 @@ const AccountingUI = (function () {
                     <input type="file" id="tx-receipt" accept="image/*,application/pdf"
                         class="w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                 </div>
+                <!-- چک‌باکس تسویه — فقط برای بدهکاری و بستانکاری -->
+                <label id="tx-settled-row" onclick="_txSettledToggle()"
+                    class="flex items-center gap-3 cursor-pointer select-none p-3 rounded-xl border-2 transition-all
+                    ${tx?.is_settled ? 'border-emerald-400 bg-emerald-50' : 'border-gray-200 bg-gray-50 hover:border-emerald-300'}">
+                    <input type="checkbox" id="tx-settled" ${tx?.is_settled ? 'checked' : ''} class="hidden">
+                    <div id="tx-settled-box"
+                        class="w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all
+                        ${tx?.is_settled ? 'border-emerald-500 bg-emerald-500' : 'border-gray-300 bg-white'}">
+                        <i class="fas fa-check text-white text-xs ${tx?.is_settled ? '' : 'hidden'}" id="tx-settled-check"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-gray-700 text-sm font-medium">تسویه شده</p>
+                        <p class="text-gray-400 text-xs">این بدهکاری/بستانکاری کاملاً تسویه شده است</p>
+                    </div>
+                    <i id="tx-settled-icon-big" class="fas fa-check-circle text-xl ${tx?.is_settled ? 'text-emerald-500' : 'text-gray-200'}"></i>
+                </label>
             </div>
             <div class="flex gap-3 mt-5">
                 <button onclick="AccountingUI._submitTx('${tx?.id||''}')"
@@ -574,6 +590,30 @@ const AccountingUI = (function () {
             <button type="button" onclick="this.closest('.amt-row').remove()" class="text-red-400 hover:text-red-600 text-lg px-1">×</button>`;
         c.appendChild(div);
     }
+
+    // تابع global برای toggle چک‌باکس تسویه در مودال
+    window._txSettledToggle = function() {
+        const cb      = document.getElementById('tx-settled');
+        const box     = document.getElementById('tx-settled-box');
+        const check   = document.getElementById('tx-settled-check');
+        const iconBig = document.getElementById('tx-settled-icon-big');
+        const row     = document.getElementById('tx-settled-row');
+        if (!cb) return;
+        cb.checked = !cb.checked;
+        if (cb.checked) {
+            box.className     = box.className.replace('border-gray-300 bg-white', 'border-emerald-500 bg-emerald-500');
+            check.classList.remove('hidden');
+            iconBig.className = iconBig.className.replace('text-gray-200', 'text-emerald-500');
+            row.style.borderColor     = '#34d399';
+            row.style.backgroundColor = '#f0fdf4';
+        } else {
+            box.className     = box.className.replace('border-emerald-500 bg-emerald-500', 'border-gray-300 bg-white');
+            check.classList.add('hidden');
+            iconBig.className = iconBig.className.replace('text-emerald-500', 'text-gray-200');
+            row.style.borderColor     = '#e5e7eb';
+            row.style.backgroundColor = '#f9fafb';
+        }
+    };
 
     function _onPersonSelChange(sel) {
         if (sel.value === '__new__') {
@@ -640,6 +680,8 @@ const AccountingUI = (function () {
         // مبلغ اول برای فیلد scalar (backward compat)
         const firstAmt = amounts[0];
 
+        const isSettled   = document.getElementById('tx-settled')?.checked ?? false;
+
         const payload = {
             type,
             tx_date:         txDate || new Date().toISOString().split('T')[0],
@@ -652,6 +694,8 @@ const AccountingUI = (function () {
             person_name:     personName,
             person_free_text: personFreeText,
             receipt_url:     receiptUrl,
+            is_settled:      isSettled,
+            settled_at:      isSettled ? (editId && _txns.find(t=>t.id===editId)?.settled_at) || new Date().toISOString() : null,
         };
 
         let err;
@@ -675,6 +719,24 @@ const AccountingUI = (function () {
         if (!client) return;
         await client.from(TBL).delete().eq('id', id);
         await loadAll();
+    }
+
+    // ── تغییر وضعیت تسویه از جدول ───────────────────────────
+    async function toggleSettled(id, newVal) {
+        const client = sb();
+        if (!client) return;
+        const payload = {
+            is_settled: newVal,
+            settled_at: newVal ? new Date().toISOString() : null,
+        };
+        await client.from(TBL).update(payload).eq('id', id);
+        // بروزرسانی آرایه داخلی بدون reload کامل
+        const tx = _txns.find(t => t.id === id);
+        if (tx) {
+            tx.is_settled = newVal;
+            tx.settled_at = payload.settled_at;
+        }
+        _renderTable();
     }
 
     // ── افزودن شخص ──────────────────────────────────────────
@@ -1109,7 +1171,7 @@ const AccountingUI = (function () {
         init, render, loadAll,
         onSearchInput, onFilterType, onFilterPerson, onFilterFrom, onFilterTo, clearFilters,
         toggleAccSort,
-        showAddModal, showEditModal, deleteTransaction,
+        showAddModal, showEditModal, deleteTransaction, toggleSettled,
         showAddPersonModal, _submitPerson, showPersonsList, showPersonDetail, _deletePerson,
         showExportModal, _doExport,
         _addAmountRow, _onPersonSelChange, _submitTx,
