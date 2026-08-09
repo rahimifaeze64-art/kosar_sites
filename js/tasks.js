@@ -32,11 +32,6 @@ const TasksModule = {
                             <i class="fas fa-plus ml-2"></i>
                             وظیفه جدید
                         </button>
-                        <button onclick="TasksModule.showDailyReportsModal()" 
-                                class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium">
-                            <i class="fas fa-chart-bar ml-2"></i>
-                            گزارش روزانه
-                        </button>
                     </div>
                 </div>
                 
@@ -58,31 +53,7 @@ const TasksModule = {
                     <!-- Main Content Area -->
                     <div class="lg:col-span-3">
                         <div class="bg-slate-800 rounded-lg shadow-md">
-                            <!-- Tabs -->
-                            <div class="border-b border-slate-700">
-                                <nav class="flex space-x-1 space-x-reverse p-2">
-                                    <button onclick="TasksModule.switchTab('tasks')" 
-                                            id="tab-tasks"
-                                            class="px-4 py-2 rounded-md font-medium transition-colors bg-lime-600 text-gray-900">
-                                        <i class="fas fa-list-check ml-2"></i>
-                                        لیست وظایف
-                                    </button>
-                                    <button onclick="TasksModule.switchTab('files')" 
-                                            id="tab-files"
-                                            class="px-4 py-2 rounded-md font-medium transition-colors text-gray-300 hover:text-lime-400">
-                                        <i class="fas fa-folder ml-2"></i>
-                                        فایل صوت متن
-                                    </button>
-                                    <button onclick="TasksModule.switchTab('reports')" 
-                                            id="tab-reports"
-                                            class="px-4 py-2 rounded-md font-medium transition-colors text-gray-300 hover:text-lime-400">
-                                        <i class="fas fa-file-alt ml-2"></i>
-                                        گزارش
-                                    </button>
-                                </nav>
-                            </div>
-                            
-                            <!-- Tab Content -->
+                            <!-- Tab Content — فقط لیست وظایف -->
                             <div class="p-4" id="tasks-tab-content">
                                 ${this.getTasksTabContent()}
                             </div>
@@ -335,7 +306,7 @@ const TasksModule = {
                         </div>
                         <p class="text-sm text-gray-400 mb-2">${task.description || ''}</p>
                         <div class="flex items-center text-xs text-gray-500 space-x-4 space-x-reverse">
-                            <span><i class="fas fa-calendar ml-1"></i>${task.dueDate || 'بدون مهلت'}</span>
+                            <span><i class="fas fa-calendar ml-1"></i>${this._formatJalaliDate(task.dueDate)}</span>
                             <span><i class="fas fa-flag ml-1"></i>${task.priority === 'high' ? 'فوری' : task.priority === 'medium' ? 'متوسط' : 'عادی'}</span>
                         </div>
                         ${voiceHTML}
@@ -346,10 +317,6 @@ const TasksModule = {
                         <span class="text-xs px-2 py-1 rounded ${statusColors[task.status]} text-white">
                             ${statusTexts[task.status] || task.status}
                         </span>
-                        <button onclick="TasksModule.toggleTaskStatus('${task.id}')" 
-                                class="text-gray-400 hover:text-green-400 p-1" title="تغییر وضعیت">
-                            <i class="fas fa-check-circle"></i>
-                        </button>
                         <button onclick="TasksModule.showEditTaskModal('${task.id}')" 
                                 class="text-gray-400 hover:text-lime-400 p-1" title="ویرایش وظیفه">
                             <i class="fas fa-edit"></i>
@@ -824,8 +791,8 @@ const TasksModule = {
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm text-gray-300 mb-1">مهلت انجام</label>
-                                <input type="date" id="task-due-date" 
-                                       class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white">
+                                <input type="text" id="task-due-date" data-jalali
+                                       class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white cursor-pointer">
                             </div>
                             <div>
                                 <label class="block text-sm text-gray-300 mb-1">اولویت</label>
@@ -852,6 +819,10 @@ const TasksModule = {
         `;
         
         document.body.insertAdjacentHTML('beforeend', modalHTML);
+        // فعال‌سازی jalali picker
+        if (typeof JalaliPicker !== 'undefined') {
+            JalaliPicker.attachById('task-due-date');
+        }
     },
     
     // مودال وظیفه صوتی
@@ -1256,7 +1227,9 @@ const TasksModule = {
         const employeeId = document.getElementById('task-employee').value;
         const title = document.getElementById('task-title').value;
         const description = document.getElementById('task-description').value;
-        const dueDate = document.getElementById('task-due-date').value;
+        // مقدار شمسی را برای نمایش ذخیره می‌کنیم
+        const dueDateEl = document.getElementById('task-due-date');
+        const dueDate = dueDateEl ? (dueDateEl.dataset.jalaliValue || dueDateEl.value || '') : '';
         const priority = document.getElementById('task-priority').value;
         
         if (!title.trim()) {
@@ -1408,9 +1381,9 @@ const TasksModule = {
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm text-gray-300 mb-1">مهلت انجام</label>
-                                <input type="date" id="edit-task-due-date"
+                                <input type="text" id="edit-task-due-date" data-jalali
                                        value="${task.dueDate || ''}"
-                                       class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white">
+                                       class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white cursor-pointer">
                             </div>
                             <div>
                                 <label class="block text-sm text-gray-300 mb-1">اولویت</label>
@@ -1446,13 +1419,19 @@ const TasksModule = {
         `;
 
         document.body.insertAdjacentHTML('beforeend', modalHTML);
+        // فعال‌سازی jalali picker برای مهلت انجام
+        if (typeof JalaliPicker !== 'undefined') {
+            JalaliPicker.attachById('edit-task-due-date');
+        }
     },
 
     saveEditedTask(taskId) {
         const newEmployeeId = document.getElementById('edit-task-employee').value;
         const title       = document.getElementById('edit-task-title').value.trim();
         const description = document.getElementById('edit-task-description').value.trim();
-        const dueDate     = document.getElementById('edit-task-due-date').value;
+        // مقدار شمسی را برای نمایش ذخیره می‌کنیم
+        const dueDateEl   = document.getElementById('edit-task-due-date');
+        const dueDate     = dueDateEl ? (dueDateEl.dataset.jalaliValue || dueDateEl.value || '') : '';
         const priority    = document.getElementById('edit-task-priority').value;
         const status      = document.getElementById('edit-task-status').value;
 
@@ -1855,6 +1834,33 @@ const TasksModule = {
         }
     },
     
+    // تبدیل تاریخ به نمایش شمسی فارسی
+    _formatJalaliDate(dateStr) {
+        if (!dateStr) return 'بدون مهلت';
+        try {
+            const toFa = n => String(n).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+            // اگر فرمت شمسی JYYY-MM-DD باشد
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                const parts = dateStr.split('-');
+                const jY = parseInt(parts[0]);
+                // اگر سال شمسی است (۱۴xx)
+                if (jY > 1400 && jY < 1500) {
+                    const months = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+                    return `${toFa(parseInt(parts[2]))} ${months[parseInt(parts[1])-1]} ${toFa(jY)}`;
+                }
+                // اگر میلادی است، تبدیل کن
+                if (typeof Jalali !== 'undefined') {
+                    const j = Jalali.toJalaali(parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2]));
+                    const months = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+                    return `${toFa(j.jd)} ${months[j.jm-1]} ${toFa(j.jy)}`;
+                }
+            }
+            return dateStr;
+        } catch(e) {
+            return dateStr || 'بدون مهلت';
+        }
+    },
+
     closeModal(modalId) {
         const modal = document.getElementById(modalId);
         if (modal) modal.remove();

@@ -20,6 +20,7 @@ const AccountingUI = (function () {
     let _fPerson = '';
     let _fFrom   = '';
     let _fTo     = '';
+    let _fSettled = '';   // '' = همه | 'yes' = تسویه‌شده | 'no' = تسویه‌نشده
     let _accSortDir = 'desc'; // 'desc' = جدیدترین اول | 'asc' = قدیمی‌ترین اول
 
     // ── Supabase client ──────────────────────────────────────
@@ -202,6 +203,8 @@ const AccountingUI = (function () {
         if (_fPerson) f = f.filter(t => t.person_acc_id === _fPerson || t.person_name === _fPerson || t.person_free_text === _fPerson);
         if (_fFrom)   f = f.filter(t => (t.tx_date||t.created_at||'') >= _fFrom);
         if (_fTo)     f = f.filter(t => (t.tx_date||t.created_at||'') <= _fTo);
+        if (_fSettled === 'yes') f = f.filter(t => t.is_settled);
+        if (_fSettled === 'no')  f = f.filter(t => !t.is_settled);
         // مرتب‌سازی
         f = f.slice().sort((a, b) => {
             const da = new Date(a.tx_date || a.created_at || 0).getTime();
@@ -251,8 +254,32 @@ const AccountingUI = (function () {
                 return t.person_free_text || t.person_name || '';
             })();
 
+            // ستون تسویه — فقط برای بدهکاری و بستانکاری
+            const isDebtCredit = t.type === 'debt' || t.type === 'credit';
+            const settledCell = isDebtCredit
+                ? `<td class="px-3 py-3 text-center">
+                    <button onclick="AccountingUI.toggleSettled('${t.id}', ${!t.is_settled})"
+                        title="${t.is_settled ? 'تسویه شده — کلیک برای لغو' : 'تسویه نشده — کلیک برای تسویه'}"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all
+                            ${t.is_settled
+                                ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border border-emerald-300'
+                                : 'bg-gray-100 text-gray-400 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-300 border border-gray-200'}">
+                        <i class="fas ${t.is_settled ? 'fa-check-circle' : 'fa-clock'} text-xs"></i>
+                        ${t.is_settled ? 'تسویه شده' : 'در انتظار'}
+                    </button>
+                    ${t.is_settled && t.settled_at
+                        ? `<p class="text-gray-300 text-xs mt-0.5">${(t.settled_at||'').substring(0,10)}</p>`
+                        : ''}
+                   </td>`
+                : `<td class="px-3 py-3 text-center text-gray-200">—</td>`;
+
+            // ردیف‌های تسویه‌شده کمی محو می‌شوند
+            const rowClass = t.is_settled
+                ? 'border-b border-gray-100 bg-emerald-50/40 hover:bg-emerald-50 transition-colors opacity-75'
+                : 'border-b border-gray-100 hover:bg-gray-50 transition-colors';
+
             return `
-            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+            <tr class="${rowClass}">
                 <td class="px-3 py-3 text-gray-400 text-xs text-center">${i+1}</td>
                 <td class="px-3 py-3">
                     <span class="text-xs px-2 py-1 rounded-full font-medium ${TYPE_COLORS[t.type]||'bg-gray-100 text-gray-600'}">
@@ -270,6 +297,7 @@ const AccountingUI = (function () {
                         ? `<a href="${esc(t.receipt_url)}" target="_blank" class="text-blue-500 hover:text-blue-700 text-xs"><i class="fas fa-paperclip"></i></a>`
                         : ''}
                 </td>
+                ${settledCell}
                 <td class="px-3 py-3 text-center">
                     <div class="flex gap-1 justify-center">
                         <button onclick="AccountingUI.showEditModal('${t.id}')"
@@ -285,9 +313,14 @@ const AccountingUI = (function () {
             </tr>`;
         }).join('');
 
+        // شمارش تسویه‌شده / نشده در بدهکاری و بستانکاری
+        const debtCreditRows = filtered.filter(t => t.type==='debt'||t.type==='credit');
+        const settledCount   = debtCreditRows.filter(t => t.is_settled).length;
+        const pendingCount   = debtCreditRows.length - settledCount;
+
         return `
         <div class="overflow-x-auto rounded-2xl border border-gray-200 shadow-sm bg-white">
-            <table class="w-full text-sm" style="min-width:820px">
+            <table class="w-full text-sm" style="min-width:920px">
                 <thead>
                     <tr class="bg-gray-50 text-gray-500 text-xs border-b border-gray-200">
                         <th class="px-3 py-3 text-center w-8">#</th>
@@ -298,6 +331,13 @@ const AccountingUI = (function () {
                         <th class="px-3 py-3 text-right">شخص</th>
                         <th class="px-3 py-3 text-right">تاریخ</th>
                         <th class="px-3 py-3 text-center">رسید</th>
+                        <th class="px-3 py-3 text-center">
+                            تسویه شده
+                            <span class="block text-gray-300 font-normal mt-0.5">
+                                <span class="text-emerald-500">${settledCount} تسویه</span> /
+                                <span class="text-orange-400">${pendingCount} در انتظار</span>
+                            </span>
+                        </th>
                         <th class="px-3 py-3 text-center">عملیات</th>
                     </tr>
                 </thead>
@@ -709,18 +749,43 @@ const AccountingUI = (function () {
 
         const rows = _persons.length
             ? _persons.map(p => {
-                const txCount = _txns.filter(t => t.person_acc_id===p.id).length;
+                const pTxns   = _txns.filter(t => t.person_acc_id === p.id);
+                const txCount = pTxns.length;
+
+                // خلاصه سریع: جمع بدهکاری و بستانکاری به تومان
+                const debtTotal   = pTxns.filter(t=>t.type==='debt')  .reduce((s,t)=>s+parseAmounts(t).find(a=>a.currency==='تومان')?.amount||0,0);
+                const creditTotal = pTxns.filter(t=>t.type==='credit').reduce((s,t)=>s+parseAmounts(t).find(a=>a.currency==='تومان')?.amount||0,0);
+                const net         = creditTotal - debtTotal;
+                const netColor    = net > 0 ? 'text-emerald-600' : net < 0 ? 'text-red-500' : 'text-gray-400';
+
+                const badge = txCount
+                    ? `<span class="bg-blue-50 text-blue-600 text-xs px-1.5 py-0.5 rounded-full">${txCount}</span>`
+                    : '';
+                const netBadge = txCount
+                    ? `<span class="text-xs ${netColor} font-medium">${net>0?'+':''}${net.toLocaleString('en-US')} ت</span>`
+                    : `<span class="text-xs text-gray-300">بدون تراکنش</span>`;
+
                 return `
-                <div class="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-                    <div>
-                        <p class="font-medium text-gray-800 text-sm">${esc(p.name)}</p>
-                        <p class="text-gray-400 text-xs">${p.phone||''} ${txCount ? `· ${txCount} تراکنش` : ''}</p>
+                <div class="flex items-center justify-between py-3 px-2 border-b border-gray-100 last:border-0
+                            hover:bg-gray-50 rounded-xl cursor-pointer transition-all group"
+                     onclick="AccountingUI.showPersonDetail('${p.id}')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-user text-blue-400 text-xs"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-800 text-sm flex items-center gap-1.5">
+                                ${esc(p.name)} ${badge}
+                            </p>
+                            <p class="text-gray-400 text-xs">${p.phone||'—'} · ${netBadge}</p>
+                        </div>
                     </div>
-                    <div class="flex gap-2">
-                        <button onclick="AccountingUI.onFilterPerson('${p.id}'); document.getElementById('acc-plist-modal').remove(); AccountingUI.render();"
-                            class="text-blue-500 hover:text-blue-700 text-xs px-2 py-1 bg-blue-50 rounded-lg">فیلتر</button>
-                        <button onclick="AccountingUI._deletePerson('${p.id}')"
-                            class="text-red-400 hover:text-red-600 text-xs px-2 py-1 bg-red-50 rounded-lg">حذف</button>
+                    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                        <button onclick="event.stopPropagation(); AccountingUI._deletePerson('${p.id}')"
+                            class="text-red-400 hover:text-white hover:bg-red-500 text-xs px-2 py-1 rounded-lg transition-all" title="حذف">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <i class="fas fa-chevron-left text-gray-300 text-xs ml-1"></i>
                     </div>
                 </div>`;
             }).join('')
@@ -730,21 +795,186 @@ const AccountingUI = (function () {
         modal.id = 'acc-plist-modal';
         modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
         modal.innerHTML = `
-        <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl max-h-[80vh] flex flex-col" onclick="event.stopPropagation()">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl max-h-[85vh] flex flex-col" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-gray-800 font-bold flex items-center gap-2">
-                    <i class="fas fa-users text-blue-500"></i>لیست اشخاص (${_persons.length})
+                    <i class="fas fa-users text-blue-500"></i>اشخاص
+                    <span class="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full">${_persons.length}</span>
                 </h3>
                 <div class="flex gap-2">
                     <button onclick="AccountingUI.showAddPersonModal()"
-                        class="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-xl hover:bg-blue-500">+ جدید</button>
-                    <button onclick="document.getElementById('acc-plist-modal').remove()" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fas fa-times"></i></button>
+                        class="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-xl hover:bg-blue-500 flex items-center gap-1">
+                        <i class="fas fa-plus text-xs"></i>جدید
+                    </button>
+                    <button onclick="document.getElementById('acc-plist-modal').remove()"
+                        class="text-gray-400 hover:text-gray-700 text-xl w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
             </div>
+            <p class="text-gray-400 text-xs mb-3">روی هر شخص کلیک کنید تا برآیند تراکنش‌هایش را ببینید</p>
             <div class="overflow-auto flex-1">${rows}</div>
         </div>`;
         document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target===modal) modal.remove(); });
+    }
+
+    function showPersonDetail(personId) {
+        const p     = _persons.find(x => x.id === personId);
+        if (!p) return;
+        const pTxns = _txns.filter(t => t.person_acc_id === personId);
+
+        // ── محاسبه برآیند به تفکیک ارز ──
+        const summary = {};
+        const TYPES   = { debt:'بدهکاری', credit:'بستانکاری', income:'درآمد', expense:'هزینه' };
+
+        pTxns.forEach(t => {
+            parseAmounts(t).forEach(a => {
+                const cur = a.currency || 'تومان';
+                if (!summary[cur]) summary[cur] = { debt:0, credit:0, income:0, expense:0 };
+                summary[cur][t.type] = (summary[cur][t.type]||0) + a.amount;
+            });
+        });
+
+        // ── کارت‌های برآیند ──
+        const summaryCards = Object.keys(summary).length
+            ? Object.entries(summary).map(([cur, s]) => {
+                const net = (s.credit||0) + (s.income||0) - (s.debt||0) - (s.expense||0);
+                const netColor   = net > 0 ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
+                                 : net < 0 ? 'text-red-500 bg-red-50 border-red-200'
+                                 :           'text-gray-500 bg-gray-50 border-gray-200';
+                const netLabel   = net > 0 ? 'طلبکار' : net < 0 ? 'بدهکار' : 'تسویه';
+                const netSign    = net > 0 ? '+' : '';
+                return `
+                <div class="rounded-xl border ${netColor} p-3 mb-2">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold">${cur}</span>
+                        <span class="text-xs font-bold px-2 py-0.5 rounded-full border ${netColor}">
+                            ${netLabel}: ${netSign}${Math.abs(net).toLocaleString('en-US')}
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        ${(s.credit||0)>0  ? `<div class="flex justify-between"><span class="text-gray-500">بستانکاری</span><span class="text-emerald-600 font-medium">+${s.credit.toLocaleString('en-US')}</span></div>` : ''}
+                        ${(s.income||0)>0  ? `<div class="flex justify-between"><span class="text-gray-500">درآمد</span><span class="text-emerald-600 font-medium">+${s.income.toLocaleString('en-US')}</span></div>` : ''}
+                        ${(s.debt||0)>0    ? `<div class="flex justify-between"><span class="text-gray-500">بدهکاری</span><span class="text-red-500 font-medium">-${s.debt.toLocaleString('en-US')}</span></div>` : ''}
+                        ${(s.expense||0)>0 ? `<div class="flex justify-between"><span class="text-gray-500">هزینه</span><span class="text-red-500 font-medium">-${s.expense.toLocaleString('en-US')}</span></div>` : ''}
+                    </div>
+                </div>`;
+            }).join('')
+            : `<p class="text-gray-400 text-sm text-center py-4">تراکنشی برای این شخص ثبت نشده</p>`;
+
+        // ── ریز تراکنش‌ها ──
+        const txRows = pTxns.length
+            ? pTxns.slice().sort((a,b)=>new Date(b.tx_date||b.created_at||0)-new Date(a.tx_date||a.created_at||0))
+                .map(t => {
+                    const amts    = parseAmounts(t);
+                    const amtHtml = amts.map(a =>
+                        `<span class="font-medium ${t.type==='credit'||t.type==='income'?'text-emerald-600':'text-red-500'}">${fmtNum(a.amount,a.currency)}</span>`
+                    ).join(' · ');
+                    const settledBadge = (t.type==='debt'||t.type==='credit') && t.is_settled
+                        ? `<span class="text-emerald-500 text-xs ml-1" title="تسویه شده"><i class="fas fa-check-circle"></i></span>`
+                        : '';
+                    return `
+                    <div class="flex items-start justify-between py-2.5 border-b border-gray-100 last:border-0 gap-2">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="text-xs px-1.5 py-0.5 rounded-full font-medium ${TYPE_COLORS[t.type]||'bg-gray-100 text-gray-600'}">
+                                    ${TYPE_LABELS[t.type]||t.type}
+                                </span>
+                                ${settledBadge}
+                                ${t.category ? `<span class="text-gray-400 text-xs">${esc(t.category)}</span>` : ''}
+                            </div>
+                            ${t.description ? `<p class="text-gray-500 text-xs mt-0.5 truncate">${esc(t.description.substring(0,60))}</p>` : ''}
+                        </div>
+                        <div class="text-right flex-shrink-0">
+                            <div class="text-sm">${amtHtml}</div>
+                            <div class="text-gray-300 text-xs">${(t.tx_date||t.created_at||'').substring(0,10)}</div>
+                        </div>
+                    </div>`;
+                }).join('')
+            : '<p class="text-gray-400 text-xs text-center py-4">بدون تراکنش</p>';
+
+        document.getElementById('acc-person-detail-modal')?.remove();
+        const modal = document.createElement('div');
+        modal.id    = 'acc-person-detail-modal';
+        modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4';
+        modal.innerHTML = `
+        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[88vh] flex flex-col" onclick="event.stopPropagation()">
+            <!-- هدر -->
+            <div class="flex items-center justify-between px-5 pt-5 pb-4 border-b border-gray-100">
+                <div class="flex items-center gap-3">
+                    <button onclick="document.getElementById('acc-person-detail-modal').remove()"
+                        class="text-gray-400 hover:text-gray-600 w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-arrow-right text-sm"></i>
+                    </button>
+                    <div class="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center">
+                        <i class="fas fa-user text-blue-500 text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-gray-800 font-bold text-base">${esc(p.name)}</h3>
+                        ${p.phone ? `<p class="text-gray-400 text-xs">${esc(p.phone)}</p>` : ''}
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="AccountingUI.onFilterPerson('${p.id}'); document.getElementById('acc-person-detail-modal').remove(); document.getElementById('acc-plist-modal')?.remove(); AccountingUI.render();"
+                        class="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-xl flex items-center gap-1 transition-all">
+                        <i class="fas fa-filter text-xs"></i>فیلتر
+                    </button>
+                    <button onclick="document.getElementById('acc-person-detail-modal').remove()"
+                        class="text-gray-400 hover:text-gray-700 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-auto flex-1 px-5 py-4 space-y-4">
+                <!-- برآیند -->
+                <div>
+                    <h4 class="text-gray-600 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <i class="fas fa-chart-pie text-blue-400"></i>برآیند مالی
+                    </h4>
+                    ${summaryCards}
+                </div>
+
+                <!-- آمار سریع -->
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="bg-gray-50 rounded-xl py-2 px-3">
+                        <p class="text-lg font-bold text-gray-800">${pTxns.length}</p>
+                        <p class="text-gray-400 text-xs">تراکنش</p>
+                    </div>
+                    <div class="bg-emerald-50 rounded-xl py-2 px-3">
+                        <p class="text-lg font-bold text-emerald-600">${pTxns.filter(t=>t.is_settled).length}</p>
+                        <p class="text-gray-400 text-xs">تسویه شده</p>
+                    </div>
+                    <div class="bg-orange-50 rounded-xl py-2 px-3">
+                        <p class="text-lg font-bold text-orange-500">${pTxns.filter(t=>(t.type==='debt'||t.type==='credit')&&!t.is_settled).length}</p>
+                        <p class="text-gray-400 text-xs">در انتظار</p>
+                    </div>
+                </div>
+
+                <!-- ریز تراکنش‌ها -->
+                <div>
+                    <h4 class="text-gray-600 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <i class="fas fa-list text-gray-400"></i>ریز تراکنش‌ها
+                    </h4>
+                    <div class="bg-gray-50 rounded-xl px-3">${txRows}</div>
+                </div>
+            </div>
+
+            <!-- فوتر -->
+            <div class="px-5 py-3 border-t border-gray-100 flex justify-between items-center">
+                <button onclick="AccountingUI._deletePerson('${p.id}')"
+                    class="text-red-400 hover:text-red-600 text-xs flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-all">
+                    <i class="fas fa-trash text-xs"></i>حذف شخص
+                </button>
+                <button onclick="document.getElementById('acc-person-detail-modal').remove()"
+                    class="bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm px-4 py-2 rounded-xl transition-all">
+                    بستن
+                </button>
+            </div>
+        </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
     }
 
     async function _deletePerson(id) {
@@ -880,7 +1110,7 @@ const AccountingUI = (function () {
         onSearchInput, onFilterType, onFilterPerson, onFilterFrom, onFilterTo, clearFilters,
         toggleAccSort,
         showAddModal, showEditModal, deleteTransaction,
-        showAddPersonModal, _submitPerson, showPersonsList, _deletePerson,
+        showAddPersonModal, _submitPerson, showPersonsList, showPersonDetail, _deletePerson,
         showExportModal, _doExport,
         _addAmountRow, _onPersonSelChange, _submitTx,
     };
