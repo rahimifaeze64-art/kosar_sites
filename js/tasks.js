@@ -77,16 +77,30 @@ const TasksModule = {
                 </div>
             </div>
         `;
-        // init چک‌لیست بعد از رندر Alpine
+        // init چک‌لیست بعد از رندر — از Alpine کاربر جاری را می‌گیریم تا مطمئن باشیم صحیح است
+        // app.js نیز این کار را در watch می‌کند؛ اگر قبلاً init شده بود دوباره اجرا نمی‌شود
         setTimeout(() => {
             if (typeof WorkChecklistModule !== 'undefined') {
-                const alpineEl = document.querySelector('[x-data]');
+                // اولویت: کاربر Alpine > localStorage
                 let user = null;
                 try {
-                    const saved = localStorage.getItem('currentUser');
-                    if (saved) user = JSON.parse(saved);
+                    const alpineEl = document.querySelector('[x-data]');
+                    if (alpineEl && alpineEl._x_dataStack) {
+                        const alpineData = alpineEl._x_dataStack[0];
+                        if (alpineData && alpineData.currentUser) user = alpineData.currentUser;
+                    }
                 } catch(e) {}
-                if (user) WorkChecklistModule.init(user);
+                if (!user) {
+                    try {
+                        const saved = localStorage.getItem('currentUser');
+                        if (saved) user = JSON.parse(saved);
+                    } catch(e) {}
+                }
+                // جلوگیری از double-init: فقط اگر work-checklist-root هنوز رندر نشده اجرا کن
+                const root = document.getElementById('work-checklist-root');
+                if (user && root && root.querySelector('.fa-spinner')) {
+                    WorkChecklistModule.init(user);
+                }
             }
         }, 300);
     },

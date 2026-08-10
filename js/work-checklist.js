@@ -388,10 +388,19 @@ const WorkChecklistModule = {
     async addTask(itemId) {
         const input = document.getElementById('wc-new-task-input-' + itemId);
         if (!input || !input.value.trim()) return;
+        // خواندن category_id از آیتم مربوطه
+        let catId = null;
+        if (this.supabase) {
+            const { data } = await this.supabase.from('checklist_items').select('category_id').eq('id', itemId).single();
+            catId = data?.category_id || null;
+        } else {
+            const it = (this._localGet('wc_items_' + this.currentUser.id) || []).find(i => i.id === itemId);
+            catId = it?.category_id || null;
+        }
         const task = {
             id: this._uuid(),
             item_id: itemId,
-            category_id: null,
+            category_id: catId,
             title: input.value.trim(),
             is_done: false,
             note: '',
