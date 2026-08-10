@@ -876,11 +876,11 @@ const TasksModule = {
                                 <div class="flex flex-col gap-1">
                                     <div class="flex gap-1 mb-1">
                                         <button type="button" onclick="WorkHoursUI.setQuickDate('task-due-date','task-due-date-disp',-2)"
-                                                class="flex-1 text-xs bg-slate-600 hover:bg-slate-500 text-gray-300 px-2 py-1 rounded-lg">پس فردا</button>
+                                                class="flex-1 text-xs bg-slate-600 hover:bg-slate-500 text-gray-300 px-2 py-1 rounded-lg"> امروز</button>
                                         <button type="button" onclick="WorkHoursUI.setQuickDate('task-due-date','task-due-date-disp',-1)"
                                                 class="flex-1 text-xs bg-blue-700 hover:bg-blue-600 text-white px-2 py-1 rounded-lg">فردا</button>
                                         <button type="button" onclick="WorkHoursUI.setQuickDate('task-due-date','task-due-date-disp',0)"
-                                                class="flex-1 text-xs bg-lime-700 hover:bg-lime-600 text-white px-2 py-1 rounded-lg">امروز</button>
+                                                class="flex-1 text-xs bg-lime-700 hover:bg-lime-600 text-white px-2 py-1 rounded-lg">پس فردا</button>
                                     </div>
                                     <input type="hidden" id="task-due-date">
                                     <button type="button" id="task-due-date-disp"
@@ -1675,11 +1675,11 @@ const TasksModule = {
                                 <div class="flex flex-col gap-1">
                                     <div class="flex gap-1 mb-1">
                                         <button type="button" onclick="WorkHoursUI.setQuickDate('edit-task-due-date','edit-task-due-date-disp',-2)"
-                                                class="flex-1 text-xs bg-slate-600 hover:bg-slate-500 text-gray-300 px-2 py-1 rounded-lg">پس فردا</button>
+                                                class="flex-1 text-xs bg-slate-600 hover:bg-slate-500 text-gray-300 px-2 py-1 rounded-lg">امروز</button>
                                         <button type="button" onclick="WorkHoursUI.setQuickDate('edit-task-due-date','edit-task-due-date-disp',-1)"
                                                 class="flex-1 text-xs bg-blue-700 hover:bg-blue-600 text-white px-2 py-1 rounded-lg">فردا</button>
                                         <button type="button" onclick="WorkHoursUI.setQuickDate('edit-task-due-date','edit-task-due-date-disp',0)"
-                                                class="flex-1 text-xs bg-lime-700 hover:bg-lime-600 text-white px-2 py-1 rounded-lg">امروز</button>
+                                                class="flex-1 text-xs bg-lime-700 hover:bg-lime-600 text-white px-2 py-1 rounded-lg">پس فردا</button>
                                     </div>
                                     <input type="hidden" id="edit-task-due-date" value="${task.dueDate || ''}">
                                     <button type="button" id="edit-task-due-date-disp"
