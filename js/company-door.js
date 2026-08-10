@@ -82,7 +82,7 @@ const CompanyDoorModule = (function () {
 
         const base = (localStorage.getItem('door_api_base') || '').trim();
         if (!base) {
-            _showToast('آدرس API تنظیم نشده — روی ⚙ کلیک کنید', 'error');
+            _showToast('اتصالات برقرار نیست', 'error');
             return;
         }
 
@@ -101,16 +101,16 @@ const CompanyDoorModule = (function () {
             if (res.ok) {
                 _status = action === 'open' ? 'open' : 'closed';
                 await saveLog(action);
-                _showToast(action === 'open' ? '✅ در باز شد' : '🔒 در بسته شد', 'success');
+                _showToast(action === 'open' ? ' در باز شد' : ' در بسته شد', 'success');
                 _updateAll();
             } else {
                 _showToast(`خطا از سرور: ${res.status}`, 'error');
             }
         } catch (e) {
             if (e.name === 'TimeoutError' || e.name === 'AbortError') {
-                _showToast('⏱ پاسخی از Raspberry Pi نرسید', 'error');
+                _showToast('Raspberry Pi نرسید', 'error');
             } else {
-                _showToast('⚠ اتصال به Raspberry Pi ناموفق بود', 'error');
+                _showToast('به Raspberry Pi ناموفق بود', 'error');
             }
         } finally {
             _loading = false;
