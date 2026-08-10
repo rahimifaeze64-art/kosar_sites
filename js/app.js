@@ -114,6 +114,26 @@ function appController() {
             // Alpine x-show نیاز به یک tick دارد
             this.$nextTick(() => doInit());
           }
+          // چک‌لیست مدیر — بعد از رندر صفحه tasks
+          if (newPage === 'tasks' && this.currentUser.role === 'manager') {
+              this.$nextTick(() => {
+                  setTimeout(() => {
+                      if (typeof WorkChecklistModule !== 'undefined') {
+                          WorkChecklistModule.init(this.currentUser);
+                      }
+                  }, 150);
+              });
+          }
+          // چک‌لیست کارمند — بعد از رندر صفحه workChecklist
+          if (newPage === 'workChecklist' && this.currentUser.role === 'employee') {
+              this.$nextTick(() => {
+                  setTimeout(() => {
+                      if (typeof WorkChecklistModule !== 'undefined') {
+                          WorkChecklistModule.init(this.currentUser);
+                      }
+                  }, 150);
+              });
+          }
         });
 
         // Listen for window resize
@@ -313,7 +333,7 @@ function appController() {
           },
           {
             id: "emp004",
-            name: "زینب سخایی م",
+            name: "زینب ناشناخته م",
             username: "sakhaei",
             role: "employee",
             email: "sakhaei@edu-system.com",

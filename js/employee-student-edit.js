@@ -76,6 +76,16 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                 <input type="email" id="edit-email" value="${student.email || ''}"
                                        class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg">
                             </div>
+                            <div>
+                                <label class="block text-base font-bold text-gray-800 mb-2">نام کامل (انگلیسی)</label>
+                                <input type="text" id="edit-name-en" value="${student.nameEn || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" dir="ltr" placeholder="Full Name in English">
+                            </div>
+                            <div>
+                                <label class="block text-base font-bold text-gray-800 mb-2">پسورد</label>
+                                <input type="text" id="edit-password" value="${student.password || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="رمز عبور دانشجو">
+                            </div>
                         </div>
                     </div>
                     
@@ -107,7 +117,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             <div>
                                 <label class="block text-base font-bold text-gray-800 mb-2">رشته تحصیلی</label>
                                 <select id="edit-field" class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg">
-                                    <option value="حقوق محض" ${student.field === 'حقوق محض' ? 'selected' : ''}>حقوق محض</option>
+                                    <option value="حقوق جزا" ${student.field === 'حقوق محض' ? 'selected' : ''}>حقوق محض</option>
                                     <option value="حقوق عمومی" ${student.field === 'حقوق عمومی' ? 'selected' : ''}>حقوق عمومی</option>
                                     <option value="حقوق خصوصی" ${student.field === 'حقوق خصوصی' ? 'selected' : ''}>حقوق خصوصی</option>
                                     <option value="حقوق بین‌الملل" ${student.field === 'حقوق بین‌الملل' ? 'selected' : ''}>حقوق بین‌الملل</option>
@@ -357,6 +367,357 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                        class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="ایران داک خطه" readonly>
                                 <div id="preview-irandoc-khate" class="mt-2"></div>
                             </div>
+
+                            <!-- ایران داک رساله -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">ایران داک رساله</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('irandoc-resale', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-irandoc-resale" value="${student.irandocResale || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="ایران داک رساله">
+                                <div id="preview-irandoc-resale" class="mt-2"></div>
+                            </div>
+
+                            <!-- عنوان -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">عنوان</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('onvan-doc', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-onvan-doc" value="${student.onvanDoc || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="عنوان پایان‌نامه / متن">
+                                <div id="preview-onvan-doc" class="mt-2"></div>
+                            </div>
+
+                            <!-- نتیجه عنوان -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">نتیجه عنوان</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('onvan-result', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-onvan-result" value="${student.onvanResult || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="نتیجه تایید عنوان">
+                                <div id="preview-onvan-result" class="mt-2"></div>
+                            </div>
+
+                            <!-- برگه ثبت‌نام سائورگ -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">برگه ثبت‌نام سائورگ</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('savorg-form', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-savorg-form" value="${student.savorgForm || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="برگه ثبت‌نام سائورگ">
+                                <div id="preview-savorg-form" class="mt-2"></div>
+                            </div>
+
+                            <!-- محضر -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">محضر</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('mahzar-doc', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-mahzar-doc" value="${student.mahzarDoc || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="سند محضر">
+                                <div id="preview-mahzar-doc" class="mt-2"></div>
+                            </div>
+
+                            <!-- اصالت -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">اصالت</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('asalat-doc', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-asalat-doc" value="${student.asalatDoc || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="سند اصالت">
+                                <div id="preview-asalat-doc" class="mt-2"></div>
+                            </div>
+
+                            <!-- تعدیل -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">تعدیل</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('tadil-doc', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-tadil-doc" value="${student.tadilDoc || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="سند تعدیل">
+                                <div id="preview-tadil-doc" class="mt-2"></div>
+                            </div>
+
+                            <!-- تنزیل نمره گردش -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">تنزیل نمره گردش</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('tanzil-doc', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-tanzil-doc" value="${student.tanzilDoc || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="سند تنزیل نمره گردش">
+                                <div id="preview-tanzil-doc" class="mt-2"></div>
+                            </div>
+
+                            <!-- حاتمی -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">حاتمی</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('hatami-doc', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-hatami-doc" value="${student.hatamiDoc || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="سند حاتمی">
+                                <div id="preview-hatami-doc" class="mt-2"></div>
+                            </div>
+
+                            <!-- ختم تجلید -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">ختم تجلید</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('khatm-tajlid', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-khatm-tajlid" value="${student.khatmTajlid || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="ختم تجلید">
+                                <div id="preview-khatm-tajlid" class="mt-2"></div>
+                            </div>
+
+                            <!-- ترجمه به اسماعیلی -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">ترجمه به اسماعیلی</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('tarjome-ismaili', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-tarjome-ismaili" value="${student.tarjomeIsmaili || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="ترجمه اسماعیلی">
+                                <div id="preview-tarjome-ismaili" class="mt-2"></div>
+                            </div>
+
+                            <!-- ارسال -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">ارسال</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('ersal-doc', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-ersal-doc" value="${student.ersalDoc || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="سند ارسال">
+                                <div id="preview-ersal-doc" class="mt-2"></div>
+                            </div>
+
+                            <!-- گردش -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">گردش</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('gardesh-doc', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-gardesh-doc" value="${student.gardeshDoc || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="سند گردش">
+                                <div id="preview-gardesh-doc" class="mt-2"></div>
+                            </div>
+
+                            <!-- دادگر -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">دادگر</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('dadgar-doc', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-dadgar-doc" value="${student.dadgarDoc || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="سند دادگر">
+                                <div id="preview-dadgar-doc" class="mt-2"></div>
+                            </div>
+
+                            <!-- سفارش تجلید -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">سفارش تجلید</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('sefaresh-tajlid', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-sefaresh-tajlid" value="${student.sefareshTajlid || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="سفارش تجلید">
+                                <div id="preview-sefaresh-tajlid" class="mt-2"></div>
+                            </div>
+
+                            <!-- مهر دانشگاه -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">مهر دانشگاه</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('mohr-daneshgah', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-mohr-daneshgah" value="${student.mohrDaneshgah || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="مهر دانشگاه">
+                                <div id="preview-mohr-daneshgah" class="mt-2"></div>
+                            </div>
+
+                            <!-- مهر سفارت -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">مهر سفارت</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('mohr-sefarat', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-mohr-sefarat" value="${student.mohrSefarat || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="مهر سفارت">
+                                <div id="preview-mohr-sefarat" class="mt-2"></div>
+                            </div>
+
+                            <!-- قطعی -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">قطعی</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('qatei-doc', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-qatei-doc" value="${student.qateiDoc || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="سند قطعی">
+                                <div id="preview-qatei-doc" class="mt-2"></div>
+                            </div>
+
+                            <!-- امر اداری -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">امر اداری</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('amr-edari', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-amr-edari" value="${student.amrEdari || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="امر اداری">
+                                <div id="preview-amr-edari" class="mt-2"></div>
+                            </div>
+
+                            <!-- ملخص -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">ملخص</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('molakhas-doc', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-molakhas-doc" value="${student.molakhasDoc || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="ملخص پایان‌نامه">
+                                <div id="preview-molakhas-doc" class="mt-2"></div>
+                            </div>
+
+                            <!-- علاقه -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">علاقه (لجنه)</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('alaqe-doc', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-alaqe-doc" value="${student.alaqeDoc || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="سند علاقه / لجنه">
+                                <div id="preview-alaqe-doc" class="mt-2"></div>
+                            </div>
+
+                            <!-- لجنه -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">لجنه</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('lajna-doc', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-lajna-doc" value="${student.lajnaDoc || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="سند لجنه">
+                                <div id="preview-lajna-doc" class="mt-2"></div>
+                            </div>
+
+                            <!-- استاد (لجنه) -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">استاد (لجنه)</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('ostad-lajna', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-ostad-lajna" value="${student.ostadLajna || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="نام استاد لجنه">
+                                <div id="preview-ostad-lajna" class="mt-2"></div>
+                            </div>
+
+                            <!-- تعدیلات -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">تعدیلات</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('tadilat-doc', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-tadilat-doc" value="${student.tadilatDoc || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="سند تعدیلات">
+                                <div id="preview-tadilat-doc" class="mt-2"></div>
+                            </div>
+
+                            <!-- تحویل -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-base font-bold text-gray-800">تحویل</label>
+                                    <button type="button" onclick="employeeModule.uploadImage('tahvil-doc', '${studentId}')"
+                                            class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600">
+                                        <i class="fas fa-camera text-lg"></i>
+                                    </button>
+                                </div>
+                                <input type="text" id="edit-tahvil-doc" value="${student.tahvilDoc || ''}"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="سند تحویل">
+                                <div id="preview-tahvil-doc" class="mt-2"></div>
+                            </div>
+
                         </div>
                     </div>
                     
@@ -415,6 +776,8 @@ EmployeeModule.saveStudentProfile = async function(studentId) {
         gender:             document.getElementById('edit-gender')?.value            || '',
         phone:              document.getElementById('edit-phone')?.value             || '',
         email:              document.getElementById('edit-email')?.value             || '',
+        nameEn:             document.getElementById('edit-name-en')?.value           || '',
+        password:           document.getElementById('edit-password')?.value          || '',
         university:         document.getElementById('edit-university')?.value        || '',
         systemPassword:     document.getElementById('edit-system-password')?.value  || '',
         field:              document.getElementById('edit-field')?.value             || '',
@@ -454,23 +817,75 @@ EmployeeModule.saveStudentProfile = async function(studentId) {
         tasdiq_doc:         document.getElementById('edit-tasdiq-doc')?.value          || null,
         vasiqe_doc:         document.getElementById('edit-vasiqe-doc')?.value          || null,
         irandoc_khate:      document.getElementById('edit-irandoc-khate')?.value       || null,
+        // فیلدهای جدید
+        irandoc_resale:     document.getElementById('edit-irandoc-resale')?.value      || null,
+        onvan_doc:          document.getElementById('edit-onvan-doc')?.value           || null,
+        onvan_result:       document.getElementById('edit-onvan-result')?.value        || null,
+        savorg_form:        document.getElementById('edit-savorg-form')?.value         || null,
+        mahzar_doc:         document.getElementById('edit-mahzar-doc')?.value          || null,
+        asalat_doc:         document.getElementById('edit-asalat-doc')?.value          || null,
+        tadil_doc:          document.getElementById('edit-tadil-doc')?.value           || null,
+        tanzil_doc:         document.getElementById('edit-tanzil-doc')?.value          || null,
+        hatami_doc:         document.getElementById('edit-hatami-doc')?.value          || null,
+        khatm_tajlid:       document.getElementById('edit-khatm-tajlid')?.value        || null,
+        tarjome_ismaili:    document.getElementById('edit-tarjome-ismaili')?.value     || null,
+        ersal_doc:          document.getElementById('edit-ersal-doc')?.value           || null,
+        gardesh_doc:        document.getElementById('edit-gardesh-doc')?.value         || null,
+        dadgar_doc:         document.getElementById('edit-dadgar-doc')?.value          || null,
+        sefaresh_tajlid:    document.getElementById('edit-sefaresh-tajlid')?.value     || null,
+        mohr_daneshgah:     document.getElementById('edit-mohr-daneshgah')?.value      || null,
+        mohr_sefarat:       document.getElementById('edit-mohr-sefarat')?.value        || null,
+        qatei_doc:          document.getElementById('edit-qatei-doc')?.value           || null,
+        amr_edari:          document.getElementById('edit-amr-edari')?.value           || null,
+        molakhas_doc:       document.getElementById('edit-molakhas-doc')?.value        || null,
+        alaqe_doc:          document.getElementById('edit-alaqe-doc')?.value           || null,
+        lajna_doc:          document.getElementById('edit-lajna-doc')?.value           || null,
+        ostad_lajna:        document.getElementById('edit-ostad-lajna')?.value         || null,
+        tadilat_doc:        document.getElementById('edit-tadilat-doc')?.value         || null,
+        tahvil_doc:         document.getElementById('edit-tahvil-doc')?.value          || null,
     };
     // همگام‌سازی با updatedData برای localStorage
     Object.assign(updatedData, {
-        adminOrderImage: documents.admin_order_image,
-        savorgCode:      documents.savorg_code,
-        sajadResult:     documents.sajad_result,
-        similarityCert:  documents.similarity_cert,
-        passportImage:   documents.passport_image,
-        typesettingDoc:  documents.typesetting_doc,
-        bindingDoc:      documents.binding_doc,
-        estelalDoc:      documents.estelal_doc,
-        languageCert:    documents.language_cert,
-        languageUpload:  documents.language_upload,
-        azfaDoc:         documents.azfa_doc,
-        tasdiqDoc:       documents.tasdiq_doc,
-        vasiqeDoc:       documents.vasiqe_doc,
-        irandocKhate:    documents.irandoc_khate,
+        adminOrderImage:  documents.admin_order_image,
+        savorgCode:       documents.savorg_code,
+        sajadResult:      documents.sajad_result,
+        similarityCert:   documents.similarity_cert,
+        passportImage:    documents.passport_image,
+        typesettingDoc:   documents.typesetting_doc,
+        bindingDoc:       documents.binding_doc,
+        estelalDoc:       documents.estelal_doc,
+        languageCert:     documents.language_cert,
+        languageUpload:   documents.language_upload,
+        azfaDoc:          documents.azfa_doc,
+        tasdiqDoc:        documents.tasdiq_doc,
+        vasiqeDoc:        documents.vasiqe_doc,
+        irandocKhate:     documents.irandoc_khate,
+        // فیلدهای جدید
+        irandocResale:    documents.irandoc_resale,
+        onvanDoc:         documents.onvan_doc,
+        onvanResult:      documents.onvan_result,
+        savorgForm:       documents.savorg_form,
+        mahzarDoc:        documents.mahzar_doc,
+        asalatDoc:        documents.asalat_doc,
+        tadilDoc:         documents.tadil_doc,
+        tanzilDoc:        documents.tanzil_doc,
+        hatamiDoc:        documents.hatami_doc,
+        khatmTajlid:      documents.khatm_tajlid,
+        tarjomeIsmaili:   documents.tarjome_ismaili,
+        ersalDoc:         documents.ersal_doc,
+        gardeshDoc:       documents.gardesh_doc,
+        dadgarDoc:        documents.dadgar_doc,
+        sefareshTajlid:   documents.sefaresh_tajlid,
+        mohrDaneshgah:    documents.mohr_daneshgah,
+        mohrSefarat:      documents.mohr_sefarat,
+        qateiDoc:         documents.qatei_doc,
+        amrEdari:         documents.amr_edari,
+        molakhasDoc:      documents.molakhas_doc,
+        alaqeDoc:         documents.alaqe_doc,
+        lajnaDoc:         documents.lajna_doc,
+        ostadLajna:       documents.ostad_lajna,
+        tadilatDoc:       documents.tadilat_doc,
+        tahvilDoc:        documents.tahvil_doc,
     });
 
     // Validation
@@ -692,6 +1107,32 @@ EmployeeModule._loadStudentDocumentPreviews = async function(studentId) {
             'tasdiq-doc':        data.tasdiq_doc,
             'vasiqe-doc':        data.vasiqe_doc,
             'irandoc-khate':     data.irandoc_khate,
+            // فیلدهای جدید
+            'irandoc-resale':    data.irandoc_resale,
+            'onvan-doc':         data.onvan_doc,
+            'onvan-result':      data.onvan_result,
+            'savorg-form':       data.savorg_form,
+            'mahzar-doc':        data.mahzar_doc,
+            'asalat-doc':        data.asalat_doc,
+            'tadil-doc':         data.tadil_doc,
+            'tanzil-doc':        data.tanzil_doc,
+            'hatami-doc':        data.hatami_doc,
+            'khatm-tajlid':      data.khatm_tajlid,
+            'tarjome-ismaili':   data.tarjome_ismaili,
+            'ersal-doc':         data.ersal_doc,
+            'gardesh-doc':       data.gardesh_doc,
+            'dadgar-doc':        data.dadgar_doc,
+            'sefaresh-tajlid':   data.sefaresh_tajlid,
+            'mohr-daneshgah':    data.mohr_daneshgah,
+            'mohr-sefarat':      data.mohr_sefarat,
+            'qatei-doc':         data.qatei_doc,
+            'amr-edari':         data.amr_edari,
+            'molakhas-doc':      data.molakhas_doc,
+            'alaqe-doc':         data.alaqe_doc,
+            'lajna-doc':         data.lajna_doc,
+            'ostad-lajna':       data.ostad_lajna,
+            'tadilat-doc':       data.tadilat_doc,
+            'tahvil-doc':        data.tahvil_doc,
         };
 
         for (const [fieldId, storagePath] of Object.entries(fieldMap)) {

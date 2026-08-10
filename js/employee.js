@@ -356,7 +356,12 @@ const EmployeeModule = {
                                         class="text-green-400 hover:text-green-300 p-1" title="تغییر وضعیت">
                                     <i class="fas fa-check-circle"></i>
                                 </button>
-                            ` : ''}
+                            ` : `
+                                <button onclick="employeeModule.revertTaskStatus('${task.id}', '${userId}')"
+                                        class="text-lime-400 hover:text-lime-300 p-1 flex items-center gap-1 text-xs bg-slate-600 hover:bg-slate-500 rounded-lg px-2 py-1" title="بازگشت به در حال انجام">
+                                    <i class="fas fa-undo text-xs"></i> بازگشت
+                                </button>
+                            `}
                         </div>
                     </div>
                 </div>
@@ -2845,7 +2850,7 @@ const EmployeeModule = {
             { id: 'emp001', name: 'سارا سادات حسینی', email: 'zahra@edu-system.com' },
             { id: 'emp002', name: 'زینب بتول محمدی', email: 'fatemeh@edu-system.com' },
             { id: 'emp003', name: 'علیرضا غلامی فرزاد', email: 'farzad@edu-system.com' },
-            { id: 'emp004', name: 'زینب سخایی م', email: 'sakhaei@edu-system.com' }
+            { id: 'emp004', name: 'زینب ناشناخته م', email: 'sakhaei@edu-system.com' }
         ];
         return employees.find(c => c.id === userId) || employees[0];
     },
@@ -2931,6 +2936,33 @@ const EmployeeModule = {
             'completed': 'وظیفه با موفقیت تکمیل شد ✓'
         };
         UTILS.showNotification(statusTextsMsg[newStatus], 'success');
+    },
+
+    // برگرداندن وضعیت تکمیل‌شده به «در حال انجام»
+    revertTaskStatus(taskId, userId) {
+        const tasks = this.getMyTasks(userId);
+        const idx = tasks.findIndex(t => t.id === taskId);
+        if (idx === -1) return;
+
+        tasks[idx].status = 'in_progress';
+        tasks[idx].completedAt = null;
+        tasks[idx].completedBy = null;
+
+        // ذخیره در localStorage
+        this.saveMyTasks(userId, tasks);
+
+        // sync به Supabase
+        if (
+            typeof SupabaseDataModule !== 'undefined' &&
+            typeof SupabaseDataModule._online === 'function' &&
+            SupabaseDataModule._online()
+        ) {
+            SupabaseDataModule.saveEmployeeTask(userId, tasks[idx])
+                .catch(e => console.warn('⚠️ revertTaskStatus Supabase خطا:', e.message));
+        }
+
+        this.refreshMyTasks(userId);
+        UTILS.showNotification('وظیفه به حالت «در حال انجام» برگشت', 'info');
     },
     
     sendMessage(userId) {

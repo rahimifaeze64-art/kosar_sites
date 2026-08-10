@@ -99,13 +99,33 @@ const AccountingUI = (function () {
     function renderDashboard(filtered) {
         const credit  = totalByCur(filtered, ['credit']);
         const debt    = totalByCur(filtered, ['debt']);
-        const income  = totalByCur(filtered, ['income']);
-        const expense = totalByCur(filtered, ['expense']);
 
-        // خالص دارایی = بستانکاری + درآمد - بدهی - هزینه
+        // درآمد = تراکنش‌های نوع income + بستانکاری‌های تسویه‌شده
+        const incomeBase    = totalByCur(filtered, ['income']);
+        const settledCredit = totalByCur(filtered.filter(t => t.type==='credit' && t.is_settled), null);
+        const incomeByCur   = {};
+        ['تومان','دلار','دینار'].forEach(c => {
+            const v = (incomeBase[c]||0) + (settledCredit[c]||0);
+            if (v > 0) incomeByCur[c] = v;
+        });
+
+        // هزینه = تراکنش‌های نوع expense + بدهی‌های تسویه‌شده
+        const expenseBase  = totalByCur(filtered, ['expense']);
+        const settledDebt  = totalByCur(filtered.filter(t => t.type==='debt' && t.is_settled), null);
+        const expenseByCur = {};
+        ['تومان','دلار','دینار'].forEach(c => {
+            const v = (expenseBase[c]||0) + (settledDebt[c]||0);
+            if (v > 0) expenseByCur[c] = v;
+        });
+
+        // بستانکاری و بدهی فقط تسویه‌نشده‌ها
+        const creditPending = totalByCur(filtered.filter(t => t.type==='credit' && !t.is_settled), null);
+        const debtPending   = totalByCur(filtered.filter(t => t.type==='debt'   && !t.is_settled), null);
+
+        // خالص دارایی = درآمد - هزینه
         const netByCur = {};
         ['تومان','دلار','دینار'].forEach(c => {
-            const v = (credit[c]||0) + (income[c]||0) - (debt[c]||0) - (expense[c]||0);
+            const v = (incomeByCur[c]||0) - (expenseByCur[c]||0);
             if (v !== 0) netByCur[c] = v;
         });
 
@@ -131,7 +151,6 @@ const AccountingUI = (function () {
         const embUnsettled = (() => {
             try {
                 if (typeof EmbassyAccountingModule === 'undefined') return null;
-                // جمع دریافتی‌های سفارت (finalAll)
                 const all = EmbassyAccountingModule.getFilteredRecords
                     ? EmbassyAccountingModule.getFilteredRecords()
                     : (EmbassyAccountingModule._filtered || []);
@@ -152,7 +171,7 @@ const AccountingUI = (function () {
             } catch { return null; }
         })();
 
-        function card(title, content, bg, border, icon, iconColor) {
+        function card(title, content, bg, border, icon, iconColor, subtitle='') {
             return `
             <div class="${bg} rounded-2xl p-4 border ${border} shadow-sm">
                 <div class="flex items-center gap-2 mb-2">
@@ -160,32 +179,49 @@ const AccountingUI = (function () {
                     <p class="text-gray-500 text-xs font-medium">${title}</p>
                 </div>
                 <div class="space-y-0.5">${content}</div>
+                ${subtitle ? `<p class="text-gray-400 text-xs mt-1">${subtitle}</p>` : ''}
             </div>`;
         }
 
-        const netColor = Object.values(netByCur).some(v=>v<0) ? 'text-red-600' : 'text-emerald-700';
+        // کمکی برای نمایش مقدار یا —
+        function fmtOrDash(byCur, cls) {
+            return Object.keys(byCur).length ? fmtMulti(byCur, cls) : '<span class="text-gray-400 text-sm">—</span>';
+        }
 
         return `
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
-            ${card('بستانکاری', fmtMulti(credit,'text-emerald-700 font-bold text-sm'), 'bg-emerald-50','border-emerald-200','fa-coins','text-emerald-500')}
-            ${card('بدهی',      fmtMulti(debt,  'text-red-600 font-bold text-sm'),     'bg-red-50',    'border-red-200',   'fa-hand-holding-usd','text-red-400')}
-            ${card('خالص دارایی', Object.keys(netByCur).length
-                ? Object.entries(netByCur).map(([c,v])=>`<span class="${v>=0?'text-emerald-700':'text-red-600'} font-bold text-sm">${fmtNum(v,c)}</span>`).join('<br>')
-                : '<span class="text-gray-400 text-sm">—</span>',
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 mb-4">
+            ${card('درآمد',
+                fmtOrDash(incomeByCur, 'text-emerald-700 font-bold text-sm'),
+                'bg-emerald-50','border-emerald-200','fa-arrow-trend-up','text-emerald-500',
+                'شامل بستانکاری تسویه‌شده')}
+            ${card('هزینه',
+                fmtOrDash(expenseByCur, 'text-red-600 font-bold text-sm'),
+                'bg-red-50','border-red-200','fa-arrow-trend-down','text-red-400',
+                'شامل بدهی تسویه‌شده')}
+            ${card('خالص',
+                Object.keys(netByCur).length
+                    ? Object.entries(netByCur).map(([c,v])=>`<span class="${v>=0?'text-emerald-700':'text-red-600'} font-bold text-sm">${fmtNum(v,c)}</span>`).join('<br>')
+                    : '<span class="text-gray-400 text-sm">—</span>',
                 'bg-blue-50','border-blue-200','fa-chart-line','text-blue-500')}
-            ${card('حساب کارمندان', empUnsettled !== null
+            ${card('بستانکاری',
+                fmtOrDash(creditPending, 'text-indigo-700 font-bold text-sm'),
+                'bg-indigo-50','border-indigo-200','fa-coins','text-indigo-500',
+                'در انتظار تسویه')}
+            ${card('بدهکاری',
+                fmtOrDash(debtPending, 'text-orange-700 font-bold text-sm'),
+                'bg-orange-50','border-orange-200','fa-hand-holding-usd','text-orange-400',
+                'در انتظار تسویه')}
+            ${card('کارمندان', empUnsettled !== null
                 ? `<span class="text-orange-700 font-bold text-sm">${empUnsettled.toLocaleString('en-US')} ت</span><p class="text-gray-400 text-xs">تسویه‌نشده</p>`
                 : '<span class="text-gray-400 text-xs">در دسترس نیست</span>',
                 'bg-orange-50','border-orange-200','fa-users','text-orange-500')}
-            ${card('حساب سفارت', embUnsettled && Object.keys(embUnsettled).length
+            ${card('سفارت', embUnsettled && Object.keys(embUnsettled).length
                 ? Object.entries(embUnsettled)
                     .filter(([,v]) => v > 0)
-                    .map(([c, v]) => {
-                        const display = c === 'دلار'
-                            ? `<span class="font-bold text-sm text-lime-700">$${Number(v).toLocaleString('en-US')}</span>`
-                            : `<span class="font-bold text-sm text-lime-700">${Number(v).toLocaleString('en-US')} ${c === 'دینار' ? 'د' : 'ت'}</span>`;
-                        return display;
-                    }).join('<br>') + '<p class="text-gray-400 text-xs mt-0.5">جمع دریافتی‌ها</p>'
+                    .map(([c, v]) => c === 'دلار'
+                        ? `<span class="font-bold text-sm text-lime-700">$${Number(v).toLocaleString('en-US')}</span>`
+                        : `<span class="font-bold text-sm text-lime-700">${Number(v).toLocaleString('en-US')} ${c==='دینار'?'د':'ت'}</span>`
+                    ).join('<br>') + '<p class="text-gray-400 text-xs mt-0.5">جمع دریافتی‌ها</p>'
                 : '<span class="text-lime-700 text-xs">→ حسابداری سفارت</span>',
                 'bg-lime-50','border-lime-200','fa-landmark','text-lime-500')}
         </div>`;
@@ -225,10 +261,10 @@ const AccountingUI = (function () {
 
     const TYPE_LABELS = { income:'درآمد', expense:'هزینه', debt:'بدهی', credit:'بستانکاری' };
     const TYPE_COLORS = {
-        income:  'bg-green-100 text-green-800',
+        income:  'bg-emerald-100 text-emerald-800',
         expense: 'bg-red-100 text-red-700',
         debt:    'bg-orange-100 text-orange-700',
-        credit:  'bg-blue-100 text-blue-800'
+        credit:  'bg-indigo-100 text-indigo-800'
     };
 
     function renderTable(filtered) {
@@ -403,6 +439,8 @@ const AccountingUI = (function () {
                     <select id="acc-ftype" onchange="AccountingUI.onFilterType(this.value)"
                         class="bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none">
                         <option value="" ${!_fType?'selected':''}>همه نوع‌ها</option>
+                        <option value="income"  ${_fType==='income' ?'selected':''}>درآمد</option>
+                        <option value="expense" ${_fType==='expense'?'selected':''}>هزینه</option>
                         <option value="debt"    ${_fType==='debt'   ?'selected':''}>بدهکاری</option>
                         <option value="credit"  ${_fType==='credit' ?'selected':''}>بستانکاری</option>
                     </select>
@@ -497,9 +535,12 @@ const AccountingUI = (function () {
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="text-gray-600 text-xs mb-1 block">نوع تراکنش *</label>
-                        <select id="tx-type" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 focus:outline-none">
+                        <select id="tx-type" onchange="AccountingUI._onTypeChange(this.value)"
+                            class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 focus:outline-none">
                             <option value="debt"    ${(!tx || tx?.type==='debt'   )?'selected':''}>بدهکاری</option>
                             <option value="credit"  ${tx?.type==='credit' ?'selected':''}>بستانکاری</option>
+                            <option value="income"  ${tx?.type==='income' ?'selected':''}>درآمد</option>
+                            <option value="expense" ${tx?.type==='expense'?'selected':''}>هزینه</option>
                         </select>
                     </div>
                     <div>
@@ -546,6 +587,7 @@ const AccountingUI = (function () {
                 </div>
                 <!-- چک‌باکس تسویه — فقط برای بدهکاری و بستانکاری -->
                 <label id="tx-settled-row" onclick="_txSettledToggle()"
+                    style="${(tx?.type==='income'||tx?.type==='expense') ? 'display:none' : ''}"
                     class="flex items-center gap-3 cursor-pointer select-none p-3 rounded-xl border-2 transition-all
                     ${tx?.is_settled ? 'border-emerald-400 bg-emerald-50' : 'border-gray-200 bg-gray-50 hover:border-emerald-300'}">
                     <input type="checkbox" id="tx-settled" ${tx?.is_settled ? 'checked' : ''} class="hidden">
@@ -591,9 +633,21 @@ const AccountingUI = (function () {
         c.appendChild(div);
     }
 
+    // نمایش/پنهان کردن چک‌باکس تسویه بر اساس نوع تراکنش
+    function _onTypeChange(type) {
+        const row = document.getElementById('tx-settled-row');
+        if (!row) return;
+        if (type === 'income' || type === 'expense') {
+            row.style.display = 'none';
+            const cb = document.getElementById('tx-settled');
+            if (cb) cb.checked = false;
+        } else {
+            row.style.display = 'flex';
+        }
+    }
+
     // تابع global برای toggle چک‌باکس تسویه در مودال
-    window._txSettledToggle = function() {
-        const cb      = document.getElementById('tx-settled');
+    window._txSettledToggle = function() {        const cb      = document.getElementById('tx-settled');
         const box     = document.getElementById('tx-settled-box');
         const check   = document.getElementById('tx-settled-check');
         const iconBig = document.getElementById('tx-settled-icon-big');
@@ -1174,7 +1228,7 @@ const AccountingUI = (function () {
         showAddModal, showEditModal, deleteTransaction, toggleSettled,
         showAddPersonModal, _submitPerson, showPersonsList, showPersonDetail, _deletePerson,
         showExportModal, _doExport,
-        _addAmountRow, _onPersonSelChange, _submitTx,
+        _addAmountRow, _onPersonSelChange, _submitTx, _onTypeChange,
     };
 
 })();

@@ -60,8 +60,35 @@ const TasksModule = {
                         </div>
                     </div>
                 </div>
+
+                <!-- ═══ چک‌لیست کاری مدیر ═══ -->
+                <div class="border-t border-slate-700 pt-6">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="bg-lime-500/20 p-2 rounded-xl">
+                            <i class="fas fa-check-square text-lime-400 text-xl"></i>
+                        </span>
+                        <h2 class="text-xl font-bold text-white">چک‌لیست کاری</h2>
+                    </div>
+                    <div id="work-checklist-root" class="min-h-[60vh]">
+                        <div class="flex items-center justify-center py-16">
+                            <i class="fas fa-spinner fa-spin text-3xl text-lime-400"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
+        // init چک‌لیست بعد از رندر Alpine
+        setTimeout(() => {
+            if (typeof WorkChecklistModule !== 'undefined') {
+                const alpineEl = document.querySelector('[x-data]');
+                let user = null;
+                try {
+                    const saved = localStorage.getItem('currentUser');
+                    if (saved) user = JSON.parse(saved);
+                } catch(e) {}
+                if (user) WorkChecklistModule.init(user);
+            }
+        }, 300);
     },
     
     // Get employees list - فقط کارمندها
@@ -82,7 +109,7 @@ const TasksModule = {
                 { id: 'emp001', name: 'سارا سادات حسینی', username: 'sareh',   email: 'sareh@alkawsar.com',   role: 'employee' },
                 { id: 'emp002', name: 'زینب بتول محمدی',  username: 'zainab',  email: 'zainab@alkawsar.com',  role: 'employee' },
                 { id: 'emp003', name: 'علیرضا غلامی فرزاد', username: 'farzad', email: 'farzad@alkawsar.com', role: 'employee' },
-                { id: 'emp004', name: 'زینب سخایی',       username: 'sakhaei', email: 'sakhaei@alkawsar.com', role: 'employee' },
+                { id: 'emp004', name: 'زینب ناشناخته',       username: 'sakhaei', email: 'sakhaei@alkawsar.com', role: 'employee' },
                 { id: 'emp005', name: 'مهدی خدایاری',     username: 'mahdi',   email: 'mahdi@alkawsar.com',   role: 'employee' }
             ];
 
@@ -191,6 +218,44 @@ const TasksModule = {
         
         const tasks = this.getemployeeTasks(this.selectedemployee);
         const employee = this.getemployees().find(c => c.id === this.selectedemployee);
+
+        // ── آمار وضعیت‌ها ──
+        const counts = {
+            pending:     tasks.filter(t => t.status === 'pending').length,
+            in_progress: tasks.filter(t => t.status === 'in_progress').length,
+            completed:   tasks.filter(t => t.status === 'completed').length,
+            rejected:    tasks.filter(t => t.status === 'rejected').length,
+            approved:    tasks.filter(t => t.status === 'approved').length,
+            delayed:     tasks.filter(t => t.status === 'delayed').length,
+        };
+
+        const statBoxes = `
+            <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">
+                <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 text-center">
+                    <p class="text-2xl font-bold text-yellow-400">${counts.pending}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">در انتظار</p>
+                </div>
+                <div class="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 text-center">
+                    <p class="text-2xl font-bold text-blue-400">${counts.in_progress}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">در حال انجام</p>
+                </div>
+                <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 text-center">
+                    <p class="text-2xl font-bold text-emerald-400">${counts.completed}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">تکمیل شده</p>
+                </div>
+                <div class="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-center">
+                    <p class="text-2xl font-bold text-red-400">${counts.rejected}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">رد شده</p>
+                </div>
+                <div class="bg-lime-500/10 border border-lime-500/30 rounded-xl p-3 text-center">
+                    <p class="text-2xl font-bold text-lime-400">${counts.approved}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">تأیید نهایی</p>
+                </div>
+                <div class="bg-orange-500/10 border border-orange-500/30 rounded-xl p-3 text-center">
+                    <p class="text-2xl font-bold text-orange-400">${counts.delayed}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">به تأخیر افتاده</p>
+                </div>
+            </div>`;
         
         return `
             <div class="space-y-4">
@@ -198,19 +263,14 @@ const TasksModule = {
                     <h4 class="text-lg font-bold text-white">
                         وظایف ${employee?.name || ''}
                     </h4>
-                    <div class="flex space-x-2 space-x-reverse">
-                        <button onclick="TasksModule.showVoiceTaskModal('${this.selectedemployee}')" 
-                                class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm">
-                            <i class="fas fa-microphone ml-1"></i>
-                            صوتی
-                        </button>
-                        <button onclick="TasksModule.showNewTaskModal('${this.selectedemployee}')" 
-                                class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-3 py-1 rounded-lg text-sm">
-                            <i class="fas fa-plus ml-1"></i>
-                            بیشتر
-                        </button>
-                    </div>
+                    <button onclick="TasksModule.showNewTaskModal('${this.selectedemployee}')" 
+                            class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-3 py-1 rounded-lg text-sm">
+                        <i class="fas fa-plus ml-1"></i>
+                        وظیفه جدید
+                    </button>
                 </div>
+
+                ${statBoxes}
                 
                 ${tasks.length === 0 ? `
                     <div class="text-center py-8">
@@ -429,7 +489,7 @@ const TasksModule = {
             <div class="flex ${isManager ? 'justify-start' : 'justify-end'}">
                 <div class="max-w-xs lg:max-w-md ${isManager ? 'bg-lime-600' : 'bg-slate-600'} rounded-lg p-3">
                     <p class="text-white text-sm">${message.text}</p>
-                    <p class="text-xs text-gray-300 mt-1">${message.timestamp}</p>
+                    <p class="text-xs text-gray-250 mt-1">${message.timestamp}</p>
                 </div>
             </div>
         `;
@@ -751,23 +811,28 @@ const TasksModule = {
         localStorage.setItem('employee_reports', JSON.stringify(reportsData));
     },
     
-    // Action methods - مودال وظیفه متنی (بیشتر)
+    // Action methods - مودال وظیفه جدید (با پیوست فایل و صوت اختیاری)
     showNewTaskModal(employeeId = null) {
         const targetemployee = employeeId || this.selectedemployee;
         if (!targetemployee) {
             UTILS.showNotification('لطفاً ابتدا یک کارمند انتخاب کنید', 'warning');
             return;
         }
-        
+        // reset state
+        this.selectedVoiceTaskFile = null;
+        this.recordedVoiceData = null;
+        this.recordedVoiceDuration = null;
+
         const employees = this.getemployees();
         const modalHTML = `
-            <div id="new-task-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                <div class="bg-slate-800 rounded-lg max-w-md w-full p-6">
+            <div id="new-task-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+                <div class="bg-slate-800 rounded-lg max-w-lg w-full p-6 my-4">
                     <h3 class="text-lg font-bold text-white mb-4">
                         <i class="fas fa-plus text-lime-400 ml-2"></i>
                         وظیفه جدید
                     </h3>
                     <div class="space-y-4">
+                        <!-- کارمند -->
                         <div>
                             <label class="block text-sm text-gray-300 mb-1">کارمند</label>
                             <select id="task-employee" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white">
@@ -776,23 +841,40 @@ const TasksModule = {
                                 `).join('')}
                             </select>
                         </div>
+                        <!-- عنوان -->
                         <div>
-                            <label class="block text-sm text-gray-300 mb-1">عنوان وظیفه</label>
-                            <input type="text" id="task-title" 
+                            <label class="block text-sm text-gray-300 mb-1">عنوان وظیفه <span class="text-red-400">*</span></label>
+                            <input type="text" id="task-title"
                                    class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white"
                                    placeholder="عنوان وظیفه را وارد کنید">
                         </div>
+                        <!-- توضیحات -->
                         <div>
                             <label class="block text-sm text-gray-300 mb-1">توضیحات</label>
                             <textarea id="task-description" rows="3"
                                       class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white"
                                       placeholder="توضیحات وظیفه..."></textarea>
                         </div>
+                        <!-- تاریخ + اولویت -->
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm text-gray-300 mb-1">مهلت انجام</label>
-                                <input type="text" id="task-due-date" data-jalali
-                                       class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white cursor-pointer">
+                                <div class="flex flex-col gap-1">
+                                    <div class="flex gap-1 mb-1">
+                                        <button type="button" onclick="WorkHoursUI.setQuickDate('task-due-date','task-due-date-disp',-2)"
+                                                class="flex-1 text-xs bg-slate-600 hover:bg-slate-500 text-gray-300 px-2 py-1 rounded-lg">پس فردا</button>
+                                        <button type="button" onclick="WorkHoursUI.setQuickDate('task-due-date','task-due-date-disp',-1)"
+                                                class="flex-1 text-xs bg-blue-700 hover:bg-blue-600 text-white px-2 py-1 rounded-lg">فردا</button>
+                                        <button type="button" onclick="WorkHoursUI.setQuickDate('task-due-date','task-due-date-disp',0)"
+                                                class="flex-1 text-xs bg-lime-700 hover:bg-lime-600 text-white px-2 py-1 rounded-lg">امروز</button>
+                                    </div>
+                                    <input type="hidden" id="task-due-date">
+                                    <button type="button" id="task-due-date-disp"
+                                            onclick="WorkHoursUI.openJalaliPicker('task-due-date','task-due-date-disp')"
+                                            class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-right text-white hover:border-lime-500 transition-colors">
+                                        <span id="task-due-date-disp-text" class="text-gray-400">انتخاب تاریخ</span>
+                                    </button>
+                                </div>
                             </div>
                             <div>
                                 <label class="block text-sm text-gray-300 mb-1">اولویت</label>
@@ -803,26 +885,213 @@ const TasksModule = {
                                 </select>
                             </div>
                         </div>
+                        <!-- پیوست فایل -->
+                        <div class="bg-slate-700 rounded-lg p-3">
+                            <label class="block text-sm text-gray-300 mb-2">
+                                <i class="fas fa-paperclip text-lime-400 ml-1"></i>
+                                پیوست فایل (اختیاری)
+                            </label>
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="TasksModule._selectNewTaskFile()"
+                                        class="bg-slate-600 hover:bg-slate-500 text-white px-3 py-1.5 rounded-lg text-sm">
+                                    <i class="fas fa-folder-open ml-1"></i>انتخاب فایل
+                                </button>
+                                <span id="new-task-file-name" class="text-gray-400 text-sm">فایلی انتخاب نشده</span>
+                            </div>
+                            <div id="new-task-file-preview" class="mt-2 hidden">
+                                <div class="bg-slate-600 rounded-lg p-2 flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <i id="new-task-file-icon" class="fas fa-file text-gray-400 text-lg"></i>
+                                        <div>
+                                            <p id="new-task-file-display" class="text-white text-sm"></p>
+                                            <p id="new-task-file-size" class="text-gray-400 text-xs"></p>
+                                        </div>
+                                    </div>
+                                    <button type="button" onclick="TasksModule._removeNewTaskFile()"
+                                            class="text-red-400 hover:text-red-300 p-1">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+            </div>
+                        </div>
+                        <!-- ضبط صوت اختیاری -->
+                        <div class="bg-slate-700 rounded-lg p-3">
+                            <label class="block text-sm text-gray-300 mb-2">
+                                <i class="fas fa-microphone text-red-400 ml-1"></i>
+                                پیام صوتی (اختیاری)
+                            </label>
+                            <div id="new-task-voice-container">
+                                <!-- حالت اولیه -->
+                                <div id="new-task-voice-initial" class="flex items-center gap-3">
+                                    <button type="button" onclick="TasksModule._startNewTaskRecording()"
+                                            class="w-12 h-12 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center text-white shadow-lg">
+                                        <i class="fas fa-microphone"></i>
+                                    </button>
+                                    <span class="text-gray-400 text-sm">برای ضبط صوت کلیک کنید</span>
+                                </div>
+                                <!-- حالت در حال ضبط -->
+                                <div id="new-task-voice-recording" class="hidden flex items-center gap-3">
+                                    <div class="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
+                                    <span class="text-white font-mono" id="new-task-recording-time">0:00</span>
+                                    <button type="button" onclick="TasksModule._stopNewTaskRecording()"
+                                            class="w-12 h-12 rounded-full bg-slate-500 hover:bg-slate-400 flex items-center justify-center text-white">
+                                        <i class="fas fa-stop"></i>
+                                    </button>
+                                    <span class="text-red-400 text-sm">در حال ضبط...</span>
+                                </div>
+                                <!-- حالت ضبط شده -->
+                                <div id="new-task-voice-recorded" class="hidden flex items-center gap-3">
+                                    <button type="button" onclick="TasksModule._playNewTaskVoice()"
+                                            class="w-10 h-10 rounded-full bg-lime-500 hover:bg-lime-600 flex items-center justify-center text-gray-900"
+                                            id="new-task-play-btn">
+                                        <i class="fas fa-play text-sm" id="new-task-play-icon"></i>
+                                    </button>
+                                    <div class="flex-1">
+                                        <div class="w-full bg-slate-500 rounded-full h-1.5">
+                                            <div class="bg-lime-400 h-1.5 rounded-full" style="width:0%" id="new-task-voice-progress"></div>
+                                        </div>
+                                        <span class="text-gray-400 text-xs" id="new-task-voice-duration"></span>
+                                    </div>
+                                    <button type="button" onclick="TasksModule._deleteNewTaskRecording()"
+                                            class="text-red-400 hover:text-red-300 p-1">
+                                        <i class="fas fa-trash text-sm"></i>
+                                    </button>
+                                    <audio id="new-task-voice-audio" class="hidden"></audio>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="flex justify-end space-x-3 space-x-reverse mt-6">
-                        <button onclick="TasksModule.closeModal('new-task-modal')" 
-                                class="px-4 py-2 text-gray-400 hover:text-white">
-                            انصراف
-                        </button>
-                        <button onclick="TasksModule.createTask()" 
-                                class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-4 py-2 rounded-lg">
-                            ایجاد وظیفه
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button onclick="TasksModule.closeModal('new-task-modal')"
+                                class="px-4 py-2 text-gray-400 hover:text-white">انصراف</button>
+                        <button onclick="TasksModule.createTask()"
+                                class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-4 py-2 rounded-lg font-medium">
+                            <i class="fas fa-paper-plane ml-2"></i>ایجاد وظیفه
                         </button>
                     </div>
                 </div>
             </div>
         `;
-        
+
         document.body.insertAdjacentHTML('beforeend', modalHTML);
-        // فعال‌سازی jalali picker
-        if (typeof JalaliPicker !== 'undefined') {
-            JalaliPicker.attachById('task-due-date');
+        if (typeof WorkHoursUI !== 'undefined') {
+            WorkHoursUI.setQuickDate('task-due-date', 'task-due-date-disp', 0);
         }
+    },
+
+    // ── انتخاب فایل پیوست برای وظیفه جدید ───────────────────────
+    _selectNewTaskFile() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt,.zip,.rar';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const nameEl   = document.getElementById('new-task-file-name');
+            const preview  = document.getElementById('new-task-file-preview');
+            const dispName = document.getElementById('new-task-file-display');
+            const dispSize = document.getElementById('new-task-file-size');
+            const dispIcon = document.getElementById('new-task-file-icon');
+            if (nameEl) nameEl.textContent = file.name;
+            if (dispName) dispName.textContent = file.name;
+            if (dispSize) dispSize.textContent = this.formatFileSize(file.size);
+            if (dispIcon) dispIcon.className = 'fas ' + this.getFileIcon(file.name) + ' text-lg';
+            if (preview) preview.classList.remove('hidden');
+            if (file.size <= 2 * 1024 * 1024) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    this.selectedVoiceTaskFile = { name: file.name, size: file.size, data: ev.target.result };
+                };
+                reader.readAsDataURL(file);
+            } else {
+                this.selectedVoiceTaskFile = { name: file.name, size: file.size, data: null };
+                UTILS.showNotification('فایل بزرگتر از ۲MB است — بدون داده ذخیره می‌شود', 'warning');
+            }
+        };
+        input.click();
+    },
+
+    _removeNewTaskFile() {
+        this.selectedVoiceTaskFile = null;
+        const nameEl  = document.getElementById('new-task-file-name');
+        const preview = document.getElementById('new-task-file-preview');
+        if (nameEl) nameEl.textContent = 'فایلی انتخاب نشده';
+        if (preview) preview.classList.add('hidden');
+    },
+
+    // ── ضبط صوت برای وظیفه جدید ──────────────────────────────────
+    async _startNewTaskRecording() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            this.mediaRecorder = new MediaRecorder(stream);
+            this.audioChunks = [];
+            this.mediaRecorder.ondataavailable = (e) => this.audioChunks.push(e.data);
+            this.mediaRecorder.onstop = () => {
+                const blob = new Blob(this.audioChunks, { type: 'audio/webm' });
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    this.recordedVoiceData = ev.target.result;
+                    const audio = document.getElementById('new-task-voice-audio');
+                    if (audio) audio.src = this.recordedVoiceData;
+                };
+                reader.readAsDataURL(blob);
+                stream.getTracks().forEach(t => t.stop());
+                document.getElementById('new-task-voice-recording')?.classList.add('hidden');
+                document.getElementById('new-task-voice-recorded')?.classList.remove('hidden');
+                const dur = document.getElementById('new-task-voice-duration');
+                if (dur) dur.textContent = this.recordedVoiceDuration || '';
+            };
+            this.mediaRecorder.start();
+            this.isRecording = true;
+            this.recordingStartTime = Date.now();
+            document.getElementById('new-task-voice-initial')?.classList.add('hidden');
+            document.getElementById('new-task-voice-recording')?.classList.remove('hidden');
+            this.recordingTimer = setInterval(() => {
+                const sec = Math.floor((Date.now() - this.recordingStartTime) / 1000);
+                const m = Math.floor(sec / 60), s = sec % 60;
+                this.recordedVoiceDuration = m + ':' + String(s).padStart(2, '0');
+                const timeEl = document.getElementById('new-task-recording-time');
+                if (timeEl) timeEl.textContent = this.recordedVoiceDuration;
+            }, 1000);
+        } catch (e) {
+            UTILS.showNotification('دسترسی به میکروفون ممکن نیست', 'error');
+        }
+    },
+
+    _stopNewTaskRecording() {
+        if (this.mediaRecorder && this.isRecording) {
+            this.mediaRecorder.stop();
+            this.isRecording = false;
+            clearInterval(this.recordingTimer);
+        }
+    },
+
+    _playNewTaskVoice() {
+        const audio = document.getElementById('new-task-voice-audio');
+        const icon  = document.getElementById('new-task-play-icon');
+        const prog  = document.getElementById('new-task-voice-progress');
+        if (!audio) return;
+        if (audio.paused) {
+            audio.play();
+            if (icon) icon.className = 'fas fa-pause text-sm';
+            audio.ontimeupdate = () => {
+                if (prog) prog.style.width = ((audio.currentTime / audio.duration) * 100) + '%';
+            };
+            audio.onended = () => {
+                if (icon) icon.className = 'fas fa-play text-sm';
+                if (prog) prog.style.width = '0%';
+            };
+        } else {
+            audio.pause();
+            if (icon) icon.className = 'fas fa-play text-sm';
+        }
+    },
+
+    _deleteNewTaskRecording() {
+        this.recordedVoiceData = null;
+        this.recordedVoiceDuration = null;
+        document.getElementById('new-task-voice-recorded')?.classList.add('hidden');
+        document.getElementById('new-task-voice-initial')?.classList.remove('hidden');
     },
     
     // مودال وظیفه صوتی
@@ -1227,11 +1496,10 @@ const TasksModule = {
         const employeeId = document.getElementById('task-employee').value;
         const title = document.getElementById('task-title').value;
         const description = document.getElementById('task-description').value;
-        // مقدار شمسی را برای نمایش ذخیره می‌کنیم
         const dueDateEl = document.getElementById('task-due-date');
-        const dueDate = dueDateEl ? (dueDateEl.dataset.jalaliValue || dueDateEl.value || '') : '';
+        const dueDate = dueDateEl ? (dueDateEl.value || '') : '';
         const priority = document.getElementById('task-priority').value;
-        
+
         if (!title.trim()) {
             UTILS.showNotification('لطفاً عنوان وظیفه را وارد کنید', 'error');
             return;
@@ -1246,8 +1514,11 @@ const TasksModule = {
             status: 'pending',
             createdAt: new Date().toISOString(),
             createdBy: 'mgr001',
-            voiceMessage: null,
-            voiceDuration: null
+            // صوت اختیاری
+            voiceMessage: this.recordedVoiceData || null,
+            voiceDuration: this.recordedVoiceDuration || null,
+            // فایل پیوست اختیاری
+            attachedFile: this.selectedVoiceTaskFile || null,
         };
 
         // ۱. ذخیره فوری در localStorage
@@ -1257,14 +1528,20 @@ const TasksModule = {
         tasksData[employeeId] = tasks;
         localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
 
-        // ۲. ذخیره در Supabase در پس‌زمینه
+        // ۲. ذخیره در Supabase در پس‌زمینه (بدون داده‌های بزرگ)
         const sb = this._sb();
         if (sb) {
-            sb.saveEmployeeTask(employeeId, localTask)
+            const taskForCloud = { ...localTask, voiceMessage: localTask.voiceMessage ? '[voice:local]' : null, attachedFile: null };
+            sb.saveEmployeeTask(employeeId, taskForCloud)
               .then(ok => { if (ok) console.log('✅ تسک در Supabase ذخیره شد:', localTask.id); })
               .catch(e => console.warn('⚠️ createTask Supabase خطا:', e.message));
         }
-        
+
+        // reset state
+        this.recordedVoiceData = null;
+        this.recordedVoiceDuration = null;
+        this.selectedVoiceTaskFile = null;
+
         this.closeModal('new-task-modal');
         this.refreshContent();
 
@@ -1381,9 +1658,22 @@ const TasksModule = {
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm text-gray-300 mb-1">مهلت انجام</label>
-                                <input type="text" id="edit-task-due-date" data-jalali
-                                       value="${task.dueDate || ''}"
-                                       class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white cursor-pointer">
+                                <div class="flex flex-col gap-1">
+                                    <div class="flex gap-1 mb-1">
+                                        <button type="button" onclick="WorkHoursUI.setQuickDate('edit-task-due-date','edit-task-due-date-disp',-2)"
+                                                class="flex-1 text-xs bg-slate-600 hover:bg-slate-500 text-gray-300 px-2 py-1 rounded-lg">پس فردا</button>
+                                        <button type="button" onclick="WorkHoursUI.setQuickDate('edit-task-due-date','edit-task-due-date-disp',-1)"
+                                                class="flex-1 text-xs bg-blue-700 hover:bg-blue-600 text-white px-2 py-1 rounded-lg">فردا</button>
+                                        <button type="button" onclick="WorkHoursUI.setQuickDate('edit-task-due-date','edit-task-due-date-disp',0)"
+                                                class="flex-1 text-xs bg-lime-700 hover:bg-lime-600 text-white px-2 py-1 rounded-lg">امروز</button>
+                                    </div>
+                                    <input type="hidden" id="edit-task-due-date" value="${task.dueDate || ''}">
+                                    <button type="button" id="edit-task-due-date-disp"
+                                            onclick="WorkHoursUI.openJalaliPicker('edit-task-due-date','edit-task-due-date-disp')"
+                                            class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-right text-white hover:border-lime-500 transition-colors">
+                                        <span id="edit-task-due-date-disp-text" class="text-gray-400">${task.dueDate ? this._formatJalaliDate(task.dueDate) : 'انتخاب تاریخ'}</span>
+                                    </button>
+                                </div>
                             </div>
                             <div>
                                 <label class="block text-sm text-gray-300 mb-1">اولویت</label>
@@ -1400,6 +1690,9 @@ const TasksModule = {
                                 <option value="pending"    ${task.status === 'pending'     ? 'selected' : ''}>در انتظار</option>
                                 <option value="in_progress"${task.status === 'in_progress' ? 'selected' : ''}>در حال انجام</option>
                                 <option value="completed"  ${task.status === 'completed'   ? 'selected' : ''}>تکمیل شده</option>
+                                <option value="approved"   ${task.status === 'approved'    ? 'selected' : ''}>تایید نهایی</option>
+                                <option value="rejected"   ${task.status === 'rejected'    ? 'selected' : ''}>رد شده</option>
+                                <option value="delayed"    ${task.status === 'delayed'     ? 'selected' : ''}>به تاخیر افتاده</option>
                             </select>
                         </div>
                     </div>
@@ -1419,9 +1712,11 @@ const TasksModule = {
         `;
 
         document.body.insertAdjacentHTML('beforeend', modalHTML);
-        // فعال‌سازی jalali picker برای مهلت انجام
-        if (typeof JalaliPicker !== 'undefined') {
-            JalaliPicker.attachById('edit-task-due-date');
+        // مقداردهی اولیه تاریخ در modal ویرایش
+        if (task.dueDate && typeof WorkHoursUI !== 'undefined') {
+            // مقدار موجود را در display نشان بده
+            const dispText = document.getElementById('edit-task-due-date-disp-text');
+            if (dispText) dispText.textContent = this._formatJalaliDate(task.dueDate);
         }
     },
 
@@ -1431,7 +1726,7 @@ const TasksModule = {
         const description = document.getElementById('edit-task-description').value.trim();
         // مقدار شمسی را برای نمایش ذخیره می‌کنیم
         const dueDateEl   = document.getElementById('edit-task-due-date');
-        const dueDate     = dueDateEl ? (dueDateEl.dataset.jalaliValue || dueDateEl.value || '') : '';
+        const dueDate     = dueDateEl ? (dueDateEl.value || '') : '';
         const priority    = document.getElementById('edit-task-priority').value;
         const status      = document.getElementById('edit-task-status').value;
 

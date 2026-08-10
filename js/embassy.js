@@ -258,7 +258,7 @@ const EmbassyModule = (function () {
                                 <label class="text-gray-700 text-xs font-semibold block mb-1">نحوه ارسال</label>
                                 <input type="text" id="f-sendMethod"
                                     class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500"
-                                    placeholder="پست، زینب سخایی، ...">
+                                    placeholder="پست، زینب ناشناخته، ...">
                             </div>
                             <div>
                                 <label class="text-gray-700 text-xs font-semibold block mb-1">تاریخ ارسال</label>
