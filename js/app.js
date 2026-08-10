@@ -129,7 +129,19 @@ function appController() {
               this.$nextTick(() => {
                   setTimeout(() => {
                       if (typeof WorkChecklistModule !== 'undefined') {
-                          WorkChecklistModule.init(this.currentUser);
+                          const root = document.getElementById('work-checklist-root');
+                          // اگر محتوا هنوز رندر نشده (spinner نشون میده) → init کن
+                          // اگر قبلاً رندر شده → فقط یک re-render سبک انجام بده
+                          if (root) {
+                              if (root.querySelector('.fa-spinner')) {
+                                  WorkChecklistModule.init(this.currentUser);
+                              } else {
+                                  // صفحه از قبل لود شده، فقط categories رو refresh کن
+                                  WorkChecklistModule.renderCategories && WorkChecklistModule.renderCategories();
+                              }
+                          } else {
+                              WorkChecklistModule.init(this.currentUser);
+                          }
                       }
                   }, 150);
               });
