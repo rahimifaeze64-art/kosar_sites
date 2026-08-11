@@ -232,6 +232,38 @@ async function _pullDataFromSupabase() {
         console.warn('⚠️ pull employee_hourly_rates خطا:', e.message);
     }
 
+    try {
+        // ── یادداشت‌های شخصی ─────────────────────────────────
+        const client = getSupabaseClient();
+        const currentUser = (() => {
+            try { return JSON.parse(localStorage.getItem('currentUser') || 'null'); } catch { return null; }
+        })();
+        if (client && currentUser && currentUser.id) {
+            const { data: notes } = await client
+                .from('personal_notes')
+                .select('*')
+                .eq('user_id', String(currentUser.id))
+                .order('updated_at', { ascending: false });
+            if (notes && notes.length > 0) {
+                const mapped = notes.map(r => ({
+                    id:        r.id,
+                    title:     r.title,
+                    content:   r.content,
+                    category:  r.category,
+                    tags:      r.tags || [],
+                    pinned:    r.pinned || false,
+                    color:     r.color || '',
+                    createdAt: r.created_at,
+                    updatedAt: r.updated_at,
+                }));
+                localStorage.setItem('personalNotes_v1', JSON.stringify(mapped));
+                console.log(`✅ ${notes.length} یادداشت شخصی از Supabase بارگذاری شد`);
+            }
+        }
+    } catch (e) {
+        console.warn('⚠️ pull personal_notes خطا:', e.message);
+    }
+
     console.log('✅ بارگذاری اولیه از Supabase کامل شد');
 }
 

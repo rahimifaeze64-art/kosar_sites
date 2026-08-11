@@ -9,11 +9,8 @@ const WorkChecklistModule = {
 
     // ─── Init ─────────────────────────────────────────────────────
     async init(user) {
-        if (this._initializing) {
-            console.warn('⚠️ [WC] init already in progress, skip');
-            return;
-        }
         this._initializing = true;
+        this._initialized = false;
         console.log('🔍 [WC] WorkChecklistModule.init called, user:', user?.id, user?.role);
         this.currentUser = user;
         // از همان getSupabaseClient که بقیه سیستم استفاده می‌کند
@@ -46,24 +43,53 @@ const WorkChecklistModule = {
 
     // ─── Supabase helpers ─────────────────────────────────────────
     async getCategories() {
+        const localKey = 'wc_categories_' + this.currentUser.id;
+        const localData = this._localGet(localKey) || [];
+        console.log('🔍 [WC] getCategories localStorage:', localData.length, '| supabase:', !!this.supabase);
+
+        // اگه localStorage داده داره، فوری برگردون + background sync
+        if (localData.length > 0) {
+            if (this.supabase) {
+                // background sync بدون انتظار
+                this.supabase
+                    .from('checklist_categories')
+                    .select('*')
+                    .eq('user_id', this.currentUser.id)
+                    .order('created_at', { ascending: true })
+                    .then(({ data }) => {
+                        if (data && data.length > 0) this._localSet(localKey, data);
+                    })
+                    .catch(() => {});
+            }
+            return localData;
+        }
+
+        // localStorage خالیه → Supabase با timeout
         if (this.supabase) {
-            const { data, error } = await this.supabase
-                .from('checklist_categories')
-                .select('*')
-                .eq('user_id', this.currentUser.id)
-                .order('created_at', { ascending: true });
-            if (error) {
-                console.error('❌ [WC] getCategories Supabase error:', error.message, error);
-            } else if (data) {
-                console.log('✅ [WC] getCategories from Supabase:', data.length, 'items');
-                // cache در localStorage به‌روز کن
-                this._localSet('wc_categories_' + this.currentUser.id, data);
-                return data;
+            try {
+                const supabasePromise = this.supabase
+                    .from('checklist_categories')
+                    .select('*')
+                    .eq('user_id', this.currentUser.id)
+                    .order('created_at', { ascending: true })
+                    .then(res => res);
+                const timeoutPromise = new Promise(resolve =>
+                    setTimeout(() => {
+                        console.warn('⚠️ [WC] getCategories TIMEOUT 4s');
+                        resolve({ data: null, error: { message: 'timeout' } });
+                    }, 4000)
+                );
+                const { data, error } = await Promise.race([supabasePromise, timeoutPromise]);
+                console.log('🔍 [WC] getCategories Supabase: data:', data?.length, '| error:', error?.message);
+                if (!error && data) {
+                    this._localSet(localKey, data);
+                    return data;
+                }
+            } catch(e) {
+                console.error('❌ [WC] getCategories exception:', e.message);
             }
         }
-        const local = this._localGet('wc_categories_' + this.currentUser.id) || [];
-        console.log('🔍 [WC] getCategories from localStorage:', local.length, 'items');
-        return local;
+        return localData; // [] اگه هم Supabase fail شد
     },
 
     async saveCategory(cat) {
@@ -110,31 +136,39 @@ const WorkChecklistModule = {
     },
 
     async getItems(categoryId) {
-        console.log('🔍 [WC] getItems:', categoryId);
+        const localKey = 'wc_items_' + this.currentUser.id;
+        const localData = (this._localGet(localKey) || []).filter(i => i.category_id === categoryId);
+        console.log('🔍 [WC] getItems:', categoryId, '| localStorage:', localData.length);
+
         if (this.supabase) {
             try {
-                const queryPromise = this.supabase
+                const t0 = Date.now();
+                const supabasePromise = this.supabase
                     .from('checklist_items')
                     .select('*')
                     .eq('category_id', categoryId)
-                    .order('created_at', { ascending: true });
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('TIMEOUT after 5s')), 5000)
+                    .order('created_at', { ascending: true })
+                    .then(res => res);
+                const timeoutPromise = new Promise(resolve =>
+                    setTimeout(() => resolve({ data: null, error: { message: 'timeout' } }), 4000)
                 );
-                const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
-                console.log('🔍 [WC] getItems Supabase result — data:', data?.length, '| error:', error?.message);
-                if (error) {
-                    console.error('❌ [WC] getItems error:', error.message);
-                } else if (data) {
+                const { data, error } = await Promise.race([supabasePromise, timeoutPromise]);
+                console.log('🔍 [WC] getItems Supabase:', Date.now()-t0, 'ms | data:', data?.length, '| error:', error?.message);
+                if (!error && data) {
+                    const allItems = this._localGet(localKey) || [];
+                    data.forEach(d => {
+                        const idx = allItems.findIndex(i => i.id === d.id);
+                        if (idx >= 0) allItems[idx] = d; else allItems.push(d);
+                    });
+                    this._localSet(localKey, allItems);
                     return data;
                 }
             } catch(e) {
                 console.error('❌ [WC] getItems exception:', e.message);
             }
         }
-        const local = (this._localGet('wc_items_' + this.currentUser.id) || []).filter(i => i.category_id === categoryId);
-        console.log('🔍 [WC] getItems from localStorage:', local.length);
-        return local;
+        console.log('🔍 [WC] getItems localStorage fallback:', localData.length);
+        return localData;
     },
 
     async saveItem(item) {
@@ -177,19 +211,34 @@ const WorkChecklistModule = {
     },
 
     async getTasks(itemId) {
+        const localKey = 'wc_tasks_' + this.currentUser.id;
+        const localData = (this._localGet(localKey) || []).filter(t => t.item_id === itemId);
         if (this.supabase) {
-            const { data, error } = await this.supabase
-                .from('checklist_tasks')
-                .select('*')
-                .eq('item_id', itemId)
-                .order('sort_order', { ascending: true });
-            if (error) {
-                console.error('❌ خطا در دریافت تسک‌ها از Supabase:', error.message);
-            } else if (data) {
-                return data;
+            try {
+                const supabasePromise = this.supabase
+                    .from('checklist_tasks')
+                    .select('*')
+                    .eq('item_id', itemId)
+                    .order('sort_order', { ascending: true })
+                    .then(res => res);
+                const timeoutPromise = new Promise(resolve =>
+                    setTimeout(() => resolve({ data: null, error: { message: 'timeout' } }), 4000)
+                );
+                const { data, error } = await Promise.race([supabasePromise, timeoutPromise]);
+                if (!error && data) {
+                    const allTasks = this._localGet(localKey) || [];
+                    data.forEach(d => {
+                        const idx = allTasks.findIndex(t => t.id === d.id);
+                        if (idx >= 0) allTasks[idx] = d; else allTasks.push(d);
+                    });
+                    this._localSet(localKey, allTasks);
+                    return data;
+                }
+            } catch(e) {
+                console.error('❌ [WC] getTasks exception:', e.message);
             }
         }
-        return (this._localGet('wc_tasks_' + this.currentUser.id) || []).filter(t => t.item_id === itemId);
+        return localData;
     },
 
     async saveTask(task) {

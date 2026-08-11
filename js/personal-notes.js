@@ -32,6 +32,18 @@ const PersonalNotesModule = {
     },
 
 
+    // ─── helpers Supabase ─────────────────────────────────────
+    _db() {
+        return (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+    },
+
+    _currentUserId() {
+        try {
+            const u = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            return u ? String(u.id) : 'guest';
+        } catch { return 'guest'; }
+    },
+
     // ─── بارگذاری / ذخیره داده ───────────────────────────────
     loadNotes() {
         try {
@@ -59,6 +71,87 @@ const PersonalNotesModule = {
 
     saveCategories() {
         localStorage.setItem(this.CATEGORIES_KEY, JSON.stringify(this.state.categories));
+    },
+
+    // ─── Supabase: بارگذاری نوت‌ها از سرور ──────────────────
+    async loadNotesFromSupabase() {
+        const db = this._db();
+        if (!db) return false;
+        try {
+            const userId = this._currentUserId();
+            const { data, error } = await db
+                .from('personal_notes')
+                .select('*')
+                .eq('user_id', userId)
+                .order('updated_at', { ascending: false });
+            if (error) throw error;
+            if (!data || data.length === 0) return false;
+            // تبدیل فرمت Supabase → فرمت داخلی
+            this.state.notes = data.map(r => ({
+                id:        r.id,
+                title:     r.title,
+                content:   r.content,
+                category:  r.category,
+                tags:      r.tags || [],
+                pinned:    r.pinned || false,
+                color:     r.color || '',
+                createdAt: r.created_at,
+                updatedAt: r.updated_at,
+            }));
+            // sync به localStorage
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.state.notes));
+            console.log(`✅ ${data.length} نوت شخصی از Supabase بارگذاری شد`);
+            return true;
+        } catch(e) {
+            console.warn('⚠️ loadNotesFromSupabase خطا:', e.message);
+            return false;
+        }
+    },
+
+    // ─── Supabase: ذخیره یک نوت ──────────────────────────────
+    async saveNoteToSupabase(note) {
+        const db = this._db();
+        if (!db) return false;
+        try {
+            const userId = this._currentUserId();
+            const row = {
+                id:         note.id,
+                user_id:    userId,
+                title:      note.title,
+                content:    note.content,
+                category:   note.category,
+                tags:       note.tags || [],
+                pinned:     note.pinned || false,
+                color:      note.color || null,
+                created_at: note.createdAt,
+                updated_at: note.updatedAt,
+            };
+            const { error } = await db
+                .from('personal_notes')
+                .upsert(row, { onConflict: 'id' });
+            if (error) throw error;
+            return true;
+        } catch(e) {
+            console.warn('⚠️ saveNoteToSupabase خطا:', e.message);
+            return false;
+        }
+    },
+
+    // ─── Supabase: حذف یک نوت ────────────────────────────────
+    async deleteNoteFromSupabase(id) {
+        const db = this._db();
+        if (!db) return false;
+        try {
+            const { error } = await db
+                .from('personal_notes')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+            return true;
+        } catch(e) {
+            console.warn('⚠️ deleteNoteFromSupabase خطا:', e.message);
+            return false;
+        }
     },
 
     // ─── رنگ دسته ────────────────────────────────────────────
@@ -148,6 +241,8 @@ const PersonalNotesModule = {
         };
         this.state.notes.unshift(note);
         this.saveNotes();
+        // ذخیره async در Supabase (بدون block کردن UI)
+        this.saveNoteToSupabase(note).catch(() => {});
         return note;
     },
 
@@ -160,11 +255,15 @@ const PersonalNotesModule = {
             updatedAt: new Date().toISOString(),
         };
         this.saveNotes();
+        // sync به Supabase
+        this.saveNoteToSupabase(this.state.notes[idx]).catch(() => {});
     },
 
     deleteNote(id) {
         this.state.notes = this.state.notes.filter(n => n.id !== id);
         this.saveNotes();
+        // حذف از Supabase
+        this.deleteNoteFromSupabase(id).catch(() => {});
         this.render();
     },
 
@@ -174,6 +273,8 @@ const PersonalNotesModule = {
             note.pinned = !note.pinned;
             note.updatedAt = new Date().toISOString();
             this.saveNotes();
+            // sync به Supabase
+            this.saveNoteToSupabase(note).catch(() => {});
             this.render();
         }
     },
@@ -211,10 +312,17 @@ const PersonalNotesModule = {
     },
 
     // فراخوانی اول — لود داده و رندر
-    init() {
-        this.loadNotes();
+    async init() {
+        this.loadNotes();       // اول از localStorage (سریع)
         this.loadCategories();
-        this.render();
+        this.render();          // نمایش فوری با داده‌های local
+
+        // سپس از Supabase (اگر موجود باشد) — async
+        const loaded = await this.loadNotesFromSupabase();
+        if (loaded) {
+            this.loadCategories();
+            this.render();      // re-render با داده‌های تازه از سرور
+        }
     },
 
     // re-render بدون reset داده‌ها
