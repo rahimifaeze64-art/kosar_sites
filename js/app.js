@@ -148,25 +148,32 @@ function appController() {
           }
           // چک‌لیست کارمند — بعد از رندر صفحه workChecklist
           if (newPage === 'workChecklist' && this.currentUser.role === 'employee') {
-              this.$nextTick(() => {
-                  setTimeout(() => {
-                      if (typeof WorkChecklistModule !== 'undefined') {
-                          const root = document.getElementById('work-checklist-root');
-                          // اگر محتوا هنوز رندر نشده (spinner نشون میده) → init کن
-                          // اگر قبلاً رندر شده → فقط یک re-render سبک انجام بده
-                          if (root) {
-                              if (root.querySelector('.fa-spinner')) {
-                                  WorkChecklistModule.init(this.currentUser);
-                              } else {
-                                  // صفحه از قبل لود شده، فقط categories رو refresh کن
-                                  WorkChecklistModule.renderCategories && WorkChecklistModule.renderCategories();
-                              }
-                          } else {
-                              WorkChecklistModule.init(this.currentUser);
-                          }
-                      }
-                  }, 150);
-              });
+              const _user = this.currentUser;
+              const _doInit = (attempt) => {
+                  if (typeof WorkChecklistModule === 'undefined') {
+                      if (attempt < 10) setTimeout(() => _doInit(attempt + 1), 200);
+                      return;
+                  }
+                  const root = document.getElementById('work-checklist-root');
+                  if (!root) {
+                      if (attempt < 10) setTimeout(() => _doInit(attempt + 1), 200);
+                      return;
+                  }
+                  // همیشه currentUser رو set کن تا مطمئن باشیم درسته
+                  WorkChecklistModule.currentUser = _user;
+                  if (!WorkChecklistModule.supabase) {
+                      if (typeof getSupabaseClient === 'function') WorkChecklistModule.supabase = getSupabaseClient();
+                      if (!WorkChecklistModule.supabase && window.supabaseClient) WorkChecklistModule.supabase = window.supabaseClient;
+                  }
+                  // اگر spinner هست یا محتوا رندر نشده → init کامل
+                  if (root.querySelector('.fa-spinner') || !root.querySelector('#wc-wrapper')) {
+                      WorkChecklistModule.init(_user);
+                  } else {
+                      // قبلاً رندر شده → فقط categories رو refresh کن
+                      WorkChecklistModule.renderCategories && WorkChecklistModule.renderCategories();
+                  }
+              };
+              this.$nextTick(() => setTimeout(() => _doInit(0), 100));
           }
         });
 

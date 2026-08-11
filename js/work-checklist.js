@@ -15,6 +15,17 @@ const WorkChecklistModule = {
         if (!this.supabase && window.supabaseClient) {
             this.supabase = window.supabaseClient;
         }
+        // اگر user معتبر نبود، از localStorage بگیر
+        if (!this.currentUser || !this.currentUser.id) {
+            try {
+                const saved = localStorage.getItem('currentUser');
+                if (saved) this.currentUser = JSON.parse(saved);
+            } catch(e) {}
+        }
+        if (!this.currentUser || !this.currentUser.id) {
+            console.error('❌ WorkChecklistModule.init: کاربر معتبر نیست');
+            return;
+        }
         await this.render();
     },
 
@@ -221,6 +232,10 @@ const WorkChecklistModule = {
     },
 
     async renderCategories() {
+        if (!this.currentUser || !this.currentUser.id) {
+            console.warn('⚠️ renderCategories: currentUser ندارد، skip');
+            return;
+        }
         const container = document.getElementById('wc-categories-container');
         if (!container) return;
         const cats = await this.getCategories();
