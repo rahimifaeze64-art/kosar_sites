@@ -102,6 +102,7 @@
                 'js/accounting-ui.js',
                 'js/work-hours.js',
                 'js/personal-chat.js',
+                'js/personal-notes.js',
                 'js/employee-accounting.js',
                 'js/embassy.js',
                 'js/embassy-accounting.js',
@@ -244,6 +245,14 @@
                     class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                 <i class="fas fa-comments text-lg"></i>
                 <span class="font-medium">گفتگو شخصی</span>
+            </button>
+
+            <!-- یادداشت شخصی - همه نقش‌ها -->
+            <button @click="currentPage = 'personalNotes'"
+                    :class="currentPage === 'personalNotes' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
+                    class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
+                <i class="fas fa-sticky-note text-lg"></i>
+                <span class="font-medium">یادداشت شخصی</span>
             </button>
 
             <!-- گفتگو مدیریت - مدیر و کارمند  -->
@@ -504,6 +513,9 @@
 
             <!-- Personal Chat Page - برای همه نقش‌ها -->
             <div x-show="currentPage === 'personalChat'" x-html="getPersonalChatContent()"></div>
+
+            <!-- Personal Notes Page - برای همه نقش‌ها -->
+            <div x-show="currentPage === 'personalNotes'" x-html="getPersonalNotesContent()"></div>
 
             <!-- Management Chat Page (Manager and employees) -->
             <div x-show="currentPage === 'managementChat' && (currentUser.role === 'manager' || currentUser.role === 'employee')" x-html="getManagementChatContent()"></div>

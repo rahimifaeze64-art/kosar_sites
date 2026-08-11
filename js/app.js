@@ -302,6 +302,7 @@ function appController() {
         chatWithManager: "گفتگو با مدیر",
         personalChat: "گفتگو شخصی",
         managementChat: "گفتگو مدیریت",
+        personalNotes: "یادداشت شخصی",
         agentAccounting: "حسابداری من",
         personalArchive: "بایگانی شخصی",
         profile: "پروفایل کاربری",
