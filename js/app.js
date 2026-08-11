@@ -148,28 +148,35 @@ function appController() {
           }
           // چک‌لیست کارمند — بعد از رندر صفحه workChecklist
           if (newPage === 'workChecklist' && this.currentUser.role === 'employee') {
+              console.log('🔍 [WC] $watch fired → workChecklist, user:', this.currentUser?.id);
               const _user = this.currentUser;
               const _doInit = (attempt) => {
+                  console.log(`🔍 [WC] $watch attempt #${attempt}`);
                   if (typeof WorkChecklistModule === 'undefined') {
+                      console.warn('⚠️ [WC] WorkChecklistModule undefined in $watch');
                       if (attempt < 10) setTimeout(() => _doInit(attempt + 1), 200);
                       return;
                   }
                   const root = document.getElementById('work-checklist-root');
+                  console.log('🔍 [WC] root in $watch:', root ? 'FOUND' : 'NOT FOUND');
                   if (!root) {
+                      console.warn('⚠️ [WC] root not found in $watch');
                       if (attempt < 10) setTimeout(() => _doInit(attempt + 1), 200);
                       return;
                   }
-                  // همیشه currentUser رو set کن تا مطمئن باشیم درسته
                   WorkChecklistModule.currentUser = _user;
                   if (!WorkChecklistModule.supabase) {
                       if (typeof getSupabaseClient === 'function') WorkChecklistModule.supabase = getSupabaseClient();
                       if (!WorkChecklistModule.supabase && window.supabaseClient) WorkChecklistModule.supabase = window.supabaseClient;
                   }
-                  // اگر spinner هست یا محتوا رندر نشده → init کامل
-                  if (root.querySelector('.fa-spinner') || !root.querySelector('#wc-wrapper')) {
+                  const hasSpinner = !!root.querySelector('.fa-spinner');
+                  const hasWrapper = !!root.querySelector('#wc-wrapper');
+                  console.log('🔍 [WC] hasSpinner:', hasSpinner, '| hasWrapper:', hasWrapper);
+                  if (hasSpinner || !hasWrapper) {
+                      console.log('✅ [WC] calling init from $watch');
                       WorkChecklistModule.init(_user);
                   } else {
-                      // قبلاً رندر شده → فقط categories رو refresh کن
+                      console.log('✅ [WC] calling renderCategories from $watch');
                       WorkChecklistModule.renderCategories && WorkChecklistModule.renderCategories();
                   }
               };
@@ -306,16 +313,22 @@ function appController() {
     // Init work checklist for employee (called from x-init in template)
     initWorkChecklist() {
         const user = this.currentUser;
+        console.log('🔍 [WC] initWorkChecklist called, user:', user?.id, 'role:', user?.role);
         const attempt = (n) => {
+            console.log(`🔍 [WC] attempt #${n} — WorkChecklistModule defined:`, typeof WorkChecklistModule !== 'undefined');
             if (typeof WorkChecklistModule === 'undefined') {
+                console.warn(`⚠️ [WC] WorkChecklistModule undefined — retry #${n}`);
                 if (n < 15) setTimeout(() => attempt(n + 1), 150);
                 return;
             }
             const root = document.getElementById('work-checklist-root');
+            console.log('🔍 [WC] root element:', root ? 'FOUND' : 'NOT FOUND');
             if (!root) {
+                console.warn(`⚠️ [WC] #work-checklist-root not found — retry #${n}`);
                 if (n < 15) setTimeout(() => attempt(n + 1), 150);
                 return;
             }
+            console.log('✅ [WC] calling WorkChecklistModule.init with user:', user?.id);
             WorkChecklistModule.init(user);
         };
         attempt(0);

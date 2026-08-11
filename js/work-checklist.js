@@ -7,6 +7,7 @@ const WorkChecklistModule = {
 
     // ─── Init ─────────────────────────────────────────────────────
     async init(user) {
+        console.log('🔍 [WC] WorkChecklistModule.init called, user:', user?.id, user?.role);
         this.currentUser = user;
         // از همان getSupabaseClient که بقیه سیستم استفاده می‌کند
         if (typeof getSupabaseClient === 'function') {
@@ -15,18 +16,22 @@ const WorkChecklistModule = {
         if (!this.supabase && window.supabaseClient) {
             this.supabase = window.supabaseClient;
         }
+        console.log('🔍 [WC] supabase client:', this.supabase ? 'OK' : 'NULL');
         // اگر user معتبر نبود، از localStorage بگیر
         if (!this.currentUser || !this.currentUser.id) {
             try {
                 const saved = localStorage.getItem('currentUser');
                 if (saved) this.currentUser = JSON.parse(saved);
+                console.log('🔍 [WC] user from localStorage:', this.currentUser?.id);
             } catch(e) {}
         }
         if (!this.currentUser || !this.currentUser.id) {
-            console.error('❌ WorkChecklistModule.init: کاربر معتبر نیست');
+            console.error('❌ [WC] WorkChecklistModule.init: کاربر معتبر نیست');
             return;
         }
+        console.log('✅ [WC] calling render...');
         await this.render();
+        console.log('✅ [WC] render done');
     },
 
     // ─── Supabase helpers ─────────────────────────────────────────
@@ -268,6 +273,7 @@ const WorkChecklistModule = {
     // ─── Main Render ──────────────────────────────────────────────
     async render() {
         const container = document.getElementById('work-checklist-root');
+        console.log('🔍 [WC] render() — container:', container ? 'FOUND' : 'NOT FOUND');
         if (!container) return;
         container.innerHTML = `
             <div class="space-y-6" id="wc-wrapper">
@@ -294,11 +300,13 @@ const WorkChecklistModule = {
     },
 
     async renderCategories() {
+        console.log('🔍 [WC] renderCategories() — currentUser:', this.currentUser?.id);
         if (!this.currentUser || !this.currentUser.id) {
             console.warn('⚠️ renderCategories: currentUser ندارد، skip');
             return;
         }
         const container = document.getElementById('wc-categories-container');
+        console.log('🔍 [WC] wc-categories-container:', container ? 'FOUND' : 'NOT FOUND');
         if (!container) return;
         const cats = await this.getCategories();
         if (!cats.length) {

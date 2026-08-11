@@ -526,7 +526,7 @@
             <!-- Work Checklist Page (Employee only) -->
             <template x-if="currentPage === 'workChecklist' && currentUser.role === 'employee'">
                 <div>
-                    <div id="work-checklist-root" class="min-h-[60vh]" x-init="$nextTick(() => initWorkChecklist())">
+                    <div id="work-checklist-root" class="min-h-[60vh]" x-init="console.log('🔍 [WC] x-init fired, user:', currentUser?.id); $nextTick(() => initWorkChecklist())">
                         <div class="flex items-center justify-center py-16">
                             <i class="fas fa-spinner fa-spin text-3xl text-lime-400"></i>
                         </div>
