@@ -146,9 +146,32 @@ function appController() {
                   }, 150);
               });
           }
-          // چک‌لیست کارمند — x-effect در HTML هندل می‌کنه
+          // چک‌لیست کارمند — از $watch هندل میشه مثل embassy و personalNotes
           if (newPage === 'workChecklist' && this.currentUser.role === 'employee') {
               console.log('🔍 [WC] $watch fired → workChecklist, user:', this.currentUser?.id);
+              this.$nextTick(() => {
+                  const doInitWC = () => {
+                      const root = document.getElementById('work-checklist-root');
+                      if (root && typeof WorkChecklistModule !== 'undefined') {
+                          // اگه قبلاً رندر شده فقط refresh
+                          if (WorkChecklistModule._initialized && root.querySelector('#wc-wrapper')) {
+                              console.log('🔍 [WC] already initialized → renderCategories');
+                              WorkChecklistModule.currentUser = this.currentUser;
+                              WorkChecklistModule.renderCategories && WorkChecklistModule.renderCategories();
+                          } else {
+                              // reset و init از نو
+                              WorkChecklistModule._initialized = false;
+                              WorkChecklistModule._initializing = false;
+                              console.log('✅ [WC] calling WorkChecklistModule.init via $watch');
+                              WorkChecklistModule.init(this.currentUser);
+                          }
+                      } else {
+                          // هنوز آماده نیست → یک بار دیگه تلاش کن
+                          setTimeout(doInitWC, 200);
+                      }
+                  };
+                  doInitWC();
+              });
           }
         });
 
