@@ -303,6 +303,24 @@ function appController() {
       }
     },
 
+    // Init work checklist for employee (called from x-init in template)
+    initWorkChecklist() {
+        const user = this.currentUser;
+        const attempt = (n) => {
+            if (typeof WorkChecklistModule === 'undefined') {
+                if (n < 15) setTimeout(() => attempt(n + 1), 150);
+                return;
+            }
+            const root = document.getElementById('work-checklist-root');
+            if (!root) {
+                if (n < 15) setTimeout(() => attempt(n + 1), 150);
+                return;
+            }
+            WorkChecklistModule.init(user);
+        };
+        attempt(0);
+    },
+
     // Get role name in Persian
     getRoleName(role) {
       const roleNames = {

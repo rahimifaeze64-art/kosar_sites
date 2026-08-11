@@ -198,6 +198,68 @@ const WorkChecklistModule = {
         this._localSet('wc_tasks_' + this.currentUser.id, tasks);
     },
 
+    // ─── Drag & Drop برای وظایف ──────────────────────────────────
+    _initDragDrop(container, itemId) {
+        let dragging = null;
+
+        container.querySelectorAll('.wc-drag-item').forEach(row => {
+            row.addEventListener('dragstart', (e) => {
+                dragging = row;
+                row.classList.add('opacity-50', 'scale-95');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            row.addEventListener('dragend', () => {
+                row.classList.remove('opacity-50', 'scale-95');
+                container.querySelectorAll('.wc-drag-over').forEach(el => el.classList.remove('wc-drag-over', 'border-t-2', 'border-lime-500'));
+                dragging = null;
+                this._saveTaskOrder(container, itemId);
+            });
+            row.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                if (!dragging || dragging === row) return;
+                e.dataTransfer.dropEffect = 'move';
+                const rect = row.getBoundingClientRect();
+                const mid = rect.top + rect.height / 2;
+                container.querySelectorAll('.wc-drag-over').forEach(el => el.classList.remove('wc-drag-over', 'border-t-2', 'border-lime-500'));
+                row.classList.add('wc-drag-over', 'border-t-2', 'border-lime-500');
+                if (e.clientY > mid) {
+                    row.after(dragging);
+                } else {
+                    row.before(dragging);
+                }
+            });
+        });
+    },
+
+    async _saveTaskOrder(container, itemId) {
+        const rows = container.querySelectorAll('.wc-drag-item');
+        const updates = [];
+        rows.forEach((row, idx) => {
+            const taskId = row.dataset.taskId;
+            updates.push({ id: taskId, sort_order: idx });
+        });
+        // آپدیت Supabase
+        if (this.supabase) {
+            for (const u of updates) {
+                await this.supabase.from('checklist_tasks').update({ sort_order: u.sort_order }).eq('id', u.id);
+            }
+        }
+        // آپدیت localStorage
+        const all = this._localGet('wc_tasks_' + this.currentUser.id) || [];
+        updates.forEach(u => {
+            const t = all.find(t => t.id === u.id);
+            if (t) t.sort_order = u.sort_order;
+        });
+        this._localSet('wc_tasks_' + this.currentUser.id, all);
+        // بروز کردن badge
+        const badge = document.getElementById('wc-item-count-' + itemId);
+        if (badge) {
+            const tasks = await this.getTasks(itemId);
+            const done = tasks.filter(t => t.is_done).length;
+            badge.textContent = done + '/' + tasks.length;
+        }
+    },
+
     // ─── localStorage helpers ─────────────────────────────────────
     _localGet(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
     _localSet(k, v) { localStorage.setItem(k, JSON.stringify(v)); },
@@ -374,12 +436,16 @@ const WorkChecklistModule = {
             return;
         }
         container.innerHTML = tasks.map(t => this._buildTaskRow(t)).join('');
+        this._initDragDrop(container, itemId);
     },
 
     _buildTaskRow(task) {
         const done = task.is_done;
         return `
-        <div class="flex items-center gap-3 group py-1 px-2 rounded-lg hover:bg-white/5 transition-all" id="wc-task-row-${task.id}">
+        <div class="flex items-center gap-3 group py-1 px-2 rounded-lg hover:bg-white/5 transition-all wc-drag-item" id="wc-task-row-${task.id}" draggable="true" data-task-id="${task.id}">
+            <span class="wc-drag-handle cursor-grab active:cursor-grabbing text-white/20 hover:text-white/60 flex-shrink-0 select-none" title="جابه‌جایی">
+                <i class="fas fa-grip-vertical text-xs"></i>
+            </span>
             <input type="checkbox" ${done ? 'checked' : ''}
                    onchange="WorkChecklistModule.toggleTask('${task.id}', this.checked)"
                    class="w-4 h-4 accent-lime-500 cursor-pointer flex-shrink-0"/>
