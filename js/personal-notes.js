@@ -904,7 +904,7 @@ const PersonalNotesModule = {
         }
         /* ── Buttons ── */
         .pn-btn-primary {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            background: linear-gradient(135deg, #8cff49ff, #64f75eff);
             color: #fff;
             border: none;
             padding: 10px 18px;
