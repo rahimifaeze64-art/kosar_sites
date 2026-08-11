@@ -149,29 +149,27 @@ function appController() {
           // چک‌لیست کارمند — از $watch هندل میشه مثل embassy و personalNotes
           if (newPage === 'workChecklist' && this.currentUser.role === 'employee') {
               console.log('🔍 [WC] $watch fired → workChecklist, user:', this.currentUser?.id);
-              this.$nextTick(() => {
+              // صبر میکنیم Alpine x-show رو کامل پردازش کنه
+              this.$nextTick(() => setTimeout(() => {
                   const doInitWC = () => {
                       const root = document.getElementById('work-checklist-root');
                       if (root && typeof WorkChecklistModule !== 'undefined') {
-                          // اگه قبلاً رندر شده فقط refresh
-                          if (WorkChecklistModule._initialized && root.querySelector('#wc-wrapper')) {
-                              console.log('🔍 [WC] already initialized → renderCategories');
-                              WorkChecklistModule.currentUser = this.currentUser;
-                              WorkChecklistModule.renderCategories && WorkChecklistModule.renderCategories();
-                          } else {
-                              // reset و init از نو
-                              WorkChecklistModule._initialized = false;
-                              WorkChecklistModule._initializing = false;
-                              console.log('✅ [WC] calling WorkChecklistModule.init via $watch');
-                              WorkChecklistModule.init(this.currentUser);
+                          // همیشه render کامل بزن تا #wc-wrapper در root کارمند inject بشه
+                          WorkChecklistModule._initialized = false;
+                          WorkChecklistModule._initializing = false;
+                          WorkChecklistModule.currentUser = this.currentUser;
+                          // supabase رو هم init کن اگه هنوز نشده
+                          if (!WorkChecklistModule.supabase && typeof getSupabaseClient === 'function') {
+                              WorkChecklistModule.supabase = getSupabaseClient();
                           }
+                          console.log('✅ [WC] calling WorkChecklistModule.render() via $watch');
+                          WorkChecklistModule.render();
                       } else {
-                          // هنوز آماده نیست → یک بار دیگه تلاش کن
                           setTimeout(doInitWC, 200);
                       }
                   };
                   doInitWC();
-              });
+              }, 80));
           }
         });
 
