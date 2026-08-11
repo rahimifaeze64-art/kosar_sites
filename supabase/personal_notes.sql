@@ -62,42 +62,27 @@ CREATE TRIGGER trg_personal_notes_updated
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- ── Row Level Security ────────────────────────────────────────
-ALTER TABLE personal_notes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE personal_notes_categories ENABLE ROW LEVEL SECURITY;
+-- ⚠️  این اپ از Supabase Auth استفاده نمی‌کند.
+--     کاربران با ID ثابت (mgr001, emp001, ...) شناسایی می‌شوند.
+--     بنابراین از anon key با دسترسی باز استفاده می‌کنیم.
+--     امنیت از طریق user_id در query تأمین می‌شود نه RLS.
 
--- هر کاربر فقط یادداشت‌های خودش را می‌بیند
-CREATE POLICY "notes_select_own"
-    ON personal_notes FOR SELECT
-    USING (user_id = auth.uid()::text OR user_id = current_setting('app.current_user_id', TRUE));
+ALTER TABLE personal_notes DISABLE ROW LEVEL SECURITY;
+ALTER TABLE personal_notes_categories DISABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "notes_insert_own"
-    ON personal_notes FOR INSERT
-    WITH CHECK (user_id = auth.uid()::text OR user_id = current_setting('app.current_user_id', TRUE));
+-- policies قدیمی را پاک کن (در صورت وجود)
+DROP POLICY IF EXISTS "notes_select_own"   ON personal_notes;
+DROP POLICY IF EXISTS "notes_insert_own"   ON personal_notes;
+DROP POLICY IF EXISTS "notes_update_own"   ON personal_notes;
+DROP POLICY IF EXISTS "notes_delete_own"   ON personal_notes;
+DROP POLICY IF EXISTS "cats_select_own"    ON personal_notes_categories;
+DROP POLICY IF EXISTS "cats_insert_own"    ON personal_notes_categories;
+DROP POLICY IF EXISTS "cats_update_own"    ON personal_notes_categories;
+DROP POLICY IF EXISTS "cats_delete_own"    ON personal_notes_categories;
 
-CREATE POLICY "notes_update_own"
-    ON personal_notes FOR UPDATE
-    USING (user_id = auth.uid()::text OR user_id = current_setting('app.current_user_id', TRUE));
-
-CREATE POLICY "notes_delete_own"
-    ON personal_notes FOR DELETE
-    USING (user_id = auth.uid()::text OR user_id = current_setting('app.current_user_id', TRUE));
-
--- همین policies برای دسته‌بندی‌ها
-CREATE POLICY "cats_select_own"
-    ON personal_notes_categories FOR SELECT
-    USING (user_id = auth.uid()::text OR user_id = current_setting('app.current_user_id', TRUE));
-
-CREATE POLICY "cats_insert_own"
-    ON personal_notes_categories FOR INSERT
-    WITH CHECK (user_id = auth.uid()::text OR user_id = current_setting('app.current_user_id', TRUE));
-
-CREATE POLICY "cats_update_own"
-    ON personal_notes_categories FOR UPDATE
-    USING (user_id = auth.uid()::text OR user_id = current_setting('app.current_user_id', TRUE));
-
-CREATE POLICY "cats_delete_own"
-    ON personal_notes_categories FOR DELETE
-    USING (user_id = auth.uid()::text OR user_id = current_setting('app.current_user_id', TRUE));
+-- دسترسی کامل برای anon role (چون از Supabase Auth استفاده نمی‌شود)
+GRANT ALL ON personal_notes            TO anon;
+GRANT ALL ON personal_notes_categories TO anon;
 
 -- ── داده نمونه (برای تست) ────────────────────────────────────
 INSERT INTO personal_notes (user_id, title, content, category, tags, color, pinned)

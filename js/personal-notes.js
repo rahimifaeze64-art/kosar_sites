@@ -40,8 +40,17 @@ const PersonalNotesModule = {
     _currentUserId() {
         try {
             const u = JSON.parse(localStorage.getItem('currentUser') || 'null');
-            return u ? String(u.id) : 'guest';
-        } catch { return 'guest'; }
+            return (u && u.id) ? String(u.id) : null;
+        } catch { return null; }
+    },
+
+    // ساخت UUID استاندارد (v4-like) برای سازگاری با ستون UUID در PostgreSQL
+    _generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
     },
 
     // ─── بارگذاری / ذخیره داده ───────────────────────────────
@@ -77,8 +86,9 @@ const PersonalNotesModule = {
     async loadNotesFromSupabase() {
         const db = this._db();
         if (!db) return false;
+        const userId = this._currentUserId();
+        if (!userId) { console.warn('⚠️ loadNotesFromSupabase: کاربری لاگین نیست'); return false; }
         try {
-            const userId = this._currentUserId();
             const { data, error } = await db
                 .from('personal_notes')
                 .select('*')
@@ -112,8 +122,9 @@ const PersonalNotesModule = {
     async saveNoteToSupabase(note) {
         const db = this._db();
         if (!db) return false;
+        const userId = this._currentUserId();
+        if (!userId) { console.warn('⚠️ saveNoteToSupabase: کاربری لاگین نیست'); return false; }
         try {
-            const userId = this._currentUserId();
             const row = {
                 id:         note.id,
                 user_id:    userId,
@@ -130,9 +141,10 @@ const PersonalNotesModule = {
                 .from('personal_notes')
                 .upsert(row, { onConflict: 'id' });
             if (error) throw error;
+            console.log('✅ نوت در Supabase ذخیره شد:', note.id);
             return true;
         } catch(e) {
-            console.warn('⚠️ saveNoteToSupabase خطا:', e.message);
+            console.error('❌ saveNoteToSupabase خطا:', e.message, e);
             return false;
         }
     },
@@ -141,15 +153,19 @@ const PersonalNotesModule = {
     async deleteNoteFromSupabase(id) {
         const db = this._db();
         if (!db) return false;
+        const userId = this._currentUserId();
+        if (!userId) return false;
         try {
             const { error } = await db
                 .from('personal_notes')
                 .delete()
-                .eq('id', id);
+                .eq('id', id)
+                .eq('user_id', userId);
             if (error) throw error;
+            console.log('✅ نوت از Supabase حذف شد:', id);
             return true;
         } catch(e) {
-            console.warn('⚠️ deleteNoteFromSupabase خطا:', e.message);
+            console.error('❌ deleteNoteFromSupabase خطا:', e.message, e);
             return false;
         }
     },
@@ -229,7 +245,7 @@ const PersonalNotesModule = {
     createNote(data) {
         const now = new Date().toISOString();
         const note = {
-            id: 'note_' + Date.now(),
+            id: this._generateUUID(),   // UUID استاندارد — سازگار با PostgreSQL
             title:    data.title    || 'یادداشت بدون عنوان',
             content:  data.content  || '',
             category: data.category || 'عمومی',
@@ -242,7 +258,7 @@ const PersonalNotesModule = {
         this.state.notes.unshift(note);
         this.saveNotes();
         // ذخیره async در Supabase (بدون block کردن UI)
-        this.saveNoteToSupabase(note).catch(() => {});
+        this.saveNoteToSupabase(note).catch(e => console.error('❌ createNote Supabase خطا:', e));
         return note;
     },
 
@@ -256,14 +272,14 @@ const PersonalNotesModule = {
         };
         this.saveNotes();
         // sync به Supabase
-        this.saveNoteToSupabase(this.state.notes[idx]).catch(() => {});
+        this.saveNoteToSupabase(this.state.notes[idx]).catch(e => console.error('❌ updateNote Supabase خطا:', e));
     },
 
     deleteNote(id) {
         this.state.notes = this.state.notes.filter(n => n.id !== id);
         this.saveNotes();
         // حذف از Supabase
-        this.deleteNoteFromSupabase(id).catch(() => {});
+        this.deleteNoteFromSupabase(id).catch(e => console.error('❌ deleteNote Supabase خطا:', e));
         this.render();
     },
 
@@ -274,7 +290,7 @@ const PersonalNotesModule = {
             note.updatedAt = new Date().toISOString();
             this.saveNotes();
             // sync به Supabase
-            this.saveNoteToSupabase(note).catch(() => {});
+            this.saveNoteToSupabase(note).catch(e => console.error('❌ togglePin Supabase خطا:', e));
             this.render();
         }
     },

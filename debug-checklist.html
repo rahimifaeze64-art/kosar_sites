@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>Debug — چک‌لیست کاری</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Tahoma, sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; direction: rtl; }
+  h1 { font-size: 1.4rem; color: #a3e635; margin-bottom: 16px; }
+  h2 { font-size: 1rem; color: #94a3b8; margin: 20px 0 8px; border-bottom: 1px solid #334155; padding-bottom: 6px; }
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; }
+  .row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #1e293b; font-size: .85rem; }
+  .row:last-child { border-bottom: none; }
+  .label { color: #94a3b8; min-width: 200px; }
+  .val { font-family: monospace; font-size: .82rem; }
+  .ok  { color: #4ade80; }
+  .err { color: #f87171; }
+  .warn{ color: #fbbf24; }
+  .info{ color: #60a5fa; }
+  button { background: #0ea5e9; color: #fff; border: none; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: .85rem; margin: 4px 2px; }
+  button:hover { background: #0284c7; }
+  button.green { background: #16a34a; }
+  button.red   { background: #dc2626; }
+  button.gray  { background: #475569; }
+  #log { background: #020617; border: 1px solid #1e3a5f; border-radius: 8px; padding: 12px; font-family: monospace; font-size: .78rem; height: 280px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+  .log-ok   { color: #4ade80; }
+  .log-err  { color: #f87171; }
+  .log-warn { color: #fbbf24; }
+  .log-info { color: #93c5fd; }
+  .log-def  { color: #e2e8f0; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: .75rem; font-weight: bold; }
+  .badge-green { background: #166534; color: #4ade80; }
+  .badge-red   { background: #7f1d1d; color: #f87171; }
+  .badge-yellow{ background: #713f12; color: #fbbf24; }
+  select { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; padding: 6px 10px; border-radius: 8px; font-size: .85rem; }
+</style>
+</head>
+<body>
+
+<h1>🔍 Debug — چک‌لیست کاری (مدیر vs کارمند)</h1>
+
+<!-- ── بخش ۱: انتخاب کاربر ── -->
+<div class="card">
+  <h2>۱. انتخاب نقش برای تست</h2>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+    <select id="roleSelect">
+      <option value="">-- انتخاب کاربر --</option>
+      <option value='{"id":"mgr001","name":"مدیر","role":"manager"}'>مدیر (mgr001)</option>
+      <option value='{"id":"emp001","name":"کارمند ۱","role":"employee"}'>کارمند ۱ (emp001)</option>
+      <option value='{"id":"emp002","name":"کارمند ۲","role":"employee"}'>کارمند ۲ (emp002)</option>
+    </select>
+    <button onclick="applyUser()">اعمال کاربر در localStorage</button>
+    <button class="gray" onclick="clearUser()">پاک کردن currentUser</button>
+  </div>
+  <div id="currentUserDisplay" class="row" style="margin-top:10px;">
+    <span class="label">currentUser فعلی:</span>
+    <span class="val" id="currentUserVal">—</span>
+  </div>
+</div>
+
+<!-- ── بخش ۲: وضعیت پیش‌نیازها ── -->
+<div class="card">
+  <h2>۲. وضعیت پیش‌نیازها</h2>
+  <div id="prereqRows"></div>
+  <button style="margin-top:10px;" onclick="checkPrereqs()">🔄 بررسی مجدد</button>
+</div>
+
+<!-- ── بخش ۳: بررسی index.html ── -->
+<div class="card">
+  <h2>۳. مشکلات شناخته‌شده در index.html / app.js</h2>
+  <div id="knownIssues"></div>
+</div>
+
+<!-- ── بخش ۴: تست مستقیم WorkChecklistModule ── -->
+<div class="card">
+  <h2>۴. تست مستقیم WorkChecklistModule</h2>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button onclick="testInit()">▶ اجرای init()</button>
+    <button onclick="testRender()">▶ render()</button>
+    <button onclick="testGetCategories()">▶ getCategories()</button>
+    <button class="gray" onclick="clearWCData()">🗑 پاک کردن داده‌های WC از localStorage</button>
+  </div>
+  <div id="work-checklist-root" style="margin-top:14px;min-height:60px;background:#020617;border-radius:8px;padding:10px;"></div>
+</div>
+
+<!-- ── بخش ۵: localStorage ── -->
+<div class="card">
+  <h2>۵. داده‌های localStorage مرتبط</h2>
+  <div id="localStorageRows"></div>
+  <button style="margin-top:8px;" onclick="checkLocalStorage()">🔄 بررسی مجدد</button>
+</div>
+
+<!-- ── بخش ۶: تست Supabase ── -->
+<div class="card">
+  <h2>۶. تست اتصال Supabase</h2>
+  <div id="supabaseRows"></div>
+  <button style="margin-top:8px;" onclick="testSupabase()">🔄 تست Supabase</button>
+</div>
+
+<!-- ── لاگ ── -->
+<div class="card">
+  <h2>📋 لاگ اجرا</h2>
+  <div style="display:flex;gap:8px;margin-bottom:8px;">
+    <button class="gray" onclick="document.getElementById('log').innerHTML=''">پاک کردن لاگ</button>
+  </div>
+  <div id="log"></div>
+</div>
+
+
+<!-- لود فایل‌های اصلی پروژه -->
+<script src="js/supabase-config.js" onerror="log('❌ supabase-config.js لود نشد','err')"></script>
+<script src="assets/libs/alpine.min.js" defer onerror="log('❌ alpine.min.js لود نشد','err')"></script>
+
+<script>
+// ── Intercept console برای نمایش در صفحه ─────────────────────
+const _origLog   = console.log.bind(console);
+const _origWarn  = console.warn.bind(console);
+const _origError = console.error.bind(console);
+
+function log(msg, type='def') {
+  const el = document.getElementById('log');
+  if (!el) return;
+  const time = new Date().toLocaleTimeString('fa-IR');
+  const cls  = {ok:'log-ok', err:'log-err', warn:'log-warn', info:'log-info', def:'log-def'}[type] || 'log-def';
+  el.innerHTML += `<span class="${cls}">[${time}] ${msg}</span>\n`;
+  el.scrollTop = el.scrollHeight;
+}
+
+console.log   = (...a) => { _origLog(...a);   if(a[0]?.toString().includes('[WC]')) log(a.join(' '), 'info'); };
+console.warn  = (...a) => { _origWarn(...a);  log('⚠️ ' + a.join(' '), 'warn'); };
+console.error = (...a) => { _origError(...a); log('❌ ' + a.join(' '), 'err');  };
+</script>
+
+<!-- لود ماژول‌های Supabase و checklist -->
+<script src="js/supabase-auth.js"   onerror="log('❌ supabase-auth.js لود نشد','err')"></script>
+<script src="js/supabase-data.js"   onerror="log('❌ supabase-data.js لود نشد','err')"></script>
+<script src="js/work-checklist.js"  onerror="log('❌ work-checklist.js لود نشد','err')"></script>
+
+<script>
+// ──────────────────────────────────────────────────────────────
+// helpers UI
+// ──────────────────────────────────────────────────────────────
+function badge(ok, t, f) {
+  return ok
+    ? `<span class="badge badge-green">✅ ${t}</span>`
+    : `<span class="badge badge-red">❌ ${f}</span>`;
+}
+function row(label, valHtml) {
+  return `<div class="row"><span class="label">${label}</span><span class="val">${valHtml}</span></div>`;
+}
+
+// نمایش کاربر جاری
+function refreshUserDisplay() {
+  try {
+    const u = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    document.getElementById('currentUserVal').innerHTML = u
+      ? `<span class="ok">${u.name} | role: <b>${u.role}</b> | id: ${u.id}</span>`
+      : `<span class="warn">تنظیم نشده</span>`;
+  } catch(e) {
+    document.getElementById('currentUserVal').innerHTML = `<span class="err">خطا: ${e.message}</span>`;
+  }
+}
+
+function applyUser() {
+  const v = document.getElementById('roleSelect').value;
+  if (!v) return alert('یک کاربر انتخاب کنید');
+  localStorage.setItem('currentUser', v);
+  log('✅ currentUser تنظیم شد: ' + v, 'ok');
+  refreshUserDisplay();
+  checkPrereqs();
+  checkLocalStorage();
+}
+
+function clearUser() {
+  localStorage.removeItem('currentUser');
+  log('🗑 currentUser پاک شد', 'warn');
+  refreshUserDisplay();
+}
+</script>
+
+<script>
+// ──────────────────────────────────────────────────────────────
+// بخش ۲: پیش‌نیازها
+// ──────────────────────────────────────────────────────────────
+function checkPrereqs() {
+  const user = (() => { try { return JSON.parse(localStorage.getItem('currentUser')||'null'); } catch{return null;} })();
+  const role = user?.role || '—';
+
+  const checks = [
+    ['WorkChecklistModule تعریف شده',     typeof WorkChecklistModule !== 'undefined'],
+    ['getSupabaseClient تعریف شده',        typeof getSupabaseClient === 'function'],
+    ['supabase client قابل دریافت',        (() => { try { return !!(typeof getSupabaseClient==='function' && getSupabaseClient()); } catch{return false;} })()],
+    ['currentUser در localStorage',        !!user],
+    ['currentUser.id وجود دارد',           !!user?.id],
+    ['currentUser.role = employee',        role === 'employee'],
+    ['work-checklist-root در DOM',         !!document.getElementById('work-checklist-root')],
+    ['WorkChecklistModule._initialized',   WorkChecklistModule?._initialized === true],
+    ['WorkChecklistModule._initializing',  WorkChecklistModule?._initializing === true],
+  ];
+
+  const html = checks.map(([label, ok]) =>
+    row(label, badge(ok, 'OK', 'FAIL'))
+  ).join('');
+
+  document.getElementById('prereqRows').innerHTML = html;
+
+  // نمایش مشکل اصلی
+  if (role !== 'employee' && role !== 'manager') {
+    log('⚠️ currentUser.role باید employee یا manager باشد — الان: ' + role, 'warn');
+  }
+  if (!user) {
+    log('❌ currentUser در localStorage تنظیم نشده — چک‌لیست لود نخواهد شد', 'err');
+  }
+}
+</script>
+
+<script>
+// ──────────────────────────────────────────────────────────────
+// بخش ۳: مشکلات شناخته‌شده
+// ──────────────────────────────────────────────────────────────
+function showKnownIssues() {
+  const issues = [
+    {
+      title: '🔴 مشکل اصلی: x-effect فقط برای employee فعال است',
+      detail: 'در index.html خط ۵۲۷ شرط داره: <code>currentUser.role === \'employee\'</code>. اگه role کاربر دقیقاً "employee" نباشه (مثلاً "Employee" با حرف بزرگ یا فاصله)، x-effect هرگز اجرا نمی‌شود و <code>initWorkChecklist()</code> صدا زده نمی‌شه.',
+      severity: 'err'
+    },
+    {
+      title: '🟡 مشکل دوم: مدیر از $watch استفاده می‌کند، کارمند از x-effect',
+      detail: 'برای مدیر: در app.js تابع <code>$watch(\'currentPage\')</code> وقتی صفحه tasks می‌شه <code>WorkChecklistModule.init()</code> رو صدا می‌زنه. برای کارمند: از <code>x-effect</code> در HTML استفاده می‌شه که به <code>initWorkChecklist()</code> متصله. اگر Alpine.js هنوز لود نشده باشد x-effect اجرا نمی‌شه.',
+      severity: 'warn'
+    },
+    {
+      title: '🟡 مشکل سوم: debounce 2 ثانیه در initWorkChecklist',
+      detail: 'تابع <code>initWorkChecklist()</code> اگه در ۲ ثانیه اخیر صدا زده شده باشه، skip می‌کنه. اگه Alpine x-effect چند بار سریع fire بزنه، فراخوانی‌های بعدی نادیده گرفته می‌شن.',
+      severity: 'warn'
+    },
+    {
+      title: '🟡 مشکل چهارم: work-checklist-root در حالت x-show پنهان است',
+      detail: 'Alpine.js از <code>display:none</code> برای x-show استفاده می‌کند. وقتی صفحه workChecklist نیست، <code>document.getElementById(\'work-checklist-root\')</code> در DOM هست ولی مخفی. این مشکلی ایجاد نمی‌کند ولی باید مطمئن شوید که بعد از x-effect، root واقعاً visible باشد.',
+      severity: 'warn'
+    },
+    {
+      title: '🔵 مشکل پنجم: getCategories با user_id کوئری می‌زند',
+      detail: 'تابع <code>getCategories()</code> از <code>this.currentUser.id</code> برای فیلتر Supabase استفاده می‌کند. اگه user_id در جدول Supabase با <code>currentUser.id</code> مطابقت نداشته باشد، نتیجه خالی برمی‌گردد.',
+      severity: 'info'
+    },
+  ];
+
+  document.getElementById('knownIssues').innerHTML = issues.map(i => `
+    <div class="card" style="background:#0f172a;margin-bottom:8px;">
+      <div class="${i.severity === 'err' ? 'err' : i.severity === 'warn' ? 'warn' : 'info'}" style="font-weight:bold;margin-bottom:4px;">${i.title}</div>
+      <div style="font-size:.82rem;color:#94a3b8;line-height:1.7;">${i.detail}</div>
+    </div>
+  `).join('');
+}
+</script>
+
+<script>
+// ──────────────────────────────────────────────────────────────
+// بخش ۴: تست مستقیم
+// ──────────────────────────────────────────────────────────────
+async function testInit() {
+  const user = (() => { try { return JSON.parse(localStorage.getItem('currentUser')||'null'); } catch{return null;} })();
+  if (!user) { log('❌ ابتدا currentUser رو تنظیم کن (بخش ۱)', 'err'); return; }
+  if (typeof WorkChecklistModule === 'undefined') { log('❌ WorkChecklistModule لود نشده', 'err'); return; }
+  log(`▶ WorkChecklistModule.init() با user: ${user.id} | role: ${user.role}`, 'info');
+  WorkChecklistModule._initialized  = false;
+  WorkChecklistModule._initializing = false;
+  try {
+    await WorkChecklistModule.init(user);
+    log('✅ init() تمام شد', 'ok');
+  } catch(e) {
+    log('❌ init() خطا: ' + e.message, 'err');
+  }
+  checkPrereqs();
+}
+
+async function testRender() {
+  if (typeof WorkChecklistModule === 'undefined') { log('❌ WorkChecklistModule لود نشده', 'err'); return; }
+  if (!WorkChecklistModule.currentUser) {
+    const user = (() => { try { return JSON.parse(localStorage.getItem('currentUser')||'null'); } catch{return null;} })();
+    WorkChecklistModule.currentUser = user;
+  }
+  log('▶ WorkChecklistModule.render()...', 'info');
+  try {
+    await WorkChecklistModule.render();
+    log('✅ render() تمام شد', 'ok');
+  } catch(e) {
+    log('❌ render() خطا: ' + e.message, 'err');
+  }
+}
+
+async function testGetCategories() {
+  if (typeof WorkChecklistModule === 'undefined') { log('❌ WorkChecklistModule لود نشده', 'err'); return; }
+  const user = (() => { try { return JSON.parse(localStorage.getItem('currentUser')||'null'); } catch{return null;} })();
+  if (!user) { log('❌ ابتدا currentUser رو تنظیم کن', 'err'); return; }
+  WorkChecklistModule.currentUser = user;
+  log(`▶ getCategories() برای user: ${user.id}...`, 'info');
+  try {
+    const cats = await WorkChecklistModule.getCategories();
+    if (!cats || cats.length === 0) {
+      log('⚠️ هیچ دسته‌بندی پیدا نشد — localStorage و Supabase هر دو خالی هستند', 'warn');
+    } else {
+      log(`✅ ${cats.length} دسته‌بندی پیدا شد: ${cats.map(c=>c.name).join(', ')}`, 'ok');
+    }
+  } catch(e) {
+    log('❌ getCategories() خطا: ' + e.message, 'err');
+  }
+}
+
+function clearWCData() {
+  const user = (() => { try { return JSON.parse(localStorage.getItem('currentUser')||'null'); } catch{return null;} })();
+  const id = user?.id || '';
+  ['wc_categories_', 'wc_items_', 'wc_tasks_'].forEach(k => {
+    localStorage.removeItem(k + id);
+    localStorage.removeItem(k + 'mgr001');
+    localStorage.removeItem(k + 'emp001');
+    localStorage.removeItem(k + 'emp002');
+  });
+  log('🗑 داده‌های WC از localStorage پاک شد', 'warn');
+  checkLocalStorage();
+}
+</script>
+
+<script>
+// ──────────────────────────────────────────────────────────────
+// بخش ۵: localStorage
+// ──────────────────────────────────────────────────────────────
+function checkLocalStorage() {
+  const user = (() => { try { return JSON.parse(localStorage.getItem('currentUser')||'null'); } catch{return null;} })();
+  const id = user?.id || '??';
+  const keys = [
+    'currentUser',
+    'wc_categories_' + id,
+    'wc_items_'      + id,
+    'wc_tasks_'      + id,
+    'wc_categories_mgr001',
+    'wc_items_mgr001',
+    'wc_tasks_mgr001',
+  ];
+  const html = keys.map(k => {
+    const raw = localStorage.getItem(k);
+    let val, count = '';
+    if (raw === null) {
+      val = `<span class="warn">موجود نیست</span>`;
+    } else {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) count = ` (${parsed.length} رکورد)`;
+        val = `<span class="ok">✅ موجود${count}</span>`;
+      } catch {
+        val = `<span class="err">⚠️ JSON نامعتبر</span>`;
+      }
+    }
+    return row(k, val);
+  }).join('');
+  document.getElementById('localStorageRows').innerHTML = html;
+}
+</script>
+
+<script>
+// ──────────────────────────────────────────────────────────────
+// بخش ۶: Supabase
+// ──────────────────────────────────────────────────────────────
+async function testSupabase() {
+  const el = document.getElementById('supabaseRows');
+  el.innerHTML = '<span class="info">در حال تست...</span>';
+  const results = [];
+
+  // ۱. SDK
+  const hasSdk = typeof window.supabase !== 'undefined';
+  results.push(row('Supabase SDK (window.supabase)', badge(hasSdk, 'لود شده', 'لود نشده')));
+
+  // ۲. getSupabaseClient
+  const hasFn = typeof getSupabaseClient === 'function';
+  results.push(row('getSupabaseClient() تعریف شده', badge(hasFn, 'OK', 'FAIL')));
+
+  // ۳. client instance
+  let client = null;
+  try { client = hasFn ? getSupabaseClient() : null; } catch(e) {}
+  results.push(row('getSupabaseClient() برمی‌گرداند', badge(!!client, 'client دریافت شد', 'null برگشت')));
+
+  if (!client) {
+    el.innerHTML = results.join('') + `<div class="err" style="margin-top:8px;padding:8px;">❌ Supabase client در دسترس نیست — تست‌های بعدی ممکن نیست</div>`;
+    log('❌ Supabase client null است — ادامه تست Supabase ممکن نیست', 'err');
+    return;
+  }
+
+  // ۴. کوئری checklist_categories
+  const user = (() => { try { return JSON.parse(localStorage.getItem('currentUser')||'null'); } catch{return null;} })();
+  if (user && user.id) {
+    try {
+      log(`▶ کوئری checklist_categories برای user_id: ${user.id}`, 'info');
+      const t0 = Date.now();
+      const { data, error } = await Promise.race([
+        client.from('checklist_categories').select('*').eq('user_id', user.id),
+        new Promise(r => setTimeout(() => r({ data: null, error: { message: 'TIMEOUT 5s' } }), 5000))
+      ]);
+      const ms = Date.now() - t0;
+      if (error) {
+        results.push(row(`checklist_categories (${ms}ms)`, `<span class="err">❌ ${error.message}</span>`));
+        log(`❌ checklist_categories خطا: ${error.message}`, 'err');
+      } else {
+        results.push(row(`checklist_categories (${ms}ms)`, `<span class="ok">✅ ${data?.length ?? 0} رکورد</span>`));
+        log(`✅ checklist_categories: ${data?.length ?? 0} رکورد در ${ms}ms`, 'ok');
+        if (data?.length === 0) {
+          log(`⚠️ هیچ دسته‌بندی برای user_id="${user.id}" در Supabase نیست`, 'warn');
+        }
+      }
+    } catch(e) {
+      results.push(row('checklist_categories', `<span class="err">❌ exception: ${e.message}</span>`));
+    }
+
+    // ۵. بررسی RLS
+    try {
+      log('▶ بررسی RLS — کوئری بدون فیلتر user_id...', 'info');
+      const { data: allData, error: allErr } = await Promise.race([
+        client.from('checklist_categories').select('id, user_id').limit(5),
+        new Promise(r => setTimeout(() => r({ data: null, error: { message: 'TIMEOUT' } }), 5000))
+      ]);
+      if (!allErr && allData) {
+        const uniqueUsers = [...new Set(allData.map(r => r.user_id))];
+        results.push(row('RLS / user_idهای موجود در جدول', `<span class="info">${uniqueUsers.join(', ') || '(خالی)'}</span>`));
+        if (allData.length > 0 && !allData.find(r => r.user_id === user.id)) {
+          log(`⚠️ user_id "${user.id}" در جدول وجود ندارد — مقادیر موجود: ${uniqueUsers.join(', ')}`, 'warn');
+        }
+      }
+    } catch(e) {}
+  } else {
+    results.push(row('تست با user_id', '<span class="warn">currentUser تنظیم نشده</span>'));
+  }
+
+  el.innerHTML = results.join('');
+}
+</script>
