@@ -515,7 +515,7 @@
             <div x-show="currentPage === 'personalChat'" x-html="getPersonalChatContent()"></div>
 
             <!-- Personal Notes Page - برای همه نقش‌ها -->
-            <div x-show="currentPage === 'personalNotes'" x-html="getPersonalNotesContent()"></div>
+            <div x-show="currentPage === 'personalNotes'" id="personal-notes-root"></div>
 
             <!-- Management Chat Page (Manager and employees) -->
             <div x-show="currentPage === 'managementChat' && (currentUser.role === 'manager' || currentUser.role === 'employee')" x-html="getManagementChatContent()"></div>

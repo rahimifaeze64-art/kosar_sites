@@ -114,6 +114,28 @@ function appController() {
             // Alpine x-show نیاز به یک tick دارد
             this.$nextTick(() => doInit());
           }
+          // یادداشت شخصی — همه نقش‌ها
+          if (newPage === 'personalNotes') {
+              this.$nextTick(() => {
+                  const doInitNotes = () => {
+                      const root = document.getElementById('personal-notes-root');
+                      if (root && typeof PersonalNotesModule !== 'undefined') {
+                          // اگر اولین بار است → inject + init کامل
+                          if (!root.querySelector('#pnRoot')) {
+                              root.innerHTML = PersonalNotesModule.getPersonalNotesContent();
+                              setTimeout(() => PersonalNotesModule.init(), 80);
+                          }
+                          // اگر قبلاً لود شده → فقط re-render (داده‌ها حفظ می‌شوند)
+                          else {
+                              PersonalNotesModule.render();
+                          }
+                      } else {
+                          setTimeout(doInitNotes, 200);
+                      }
+                  };
+                  doInitNotes();
+              });
+          }
           // چک‌لیست مدیر — بعد از رندر صفحه tasks
           if (newPage === 'tasks' && this.currentUser.role === 'manager') {
               this.$nextTick(() => {

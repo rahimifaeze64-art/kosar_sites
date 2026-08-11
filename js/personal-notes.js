@@ -200,17 +200,24 @@ const PersonalNotesModule = {
 
 
     // ─── HTML اصلی صفحه ──────────────────────────────────────
+    // این تابع فقط یکبار (اولین بار) container را می‌سازد
     getPersonalNotesContent() {
-        this.loadNotes();
-        this.loadCategories();
-        setTimeout(() => this.init(), 80);
-        return `<div id="pnRoot" style="font-family:'Vazirmatn',sans-serif; direction:rtl; min-height:80vh;"></div>`;
+        // فقط container را برگردان — init را app.js صدا می‌زند
+        return `<div id="pnRoot" style="font-family:'Vazirmatn',sans-serif; direction:rtl; min-height:80vh;">
+            <div style="text-align:center;padding:60px;color:#94a3b8;">
+                <i class="fas fa-spinner fa-spin" style="font-size:2rem;"></i>
+            </div>
+        </div>`;
     },
 
+    // فراخوانی اول — لود داده و رندر
     init() {
+        this.loadNotes();
+        this.loadCategories();
         this.render();
     },
 
+    // re-render بدون reset داده‌ها
     render() {
         const root = document.getElementById('pnRoot');
         if (!root) return;
