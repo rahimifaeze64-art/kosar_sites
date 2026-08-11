@@ -4,9 +4,15 @@ const WorkChecklistModule = {
     // ─── State ───────────────────────────────────────────────────
     supabase: null,
     currentUser: null,
+    _initializing: false,   // جلوگیری از double-init
 
     // ─── Init ─────────────────────────────────────────────────────
     async init(user) {
+        if (this._initializing) {
+            console.warn('⚠️ [WC] init already in progress, skip');
+            return;
+        }
+        this._initializing = true;
         console.log('🔍 [WC] WorkChecklistModule.init called, user:', user?.id, user?.role);
         this.currentUser = user;
         // از همان getSupabaseClient که بقیه سیستم استفاده می‌کند
@@ -27,11 +33,13 @@ const WorkChecklistModule = {
         }
         if (!this.currentUser || !this.currentUser.id) {
             console.error('❌ [WC] WorkChecklistModule.init: کاربر معتبر نیست');
+            this._initializing = false;
             return;
         }
         console.log('✅ [WC] calling render...');
         await this.render();
         console.log('✅ [WC] render done');
+        this._initializing = false;
     },
 
     // ─── Supabase helpers ─────────────────────────────────────────
@@ -43,14 +51,17 @@ const WorkChecklistModule = {
                 .eq('user_id', this.currentUser.id)
                 .order('created_at', { ascending: true });
             if (error) {
-                console.error('❌ خطا در دریافت دسته‌بندی‌ها از Supabase:', error.message);
+                console.error('❌ [WC] getCategories Supabase error:', error.message, error);
             } else if (data) {
+                console.log('✅ [WC] getCategories from Supabase:', data.length, 'items');
                 // cache در localStorage به‌روز کن
                 this._localSet('wc_categories_' + this.currentUser.id, data);
                 return data;
             }
         }
-        return this._localGet('wc_categories_' + this.currentUser.id) || [];
+        const local = this._localGet('wc_categories_' + this.currentUser.id) || [];
+        console.log('🔍 [WC] getCategories from localStorage:', local.length, 'items');
+        return local;
     },
 
     async saveCategory(cat) {
@@ -309,6 +320,7 @@ const WorkChecklistModule = {
         console.log('🔍 [WC] wc-categories-container:', container ? 'FOUND' : 'NOT FOUND');
         if (!container) return;
         const cats = await this.getCategories();
+        console.log('🔍 [WC] categories count:', cats?.length, cats);
         if (!cats.length) {
             container.innerHTML = `
                 <div class="col-span-full text-center py-16 bg-white/5 rounded-2xl border border-white/10">

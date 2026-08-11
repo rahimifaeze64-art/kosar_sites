@@ -444,3 +444,98 @@ body[data-theme="olive"] .stat-card,
         background: var(--olive-background);
     }
 }
+
+
+/* ========== Work Checklist — سازگار با تم روشن ========== */
+#work-checklist-root,
+#work-checklist-root * {
+    color: inherit;
+}
+
+#work-checklist-root {
+    color: #1a1a1a;
+}
+
+/* عنوان صفحه */
+#work-checklist-root h2.text-white,
+#work-checklist-root h3.text-white,
+#work-checklist-root span.text-white,
+#work-checklist-root .text-white {
+    color: #1a1a1a !important;
+}
+
+/* کارت دسته‌بندی */
+#work-checklist-root [id^="wc-cat-"] {
+    background: #ffffff !important;
+    border-color: #d1d5db !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+/* کارت آیتم */
+#work-checklist-root [id^="wc-item-"] {
+    background: #f9fafb !important;
+    border-color: #e5e7eb !important;
+}
+
+#work-checklist-root [id^="wc-item-"] .border-b {
+    border-color: #e5e7eb !important;
+}
+
+/* panel وظایف */
+#work-checklist-root [id^="wc-tasks-panel-"] {
+    background: #f9fafb;
+}
+
+/* input وظیفه جدید */
+#work-checklist-root input[id^="wc-new-task-input-"] {
+    background: #f3f4f6 !important;
+    color: #1a1a1a !important;
+    border-color: #d1d5db !important;
+}
+#work-checklist-root input[id^="wc-new-task-input-"]::placeholder {
+    color: #9ca3af !important;
+}
+
+/* ردیف وظایف */
+#work-checklist-root [id^="wc-task-row-"] {
+    color: #1a1a1a !important;
+}
+#work-checklist-root [id^="wc-task-row-"]:hover {
+    background: #f3f4f6 !important;
+}
+
+/* متن وظیفه */
+#work-checklist-root [id^="wc-task-text-"] {
+    color: #1a1a1a !important;
+}
+#work-checklist-root [id^="wc-task-text-"].line-through {
+    color: #9ca3af !important;
+}
+
+/* دکمه‌های اکشن */
+#work-checklist-root button.bg-white\/10,
+#work-checklist-root button.hover\:bg-white\/20 {
+    background: #f3f4f6 !important;
+    color: #374151 !important;
+}
+#work-checklist-root button.bg-white\/10:hover {
+    background: #e5e7eb !important;
+}
+
+/* badge شمارنده */
+#work-checklist-root [id^="wc-item-count-"] {
+    background: rgba(143,191,63,0.15) !important;
+    color: #4a7c1f !important;
+}
+
+/* وضعیت خالی */
+#work-checklist-root .col-span-full p,
+#work-checklist-root p.italic {
+    color: #6b7280 !important;
+}
+
+/* آیکون‌های ویرایش/حذف - فقط موقع hover دیده بشن */
+#work-checklist-root .text-black-300,
+#work-checklist-root .text-black-400 {
+    color: #6b7280 !important;
+}
