@@ -252,28 +252,28 @@ const PersonalNotesModule = {
 
         return `
         <div class="pn-stats-bar">
-          <div class="pn-stat-card" style="background:linear-gradient(135deg,#f59e0b,#d97706);">
+          <div class="pn-stat-card" style="background:linear-gradient(135deg, #4ade80, #22c55e);">
             <i class="fas fa-thumbtack" style="font-size:1.5rem;opacity:.8;"></i>
             <div>
               <div style="font-size:1.8rem;font-weight:700;">${total}</div>
               <div style="font-size:.75rem;opacity:.85;">کل یادداشت‌ها</div>
             </div>
           </div>
-          <div class="pn-stat-card" style="background:linear-gradient(135deg,#f59e0b,#d97706);">
+          <div class="pn-stat-card" style="background:linear-gradient(135deg, #4ade80, #22c55e);">
             <i class="fas fa-thumbtack" style="font-size:1.5rem;opacity:.8;"></i>
             <div>
               <div style="font-size:1.8rem;font-weight:700;">${pinCount}</div>
               <div style="font-size:.75rem;opacity:.85;">پین‌شده</div>
             </div>
           </div>
-          <div class="pn-stat-card" style="background:linear-gradient(135deg,#f59e0b,#d97706);">
+          <div class="pn-stat-card" style="background:linear-gradient(135deg, #4ade80, #22c55e);">
             <i class="fas fa-thumbtack" style="font-size:1.5rem;opacity:.8;"></i>
             <div>
               <div style="font-size:1.8rem;font-weight:700;">${this.state.categories.length}</div>
               <div style="font-size:.75rem;opacity:.85;">دسته‌بندی</div>
             </div>
           </div>
-          <div class="pn-stat-card" style="background:linear-gradient(135deg,#f59e0b,#d97706);">
+          <div class="pn-stat-card" style="background:linear-gradient(135deg, #4ade80, #22c55e);">
             <i class="fas fa-thumbtack" style="font-size:1.5rem;opacity:.8;"></i>
             <div>
               <div style="font-size:1.1rem;font-weight:700;">${topCat ? topCat[0] : '—'}</div>
