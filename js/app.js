@@ -146,20 +146,9 @@ function appController() {
                   }, 150);
               });
           }
-          // چک‌لیست کارمند — x-if خودش x-init داره، $watch فقط به عنوان fallback
+          // چک‌لیست کارمند — x-effect در HTML هندل می‌کنه
           if (newPage === 'workChecklist' && this.currentUser.role === 'employee') {
               console.log('🔍 [WC] $watch fired → workChecklist, user:', this.currentUser?.id);
-              // x-init در template این رو هندل می‌کنه؛ اینجا فقط اگه x-init اجرا نشد fallback
-              this.$nextTick(() => {
-                  setTimeout(() => {
-                      const root = document.getElementById('work-checklist-root');
-                      console.log('🔍 [WC] $watch fallback check — root:', root ? 'FOUND' : 'NOT FOUND', '| initializing:', WorkChecklistModule?._initializing, '| wrapper:', !!root?.querySelector('#wc-wrapper'));
-                      if (root && !WorkChecklistModule._initializing && !root.querySelector('#wc-wrapper')) {
-                          console.log('✅ [WC] $watch fallback: calling initWorkChecklist');
-                          this.initWorkChecklist();
-                      }
-                  }, 400);
-              });
           }
         });
 
@@ -289,21 +278,30 @@ function appController() {
       }
     },
 
-    // Init work checklist for employee (called from x-init in template)
+    // Init work checklist for employee — فقط یک بار اجرا میشه
     initWorkChecklist() {
+        // اگه قبلاً initialized شده → فقط refresh
+        if (typeof WorkChecklistModule !== 'undefined' && WorkChecklistModule._initialized) {
+            console.log('🔍 [WC] already initialized → renderCategories');
+            WorkChecklistModule.renderCategories && WorkChecklistModule.renderCategories();
+            return;
+        }
+        // اگه در حال init هست → skip
+        if (typeof WorkChecklistModule !== 'undefined' && WorkChecklistModule._initializing) {
+            console.log('🔍 [WC] init in progress, skip');
+            return;
+        }
         const user = this.currentUser;
         console.log('🔍 [WC] initWorkChecklist called, user:', user?.id, 'role:', user?.role);
         const attempt = (n) => {
             console.log(`🔍 [WC] attempt #${n} — WorkChecklistModule defined:`, typeof WorkChecklistModule !== 'undefined');
             if (typeof WorkChecklistModule === 'undefined') {
-                console.warn(`⚠️ [WC] WorkChecklistModule undefined — retry #${n}`);
                 if (n < 15) setTimeout(() => attempt(n + 1), 150);
                 return;
             }
             const root = document.getElementById('work-checklist-root');
             console.log('🔍 [WC] root element:', root ? 'FOUND' : 'NOT FOUND');
             if (!root) {
-                console.warn(`⚠️ [WC] #work-checklist-root not found — retry #${n}`);
                 if (n < 15) setTimeout(() => attempt(n + 1), 150);
                 return;
             }

@@ -5,6 +5,7 @@ const WorkChecklistModule = {
     supabase: null,
     currentUser: null,
     _initializing: false,   // جلوگیری از double-init
+    _initialized: false,    // آیا قبلاً init شده
 
     // ─── Init ─────────────────────────────────────────────────────
     async init(user) {
@@ -40,6 +41,7 @@ const WorkChecklistModule = {
         await this.render();
         console.log('✅ [WC] render done');
         this._initializing = false;
+        this._initialized = true;
     },
 
     // ─── Supabase helpers ─────────────────────────────────────────
@@ -108,19 +110,31 @@ const WorkChecklistModule = {
     },
 
     async getItems(categoryId) {
+        console.log('🔍 [WC] getItems:', categoryId);
         if (this.supabase) {
-            const { data, error } = await this.supabase
-                .from('checklist_items')
-                .select('*')
-                .eq('category_id', categoryId)
-                .order('created_at', { ascending: true });
-            if (error) {
-                console.error('❌ خطا در دریافت آیتم‌ها از Supabase:', error.message);
-            } else if (data) {
-                return data;
+            try {
+                const queryPromise = this.supabase
+                    .from('checklist_items')
+                    .select('*')
+                    .eq('category_id', categoryId)
+                    .order('created_at', { ascending: true });
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('TIMEOUT after 5s')), 5000)
+                );
+                const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
+                console.log('🔍 [WC] getItems Supabase result — data:', data?.length, '| error:', error?.message);
+                if (error) {
+                    console.error('❌ [WC] getItems error:', error.message);
+                } else if (data) {
+                    return data;
+                }
+            } catch(e) {
+                console.error('❌ [WC] getItems exception:', e.message);
             }
         }
-        return (this._localGet('wc_items_' + this.currentUser.id) || []).filter(i => i.category_id === categoryId);
+        const local = (this._localGet('wc_items_' + this.currentUser.id) || []).filter(i => i.category_id === categoryId);
+        console.log('🔍 [WC] getItems from localStorage:', local.length);
+        return local;
     },
 
     async saveItem(item) {
@@ -330,14 +344,35 @@ const WorkChecklistModule = {
                 </div>`;
             return;
         }
-        container.innerHTML = cats.map(cat => this._buildCategoryCard(cat)).join('');
-        // render items inside each category
+
+        // همه آیتم‌ها رو یکجا بگیر قبل از هر DOM write
+        console.log('🔍 [WC] fetching all items before DOM write...');
+        const allItemsMap = {};
         for (const cat of cats) {
-            await this.renderItems(cat.id);
+            try {
+                const items = await this.getItems(cat.id);
+                allItemsMap[cat.id] = items || [];
+                console.log('🔍 [WC] items for cat', cat.id, ':', items?.length);
+            } catch(e) {
+                console.error('❌ [WC] getItems error for cat', cat.id, ':', e.message);
+                allItemsMap[cat.id] = [];
+            }
         }
+
+        // حالا یکجا DOM رو بنویس
+        console.log('🔍 [WC] writing DOM...');
+        container.innerHTML = cats.map(cat => {
+            const items = allItemsMap[cat.id] || [];
+            return this._buildCategoryCardWithItems(cat, items);
+        }).join('');
+        console.log('✅ [WC] renderCategories done — DOM written');
     },
 
     _buildCategoryCard(cat) {
+        return this._buildCategoryCardWithItems(cat, []);
+    },
+
+    _buildCategoryCardWithItems(cat, items) {
         const colors = {
             lime: 'border-lime-500/40 bg-lime-900/20',
             blue:   'border-blue-500/40 bg-blue-900/20',
@@ -376,20 +411,30 @@ const WorkChecklistModule = {
             </div>
             ${cat.description ? `<p class="text-black-400/70 text-sm">${this._esc(cat.description)}</p>` : ''}
             <div id="wc-items-${cat.id}" class="space-y-3 min-h-[40px]">
-                <i class="fas fa-spinner fa-spin text-lime-400 text-sm block text-center py-2"></i>
+                ${items.length === 0
+                    ? `<p class="text-gray-400/70 text-sm text-center py-2 italic">آیتمی وجود ندارد — یک آیتم اضافه کنید</p>`
+                    : items.map(item => this._buildItemCard(item)).join('')
+                }
             </div>
         </div>`;
     },
 
     async renderItems(categoryId) {
         const container = document.getElementById('wc-items-' + categoryId);
+        console.log('🔍 [WC] renderItems:', categoryId, '| container:', container ? 'FOUND' : 'NOT FOUND');
         if (!container) return;
-        const items = await this.getItems(categoryId);
-        if (!items.length) {
-            container.innerHTML = `<p class="text-black-300/50 text-sm text-center py-2 italic">آیتمی وجود ندارد — یک آیتم اضافه کنید</p>`;
-            return;
+        try {
+            const items = await this.getItems(categoryId);
+            console.log('🔍 [WC] renderItems got items:', items?.length, items);
+            if (!items.length) {
+                container.innerHTML = `<p class="text-black-300/50 text-sm text-center py-2 italic">آیتمی وجود ندارد — یک آیتم اضافه کنید</p>`;
+                return;
+            }
+            container.innerHTML = items.map(item => this._buildItemCard(item)).join('');
+        } catch(e) {
+            console.error('❌ [WC] renderItems error:', e);
+            container.innerHTML = `<p class="text-red-400 text-xs p-2">خطا: ${e.message}</p>`;
         }
-        container.innerHTML = items.map(item => this._buildItemCard(item)).join('');
     },
 
     _buildItemCard(item) {
