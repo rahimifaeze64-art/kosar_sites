@@ -542,7 +542,7 @@ const PersonalNotesModule = {
 
             <!-- برچسب‌ها -->
             <div style="flex:2;min-width:180px;">
-              <label style="font-size:.8rem;color:#64748b;display:block;margin-bottom:4px;">برچسب‌ها <span style="color:#94a3b8;">(با کاما جدا کنید)</span></label>
+              <label style="font-size:.8rem;color:#64748b;display:block;margin-bottom:4px;">برچسب‌ها <span style="color:#94a3b8;"></span></label>
               <input id="pnFormTags" type="text" placeholder="مثال: مهم، پروژه، ایده"
                      value="${note && note.tags ? note.tags.join(', ') : ''}"
                      style="width:100%;padding:9px 10px;border:1.5px solid #e2e8f0;border-radius:8px;
