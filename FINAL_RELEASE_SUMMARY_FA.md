@@ -51,7 +51,7 @@
 
 تعریف شده و آماده:
 1. **taghizadeh / taghizadeh** (مدیر)
-2. **sakhaei / Z@z12345** (کارمند)
+2. **fazeli / Z@z12345** (کارمند)
 3. **farzad / F@f12345** (کارمند)
 
 ### 3️⃣ فایل‌های Production ✅

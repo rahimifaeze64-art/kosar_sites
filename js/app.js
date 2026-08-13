@@ -292,6 +292,11 @@ function appController() {
         // Load dashboard content
         await this.loadDashboardContent();
 
+        // اطلاع به CityWorldUI که کاربر مشخص شد
+        window.dispatchEvent(new CustomEvent('appUserReady', {
+          detail: { role: this.currentUser.role, name: this.currentUser.name }
+        }));
+
         debugLogger("Application initialized successfully", "success", {
           currentUser: this.currentUser,
           currentPage: this.currentPage,
@@ -413,10 +418,10 @@ function appController() {
           },
           {
             id: "emp004",
-            name: "زینب ناشناخته م",
-            username: "sakhaei",
+            name: "سید محمد فاضلی",
+            username: "fazeli",
             role: "employee",
-            email: "sakhaei@edu-system.com",
+            email: "fazeli@edu-system.com",
           },
         ];
 

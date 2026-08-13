@@ -47,7 +47,7 @@ function appData() {
             },
             {
                 id: 3,
-                studentName: 'علی زینب ناشناخته',
+                studentName: 'علی زینب فاضلی',
                 studentId: 'ST003',
                 university: 'دانشگاه امیرکبیر',
                 field: 'مهندسی مکانیک',

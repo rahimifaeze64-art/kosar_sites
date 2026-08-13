@@ -79,7 +79,7 @@ const SupabaseConnection = {
 
 // ── ترجمه خطاهای Supabase به فارسی ─────────────────────────
 function translateSupabaseError(error) {
-    if (!error) return 'خطای ناشناخته';
+    if (!error) return 'خطای فاضلی';
     const msg = error.message || error.toString();
 
     const map = {

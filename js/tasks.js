@@ -14,9 +14,23 @@ const TasksModule = {
     // Voice task attachment state
     selectedVoiceTaskFile: null,
     
+    // محاسبه آمار کلی همه کارمندان
+    getAllEmployeesStats() {
+        const employees = this.getemployees();
+        const counts = { pending: 0, in_progress: 0, completed: 0, rejected: 0, approved: 0, delayed: 0 };
+        employees.forEach(emp => {
+            const tasks = this.getemployeeTasks(emp.id);
+            tasks.forEach(t => {
+                if (counts[t.status] !== undefined) counts[t.status]++;
+            });
+        });
+        return counts;
+    },
+
     // Get tasks page content
     getTasksContent() {
         const employees = this.getemployees();
+        const stats = this.getAllEmployeesStats();
         
         return `
             <div class="space-y-6">
@@ -32,6 +46,34 @@ const TasksModule = {
                             <i class="fas fa-plus ml-2"></i>
                             وظیفه جدید
                         </button>
+                    </div>
+                </div>
+
+                <!-- ═══ باکس‌های آمار کلی همه کارمندان ═══ -->
+                <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                    <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 text-center">
+                        <p class="text-2xl font-bold text-yellow-400">${stats.pending}</p>
+                        <p class="text-xs text-gray-400 mt-0.5">در انتظار</p>
+                    </div>
+                    <div class="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 text-center">
+                        <p class="text-2xl font-bold text-blue-400">${stats.in_progress}</p>
+                        <p class="text-xs text-gray-400 mt-0.5">در حال انجام</p>
+                    </div>
+                    <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 text-center">
+                        <p class="text-2xl font-bold text-emerald-400">${stats.completed}</p>
+                        <p class="text-xs text-gray-400 mt-0.5">تکمیل شده</p>
+                    </div>
+                    <div class="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-center">
+                        <p class="text-2xl font-bold text-red-400">${stats.rejected}</p>
+                        <p class="text-xs text-gray-400 mt-0.5">رد شده</p>
+                    </div>
+                    <div class="bg-lime-500/10 border border-lime-500/30 rounded-xl p-3 text-center">
+                        <p class="text-2xl font-bold text-lime-400">${stats.approved}</p>
+                        <p class="text-xs text-gray-400 mt-0.5">تأیید نهایی</p>
+                    </div>
+                    <div class="bg-orange-500/10 border border-orange-500/30 rounded-xl p-3 text-center">
+                        <p class="text-2xl font-bold text-orange-400">${stats.delayed}</p>
+                        <p class="text-xs text-gray-400 mt-0.5">به تأخیر افتاده</p>
                     </div>
                 </div>
                 
@@ -123,7 +165,7 @@ const TasksModule = {
                 { id: 'emp001', name: 'سارا سادات حسینی', username: 'sareh',   email: 'sareh@alkawsar.com',   role: 'employee' },
                 { id: 'emp002', name: 'زینب بتول محمدی',  username: 'zainab',  email: 'zainab@alkawsar.com',  role: 'employee' },
                 { id: 'emp003', name: 'علیرضا غلامی فرزاد', username: 'farzad', email: 'farzad@alkawsar.com', role: 'employee' },
-                { id: 'emp004', name: 'زینب ناشناخته',       username: 'sakhaei', email: 'sakhaei@alkawsar.com', role: 'employee' },
+                { id: 'emp004', name: 'سید محمد فاضلی',       username: 'fazeli', email: 'fazeli@alkawsar.com', role: 'employee' },
                 { id: 'emp005', name: 'مهدی خدایاری',     username: 'mahdi',   email: 'mahdi@alkawsar.com',   role: 'employee' }
             ];
 
@@ -233,44 +275,6 @@ const TasksModule = {
         const tasks = this.getemployeeTasks(this.selectedemployee);
         const employee = this.getemployees().find(c => c.id === this.selectedemployee);
 
-        // ── آمار وضعیت‌ها ──
-        const counts = {
-            pending:     tasks.filter(t => t.status === 'pending').length,
-            in_progress: tasks.filter(t => t.status === 'in_progress').length,
-            completed:   tasks.filter(t => t.status === 'completed').length,
-            rejected:    tasks.filter(t => t.status === 'rejected').length,
-            approved:    tasks.filter(t => t.status === 'approved').length,
-            delayed:     tasks.filter(t => t.status === 'delayed').length,
-        };
-
-        const statBoxes = `
-            <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">
-                <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 text-center">
-                    <p class="text-2xl font-bold text-yellow-400">${counts.pending}</p>
-                    <p class="text-xs text-gray-400 mt-0.5">در انتظار</p>
-                </div>
-                <div class="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 text-center">
-                    <p class="text-2xl font-bold text-blue-400">${counts.in_progress}</p>
-                    <p class="text-xs text-gray-400 mt-0.5">در حال انجام</p>
-                </div>
-                <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 text-center">
-                    <p class="text-2xl font-bold text-emerald-400">${counts.completed}</p>
-                    <p class="text-xs text-gray-400 mt-0.5">تکمیل شده</p>
-                </div>
-                <div class="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-center">
-                    <p class="text-2xl font-bold text-red-400">${counts.rejected}</p>
-                    <p class="text-xs text-gray-400 mt-0.5">رد شده</p>
-                </div>
-                <div class="bg-lime-500/10 border border-lime-500/30 rounded-xl p-3 text-center">
-                    <p class="text-2xl font-bold text-lime-400">${counts.approved}</p>
-                    <p class="text-xs text-gray-400 mt-0.5">تأیید نهایی</p>
-                </div>
-                <div class="bg-orange-500/10 border border-orange-500/30 rounded-xl p-3 text-center">
-                    <p class="text-2xl font-bold text-orange-400">${counts.delayed}</p>
-                    <p class="text-xs text-gray-400 mt-0.5">به تأخیر افتاده</p>
-                </div>
-            </div>`;
-        
         return `
             <div class="space-y-4">
                 <div class="flex justify-between items-center">
@@ -283,8 +287,6 @@ const TasksModule = {
                         وظیفه جدید
                     </button>
                 </div>
-
-                ${statBoxes}
                 
                 ${tasks.length === 0 ? `
                     <div class="text-center py-8">

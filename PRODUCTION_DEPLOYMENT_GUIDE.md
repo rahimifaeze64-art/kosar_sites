@@ -152,7 +152,7 @@ python create_default_users.py
 خروجی:
 ```
 ✅ Created user: taghizadeh (manager)
-✅ Created user: sakhaei (employee)
+✅ Created user: fazeli (employee)
 ✅ Created user: farzad (employee)
 ```
 
@@ -445,7 +445,7 @@ sudo ufw status
    - رمز عبور: `taghizadeh`
 
 2. **کارمند 1:**
-   - نام کاربری: `sakhaei`
+   - نام کاربری: `fazeli`
    - رمز عبور: `Z@z12345`
 
 3. **کارمند 2:**

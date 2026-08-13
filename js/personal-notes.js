@@ -12,11 +12,6 @@ const PersonalNotesModule = {
     // رنگ‌های پیش‌فرض هر دسته‌بندی
     CATEGORY_COLORS: {
         'عمومی':      { bg: '#3b82f6', light: '#eff6ff', border: '#93c5fd', text: '#1d4ed8' },
-        'کاری':       { bg: '#10b981', light: '#ecfdf5', border: '#6ee7b7', text: '#047857' },
-        'شخصی':       { bg: '#8b5cf6', light: '#f5f3ff', border: '#c4b5fd', text: '#6d28d9' },
-        'ایده':       { bg: '#f59e0b', light: '#fffbeb', border: '#fcd34d', text: '#b45309' },
-        'مهم':        { bg: '#ef4444', light: '#fef2f2', border: '#fca5a5', text: '#b91c1c' },
-        'یادآوری':    { bg: '#06b6d4', light: '#ecfeff', border: '#67e8f9', text: '#0e7490' },
     },
 
     // ─── وضعیت داخلی ─────────────────────────────────────────
@@ -26,7 +21,7 @@ const PersonalNotesModule = {
         activeCategory: 'همه',
         searchQuery: '',
         editingNote: null,      // null = جدید | id = ویرایش
-        sortMode: 'newest',     // newest | oldest | alpha | pinned
+        sortMode: 'oldest',     // newest | oldest | alpha | pinned
         viewMode: 'grid',       // grid | list
         showForm: false,
     },
@@ -255,7 +250,7 @@ const PersonalNotesModule = {
             createdAt: now,
             updatedAt: now,
         };
-        this.state.notes.unshift(note);
+        this.state.notes.push(note);  // push به آخر (صف) به جای unshift (استک)
         this.saveNotes();
         // ذخیره async در Supabase (بدون block کردن UI)
         this.saveNoteToSupabase(note).catch(e => console.error('❌ createNote Supabase خطا:', e));
@@ -383,28 +378,28 @@ const PersonalNotesModule = {
 
         return `
         <div class="pn-stats-bar">
-          <div class="pn-stat-card" style="background:linear-gradient(135deg, #4ade80, #22c55e);">
+          <div class="pn-stat-card" style="background:linear-gradient(135deg, #8be4acff, #8ddfabff);">
             <i class="fas fa-thumbtack" style="font-size:1.5rem;opacity:.8;"></i>
             <div>
               <div style="font-size:1.8rem;font-weight:700;">${total}</div>
               <div style="font-size:.75rem;opacity:.85;">کل یادداشت‌ها</div>
             </div>
           </div>
-          <div class="pn-stat-card" style="background:linear-gradient(135deg, #4ade80, #22c55e);">
+          <div class="pn-stat-card" style="background:linear-gradient(135deg, #8be4acff, #8ddfabff);">
             <i class="fas fa-thumbtack" style="font-size:1.5rem;opacity:.8;"></i>
             <div>
               <div style="font-size:1.8rem;font-weight:700;">${pinCount}</div>
               <div style="font-size:.75rem;opacity:.85;">پین‌شده</div>
             </div>
           </div>
-          <div class="pn-stat-card" style="background:linear-gradient(135deg, #4ade80, #22c55e);">
+          <div class="pn-stat-card" style="background:linear-gradient(135deg, #8be4acff, #8ddfabff);">
             <i class="fas fa-thumbtack" style="font-size:1.5rem;opacity:.8;"></i>
             <div>
               <div style="font-size:1.8rem;font-weight:700;">${this.state.categories.length}</div>
               <div style="font-size:.75rem;opacity:.85;">دسته‌بندی</div>
             </div>
           </div>
-          <div class="pn-stat-card" style="background:linear-gradient(135deg, #4ade80, #22c55e);">
+          <div class="pn-stat-card" style="background:linear-gradient(135deg, #8be4acff, #8ddfabff);">
             <i class="fas fa-thumbtack" style="font-size:1.5rem;opacity:.8;"></i>
             <div>
               <div style="font-size:1.1rem;font-weight:700;">${topCat ? topCat[0] : '—'}</div>

@@ -1,0 +1,385 @@
+/* ═══════════════════════════════════════════
+   city-world.css — استایل صفحه شهر سه‌بعدی
+   ═══════════════════════════════════════════ */
+
+/* ─── کانتینر اصلی ─── */
+#city-world-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: opacity 0.4s ease;
+}
+
+#city-world-overlay.hidden {
+  display: none;
+}
+
+/* ─── کانتینر Three.js ─── */
+#city-canvas-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+#city-canvas-container canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  outline: none;
+  touch-action: none;
+}
+
+/* ─── نوار بالا (HUD) ─── */
+#city-hud-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(180deg, rgba(0,0,0,0.65) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 10;
+  gap: 12px;
+}
+
+#city-hud-top .hud-title {
+  font-family: 'Vazirmatn', Tahoma, sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  pointer-events: none;
+  flex: 1;
+  text-align: center;
+}
+
+/* دکمه بازگشت */
+#city-back-btn {
+  pointer-events: all;
+  background: rgba(30,41,59,0.85);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  font-family: 'Vazirmatn', Tahoma, sans-serif;
+  font-size: 0.85rem;
+  padding: 8px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  backdrop-filter: blur(8px);
+  transition: background 0.2s, transform 0.15s;
+  white-space: nowrap;
+}
+
+#city-back-btn:hover {
+  background: rgba(59,130,246,0.85);
+  transform: scale(1.04);
+}
+
+/* ─── دکمه باز کردن شهر (در sidebar) ─── */
+#city-open-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(16,185,129,0.2));
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  font-family: 'Vazirmatn', Tahoma, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: right;
+  direction: rtl;
+}
+
+#city-open-btn:hover {
+  background: linear-gradient(135deg, rgba(99,102,241,0.5), rgba(16,185,129,0.4));
+  transform: translateX(-3px);
+  box-shadow: 0 4px 20px rgba(99,102,241,0.35);
+}
+
+#city-open-btn .btn-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+#city-open-btn .btn-badge {
+  margin-right: auto;
+  background: rgba(16,185,129,0.3);
+  border: 1px solid rgba(16,185,129,0.4);
+  color: #6ee7b7;
+  font-size: 0.65rem;
+  padding: 2px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* ─── پرامپت ورود به ساختمان ─── */
+#city-enter-prompt {
+  position: absolute;
+  bottom: 160px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(99,102,241,0.5);
+  color: #e2e8f0;
+  font-family: 'Vazirmatn', Tahoma, sans-serif;
+  font-size: 0.95rem;
+  padding: 12px 24px;
+  border-radius: 14px;
+  text-align: center;
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 20;
+}
+
+#city-enter-prompt.visible {
+  opacity: 1;
+}
+
+#city-enter-prompt strong {
+  color: #6ee7b7;
+}
+
+/* ─── توست نوتیف ─── */
+#city-toast {
+  position: absolute;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  background: rgba(15,23,42,0.92);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #f1f5f9;
+  font-family: 'Vazirmatn', Tahoma, sans-serif;
+  font-size: 0.88rem;
+  padding: 10px 22px;
+  border-radius: 12px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 30;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  white-space: nowrap;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+/* ─── Minimap ─── */
+#city-minimap-wrap {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  z-index: 20;
+  background: rgba(15,23,42,0.8);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 8px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+#city-minimap-wrap .map-label {
+  font-family: 'Vazirmatn', Tahoma, sans-serif;
+  font-size: 0.65rem;
+  color: #94a3b8;
+  text-align: center;
+  margin-bottom: 5px;
+}
+
+#city-minimap {
+  display: block;
+  border-radius: 8px;
+}
+
+/* ─── کنترل‌های کیبورد (راهنما) ─── */
+#city-controls-hint {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 20;
+  background: rgba(15,23,42,0.75);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 10px 14px;
+  backdrop-filter: blur(8px);
+}
+
+#city-controls-hint p {
+  font-family: 'Vazirmatn', Tahoma, sans-serif;
+  font-size: 0.7rem;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.8;
+  direction: rtl;
+  text-align: right;
+}
+
+#city-controls-hint .key {
+  display: inline-block;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 5px;
+  padding: 1px 6px;
+  font-size: 0.65rem;
+  color: #e2e8f0;
+  font-family: monospace;
+  margin: 0 2px;
+}
+
+/* ─── Joystick موبایل ─── */
+#city-joystick {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 100px;
+  background: rgba(255,255,255,0.07);
+  border: 2px solid rgba(255,255,255,0.18);
+  border-radius: 50%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 25;
+  touch-action: none;
+  backdrop-filter: blur(4px);
+}
+
+#city-joystick-knob {
+  width: 42px;
+  height: 42px;
+  background: rgba(99,102,241,0.7);
+  border: 2px solid rgba(255,255,255,0.4);
+  border-radius: 50%;
+  transition: transform 0.05s;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+}
+
+/* نمایش joystick روی موبایل */
+@media (max-width: 768px) {
+  #city-joystick {
+    display: flex;
+  }
+
+  #city-controls-hint {
+    display: none;
+  }
+
+  #city-minimap {
+    width: 100px;
+    height: 100px;
+  }
+
+  /* دکمه ورود موبایل */
+  #city-enter-mobile-btn {
+    display: flex !important;
+  }
+}
+
+/* ─── دکمه ورود موبایل ─── */
+#city-enter-mobile-btn {
+  position: absolute;
+  bottom: 28px;
+  right: 20px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: rgba(16,185,129,0.8);
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  font-size: 1.6rem;
+  cursor: pointer;
+  z-index: 25;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  backdrop-filter: blur(6px);
+  transition: transform 0.15s;
+}
+
+#city-enter-mobile-btn:active {
+  transform: scale(0.92);
+}
+
+/* ─── انیمیشن ورود به ساختمان ─── */
+@keyframes cityEnterFlash {
+  0%   { opacity: 0; }
+  30%  { opacity: 0.7; }
+  100% { opacity: 0; }
+}
+
+#city-enter-flash {
+  position: fixed;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 300;
+}
+
+#city-enter-flash.flash {
+  animation: cityEnterFlash 0.6s ease forwards;
+}
+
+/* ─── Loading overlay ─── */
+#city-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #0f172a;
+  z-index: 50;
+  gap: 20px;
+  transition: opacity 0.5s ease;
+}
+
+#city-loading.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#city-loading .loader-dots {
+  display: flex;
+  gap: 10px;
+}
+
+#city-loading .loader-dots span {
+  width: 12px;
+  height: 12px;
+  background: #6366f1;
+  border-radius: 50%;
+  animation: dotBounce 1.2s infinite ease-in-out both;
+}
+
+#city-loading .loader-dots span:nth-child(1) { animation-delay: -0.32s; }
+#city-loading .loader-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes dotBounce {
+  0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+  40%           { transform: scale(1.0); opacity: 1; }
+}
+
+#city-loading p {
+  font-family: 'Vazirmatn', Tahoma, sans-serif;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  direction: rtl;
+}

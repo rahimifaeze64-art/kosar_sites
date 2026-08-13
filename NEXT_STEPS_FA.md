@@ -218,7 +218,7 @@ python manage.py collectstatic --noinput
 **خروجی موفق:**
 ```
 ✅ Created user: taghizadeh (manager)
-✅ Created user: sakhaei (employee)
+✅ Created user: fazeli (employee)
 ✅ Created user: farzad (employee)
 ```
 

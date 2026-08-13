@@ -15,7 +15,7 @@ const StepAssignmentModule = {
         { id: 'emp001', name: 'سارا سادات حسینی' },
         { id: 'emp002', name: 'زینب بتول محمدی' },
         { id: 'emp003', name: 'علیرضا غلامی فرزاد' },
-        { id: 'emp004', name: 'زینب ناشناخته م' },
+        { id: 'emp004', name: 'سید محمد فاضلی' },
     ],
 
     // کلید ذخیره‌سازی در localStorage

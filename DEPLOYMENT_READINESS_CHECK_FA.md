@@ -81,7 +81,7 @@ const response = await fetch('http://127.0.0.1:8000/api/auth/login/', {
 #### 2.3 کاربران پیش‌فرض
 ```javascript
 ✅ مدیر: taghizadeh / taghizadeh
-✅ کارمند 1: sakhaei / Z@z12345
+✅ کارمند 1: fazeli / Z@z12345
 ✅ کارمند 2: farzad / F@f12345
 ```
 

@@ -72,7 +72,7 @@ python manage.py test
 | نقش | نام کاربری | رمز عبور |
 |-----|-----------|----------|
 | مدیر | taghizadeh | taghizadeh |
-| کارمند | sakhaei | Z@z12345 |
+| کارمند | fazeli | Z@z12345 |
 | کارمند | farzad | F@f12345 |
 
 ---

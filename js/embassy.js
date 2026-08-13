@@ -258,7 +258,7 @@ const EmbassyModule = (function () {
                                 <label class="text-gray-700 text-xs font-semibold block mb-1">نحوه ارسال</label>
                                 <input type="text" id="f-sendMethod"
                                     class="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500"
-                                    placeholder="پست، زینب ناشناخته، ...">
+                                    placeholder="پست، سید محمد فاضلی، ...">
                             </div>
                             <div>
                                 <label class="text-gray-700 text-xs font-semibold block mb-1">تاریخ ارسال</label>
@@ -289,13 +289,24 @@ const EmbassyModule = (function () {
                             <div class="grid grid-cols-2 gap-2">
                                 <div>
                                     <label class="text-gray-700 text-xs font-semibold block mb-1">ارسال</label>
-                                    <label class="flex items-center gap-1 cursor-pointer mb-1"><input type="radio" name="f-send-status" id="f-send-yes" value="ارسال شده" class="accent-green-500 w-3 h-3"><span class="text-green-700 text-xs font-semibold">شده ✓</span></label>
-                                    <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="f-send-status" id="f-send-no" value="ارسال نشده" checked class="accent-red-500 w-3 h-3"><span class="text-red-600 text-xs font-semibold">نشده ✗</span></label>
+                                    <label class="flex items-center gap-1 cursor-pointer mb-1"><input type="radio" name="f-send-status" id="f-send-yes" value="ارسال شده" class="accent-green-500 w-3 h-3"><span class="text-green-700 text-xs font-semibold">شده </span></label>
+                                    <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="f-send-status" id="f-send-no" value="ارسال نشده" checked class="accent-red-500 w-3 h-3"><span class="text-red-600 text-xs font-semibold">نشده </span></label>
                                 </div>
                                 <div>
                                     <label class="text-gray-700 text-xs font-semibold block mb-1">دریافت</label>
-                                    <label class="flex items-center gap-1 cursor-pointer mb-1"><input type="radio" name="f-receive-status" id="f-receive-yes" value="شده" class="accent-green-500 w-3 h-3"><span class="text-green-700 text-xs font-semibold">شده ✓</span></label>
-                                    <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="f-receive-status" id="f-receive-no" value="نشده" checked class="accent-red-500 w-3 h-3"><span class="text-red-600 text-xs font-semibold">نشده ✗</span></label>
+                                    <label class="flex items-center gap-1 cursor-pointer mb-1"><input type="radio" name="f-receive-status" id="f-receive-yes" value="شده" class="accent-green-500 w-3 h-3"><span class="text-green-700 text-xs font-semibold">شده </span></label>
+                                    <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="f-receive-status" id="f-receive-no" value="نشده" checked class="accent-red-500 w-3 h-3"><span class="text-red-600 text-xs font-semibold">نشده </span></label>
+                                </div>
+                            </div>
+                            <!-- پرداخت از طرف ما -->
+                            <div class="bg-purple-50 border border-purple-200 rounded-xl p-2 mt-1">
+                                <label class="text-purple-700 text-xs font-bold block mb-1"><i class="fas fa-money-check-alt ml-1"></i>پرداخت (از طرف ما)</label>
+                                <input type="number" id="f-our-payment" min="0" step="any"
+                                    class="w-full bg-white text-gray-900 border border-purple-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-purple-500 mb-1"
+                                    placeholder="مبلغ پرداختی (عدد)">
+                                <div class="flex gap-3">
+                                    <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="f-our-payment-status" id="f-our-payment-done" value="شده" class="accent-green-500 w-3 h-3"><span class="text-green-700 text-xs font-semibold">پرداخت شده</span></label>
+                                    <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="f-our-payment-status" id="f-our-payment-not" value="نشده" checked class="accent-red-500 w-3 h-3"><span class="text-red-600 text-xs font-semibold">پرداخت نشده</span></label>
                                 </div>
                             </div>
                         </div>
@@ -368,8 +379,8 @@ const EmbassyModule = (function () {
                             <div>
                                 <label class="text-gray-700 text-xs font-semibold block mb-1">وکالت‌نامه</label>
                                 <div class="flex gap-3 mb-1">
-                                    <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="f-vekalat" id="f-vekalat-yes" value="دارد" class="accent-green-500 w-3 h-3"><span class="text-green-700 text-xs font-semibold">دارد ✓</span></label>
-                                    <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="f-vekalat" id="f-vekalat-no" value="ندارد" checked class="accent-red-500 w-3 h-3"><span class="text-red-600 text-xs font-semibold">ندارد ✗</span></label>
+                                    <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="f-vekalat" id="f-vekalat-yes" value="دارد" class="accent-green-500 w-3 h-3"><span class="text-green-700 text-xs font-semibold">دارد </span></label>
+                                    <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="f-vekalat" id="f-vekalat-no" value="ندارد" checked class="accent-red-500 w-3 h-3"><span class="text-red-600 text-xs font-semibold">ندارد </span></label>
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <label class="cursor-pointer bg-green-400 hover:bg-green-500 text-white text-xs px-2 py-1 rounded-lg flex items-center gap-1 transition-all">
@@ -502,7 +513,7 @@ const EmbassyModule = (function () {
                 <!-- اعلام وصول: سبز=دارد | آبی=در انتظار -->
                 <td class="px-3 py-3">
                     ${r.acknowledgment
-                        ? `<span style="background:#dcfce7;color:#15803d;font-size:11px;padding:2px 8px;border-radius:8px;font-weight:700;">✓ ${r.acknowledgment}</span>`
+                        ? `<span style="background:#dcfce7;color:#15803d;font-size:11px;padding:2px 8px;border-radius:8px;font-weight:700;"> ${r.acknowledgment}</span>`
                         : `<span style="background:#dbeafe;color:#1d4ed8;font-size:11px;padding:2px 8px;border-radius:8px;font-weight:500;">در انتظار</span>`}
                 </td>
 
@@ -514,7 +525,7 @@ const EmbassyModule = (function () {
                         const final_  = r.settlement_final_list   && r.settlement_final_list.length   ? r.settlement_final_list   : (r.settlement_final   > 0 ? [{amount: r.settlement_final,   currency: r.settlement||'تومان'}] : []);
 
                         if (!agreed.length && !deposit.length && !final_.length) {
-                            return '<span style="background:#fee2e2;color:#b91c1c;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">✗ تسویه نشده</span>';
+                            return '<span style="background:#fee2e2;color:#b91c1c;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;"> تسویه نشده</span>';
                         }
                         const fmt = (p) => {
                             const amt = Number(p.amount).toLocaleString(p.currency === 'تومان' ? 'fa-IR' : 'en');
@@ -525,7 +536,7 @@ const EmbassyModule = (function () {
                         const rows = [];
                         if (agreed.length)  rows.push(`<div style="color:#c2410c;font-size:11px;">توافق: ${agreed.map(fmt).join(' + ')}</div>`);
                         if (deposit.length) rows.push(`<div style="color:#92400e;font-size:11px;">بیعانه: ${deposit.map(fmt).join(' + ')}</div>`);
-                        if (final_.length)  rows.push(`<span style="background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;">✓ تسویه: ${final_.map(fmt).join(' + ')}</span>`);
+                        if (final_.length)  rows.push(`<span style="background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;"> تسویه: ${final_.map(fmt).join(' + ')}</span>`);
                         else                rows.push(`<span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:999px;font-size:11px;">در انتظار تسویه</span>`);
                         return `<div style="display:flex;flex-direction:column;gap:2px;">${rows.join('')}</div>`;
                     })()}
@@ -535,39 +546,61 @@ const EmbassyModule = (function () {
                 <td class="px-3 py-3 text-gray-900 text-sm font-mono font-semibold">
                     ${r.sajad_code
                         ? r.sajad_code
-                        : `<span style="background:#fee2e2;color:#b91c1c;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">✗ ندارد</span>`}
+                        : `<span style="background:#fee2e2;color:#b91c1c;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;"> ندارد</span>`}
                 </td>
 
                 <!-- وکالت: سبز=دارد | قرمز=ندارد -->
                 <td class="px-3 py-3">
                     ${r.vekalat === 'دارد'
-                        ? `<span style="background:#dcfce7;color:#15803d;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">✓ دارد</span>`
-                        : `<span style="background:#fee2e2;color:#b91c1c;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">✗ ندارد</span>`}
+                        ? `<span style="background:#dcfce7;color:#15803d;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;"> دارد</span>`
+                        : `<span style="background:#fee2e2;color:#b91c1c;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;"> ندارد</span>`}
                 </td>
 
                 <!-- ارسال: سبز=شده | آبی=در انتظار | قرمز=نشده -->
                 <td class="px-3 py-3">
                     ${r.send_status === 'ارسال شده'
-                        ? `<span style="background:#dcfce7;color:#15803d;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">✓ ارسال شده</span>`
+                        ? `<span style="background:#dcfce7;color:#15803d;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;"> ارسال شده</span>`
                         : r.send_status === 'در انتظار'
                         ? `<span style="background:#dbeafe;color:#1d4ed8;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:500;">در انتظار</span>`
-                        : `<span style="background:#fee2e2;color:#b91c1c;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">✗ ارسال نشده</span>`}
+                        : `<span style="background:#fee2e2;color:#b91c1c;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;"> ارسال نشده</span>`}
                 </td>
 
                 <!-- دریافت: سبز=شده | آبی=در انتظار | قرمز=نشده -->
                 <td class="px-3 py-3">
                     ${r.receive_status === 'شده'
-                        ? `<span style="background:#dcfce7;color:#15803d;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">✓ شده</span>`
+                        ? `<span style="background:#dcfce7;color:#15803d;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;"> شده</span>`
                         : r.receive_status === 'در انتظار'
                         ? `<span style="background:#dbeafe;color:#1d4ed8;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:500;">در انتظار</span>`
-                        : `<span style="background:#fee2e2;color:#b91c1c;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">✗ نشده</span>`}
+                        : `<span style="background:#fee2e2;color:#b91c1c;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;"> نشده</span>`}
                 </td>
 
                 <!-- فایل‌ها: لینک دانلود | قرمز=آپلود نشده -->
                 <td class="px-3 py-3">
                     ${r.file_paths && r.file_paths.length
                         ? r.file_paths.map(p => `<button onclick="EmbassyModule.downloadFile('${p}')" style="display:block;color:#2563eb;font-size:11px;text-decoration:underline;max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;background:none;border:none;cursor:pointer;"><i class="fas fa-download" style="margin-left:4px;"></i>${p.split('/').pop()}</button>`).join('')
-                        : `<span style="background:#fee2e2;color:#b91c1c;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">✗ آپلود نشده</span>`}
+                        : `<span style="background:#fee2e2;color:#b91c1c;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;"> آپلود نشده</span>`}
+                </td>
+
+                <!-- پرداخت از طرف ما -->
+                <td class="px-3 py-3">
+                    ${(() => {
+                        const amt = r.our_payment_amount;
+                        const st  = r.our_payment_status;
+                        if (!amt && st !== 'شده') {
+                            return `<span style="background:#f3e8ff;color:#7c3aed;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">نشده</span>`;
+                        }
+                        const fmtAmt = amt ? Number(amt).toLocaleString('fa-IR') + ' ت' : '';
+                        if (st === 'شده') {
+                            return `<div style="display:flex;flex-direction:column;gap:2px;">
+                                ${fmtAmt ? `<div style="color:#374151;font-size:11px;">${fmtAmt}</div>` : ''}
+                                <span style="background:#dcfce7;color:#15803d;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">شده</span>
+                            </div>`;
+                        }
+                        return `<div style="display:flex;flex-direction:column;gap:2px;">
+                            ${fmtAmt ? `<div style="color:#374151;font-size:11px;">${fmtAmt}</div>` : ''}
+                            <span style="background:#f3e8ff;color:#7c3aed;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">نشده</span>
+                        </div>`;
+                    })()}
                 </td>
 
                 <td class="px-3 py-3 text-gray-500 text-xs">
@@ -612,6 +645,7 @@ const EmbassyModule = (function () {
                             <th class="px-3 py-3 text-right font-bold">ارسال</th>
                             <th class="px-3 py-3 text-right font-bold">دریافت</th>
                             <th class="px-3 py-3 text-right font-bold">فایل‌ها</th>
+                            <th class="px-3 py-3 text-right font-bold">پرداخت ما</th>
                             <th class="px-3 py-3 text-right font-bold">آخرین آپدیت</th>
                             <th class="px-3 py-3 text-right font-bold">ثبت‌کننده</th>
                             <th class="px-3 py-3 text-right font-bold">عملیات</th>
@@ -1343,6 +1377,13 @@ const EmbassyModule = (function () {
         const phoneEl = document.getElementById('f-phone');
         if (phoneEl) phoneEl.value = r.phone || '';
 
+        // پرداخت از طرف ما
+        const ourPaymentEl = document.getElementById('f-our-payment');
+        if (ourPaymentEl) ourPaymentEl.value = r.our_payment_amount || '';
+        const ourPaymentStatus = r.our_payment_status || 'نشده';
+        const ourPayRadio = document.querySelector(`input[name="f-our-payment-status"][value="${ourPaymentStatus}"]`);
+        if (ourPayRadio) ourPayRadio.checked = true;
+
         // فایل‌های موجود — با قابلیت حذف
         _selectedFiles = [];
         _existingFilePaths = r.file_paths ? [...r.file_paths] : [];
@@ -1529,6 +1570,8 @@ const EmbassyModule = (function () {
             vekalat:             document.querySelector('input[name="f-vekalat"]:checked')?.value || 'ندارد',
             send_status:         document.querySelector('input[name="f-send-status"]:checked')?.value || 'ارسال نشده',
             receive_status:      document.querySelector('input[name="f-receive-status"]:checked')?.value || 'نشده',
+            our_payment_amount:  parseFloat(document.getElementById('f-our-payment')?.value) || null,
+            our_payment_status:  document.querySelector('input[name="f-our-payment-status"]:checked')?.value || 'نشده',
         };
 
         if (filePaths.length || existingPaths.length) {
@@ -1600,7 +1643,7 @@ const EmbassyModule = (function () {
         if (ok) {
             closeModal();
             await load();
-            _toast(editId ? 'رکورد بروزرسانی شد ✓' : 'رکورد جدید ثبت شد ✓', 'success');
+            _toast(editId ? 'رکورد بروزرسانی شد ' : 'رکورد جدید ثبت شد ', 'success');
         } else {
             _toast('خطا در ذخیره‌سازی — اتصال Supabase را بررسی کنید', 'error');
         }
