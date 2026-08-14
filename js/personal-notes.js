@@ -64,12 +64,14 @@ const PersonalNotesModule = {
         try {
             const raw = localStorage.getItem(this.CATEGORIES_KEY);
             const saved = raw ? JSON.parse(raw) : [];
-            // دسته‌های پیش‌فرض را همیشه اول بگذار
-            const defaults = Object.keys(this.CATEGORY_COLORS);
-            const custom = saved.filter(c => !defaults.includes(c));
+            // فقط 'عمومی' دسته پیش‌فرض است — بقیه پیش‌فرض‌های قدیمی حذف شده‌اند
+            const defaults = ['عمومی'];
+            const removedDefaults = ['کاری', 'شخصی', 'ایده', 'مهم', 'یادآوری'];
+            // دسته‌های سفارشی (نه از پیش‌فرض‌های قدیمی)
+            const custom = saved.filter(c => !defaults.includes(c) && !removedDefaults.includes(c));
             this.state.categories = [...defaults, ...custom];
         } catch(e) {
-            this.state.categories = Object.keys(this.CATEGORY_COLORS);
+            this.state.categories = ['عمومی'];
         }
     },
 
@@ -88,7 +90,7 @@ const PersonalNotesModule = {
                 .from('personal_notes')
                 .select('*')
                 .eq('user_id', userId)
-                .order('updated_at', { ascending: false });
+                .order('created_at', { ascending: true });  // صف: قدیمی‌ترین اول، جدیدترین آخر
             if (error) throw error;
             if (!data || data.length === 0) return false;
             // تبدیل فرمت Supabase → فرمت داخلی
@@ -217,7 +219,7 @@ const PersonalNotesModule = {
         // مرتب‌سازی
         switch (this.state.sortMode) {
             case 'newest':
-                notes.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+                notes.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                 break;
             case 'oldest':
                 notes.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
@@ -299,8 +301,7 @@ const PersonalNotesModule = {
     },
 
     deleteCategory(name) {
-        const defaults = Object.keys(this.CATEGORY_COLORS);
-        if (defaults.includes(name)) return false;
+        if (name === 'عمومی') return false;  // فقط عمومی قابل حذف نیست
         this.state.categories = this.state.categories.filter(c => c !== name);
         // یادداشت‌های این دسته → عمومی
         this.state.notes.forEach(n => { if (n.category === name) n.category = 'عمومی'; });
@@ -427,8 +428,8 @@ const PersonalNotesModule = {
           <!-- مرتب‌سازی -->
           <select id="pnSort" style="padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;
                                      font-family:inherit;font-size:.85rem;background:#fff;color:#334155;cursor:pointer;">
-            <option value="newest"  ${this.state.sortMode==='newest' ?'selected':''}>جدیدترین</option>
-            <option value="oldest"  ${this.state.sortMode==='oldest' ?'selected':''}>قدیمی‌ترین</option>
+            <option value="oldest"  ${this.state.sortMode==='oldest' ?'selected':''}>قدیمی‌ترین اول (صف)</option>
+            <option value="newest"  ${this.state.sortMode==='newest' ?'selected':''}>جدیدترین اول</option>
             <option value="alpha"   ${this.state.sortMode==='alpha'  ?'selected':''}>الفبایی</option>
             <option value="pinned"  ${this.state.sortMode==='pinned' ?'selected':''}>پین‌شده اول</option>
           </select>

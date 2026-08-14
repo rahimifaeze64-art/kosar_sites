@@ -15,6 +15,7 @@ function appController() {
     accPage: "main",        // main | personal | employees | embassy
     empAccPage: "main",     // main | emp_accounting | work_hours
     accMenuOpen: false,     // dropdown حسابداری در sidebar
+    empAccAllowedIds: JSON.parse(localStorage.getItem('empAccAllowedIds') || '[]'), // کارمندان مجاز به دیدن حسابداری کارمندان
     showModal: null,
     selectedOrder: null,
     notifications: [],

@@ -416,6 +416,16 @@
                         </button>
                     </template>
 
+                    <!-- حسابداری کارمندان - فقط کارمند مجاز -->
+                    <template x-if="currentUser.role === 'employee' && empAccAllowedIds.includes(currentUser.id)">
+                        <button @click="currentPage = 'empAccView'"
+                                :class="currentPage === 'empAccView' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
+                                class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
+                            <i class="fas fa-users-cog text-lg"></i>
+                            <span class="font-medium">حسابداری کارمندان</span>
+                        </button>
+                    </template>
+
                     <!-- منوی کارمندان مالی - فقط برای مدیر — حذف شد، داخل حسابداری است -->
                     <!-- <template x-if="currentUser.role === 'manager'">...</template> -->
 
@@ -629,6 +639,17 @@
                         </div>
                         <!-- حسابداری کارمندان — مستقیم (ادغام شده) -->
                         <div x-show="accPage === 'employees'">
+                            <!-- دکمه بازگشت + تخصیص کارمند -->
+                            <div class="flex items-center justify-between mb-4">
+                                <button @click="accPage = 'main'" class="flex items-center gap-2 text-gray-400 hover:text-white text-sm transition-colors">
+                                    <i class="fas fa-arrow-right"></i> بازگشت
+                                </button>
+                                <button @click="$dispatch('open-emp-acc-assign')"
+                                        onclick="openEmpAccAssignModal()"
+                                        class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl flex items-center gap-2 text-sm transition-all shadow-lg">
+                                    <i class="fas fa-user-check"></i> تخصیص کارمند
+                                </button>
+                            </div>
                             <div x-html="getEmployeeAccountingContent()"></div>
                         </div>
 
@@ -646,6 +667,17 @@
             
             <!-- Employee Accounting Page (Manager only) -->
             <div x-show="currentPage === 'employeeAccounting' && currentUser.role === 'manager'" x-html="getEmployeeAccountingContent()"></div>
+
+            <!-- حسابداری کارمندان - برای کارمند مجاز -->
+            <div x-show="currentPage === 'empAccView' && currentUser.role === 'employee' && empAccAllowedIds.includes(currentUser.id)">
+                <div class="mb-4 flex items-center gap-3">
+                    <span class="bg-indigo-500/20 p-2 rounded-xl">
+                        <i class="fas fa-users-cog text-indigo-400 text-xl"></i>
+                    </span>
+                    <h2 class="text-xl font-bold text-white">حسابداری کارمندان</h2>
+                </div>
+                <div x-html="getEmployeeAccountingContent()"></div>
+            </div>
             
             <!-- Profile Page -->
             <div x-show="currentPage === 'profile'" x-html="getProfileContent()"></div>
@@ -672,6 +704,34 @@
 
     <!-- Modals Container -->
     <div id="modals-container"></div>
+
+    <!-- ═══ مودال تخصیص کارمند به حسابداری کارمندان ═══ -->
+    <div id="emp-acc-assign-modal" style="display:none;"
+         class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md border border-indigo-500/30 p-6" dir="rtl">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-user-check text-indigo-400"></i>
+                    تخصیص دسترسی حسابداری کارمندان
+                </h3>
+                <button onclick="closeEmpAccAssignModal()" class="text-gray-400 hover:text-white text-xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <p class="text-gray-400 text-sm mb-4">کارمندانی که تیک بزنید می‌توانند صفحه حسابداری کارمندان را ببینند.</p>
+            <div id="emp-acc-assign-list" class="space-y-2 max-h-72 overflow-y-auto mb-5"></div>
+            <div class="flex gap-3">
+                <button onclick="saveEmpAccAssign()"
+                        class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl transition-all">
+                    <i class="fas fa-save ml-1"></i> ذخیره
+                </button>
+                <button onclick="closeEmpAccAssignModal()"
+                        class="px-6 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2.5 rounded-xl transition-all">
+                    انصراف
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script>
@@ -802,6 +862,92 @@
         // Initial debug message
         debugLogger('Debug system initialized', 'success');
     </script>
+    <!-- ═══ تخصیص کارمند به حسابداری کارمندان ═══ -->
+    <script>
+        // لیست کارمندان از HARDCODED_USERS — بعد از لود اسکریپت‌ها
+        function _getEmployeesForAssign() {
+            try {
+                if (typeof HARDCODED_USERS !== 'undefined') {
+                    return HARDCODED_USERS.filter(u => u.role === 'employee' && u.active);
+                }
+            } catch(e) {}
+            return [
+                { id: 'emp001', name: 'سارا سادات حسینی' },
+                { id: 'emp002', name: 'زینب بتول محمدی' },
+                { id: 'emp003', name: 'علیرضا غلامی فرزاد' },
+                { id: 'emp004', name: 'سید محمد فاضلی' },
+                { id: 'emp005', name: 'مهدی خدایاری' },
+            ];
+        }
+
+        function openEmpAccAssignModal() {
+            var modal = document.getElementById('emp-acc-assign-modal');
+            var list  = document.getElementById('emp-acc-assign-list');
+            if (!modal || !list) return;
+
+            var allowed = [];
+            try { allowed = JSON.parse(localStorage.getItem('empAccAllowedIds') || '[]'); } catch(e) {}
+
+            var employees = _getEmployeesForAssign();
+            list.innerHTML = employees.map(function(emp) {
+                var checked = allowed.includes(emp.id) ? 'checked' : '';
+                return '<label class="flex items-center gap-3 p-3 rounded-xl bg-slate-700 hover:bg-slate-600 cursor-pointer transition-colors">'
+                    + '<input type="checkbox" value="' + emp.id + '" ' + checked
+                    + ' class="w-4 h-4 accent-indigo-500 flex-shrink-0">'
+                    + '<div class="w-8 h-8 rounded-full bg-indigo-500/30 flex items-center justify-center text-indigo-300 font-bold text-sm flex-shrink-0">'
+                    + emp.name.charAt(0)
+                    + '</div>'
+                    + '<span class="text-white font-medium text-sm">' + emp.name + '</span>'
+                    + '</label>';
+            }).join('');
+
+            modal.style.display = 'flex';
+        }
+
+        function closeEmpAccAssignModal() {
+            var modal = document.getElementById('emp-acc-assign-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function saveEmpAccAssign() {
+            var list = document.getElementById('emp-acc-assign-list');
+            if (!list) return;
+
+            var selected = Array.from(list.querySelectorAll('input[type=checkbox]:checked'))
+                .map(function(cb) { return cb.value; });
+
+            localStorage.setItem('empAccAllowedIds', JSON.stringify(selected));
+
+            // بروزرسانی Alpine state بدون reload
+            try {
+                var alpineEl = document.querySelector('[x-data]');
+                if (alpineEl && alpineEl._x_dataStack) {
+                    var data = alpineEl._x_dataStack[0];
+                    if (data) data.empAccAllowedIds = selected;
+                }
+            } catch(e) {}
+
+            closeEmpAccAssignModal();
+
+            // toast تأیید
+            var t = document.createElement('div');
+            t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#4f46e5;color:#fff;padding:12px 24px;border-radius:12px;font-family:Vazirmatn,sans-serif;font-size:14px;z-index:9999;direction:rtl;box-shadow:0 4px 20px rgba(0,0,0,.3);';
+            t.textContent = selected.length > 0
+                ? '✅ دسترسی ' + selected.length + ' کارمند ذخیره شد'
+                : '✅ دسترسی همه کارمندان لغو شد';
+            document.body.appendChild(t);
+            setTimeout(function() { t.remove(); }, 3000);
+        }
+
+        // بستن مودال با کلیک خارج از آن
+        document.addEventListener('click', function(e) {
+            var modal = document.getElementById('emp-acc-assign-modal');
+            if (modal && modal.style.display === 'flex' && e.target === modal) {
+                closeEmpAccAssignModal();
+            }
+        });
+    </script>
+
     <!-- ═══ Dynamic Script Loader — همیشه آخرین نسخه ═══ -->
     <script>
     (function() {
@@ -841,8 +987,7 @@
         }
     </script>
     
-    <!-- Tesseract.js for OCR -->
-    <script src="assets/libs/tesseract.min.js"></script>
+    
     
     <!-- Moment.js for Date Handling -->
     <script src="assets/libs/moment.min.js"></script>

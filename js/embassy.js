@@ -299,10 +299,10 @@ const EmbassyModule = (function () {
                                 </div>
                             </div>
                             <!-- پرداخت از طرف ما -->
-                            <div class="bg-purple-50 border border-purple-200 rounded-xl p-2 mt-1">
-                                <label class="text-purple-700 text-xs font-bold block mb-1"><i class="fas fa-money-check-alt ml-1"></i>پرداخت (از طرف ما)</label>
+                            <div class="bg-green-50 border border-green-200 rounded-xl p-2 mt-1">
+                                <label class="text-green-700 text-xs font-bold block mb-1"><i class="fas fa-money-check-alt ml-1"></i>پرداخت (از طرف ما)</label>
                                 <input type="number" id="f-our-payment" min="0" step="any"
-                                    class="w-full bg-white text-gray-900 border border-purple-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-purple-500 mb-1"
+                                    class="w-full bg-white text-gray-900 border border-green-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-green-500 mb-1"
                                     placeholder="مبلغ پرداختی (عدد)">
                                 <div class="flex gap-3">
                                     <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="f-our-payment-status" id="f-our-payment-done" value="شده" class="accent-green-500 w-3 h-3"><span class="text-green-700 text-xs font-semibold">پرداخت شده</span></label>
