@@ -244,14 +244,15 @@ const EmbassyModule = (function () {
                             <div>
                                 <label class="text-gray-700 text-xs font-semibold block mb-1">تاریخ دریافت</label>
                                 <div class="flex gap-1 mb-1">
-                                    <button type="button" onclick="EmbassyModule._setQuickDate('f-receiveDate','f-receiveDate-disp',-1)" class="flex-1 text-xs py-1 rounded-lg bg-gray-100 hover:bg-blue-100 text-gray-600 border border-gray-200 transition-all">دیروز</button>
-                                    <button type="button" onclick="EmbassyModule._setQuickDate('f-receiveDate','f-receiveDate-disp',0)" class="flex-1 text-xs py-1 rounded-lg bg-blue-500 hover:bg-blue-600 text-white border border-blue-500 font-bold transition-all">امروز</button>
-                                    <button type="button" onclick="EmbassyModule._setQuickDate('f-receiveDate','f-receiveDate-disp',1)" class="flex-1 text-xs py-1 rounded-lg bg-gray-100 hover:bg-blue-100 text-gray-600 border border-gray-200 transition-all">فردا</button>
+                                    <button type="button" onclick="WorkHoursUI.setQuickDate('f-receiveDate','f-receiveDate-disp',-1)" class="flex-1 text-xs py-1 rounded-lg bg-gray-100 hover:bg-blue-100 text-gray-600 border border-gray-200 transition-all">دیروز</button>
+                                    <button type="button" onclick="WorkHoursUI.setQuickDate('f-receiveDate','f-receiveDate-disp',0)" class="flex-1 text-xs py-1 rounded-lg bg-blue-500 hover:bg-blue-600 text-white border border-blue-500 font-bold transition-all">امروز</button>
+                                    <button type="button" onclick="WorkHoursUI.setQuickDate('f-receiveDate','f-receiveDate-disp',1)" class="flex-1 text-xs py-1 rounded-lg bg-gray-100 hover:bg-blue-100 text-gray-600 border border-gray-200 transition-all">فردا</button>
                                 </div>
                                 <input type="hidden" id="f-receiveDate">
-                                <button type="button" id="f-receiveDate-disp" onclick="EmbassyModule._openJalaliPicker('f-receiveDate','f-receiveDate-disp')"
-                                    class="w-full text-right bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-500 focus:outline-none flex items-center justify-between">
-                                    <span>انتخاب از تقویم</span><i class="fas fa-calendar-alt text-gray-400"></i>
+                                <button type="button" id="f-receiveDate-disp"
+                                    onclick="WorkHoursUI.openJalaliPicker('f-receiveDate','f-receiveDate-disp')"
+                                    class="w-full text-right bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-500 focus:outline-none flex items-center justify-between hover:border-blue-400 transition-colors">
+                                    <span id="f-receiveDate-disp-text">انتخاب از تقویم</span><i class="fas fa-calendar-alt text-gray-400"></i>
                                 </button>
                             </div>
                             <div>
@@ -263,14 +264,15 @@ const EmbassyModule = (function () {
                             <div>
                                 <label class="text-gray-700 text-xs font-semibold block mb-1">تاریخ ارسال</label>
                                 <div class="flex gap-1 mb-1">
-                                    <button type="button" onclick="EmbassyModule._setQuickDate('f-sendDate','f-sendDate-disp',-1)" class="flex-1 text-xs py-1 rounded-lg bg-gray-100 hover:bg-blue-100 text-gray-600 border border-gray-200 transition-all">دیروز</button>
-                                    <button type="button" onclick="EmbassyModule._setQuickDate('f-sendDate','f-sendDate-disp',0)" class="flex-1 text-xs py-1 rounded-lg bg-blue-500 hover:bg-blue-600 text-white border border-blue-500 font-bold transition-all">امروز</button>
-                                    <button type="button" onclick="EmbassyModule._setQuickDate('f-sendDate','f-sendDate-disp',1)" class="flex-1 text-xs py-1 rounded-lg bg-gray-100 hover:bg-blue-100 text-gray-600 border border-gray-200 transition-all">فردا</button>
+                                    <button type="button" onclick="WorkHoursUI.setQuickDate('f-sendDate','f-sendDate-disp',-1)" class="flex-1 text-xs py-1 rounded-lg bg-gray-100 hover:bg-blue-100 text-gray-600 border border-gray-200 transition-all">دیروز</button>
+                                    <button type="button" onclick="WorkHoursUI.setQuickDate('f-sendDate','f-sendDate-disp',0)" class="flex-1 text-xs py-1 rounded-lg bg-blue-500 hover:bg-blue-600 text-white border border-blue-500 font-bold transition-all">امروز</button>
+                                    <button type="button" onclick="WorkHoursUI.setQuickDate('f-sendDate','f-sendDate-disp',1)" class="flex-1 text-xs py-1 rounded-lg bg-gray-100 hover:bg-blue-100 text-gray-600 border border-gray-200 transition-all">فردا</button>
                                 </div>
                                 <input type="hidden" id="f-sendDate">
-                                <button type="button" id="f-sendDate-disp" onclick="EmbassyModule._openJalaliPicker('f-sendDate','f-sendDate-disp')"
-                                    class="w-full text-right bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-500 focus:outline-none flex items-center justify-between">
-                                    <span>انتخاب از تقویم</span><i class="fas fa-calendar-alt text-gray-400"></i>
+                                <button type="button" id="f-sendDate-disp"
+                                    onclick="WorkHoursUI.openJalaliPicker('f-sendDate','f-sendDate-disp')"
+                                    class="w-full text-right bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-500 focus:outline-none flex items-center justify-between hover:border-blue-400 transition-colors">
+                                    <span id="f-sendDate-disp-text">انتخاب از تقویم</span><i class="fas fa-calendar-alt text-gray-400"></i>
                                 </button>
                             </div>
                             <div>
@@ -736,6 +738,26 @@ const EmbassyModule = (function () {
             var d2 = new Date();
             d2.setDate(d2.getDate() - 3);
             return d2;
+        }
+    }
+
+    // ── helper: نمایش تاریخ شمسی در span display button ───────
+    function _updateDateDisp(hiddenId, dispTextId, val) {
+        var dispText = document.getElementById(dispTextId);
+        if (!dispText) return;
+        if (!val) {
+            dispText.textContent = 'انتخاب از تقویم';
+            return;
+        }
+        // val می‌تواند به فرمت 1404-03-15 یا 1404/03/15 باشد
+        var parts = val.split(/[-\/]/);
+        if (parts.length === 3) {
+            var MONTHS = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+            var m = parseInt(parts[1]);
+            var label = parseInt(parts[2]) + ' ' + (MONTHS[m-1] || '') + ' ' + parts[0];
+            dispText.textContent = label;
+        } else {
+            dispText.textContent = val;
         }
     }
 
@@ -1265,19 +1287,12 @@ const EmbassyModule = (function () {
             var el = document.getElementById(id);
             if (el) delete el.dataset.pickerAttached;
         });
+        // ریست display text دکمه‌های تاریخ
+        var rdText = document.getElementById('f-receiveDate-disp-text');
+        if (rdText) rdText.textContent = 'انتخاب از تقویم';
+        var sdText = document.getElementById('f-sendDate-disp-text');
+        if (sdText) sdText.textContent = 'انتخاب از تقویم';
         document.getElementById('embassy-modal').classList.remove('hidden');
-        // فعال‌سازی تقویم شمسی روی فیلدهای تاریخ
-        setTimeout(function() {
-            if (typeof JalaliPicker !== 'undefined') {
-                ['f-receiveDate','f-sendDate'].forEach(function(id) {
-                    var el = document.getElementById(id);
-                    if (el && !el.dataset.pickerAttached) {
-                        JalaliPicker._attach(el);
-                        el.dataset.pickerAttached = '1';
-                    }
-                });
-            }
-        }, 80);
     }
 
     // ── مودال ویرایش ─────────────────────────────────────────
@@ -1351,6 +1366,9 @@ const EmbassyModule = (function () {
         document.getElementById('f-receiveDate').value      = r.receive_date       || '';
         document.getElementById('f-sendMethod').value       = r.send_method        || '';
         document.getElementById('f-sendDate').value         = r.send_date          || '';
+        // آپدیت display button های تاریخ دریافت و ارسال
+        _updateDateDisp('f-receiveDate', 'f-receiveDate-disp-text', r.receive_date);
+        _updateDateDisp('f-sendDate',    'f-sendDate-disp-text',    r.send_date);
         document.getElementById('f-acknowledgment').value   = r.acknowledgment     || '';
         const fa = document.getElementById('f-settlement-agreed');   if(fa) fa.value = r.settlement_agreed  || '';
         const fd = document.getElementById('f-settlement-deposit');  if(fd) fd.value = r.settlement_deposit || '';
@@ -1400,18 +1418,6 @@ const EmbassyModule = (function () {
         _renderExistingPassportFiles();
 
         document.getElementById('embassy-modal').classList.remove('hidden');
-        // فعال‌سازی تقویم شمسی
-        setTimeout(function() {
-            if (typeof JalaliPicker !== 'undefined') {
-                ['f-receiveDate','f-sendDate'].forEach(function(id) {
-                    var el = document.getElementById(id);
-                    if (el && !el.dataset.pickerAttached) {
-                        JalaliPicker._attach(el);
-                        el.dataset.pickerAttached = '1';
-                    }
-                });
-            }
-        }, 80);
     }
 
     function closeModal() {

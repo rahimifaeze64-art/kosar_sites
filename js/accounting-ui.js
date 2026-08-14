@@ -847,6 +847,17 @@ const AccountingUI = (function () {
         if (!client) { alert('اتصال برقرار نیست'); return; }
         const name = document.getElementById('np-name')?.value.trim();
         if (!name) { alert('نام الزامی است'); return; }
+
+        // بررسی تکراری بودن نام — مقایسه case-insensitive و بدون فاصله اضافه
+        const duplicate = _persons.find(p =>
+            p.name.trim().replace(/\s+/g, ' ').toLowerCase() ===
+            name.replace(/\s+/g, ' ').toLowerCase()
+        );
+        if (duplicate) {
+            alert(`این شخص قبلاً ایجاد شده است:\n«${duplicate.name}»`);
+            return;
+        }
+
         const { data, error } = await client.from(PTBL).insert([{
             name,
             type:  document.getElementById('np-type')?.value || 'other',

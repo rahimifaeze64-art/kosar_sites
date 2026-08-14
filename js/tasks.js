@@ -60,13 +60,13 @@ const TasksModule = {
                 ${list.length ? `
                 <div class="absolute z-50 bottom-full mb-2 right-1/2 translate-x-1/2
                             hidden group-hover:block
-                            bg-gray-100 text-white text-xs rounded-lg px-3 py-2
+                            bg-white text-gray-800 text-xs rounded-lg px-3 py-2
                             shadow-xl border border-gray-200 whitespace-pre-line
                             min-w-max max-w-[200px] text-right pointer-events-none">
-                    <div class="font-semibold text-gray-300 mb-1 border-b border-gray-300 pb-1">همکاران:</div>
-                    ${list.map(e => `<div class="flex justify-between gap-3"><span>${e.name}</span><span class="text-${numCls} font-bold">${e.count}</span></div>`).join('')}
+                    <div class="font-semibold text-gray-600 mb-1 border-b border-gray-200 pb-1">همکاران:</div>
+                    ${list.map(e => `<div class="flex justify-between gap-3"><span class="text-gray-700">${e.name}</span><span class="text-${numCls} font-bold">${e.count}</span></div>`).join('')}
                     <div class="absolute bottom-0 right-1/2 translate-x-1/2 translate-y-full
-                                border-4 border-transparent border-t-gray-300"></div>
+                                border-4 border-transparent border-t-white"></div>
                 </div>` : ''}
             </div>`;
         };
