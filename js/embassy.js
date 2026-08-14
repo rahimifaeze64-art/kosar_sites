@@ -583,24 +583,28 @@ const EmbassyModule = (function () {
 
                 <!-- پرداخت از طرف ما -->
                 <td class="px-3 py-3">
-                    ${(() => {
-                        const amt = r.our_payment_amount;
-                        const st  = r.our_payment_status;
-                        if (!amt && st !== 'شده') {
-                            return `<span style="background:#f3e8ff;color:#7c3aed;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">نشده</span>`;
-                        }
-                        const fmtAmt = amt ? Number(amt).toLocaleString('fa-IR') + ' ت' : '';
-                        if (st === 'شده') {
+                        ${(() => {
+                            const amt = r.our_payment_amount;
+                            const st  = r.our_payment_status;
+
+                            if (!amt && st !== 'شده') {
+                                return `<span style="background:#fee2e2;color:#b91c1c;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">نشده</span>`;
+                            }
+
+                            const fmtAmt = amt ? Number(amt).toLocaleString('fa-IR') + ' ت' : '';
+
+                            if (st === 'شده') {
+                                return `<div style="display:flex;flex-direction:column;gap:2px;">
+                                    ${fmtAmt ? `<div style="color:#374151;font-size:11px;">${fmtAmt}</div>` : ''}
+                                    <span style="background:#dcfce7;color:#15803d;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">شده</span>
+                                </div>`;
+                            }
+
                             return `<div style="display:flex;flex-direction:column;gap:2px;">
                                 ${fmtAmt ? `<div style="color:#374151;font-size:11px;">${fmtAmt}</div>` : ''}
-                                <span style="background:#dcfce7;color:#15803d;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">شده</span>
+                                <span style="background:#fee2e2;color:#b91c1c;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">نشده</span>
                             </div>`;
-                        }
-                        return `<div style="display:flex;flex-direction:column;gap:2px;">
-                            ${fmtAmt ? `<div style="color:#374151;font-size:11px;">${fmtAmt}</div>` : ''}
-                            <span style="background:#f3e8ff;color:#7c3aed;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;">نشده</span>
-                        </div>`;
-                    })()}
+                        })()}
                 </td>
 
                 <td class="px-3 py-3 text-gray-500 text-xs">
