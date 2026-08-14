@@ -4,7 +4,7 @@ const OrderWizardModule = {
     workTypes: [
         'عناوین رساله ارشد', 'عناوین رساله دکتری', 'عناوین مقاله',
         'پروپوزال رساله ارشد', 'پروپوزال رساله دکتری', 'پروپوزال مقاله',
-        'رساله ارشد', 'رساله دکتری', 'تعدیل', 'تنضید', 'ترجمه',
+        'رساله ارشد', 'رساله دکتری', 'مقاله', 'تعدیل', 'تنضید', 'ترجمه',
         'استلال عراقی', 'استلال ایرانی', 'علاج استلال ایرانی', 'علاج استلال عراقی',
         'ترجمه و تصدیق مباشره', 'ترجمه و تصدیق قبول نهایی', 'ترجمه و تصدیق دانشنامه',
         'ترجمه مدرک', 'تجلید', 'همانند جویی',
@@ -18,20 +18,19 @@ const OrderWizardModule = {
     
     // لیست دانشگاه‌ها
     universities: [
-        'دانشگاه قم', 'جامعه المصطفی', 'دانشگاه تهران',
-        
+        'دانشگاه قم', 'جامعه المصطفی', 'دانشگاه تهران', 'سایر'
     ],
     
     // لیست رشته‌ها
     fields: [
-        'حقوق محض', 'حقوق عمومی', 'حقوق خصوصی', 'حقوق بین‌الملل',
+        'حقوق جزا و جرم شناسی', 'حقوق عمومی', 'حقوق خصوصی', 'حقوق بین‌الملل',
         'علوم سیاسی', 'فلسفه', 'اقتصاد', 'مدیریت', 'سایر'
     ],
     
     // Get the wizard modal
     getWizardModal() {
         return `
-            <div x-data="orderWizardData()">
+            <div x-data="orderWizardData()" x-init="init()">
                 <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-lime-600 to-lime-600 relative">
                     <button @click="$dispatch('close-modal')" 
                             class="absolute left-4 top-4 text-white hover:text-gray-200 text-2xl"
@@ -47,29 +46,88 @@ const OrderWizardModule = {
                 <div class="p-6 bg-gray-50 max-h-[70vh] overflow-y-auto">
                     <form @submit.prevent="submitOrder()" class="space-y-5">
                         
-                        <!-- 1. نام دانشجو -->
+                        <!-- 1. نام دانشجو - با dropdown سرچ + امکان ورود دستی -->
                         <div>
                             <label class="block text-lg font-bold text-gray-800 mb-2">
                                 <i class="fas fa-user text-lime-500 ml-2"></i>
                                 نام دانشجو <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" x-model="newOrder.studentName" 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 text-lg"
-                                   required placeholder="نام و نام خانوادگی دانشجو">
+                            <!-- جستجو و انتخاب از دانشجویان موجود -->
+                            <div class="relative mb-2">
+                                <input type="text" id="wiz-student-search"
+                                       x-model="studentSearch"
+                                       @input="filterStudents()"
+                                       @focus="showStudentDropdown = true"
+                                       @keydown.escape="showStudentDropdown = false"
+                                       placeholder="جستجو در بین دانشجویان موجود..."
+                                       autocomplete="off"
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 text-base pr-10">
+                                <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                                <!-- لیست کشویی دانشجویان -->
+                                <div x-show="showStudentDropdown && filteredStudents.length > 0"
+                                     @click.outside="showStudentDropdown = false"
+                                     class="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+                                    <template x-for="st in filteredStudents" :key="st.id">
+                                        <div @click="selectStudent(st)"
+                                             class="px-4 py-2.5 hover:bg-lime-50 cursor-pointer flex items-center gap-2 border-b border-gray-100 last:border-0">
+                                            <div class="w-7 h-7 rounded-full bg-lime-100 text-lime-700 flex items-center justify-center text-xs font-bold flex-shrink-0"
+                                                 x-text="(st.name||'?').charAt(0)"></div>
+                                            <div>
+                                                <p class="text-sm font-medium text-gray-800" x-text="st.name"></p>
+                                                <p class="text-xs text-gray-400" x-text="st.university || st.field || ''"></p>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                            <!-- ورود دستی نام دانشجو -->
+                            <div class="mt-1">
+                                <label class="block text-sm text-gray-500 mb-1">
+                                    <i class="fas fa-keyboard ml-1 text-gray-400"></i>
+                                    یا نام دانشجو را وارد کنید (اگر در لیست نیست):
+                                </label>
+                                <input type="text" x-model="newOrder.studentName"
+                                       class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 text-base bg-white"
+                                       placeholder="نام و نام خانوادگی دانشجو"
+                                       required>
+                            </div>
                         </div>
                         
-                        <!-- 2. نوع کار -->
+                        <!-- 2. نوع کار - با قابلیت سرچ -->
                         <div>
                             <label class="block text-lg font-bold text-gray-800 mb-2">
                                 <i class="fas fa-tasks text-lime-500 ml-2"></i>
                                 نوع کار <span class="text-red-500">*</span>
                             </label>
-                            <select x-model="newOrder.workType" 
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 text-lg"
-                                    required>
-                                <option value="">انتخاب نوع کار...</option>
-                                ${this.workTypes.map(w => `<option value="${w}">${w}</option>`).join('')}
-                            </select>
+                            <div class="relative">
+                                <input type="text" id="wiz-worktype-search"
+                                       x-model="workTypeSearch"
+                                       @input="filterWorkTypes()"
+                                       @focus="showWorkTypeDropdown = true"
+                                       @keydown.escape="showWorkTypeDropdown = false"
+                                       placeholder="جستجو در نوع کار..."
+                                       autocomplete="off"
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 text-lg pr-10">
+                                <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                                <div x-show="showWorkTypeDropdown && filteredWorkTypes.length > 0"
+                                     @click.outside="showWorkTypeDropdown = false"
+                                     class="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-52 overflow-y-auto">
+                                    <template x-for="wt in filteredWorkTypes" :key="wt">
+                                        <div @click="selectWorkType(wt)"
+                                             class="px-4 py-2.5 hover:bg-lime-50 cursor-pointer text-sm border-b border-gray-100 last:border-0"
+                                             :class="newOrder.workType === wt ? 'bg-lime-50 font-semibold text-lime-700' : 'text-gray-700'"
+                                             x-text="wt"></div>
+                                    </template>
+                                </div>
+                            </div>
+                            <!-- نمایش مقدار انتخاب‌شده -->
+                            <div x-show="newOrder.workType" class="mt-1.5 flex items-center gap-2">
+                                <span class="text-xs text-gray-500">انتخاب‌شده:</span>
+                                <span class="text-sm font-semibold text-lime-700 bg-lime-50 px-2 py-0.5 rounded" x-text="newOrder.workType"></span>
+                                <button type="button" @click="newOrder.workType=''; workTypeSearch=''; filterWorkTypes()"
+                                        class="text-gray-400 hover:text-red-500 text-xs"><i class="fas fa-times"></i></button>
+                            </div>
+                            <input type="hidden" x-model="newOrder.workType" required>
                         </div>
                         
                         <!-- 3. دانشگاه -->
@@ -89,7 +147,7 @@ const OrderWizardModule = {
                                 </select>
                             </div>
                             <input x-show="showCustomUniversity" type="text" x-model="newOrder.university" 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 text-lg"
+                                   class="mt-2 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 text-lg"
                                    placeholder="نام دانشگاه را وارد کنید">
                         </div>
                         
@@ -110,7 +168,7 @@ const OrderWizardModule = {
                                 </select>
                             </div>
                             <input x-show="showCustomField" type="text" x-model="newOrder.field" 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 text-lg"
+                                   class="mt-2 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 text-lg"
                                    placeholder="نام رشته را وارد کنید">
                         </div>
                         
@@ -122,15 +180,30 @@ const OrderWizardModule = {
                             </label>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-sm text-gray-600 mb-1">تاریخ</label>
-                                    <input type="date" x-model="newOrder.deadlineDate" 
-                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
-                                           required>
+                                    <label class="block text-sm text-gray-600 mb-1">تاریخ (شمسی)</label>
+                                    <!-- hidden input نگهدارنده مقدار میلادی برای فرم -->
+                                    <input type="hidden" id="wiz-deadline-date" x-model="newOrder.deadlineDate">
+                                    <!-- input شمسی — کتابخانه jalalidatepicker آن را کنترل می‌کند -->
+                                    <input type="text"
+                                           id="wiz-deadline-date-jdp"
+                                           data-jdp
+                                           data-jdp-target-value-input="#wiz-deadline-date"
+                                           data-jdp-target-value-type="gregorian"
+                                           placeholder="انتخاب تاریخ شمسی"
+                                           autocomplete="off"
+                                           readonly
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 text-base cursor-pointer bg-white">
                                 </div>
                                 <div>
-                                    <label class="block text-sm text-gray-600 mb-1">ساعت</label>
-                                    <input type="time" x-model="newOrder.deadlineTime" 
-                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
+                                    <label class="block text-sm text-gray-600 mb-1">ساعت (مثال: 14:30)</label>
+                                    <input type="text"
+                                           x-model="newOrder.deadlineTime"
+                                           placeholder="مثال: 14:30"
+                                           pattern="^([01]?[0-9]|2[0-3]):[0-5][0-9]$"
+                                           maxlength="5"
+                                           dir="ltr"
+                                           oninput="this.value=this.value.replace(/[^0-9:]/g,''); if(this.value.length===2 && !this.value.includes(':')) this.value+=':';"
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 font-mono text-left"
                                            required>
                                 </div>
                             </div>
@@ -234,6 +307,47 @@ const OrderWizardModule = {
 
 // Alpine.js data function
 function orderWizardData() {
+
+    // ── بارگذاری لیست دانشجویان از DataModule / localStorage ──
+    function _loadStudents() {
+        try {
+            if (typeof DataModule !== 'undefined' && DataModule.getUsers) {
+                const all = DataModule.getUsers();
+                if (Array.isArray(all) && all.length) {
+                    return all.filter(u => u.role === 'student');
+                }
+            }
+        } catch(e) {}
+        try {
+            const raw = localStorage.getItem('edu_system_users');
+            if (raw) {
+                const all = JSON.parse(raw);
+                return Array.isArray(all) ? all.filter(u => u.role === 'student') : [];
+            }
+        } catch(e) {}
+        // fallback: students_data
+        try {
+            const raw = localStorage.getItem('students_data');
+            if (raw) {
+                const obj = JSON.parse(raw);
+                return Object.values(obj).map(s => ({
+                    id: s.id || s.studentId || String(Math.random()),
+                    name: s.name || s.studentName || '',
+                    university: s.university || '',
+                    field: s.field || '',
+                    role: 'student'
+                })).filter(s => s.name);
+            }
+        } catch(e) {}
+        return [];
+    }
+
+    const ALL_WORK_TYPES = (typeof OrderWizardModule !== 'undefined')
+        ? OrderWizardModule.workTypes
+        : ['عناوین رساله ارشد','عناوین رساله دکتری','عناوین مقاله','پروپوزال رساله ارشد',
+           'پروپوزال رساله دکتری','پروپوزال مقاله','رساله ارشد','رساله دکتری','مقاله',
+           'تعدیل','تنضید','ترجمه','سایر'];
+
     const data = {
         newOrder: {
             studentName: '',
@@ -253,7 +367,83 @@ function orderWizardData() {
         },
         showCustomUniversity: false,
         showCustomField: false,
-        
+
+        // ── student search ──
+        studentSearch: '',
+        showStudentDropdown: false,
+        allStudents: [],
+        filteredStudents: [],
+
+        // ── work-type search ──
+        workTypeSearch: '',
+        showWorkTypeDropdown: false,
+        allWorkTypes: ALL_WORK_TYPES,
+        filteredWorkTypes: ALL_WORK_TYPES,
+
+        init() {
+            this.allStudents = _loadStudents();
+            this.filteredStudents = [];
+            this.filteredWorkTypes = [...this.allWorkTypes];
+            // راه‌اندازی date picker شمسی برای فیلد تاریخ مهلت تحویل
+            var self = this;
+            setTimeout(function() {
+                if (typeof JalaliPicker !== 'undefined') {
+                    JalaliPicker.attachById('wiz-deadline-date');
+                } else if (typeof jalaliDatepicker !== 'undefined') {
+                    jalaliDatepicker.startWatch({ selector: '#wiz-deadline-date-jdp' });
+                }
+                // sync مقدار Alpine با hidden input هنگام تغییر
+                var hidden = document.getElementById('wiz-deadline-date');
+                if (hidden) {
+                    hidden.addEventListener('change', function() {
+                        self.newOrder.deadlineDate = hidden.value;
+                    });
+                }
+            }, 50);
+        },
+
+        filterStudents() {
+            const q = (this.studentSearch || '').trim().toLowerCase();
+            if (!q) { this.filteredStudents = []; this.showStudentDropdown = false; return; }
+            this.filteredStudents = this.allStudents.filter(s =>
+                (s.name || '').toLowerCase().includes(q) ||
+                (s.university || '').toLowerCase().includes(q)
+            ).slice(0, 10);
+            this.showStudentDropdown = this.filteredStudents.length > 0;
+        },
+
+        selectStudent(st) {
+            this.newOrder.studentName = st.name || '';
+            this.studentSearch = '';
+            this.filteredStudents = [];
+            this.showStudentDropdown = false;
+            // پر کردن خودکار دانشگاه اگر خالی باشد
+            if (!this.newOrder.universitySelect && st.university) {
+                const unis = (typeof OrderWizardModule !== 'undefined') ? OrderWizardModule.universities : [];
+                if (unis.includes(st.university)) {
+                    this.newOrder.universitySelect = st.university;
+                    this.newOrder.university = st.university;
+                } else {
+                    this.newOrder.universitySelect = 'سایر';
+                    this.newOrder.university = st.university;
+                    this.showCustomUniversity = true;
+                }
+            }
+        },
+
+        filterWorkTypes() {
+            const q = (this.workTypeSearch || '').trim().toLowerCase();
+            if (!q) { this.filteredWorkTypes = [...this.allWorkTypes]; return; }
+            this.filteredWorkTypes = this.allWorkTypes.filter(w => w.toLowerCase().includes(q));
+            this.showWorkTypeDropdown = true;
+        },
+
+        selectWorkType(wt) {
+            this.newOrder.workType = wt;
+            this.workTypeSearch = wt;
+            this.showWorkTypeDropdown = false;
+        },
+
         submitOrder() {
             // Validation
             if (!this.newOrder.studentName) {
@@ -273,7 +463,19 @@ function orderWizardData() {
                 return;
             }
             if (!this.newOrder.deadlineDate || !this.newOrder.deadlineTime) {
-                alert('لطفاً مهلت تحویل را مشخص کنید');
+                // بررسی مستقیم hidden input هم برای اطمینان
+                var hiddenDate = document.getElementById('wiz-deadline-date');
+                var dateVal = (hiddenDate && hiddenDate.value) ? hiddenDate.value : this.newOrder.deadlineDate;
+                if (!dateVal || !this.newOrder.deadlineTime) {
+                    alert('لطفاً مهلت تحویل را مشخص کنید');
+                    return;
+                }
+                this.newOrder.deadlineDate = dateVal;
+            }
+            // اعتبارسنجی فرمت ساعت
+            const timePattern = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+            if (!timePattern.test(this.newOrder.deadlineTime)) {
+                alert('لطفاً ساعت را به فرمت صحیح وارد کنید (مثال: 14:30)');
                 return;
             }
             if (!this.newOrder.cost) {
@@ -285,6 +487,10 @@ function orderWizardData() {
             const university = this.newOrder.university || this.newOrder.universitySelect;
             const field = this.newOrder.field || this.newOrder.fieldSelect;
             const orderId = 'ORD-' + Date.now();
+            
+            // مقدار تاریخ را از hidden input بخوان (Gregorian YYYY-MM-DD)
+            const hiddenDateEl = document.getElementById('wiz-deadline-date');
+            const deadlineDate = (hiddenDateEl && hiddenDateEl.value) ? hiddenDateEl.value : this.newOrder.deadlineDate;
             
             // ذخیره فایل جداگانه (برای جلوگیری از پر شدن localStorage)
             const attachmentData = this.newOrder.attachment || window._orderAttachment || null;
@@ -299,14 +505,15 @@ function orderWizardData() {
             }
             
             // Build order object - بدون base64 فایل
+            const deadlineTime = this.newOrder.deadlineTime || '00:00';
             const order = {
                 id: orderId,
                 studentName: this.newOrder.studentName,
                 type: this.newOrder.workType,
                 university: university,
                 field: field,
-                deadline: `${this.newOrder.deadlineDate}T${this.newOrder.deadlineTime}`,
-                deadlineDateTime: `${this.newOrder.deadlineDate}T${this.newOrder.deadlineTime}`,
+                deadline: `${deadlineDate}T${deadlineTime}`,
+                deadlineDateTime: `${deadlineDate}T${deadlineTime}`,
                 attachmentName: attachmentName || null,
                 hasAttachment: !!attachmentData,
                 description: this.newOrder.description,

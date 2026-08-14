@@ -18,19 +18,58 @@ const TasksModule = {
     getAllEmployeesStats() {
         const employees = this.getemployees();
         const counts = { pending: 0, in_progress: 0, completed: 0, rejected: 0, approved: 0, delayed: 0 };
+        // نگهداری نام کارمندان به ازای هر وضعیت
+        const names = { pending: [], in_progress: [], completed: [], rejected: [], approved: [], delayed: [] };
         employees.forEach(emp => {
             const tasks = this.getemployeeTasks(emp.id);
+            const empCounts = { pending: 0, in_progress: 0, completed: 0, rejected: 0, approved: 0, delayed: 0 };
             tasks.forEach(t => {
-                if (counts[t.status] !== undefined) counts[t.status]++;
+                if (counts[t.status] !== undefined) {
+                    counts[t.status]++;
+                    empCounts[t.status]++;
+                }
+            });
+            // اگر کارمند در این وضعیت وظیفه دارد، اسمش را اضافه کن
+            Object.keys(empCounts).forEach(status => {
+                if (empCounts[status] > 0) {
+                    names[status].push({ name: emp.name, count: empCounts[status] });
+                }
             });
         });
-        return counts;
+        return { counts, names };
     },
 
     // Get tasks page content
     getTasksContent() {
         const employees = this.getemployees();
-        const stats = this.getAllEmployeesStats();
+        const { counts: stats, names } = this.getAllEmployeesStats();
+
+        // ساخت tooltip HTML برای هر وضعیت
+        const makeTooltip = (status) => {
+            return names[status] || [];
+        };
+
+        const statBox = (bg, border, numCls, count, label, status) => {
+            const list = makeTooltip(status);
+            const tip = list.length ? list.map(e => `${e.name} (${e.count})`).join('\n') : '';
+            return `
+            <div class="relative group bg-${bg}-500/10 border border-${bg}-500/30 rounded-xl p-3 text-center cursor-default select-none"
+                 ${tip ? `title="${tip}"` : ''}>
+                <p class="text-2xl font-bold text-${numCls}">${count}</p>
+                <p class="text-xs text-gray-400 mt-0.5">${label}</p>
+                ${list.length ? `
+                <div class="absolute z-50 bottom-full mb-2 right-1/2 translate-x-1/2
+                            hidden group-hover:block
+                            bg-gray-100 text-white text-xs rounded-lg px-3 py-2
+                            shadow-xl border border-gray-200 whitespace-pre-line
+                            min-w-max max-w-[200px] text-right pointer-events-none">
+                    <div class="font-semibold text-gray-300 mb-1 border-b border-gray-300 pb-1">همکاران:</div>
+                    ${list.map(e => `<div class="flex justify-between gap-3"><span>${e.name}</span><span class="text-${numCls} font-bold">${e.count}</span></div>`).join('')}
+                    <div class="absolute bottom-0 right-1/2 translate-x-1/2 translate-y-full
+                                border-4 border-transparent border-t-gray-300"></div>
+                </div>` : ''}
+            </div>`;
+        };
         
         return `
             <div class="space-y-6">
@@ -51,30 +90,12 @@ const TasksModule = {
 
                 <!-- ═══ باکس‌های آمار کلی همه کارمندان ═══ -->
                 <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                    <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 text-center">
-                        <p class="text-2xl font-bold text-yellow-400">${stats.pending}</p>
-                        <p class="text-xs text-gray-400 mt-0.5">در انتظار</p>
-                    </div>
-                    <div class="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 text-center">
-                        <p class="text-2xl font-bold text-blue-400">${stats.in_progress}</p>
-                        <p class="text-xs text-gray-400 mt-0.5">در حال انجام</p>
-                    </div>
-                    <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 text-center">
-                        <p class="text-2xl font-bold text-emerald-400">${stats.completed}</p>
-                        <p class="text-xs text-gray-400 mt-0.5">تکمیل شده</p>
-                    </div>
-                    <div class="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-center">
-                        <p class="text-2xl font-bold text-red-400">${stats.rejected}</p>
-                        <p class="text-xs text-gray-400 mt-0.5">رد شده</p>
-                    </div>
-                    <div class="bg-lime-500/10 border border-lime-500/30 rounded-xl p-3 text-center">
-                        <p class="text-2xl font-bold text-lime-400">${stats.approved}</p>
-                        <p class="text-xs text-gray-400 mt-0.5">تأیید نهایی</p>
-                    </div>
-                    <div class="bg-orange-500/10 border border-orange-500/30 rounded-xl p-3 text-center">
-                        <p class="text-2xl font-bold text-orange-400">${stats.delayed}</p>
-                        <p class="text-xs text-gray-400 mt-0.5">به تأخیر افتاده</p>
-                    </div>
+                    ${statBox('yellow', 'yellow', 'yellow-400', stats.pending,    'در انتظار',       'pending')}
+                    ${statBox('blue',   'blue',   'blue-400',   stats.in_progress,'در حال انجام',    'in_progress')}
+                    ${statBox('emerald','emerald','emerald-400',stats.completed,  'تکمیل شده',       'completed')}
+                    ${statBox('red',    'red',    'red-400',    stats.rejected,   'رد شده',          'rejected')}
+                    ${statBox('lime',   'lime',   'lime-400',   stats.approved,   'تأیید نهایی',     'approved')}
+                    ${statBox('orange', 'orange', 'orange-400', stats.delayed,    'به تأخیر افتاده', 'delayed')}
                 </div>
                 
                 <!-- Main Layout -->
@@ -305,14 +326,20 @@ const TasksModule = {
     // Get task card
     getTaskCard(task) {
         const statusColors = {
-            'pending': 'bg-lime-500',
+            'pending':     'bg-lime-500',
             'in_progress': 'bg-blue-500',
-            'completed': 'bg-green-500'
+            'completed':   'bg-green-500',
+            'approved':    'bg-teal-500',
+            'rejected':    'bg-red-500',
+            'delayed':     'bg-orange-500'
         };
         const statusTexts = {
-            'pending': 'در انتظار',
+            'pending':     'در انتظار',
             'in_progress': 'در حال انجام',
-            'completed': 'تکمیل شده'
+            'completed':   'تکمیل شده',
+            'approved':    'تأیید نهایی',
+            'rejected':    'رد شده',
+            'delayed':     'به تأخیر افتاده'
         };
         
         // Voice message display
@@ -371,9 +398,36 @@ const TasksModule = {
                 </div>
             </div>
         ` : '';
+
+        // نمایش توضیحات رد شدن (اگر موجود باشد)
+        const rejectNoteHTML = task.status === 'rejected' && task.rejectNote ? `
+            <div class="mt-2 bg-red-900/30 border border-red-700/40 rounded-lg px-3 py-2">
+                <p class="text-xs text-red-300 flex items-start gap-1">
+                    <i class="fas fa-comment-alt mt-0.5 flex-shrink-0"></i>
+                    <span><span class="font-semibold">دلیل رد:</span> ${task.rejectNote}</span>
+                </p>
+            </div>
+        ` : '';
+
+        // دکمه‌های تأیید/رد برای وضعیت "تکمیل شده"
+        const approveRejectHTML = task.status === 'completed' ? `
+            <div class="mt-3 pt-3 border-t border-slate-600 flex items-center gap-2">
+                <span class="text-xs text-gray-400 ml-auto">بررسی:</span>
+                <button onclick="TasksModule.approveTask('${task.id}')"
+                        title="تأیید وظیفه"
+                        class="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-medium transition-colors">
+                    <i class="fas fa-check"></i>تأیید
+                </button>
+                <button onclick="TasksModule.showRejectModal('${task.id}')"
+                        title="رد وظیفه"
+                        class="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-medium transition-colors">
+                    <i class="fas fa-times"></i>رد
+                </button>
+            </div>
+        ` : '';
         
         return `
-            <div class="bg-slate-700 rounded-lg p-4">
+            <div class="bg-slate-700 rounded-lg p-4" id="task-card-${task.id}">
                 <div class="flex justify-between items-start">
                     <div class="flex-1">
                         <div class="flex items-center mb-2">
@@ -388,9 +442,11 @@ const TasksModule = {
                         ${voiceHTML}
                         ${additionalTextHTML}
                         ${attachedFileHTML}
+                        ${rejectNoteHTML}
+                        ${approveRejectHTML}
                     </div>
-                    <div class="flex items-center space-x-2 space-x-reverse">
-                        <span class="text-xs px-2 py-1 rounded ${statusColors[task.status]} text-white">
+                    <div class="flex items-center space-x-2 space-x-reverse mr-3">
+                        <span class="text-xs px-2 py-1 rounded ${statusColors[task.status] || 'bg-gray-500'} text-white whitespace-nowrap">
                             ${statusTexts[task.status] || task.status}
                         </span>
                         <button onclick="TasksModule.showEditTaskModal('${task.id}')" 
@@ -877,19 +933,20 @@ const TasksModule = {
                                 <label class="block text-sm text-gray-300 mb-1">مهلت انجام</label>
                                 <div class="flex flex-col gap-1">
                                     <div class="flex gap-1 mb-1">
-                                        <button type="button" onclick="WorkHoursUI.setQuickDate('task-due-date','task-due-date-disp',-2)"
+                                        <button type="button" onclick="TasksModule._setTaskDate('task-due-date', -2)"
                                                 class="flex-1 text-xs bg-slate-600 hover:bg-slate-500 text-gray-300 px-2 py-1 rounded-lg"> امروز</button>
-                                        <button type="button" onclick="WorkHoursUI.setQuickDate('task-due-date','task-due-date-disp',-1)"
+                                        <button type="button" onclick="TasksModule._setTaskDate('task-due-date', -1)"
                                                 class="flex-1 text-xs bg-blue-700 hover:bg-blue-600 text-white px-2 py-1 rounded-lg">فردا</button>
-                                        <button type="button" onclick="WorkHoursUI.setQuickDate('task-due-date','task-due-date-disp',0)"
+                                        <button type="button" onclick="TasksModule._setTaskDate('task-due-date', 0)"
                                                 class="flex-1 text-xs bg-lime-700 hover:bg-lime-600 text-white px-2 py-1 rounded-lg">پس فردا</button>
                                     </div>
-                                    <input type="hidden" id="task-due-date">
-                                    <button type="button" id="task-due-date-disp"
-                                            onclick="WorkHoursUI.openJalaliPicker('task-due-date','task-due-date-disp')"
-                                            class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-right text-white hover:border-lime-500 transition-colors">
-                                        <span id="task-due-date-disp-text" class="text-gray-400">انتخاب تاریخ</span>
-                                    </button>
+                                    <input type="text"
+                                           id="task-due-date"
+                                           data-jdp
+                                           placeholder="انتخاب تاریخ"
+                                           autocomplete="off"
+                                           readonly
+                                           class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-right text-white hover:border-lime-500 transition-colors cursor-pointer">
                                 </div>
                             </div>
                             <div>
@@ -979,7 +1036,7 @@ const TasksModule = {
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
                         <button onclick="TasksModule.closeModal('new-task-modal')"
-                                class="px-4 py-2 text-gray-400 hover:text-white">انصراف</button>
+                                class="px-4 py-2 text-gray-400 hover:text-black">انصراف</button>
                         <button onclick="TasksModule.createTask()"
                                 class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-4 py-2 rounded-lg font-medium">
                             <i class="fas fa-paper-plane ml-2"></i>ایجاد وظیفه
@@ -990,9 +1047,41 @@ const TasksModule = {
         `;
 
         document.body.insertAdjacentHTML('beforeend', modalHTML);
-        if (typeof WorkHoursUI !== 'undefined') {
-            WorkHoursUI.setQuickDate('task-due-date', 'task-due-date-disp', 0);
+        // مقداردهی پیش‌فرض: فردا
+        TasksModule._setTaskDate('task-due-date', -1);
+        // راه‌اندازی date picker شمسی
+        setTimeout(function() {
+            if (typeof JalaliPicker !== 'undefined') {
+                JalaliPicker.start();
+            } else if (typeof jalaliDatepicker !== 'undefined') {
+                jalaliDatepicker.startWatch();
+            }
+        }, 30);
+    },
+
+    // ── helper: تنظیم سریع تاریخ شمسی در input ─────────────────
+    _setTaskDate(inputId, offset) {
+        var input = document.getElementById(inputId);
+        if (!input) return;
+        var d = new Date();
+        // timezone ایران
+        try {
+            var iranStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Tehran' });
+            d = new Date(iranStr);
+        } catch(e) {}
+        d.setDate(d.getDate() + offset);
+        // تبدیل به شمسی
+        var jStr = '';
+        if (typeof Jalali !== 'undefined') {
+            jStr = Jalali.toJalaliISO(d);
+        } else {
+            jStr = d.getFullYear() + '-' +
+                   String(d.getMonth()+1).padStart(2,'0') + '-' +
+                   String(d.getDate()).padStart(2,'0');
         }
+        input.value = jStr;
+        // fire change برای sync
+        input.dispatchEvent(new Event('change', { bubbles: true }));
     },
 
     // ── انتخاب فایل پیوست برای وظیفه جدید ───────────────────────
@@ -1854,6 +1943,96 @@ const TasksModule = {
 
         this.refreshContent();
         UTILS.showNotification('وظیفه حذف شد', 'success');
+    },
+
+    // ── تأیید وظیفه تکمیل‌شده ─────────────────────────────────
+    approveTask(taskId) {
+        if (!this.selectedemployee) return;
+        const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+        const tasks = tasksData[this.selectedemployee] || [];
+        const idx = tasks.findIndex(t => t.id === taskId);
+        if (idx === -1) return;
+        tasks[idx].status = 'approved';
+        tasks[idx].approvedAt = new Date().toISOString();
+        tasksData[this.selectedemployee] = tasks;
+        localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
+        this.refreshContent();
+        UTILS.showNotification('وظیفه تأیید شد ✓', 'success');
+    },
+
+    // ── نمایش مودال رد وظیفه ──────────────────────────────────
+    showRejectModal(taskId) {
+        // حذف مودال قبلی اگر موجود باشد
+        const old = document.getElementById('__reject-task-modal');
+        if (old) old.remove();
+
+        const modal = document.createElement('div');
+        modal.id = '__reject-task-modal';
+        modal.className = 'fixed inset-0 z-[9999] flex items-center justify-center p-4';
+        modal.innerHTML = `
+            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                 onclick="document.getElementById('__reject-task-modal').remove()"></div>
+            <div class="relative bg-slate-800 border border-red-700/40 rounded-2xl shadow-2xl w-full max-w-md p-6 z-10">
+                <h3 class="text-lg font-bold text-white mb-1 flex items-center gap-2">
+                    <i class="fas fa-times-circle text-red-400"></i>
+                    رد وظیفه
+                </h3>
+                <p class="text-xs text-gray-400 mb-4">توضیحات رد شدن را بنویسید — این پیام به کارمند ارسال می‌شود.</p>
+                <textarea id="__reject-note-input" rows="4"
+                          placeholder="دلیل رد کردن را توضیح دهید..."
+                          class="w-full bg-slate-700 border border-slate-600 focus:border-red-500 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none resize-none text-sm"></textarea>
+                <div class="flex gap-3 mt-4 justify-end">
+                    <button onclick="document.getElementById('__reject-task-modal').remove()"
+                            class="px-4 py-2 text-gray-400 hover:text-white text-sm">انصراف</button>
+                    <button onclick="TasksModule.rejectTask('${taskId}')"
+                            class="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-medium flex items-center gap-2">
+                        <i class="fas fa-times"></i>رد وظیفه
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        setTimeout(() => document.getElementById('__reject-note-input')?.focus(), 50);
+    },
+
+    // ── ثبت رد وظیفه و ارسال پیام به کارمند ──────────────────
+    rejectTask(taskId) {
+        const note = document.getElementById('__reject-note-input')?.value.trim() || '';
+        if (!note) {
+            UTILS.showNotification('لطفاً دلیل رد را بنویسید', 'error');
+            return;
+        }
+        if (!this.selectedemployee) return;
+
+        // بروزرسانی وضعیت وظیفه
+        const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+        const tasks = tasksData[this.selectedemployee] || [];
+        const idx = tasks.findIndex(t => t.id === taskId);
+        if (idx === -1) return;
+        tasks[idx].status = 'rejected';
+        tasks[idx].rejectNote = note;
+        tasks[idx].rejectedAt = new Date().toISOString();
+        tasksData[this.selectedemployee] = tasks;
+        localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
+
+        // ارسال پیام به کارمند
+        const taskTitle = tasks[idx].title || 'وظیفه';
+        const messages = this.getemployeeMessages(this.selectedemployee);
+        messages.push({
+            id: 'msg_' + Date.now(),
+            text: `❌ وظیفه "${taskTitle}" رد شد.\n📝 دلیل: ${note}`,
+            sender: 'manager',
+            timestamp: new Date().toISOString(),
+            isSystemMessage: true
+        });
+        const msgsData = JSON.parse(localStorage.getItem('employee_messages') || '{}');
+        msgsData[this.selectedemployee] = messages;
+        localStorage.setItem('employee_messages', JSON.stringify(msgsData));
+
+        // بستن مودال
+        document.getElementById('__reject-task-modal')?.remove();
+        this.refreshContent();
+        UTILS.showNotification('وظیفه رد شد و پیام ارسال گردید', 'info');
     },
     
     sendemployeeMessage() {

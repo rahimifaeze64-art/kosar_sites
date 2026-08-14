@@ -192,9 +192,6 @@ const OrderDetailRedesign = (function () {
             <p class="text-base font-black">${fmt(order.paidAmount||0)}</p>
             <p class="text-[10px] opacity-80">${pst.label}</p>
           </div>
-          <div class="bg-white rounded-xl border border-gray-200 px-4 py-2 flex items-center justify-center shadow-sm">
-            ${progressRing(order.progress)}
-          </div>
           ${agentName?`
           <div class="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-2 shadow-sm">
             <div class="w-8 h-8 rounded-full bg-[#8FBF3F] text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
@@ -269,26 +266,6 @@ const OrderDetailRedesign = (function () {
           ${row('fa-calendar-check','تاریخ ثبت',fmtDate(order.createdAt))}
           ${row('fa-calendar-alt','مهلت تحویل',fmtDeadline(order.deadline||order.deadlineDateTime))}
           ${order.stage?row('fa-map-marker-alt','مرحله',esc(order.stage)):''}
-        </div>
-      </div>
-      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-        <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-          <h4 class="text-sm font-bold text-gray-700 flex items-center gap-2"><i class="fas fa-chart-line text-[#8FBF3F]"></i>پیشرفت کار</h4>
-          <span class="text-sm font-bold text-[#5a7a28]">${Math.min(100,parseInt(order.progress)||0)}%</span>
-        </div>
-        <div class="p-4 space-y-3">
-          <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
-            ${(()=>{const p=Math.min(100,parseInt(order.progress)||0);const c=p<30?'bg-red-400':p<70?'bg-amber-400':'bg-green-500';
-              return `<div class="${c} h-3 rounded-full" style="width:${p}%"></div>`;})()}
-          </div>
-          ${canManage(userRole)?`
-          <div class="flex items-center gap-3">
-            <label class="text-xs text-gray-500">بروزرسانی:</label>
-            <input type="range" min="0" max="100" value="${parseInt(order.progress)||0}" class="flex-1 accent-[#8FBF3F]"
-              oninput="document.getElementById('odr-prog-val').textContent=this.value+'%'"
-              onchange="OrderDetailRedesign.updateProgress('${esc(order.id)}',this.value)">
-            <span id="odr-prog-val" class="text-xs font-bold text-[#5a7a28] w-10 text-center">${parseInt(order.progress)||0}%</span>
-          </div>`:''}
         </div>
       </div>
       <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
@@ -496,23 +473,7 @@ const OrderDetailRedesign = (function () {
                 <i class="fas fa-clock ml-1 text-[10px]"></i>مهلت: ${fmtDate(order.deadline||order.deadlineDateTime)}</span>`:''}
             </div>
           </div>
-          <div class="flex-shrink-0">${progressRing(prog)}</div>
-        </div>
-        <!-- slider پیشرفت -->
-        <div class="mt-4">
-          <div class="flex items-center justify-between mb-1">
-            <span class="text-xs font-medium text-gray-600">پیشرفت کار</span>
-            <span class="text-xs font-bold text-[#5a7a28]" id="mw-prog-val">${prog}%</span>
-          </div>
-          <div class="flex items-center gap-3">
-            <input type="range" min="0" max="100" value="${prog}" class="flex-1 accent-[#8FBF3F]"
-              oninput="document.getElementById('mw-prog-val').textContent=this.value+'%'"
-              onchange="OrderDetailRedesign.updateProgress('${esc(order.id)}',this.value)">
-            <button onclick="OrderDetailRedesign.updateProgress('${esc(order.id)}',document.getElementById('mw-prog-val').textContent.replace('%',''))"
-              class="bg-[#8FBF3F] hover:bg-[#7aac2e] text-white px-3 py-1.5 rounded-lg text-xs font-medium flex-shrink-0">
-              <i class="fas fa-save ml-1"></i>ذخیره
-            </button>
-          </div>
+          <div class="flex-shrink-0"></div>
         </div>
       </div>
 
@@ -751,46 +712,6 @@ const OrderDetailRedesign = (function () {
         <div class="flex justify-between text-xs text-gray-400 mt-1">
           <span>پرداخت: ${fmt(paid)} ${currency}</span>
           <span>مانده: ${fmt(remaining)} ${currency}</span>
-        </div>
-      </div>
-      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-        <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-          <h4 class="text-sm font-bold text-gray-700 flex items-center gap-2"><i class="fas fa-percent text-[#8FBF3F]"></i>تقسیم درآمد</h4>
-        </div>
-        <div class="p-4">
-          <div class="grid grid-cols-2 gap-3 mb-4">
-            <div class="bg-[#f3f9e8] rounded-xl p-4 text-center border border-[#d4edaa]">
-              <p class="text-xs text-gray-500 mb-1">سهم عامل (${agentPct}٪)</p>
-              <p class="text-xl font-black text-[#5a7a28]">${fmt(total*agentPct/100)}</p>
-              <p class="text-xs text-gray-400">${currency}</p>
-            </div>
-            <div class="bg-blue-50 rounded-xl p-4 text-center border border-blue-100">
-              <p class="text-xs text-gray-500 mb-1">سهم مدیریت (${mgrPct}٪)</p>
-              <p class="text-xl font-black text-blue-700">${fmt(total*mgrPct/100)}</p>
-              <p class="text-xs text-gray-400">${currency}</p>
-            </div>
-          </div>
-          <div class="w-full h-2.5 rounded-full overflow-hidden flex">
-            <div class="bg-[#8FBF3F] h-full" style="width:${agentPct}%"></div>
-            <div class="bg-blue-400 h-full" style="width:${mgrPct}%"></div>
-          </div>
-          ${canManage(userRole)?`
-          <div class="mt-4 pt-4 border-t border-gray-100 space-y-3">
-            <p class="text-xs font-semibold text-gray-600">تغییر درصدها</p>
-            <div class="grid grid-cols-2 gap-3">
-              <div><label class="text-xs text-gray-500 block mb-1">سهم عامل ٪</label>
-                <input type="number" id="fin-agent-pct" value="${agentPct}" min="0" max="100"
-                  class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#8FBF3F] outline-none"
-                  oninput="document.getElementById('fin-mgr-pct').value=100-this.value"></div>
-              <div><label class="text-xs text-gray-500 block mb-1">سهم مدیریت ٪</label>
-                <input type="number" id="fin-mgr-pct" value="${mgrPct}" min="0" max="100"
-                  class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#8FBF3F] outline-none"
-                  oninput="document.getElementById('fin-agent-pct').value=100-this.value"></div>
-            </div>
-            <button onclick="OrderDetailRedesign.saveRevenueSplit('${esc(order.id)}')"
-              class="w-full bg-[#8FBF3F] hover:bg-[#7aac2e] text-white py-2 rounded-lg text-sm font-medium">
-              <i class="fas fa-save ml-1"></i>ذخیره درصدها</button>
-          </div>`:''}
         </div>
       </div>
       ${canManage(userRole)?`
@@ -1482,7 +1403,6 @@ const OrderDetailRedesign = (function () {
       <tr><td>رشته</td><td>${order.field||'---'}</td></tr>
       <tr><td>نوع کار</td><td>${order.type||'---'}</td></tr>
       <tr><td>وضعیت</td><td>${STATUS[order.status]?.label||order.status||'---'}</td></tr>
-      <tr><td>پیشرفت</td><td>${order.progress||0}%</td></tr>
       <tr><td>مبلغ</td><td>${(parseFloat(order.totalAmount||0)).toLocaleString('fa-IR')} ${currency}</td></tr>
       <tr><td>پرداخت</td><td>${(parseFloat(order.paidAmount||0)).toLocaleString('fa-IR')} ${currency}</td></tr>
       <tr><td>عامل</td><td>${order.assignedDoctor||'---'}</td></tr>

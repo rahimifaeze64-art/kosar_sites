@@ -131,6 +131,8 @@ const OrdersRedesign = (function () {
     if (level === 'warning') return 'bg-amber-50 border-r-4 border-amber-300';
     return '';
   }
+
+  function statusBadge(status) {
     const s = STATUS[status] || { label: status || '---', cls: 'bg-gray-100 text-gray-700 border border-gray-200', icon: 'fa-circle', dot: 'bg-gray-400' };
     return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${s.cls}">
       <i class="fas ${s.icon} text-[10px]"></i>${s.label}</span>`;
@@ -404,7 +406,6 @@ const OrdersRedesign = (function () {
         <div class="text-xs text-gray-400">${esc(order.degree || '')}</div>
       </td>
       <td class="px-4 py-3">${statusBadge(order.status)}</td>
-      <td class="px-4 py-3 min-w-[120px]">${progressBar(order.progress)}</td>
       <td class="px-4 py-3">
         <div class="text-sm font-semibold text-gray-800">${fmt(order.totalAmount || order.cost || 0)} ${currency}</div>
         <div class="text-xs mt-0.5">
@@ -511,7 +512,6 @@ const OrdersRedesign = (function () {
                 <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">دانشجو</th>
                 <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">نوع کار</th>
                 <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">وضعیت</th>
-                <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">پیشرفت</th>
                 <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">مبلغ</th>
                 <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">عامل</th>
                 <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">مهلت</th>
@@ -584,12 +584,9 @@ const OrdersRedesign = (function () {
       const agents = AGENTS();
       const agentObj = agents.find(a => a.id === o.assignedDoctorId || a.id === o.assignedAgentId);
       const agentName = agentObj ? esc(agentObj.name) : esc(o.assignedDoctor || '');
-      const p = Math.min(100, parseInt(o.progress) || 0);
-      const pcolor = p < 30 ? 'bg-red-400' : p < 70 ? 'bg-amber-400' : 'bg-green-500';
       const currency = esc(o.currency || 'تومان');
       return `
       <div class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
-        <div class="h-1.5 w-full ${pcolor}" style="width:${p}%"></div>
         <div class="p-4 flex-1 space-y-3">
           <div class="flex items-start justify-between gap-2">
             <div class="flex-1 min-w-0">
@@ -599,20 +596,6 @@ const OrdersRedesign = (function () {
             ${statusBadge(o.status)}
           </div>
           <div class="flex items-center gap-2">
-            <span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full truncate max-w-[180px]">
-              ${esc(o.isCustomOrder ? (o.title||o.type) : o.type) || '---'}
-            </span>
-            ${o.degree ? `<span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">${esc(o.degree)}</span>` : ''}
-          </div>
-          <div class="space-y-1">
-            <div class="flex justify-between text-xs text-gray-500">
-              <span>پیشرفت</span><span>${p}%</span>
-            </div>
-            <div class="w-full bg-gray-100 rounded-full h-1.5">
-              <div class="${pcolor} h-1.5 rounded-full transition-all" style="width:${p}%"></div>
-            </div>
-          </div>
-          <div class="flex items-center justify-between text-xs">
             <span class="font-semibold text-gray-800">${fmt(o.totalAmount||o.cost||0)} ${currency}</span>
             <span class="px-1.5 py-0.5 rounded text-[10px] font-medium ${pst.cls}">
               <i class="fas ${pst.icon} ml-1 text-[8px]"></i>${pst.label}
@@ -699,12 +682,6 @@ const OrdersRedesign = (function () {
               <span class="text-sm font-medium text-gray-800">${v}</span>
             </div>`).join('')}
         </div>
-        <div class="bg-gray-50 rounded-lg p-3 space-y-2">
-          <div class="flex justify-between text-xs text-gray-500">
-            <span>پیشرفت کار</span><span>${Math.min(100,parseInt(order.progress)||0)}%</span>
-          </div>
-          ${progressBar(order.progress)}
-        </div>
         ${order.description ? `
         <div class="bg-blue-50 rounded-lg p-3">
           <p class="text-xs text-blue-600 font-medium mb-1"><i class="fas fa-comment-alt ml-1"></i>توضیحات</p>
@@ -737,19 +714,6 @@ const OrdersRedesign = (function () {
               <p class="text-xs text-gray-500 mb-1">${k}</p>
               <p class="text-sm font-bold ${tc}">${v}</p>
             </div>`).join('')}
-        </div>
-        <div class="bg-gray-50 rounded-xl p-4">
-          <p class="text-sm font-semibold text-gray-700 mb-3"><i class="fas fa-percent ml-2 text-[#8FBF3F]"></i>تقسیم درآمد</p>
-          <div class="flex gap-4">
-            <div class="flex-1 bg-white rounded-lg p-3 border border-gray-200 text-center">
-              <p class="text-xs text-gray-500">سهم عامل (${agentPct}٪)</p>
-              <p class="text-base font-bold text-[#5a7a28] mt-1">${fmt(agentShare)} ${currency}</p>
-            </div>
-            <div class="flex-1 bg-white rounded-lg p-3 border border-gray-200 text-center">
-              <p class="text-xs text-gray-500">سهم مدیریت (${mgrPct}٪)</p>
-              <p class="text-base font-bold text-blue-700 mt-1">${fmt(mgrShare)} ${currency}</p>
-            </div>
-          </div>
         </div>
         ${canEdit ? `
         <div class="bg-white rounded-xl border border-gray-200 p-4">
@@ -1038,16 +1002,6 @@ const OrdersRedesign = (function () {
                   inp('frm-deadline','date',deadlineVal,''))}
                 ${field('frm-deadline-time','مهلت تحویل (ساعت)',
                   inp('frm-deadline-time','time',deadlineTime,''))}
-                ${field('frm-progress','درصد پیشرفت',`
-                  <div class="flex items-center gap-3">
-                    <input type="range" id="frm-progress" min="0" max="100"
-                      value="${parseInt(o.progress)||0}"
-                      class="flex-1 accent-[#8FBF3F]"
-                      oninput="document.getElementById('frm-progress-val').textContent=this.value+'٪'">
-                    <span id="frm-progress-val" class="text-sm font-semibold text-[#5a7a28] w-10 text-center">
-                      ${parseInt(o.progress)||0}٪
-                    </span>
-                  </div>`)}
               </div>
               ${field('frm-description','توضیحات',`
                 <textarea id="frm-description" rows="3" placeholder="توضیحات، الزامات و جزئیات سفارش..."
@@ -1109,14 +1063,6 @@ const OrdersRedesign = (function () {
                     class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#8FBF3F] outline-none bg-white">
                     <option value="">— بدون تخصیص —</option>${agentOpts}
                   </select>`)}
-                ${field('frm-agent-pct','سهم عامل ٪',`
-                  <input type="number" id="frm-agent-pct" value="${parseFloat(o.revenueAgentPercent)||60}" min="0" max="100"
-                    class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#8FBF3F] outline-none bg-white"
-                    oninput="document.getElementById('frm-mgr-pct').value=100-this.value">`)}
-                ${field('frm-mgr-pct','سهم مدیریت ٪',`
-                  <input type="number" id="frm-mgr-pct" value="${parseFloat(o.revenueManagerPercent)||40}" min="0" max="100"
-                    class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#8FBF3F] outline-none bg-white"
-                    oninput="document.getElementById('frm-agent-pct').value=100-this.value">`)}
               </div>
             </div>
 
@@ -1356,7 +1302,6 @@ const OrdersRedesign = (function () {
       revenueManagerPercent: mgrPct,
       phone:                 document.getElementById('frm-phone')?.value.trim() || '',
       passportNumber:        document.getElementById('frm-passport')?.value.trim() || '',
-      progress:              parseInt(document.getElementById('frm-progress')?.value) || 0,
       updatedAt:             new Date().toISOString(),
     };
 

@@ -1,260 +1,673 @@
 /**
  * jalali-picker.js
- * date picker شمسی سبک — بدون dependency
- * استفاده: JalaliPicker.init() بعد از لود DOM
+ *
+ * Thin adapter around @majidh1/jalalidatepicker for a static/vanilla-JS site.
+ *
+ * Requirements:
+ *   - jalalidatepicker.min.css
+ *   - jalalidatepicker.min.js
+ *   must be loaded BEFORE this file.
+ *
+ * Public API:
+ *   JalaliPicker.init()
+ *   JalaliPicker.attachById(id)
+ *   JalaliPicker.sync(id)
+ *   JalaliPicker.start()
  */
 
-(function(root) {
+(function (root) {
     'use strict';
 
-    var J = root.Jalali;
-    if (!J) { console.error('jalali-picker: Jalali.js باید قبل از این فایل لود شود'); return; }
+    var LIBRARY_SELECTOR = 'input[data-jdp]';
+    var LEGACY_SELECTOR = 'input[data-jalali]';
 
-    var MONTHS = J.MONTHS;
-    var activeInput = null;
-    var pickerEl = null;
-    var currentJY, currentJM;
+    var DISPLAY_ATTRIBUTE = 'data-jalali-display';
+    var TARGET_ATTRIBUTE = 'data-jdp-target-value-input';
+    var TARGET_TYPE_ATTRIBUTE = 'data-jdp-target-value-type';
 
-    // ── ساخت picker DOM ─────────────────────────────────────
-    function createPicker() {
-        if (document.getElementById('__jalali-picker')) return;
-        var el = document.createElement('div');
-        el.id = '__jalali-picker';
-        el.dir = 'rtl';
-        el.style.cssText = [
-            'position:fixed','z-index:99999','background:#1e3a5f',
-            'border:1px solid #3b82f6','border-radius:12px','padding:12px',
-            'box-shadow:0 8px 32px rgba(0,0,0,0.5)','min-width:280px',
-            'font-family:Vazirmatn,sans-serif','display:none','color:#fff'
-        ].join(';');
-        document.body.appendChild(el);
-        pickerEl = el;
+    var initialized = false;
 
-        document.addEventListener('click', function(e) {
-            if (!pickerEl) return;
-            if (!pickerEl.contains(e.target) && e.target !== activeInput) {
-                pickerEl.style.display = 'none';
-                activeInput = null;
+    function logError(message) {
+        if (root.console && console.error) {
+            console.error('[JalaliPicker] ' + message);
+        }
+    }
+
+    function isLibraryReady() {
+        return !!(
+            root.jalaliDatepicker &&
+            typeof root.jalaliDatepicker.startWatch === 'function'
+        );
+    }
+
+    /**
+     * Convert Gregorian YYYY-MM-DD to Jalali YYYY/MM/DD
+     * for displaying an existing value.
+     *
+     * This does not use another date library.
+     */
+    function gregorianToJalaliDisplay(value) {
+        if (!value) {
+            return '';
+        }
+
+        var match = String(value).match(
+            /^(\d{4})-(\d{1,2})-(\d{1,2})/
+        );
+
+        if (!match) {
+            return '';
+        }
+
+        var year = Number(match[1]);
+        var month = Number(match[2]);
+        var day = Number(match[3]);
+
+        var date = new Date(
+            Date.UTC(
+                year,
+                month - 1,
+                day,
+                12,
+                0,
+                0
+            )
+        );
+
+        if (isNaN(date.getTime())) {
+            return '';
+        }
+
+        try {
+            var formatter = new Intl.DateTimeFormat(
+                'en-US-u-ca-persian',
+                {
+                    calendar: 'persian',
+                    numberingSystem: 'latn',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    timeZone: 'UTC'
+                }
+            );
+
+            var parts = formatter.formatToParts(date);
+            var result = {};
+
+            parts.forEach(function (part) {
+                if (part.type === 'year') {
+                    result.year = part.value;
+                }
+
+                if (part.type === 'month') {
+                    result.month = part.value;
+                }
+
+                if (part.type === 'day') {
+                    result.day = part.value;
+                }
+            });
+
+            if (
+                !result.year ||
+                !result.month ||
+                !result.day
+            ) {
+                return '';
             }
-        });
+
+            return (
+                result.year +
+                '/' +
+                result.month +
+                '/' +
+                result.day
+            );
+        } catch (error) {
+            logError(
+                'Unable to convert the existing Gregorian date to Jalali.'
+            );
+
+            return '';
+        }
     }
 
-    // ── رندر تقویم ──────────────────────────────────────────
-    function renderCalendar(jy, jm) {
-        currentJY = jy; currentJM = jm;
-        var g = J.toGregorian(jy, jm, 1);
-        var firstDay = new Date(g.gy, g.gm - 1, g.gd).getDay(); // 0=Sun
-        // تبدیل به شنبه-اول (IR)
-        var startOffset = (firstDay + 1) % 7;
-        var daysInMonth = J.monthLength ? J.monthLength(jy, jm) : (jm <= 6 ? 31 : jm <= 11 ? 30 : 29);
+    /**
+     * Copy visual/form-related attributes from the original input
+     * to the visible Jalali input.
+     */
+    function copyInputAttributes(source, target) {
 
-        // هدر ناوبری
-        var prevM = jm === 1 ? 12 : jm - 1;
-        var prevY = jm === 1 ? jy - 1 : jy;
-        var nextM = jm === 12 ? 1 : jm + 1;
-        var nextY = jm === 12 ? jy + 1 : jy;
+        if (source.className) {
+            target.className = source.className;
+        }
 
-        var today = J.toJalaali(new Date().getFullYear(), new Date().getMonth()+1, new Date().getDate());
+        if (source.getAttribute('style')) {
+            target.setAttribute(
+                'style',
+                source.getAttribute('style')
+            );
+        }
 
-        // مقدار انتخاب‌شده فعلی
-        var selD = 0;
-        if (activeInput && activeInput.dataset.jalaliValue) {
-            var parts = activeInput.dataset.jalaliValue.split('-');
-            if (parts.length === 3 && parseInt(parts[0]) === jy && parseInt(parts[1]) === jm) {
-                selD = parseInt(parts[2]);
+        if (source.getAttribute('placeholder')) {
+            target.setAttribute(
+                'placeholder',
+                source.getAttribute('placeholder')
+            );
+        } else {
+            target.setAttribute(
+                'placeholder',
+                'انتخاب تاریخ'
+            );
+        }
+
+        if (source.getAttribute('dir')) {
+            target.setAttribute(
+                'dir',
+                source.getAttribute('dir')
+            );
+        }
+
+        if (source.getAttribute('title')) {
+            target.setAttribute(
+                'title',
+                source.getAttribute('title')
+            );
+        }
+
+        if (source.getAttribute('aria-label')) {
+            target.setAttribute(
+                'aria-label',
+                source.getAttribute('aria-label')
+            );
+        }
+
+        if (source.disabled) {
+            target.disabled = true;
+        }
+
+        if (source.required) {
+            target.required = true;
+        }
+
+        target.readOnly = true;
+        target.autocomplete = 'off';
+    }
+
+    /**
+     * Create the visible Jalali input next to the original input.
+     *
+     * Original input:
+     *   - remains the backend value
+     *   - contains Gregorian date
+     *
+     * Display input:
+     *   - visible to user
+     *   - contains Jalali date
+     *   - is controlled by JalaliDatePicker
+     */
+    function createDisplayInput(source) {
+
+        var existing = source.nextElementSibling;
+
+        if (
+            existing &&
+            existing.matches &&
+            existing.matches(
+                'input[' + DISPLAY_ATTRIBUTE + ']'
+            )
+        ) {
+            return existing;
+        }
+
+        var display = document.createElement('input');
+
+        display.type = 'text';
+
+        display.setAttribute(
+            DISPLAY_ATTRIBUTE,
+            'true'
+        );
+
+        display.setAttribute(
+            'data-jdp',
+            ''
+        );
+
+        display.setAttribute(
+            TARGET_ATTRIBUTE,
+            '#' + source.id
+        );
+
+        display.setAttribute(
+            TARGET_TYPE_ATTRIBUTE,
+            'gregorian'
+        );
+
+        copyInputAttributes(
+            source,
+            display
+        );
+
+        /*
+         * The display input must not be submitted
+         * as a separate form field.
+         */
+        display.removeAttribute('name');
+
+        display.removeAttribute('value');
+
+        display.value =
+            gregorianToJalaliDisplay(
+                source.value
+            );
+
+        /*
+         * Keep the original input in the form,
+         * but hide it visually.
+         */
+        source.style.display = 'none';
+
+        source.parentNode.insertBefore(
+            display,
+            source.nextSibling
+        );
+
+        return display;
+    }
+
+    function ensureId(input) {
+
+        if (input.id) {
+            return input.id;
+        }
+
+        var id =
+            'jalali-date-' +
+            Math.random()
+                .toString(36)
+                .slice(2, 10);
+
+        input.id = id;
+
+        return id;
+    }
+
+    /**
+     * Convert an existing legacy input:
+     *
+     * <input
+     *     id="order-date"
+     *     name="orderDate"
+     *     data-jalali
+     * >
+     *
+     * into:
+     *
+     * Original input
+     *     -> Gregorian/backend value
+     *
+     * Display input
+     *     -> Jalali picker
+     */
+    function attach(input) {
+
+        if (
+            !input ||
+            input.nodeType !== 1
+        ) {
+            return null;
+        }
+
+        /*
+         * Never process the generated display input.
+         */
+        if (
+            input.hasAttribute(
+                DISPLAY_ATTRIBUTE
+            )
+        ) {
+            return input;
+        }
+
+        /*
+         * Prevent duplicate initialization.
+         */
+        if (
+            input.dataset.jalaliPickerInitialized ===
+            'true'
+        ) {
+            return (
+                input.nextElementSibling ||
+                input
+            );
+        }
+
+        ensureId(input);
+
+        var display =
+            createDisplayInput(input);
+
+        input.dataset.jalaliPickerInitialized =
+            'true';
+
+        /*
+         * If the original input already contains
+         * a Gregorian value, show the corresponding
+         * Jalali value.
+         */
+        if (
+            input.value &&
+            !display.value
+        ) {
+            display.value =
+                gregorianToJalaliDisplay(
+                    input.value
+                );
+        }
+
+        return display;
+    }
+
+    /**
+     * Initialize the official JalaliDatePicker library.
+     */
+    function configureLibrary() {
+
+        if (!isLibraryReady()) {
+
+            logError(
+                'jalalidatepicker.min.js must be loaded ' +
+                'before jalali-picker.js.'
+            );
+
+            return false;
+        }
+
+        /*
+         * The official library reads these values
+         * from the attributes on each input:
+         *
+         * data-jdp-target-value-input
+         * data-jdp-target-value-type
+         *
+         * No extra options needed — attributes are read directly.
+         */
+        root.jalaliDatepicker.startWatch();
+
+        return true;
+    }
+
+    /**
+     * Convert all existing data-jalali inputs
+     * to JalaliDatePicker display inputs.
+     */
+    function attachLegacyInputs() {
+
+        var inputs =
+            document.querySelectorAll(
+                LEGACY_SELECTOR
+            );
+
+        Array.prototype.forEach.call(
+            inputs,
+            function (input) {
+
+                /*
+                 * Do not process generated
+                 * display inputs.
+                 */
+                if (
+                    input.hasAttribute(
+                        DISPLAY_ATTRIBUTE
+                    )
+                ) {
+                    return;
+                }
+
+                /*
+                 * If it already uses data-jdp,
+                 * leave it alone.
+                 */
+                if (
+                    !input.hasAttribute(
+                        'data-jdp'
+                    )
+                ) {
+                    attach(input);
+                }
+
             }
-        }
-
-        var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
-        html += '<button onclick="JalaliPicker._nav(' + prevY + ',' + prevM + ')" style="background:none;border:none;color:#93c5fd;font-size:18px;cursor:pointer;padding:4px 8px">&#8250;</button>';
-        html += '<div style="text-align:center">';
-        html += '<select onchange="JalaliPicker._goMonth(this.value)" style="background:#1e3a5f;color:#fff;border:1px solid #3b82f6;border-radius:6px;padding:2px 6px;margin-left:4px">';
-        for (var mi = 1; mi <= 12; mi++) {
-            html += '<option value="' + mi + '"' + (mi === jm ? ' selected' : '') + '>' + MONTHS[mi-1] + '</option>';
-        }
-        html += '</select>';
-        html += '<select onchange="JalaliPicker._goYear(this.value)" style="background:#1e3a5f;color:#fff;border:1px solid #3b82f6;border-radius:6px;padding:2px 6px">';
-        for (var yi = jy - 5; yi <= jy + 5; yi++) {
-            html += '<option value="' + yi + '"' + (yi === jy ? ' selected' : '') + '>' + toFa(yi) + '</option>';
-        }
-        html += '</select></div>';
-        html += '<button onclick="JalaliPicker._nav(' + nextY + ',' + nextM + ')" style="background:none;border:none;color:#93c5fd;font-size:18px;cursor:pointer;padding:4px 8px">&#8249;</button>';
-        html += '</div>';
-
-        // روزهای هفته
-        var dayNames = ['ش','ی','د','س','چ','پ','ج'];
-        html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">';
-        for (var d = 0; d < 7; d++) {
-            html += '<div style="text-align:center;font-size:11px;color:#93c5fd;padding:4px 0">' + dayNames[d] + '</div>';
-        }
-        html += '</div>';
-
-        // روزها
-        html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">';
-        // خانه‌های خالی اول
-        for (var e = 0; e < startOffset; e++) {
-            html += '<div></div>';
-        }
-        for (var day = 1; day <= daysInMonth; day++) {
-            var isToday = (today.jy === jy && today.jm === jm && today.jd === day);
-            var isSel = selD === day;
-            var isFri = ((startOffset + day - 1) % 7) === 6;
-            var bg = isSel ? '#3b82f6' : isToday ? '#1d4ed8' : 'transparent';
-            var col = isFri ? '#f87171' : '#fff';
-            var border = isToday && !isSel ? '1px solid #60a5fa' : '1px solid transparent';
-            html += '<button onclick="JalaliPicker._pick(' + jy + ',' + jm + ',' + day + ')"';
-            html += ' style="background:' + bg + ';color:' + col + ';border:' + border + ';border-radius:6px;padding:6px 0;font-size:13px;cursor:pointer;text-align:center;font-family:Vazirmatn,sans-serif">';
-            html += toFa(day);
-            html += '</button>';
-        }
-        html += '</div>';
-
-        // دکمه امروز
-        html += '<div style="margin-top:8px;text-align:center">';
-        html += '<button onclick="JalaliPicker._today()" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:6px 20px;cursor:pointer;font-size:12px;font-family:Vazirmatn,sans-serif">امروز</button>';
-        html += '<button onclick="JalaliPicker._clear()" style="background:#374151;color:#9ca3af;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;margin-right:6px;font-family:Vazirmatn,sans-serif">پاک</button>';
-        html += '</div>';
-
-        pickerEl.innerHTML = html;
-        pickerEl.style.display = 'block';
+        );
     }
 
-    function toFa(n) {
-        return String(n).replace(/\d/g, function(d) { return '۰۱۲۳۴۵۶۷۸۹'[d]; });
+    /**
+     * Synchronize a visible Jalali input
+     * after the backend/Gregorian input
+     * has been changed programmatically.
+     */
+    function syncDisplayFromBackendInput(input) {
+
+        if (!input) {
+            return;
+        }
+
+        var display =
+            input.nextElementSibling;
+
+        if (
+            !display ||
+            !display.hasAttribute(
+                DISPLAY_ATTRIBUTE
+            )
+        ) {
+            return;
+        }
+
+        display.value =
+            gregorianToJalaliDisplay(
+                input.value
+            );
     }
 
-    function pad2(n) { return n < 10 ? '0' + n : String(n); }
-
-    // ── position picker ─────────────────────────────────────
-    function positionPicker(input) {
-        var rect = input.getBoundingClientRect();
-        var top = rect.bottom + window.scrollY + 4;
-        var left = rect.left + window.scrollX;
-        // مطمئن شو از صفحه خارج نشه
-        if (left + 290 > window.innerWidth) left = window.innerWidth - 295;
-        pickerEl.style.top = top + 'px';
-        pickerEl.style.left = left + 'px';
-    }
-
-    // ── Public API ───────────────────────────────────────────
     var JalaliPicker = {
 
-        init: function() {
-            createPicker();
-            // تبدیل همه input[data-jalali] به picker
-            document.querySelectorAll('input[data-jalali]').forEach(function(input) {
-                JalaliPicker._attach(input);
-            });
-        },
+        /**
+         * Initialize all date inputs.
+         */
+        init: function () {
 
-        // اتصال به یک input خاص
-        _attach: function(input) {
-            // اطمینان از اینکه pickerEl ساخته شده
-            createPicker();
+            if (!isLibraryReady()) {
 
-            // مخفی کردن input اصلی
-            input.style.display = 'none';
-
-            // ساخت display input
-            var display = document.createElement('input');
-            display.type = 'text';
-            display.readOnly = true;
-            display.placeholder = 'انتخاب تاریخ';
-            display.className = input.className;
-            display.style.cssText = 'cursor:pointer;' + (input.style.cssText || '');
-            display.title = 'تقویم شمسی';
-
-            // نمایش مقدار اولیه
-            if (input.value) {
-                var j = J.toJalaali(
-                    parseInt(input.value.split('-')[0]),
-                    parseInt(input.value.split('-')[1]),
-                    parseInt(input.value.split('-')[2])
+                logError(
+                    'jalalidatepicker is not available. ' +
+                    'Load jalalidatepicker.min.js ' +
+                    'before jalali-picker.js.'
                 );
-                var jStr = j.jy + '-' + pad2(j.jm) + '-' + pad2(j.jd);
-                input.dataset.jalaliValue = jStr;
-                display.value = J.toJalaliDisplay(new Date(input.value));
+
+                return false;
             }
 
-            input.parentNode.insertBefore(display, input.nextSibling);
+            /*
+             * Convert legacy data-jalali
+             * inputs first.
+             */
+            attachLegacyInputs();
 
-            display.addEventListener('click', function(e) {
-                e.stopPropagation();
-                activeInput = input;
+            /*
+             * Initialize the official picker
+             * only once.
+             */
+            if (!initialized) {
 
-                var t = J.toJalaali(new Date().getFullYear(), new Date().getMonth()+1, new Date().getDate());
-                if (input.dataset.jalaliValue) {
-                    var p = input.dataset.jalaliValue.split('-');
-                    if (p.length === 3) { t = { jy: parseInt(p[0]), jm: parseInt(p[1]), jd: parseInt(p[2]) }; }
-                }
-                positionPicker(display);
-                renderCalendar(t.jy, t.jm);
-            });
-        },
+                configureLibrary();
 
-        _nav: function(y, m) {
-            renderCalendar(y, m);
-        },
-
-        _goMonth: function(m) {
-            renderCalendar(currentJY, parseInt(m));
-        },
-
-        _goYear: function(y) {
-            renderCalendar(parseInt(y), currentJM);
-        },
-
-        _pick: function(jy, jm, jd) {
-            if (!activeInput) return;
-            var jStr = jy + '-' + pad2(jm) + '-' + pad2(jd);
-            activeInput.dataset.jalaliValue = jStr;
-
-            // تبدیل به میلادی برای value اصلی input
-            var g = J.toGregorian(jy, jm, jd);
-            activeInput.value = g.gy + '-' + pad2(g.gm) + '-' + pad2(g.gd);
-
-            // آپدیت display input
-            var disp = activeInput.nextElementSibling;
-            if (disp && disp.readOnly) {
-                disp.value = toFa(jd) + ' ' + J.MONTHS[jm-1] + ' ' + toFa(jy);
+                initialized = true;
             }
 
-            // fire change event
-            activeInput.dispatchEvent(new Event('change', { bubbles: true }));
-
-            pickerEl.style.display = 'none';
-            activeInput = null;
+            return true;
         },
 
-        _today: function() {
-            var t = new Date();
-            var j = J.toJalaali(t.getFullYear(), t.getMonth()+1, t.getDate());
-            JalaliPicker._pick(j.jy, j.jm, j.jd);
+        /**
+         * Attach the picker to a specific input.
+         *
+         * Example:
+         *
+         * JalaliPicker.attachById(
+         *     'order-date'
+         * );
+         */
+        attachById: function (id) {
+
+            if (!isLibraryReady()) {
+
+                logError(
+                    'jalalidatepicker is not available. ' +
+                    'Load jalalidatepicker.min.js ' +
+                    'before jalali-picker.js.'
+                );
+
+                return null;
+            }
+
+            var input =
+                document.getElementById(id);
+
+            if (!input) {
+
+                logError(
+                    'Input not found: #' + id
+                );
+
+                return null;
+            }
+
+            var display;
+
+            /*
+             * If the input already uses
+             * data-jdp, use it directly.
+             */
+            if (
+                input.hasAttribute(
+                    'data-jdp'
+                )
+            ) {
+
+                display = input;
+
+            } else {
+
+                display = attach(input);
+
+            }
+
+            if (!initialized) {
+
+                configureLibrary();
+
+                initialized = true;
+
+            }
+
+            return display;
         },
 
-        _clear: function() {
-            if (!activeInput) return;
-            activeInput.value = '';
-            activeInput.dataset.jalaliValue = '';
-            var disp = activeInput.nextElementSibling;
-            if (disp && disp.readOnly) disp.value = '';
-            pickerEl.style.display = 'none';
-            activeInput = null;
+        /**
+         * Refresh a display input after
+         * its Gregorian/backend value changes.
+         *
+         * Example:
+         *
+         * JalaliPicker.sync('order-date');
+         */
+        sync: function (id) {
+
+            var input =
+                document.getElementById(id);
+
+            if (!input) {
+                return false;
+            }
+
+            syncDisplayFromBackendInput(
+                input
+            );
+
+            return true;
         },
 
-        // اتصال دستی به input با id
-        attachById: function(id) {
-            var el = document.getElementById(id);
-            if (el) JalaliPicker._attach(el);
-        },
+        /**
+         * Start the official JalaliDatePicker
+         * manually.
+         */
+        start: function () {
 
-        // اطمینان از اینکه picker DOM ساخته شده
-        _ensureCreated: function() {
-            createPicker();
+            if (!isLibraryReady()) {
+
+                logError(
+                    'jalalidatepicker is not loaded.'
+                );
+
+                return false;
+            }
+
+            if (!initialized) {
+
+                configureLibrary();
+
+                initialized = true;
+
+            }
+
+            return true;
         }
+
     };
 
-    root.JalaliPicker = JalaliPicker;
-    console.log('✅ JalaliPicker بارگذاری شد');
+    /*
+     * Expose public API.
+     */
+    root.JalaliPicker =
+        JalaliPicker;
 
-})(typeof window !== 'undefined' ? window : this);
+    /**
+     * Automatic initialization after DOM
+     * is ready.
+     */
+    function autoInit() {
+
+        if (
+            document.querySelector(
+                LEGACY_SELECTOR
+            ) ||
+            document.querySelector(
+                LIBRARY_SELECTOR
+            )
+        ) {
+
+            JalaliPicker.init();
+
+        }
+
+    }
+
+    if (
+        document.readyState ===
+        'loading'
+    ) {
+
+        document.addEventListener(
+            'DOMContentLoaded',
+            autoInit
+        );
+
+    } else {
+
+        autoInit();
+
+    }
+
+})(typeof window !== 'undefined'
+    ? window
+    : this);

@@ -755,7 +755,7 @@ const EmployeeAccountingUI = (function() {
                     </div>
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-emerald-400/20">
                         <i class="fas fa-check-circle text-emerald-400 mb-2 block"></i>
-                        <p class="text-black-400 text-xs mb-1">ساعات تأیید شدهشده</p>
+                        <p class="text-black-400 text-xs mb-1">ساعات تأیید شده</p>
                         <p class="text-lg font-bold text-emerald-400">${totalHours.toFixed(1)}</p>
                         <p class="text-black-300/60 text-xs">ساعت</p>
                     </div>
@@ -768,7 +768,7 @@ const EmployeeAccountingUI = (function() {
                     </div>
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-cyan-400/20">
                         <i class="fas fa-check-double text-cyan-400 mb-2 block"></i>
-                        <p class="text-black-400 text-xs mb-1">هزینه‌های تأیید شدهشده</p>
+                        <p class="text-black-400 text-xs mb-1">هزینه‌های تأیید شده</p>
                         <p class="text-sm font-bold text-cyan-400">${EmployeeAccountingModule.formatCurrency(totalExpenses)}</p>
                     </div>
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-red-400/20">
@@ -778,6 +778,15 @@ const EmployeeAccountingUI = (function() {
                             (() => { try { return JSON.parse(localStorage.getItem('work_deductions')||'[]').reduce((s,d)=>s+Number(d.amount||0),0); } catch { return 0; } })()
                         )}</p>
                     </div>
+
+                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-green-400/20">
+                        <i class="fas fa-gift text-green-400 mb-2 block"></i>
+                        <p class="text-black-400 text-xs mb-1">جمع هدایا</p>
+                        <p class="text-sm font-bold text-green-400">${EmployeeAccountingModule.formatCurrency(
+                            (() => { try { return JSON.parse(localStorage.getItem('work_gifts')||'[]').reduce((s,g)=>s+Number(g.amount||0),0); } catch { return 0; } })()
+                        )}</p>
+                    </div>
+
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-lime-400/20">
                         <i class="fas fa-wallet text-lime-400 mb-2 block"></i>
                         <p class="text-black-400 text-xs mb-1">مبالغ تسویه‌نشده</p>
@@ -796,13 +805,7 @@ const EmployeeAccountingUI = (function() {
                             })()
                         )}</p>
                     </div>
-                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-green-400/20">
-                        <i class="fas fa-gift text-green-400 mb-2 block"></i>
-                        <p class="text-black-400 text-xs mb-1">جمع هدایا</p>
-                        <p class="text-sm font-bold text-green-400">${EmployeeAccountingModule.formatCurrency(
-                            (() => { try { return JSON.parse(localStorage.getItem('work_gifts')||'[]').reduce((s,g)=>s+Number(g.amount||0),0); } catch { return 0; } })()
-                        )}</p>
-                    </div>
+                    
                 </div>
 
                 ${/* بخش pending در جزئیات هر کارمند نمایش داده می‌شه */ ''}

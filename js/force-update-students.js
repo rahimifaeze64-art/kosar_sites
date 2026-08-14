@@ -55,7 +55,7 @@ function forceUpdateStudentsTo20() {
             { id: 'std009', eduSteps: 17, defSteps: 7 },  // حسین علی - استلال + مدیر گروه
             { id: 'std010', eduSteps: 4, defSteps: 0 },   // سارا - ایرانداک خطه
             { id: 'std011', eduSteps: 8, defSteps: 2 },   // عمر - بارگزاری لغت + نسخ
-            { id: 'std012', eduSteps: 18, defSteps: 8 },  // نور الهدی - تجلید + معاون
+            { id: 'std012', eduSteps: 18, defSteps: 8 },  // نور  - تجلید + معاون
             { id: 'std013', eduSteps: 6, defSteps: 1 },   // یوسف - مدرک لغت + پوستر
             { id: 'std014', eduSteps: 11, defSteps: 3 },  // هدی - دادگر + ثبت عنوان
             { id: 'std015', eduSteps: 20, defSteps: 9 },  // کریم - قطعی + زمان پور
