@@ -1,4 +1,4 @@
-/* Main Styles for Educational Management System */
+﻿/* Main Styles for Educational Management System */
 
 /* RTL Support & Font */
 body {
@@ -575,4 +575,56 @@ body {
 /* Task card hover effect */
 .bg-slate-700:hover {
     transform: translateY(-2px);
+}
+
+/* ═══ jalalidatepicker — dark theme override (Work Hours page) ═══ */
+/* فقط روی صفحه ساعات کاری که background تیره دارد اعمال می‌شود */
+#workHoursForm input[data-jdp],
+#deductionForm input[data-jdp],
+#expenseForm input[data-jdp] {
+    background: rgba(120, 42, 42, 0.1) !important;
+    color: #5e0b0b !important;
+    border-color: rgba(118, 43, 43, 0.2) !important;
+}
+
+#workHoursForm input[data-jdp]::placeholder,
+#deductionForm input[data-jdp]::placeholder,
+#expenseForm input[data-jdp]::placeholder {
+    color: rgba(37, 83, 135, 0.6) !important;
+}
+
+#workHoursForm input[data-jdp]:focus,
+#deductionForm input[data-jdp]:focus,
+#expenseForm input[data-jdp]:focus {
+    border-color: #3d5d85 !important;
+    outline: none !important;
+}
+
+/* تم تاریک برای popup تقویم — فقط وقتی از صفحه ساعات کاری باز شده */
+body.jdp-dark-mode jdp-container {
+    --jdp-color-0: #1e3a5f;
+    --jdp-color-1: #162d4a;
+    --jdp-color-2: #2d5080;
+    --jdp-color-3: #4a7ab5;
+    --jdp-color-4: #93c5fd;
+    --jdp-color-5: #e2e8f0;
+    --jdp-primary:  #3b82f6;
+    --jdp-red:      #f87171;
+    font-family: 'Vazirmatn', sans-serif !important;
+    z-index: 99999 !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+}
+
+/* همیشه z-index و font بالا باشه */
+jdp-container {
+    font-family: 'Vazirmatn', sans-serif !important;
+    z-index: 99999 !important;
+}
+
+/* input تقویم در modal مدیر */
+#mgr-ded-date-jdp {
+    background: #1e3a5f !important;
+    color: #691010 !important;
+    border-color: #3b5998 !important;
+    cursor: pointer;
 }

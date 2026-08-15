@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تست datepicker</title>
+    <link href="assets/libs/jalalidatepicker/jalalidatepicker.min.css" rel="stylesheet">
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+    <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
+    <script src="assets/libs/tailwindcss.js"></script>
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; background: #1e293b; padding: 40px; }
+        jdp-container {
+            --jdp-color-0: #1e3a5f;
+            --jdp-color-1: #162d4a;
+            --jdp-color-2: #2d5080;
+            --jdp-color-3: #4a7ab5;
+            --jdp-color-5: #e2e8f0;
+            --jdp-primary: #3b82f6;
+            --jdp-red: #f87171;
+            z-index: 99999 !important;
+            font-family: 'Vazirmatn', sans-serif !important;
+        }
+    </style>
+</head>
+<body>
+    <div style="max-width:400px;margin:0 auto;">
+        <h2 style="color:white;margin-bottom:20px;">تست datepicker در صفحه تاریک</h2>
+
+        <div style="margin-bottom:16px;">
+            <label style="color:#94a3b8;font-size:14px;display:block;margin-bottom:6px;">تاریخ ساعت کاری (شمسی)</label>
+            <input type="hidden" id="workDate">
+            <input type="text"
+                   id="workDate-jdp"
+                   data-jdp
+                   data-jdp-target-value-input="#workDate"
+                   data-jdp-target-value-type="gregorian"
+                   placeholder="انتخاب تاریخ شمسی"
+                   autocomplete="off"
+                   readonly
+                   onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                   style="width:100%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:12px;padding:12px 16px;color:white;font-size:14px;cursor:pointer;font-family:Vazirmatn,sans-serif;direction:rtl;">
+        </div>
+
+        <div style="margin-bottom:16px;">
+            <label style="color:#94a3b8;font-size:14px;display:block;margin-bottom:6px;">تاریخ کسر</label>
+            <input type="hidden" id="deductionDate">
+            <input type="text"
+                   id="deductionDate-jdp"
+                   data-jdp
+                   data-jdp-target-value-input="#deductionDate"
+                   data-jdp-target-value-type="gregorian"
+                   placeholder="انتخاب تاریخ شمسی"
+                   autocomplete="off"
+                   readonly
+                   onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                   style="width:100%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:12px;padding:12px 16px;color:white;font-size:14px;cursor:pointer;font-family:Vazirmatn,sans-serif;direction:rtl;">
+        </div>
+
+        <div id="result" style="margin-top:20px;padding:12px;background:rgba(255,255,255,0.1);border-radius:8px;color:white;font-size:13px;">
+            مقادیر hidden inputs اینجا نمایش داده می‌شود...
+        </div>
+    </div>
+
+    <script src="assets/libs/jalalidatepicker/jalalidatepicker.min.js"></script>
+    <script>
+        // init
+        jalaliDatepicker.startWatch({
+            showTodayBtn: true,
+            showEmptyBtn: true,
+            showCloseBtn: true,
+        });
+
+        // نمایش مقادیر هنگام تغییر
+        document.addEventListener('jdp:change', function() {
+            var wDate = document.getElementById('workDate').value;
+            var dDate = document.getElementById('deductionDate').value;
+            document.getElementById('result').innerHTML =
+                '<b>workDate (میلادی):</b> ' + (wDate||'—') + '<br>' +
+                '<b>deductionDate (میلادی):</b> ' + (dDate||'—');
+        });
+    </script>
+</body>
+</html>

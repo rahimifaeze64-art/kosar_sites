@@ -1,4 +1,4 @@
-﻿/**
+/**
  * سیستم ساعات کاری
  * مدیریت ثبت و نمایش ساعات کاری کارمندان
  * ذخیره‌سازی: Supabase (اصلی) + localStorage (کش/آفلاین)
@@ -453,6 +453,17 @@ const WorkHoursUI = (function() {
         }
         
         console.log('WorkHoursUI initialized', currentUser);
+
+        // re-init jalalidatepicker برای input‌های صفحه
+        setTimeout(_reInitDatepicker, 0);
+    }
+
+    /**
+     * آپدیت نمایش تاریخ‌ها — jalalidatepicker خودش مدیریت می‌کند
+     * این تابع برای سازگاری با کدهای قدیمی نگه داشته شده
+     */
+    function _syncDateDisplayTexts() {
+        _reInitDatepicker();
     }
     
     /**
@@ -521,22 +532,20 @@ const WorkHoursUI = (function() {
                     
                     <form id="workHoursForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
-                            <label class="block text-black-400 text-sm mb-2">تاریخ</label>
-                            <div class="space-y-2">
-                                <div class="flex gap-2">
-                                    <button type="button" onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp',-2)"
-                                        class="flex-1 text-xs py-2 rounded-xl bg-white/10 hover:bg-blue-500/30 text-black-400 hover:text-white border border-white/10 transition-all">پریروز</button>
-                                    <button type="button" onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp',-1)"
-                                        class="flex-1 text-xs py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white border border-blue-500 transition-all font-bold">دیروز</button>
-                                </div>
-                                <input type="hidden" id="workDate" value="${today}">
-                                <button type="button" id="workDate-disp"
-                                    onclick="WorkHoursUI.openJalaliPicker('workDate','workDate-disp')"
-                                    class="w-full text-right bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-black-400 text-sm flex items-center justify-between hover:bg-white/15 transition-all">
-                                    <span id="workDate-disp-text">${today}</span>
-                                    <i class="fas fa-calendar-alt text-black-400"></i>
-                                </button>
-                            </div>
+                            <label class="block text-black-600 text-sm mb-2">تاریخ (شمسی)</label>
+                            <!-- مقدار میلادی — توسط jalalidatepicker ست می‌شود -->
+                            <input type="hidden" id="workDate">
+                            <!-- فیلد شمسی — با کلیک باز می‌شود -->
+                            <input type="text"
+                                   id="workDate-jdp"
+                                   data-jdp
+                                   data-jdp-target-value-input="#workDate"
+                                   data-jdp-target-value-type="gregorian"
+                                   placeholder="انتخاب تاریخ شمسی"
+                                   autocomplete="off"
+                                   readonly
+                                   onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                                   class="w-full bg-black/10 border border-gray/500 rounded-xl px-4 py-3 text-black placeholder-black-300/50 focus:outline-none focus:border-black-400 cursor-pointer text-sm">
                         </div>
                         
                         <div>
@@ -600,22 +609,20 @@ const WorkHoursUI = (function() {
                     <form id="deductionForm" onsubmit="WorkHoursUI.submitDeductionForm(event)">
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                             <div>
-                                <label class="block text-black-400 text-sm mb-2">تاریخ کسر <span class="text-red-400">*</span></label>
-                                <div class="space-y-2">
-                                    <div class="flex gap-2">
-                                        <button type="button" onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp',-2)"
-                                            class="flex-1 text-xs py-2 rounded-xl bg-white/10 hover:bg-red-500/30 text-black-400 hover:text-white border border-white/10 transition-all">پریروز</button>
-                                        <button type="button" onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp',-1)"
-                                            class="flex-1 text-xs py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white border border-red-500 transition-all font-bold">دیروز</button>
-                                    </div>
-                                    <input type="hidden" id="deductionDate">
-                                    <button type="button" id="deductionDate-disp"
-                                        onclick="WorkHoursUI.openJalaliPicker('deductionDate','deductionDate-disp')"
-                                        class="w-full text-right bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-black-400 text-sm flex items-center justify-between hover:bg-white/15 transition-all">
-                                        <span id="deductionDate-disp-text">انتخاب تاریخ</span>
-                                        <i class="fas fa-calendar-alt text-red-400"></i>
-                                    </button>
-                                </div>
+                                <label class="block text-black-400 text-sm mb-2">تاریخ کسر (شمسی) <span class="text-red-400">*</span></label>
+                                <!-- مقدار میلادی -->
+                                <input type="hidden" id="deductionDate">
+                                <!-- فیلد شمسی -->
+                                <input type="text"
+                                       id="deductionDate-jdp"
+                                       data-jdp
+                                       data-jdp-target-value-input="#deductionDate"
+                                       data-jdp-target-value-type="gregorian"
+                                       placeholder="انتخاب تاریخ شمسی"
+                                       autocomplete="off"
+                                       readonly
+                                       onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                                       class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300/50 focus:outline-none focus:border-red-400 cursor-pointer text-sm">
                             </div>
                             <div>
                                 <label class="block text-black-400 text-sm mb-2">مبلغ کسر (تومان) <span class="text-red-400">*</span></label>
@@ -653,22 +660,20 @@ const WorkHoursUI = (function() {
                     
                     <form id="expenseForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                            <label class="block text-black-400 text-sm mb-2">تاریخ</label>
-                            <div class="space-y-2">
-                                <div class="flex gap-2">
-                                    <button type="button" onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp',-2)"
-                                        class="flex-1 text-xs py-2 rounded-xl bg-white/10 hover:bg-orange-500/30 text-black-400 hover:text-white border border-white/10 transition-all">پریروز</button>
-                                    <button type="button" onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp',-1)"
-                                        class="flex-1 text-xs py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white border border-orange-500 transition-all font-bold">دیروز</button>
-                                </div>
-                                <input type="hidden" id="expenseDate" value="${today}">
-                                <button type="button" id="expenseDate-disp"
-                                    onclick="WorkHoursUI.openJalaliPicker('expenseDate','expenseDate-disp')"
-                                    class="w-full text-right bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-black-400 text-sm flex items-center justify-between hover:bg-white/15 transition-all">
-                                    <span id="expenseDate-disp-text">${today}</span>
-                                    <i class="fas fa-calendar-alt text-orange-400"></i>
-                                </button>
-                            </div>
+                            <label class="block text-black-400 text-sm mb-2">تاریخ (شمسی)</label>
+                            <!-- مقدار میلادی -->
+                            <input type="hidden" id="expenseDate">
+                            <!-- فیلد شمسی -->
+                            <input type="text"
+                                   id="expenseDate-jdp"
+                                   data-jdp
+                                   data-jdp-target-value-input="#expenseDate"
+                                   data-jdp-target-value-type="gregorian"
+                                   placeholder="انتخاب تاریخ شمسی"
+                                   autocomplete="off"
+                                   readonly
+                                   onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                                   class="w-full bg-black/10 border border-black/20 rounded-xl px-4 py-3 text-black placeholder-blue-300/50 focus:outline-none focus:border-orange-400 cursor-pointer text-sm">
                         </div>
                         
                         <div>
@@ -814,21 +819,17 @@ const WorkHoursUI = (function() {
         // پر کردن فرم با تاریخ مورد نظر و اسکرول
         if (entryType === 'expense') {
             const expDateEl = document.getElementById('expenseDate');
-            if (expDateEl) {
-                expDateEl.value = entryDate || '';
-                const dispText = document.getElementById('expenseDate-disp-text');
-                if (dispText) dispText.textContent = entryDate || '';
-            }
+            const expJdpEl  = document.getElementById('expenseDate-jdp');
+            if (expDateEl) expDateEl.value = entryDate || '';
+            if (expJdpEl && entryDate) expJdpEl.value = _wh_jalaliDisplay(entryDate) || entryDate;
             // اسکرول به فرم هزینه
             document.getElementById('expenseForm')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             showNotification('تاریخ فرم هزینه تنظیم شد — اطلاعات را ویرایش و ارسال کنید', 'info');
         } else {
             const workDateEl = document.getElementById('workDate');
-            if (workDateEl) {
-                workDateEl.value = entryDate || '';
-                const dispText = document.getElementById('workDate-disp-text');
-                if (dispText) dispText.textContent = entryDate || '';
-            }
+            const workJdpEl  = document.getElementById('workDate-jdp');
+            if (workDateEl) workDateEl.value = entryDate || '';
+            if (workJdpEl && entryDate) workJdpEl.value = _wh_jalaliDisplay(entryDate) || entryDate;
             document.getElementById('workHoursForm')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             showNotification('تاریخ فرم ساعت کاری تنظیم شد — اطلاعات را ویرایش و ارسال کنید', 'info');
         }
@@ -1262,46 +1263,6 @@ const WorkHoursUI = (function() {
     /**
      * ثبت فرم
      */
-    function submitForm() {
-        const date = document.getElementById('workDate').value;
-        const startTime = document.getElementById('startTime').value;
-        const endTime = document.getElementById('endTime').value;
-        const description = document.getElementById('workDescription').value;
-        const expenses = parseFloat(document.getElementById('workExpenses').value) || 0;
-        const expensesDescription = document.getElementById('expensesDescription').value;
-        
-        if (!date || !startTime || !endTime) {
-            showNotification('لطفاً تمام فیلدهای ضروری را پر کنید', 'error');
-            return;
-        }
-        
-        if (startTime >= endTime) {
-            showNotification('ساعت پایان باید بزرگتر از ساعت شروع باشد', 'error');
-            return;
-        }
-        
-        const entry = {
-            employeeId: currentUser.id,
-            employeeName: currentUser.name || currentUser.username || 'کارمند',
-            date,
-            startTime,
-            endTime,
-            description,
-            expenses,
-            expensesDescription
-        };
-        
-        const result = WorkHoursModule.addWorkHour(entry);
-        
-        if (result) {
-            showNotification('ساعت کاری با موفقیت ثبت شد', 'success');
-            resetForm();
-            refreshContent();
-        } else {
-            showNotification('خطا در ثبت ساعت کاری', 'error');
-        }
-    }
-    
     /**
      * ثبت فرم ساعات کاری
      */
@@ -1388,8 +1349,11 @@ const WorkHoursUI = (function() {
     function resetForm() {
         document.getElementById('workHoursForm')?.reset();
         document.getElementById('totalHoursDisplay').textContent = '0 ساعت';
-        const today = WorkHoursModule.formatDate(new Date());
-        document.getElementById('workDate').value = today;
+        // clear hidden date و jdp display input
+        var wdHidden = document.getElementById('workDate');
+        var wdJdp    = document.getElementById('workDate-jdp');
+        if (wdHidden) wdHidden.value = '';
+        if (wdJdp)    wdJdp.value = '';
     }
     
     /**
@@ -1397,8 +1361,10 @@ const WorkHoursUI = (function() {
      */
     function resetExpenseForm() {
         document.getElementById('expenseForm')?.reset();
-        const today = WorkHoursModule.formatDate(new Date());
-        document.getElementById('expenseDate').value = today;
+        var edHidden = document.getElementById('expenseDate');
+        var edJdp    = document.getElementById('expenseDate-jdp');
+        if (edHidden) edHidden.value = '';
+        if (edJdp)    edJdp.value = '';
     }
     
     /**
@@ -1609,6 +1575,8 @@ const WorkHoursUI = (function() {
                 }
                 // re-attach event listeners
                 setupEventListeners();
+                // re-init jalalidatepicker برای input‌های جدید
+                _reInitDatepicker();
                 return;
             }
         } catch (e) {
@@ -1620,7 +1588,11 @@ const WorkHoursUI = (function() {
             const app = UIRefresh._getApp();
             if (app && app.currentPage === 'workHours') {
                 app.currentPage = '__temp__';
-                setTimeout(() => { app.currentPage = 'workHours'; }, 50);
+                setTimeout(() => {
+                    app.currentPage = 'workHours';
+                    // re-init jalalidatepicker بعد از render
+                    setTimeout(_reInitDatepicker, 100);
+                }, 50);
             }
         }
     }
@@ -1772,10 +1744,19 @@ const WorkHoursUI = (function() {
                     </div>
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
-                        <div class="relative">
-                            <input type="date" id="mgr-ded-date" required
-                                class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none">
-                        </div>
+                        <!-- مقدار میلادی -->
+                        <input type="hidden" id="mgr-ded-date">
+                        <!-- فیلد شمسی — کتابخانه jalalidatepicker آن را کنترل می‌کند -->
+                        <input type="text"
+                               id="mgr-ded-date-jdp"
+                               data-jdp
+                               data-jdp-target-value-input="#mgr-ded-date"
+                               data-jdp-target-value-type="gregorian"
+                               placeholder="انتخاب تاریخ شمسی"
+                               autocomplete="off"
+                               readonly
+                               onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                               class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none cursor-pointer text-sm">
                     </div>
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">مبلغ (تومان) <span class="text-red-400">*</span></label>
@@ -1795,6 +1776,10 @@ const WorkHoursUI = (function() {
             </div>`;
         document.body.appendChild(modal);
         modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+        // re-init jalalidatepicker برای input جدید در modal
+        if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
+            setTimeout(function() { jalaliDatepicker.startWatch(); }, 50);
+        }
     }
 
     function saveMgrDeduction() {
@@ -1841,6 +1826,11 @@ const WorkHoursUI = (function() {
         list.push(record);
         localStorage.setItem(DEDUCTION_KEY, JSON.stringify(list));
         document.getElementById('deductionForm').reset();
+        // clear hidden date و jdp display input
+        var ddHidden = document.getElementById('deductionDate');
+        var ddJdp    = document.getElementById('deductionDate-jdp');
+        if (ddHidden) ddHidden.value = '';
+        if (ddJdp)    ddJdp.value = '';
         const listEl = document.getElementById('deductions-list');
         if (listEl) listEl.innerHTML = _renderDeductions();
         showNotification('کسر با موفقیت ثبت شد', 'success');
@@ -1882,11 +1872,59 @@ const WorkHoursUI = (function() {
         if (listEl) listEl.innerHTML = _renderDeductions();
     }
 
+    // ── re-init jalalidatepicker بعد از render ────────────────
+    function _reInitDatepicker() {
+        if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
+            setTimeout(function() {
+                jalaliDatepicker.startWatch({
+                    showTodayBtn: true,
+                    showEmptyBtn: true,
+                    showCloseBtn: true,
+                });
+            }, 30);
+        }
+    }
+
+    /**
+     * باز کردن تقویم شمسی با dark theme
+     * از onclick مستقیم روی input‌ها صدا زده می‌شود
+     */
+    function openDarkPicker(inputEl) {
+        if (typeof jalaliDatepicker === 'undefined') return;
+        // dark mode class روی body
+        document.body.classList.add('jdp-dark-mode');
+        // برداشتن class بعد از بسته شدن تقویم
+        var removeClass = function() {
+            document.body.classList.remove('jdp-dark-mode');
+            document.removeEventListener('click', removeClass);
+        };
+        setTimeout(function() {
+            document.addEventListener('click', removeClass);
+        }, 300);
+        jalaliDatepicker.show(inputEl);
+    }
+
     // ── تاریخ شمسی سریع (برای فیلدهای ساعات کاری) ────────────
     function _wh_iranToday() {
         var now = new Date();
         var utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
         return new Date(utcMs + 3.5 * 3600000);
+    }
+
+    // تبدیل رشته YYYY-MM-DD به نمایش شمسی
+    function _wh_jalaliDisplay(dateStr) {
+        if (!dateStr) return '';
+        if (typeof Jalali !== 'undefined' && typeof Jalali.displayDate === 'function') {
+            return Jalali.displayDate(dateStr);
+        }
+        // fallback: نمایش ساده
+        var p = dateStr.split('-');
+        if (p.length === 3) {
+            var MONTHS = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+            var m = parseInt(p[1]) - 1;
+            return parseInt(p[2]) + ' ' + (MONTHS[m] || '') + ' ' + p[0];
+        }
+        return dateStr;
     }
 
     function setQuickDate(hiddenId, dispBtnId, offset) {
@@ -1902,95 +1940,6 @@ const WorkHoursUI = (function() {
             var textSpan = document.getElementById(hiddenId + '-disp-text');
             if (textSpan) textSpan.textContent = display + ' (' + label + ')';
         }
-    }
-
-    function openJalaliPicker(hiddenId, dispBtnId) {
-        var old = document.getElementById('__wh-cal-popup');
-        if (old) { old.remove(); if (old.dataset.for === hiddenId) return; }
-
-        var hidden = document.getElementById(hiddenId);
-        var dispBtn = document.getElementById(dispBtnId);
-        if (!hidden || !dispBtn) return;
-
-        var today = _wh_iranToday();
-        var jToday = (typeof Jalali !== 'undefined') ? Jalali.toJalaali(today.getFullYear(), today.getMonth()+1, today.getDate()) : {jy:1405,jm:1,jd:1};
-
-        var initY = jToday.jy, initM = jToday.jm;
-        if (hidden.value) { var p = hidden.value.split('-'); if (p.length===3){initY=parseInt(p[0]);initM=parseInt(p[1]);} }
-
-        var popup = document.createElement('div');
-        popup.id = '__wh-cal-popup';
-        popup.dataset.for = hiddenId;
-        popup.style.cssText = 'position:fixed;z-index:99999;background:#1e3a5f;border:1px solid #3b82f6;border-radius:12px;padding:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);min-width:260px;direction:rtl;font-family:Vazirmatn,sans-serif;color:#fff;';
-        document.body.appendChild(popup);
-
-        var rect = dispBtn.getBoundingClientRect();
-        popup.style.top = (rect.bottom + window.scrollY + 4) + 'px';
-        var left = rect.left + window.scrollX;
-        if (left + 270 > window.innerWidth) left = window.innerWidth - 275;
-        popup.style.left = left + 'px';
-
-        _renderWhCalPopup(hiddenId, dispBtnId, initY, initM, jToday);
-
-        setTimeout(function() {
-            document.addEventListener('click', function closeOut(e) {
-                var p2 = document.getElementById('__wh-cal-popup');
-                if (p2 && !p2.contains(e.target) && e.target !== dispBtn) {
-                    p2.remove();
-                    document.removeEventListener('click', closeOut);
-                }
-            });
-        }, 10);
-    }
-
-    function _renderWhCalPopup(hiddenId, dispBtnId, jy, jm, jToday) {
-        var popup = document.getElementById('__wh-cal-popup');
-        if (!popup) return;
-        var MONTHS = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
-        var daysInMonth = (jm<=6)?31:(jm<=11)?30:29;
-        var prevM=jm===1?12:jm-1, prevY=jm===1?jy-1:jy, nextM=jm===12?1:jm+1, nextY=jm===12?jy+1:jy;
-        var g1=(typeof Jalali!=='undefined')?Jalali.toGregorian(jy,jm,1):{gy:2024,gm:1,gd:1};
-        var d1=new Date(g1.gy,g1.gm-1,g1.gd).getDay();
-        var startOffset=(d1+1)%7;
-        var selVal=(document.getElementById(hiddenId)||{}).value||'';
-        var sp=selVal.split('-'); var selD=(sp.length===3&&parseInt(sp[0])===jy&&parseInt(sp[1])===jm)?parseInt(sp[2]):0;
-
-        var html='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
-        html+='<button onclick="WorkHoursUI._renderWhCalPopup(\''+hiddenId+'\',\''+dispBtnId+'\','+prevY+','+prevM+',{jy:'+jToday.jy+',jm:'+jToday.jm+',jd:'+jToday.jd+'})" style="background:none;border:none;cursor:pointer;font-size:18px;color:#93c5fd;padding:2px 6px;">›</button>';
-        html+='<div style="font-size:13px;font-weight:700;">'+MONTHS[jm-1]+' '+jy+'</div>';
-        html+='<button onclick="WorkHoursUI._renderWhCalPopup(\''+hiddenId+'\',\''+dispBtnId+'\','+nextY+','+nextM+',{jy:'+jToday.jy+',jm:'+jToday.jm+',jd:'+jToday.jd+'})" style="background:none;border:none;cursor:pointer;font-size:18px;color:#93c5fd;padding:2px 6px;">‹</button>';
-        html+='</div>';
-        html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;">';
-        ['ش','ی','د','س','چ','پ','ج'].forEach(function(n){html+='<div style="text-align:center;font-size:10px;color:#93c5fd;">'+n+'</div>';});
-        html+='</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">';
-        for(var e2=0;e2<startOffset;e2++) html+='<div></div>';
-        for(var day=1;day<=daysInMonth;day++){
-            var isT=(jToday.jy===jy&&jToday.jm===jm&&jToday.jd===day);
-            var isSel=selD===day;
-            var isFri=((startOffset+day-1)%7)===6;
-            var bg=isSel?'#3b82f6':isT?'#1d4ed8':'transparent';
-            var col=isSel?'#fff':isFri?'#f87171':'#fff';
-            var brd=isT&&!isSel?'1px solid #60a5fa':'1px solid transparent';
-            html+='<button type="button" onclick="WorkHoursUI._pickWhDate(\''+hiddenId+'\',\''+dispBtnId+'\','+jy+','+jm+','+day+')" style="background:'+bg+';color:'+col+';border:'+brd+';border-radius:6px;padding:5px 0;font-size:12px;cursor:pointer;text-align:center;">'+day+'</button>';
-        }
-        html+='</div><div style="display:flex;gap:4px;margin-top:8px;">';
-        html+='<button type="button" onclick="WorkHoursUI.setQuickDate(\''+hiddenId+'\',\''+dispBtnId+'\',-2);document.getElementById(\'__wh-cal-popup\').remove();" style="flex:1;background:#6b7280;color:#fff;border:none;border-radius:8px;padding:5px;font-size:11px;cursor:pointer;">پریروز</button>';
-        html+='<button type="button" onclick="WorkHoursUI.setQuickDate(\''+hiddenId+'\',\''+dispBtnId+'\',-1);document.getElementById(\'__wh-cal-popup\').remove();" style="flex:1;background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:5px;font-size:11px;cursor:pointer;">دیروز</button>';
-        html+='<button type="button" onclick="document.getElementById(\'__wh-cal-popup\').remove();" style="flex:1;background:#374151;color:#9ca3af;border:none;border-radius:8px;padding:5px;font-size:11px;cursor:pointer;">بستن</button>';
-        html+='</div>';
-        popup.innerHTML=html;
-    }
-
-    function _pickWhDate(hiddenId, dispBtnId, jy, jm, jd) {
-        var hidden=document.getElementById(hiddenId);
-        var pad=function(n){return n<10?'0'+n:String(n);};
-        var jStr=jy+'-'+pad(jm)+'-'+pad(jd);
-        if(hidden) hidden.value=jStr;
-        var MONTHS=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
-        var textSpan=document.getElementById(hiddenId+'-disp-text');
-        if(textSpan) textSpan.textContent=jd+' '+MONTHS[jm-1]+' '+jy;
-        var p=document.getElementById('__wh-cal-popup');
-        if(p) p.remove();
     }
 
     // عمومی‌سازی توابع
@@ -2021,8 +1970,8 @@ const WorkHoursUI = (function() {
         showAddDeductionForEmployeeModal,
         saveMgrDeduction,
         setQuickDate,
-        openJalaliPicker,
-        _renderWhCalPopup,
-        _pickWhDate,
+        _wh_jalaliDisplay,
+        _syncDateDisplayTexts,
+        _reInitDatepicker,
     };
 })();

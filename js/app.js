@@ -1042,14 +1042,30 @@ function appController() {
         if (typeof WorkHoursUI !== "undefined") {
           WorkHoursUI.init();
 
+          let html = '';
           // Return different content based on role
           if (this.currentUser.role === "manager") {
             debugLogger("Loading manager work hours view", "info");
-            return WorkHoursUI.getManagerContent();
+            html = WorkHoursUI.getManagerContent();
           } else if (this.currentUser.role === "employee") {
             debugLogger("Loading employee work hours view", "info");
-            return WorkHoursUI.getEmployeeContent();
+            html = WorkHoursUI.getEmployeeContent();
           }
+
+          // init jalalidatepicker بعد از اینکه Alpine x-html DOM را آپدیت کرد
+          if (html) {
+            this.$nextTick(() => {
+              if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
+                jalaliDatepicker.startWatch({
+                  showTodayBtn: true,
+                  showEmptyBtn: true,
+                  showCloseBtn: true,
+                });
+              }
+            });
+          }
+
+          return html;
         }
 
         debugLogger("WorkHoursUI not found", "error");
