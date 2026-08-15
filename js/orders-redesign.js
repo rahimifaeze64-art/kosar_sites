@@ -368,13 +368,7 @@ const OrdersRedesign = (function () {
           <i class="fas fa-edit text-sm"></i>
         </button>`;
 
-      if (order.status === 'pending') {
-        actionBtns += `
-          <button onclick="OrdersRedesign.changeStatus('${sid}','in_progress')"
-            class="p-1.5 rounded-lg hover:bg-teal-50 text-teal-600 transition-colors" title="شروع کار">
-            <i class="fas fa-play text-sm"></i>
-          </button>`;
-      }
+      
       if (order.status === 'in_progress') {
         actionBtns += `
           <button onclick="OrdersRedesign.changeStatus('${sid}','completed')"

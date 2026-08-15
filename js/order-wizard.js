@@ -181,8 +181,8 @@ const OrderWizardModule = {
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-sm text-gray-600 mb-1">تاریخ (شمسی)</label>
-                                    <!-- hidden input نگهدارنده مقدار میلادی برای فرم -->
-                                    <input type="hidden" id="wiz-deadline-date" x-model="newOrder.deadlineDate">
+                                    <!-- hidden input نگهدارنده مقدار میلادی — بدون x-model چون datepicker مستقیم value را ست می‌کند -->
+                                    <input type="hidden" id="wiz-deadline-date">
                                     <!-- input شمسی — کتابخانه jalalidatepicker آن را کنترل می‌کند -->
                                     <input type="text"
                                            id="wiz-deadline-date-jdp"
@@ -384,22 +384,77 @@ function orderWizardData() {
             this.allStudents = _loadStudents();
             this.filteredStudents = [];
             this.filteredWorkTypes = [...this.allWorkTypes];
-            // راه‌اندازی date picker شمسی برای فیلد تاریخ مهلت تحویل
-            var self = this;
             setTimeout(function() {
-                if (typeof JalaliPicker !== 'undefined') {
-                    JalaliPicker.attachById('wiz-deadline-date');
-                } else if (typeof jalaliDatepicker !== 'undefined') {
+                if (typeof jalaliDatepicker !== 'undefined') {
                     jalaliDatepicker.startWatch({ selector: '#wiz-deadline-date-jdp' });
-                }
-                // sync مقدار Alpine با hidden input هنگام تغییر
-                var hidden = document.getElementById('wiz-deadline-date');
-                if (hidden) {
-                    hidden.addEventListener('change', function() {
-                        self.newOrder.deadlineDate = hidden.value;
-                    });
+                } else if (typeof JalaliPicker !== 'undefined') {
+                    JalaliPicker.attachById('wiz-deadline-date');
                 }
             }, 50);
+        },
+
+        // خواندن تاریخ مستقیم از DOM و تبدیل به میلادی YYYY-MM-DD
+        _getDeadlineDate() {
+            var hAll = document.querySelectorAll('#wiz-deadline-date');
+            var jAll = document.querySelectorAll('#wiz-deadline-date-jdp');
+            var h = hAll.length ? hAll[hAll.length - 1] : null;
+            var j = jAll.length  ? jAll[jAll.length  - 1] : null;
+
+            // اول hidden input را بررسی کن (باید gregorian باشد)
+            var val = (h && h.value) ? h.value : (j && j.value) ? j.value : '';
+            if (!val) return '';
+
+            // اگر مقدار میلادی معتبر بود (YYYY-MM-DD) همان را برگردان
+            if (/^\d{4}-\d{2}-\d{2}$/.test(val) && !isNaN(new Date(val).getTime())) {
+                return val;
+            }
+
+            // اگر شمسی بود (1403/05/24 یا 1403-05-24) آن را تبدیل کن
+            var jalaliMatch = val.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+            if (jalaliMatch) {
+                var jy = parseInt(jalaliMatch[1]);
+                var jm = parseInt(jalaliMatch[2]);
+                var jd = parseInt(jalaliMatch[3]);
+                // فقط اعداد شمسی (سال بین 1300 تا 1500) را تبدیل کن
+                if (jy >= 1300 && jy <= 1500) {
+                    try {
+                        var g;
+                        if (typeof Jalali !== 'undefined' && Jalali.toGregorian) {
+                            g = Jalali.toGregorian(jy, jm, jd);
+                        } else {
+                            g = this._jalaliToGregorian(jy, jm, jd);
+                        }
+                        if (g && g.gy) {
+                            var gy = String(g.gy);
+                            var gm = String(g.gm).padStart(2, '0');
+                            var gd = String(g.gd).padStart(2, '0');
+                            return gy + '-' + gm + '-' + gd;
+                        }
+                    } catch(e) {}
+                }
+            }
+
+            // اگر هیچ‌کدام نبود، همان مقدار خام را برگردان
+            return val;
+        },
+
+        // تبدیل شمسی به میلادی (fallback اگر Jalali موجود نباشد)
+        _jalaliToGregorian(jy, jm, jd) {
+            var i = 621 + (jy <= 979 ? 0 : 979);
+            jy -= (jy <= 979 ? 0 : 979);
+            var days = 365 * jy + Math.floor((jy + 3) / 4) * 8 + Math.floor((jy % 33 + 3) / 4) + 78
+                + jd + (jm <= 6 ? (jm - 1) * 31 : (jm - 7) * 30 + 186);
+            i += 400 * Math.floor(days / 146097);
+            days %= 146097;
+            if (days > 36524) { i += 100 * Math.floor(--days / 36524); days %= 36524; if (days >= 365) days++; }
+            i += 4 * Math.floor(days / 1461);
+            days %= 1461;
+            if (days > 365) { i += Math.floor((days - 1) / 365); days = (days - 1) % 365; }
+            var gd = days + 1;
+            var months = [0,31,(i%4===0&&i%100!==0||i%400===0)?29:28,31,30,31,30,31,31,30,31,30,31];
+            var gm;
+            for (gm = 0; gm < 13; gm++) { if (gd <= months[gm]) break; gd -= months[gm]; }
+            return { gy: i, gm: gm, gd: gd };
         },
 
         filterStudents() {
@@ -462,15 +517,15 @@ function orderWizardData() {
                 alert('لطفاً رشته تحصیلی را انتخاب کنید');
                 return;
             }
-            if (!this.newOrder.deadlineDate || !this.newOrder.deadlineTime) {
-                // بررسی مستقیم hidden input هم برای اطمینان
-                var hiddenDate = document.getElementById('wiz-deadline-date');
-                var dateVal = (hiddenDate && hiddenDate.value) ? hiddenDate.value : this.newOrder.deadlineDate;
-                if (!dateVal || !this.newOrder.deadlineTime) {
-                    alert('لطفاً مهلت تحویل را مشخص کنید');
-                    return;
-                }
-                this.newOrder.deadlineDate = dateVal;
+            // تاریخ را همیشه مستقیم از DOM بخوان
+            var _deadlineDate = this._getDeadlineDate();
+            if (!_deadlineDate) {
+                alert('لطفاً تاریخ تحویل را انتخاب کنید');
+                return;
+            }
+            if (!this.newOrder.deadlineTime) {
+                alert('لطفاً ساعت تحویل را مشخص کنید');
+                return;
             }
             // اعتبارسنجی فرمت ساعت
             const timePattern = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
@@ -488,9 +543,8 @@ function orderWizardData() {
             const field = this.newOrder.field || this.newOrder.fieldSelect;
             const orderId = 'ORD-' + Date.now();
             
-            // مقدار تاریخ را از hidden input بخوان (Gregorian YYYY-MM-DD)
-            const hiddenDateEl = document.getElementById('wiz-deadline-date');
-            const deadlineDate = (hiddenDateEl && hiddenDateEl.value) ? hiddenDateEl.value : this.newOrder.deadlineDate;
+            // مقدار تاریخ را از DOM بخوان (Gregorian YYYY-MM-DD)
+            const deadlineDate = _deadlineDate;
             
             // ذخیره فایل جداگانه (برای جلوگیری از پر شدن localStorage)
             const attachmentData = this.newOrder.attachment || window._orderAttachment || null;

@@ -96,6 +96,18 @@ const OrderDetailRedesign = (function () {
   }
   function canManage(role) { return role === 'manager' || role === 'employee'; }
 
+  // resolve کردن url فایل — اگر کلید localStorage باشد، داده واقعی را برمی‌گرداند
+  function resolveFileUrl(url) {
+    if (!url) return '';
+    // اگر base64 یا http باشد، همان را برگردان
+    if (url.startsWith('data:') || url.startsWith('http')) return url;
+    // اگر کلید localStorage باشد (order_file_...)
+    if (url.startsWith('order_file_')) {
+      try { return localStorage.getItem(url) || ''; } catch(e) { return ''; }
+    }
+    return url;
+  }
+
   // ── data helpers ─────────────────────────────────────────────
   function getOrders() {
     if (typeof DataModule !== 'undefined') return DataModule.getOrders() || [];
@@ -136,13 +148,14 @@ const OrderDetailRedesign = (function () {
 
   // ── تب‌ها بر اساس نقش ────────────────────────────────────────
   const TABS = [
-    { id:'overview',   icon:'fa-info-circle',  label:'مشخصات',     roles:['manager','employee','agent','student'] },
-    { id:'mywork',     icon:'fa-tasks',         label:'کار من',     roles:['agent'] },
-    { id:'files',      icon:'fa-paperclip',     label:'فایل‌ها',    roles:['manager','employee','agent'] },
-    { id:'history',    icon:'fa-history',       label:'تاریخچه',    roles:['manager','employee','agent'] },
-    { id:'financial',  icon:'fa-coins',         label:'مالی',       roles:['manager','employee'] },
-    { id:'assignment', icon:'fa-user-tie',      label:'تخصیص',      roles:['manager','employee'] },
-    { id:'addemployee',icon:'fa-user-plus',     label:'کارمند',     roles:['manager'] },
+    { id:'overview',     icon:'fa-info-circle',  label:'مشخصات',     roles:['manager','employee','agent','student'] },
+    { id:'mywork',       icon:'fa-tasks',         label:'کار من',     roles:['agent'] },
+    { id:'corrections',  icon:'fa-edit',          label:'اصلاحات',    roles:['agent'] },
+    { id:'files',        icon:'fa-paperclip',     label:'فایل‌ها',    roles:['manager','employee','agent'] },
+    { id:'history',      icon:'fa-history',       label:'تاریخچه',    roles:['manager','employee','agent'] },
+    { id:'financial',    icon:'fa-coins',         label:'مالی',       roles:['manager','employee'] },
+    { id:'assignment',   icon:'fa-user-tie',      label:'تخصیص',      roles:['manager','employee'] },
+    { id:'addemployee',  icon:'fa-user-plus',     label:'کارمند',     roles:['manager'] },
   ];
 
   // ── هدر ──────────────────────────────────────────────────────
@@ -308,7 +321,7 @@ const OrderDetailRedesign = (function () {
           ${f.reviewComment?`<p class="text-xs text-red-600 mt-1 bg-red-50 rounded px-2 py-1"><i class="fas fa-comment-alt ml-1"></i>${esc(f.reviewComment)}</p>`:''}
         </div>
         <div class="flex gap-1 flex-shrink-0">
-          ${f.url?`<a href="${esc(f.url)}" download="${esc(f.name)}"
+          ${f.url?`<a href="#" onclick="OrderDetailRedesign.downloadFile('${esc(f.url)}','${esc(f.name)}');return false;"
             class="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100" title="دانلود">
             <i class="fas fa-download text-xs"></i></a>`:''}
           ${showReview&&canManage(userRole)?`
@@ -549,7 +562,7 @@ const OrderDetailRedesign = (function () {
                 </div>
                 ${f.reviewComment?`<p class="text-xs text-red-600 mt-1">${esc(f.reviewComment)}</p>`:''}
               </div>
-              ${f.url?`<a href="${esc(f.url)}" download="${esc(f.name)}"
+              ${f.url?`<a href="#" onclick="OrderDetailRedesign.downloadFile('${esc(f.url)}','${esc(f.name)}');return false;"
                 class="p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 opacity-0 group-hover:opacity-100">
                 <i class="fas fa-download text-xs"></i></a>`:''}
             </div>`;}).join('')}
@@ -944,17 +957,248 @@ const OrderDetailRedesign = (function () {
     </div>`;
   }
 
+  // ── تب اصلاحات (فقط عامل) ───────────────────────────────────
+  // نمایش تمام فایل‌هایی که کارمند روی آن‌ها توضیحات اصلاح گذاشته
+  function renderCorrectionsTab(order, userRole) {
+    const allFiles = Array.isArray(order.files) ? order.files : [];
+
+    // فایل‌هایی که نیاز به اصلاح دارند
+    const rejectedFiles = allFiles.filter(f => f.reviewStatus === 'rejected');
+    // فایل‌هایی که تأیید شده‌اند
+    const approvedFiles = allFiles.filter(f => f.reviewStatus === 'approved');
+    // فایل‌هایی که هنوز در انتظارند
+    const pendingFiles  = allFiles.filter(f => !f.reviewStatus || f.reviewStatus === 'pending');
+
+    const correctionCard = (f) => {
+      const hasReupload = f.url && f.reviewVersion > 1;
+      return `
+      <div class="bg-white rounded-xl border-2 border-red-200 overflow-hidden shadow-sm">
+        <div class="bg-red-50 px-4 py-3 border-b border-red-100 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fas ${fileIcon(f.name)} text-xl"></i>
+            <div>
+              <p class="text-sm font-bold text-gray-800">${esc(f.name||'')}</p>
+              <div class="flex items-center gap-2 mt-0.5">
+                ${f.fileType?`<span class="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded">${esc(f.fileType)}</span>`:''}
+                ${f.size?`<span class="text-[10px] text-gray-400">${fmtSize(f.size)}</span>`:''}
+                <span class="text-[10px] text-gray-400">آپلود: ${esc(f.uploadedByName||'')}</span>
+                <span class="text-[10px] text-gray-400">${f.reviewedAt?fmtDate(f.reviewedAt):''}</span>
+              </div>
+            </div>
+          </div>
+          <span class="text-xs bg-red-100 text-red-700 font-bold px-2 py-1 rounded-lg border border-red-200">
+            <i class="fas fa-exclamation-circle ml-1"></i>نیاز به اصلاح
+          </span>
+        </div>
+        <div class="p-4 space-y-3">
+          <!-- توضیحات اصلاحات از کارمند -->
+          <div class="bg-amber-50 rounded-lg border border-amber-200 p-3">
+            <p class="text-xs font-bold text-amber-700 mb-1">
+              <i class="fas fa-comment-alt ml-1"></i>توضیحات اصلاحات (از کارمند):
+            </p>
+            <p class="text-sm text-gray-800 leading-relaxed">${esc(f.reviewComment||'توضیحاتی ثبت نشده')}</p>
+            ${f.reviewedBy?`<p class="text-[10px] text-gray-400 mt-2"><i class="fas fa-user ml-1"></i>بررسی‌کننده: ${esc(f.reviewedBy)}</p>`:''}
+          </div>
+
+          <!-- فایل بازگذاری‌شده توسط کارمند (اگر وجود دارد) -->
+          ${hasReupload?`
+          <div class="bg-blue-50 rounded-lg border border-blue-200 p-3">
+            <p class="text-xs font-bold text-blue-700 mb-2">
+              <i class="fas fa-sync-alt ml-1"></i>فایل اصلاح‌شده از کارمند (ویرایش ${f.reviewVersion}):
+            </p>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i class="fas ${fileIcon(f.name)} text-blue-500"></i>
+                <span class="text-sm text-gray-700">${esc(f.name)}</span>
+              </div>
+              <a href="#" onclick="OrderDetailRedesign.downloadFile('${esc(f.url)}','${esc(f.name)}');return false;"
+                class="flex items-center gap-1 text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700">
+                <i class="fas fa-download"></i>دانلود
+              </a>
+            </div>
+          </div>`:
+          `<div class="bg-gray-50 rounded-lg border border-dashed border-gray-300 p-3 text-center text-gray-400 text-xs">
+            <i class="fas fa-file-upload text-2xl block mb-1 opacity-30"></i>
+            کارمند فایل جایگزینی آپلود نکرده — فایل اصلاح را از تب «کار من» آپلود کنید
+          </div>`}
+
+          <!-- دکمه آپلود فایل اصلاح‌شده توسط عامل -->
+          <div class="bg-lime-50 rounded-lg border border-lime-200 p-3">
+            <p class="text-xs font-bold text-lime-700 mb-2">
+              <i class="fas fa-upload ml-1"></i>ارسال فایل اصلاح‌شده:
+            </p>
+            <div class="flex gap-2">
+              <input type="file" id="corr-file-${esc(f.id)}"
+                accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
+                class="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:ring-2 focus:ring-lime-400 outline-none">
+              <button onclick="OrderDetailRedesign.uploadCorrectedFile('${esc(order.id)}','${esc(f.id)}')"
+                class="bg-[#8FBF3F] hover:bg-[#7aac2e] text-white px-4 py-1.5 rounded-lg text-xs font-bold flex-shrink-0">
+                <i class="fas fa-paper-plane ml-1"></i>ارسال
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    };
+
+    const approvedCard = (f) => `
+      <div class="flex items-center gap-3 p-3 bg-green-50 rounded-xl border border-green-100">
+        <i class="fas ${fileIcon(f.name)} text-xl text-green-500 flex-shrink-0"></i>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-gray-800 truncate">${esc(f.name||'')}</p>
+          <div class="flex items-center gap-2 mt-0.5">
+            ${f.fileType?`<span class="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded">${esc(f.fileType)}</span>`:''}
+            <span class="text-[10px] text-gray-400">${f.reviewedAt?fmtDate(f.reviewedAt):''}</span>
+          </div>
+        </div>
+        <span class="text-xs bg-green-100 text-green-700 font-medium px-2 py-1 rounded-lg border border-green-200 flex-shrink-0">
+          <i class="fas fa-check ml-1"></i>تأیید شد
+        </span>
+        ${f.url?`<a href="#" onclick="OrderDetailRedesign.downloadFile('${esc(f.url)}','${esc(f.name)}');return false;"
+          class="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 flex-shrink-0" title="دانلود">
+          <i class="fas fa-download text-xs"></i></a>`:''}
+      </div>`;
+
+    return `
+    <div class="space-y-5">
+
+      <!-- خلاصه وضعیت -->
+      <div class="grid grid-cols-3 gap-3">
+        <div class="bg-red-50 rounded-xl p-4 text-center border border-red-100">
+          <i class="fas fa-exclamation-circle text-red-500 text-xl mb-1 block"></i>
+          <p class="text-2xl font-black text-red-700">${rejectedFiles.length}</p>
+          <p class="text-xs text-gray-500">نیاز به اصلاح</p>
+        </div>
+        <div class="bg-amber-50 rounded-xl p-4 text-center border border-amber-100">
+          <i class="fas fa-clock text-amber-500 text-xl mb-1 block"></i>
+          <p class="text-2xl font-black text-amber-700">${pendingFiles.length}</p>
+          <p class="text-xs text-gray-500">در انتظار بررسی</p>
+        </div>
+        <div class="bg-green-50 rounded-xl p-4 text-center border border-green-100">
+          <i class="fas fa-check-circle text-green-500 text-xl mb-1 block"></i>
+          <p class="text-2xl font-black text-green-700">${approvedFiles.length}</p>
+          <p class="text-xs text-gray-500">تأیید شده</p>
+        </div>
+      </div>
+
+      <!-- فایل‌های نیازمند اصلاح -->
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+        <div class="bg-red-50 px-4 py-3 border-b border-red-100 flex items-center justify-between">
+          <h4 class="text-sm font-bold text-red-800 flex items-center gap-2">
+            <i class="fas fa-tools text-red-500"></i>فایل‌های نیازمند اصلاح
+          </h4>
+          <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold">${rejectedFiles.length}</span>
+        </div>
+        <div class="p-4">
+          ${rejectedFiles.length === 0
+            ? `<div class="flex flex-col items-center py-10 text-gray-400">
+                <i class="fas fa-check-circle text-5xl text-green-300 mb-3"></i>
+                <p class="text-sm font-medium text-green-600">هیچ اصلاحیه‌ای وجود ندارد</p>
+                <p class="text-xs text-gray-400 mt-1">همه فایل‌ها تأیید شده‌اند یا هنوز بررسی نشده‌اند</p>
+              </div>`
+            : `<div class="space-y-4">${rejectedFiles.map(f => correctionCard(f)).join('')}</div>`}
+        </div>
+      </div>
+
+      <!-- فایل‌های تأیید شده -->
+      ${approvedFiles.length > 0 ? `
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+        <div class="bg-green-50 px-4 py-3 border-b border-green-100 flex items-center justify-between">
+          <h4 class="text-sm font-bold text-green-800 flex items-center gap-2">
+            <i class="fas fa-check-double text-green-500"></i>فایل‌های تأیید شده
+          </h4>
+          <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">${approvedFiles.length}</span>
+        </div>
+        <div class="p-4 space-y-2">
+          ${approvedFiles.map(f => approvedCard(f)).join('')}
+        </div>
+      </div>` : ''}
+
+    </div>`;
+  }
+
+  // ── آپلود فایل اصلاح‌شده توسط عامل از تب اصلاحات ──────────
+  function uploadCorrectedFile(orderId, originalFileId) {
+    const input = document.getElementById('corr-file-' + originalFileId);
+    const file  = input?.files?.[0];
+    if (!file) { notify('فایلی انتخاب نشده','error'); return; }
+    if (file.size > 10*1024*1024) { notify('حجم فایل بیشتر از ۱۰ مگابایت','error'); return; }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const orders = getOrders();
+      const idx    = orders.findIndex(o => o.id === orderId);
+      if (idx === -1) { notify('سفارش یافت نشد','error'); return; }
+
+      const origIdx = (orders[idx].files||[]).findIndex(f => f.id === originalFileId);
+      if (origIdx === -1) { notify('فایل اصلی یافت نشد','error'); return; }
+
+      const origFile  = orders[idx].files[origIdx];
+      const user      = currentUser();
+      const fileId    = 'f_'+Date.now();
+      const storageKey = `order_file_${orderId}_${fileId}`;
+
+      try {
+        localStorage.setItem(storageKey, ev.target.result);
+      } catch(e) {
+        notify('فایل بزرگ‌تر از ظرفیت مرورگر است','error');
+        return;
+      }
+
+      const newVersion = (origFile.reviewVersion||1) + 1;
+      const newFile = {
+        id: fileId, name: file.name,
+        fileType: origFile.fileType||'سایر',
+        size: file.size,
+        url: storageKey,
+        uploadedBy: user.id, uploadedByName: user.name||'عامل',
+        uploadedAt: new Date().toISOString(),
+        isAgentFile: true,
+        reviewStatus: 'pending',
+        reviewVersion: newVersion,
+        revisionOf: originalFileId,
+      };
+
+      // وضعیت فایل اصلی را به pending تغییر بده (اصلاح ارسال شد)
+      orders[idx].files[origIdx] = {
+        ...origFile,
+        reviewStatus: 'pending',
+        reviewComment: origFile.reviewComment, // کامنت کارمند را نگه دار
+      };
+      orders[idx].files.push(newFile);
+      orders[idx].workLog = [...(orders[idx].workLog||[]), {
+        id: Date.now().toString(36), type:'file_upload',
+        message:`فایل اصلاح‌شده (ویرایش ${newVersion}): ${file.name}`,
+        by: user.name||'عامل', timestamp: new Date().toISOString(),
+      }];
+      orders[idx].updatedAt = new Date().toISOString();
+
+      try {
+        saveOrders(orders);
+        if (input) input.value = '';
+        notify(`✅ فایل اصلاح‌شده "${file.name}" ارسال شد — منتظر بررسی کارمند`,'success');
+        switchTab('corrections');
+      } catch(e) {
+        try { localStorage.removeItem(storageKey); } catch(_) {}
+        notify('خطا در ذخیره. حافظه مرورگر پر است.','error');
+      }
+    };
+    reader.onerror = () => notify('خطا در خواندن فایل','error');
+    reader.readAsDataURL(file);
+  }
+
   // ── مودال اصلی ───────────────────────────────────────────────
   function getTabContent(order, userRole, tab) {
     switch(tab) {
-      case 'overview':    return renderOverviewTab(order, userRole);
-      case 'mywork':      return renderMyWorkTab(order, userRole);
-      case 'files':       return renderFilesTab(order, userRole);
-      case 'history':     return renderHistoryTab(order, userRole);
-      case 'financial':   return renderFinancialTab(order, userRole);
-      case 'assignment':  return renderAssignmentTab(order, userRole);
-      case 'addemployee': return renderAddEmployeeTab(order, userRole);
-      default:            return renderOverviewTab(order, userRole);
+      case 'overview':     return renderOverviewTab(order, userRole);
+      case 'mywork':       return renderMyWorkTab(order, userRole);
+      case 'corrections':  return renderCorrectionsTab(order, userRole);
+      case 'files':        return renderFilesTab(order, userRole);
+      case 'history':      return renderHistoryTab(order, userRole);
+      case 'financial':    return renderFinancialTab(order, userRole);
+      case 'assignment':   return renderAssignmentTab(order, userRole);
+      case 'addemployee':  return renderAddEmployeeTab(order, userRole);
+      default:             return renderOverviewTab(order, userRole);
     }
   }
 
@@ -1218,30 +1462,67 @@ const OrderDetailRedesign = (function () {
     reader.onload = (ev) => {
       const orders = getOrders();
       const idx = orders.findIndex(o=>o.id===orderId);
-      if (idx===-1) return;
+      if (idx===-1) { notify('سفارش یافت نشد','error'); return; }
       const user = currentUser();
+      const fileId = 'f_'+Date.now();
+
+      // ذخیره داده فایل جداگانه تا orders array پر نشود
+      let fileUrl = ev.target.result;
+      const fileStorageKey = `order_file_${orderId}_${fileId}`;
+      try {
+        localStorage.setItem(fileStorageKey, fileUrl);
+        fileUrl = fileStorageKey; // فقط کلید را ذخیره کن
+      } catch(e) {
+        // اگر حتی به تنهایی هم ذخیره نشد، حجم فایل خیلی بزرگ است
+        notify('فایل بیش از حد بزرگ است و قابل ذخیره نیست. لطفاً فایل کوچک‌تری انتخاب کنید.','error');
+        return;
+      }
+
       const newFile = {
-        id:'f_'+Date.now(), name:file.name, fileType, size:file.size,
-        url:ev.target.result, uploadedBy:user.id, uploadedByName:user.name||'',
-        uploadedAt:new Date().toISOString(), reviewStatus:'pending', reviewVersion:1,
+        id: fileId, name: file.name, fileType, size: file.size,
+        url: fileUrl,   // کلید localStorage — نه base64 خام
+        uploadedBy: user.id, uploadedByName: user.name||'',
+        uploadedAt: new Date().toISOString(), reviewStatus:'pending', reviewVersion:1,
       };
       if (!orders[idx].files) orders[idx].files = [];
       orders[idx].files.push(newFile);
       orders[idx].workLog = [...(orders[idx].workLog||[]), {
-        id:Date.now().toString(36), type:'file_upload',
+        id: Date.now().toString(36), type:'file_upload',
         message:`فایل "${file.name}" (${fileType}) آپلود شد`,
-        timestamp:new Date().toISOString(), by:user.name||'',
+        timestamp: new Date().toISOString(), by: user.name||'',
       }];
       orders[idx].updatedAt = new Date().toISOString();
-      saveOrders(orders);
-      notify(`فایل "${file.name}" آپلود شد ✓`,'success');
-      switchTab('files');
+
+      try {
+        saveOrders(orders);
+        notify(`فایل "${file.name}" آپلود شد ✓`,'success');
+        // پاک کردن فرم
+        if (fileInput) fileInput.value = '';
+        const sel = document.getElementById('file-type-sel');
+        if (sel) sel.value = '';
+        switchTab('files');
+      } catch(e) {
+        // اگر save کل orders شکست خورد، داده فایل را پاک کن
+        try { localStorage.removeItem(fileStorageKey); } catch(_) {}
+        notify('خطا در ذخیره: حافظه مرورگر پر است. برخی فایل‌های قدیمی را حذف کنید.','error');
+      }
     };
+    reader.onerror = () => notify('خطا در خواندن فایل','error');
     reader.readAsDataURL(file);
   }
 
+  function downloadFile(urlOrKey, fileName) {
+    const data = resolveFileUrl(urlOrKey);
+    if (!data) { notify('فایل یافت نشد','error'); return; }
+    const a = document.createElement('a');
+    a.href = data;
+    a.download = fileName || 'file';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
   function handleFileDrop(event, orderId) {
-    event.preventDefault();
     const dz = document.getElementById('file-drop-zone');
     if (dz) dz.classList.remove('border-[#8FBF3F]','bg-[#f9fdf0]');
     const file = event.dataTransfer?.files?.[0];
@@ -1256,6 +1537,11 @@ const OrderDetailRedesign = (function () {
     const orders = getOrders();
     const idx = orders.findIndex(o=>o.id===orderId);
     if (idx===-1) return;
+    // پاک کردن داده فایل از localStorage
+    const fileToDelete = (orders[idx].files||[]).find(f=>f.id===fileId);
+    if (fileToDelete && fileToDelete.url && fileToDelete.url.startsWith('order_file_')) {
+      try { localStorage.removeItem(fileToDelete.url); } catch(e) {}
+    }
     orders[idx].files = (orders[idx].files||[]).filter(f=>f.id!==fileId);
     orders[idx].updatedAt = new Date().toISOString();
     saveOrders(orders);
@@ -1424,7 +1710,8 @@ const OrderDetailRedesign = (function () {
     addPayment, saveRevenueSplit,
     assignAgent, saveAssignmentNotes,
     addNote, addEmployee, removeEmployee,
-    uploadFile, handleFileDrop, deleteFile,
+    uploadFile, handleFileDrop, deleteFile, downloadFile,
+    uploadCorrectedFile,
     showFileReview, submitFileReview,
     uploadMyFile, addMyNote,
     printOrder,
