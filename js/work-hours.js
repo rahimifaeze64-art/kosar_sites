@@ -1267,10 +1267,24 @@ const WorkHoursUI = (function() {
      * ثبت فرم ساعات کاری
      */
     function submitForm() {
-        const date = document.getElementById('workDate').value;
+        // hidden: مقدار میلادی از jalalidatepicker
+        // jdp input: مقدار شمسی نمایشی
+        const hiddenInput = document.getElementById('workDate');
+        const jdpInput    = document.getElementById('workDate-jdp');
+
+        // اگه hidden خالیه ولی jdp مقدار داره → تبدیل کن
+        let date = hiddenInput ? hiddenInput.value : '';
+        if (!date && jdpInput && jdpInput.value) {
+            // mقدار jdp شمسی است — تبدیل به میلادی
+            date = _convertJalaliInputToGregorian(jdpInput.value);
+            if (date && hiddenInput) hiddenInput.value = date;
+        }
+
         const startTime = document.getElementById('startTime').value;
         const endTime = document.getElementById('endTime').value;
         const description = (document.getElementById('workDescription')?.value || '').trim();
+
+        console.log('[WorkHours] submit → date:', JSON.stringify(date), '| startTime:', startTime, '| endTime:', endTime);
 
         if (!date || !startTime || !endTime) {
             showNotification('لطفاً تمام فیلدها را پر کنید', 'error');
@@ -1310,7 +1324,15 @@ const WorkHoursUI = (function() {
      * ثبت فرم هزینه‌ها
      */
     function submitExpenseForm() {
-        const date   = document.getElementById('expenseDate').value;
+        const hiddenInput = document.getElementById('expenseDate');
+        const jdpInput    = document.getElementById('expenseDate-jdp');
+
+        let date = hiddenInput ? hiddenInput.value : '';
+        if (!date && jdpInput && jdpInput.value) {
+            date = _convertJalaliInputToGregorian(jdpInput.value);
+            if (date && hiddenInput) hiddenInput.value = date;
+        }
+
         const amount = parseFloat(document.getElementById('expenseAmount').value);
         const description = document.getElementById('expenseDescription').value;
 
@@ -1784,7 +1806,15 @@ const WorkHoursUI = (function() {
 
     function saveMgrDeduction() {
         var empSel = document.getElementById('mgr-ded-emp');
-        var date   = document.getElementById('mgr-ded-date')?.value;
+        var hiddenInput = document.getElementById('mgr-ded-date');
+        var jdpInput    = document.getElementById('mgr-ded-date-jdp');
+
+        var date = hiddenInput ? hiddenInput.value : '';
+        if (!date && jdpInput && jdpInput.value) {
+            date = _convertJalaliInputToGregorian(jdpInput.value);
+            if (date && hiddenInput) hiddenInput.value = date;
+        }
+
         var amount = parseFloat(document.getElementById('mgr-ded-amount')?.value) || 0;
         var reason = document.getElementById('mgr-ded-reason')?.value?.trim();
         if (!empSel?.value || !date || !amount || !reason) { showNotification('همه فیلدها را پر کنید', 'error'); return; }
@@ -1808,7 +1838,15 @@ const WorkHoursUI = (function() {
 
     function submitDeductionForm(e) {
         e.preventDefault();
-        const date   = document.getElementById('deductionDate').value;
+        const hiddenInput = document.getElementById('deductionDate');
+        const jdpInput    = document.getElementById('deductionDate-jdp');
+
+        let date = hiddenInput ? hiddenInput.value : '';
+        if (!date && jdpInput && jdpInput.value) {
+            date = _convertJalaliInputToGregorian(jdpInput.value);
+            if (date && hiddenInput) hiddenInput.value = date;
+        }
+
         const amount = parseFloat(document.getElementById('deductionAmount').value) || 0;
         const reason = document.getElementById('deductionReason').value.trim();
         if (!date || !amount || !reason) {
@@ -1886,20 +1924,86 @@ const WorkHoursUI = (function() {
     }
 
     /**
+     * تبدیل مقدار شمسی نمایشی به میلادی YYYY-MM-DD
+     * ورودی: رشته‌ای مثل "1404/05/24" یا "۱۴۰۴/۰۵/۲۴"
+     * خروجی: "2025-08-15" یا '' در صورت خطا
+     */
+    function _convertJalaliInputToGregorian(jStr) {
+        if (!jStr) return '';
+        // تبدیل اعداد فارسی به لاتین
+        var normalized = jStr.replace(/[۰-۹]/g, function(d) {
+            return String.fromCharCode(d.charCodeAt(0) - 1728);
+        }).replace(/[٠-٩]/g, function(d) {
+            return String.fromCharCode(d.charCodeAt(0) - 1584);
+        });
+        // جدا کردن سال/ماه/روز
+        var parts = normalized.split(/[\/\-\.]/);
+        if (parts.length !== 3) return '';
+        var jy = parseInt(parts[0], 10);
+        var jm = parseInt(parts[1], 10);
+        var jd = parseInt(parts[2], 10);
+        if (!jy || !jm || !jd) return '';
+        // استفاده از Jalali اگر موجود باشد
+        if (typeof Jalali !== 'undefined' && typeof Jalali.toGregorian === 'function') {
+            try {
+                var g = Jalali.toGregorian(jy, jm, jd);
+                var pad = function(n) { return n < 10 ? '0' + n : String(n); };
+                return g.gy + '-' + pad(g.gm) + '-' + pad(g.gd);
+            } catch(e) {}
+        }
+        // fallback: الگوریتم ساده تبدیل جلالی به میلادی
+        return _jalaliToGregorianFallback(jy, jm, jd);
+    }
+
+    function _jalaliToGregorianFallback(jy, jm, jd) {
+        var jy2 = jy <= 979 ? 979 : jy - 979;
+        var jm2 = jm - 1;
+        var days = (365 * jy2) + (Math.floor(jy2 / 33) * 8) + Math.floor(((jy2 % 33) + 3) / 4) + 78 + jd +
+                   (jm2 < 6 ? jm2 * 31 : (jm2 * 30) + 6);
+        var gy = 1600 + (400 * Math.floor(days / 146097));
+        days %= 146097;
+        if (days > 36524) { gy += 100 * Math.floor(--days / 36524); days %= 36524; if (days >= 365) days++; }
+        gy += 4 * Math.floor(days / 1461);
+        days %= 1461;
+        if (days > 365) { gy += Math.floor((days - 1) / 365); days = (days - 1) % 365; }
+        var gd = days + 1;
+        var months = [0,31,(gy%4===0&&gy%100!==0||gy%400===0)?29:28,31,30,31,30,31,31,30,31,30,31];
+        var gm = 0;
+        for (var i = 1; i <= 12; i++) { if (gd <= months[i]) { gm = i; break; } gd -= months[i]; }
+        var pad = function(n) { return n < 10 ? '0' + n : String(n); };
+        return gy + '-' + pad(gm) + '-' + pad(gd);
+    }
+
+    /**
      * باز کردن تقویم شمسی با dark theme
      * از onclick مستقیم روی input‌ها صدا زده می‌شود
      */
     function openDarkPicker(inputEl) {
-        if (typeof jalaliDatepicker === 'undefined') return;
+        if (typeof jalaliDatepicker === 'undefined') {
+            console.error('jalaliDatepicker not loaded');
+            return;
+        }
+        // اطمینان از init بودن کتابخانه
+        if (typeof jalaliDatepicker.startWatch === 'function') {
+            jalaliDatepicker.startWatch({
+                showTodayBtn: true,
+                showEmptyBtn: true,
+                showCloseBtn: true,
+            });
+        }
         // dark mode class روی body
         document.body.classList.add('jdp-dark-mode');
         // برداشتن class بعد از بسته شدن تقویم
-        var removeClass = function() {
-            document.body.classList.remove('jdp-dark-mode');
-            document.removeEventListener('click', removeClass);
+        var removeClassHandler = function(e) {
+            // اگه کلیک خارج از تقویم بود class رو بردار
+            var container = document.querySelector('jdp-container');
+            if (!container || !container.contains(e.target)) {
+                document.body.classList.remove('jdp-dark-mode');
+                document.removeEventListener('click', removeClassHandler);
+            }
         };
         setTimeout(function() {
-            document.addEventListener('click', removeClass);
+            document.addEventListener('click', removeClassHandler);
         }, 300);
         jalaliDatepicker.show(inputEl);
     }
@@ -1973,5 +2077,7 @@ const WorkHoursUI = (function() {
         _wh_jalaliDisplay,
         _syncDateDisplayTexts,
         _reInitDatepicker,
+        openDarkPicker,
+        _convertJalaliInputToGregorian,
     };
 })();
