@@ -582,9 +582,9 @@ body {
 #workHoursForm input[data-jdp],
 #deductionForm input[data-jdp],
 #expenseForm input[data-jdp] {
-    background: rgba(120, 42, 42, 0.1) !important;
-    color: #5e0b0b !important;
-    border-color: rgba(118, 43, 43, 0.2) !important;
+    background: rgba(67, 141, 44, 0.1) !important;
+    color: #1a0451 !important;
+    border-color: rgba(84, 178, 66, 0.2) !important;
 }
 
 #workHoursForm input[data-jdp]::placeholder,
@@ -623,8 +623,8 @@ jdp-container {
 
 /* input تقویم در modal مدیر */
 #mgr-ded-date-jdp {
-    background: #1e3a5f !important;
-    color: #691010 !important;
-    border-color: #3b5998 !important;
+    background: #51ac3d !important;
+    color: #170362 !important;
+    border-color: #42b954 !important;
     cursor: pointer;
 }
