@@ -9,6 +9,11 @@ const WorkChecklistModule = {
 
     // ─── Init ─────────────────────────────────────────────────────
     async init(user) {
+        // جلوگیری از اجرای همزمان چند init
+        if (this._initializing) {
+            console.log('🔍 [WC] init already in progress, skip');
+            return;
+        }
         this._initializing = true;
         this._initialized = false;
         console.log('🔍 [WC] WorkChecklistModule.init called, user:', user?.id, user?.role);
@@ -140,6 +145,30 @@ const WorkChecklistModule = {
         const localData = (this._localGet(localKey) || []).filter(i => i.category_id === categoryId);
         console.log('🔍 [WC] getItems:', categoryId, '| localStorage:', localData.length);
 
+        // اگه localStorage داده داره، فوری برگردون + background sync (مثل getCategories)
+        if (localData.length > 0) {
+            if (this.supabase) {
+                this.supabase
+                    .from('checklist_items')
+                    .select('*')
+                    .eq('category_id', categoryId)
+                    .order('created_at', { ascending: true })
+                    .then(({ data }) => {
+                        if (data && data.length > 0) {
+                            const allItems = this._localGet(localKey) || [];
+                            data.forEach(d => {
+                                const idx = allItems.findIndex(i => i.id === d.id);
+                                if (idx >= 0) allItems[idx] = d; else allItems.push(d);
+                            });
+                            this._localSet(localKey, allItems);
+                        }
+                    })
+                    .catch(() => {});
+            }
+            return localData;
+        }
+
+        // localStorage خالیه → Supabase با timeout
         if (this.supabase) {
             try {
                 const t0 = Date.now();
@@ -213,6 +242,31 @@ const WorkChecklistModule = {
     async getTasks(itemId) {
         const localKey = 'wc_tasks_' + this.currentUser.id;
         const localData = (this._localGet(localKey) || []).filter(t => t.item_id === itemId);
+
+        // اگه localStorage داده داره، فوری برگردون + background sync
+        if (localData.length > 0) {
+            if (this.supabase) {
+                this.supabase
+                    .from('checklist_tasks')
+                    .select('*')
+                    .eq('item_id', itemId)
+                    .order('sort_order', { ascending: true })
+                    .then(({ data }) => {
+                        if (data && data.length > 0) {
+                            const allTasks = this._localGet(localKey) || [];
+                            data.forEach(d => {
+                                const idx = allTasks.findIndex(t => t.id === d.id);
+                                if (idx >= 0) allTasks[idx] = d; else allTasks.push(d);
+                            });
+                            this._localSet(localKey, allTasks);
+                        }
+                    })
+                    .catch(() => {});
+            }
+            return localData;
+        }
+
+        // localStorage خالیه → Supabase با timeout
         if (this.supabase) {
             try {
                 const supabasePromise = this.supabase
@@ -410,10 +464,15 @@ const WorkChecklistModule = {
 
         // حالا یکجا DOM رو بنویس
         console.log('🔍 [WC] writing DOM...');
-        container.innerHTML = cats.map(cat => {
-            const items = allItemsMap[cat.id] || [];
-            return this._buildCategoryCardWithItems(cat, items);
-        }).join('');
+        try {
+            container.innerHTML = cats.map(cat => {
+                const items = allItemsMap[cat.id] || [];
+                return this._buildCategoryCardWithItems(cat, items);
+            }).join('');
+        } catch(e) {
+            console.error('❌ [WC] DOM write error:', e);
+            container.innerHTML = `<p class="text-red-400 p-4">خطا در نمایش: ${e.message}</p>`;
+        }
         console.log('✅ [WC] renderCategories done — DOM written');
     },
 
@@ -426,16 +485,19 @@ const WorkChecklistModule = {
             lime: 'border-lime-500/40 bg-lime-900/20',
             blue:   'border-blue-500/40 bg-blue-900/20',
             green:  'border-green-500/40 bg-green-900/20',
-            lime: 'border-lime-500/40 bg-lime-900/20',
             red:    'border-red-500/40 bg-red-900/20',
             pink:   'border-pink-500/40 bg-pink-900/20',
         };
         const iconColors = {
-            lime: 'text-lime-400', blue: 'text-black-400',
-            green:  'text-green-400',  lime: 'text-lime-400',
+            lime: 'text-lime-400', blue: 'text-blue-400',
+            green:  'text-green-400',
             red:    'text-red-400',    pink:   'text-pink-400',
         };
         const clr = cat.color || 'lime';
+        const itemsHtml = (items || []).map(item => {
+            try { return this._buildItemCard(item); }
+            catch(e) { console.error('❌ [WC] _buildItemCard error:', e); return ''; }
+        }).join('');
         return `
         <div class="rounded-2xl border ${colors[clr] || colors.lime} p-5 space-y-4 backdrop-blur-sm" id="wc-cat-${cat.id}">
             <div class="flex items-center justify-between">
@@ -449,7 +511,7 @@ const WorkChecklistModule = {
                         <i class="fas fa-plus text-xs"></i> آیتم
                     </button>
                     <button onclick="WorkChecklistModule.showEditCategoryModal('${cat.id}')"
-                            class="text-black-300 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-all" title="ویرایش">
+                            class="text-gray-300 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-all" title="ویرایش">
                         <i class="fas fa-edit text-sm"></i>
                     </button>
                     <button onclick="WorkChecklistModule.confirmDeleteCategory('${cat.id}')"
@@ -458,11 +520,11 @@ const WorkChecklistModule = {
                     </button>
                 </div>
             </div>
-            ${cat.description ? `<p class="text-black-400/70 text-sm">${this._esc(cat.description)}</p>` : ''}
+            ${cat.description ? `<p class="text-gray-400/70 text-sm">${this._esc(cat.description)}</p>` : ''}
             <div id="wc-items-${cat.id}" class="space-y-3 min-h-[40px]">
                 ${items.length === 0
                     ? `<p class="text-gray-400/70 text-sm text-center py-2 italic">آیتمی وجود ندارد — یک آیتم اضافه کنید</p>`
-                    : items.map(item => this._buildItemCard(item)).join('')
+                    : itemsHtml
                 }
             </div>
         </div>`;

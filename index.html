@@ -287,6 +287,16 @@
                 </button>
             </template>
 
+            <!-- چک‌لیست کاری - فقط مدیر -->
+            <template x-if="currentUser.role === 'manager'">
+                <button @click="currentPage = 'workChecklist'"
+                        :class="currentPage === 'workChecklist' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
+                        class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
+                    <i class="fas fa-check-square text-lg"></i>
+                    <span class="font-medium">چک‌لیست کاری</span>
+                </button>
+            </template>
+
             <!-- وظایف من - فقط عامل -->
             <template x-if="currentUser.role === 'agent'">
                 <button @click="currentPage = 'agentTasks'"
@@ -535,8 +545,8 @@
             <!-- Work Hours Page (Manager and employees) -->
             <div x-show="currentPage === 'workHours' && (currentUser.role === 'manager' || currentUser.role === 'employee')" x-html="getWorkHoursContent()"></div>
 
-            <!-- Work Checklist Page (Employee only) -->
-            <div x-show="currentPage === 'workChecklist' && currentUser.role === 'employee'">
+            <!-- Work Checklist Page (Manager and Employee) -->
+            <div x-show="currentPage === 'workChecklist' && (currentUser.role === 'employee' || currentUser.role === 'manager')">
                 <div id="work-checklist-root" class="min-h-[60vh]">
                     <div class="flex items-center justify-center py-16">
                         <i class="fas fa-spinner fa-spin text-3xl text-lime-400"></i>

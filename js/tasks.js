@@ -124,48 +124,10 @@ const TasksModule = {
                     </div>
                 </div>
 
-                <!-- ═══ چک‌لیست کاری مدیر ═══ -->
-                <div class="border-t border-slate-700 pt-6">
-                    <div class="flex items-center gap-3 mb-4">
-                        <span class="bg-lime-500/20 p-2 rounded-xl">
-                            <i class="fas fa-check-square text-lime-400 text-xl"></i>
-                        </span>
-                        <h2 class="text-xl font-bold text-white">چک‌لیست کاری</h2>
-                    </div>
-                    <div id="work-checklist-root" class="min-h-[60vh]">
-                        <div class="flex items-center justify-center py-16">
-                            <i class="fas fa-spinner fa-spin text-3xl text-lime-400"></i>
-                        </div>
-                    </div>
-                </div>
+                <!-- ═══ چک‌لیست کاری مدیر — به صفحه مستقل workChecklist منتقل شده ═══ -->
             </div>
         `;
-        // init چک‌لیست بعد از رندر — از Alpine کاربر جاری را می‌گیریم تا مطمئن باشیم صحیح است
-        // app.js نیز این کار را در watch می‌کند؛ اگر قبلاً init شده بود دوباره اجرا نمی‌شود
-        setTimeout(() => {
-            if (typeof WorkChecklistModule !== 'undefined') {
-                // اولویت: کاربر Alpine > localStorage
-                let user = null;
-                try {
-                    const alpineEl = document.querySelector('[x-data]');
-                    if (alpineEl && alpineEl._x_dataStack) {
-                        const alpineData = alpineEl._x_dataStack[0];
-                        if (alpineData && alpineData.currentUser) user = alpineData.currentUser;
-                    }
-                } catch(e) {}
-                if (!user) {
-                    try {
-                        const saved = localStorage.getItem('currentUser');
-                        if (saved) user = JSON.parse(saved);
-                    } catch(e) {}
-                }
-                // جلوگیری از double-init: فقط اگر work-checklist-root هنوز رندر نشده اجرا کن
-                const root = document.getElementById('work-checklist-root');
-                if (user && root && root.querySelector('.fa-spinner')) {
-                    WorkChecklistModule.init(user);
-                }
-            }
-        }, 300);
+        // نیازی به init چک‌لیست اینجا نیست — صفحه مستقل workChecklist این کار را می‌کند
     },
     
     // Get employees list - فقط کارمندها

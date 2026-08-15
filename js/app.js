@@ -137,40 +137,41 @@ function appController() {
                   doInitNotes();
               });
           }
-          // چک‌لیست مدیر — بعد از رندر صفحه tasks
-          if (newPage === 'tasks' && this.currentUser.role === 'manager') {
+          // چک‌لیست مدیر — بعد از رندر صفحه tasks (دیگر نیازی نیست — صفحه مستقل دارد)
+          // چک‌لیست — هر دو نقش مدیر و کارمند از صفحه مستقل workChecklist استفاده می‌کنند
+          if (newPage === 'workChecklist' && (this.currentUser.role === 'employee' || this.currentUser.role === 'manager')) {
+              console.log('🔍 [WC] $watch fired → workChecklist, user:', this.currentUser?.id);
+              // صبر میکنیم Alpine x-show رو کامل پردازش کنه بعد init میزنیم
               this.$nextTick(() => {
                   setTimeout(() => {
-                      if (typeof WorkChecklistModule !== 'undefined') {
-                          WorkChecklistModule.init(this.currentUser);
+                      if (typeof WorkChecklistModule === 'undefined') return;
+                      // اگه در حین init هستیم، صبر کن
+                      if (WorkChecklistModule._initializing) {
+                          console.log('🔍 [WC] $watch: init in progress, skip');
+                          return;
                       }
-                  }, 150);
-              });
-          }
-          // چک‌لیست کارمند — از $watch هندل میشه مثل embassy و personalNotes
-          if (newPage === 'workChecklist' && this.currentUser.role === 'employee') {
-              console.log('🔍 [WC] $watch fired → workChecklist, user:', this.currentUser?.id);
-              // صبر میکنیم Alpine x-show رو کامل پردازش کنه
-              this.$nextTick(() => setTimeout(() => {
-                  const doInitWC = () => {
-                      const root = document.getElementById('work-checklist-root');
-                      if (root && typeof WorkChecklistModule !== 'undefined') {
-                          // همیشه render کامل بزن تا #wc-wrapper در root کارمند inject بشه
-                          WorkChecklistModule._initialized = false;
-                          WorkChecklistModule._initializing = false;
-                          WorkChecklistModule.currentUser = this.currentUser;
-                          // supabase رو هم init کن اگه هنوز نشده
-                          if (!WorkChecklistModule.supabase && typeof getSupabaseClient === 'function') {
-                              WorkChecklistModule.supabase = getSupabaseClient();
+                      // اگه قبلاً init شده، فقط refresh
+                      if (WorkChecklistModule._initialized) {
+                          const root = document.getElementById('work-checklist-root');
+                          if (root && root.querySelector('#wc-wrapper')) {
+                              console.log('🔍 [WC] $watch: already init → renderCategories');
+                              WorkChecklistModule.currentUser = this.currentUser;
+                              WorkChecklistModule.renderCategories();
+                              return;
                           }
-                          console.log('✅ [WC] calling WorkChecklistModule.render() via $watch');
-                          WorkChecklistModule.render();
-                      } else {
-                          setTimeout(doInitWC, 200);
                       }
-                  };
-                  doInitWC();
-              }, 80));
+                      // init از نو
+                      const root = document.getElementById('work-checklist-root');
+                      if (!root) return;
+                      WorkChecklistModule._initialized = false;
+                      WorkChecklistModule._initializing = false;
+                      if (!WorkChecklistModule.supabase && typeof getSupabaseClient === 'function') {
+                          WorkChecklistModule.supabase = getSupabaseClient();
+                      }
+                      console.log('✅ [WC] $watch → WorkChecklistModule.init()');
+                      WorkChecklistModule.init(this.currentUser);
+                  }, 100);
+              });
           }
         });
 
@@ -204,8 +205,8 @@ function appController() {
                 }
                 // dashboard رو هم refresh کن
                 if (this.currentPage === 'dashboard' || this.currentPage === 'home') {
-                    if (typeof UIRefresh !== 'undefined') {
-                        UIRefresh.refresh();
+                    if (typeof UIRefresh !== 'undefined' && typeof UIRefresh.dashboard === 'function') {
+                        UIRefresh.dashboard();
                     }
                 }
                 // یادداشت شخصی — اگر صفحه باز است re-render کن با داده‌های تازه
@@ -311,9 +312,9 @@ function appController() {
 
     // Init work checklist for employee — فقط یک بار اجرا میشه
     initWorkChecklist() {
-        // debounce: اگه قبلاً در 2 ثانیه اخیر صدا زده شده، skip
+        // debounce: اگه قبلاً در 1 ثانیه اخیر صدا زده شده، skip
         const now = Date.now();
-        if (this._lastInitCall && (now - this._lastInitCall) < 2000) {
+        if (this._lastInitCall && (now - this._lastInitCall) < 1000) {
             console.log('🔍 [WC] debounce skip');
             return;
         }
@@ -323,28 +324,39 @@ function appController() {
         console.log('🔍 [WC] initWorkChecklist called, user:', user?.id, 'role:', user?.role);
 
         if (typeof WorkChecklistModule === 'undefined') {
-            console.warn('⚠️ [WC] WorkChecklistModule undefined');
-            return;
-        }
-        const root = document.getElementById('work-checklist-root');
-        if (!root) {
-            console.warn('⚠️ [WC] root not found');
+            console.warn('⚠️ [WC] WorkChecklistModule undefined — retry in 300ms');
+            setTimeout(() => this.initWorkChecklist(), 300);
             return;
         }
 
-        // اگه قبلاً init شده و wrapper موجوده → فقط refresh
-        if (WorkChecklistModule._initialized && root.querySelector('#wc-wrapper')) {
-            console.log('🔍 [WC] already done → renderCategories');
-            WorkChecklistModule.currentUser = user;
-            WorkChecklistModule.renderCategories && WorkChecklistModule.renderCategories();
-            return;
-        }
+        const doInit = () => {
+            const root = document.getElementById('work-checklist-root');
+            if (!root) {
+                console.warn('⚠️ [WC] root not found — retry in 200ms');
+                setTimeout(doInit, 200);
+                return;
+            }
 
-        // reset flags و init از نو
-        WorkChecklistModule._initialized = false;
-        WorkChecklistModule._initializing = false;
-        console.log('✅ [WC] calling WorkChecklistModule.init with user:', user?.id);
-        WorkChecklistModule.init(user);
+            // اگه قبلاً init شده و wrapper موجوده → فقط refresh
+            if (WorkChecklistModule._initialized && root.querySelector('#wc-wrapper')) {
+                console.log('🔍 [WC] already done → renderCategories');
+                WorkChecklistModule.currentUser = user;
+                WorkChecklistModule.renderCategories && WorkChecklistModule.renderCategories();
+                return;
+            }
+
+            // reset flags و init از نو
+            WorkChecklistModule._initialized = false;
+            WorkChecklistModule._initializing = false;
+            // اطمینان از supabase client
+            if (!WorkChecklistModule.supabase && typeof getSupabaseClient === 'function') {
+                WorkChecklistModule.supabase = getSupabaseClient();
+            }
+            console.log('✅ [WC] calling WorkChecklistModule.init with user:', user?.id);
+            WorkChecklistModule.init(user);
+        };
+
+        doInit();
     },
 
     // Get role name in Persian
