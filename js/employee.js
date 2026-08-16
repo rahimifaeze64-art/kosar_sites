@@ -435,6 +435,22 @@ const EmployeeModule = {
                     </h3>
                     
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Search by name -->
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-search ml-1 text-lime-400"></i>
+                                جستجوی نام دانشجو
+                            </label>
+                            <div class="relative">
+                                <input type="text"
+                                       id="filter-student-name"
+                                       placeholder="نام دانشجو را تایپ کنید..."
+                                       oninput="employeeModule.applyStudentFilter()"
+                                       class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-4 py-2.5 pr-10 focus:outline-none focus:ring-2 focus:ring-lime-500 placeholder-gray-500">
+                                <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                            </div>
+                        </div>
+
                         <!-- Filter Type -->
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">نوع مسیر</label>
@@ -4552,123 +4568,114 @@ EmployeeModule.applyStepsToAllStudents = function(type, newSteps) {
     console.log(`✅ Applied ${type} steps to ${Object.keys(studentsData).length} students`);
 };
 
-// Update applyStudentFilter to include empty field filter
+// Update applyStudentFilter to include empty field filter and name search
 EmployeeModule.applyStudentFilter = function() {
-    const filterTypeElement = document.getElementById('filter-type');
-    const filterStepElement = document.getElementById('filter-step');
+    const filterTypeElement      = document.getElementById('filter-type');
+    const filterStepElement      = document.getElementById('filter-step');
     const filterEmptyFieldElement = document.getElementById('filter-empty-field');
-    
+    const filterNameElement      = document.getElementById('filter-student-name');
+
     if (!filterTypeElement || !filterStepElement) {
         console.warn('Filter elements not found');
         return;
     }
-    
-    const filterType = filterTypeElement.value;
-    const filterStep = filterStepElement.value;
+
+    const filterType       = filterTypeElement.value;
+    const filterStep       = filterStepElement.value;
     const filterEmptyField = filterEmptyFieldElement ? filterEmptyFieldElement.value : 'all';
-    
+    const filterName       = filterNameElement ? filterNameElement.value.trim().toLowerCase() : '';
+
     const students = this.getAllStudents();
-    
-    console.log(`🔍 Filtering ${students.length} students by type: ${filterType}, step: ${filterStep}, empty field: ${filterEmptyField}`);
-    
+
+    console.log(`🔍 Filtering ${students.length} students — name:"${filterName}" type:${filterType} step:${filterStep} emptyField:${filterEmptyField}`);
+
     let filteredStudents = students;
-    
-    // Filter by educational/defense steps
+
+    // ── فیلتر نام دانشجو ──────────────────────────────────────
+    if (filterName) {
+        filteredStudents = filteredStudents.filter(s => {
+            const name = (s.name || '').toLowerCase();
+            return name.includes(filterName);
+        });
+    }
+
+    // ── فیلتر نوع مسیر / مرحله ────────────────────────────────
     if (filterType === 'educational' && filterStep !== 'all') {
         const selectedStepIndex = parseInt(filterStep);
-        
         filteredStudents = filteredStudents.filter(s => {
             const steps = s.educationalSteps || this.getDefaultEducationalSteps();
             const currentStepIndex = steps.findIndex(step => !step.completed);
-            
-            if (filterStep === 'completed') {
-                const allCompleted = currentStepIndex === -1;
-                if (allCompleted) {
-                    console.log(`  ✅ ${s.name}: همه مراحل تکمیل شده`);
-                }
-                return allCompleted;
-            } else {
-                const matches = currentStepIndex >= selectedStepIndex || currentStepIndex === -1;
-                if (matches) {
-                    const currentStep = currentStepIndex === -1 ? 'تکمیل شده' : steps[currentStepIndex]?.name;
-                    console.log(`  ✅ ${s.name}: مرحله فعلی ${currentStepIndex} (${currentStep}) >= ${selectedStepIndex}`);
-                }
-                return matches;
-            }
+            if (filterStep === 'completed') return currentStepIndex === -1;
+            return currentStepIndex >= selectedStepIndex || currentStepIndex === -1;
         });
     } else if (filterType === 'defense' && filterStep !== 'all') {
         const selectedStepIndex = parseInt(filterStep);
-        
         filteredStudents = filteredStudents.filter(s => {
             const steps = s.defenseSteps || this.getDefaultDefenseSteps2();
             const currentStepIndex = steps.findIndex(step => !step.completed);
-            
-            if (filterStep === 'completed') {
-                const allCompleted = currentStepIndex === -1;
-                if (allCompleted) {
-                    console.log(`  ✅ ${s.name}: همه مراحل دفاع تکمیل شده`);
-                }
-                return allCompleted;
-            } else {
-                const matches = currentStepIndex >= selectedStepIndex || currentStepIndex === -1;
-                if (matches) {
-                    const currentStep = currentStepIndex === -1 ? 'تکمیل شده' : steps[currentStepIndex]?.name;
-                    console.log(`  ✅ ${s.name}: مرحله فعلی ${currentStepIndex} (${currentStep}) >= ${selectedStepIndex}`);
-                }
-                return matches;
-            }
+            if (filterStep === 'completed') return currentStepIndex === -1;
+            return currentStepIndex >= selectedStepIndex || currentStepIndex === -1;
         });
     }
-    
-    // Filter by empty fields
+
+    // ── فیلتر فیلدهای خالی ────────────────────────────────────
     if (filterEmptyField !== 'all') {
         filteredStudents = filteredStudents.filter(s => {
-            const fieldValue = s[filterEmptyField];
-            const isEmpty = !fieldValue || fieldValue === '' || fieldValue === null || fieldValue === undefined;
-            if (isEmpty) {
-                console.log(`  ✅ ${s.name}: فیلد ${filterEmptyField} خالی است`);
-            }
-            return isEmpty;
+            const v = s[filterEmptyField];
+            return !v || v === '' || v === null || v === undefined;
         });
     }
-    
+
     console.log(`📊 Filtered result: ${filteredStudents.length} students`);
-    
-    // Update the display
-    const container = document.getElementById('students-list-container');
+
+    // ── آپدیت counter ──────────────────────────────────────────
     const countSpan = document.getElementById('filter-count');
-    
-    if (countSpan) {
-        countSpan.textContent = filteredStudents.length;
+    if (countSpan) countSpan.textContent = filteredStudents.length;
+
+    // ── آپدیت هر دو container (active / inactive) ─────────────
+    const activeContainer   = document.getElementById('students-list-container-active');
+    const inactiveContainer = document.getElementById('students-list-container-inactive');
+
+    // تعیین کدام tab فعاله
+    const activeTab = document.getElementById('student-list-tab-active');
+    const showingActive = !activeTab || activeTab.classList.contains('border-green-500') || activeTab.classList.contains('text-green-400');
+
+    const renderGrid = (list, emptyMsg) => {
+        if (!list.length) return `
+            <div class="text-center py-8">
+                <i class="fas fa-search text-4xl text-gray-500 mb-4"></i>
+                <p class="text-gray-400">${emptyMsg}</p>
+                ${filterName ? `<p class="text-sm text-gray-500 mt-1">نتیجه‌ای برای "<span class="text-lime-400">${filterName}</span>" یافت نشد</p>` : ''}
+            </div>`;
+        return `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            ${list.map(s => this.getStudentCardWithProgress(s)).join('')}
+        </div>`;
+    };
+
+    if (activeContainer) {
+        const active = filteredStudents.filter(s => s.active);
+        activeContainer.innerHTML = renderGrid(active, 'دانشجوی فعالی با این فیلتر یافت نشد');
     }
-    
-    if (container) {
-        if (filteredStudents.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-8">
-                    <i class="fas fa-user-graduate text-4xl text-gray-500 mb-4"></i>
-                    <p class="text-gray-400">دانشجویی با این فیلتر یافت نشد</p>
-                    <p class="text-sm text-gray-500 mt-2">نوع: ${filterType}, مرحله: ${filterStep}, فیلد خالی: ${filterEmptyField}</p>
-                </div>
-            `;
-        } else {
-            container.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    ${filteredStudents.map(student => this.getStudentCardWithProgress(student)).join('')}
-                </div>
-            `;
-        }
+    if (inactiveContainer) {
+        const inactive = filteredStudents.filter(s => !s.active);
+        inactiveContainer.innerHTML = renderGrid(inactive, 'دانشجوی خاتمه‌یافته‌ای با این فیلتر یافت نشد');
+    }
+
+    // legacy container (اگه هنوز جایی استفاده بشه)
+    const legacyContainer = document.getElementById('students-list-container');
+    if (legacyContainer && !activeContainer) {
+        legacyContainer.innerHTML = renderGrid(filteredStudents, 'دانشجویی با این فیلتر یافت نشد');
     }
 };
 
 // Update clearStudentFilter to reset empty field filter too
 EmployeeModule.clearStudentFilter = function() {
+    const nameInput = document.getElementById('filter-student-name');
+    if (nameInput) nameInput.value = '';
     document.getElementById('filter-type').value = 'all';
     document.getElementById('filter-step').value = 'all';
     const filterEmptyField = document.getElementById('filter-empty-field');
-    if (filterEmptyField) {
-        filterEmptyField.value = 'all';
-    }
+    if (filterEmptyField) filterEmptyField.value = 'all';
     this.applyStudentFilter();
 };
 
