@@ -580,7 +580,7 @@ const OrdersRedesign = (function () {
       const agentName = agentObj ? esc(agentObj.name) : esc(o.assignedDoctor || '');
       const currency = esc(o.currency || 'تومان');
       return `
-      <div class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col" id="ord-card-${sid}">
         <div class="p-4 flex-1 space-y-3">
           <div class="flex items-start justify-between gap-2">
             <div class="flex-1 min-w-0">
@@ -617,6 +617,11 @@ const OrdersRedesign = (function () {
           <button onclick="OrdersRedesign.openEdit('${sid}')"
             class="flex-1 text-center py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 text-xs font-medium transition-colors">
             <i class="fas fa-edit ml-1"></i>ویرایش
+          </button>` : ''}
+          ${userRole === 'manager' ? `
+          <button onclick="OrdersRedesign.deleteOrder('${sid}')"
+            class="py-1.5 px-3 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-xs font-medium transition-colors" title="حذف سفارش">
+            <i class="fas fa-trash"></i>
           </button>` : ''}
         </div>
       </div>`;
@@ -878,10 +883,17 @@ const OrdersRedesign = (function () {
         <!-- Footer -->
         <div class="flex items-center justify-between p-4 border-t border-gray-100 bg-gray-50">
           ${statusActions}
-          <button onclick="OrdersRedesign._closeDetail()"
-            class="mr-auto bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm transition-colors">
-            بستن
-          </button>
+          <div class="flex items-center gap-2 mr-auto">
+            ${userRole === 'manager' ? `
+            <button onclick="OrdersRedesign.deleteOrder('${sid}');OrdersRedesign._closeDetail()"
+              class="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 px-4 py-2 rounded-lg text-sm transition-colors border border-red-200">
+              <i class="fas fa-trash text-xs"></i>حذف سفارش
+            </button>` : ''}
+            <button onclick="OrdersRedesign._closeDetail()"
+              class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm transition-colors">
+              بستن
+            </button>
+          </div>
         </div>
       </div>
     </div>`;
@@ -1374,15 +1386,23 @@ const OrdersRedesign = (function () {
     saveOrders(orders);
     _currentOrders = _currentOrders.filter(o => o.id !== orderId);
     notify('سفارش حذف شد', 'warning');
-    // حذف ردیف از جدول بدون reload کامل
-    const row = document.getElementById(`ord-row-${esc(orderId)}`);
-    if (row) {
-      row.style.transition = 'opacity 0.3s';
-      row.style.opacity = '0';
-      setTimeout(() => { row.remove(); _updateCount(); }, 300);
-    } else {
-      refresh();
-    }
+
+    const escapedId = esc(orderId);
+    const fadeAndRemove = (el) => {
+      if (!el) return false;
+      el.style.transition = 'opacity 0.3s, transform 0.3s';
+      el.style.opacity = '0';
+      el.style.transform = 'scale(0.95)';
+      setTimeout(() => { el.remove(); _updateCount(); }, 300);
+      return true;
+    };
+
+    // حذف از جدول و کارت بدون reload کامل
+    const removed = fadeAndRemove(document.getElementById(`ord-row-${escapedId}`));
+    fadeAndRemove(document.getElementById(`ord-card-${escapedId}`));
+
+    // اگه هیچ‌کدام نبود → refresh کامل
+    if (!removed) refresh();
   }
 
   // ثبت پرداخت جدید از مودال جزئیات
