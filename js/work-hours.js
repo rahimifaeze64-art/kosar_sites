@@ -1273,11 +1273,12 @@ const WorkHoursUI = (function() {
         const jdpInput    = document.getElementById('workDate-jdp');
 
         let rawDate = hiddenInput ? hiddenInput.value : '';
+        // اگه hidden خالیه، از jdp input بخوان (شمسی)
         if (!rawDate && jdpInput && jdpInput.value) {
-            rawDate = _convertJalaliInputToGregorian(jdpInput.value);
+            rawDate = jdpInput.value; // شمسی — _toJalaliISOSafe خودش normalize می‌کنه
         }
 
-        // تبدیل به تاریخ شمسی برای ذخیره‌سازی (Jalali.displayDate انتظار شمسی دارد)
+        // تبدیل به تاریخ شمسی YYYY-MM-DD برای ذخیره‌سازی
         let date = _toJalaliISOSafe(rawDate);
 
         const startTime = document.getElementById('startTime').value;
@@ -1329,7 +1330,7 @@ const WorkHoursUI = (function() {
 
         let rawDate = hiddenInput ? hiddenInput.value : '';
         if (!rawDate && jdpInput && jdpInput.value) {
-            rawDate = _convertJalaliInputToGregorian(jdpInput.value);
+            rawDate = jdpInput.value;
         }
 
         // تبدیل به شمسی برای ذخیره
@@ -1813,7 +1814,7 @@ const WorkHoursUI = (function() {
 
         var rawDate = hiddenInput ? hiddenInput.value : '';
         if (!rawDate && jdpInput && jdpInput.value) {
-            rawDate = _convertJalaliInputToGregorian(jdpInput.value);
+            rawDate = jdpInput.value;
         }
 
         // تبدیل به شمسی برای ذخیره
@@ -1847,7 +1848,7 @@ const WorkHoursUI = (function() {
 
         let rawDate = hiddenInput ? hiddenInput.value : '';
         if (!rawDate && jdpInput && jdpInput.value) {
-            rawDate = _convertJalaliInputToGregorian(jdpInput.value);
+            rawDate = jdpInput.value;
         }
 
         // تبدیل به شمسی برای ذخیره
@@ -1938,22 +1939,42 @@ const WorkHoursUI = (function() {
      */
     function _toJalaliISOSafe(dateStr) {
         if (!dateStr) return '';
-        // اگه قبلاً شمسی هست (سال > 1300) برنگردون
-        var parts = String(dateStr).split('-');
-        if (parts.length === 3) {
-            var y = parseInt(parts[0], 10);
-            if (y >= 1300 && y <= 1500) return dateStr; // شمسی — بدون تغییر
-            if (y >= 1900 && y <= 2100) {
-                // میلادی → تبدیل به شمسی
-                if (typeof Jalali !== 'undefined' && typeof Jalali.toJalaali === 'function') {
-                    try {
-                        var j = Jalali.toJalaali(y, parseInt(parts[1], 10), parseInt(parts[2], 10));
-                        var pad = function(n) { return n < 10 ? '0' + n : String(n); };
-                        return j.jy + '-' + pad(j.jm) + '-' + pad(j.jd);
-                    } catch(e) {}
+        var str = String(dateStr).trim();
+
+        // normalize: اعداد فارسی/عربی → لاتین
+        str = str.replace(/[۰-۹]/g, function(d) { return String.fromCharCode(d.charCodeAt(0) - 1728); })
+                 .replace(/[٠-٩]/g, function(d) { return String.fromCharCode(d.charCodeAt(0) - 1584); });
+
+        // normalize: / و . → -
+        str = str.replace(/[\/\.]/g, '-');
+
+        var parts = str.split('-');
+        if (parts.length !== 3) return dateStr;
+
+        var y  = parseInt(parts[0], 10);
+        var m  = parseInt(parts[1], 10);
+        var d  = parseInt(parts[2], 10);
+        if (!y || !m || !d) return dateStr;
+
+        var pad = function(n) { return n < 10 ? '0' + n : String(n); };
+
+        // شمسی (1300-1500) — بدون تغییر، فقط normalize
+        if (y >= 1300 && y <= 1500) {
+            return y + '-' + pad(m) + '-' + pad(d);
+        }
+
+        // میلادی (1900-2100) → تبدیل به شمسی
+        if (y >= 1900 && y <= 2100) {
+            if (typeof Jalali !== 'undefined' && typeof Jalali.toJalaali === 'function') {
+                try {
+                    var j = Jalali.toJalaali(y, m, d);
+                    return j.jy + '-' + pad(j.jm) + '-' + pad(j.jd);
+                } catch(e) {
+                    console.warn('[WorkHours] _toJalaliISOSafe Jalali.toJalaali خطا:', e);
                 }
             }
         }
+
         return dateStr;
     }
 
