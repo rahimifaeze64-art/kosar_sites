@@ -309,7 +309,7 @@ const WorkHoursModule = (function() {
     function getAllEntriesByEmployee(employeeId) {
         const allEntries = getWorkHours();
         return allEntries.filter(e => e.employeeId === employeeId)
-            .sort((a, b) => new Date(b.date) - new Date(a.date));
+            .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     }
     
     /**
@@ -1124,7 +1124,7 @@ const WorkHoursUI = (function() {
             rejected: 'رد شده'
         };
         
-        return allExpenses.sort((a, b) => new Date(b.date) - new Date(a.date)).map(expense => `
+        return allExpenses.sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(expense => `
             <tr class="border-b border-white/5 hover:bg-white/5">
                 <td class="py-4 px-4">
                     <div class="flex items-center gap-3">
@@ -1267,24 +1267,24 @@ const WorkHoursUI = (function() {
      * ثبت فرم ساعات کاری
      */
     function submitForm() {
-        // hidden: مقدار میلادی از jalalidatepicker
+        // hidden: مقدار میلادی از jalalidatepicker (فرمت YYYY-MM-DD)
         // jdp input: مقدار شمسی نمایشی
         const hiddenInput = document.getElementById('workDate');
         const jdpInput    = document.getElementById('workDate-jdp');
 
-        // اگه hidden خالیه ولی jdp مقدار داره → تبدیل کن
-        let date = hiddenInput ? hiddenInput.value : '';
-        if (!date && jdpInput && jdpInput.value) {
-            // mقدار jdp شمسی است — تبدیل به میلادی
-            date = _convertJalaliInputToGregorian(jdpInput.value);
-            if (date && hiddenInput) hiddenInput.value = date;
+        let rawDate = hiddenInput ? hiddenInput.value : '';
+        if (!rawDate && jdpInput && jdpInput.value) {
+            rawDate = _convertJalaliInputToGregorian(jdpInput.value);
         }
+
+        // تبدیل به تاریخ شمسی برای ذخیره‌سازی (Jalali.displayDate انتظار شمسی دارد)
+        let date = _toJalaliISOSafe(rawDate);
 
         const startTime = document.getElementById('startTime').value;
         const endTime = document.getElementById('endTime').value;
         const description = (document.getElementById('workDescription')?.value || '').trim();
 
-        console.log('[WorkHours] submit → date:', JSON.stringify(date), '| startTime:', startTime, '| endTime:', endTime);
+        console.log('[WorkHours] submit → rawDate:', rawDate, '→ jalali:', date, '| startTime:', startTime, '| endTime:', endTime);
 
         if (!date || !startTime || !endTime) {
             showNotification('لطفاً تمام فیلدها را پر کنید', 'error');
@@ -1327,11 +1327,13 @@ const WorkHoursUI = (function() {
         const hiddenInput = document.getElementById('expenseDate');
         const jdpInput    = document.getElementById('expenseDate-jdp');
 
-        let date = hiddenInput ? hiddenInput.value : '';
-        if (!date && jdpInput && jdpInput.value) {
-            date = _convertJalaliInputToGregorian(jdpInput.value);
-            if (date && hiddenInput) hiddenInput.value = date;
+        let rawDate = hiddenInput ? hiddenInput.value : '';
+        if (!rawDate && jdpInput && jdpInput.value) {
+            rawDate = _convertJalaliInputToGregorian(jdpInput.value);
         }
+
+        // تبدیل به شمسی برای ذخیره
+        let date = _toJalaliISOSafe(rawDate);
 
         const amount = parseFloat(document.getElementById('expenseAmount').value);
         const description = document.getElementById('expenseDescription').value;
@@ -1809,11 +1811,13 @@ const WorkHoursUI = (function() {
         var hiddenInput = document.getElementById('mgr-ded-date');
         var jdpInput    = document.getElementById('mgr-ded-date-jdp');
 
-        var date = hiddenInput ? hiddenInput.value : '';
-        if (!date && jdpInput && jdpInput.value) {
-            date = _convertJalaliInputToGregorian(jdpInput.value);
-            if (date && hiddenInput) hiddenInput.value = date;
+        var rawDate = hiddenInput ? hiddenInput.value : '';
+        if (!rawDate && jdpInput && jdpInput.value) {
+            rawDate = _convertJalaliInputToGregorian(jdpInput.value);
         }
+
+        // تبدیل به شمسی برای ذخیره
+        var date = _toJalaliISOSafe(rawDate);
 
         var amount = parseFloat(document.getElementById('mgr-ded-amount')?.value) || 0;
         var reason = document.getElementById('mgr-ded-reason')?.value?.trim();
@@ -1841,11 +1845,13 @@ const WorkHoursUI = (function() {
         const hiddenInput = document.getElementById('deductionDate');
         const jdpInput    = document.getElementById('deductionDate-jdp');
 
-        let date = hiddenInput ? hiddenInput.value : '';
-        if (!date && jdpInput && jdpInput.value) {
-            date = _convertJalaliInputToGregorian(jdpInput.value);
-            if (date && hiddenInput) hiddenInput.value = date;
+        let rawDate = hiddenInput ? hiddenInput.value : '';
+        if (!rawDate && jdpInput && jdpInput.value) {
+            rawDate = _convertJalaliInputToGregorian(jdpInput.value);
         }
+
+        // تبدیل به شمسی برای ذخیره
+        let date = _toJalaliISOSafe(rawDate);
 
         const amount = parseFloat(document.getElementById('deductionAmount').value) || 0;
         const reason = document.getElementById('deductionReason').value.trim();
@@ -1921,6 +1927,34 @@ const WorkHoursUI = (function() {
                 });
             }, 30);
         }
+    }
+
+    /**
+     * تبدیل هر تاریخ (میلادی یا شمسی) به شمسی YYYY-MM-DD برای ذخیره‌سازی
+     * چون Jalali.displayDate انتظار فرمت شمسی دارد
+     *
+     * ورودی میلادی: "2025-08-17"  →  خروجی شمسی: "1404-05-26"
+     * ورودی شمسی:  "1404-05-26"  →  خروجی شمسی: "1404-05-26"  (بدون تغییر)
+     */
+    function _toJalaliISOSafe(dateStr) {
+        if (!dateStr) return '';
+        // اگه قبلاً شمسی هست (سال > 1300) برنگردون
+        var parts = String(dateStr).split('-');
+        if (parts.length === 3) {
+            var y = parseInt(parts[0], 10);
+            if (y >= 1300 && y <= 1500) return dateStr; // شمسی — بدون تغییر
+            if (y >= 1900 && y <= 2100) {
+                // میلادی → تبدیل به شمسی
+                if (typeof Jalali !== 'undefined' && typeof Jalali.toJalaali === 'function') {
+                    try {
+                        var j = Jalali.toJalaali(y, parseInt(parts[1], 10), parseInt(parts[2], 10));
+                        var pad = function(n) { return n < 10 ? '0' + n : String(n); };
+                        return j.jy + '-' + pad(j.jm) + '-' + pad(j.jd);
+                    } catch(e) {}
+                }
+            }
+        }
+        return dateStr;
     }
 
     /**
@@ -2079,5 +2113,6 @@ const WorkHoursUI = (function() {
         _reInitDatepicker,
         openDarkPicker,
         _convertJalaliInputToGregorian,
+        _toJalaliISOSafe,
     };
 })();
