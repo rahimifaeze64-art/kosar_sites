@@ -501,9 +501,10 @@ const EmbassyModule = (function () {
             return;
         }
 
+        const total = records.length;
         const rows = records.map((r, i) => `
             <tr class="border-b border-gray-200 hover:bg-lime-50 transition-colors bg-white">
-                <td class="px-3 py-3 text-gray-500 text-xs text-center font-medium">${i + 1}</td>
+                <td class="px-3 py-3 text-gray-500 text-xs text-center font-medium">${total - i}</td>
                 <td class="px-3 py-3 font-semibold text-gray-900">${r.student_name}</td>
                 <td class="px-3 py-3">
                     <span class="bg-blue-100 text-black-800 text-xs px-2 py-1 rounded-lg font-medium">${r.work_type}</span>
@@ -651,7 +652,7 @@ const EmbassyModule = (function () {
                             <th class="px-3 py-3 text-right font-bold">ارسال</th>
                             <th class="px-3 py-3 text-right font-bold">دریافت</th>
                             <th class="px-3 py-3 text-right font-bold">فایل‌ها</th>
-                            <th class="px-3 py-3 text-right font-bold">پرداخت ما</th>
+                            <th class="px-3 py-3 text-right font-bold">پرداخت</th>
                             <th class="px-3 py-3 text-right font-bold">آخرین آپدیت</th>
                             <th class="px-3 py-3 text-right font-bold">ثبت‌کننده</th>
                             <th class="px-3 py-3 text-right font-bold">عملیات</th>

@@ -67,7 +67,12 @@ const EmployeeModule = {
                         <i class="fas fa-clipboard-check text-lime-400 ml-2"></i>
                         وظایف من
                     </h2>
-                    <div class="flex space-x-3 space-x-reverse">
+                    <div class="flex space-x-3 space-x-reverse flex-wrap gap-2">
+                        <button onclick="employeeModule.showAssignTaskModal('${userId}')" 
+                                class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-4 py-2 rounded-lg font-medium">
+                            <i class="fas fa-plus ml-2"></i>
+                            ثبت وظیفه جدید
+                        </button>
                         <button onclick="employeeModule.showCreateAgentTaskModal('${userId}')" 
                                 class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium">
                             <i class="fas fa-plus-circle ml-2"></i>
@@ -3484,6 +3489,241 @@ const EmployeeModule = {
         if (modal) {
             modal.remove();
         }
+    },
+
+    // ══════════════════════════════════════════════════════════
+    // ── مودال ثبت وظیفه جدید توسط کارمند (برای مدیر/همکار) ──
+    // ══════════════════════════════════════════════════════════
+    showAssignTaskModal(fromUserId) {
+        const old = document.getElementById('assign-task-modal');
+        if (old) old.remove();
+
+        // لیست گیرندگان: مدیر + سایر کارمندان
+        const allUsers = (typeof HARDCODED_USERS !== 'undefined') ? HARDCODED_USERS : [];
+        const manager  = allUsers.filter(u => u.role === 'manager' && u.active);
+        const employees= allUsers.filter(u => u.role === 'employee' && u.active && u.id !== fromUserId);
+        const recipients = [
+            ...manager.map(u => ({ id: u.id, name: u.name, badge: 'مدیر', color: 'lime' })),
+            ...employees.map(u => ({ id: u.id, name: u.name, badge: 'کارمند', color: 'blue' }))
+        ];
+
+        const optionsHTML = recipients.map(r =>
+            `<option value="${r.id}">[${r.badge}] ${r.name}</option>`
+        ).join('');
+
+        const modal = document.createElement('div');
+        modal.id = 'assign-task-modal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4';
+        modal.innerHTML = `
+            <div class="bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg border border-slate-600">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-700">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-tasks text-lime-400"></i>
+                        ثبت وظیفه جدید
+                    </h3>
+                    <button onclick="document.getElementById('assign-task-modal').remove()"
+                            class="text-gray-400 hover:text-white text-xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <!-- گیرنده -->
+                    <div>
+                        <label class="block text-sm text-gray-300 mb-1">
+                            <i class="fas fa-user-check text-lime-400 ml-1"></i>تعریف وظیفه برای
+                        </label>
+                        <select id="at-assignee" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-lime-500">
+                            <option value="">-- انتخاب کنید --</option>
+                            ${optionsHTML}
+                        </select>
+                    </div>
+                    <!-- عنوان -->
+                    <div>
+                        <label class="block text-sm text-gray-300 mb-1">
+                            <i class="fas fa-heading text-lime-400 ml-1"></i>عنوان وظیفه <span class="text-red-400">*</span>
+                        </label>
+                        <input type="text" id="at-title"
+                               class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-lime-500"
+                               placeholder="عنوان را وارد کنید">
+                    </div>
+                    <!-- توضیحات -->
+                    <div>
+                        <label class="block text-sm text-gray-300 mb-1">
+                            <i class="fas fa-align-right text-lime-400 ml-1"></i>توضیحات
+                        </label>
+                        <textarea id="at-description" rows="3"
+                                  class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-lime-500 resize-none"
+                                  placeholder="توضیحات اضافی..."></textarea>
+                    </div>
+                    <!-- تاریخ + اولویت -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">
+                                <i class="fas fa-calendar text-lime-400 ml-1"></i>مهلت انجام
+                            </label>
+                            <div class="flex gap-1 mb-1">
+                                <button type="button" onclick="employeeModule._setATDate(0)"
+                                        class="flex-1 text-xs bg-slate-600 hover:bg-slate-500 text-gray-300 px-1 py-1 rounded-lg">امروز</button>
+                                <button type="button" onclick="employeeModule._setATDate(1)"
+                                        class="flex-1 text-xs bg-blue-700 hover:bg-blue-600 text-white px-1 py-1 rounded-lg">فردا</button>
+                                <button type="button" onclick="employeeModule._setATDate(2)"
+                                        class="flex-1 text-xs bg-lime-700 hover:bg-lime-600 text-white px-1 py-1 rounded-lg">پس‌فردا</button>
+                            </div>
+                            <input type="hidden" id="at-duedate" value="">
+                            <input type="text"
+                                   id="at-duedate-jdp"
+                                   data-jdp
+                                   data-jdp-target-value-input="#at-duedate"
+                                   data-jdp-target-value-type="jalali"
+                                   placeholder="انتخاب تاریخ"
+                                   autocomplete="off"
+                                   readonly
+                                   onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                                   class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-right text-white hover:border-lime-500 transition-colors cursor-pointer text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">
+                                <i class="fas fa-flag text-lime-400 ml-1"></i>اولویت
+                            </label>
+                            <select id="at-priority" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-lime-500">
+                                <option value="low">عادی</option>
+                                <option value="medium">متوسط</option>
+                                <option value="high">فوری</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 px-6 py-4 border-t border-slate-700">
+                    <button onclick="document.getElementById('assign-task-modal').remove()"
+                            class="px-4 py-2 text-gray-400 hover:text-white text-sm">انصراف</button>
+                    <button onclick="employeeModule.submitAssignTask('${fromUserId}')"
+                            class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-5 py-2 rounded-lg font-medium text-sm flex items-center gap-2">
+                        <i class="fas fa-paper-plane"></i>ثبت وظیفه
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        // مقدار پیش‌فرض: فردا
+        this._setATDate(1);
+        // راه‌اندازی jalalidatepicker
+        setTimeout(function() {
+            if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
+                jalaliDatepicker.startWatch({ showTodayBtn: true, showEmptyBtn: true, showCloseBtn: true });
+            }
+        }, 50);
+    },
+
+    // ── تنظیم سریع تاریخ در مودال assign ────────────────────
+    _setATDate(offset) {
+        try {
+            let d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tehran' }));
+            d.setDate(d.getDate() + offset);
+            let jStr = '';
+            if (typeof Jalali !== 'undefined') {
+                jStr = Jalali.toJalaliISO(d);
+            } else {
+                jStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+            }
+            const hidden = document.getElementById('at-duedate');
+            const jdpInput = document.getElementById('at-duedate-jdp');
+            if (hidden) hidden.value = jStr;
+            if (jdpInput) jdpInput.value = this._fmtJalali(jStr);
+        } catch(e) {}
+    },
+
+    // ── فرمت تاریخ شمسی برای نمایش ──────────────────────────
+    _fmtJalali(dateStr) {
+        if (!dateStr) return 'انتخاب تاریخ';
+        try {
+            const toFa = n => String(n).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                const months = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+                return `${toFa(parseInt(parts[2]))} ${months[parseInt(parts[1])-1]} ${toFa(parseInt(parts[0]))}`;
+            }
+            return dateStr;
+        } catch(e) { return dateStr; }
+    },
+
+    // ── ثبت نهایی وظیفه ─────────────────────────────────────
+    submitAssignTask(fromUserId) {
+        const assigneeId = document.getElementById('at-assignee')?.value;
+        const title      = document.getElementById('at-title')?.value.trim();
+        const description= document.getElementById('at-description')?.value.trim();
+        // از hidden یا jdp بخون
+        const dueDateHidden = document.getElementById('at-duedate');
+        const dueDateJdp    = document.getElementById('at-duedate-jdp');
+        const dueDate    = (dueDateHidden?.value || dueDateJdp?.value || '').trim();
+        const priority   = document.getElementById('at-priority')?.value;
+
+        if (!assigneeId) { UTILS.showNotification('لطفاً گیرنده را انتخاب کنید', 'error'); return; }
+        if (!title)      { UTILS.showNotification('لطفاً عنوان وظیفه را وارد کنید', 'error'); return; }
+
+        // نام فرستنده
+        let fromName = 'کارمند';
+        try {
+            const allUsers = typeof HARDCODED_USERS !== 'undefined' ? HARDCODED_USERS : [];
+            const sender = allUsers.find(u => u.id === fromUserId);
+            if (sender) fromName = sender.name;
+        } catch(e) {}
+
+        // نام گیرنده برای نمایش
+        let assigneeName = 'مدیر';
+        try {
+            const allUsers = typeof HARDCODED_USERS !== 'undefined' ? HARDCODED_USERS : [];
+            const rec = allUsers.find(u => u.id === assigneeId);
+            if (rec) assigneeName = rec.name;
+        } catch(e) {}
+
+        const task = {
+            id:          'mgtask_' + Date.now(),
+            title,
+            description,
+            dueDate,
+            priority,
+            status:      'pending',
+            fromId:      fromUserId,
+            fromName,
+            assignedToId: assigneeId,
+            assignedTo:  assigneeName,
+            createdAt:   new Date().toISOString()
+        };
+
+        // اگر گیرنده مدیر است → در tasks_for_manager ذخیره کن
+        const allUsers = typeof HARDCODED_USERS !== 'undefined' ? HARDCODED_USERS : [];
+        const assigneeUser = allUsers.find(u => u.id === assigneeId);
+        if (assigneeUser && assigneeUser.role === 'manager') {
+            if (typeof TasksModule !== 'undefined') {
+                TasksModule.saveTaskForManager(task);
+            } else {
+                // fallback مستقیم به Supabase
+                const sbm = (typeof SupabaseDataModule !== 'undefined') ? SupabaseDataModule : null;
+                if (sbm && typeof sbm.saveTaskForManager === 'function') {
+                    sbm.saveTaskForManager(task)
+                       .catch(e => console.warn('⚠️ submitAssignTask Supabase خطا:', e.message));
+                }
+                const all = JSON.parse(localStorage.getItem('tasks_for_manager') || '[]');
+                all.unshift(task);
+                localStorage.setItem('tasks_for_manager', JSON.stringify(all));
+            }
+        } else {
+            // برای کارمند دیگر → در employee_tasks ذخیره + sync Supabase
+            const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+            const arr = tasksData[assigneeId] || [];
+            arr.unshift(task);
+            tasksData[assigneeId] = arr;
+            localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
+            // sync به Supabase
+            const sbm = (typeof SupabaseDataModule !== 'undefined') ? SupabaseDataModule : null;
+            if (sbm && typeof sbm.saveEmployeeTask === 'function') {
+                sbm.saveEmployeeTask(assigneeId, task)
+                   .catch(e => console.warn('⚠️ submitAssignTask (employee) Supabase خطا:', e.message));
+            }
+        }
+
+        document.getElementById('assign-task-modal')?.remove();
+        UTILS.showNotification(`وظیفه برای ${assigneeName} ثبت شد ✓`, 'success');
     },
     
     // Submit agent task

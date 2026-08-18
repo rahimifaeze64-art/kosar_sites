@@ -1273,6 +1273,11 @@ const SupabaseDataModule = {
             voice_duration: t.voiceDuration  || null,
             additional_text: t.additionalText || null,
             order_id:       t.orderId        || null,
+            reject_note:    t.rejectNote     || null,
+            approved_at:    t.approvedAt     || null,
+            rejected_at:    t.rejectedAt     || null,
+            from_id:        t.fromId         || null,
+            from_name:      t.fromName       || null,
             updated_at:     new Date().toISOString()
         };
     },
@@ -1295,8 +1300,121 @@ const SupabaseDataModule = {
             additionalText: r.additional_text || null,
             orderId:        r.order_id       || null,
             createdBy:      r.created_by     || null,
+            rejectNote:     r.reject_note    || null,
+            approvedAt:     r.approved_at    || null,
+            rejectedAt:     r.rejected_at    || null,
+            fromId:         r.from_id        || null,
+            fromName:       r.from_name      || null,
             createdAt:      r.created_at
         };
+    },
+
+    // ── وظایف ارسالی از کارمند برای مدیر ───────────────────
+    async getTasksForManager() {
+        const localData = JSON.parse(localStorage.getItem('tasks_for_manager') || '[]');
+        if (!this._online()) return localData;
+        try {
+            const { data, error } = await this._db()
+                .from('tasks_for_manager')
+                .select('*')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            if (data && data.length > 0) {
+                // merge: ترکیب remote + local (local اولویت)
+                const merged = data.map(r => ({
+                    id:          r.id,
+                    title:       r.title,
+                    description: r.description || '',
+                    dueDate:     r.due_date     || '',
+                    priority:    r.priority     || 'low',
+                    status:      r.status       || 'pending',
+                    fromId:      r.from_id      || null,
+                    fromName:    r.from_name    || null,
+                    assignedToId: r.assigned_to_id || null,
+                    assignedTo:  r.assigned_to  || null,
+                    updatedAt:   r.updated_at,
+                    createdAt:   r.created_at
+                }));
+                localStorage.setItem('tasks_for_manager', JSON.stringify(merged));
+                return merged;
+            }
+            return localData;
+        } catch (e) {
+            console.warn('⚠️ getTasksForManager خطا:', e.message);
+            return localData;
+        }
+    },
+
+    async saveTaskForManager(task) {
+        // ذخیره محلی
+        const all = JSON.parse(localStorage.getItem('tasks_for_manager') || '[]');
+        const idx = all.findIndex(t => t.id === task.id);
+        if (idx >= 0) all[idx] = task; else all.unshift(task);
+        localStorage.setItem('tasks_for_manager', JSON.stringify(all));
+
+        if (!this._online()) return true;
+        try {
+            const row = {
+                id:             task.id,
+                title:          task.title,
+                description:    task.description    || null,
+                due_date:       task.dueDate        || null,
+                priority:       task.priority       || 'low',
+                status:         task.status         || 'pending',
+                from_id:        task.fromId         || null,
+                from_name:      task.fromName       || null,
+                assigned_to_id: task.assignedToId   || null,
+                assigned_to:    task.assignedTo     || null,
+                updated_at:     new Date().toISOString()
+            };
+            const { error } = await this._db()
+                .from('tasks_for_manager')
+                .upsert(row, { onConflict: 'id' });
+            if (error) throw error;
+            return true;
+        } catch (e) {
+            console.warn('⚠️ saveTaskForManager خطا:', e.message);
+            return false;
+        }
+    },
+
+    async updateManagerTaskStatus(taskId, status) {
+        // محلی
+        const all = JSON.parse(localStorage.getItem('tasks_for_manager') || '[]');
+        const t = all.find(t => t.id === taskId);
+        if (t) { t.status = status; t.updatedAt = new Date().toISOString(); }
+        localStorage.setItem('tasks_for_manager', JSON.stringify(all));
+
+        if (!this._online()) return true;
+        try {
+            const { error } = await this._db()
+                .from('tasks_for_manager')
+                .update({ status, updated_at: new Date().toISOString() })
+                .eq('id', taskId);
+            if (error) throw error;
+            return true;
+        } catch (e) {
+            console.warn('⚠️ updateManagerTaskStatus خطا:', e.message);
+            return false;
+        }
+    },
+
+    async deleteManagerTask(taskId) {
+        const all = JSON.parse(localStorage.getItem('tasks_for_manager') || '[]');
+        localStorage.setItem('tasks_for_manager', JSON.stringify(all.filter(t => t.id !== taskId)));
+
+        if (!this._online()) return true;
+        try {
+            const { error } = await this._db()
+                .from('tasks_for_manager')
+                .delete()
+                .eq('id', taskId);
+            if (error) throw error;
+            return true;
+        } catch (e) {
+            console.warn('⚠️ deleteManagerTask خطا:', e.message);
+            return false;
+        }
     },
 
     _workHourToDb(e) {

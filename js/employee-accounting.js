@@ -692,10 +692,10 @@ const EmployeeAccountingUI = (function() {
                             <span class="text-xl font-bold text-black-400">${emp.totalHoursApproved}</span>
                             <span class="text-black-300 text-sm"> ساعت</span>
                             <p class="text-black-400/60 text-xs">${emp.hoursCount} گزارش</p>
-                        </td>
+                        </td>                       
                         <td class="text-center py-4 px-4">
                             <span class="text-orange-400 font-bold">${EmployeeAccountingModule.formatCurrency(emp.totalExpensesApproved)}</span>
-                        </td>
+                        </td>                   
                         <td class="text-center py-4 px-4">
                             <span class="text-emerald-400 font-bold text-lg">${EmployeeAccountingModule.formatCurrency(emp.grandTotal)}</span>
                             <p class="text-black-300/60 text-xs mt-0.5">(ساعات × نرخ) + هزینه‌ها</p>
@@ -1369,8 +1369,11 @@ const EmployeeAccountingUI = (function() {
         const entries    = WorkHoursModule.getAllEntriesByEmployee(employeeId);
         const deductions = (() => { try { return JSON.parse(localStorage.getItem('work_deductions')||'[]').filter(d=>d.employeeId===employeeId); } catch { return []; } })();
         const gifts      = (() => { try { return JSON.parse(localStorage.getItem('work_gifts')||'[]').filter(g=>g.employeeId===employeeId); } catch { return []; } })();
+        const settlements= (() => { try { return JSON.parse(localStorage.getItem('work_settlements')||'[]').filter(s=>s.employeeId===employeeId); } catch { return []; } })();
         const totalDed   = deductions.reduce((s,d) => s + Number(d.amount||0), 0);
         const totalGift  = gifts.reduce((s,g) => s + Number(g.amount||0), 0);
+        const totalPaid  = settlements.reduce((s,r) => s + Number(r.amount||0), 0);
+        const remaining  = Math.max(0, summary.grandTotal + totalGift - totalDed - totalPaid);
         const safeName   = (summary.employeeName||'').replace(/'/g,"\\'");
 
         document.getElementById('employee-details-modal')?.remove();
@@ -1414,27 +1417,51 @@ const EmployeeAccountingUI = (function() {
                     </div>
                 </div>
 
-                <!-- کارت‌های خلاصه -->
-                <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
-                    <div class="bg-white/10 rounded-xl p-3 text-center">
-                        <p class="text-black-400 text-xs mb-1">ساعات تأیید شده</p>
-                        <p class="text-xl font-bold text-black-400">${summary.totalHoursApproved}</p>
+                <!-- ═══ باکس‌های هدر کامل (همان باکس‌های صفحه اصلی) ═══ -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+                    <div class="bg-blue-500/10 border border-blue-400/20 rounded-xl p-3 text-center">
+                        <i class="fas fa-paper-plane text-blue-400 mb-1 block text-sm"></i>
+                        <p class="text-gray-400 text-xs mb-0.5">ساعات ارسال‌شده</p>
+                        <p class="text-xl font-bold text-blue-400">${summary.totalHours}</p>
+                        <p class="text-gray-500 text-xs">${summary.hoursCount} گزارش · ${summary.workDays} روز</p>
                     </div>
-                    <div class="bg-white/10 rounded-xl p-3 text-center">
-                        <p class="text-black-400 text-xs mb-1">هزینه‌های تأیید شده</p>
+                    <div class="bg-emerald-500/10 border border-emerald-400/20 rounded-xl p-3 text-center">
+                        <i class="fas fa-check-circle text-emerald-400 mb-1 block text-sm"></i>
+                        <p class="text-gray-400 text-xs mb-0.5">ساعات تأیید شده</p>
+                        <p class="text-xl font-bold text-emerald-400">${summary.totalHoursApproved}</p>
+                        <p class="text-gray-500 text-xs">× ${EmployeeAccountingModule.formatCurrency(summary.hourlyRate)}/ساعت</p>
+                    </div>
+                    <div class="bg-orange-500/10 border border-orange-400/20 rounded-xl p-3 text-center">
+                        <i class="fas fa-receipt text-orange-400 mb-1 block text-sm"></i>
+                        <p class="text-gray-400 text-xs mb-0.5">هزینه‌های تأیید شده</p>
                         <p class="text-sm font-bold text-orange-400">${EmployeeAccountingModule.formatCurrency(summary.totalExpensesApproved)}</p>
+                        <p class="text-gray-500 text-xs">${summary.expensesCount} مورد</p>
                     </div>
-                    <div class="bg-white/10 rounded-xl p-3 text-center">
-                        <p class="text-black-400 text-xs mb-1">نرخ ساعتی</p>
+                    <div class="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
+                        <i class="fas fa-hand-holding-usd text-lime-400 mb-1 block text-sm"></i>
+                        <p class="text-gray-400 text-xs mb-0.5">نرخ ساعتی</p>
                         <p class="text-sm font-bold text-white">${EmployeeAccountingModule.formatCurrency(summary.hourlyRate)}</p>
+                        <p class="text-gray-500 text-xs">هر ساعت</p>
                     </div>
                     <div class="bg-red-500/10 border border-red-400/20 rounded-xl p-3 text-center">
-                        <p class="text-red-200 text-xs mb-1">جمع کسورات</p>
+                        <i class="fas fa-minus-circle text-red-400 mb-1 block text-sm"></i>
+                        <p class="text-red-200 text-xs mb-0.5">جمع کسورات</p>
                         <p class="text-sm font-bold text-red-400">${EmployeeAccountingModule.formatCurrency(totalDed)}</p>
                     </div>
                     <div class="bg-green-500/10 border border-green-400/20 rounded-xl p-3 text-center">
-                        <p class="text-green-200 text-xs mb-1">جمع هدایا</p>
+                        <i class="fas fa-gift text-green-400 mb-1 block text-sm"></i>
+                        <p class="text-green-200 text-xs mb-0.5">جمع هدایا</p>
                         <p class="text-sm font-bold text-green-400">${EmployeeAccountingModule.formatCurrency(totalGift)}</p>
+                    </div>
+                    <div class="bg-purple-500/10 border border-purple-400/20 rounded-xl p-3 text-center">
+                        <i class="fas fa-wallet text-purple-400 mb-1 block text-sm"></i>
+                        <p class="text-purple-200 text-xs mb-0.5">تسویه شده</p>
+                        <p class="text-sm font-bold text-purple-400">${EmployeeAccountingModule.formatCurrency(totalPaid)}</p>
+                    </div>
+                    <div class="bg-lime-500/10 border border-lime-400/30 rounded-xl p-3 text-center">
+                        <i class="fas fa-coins text-lime-400 mb-1 block text-sm"></i>
+                        <p class="text-lime-200 text-xs mb-0.5">مانده پرداختنی</p>
+                        <p class="text-lg font-bold text-lime-400">${EmployeeAccountingModule.formatCurrency(remaining)}</p>
                     </div>
                 </div>
 
@@ -1496,9 +1523,12 @@ const EmployeeAccountingUI = (function() {
             .map(e => `<option value="${e.employeeId}">${e.employeeName}</option>`)
             .join('');
 
-        const today = new Date().toISOString().split('T')[0];
-        const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-            .toISOString().split('T')[0];
+        // تاریخ امروز و اول ماه به شمسی
+        let d = new Date();
+        try { d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tehran' })); } catch(e) {}
+        const todayJ = _toJalaliISO(d);
+        const firstD = new Date(d.getFullYear(), d.getMonth(), 1);
+        const firstJ  = _toJalaliISO(firstD);
 
         const modal = document.createElement('div');
         modal.id = 'emp-export-modal';
@@ -1515,13 +1545,33 @@ const EmployeeAccountingUI = (function() {
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="text-gray-400 text-xs mb-1 block">از تاریخ</label>
-                            <input type="date" id="emp-exp-from" value="${firstOfMonth}"
-                                class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
+                            <input type="hidden" id="emp-exp-from" value="${firstJ}">
+                            <input type="text"
+                                   id="emp-exp-from-jdp"
+                                   data-jdp
+                                   data-jdp-target-value-input="#emp-exp-from"
+                                   data-jdp-target-value-type="jalali"
+                                   value="${_fmtJalali(firstJ)}"
+                                   placeholder="انتخاب تاریخ"
+                                   autocomplete="off"
+                                   readonly
+                                   onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                                   class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none hover:border-green-400 cursor-pointer transition-colors">
                         </div>
                         <div>
                             <label class="text-gray-400 text-xs mb-1 block">تا تاریخ</label>
-                            <input type="date" id="emp-exp-to" value="${today}"
-                                class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
+                            <input type="hidden" id="emp-exp-to" value="${todayJ}">
+                            <input type="text"
+                                   id="emp-exp-to-jdp"
+                                   data-jdp
+                                   data-jdp-target-value-input="#emp-exp-to"
+                                   data-jdp-target-value-type="jalali"
+                                   value="${_fmtJalali(todayJ)}"
+                                   placeholder="انتخاب تاریخ"
+                                   autocomplete="off"
+                                   readonly
+                                   onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                                   class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none hover:border-green-400 cursor-pointer transition-colors">
                         </div>
                     </div>
                     <div>
@@ -1560,6 +1610,12 @@ const EmployeeAccountingUI = (function() {
             </div>`;
         document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        // راه‌اندازی jalalidatepicker برای input های تاریخ
+        setTimeout(function() {
+            if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
+                jalaliDatepicker.startWatch({ showTodayBtn: true, showEmptyBtn: true, showCloseBtn: true });
+            }
+        }, 50);
     }
 
     function doExportEmployeesCSV() {
@@ -1879,6 +1935,188 @@ const EmployeeAccountingUI = (function() {
         refreshContent();
     }
 
+    // ══════════════════════════════════════════════════════════
+    // ── دسترسی sidebar کارمند به حسابداری کارمندان ────────────
+    // ══════════════════════════════════════════════════════════
+
+    function _getAllowedIds() {
+        try { return JSON.parse(localStorage.getItem('empAccAllowedIds') || '[]'); }
+        catch { return []; }
+    }
+
+    function _saveAllowedIds(ids) {
+        localStorage.setItem('empAccAllowedIds', JSON.stringify(ids));
+        // آپدیت live در Alpine.js بدون reload
+        try {
+            const alpineEl = document.querySelector('[x-data]');
+            if (alpineEl && alpineEl.__x) {
+                alpineEl.__x.$data.empAccAllowedIds = ids;
+            } else if (alpineEl && alpineEl._x_dataStack) {
+                // Alpine v3
+                const data = alpineEl._x_dataStack[0];
+                if (data) data.empAccAllowedIds = ids;
+            }
+        } catch(e) { console.warn('Alpine sync:', e); }
+    }
+
+    function hasSidebarAccess(employeeId) {
+        return _getAllowedIds().includes(employeeId);
+    }
+
+    function toggleSidebarAccess(employeeId, employeeName, btn) {
+        const ids = _getAllowedIds();
+        const idx = ids.indexOf(employeeId);
+        let granted = false;
+        if (idx === -1) {
+            ids.push(employeeId);
+            granted = true;
+        } else {
+            ids.splice(idx, 1);
+            granted = false;
+        }
+        _saveAllowedIds(ids);
+
+        // آپدیت ظاهر دکمه بدون refresh کامل
+        if (btn) {
+            if (granted) {
+                btn.className = 'px-2 py-1 rounded-lg text-xs transition-all bg-purple-500/40 text-purple-300 border border-purple-400/40';
+                btn.innerHTML = '<i class="fas fa-toggle-on ml-1"></i>sidebar فعال';
+            } else {
+                btn.className = 'px-2 py-1 rounded-lg text-xs transition-all bg-white/5 text-gray-400 hover:bg-purple-500/20 hover:text-purple-300 border border-white/10';
+                btn.innerHTML = '<i class="fas fa-toggle-off ml-1"></i>sidebar';
+            }
+        }
+
+        const msg = granted
+            ? `✅ دسترسی "${employeeName}" به صفحه حسابداری کارمندان فعال شد`
+            : `❌ دسترسی "${employeeName}" حذف شد`;
+        showNotification(msg, granted ? 'success' : 'info');
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // ── تقویم شمسی برای فیلتر Export ─────────────────────────
+    // ══════════════════════════════════════════════════════════
+
+    // تبدیل میلادی به شمسی ISO
+    function _toJalaliISO(d) {
+        if (typeof Jalali !== 'undefined' && Jalali.toJalaliISO) return Jalali.toJalaliISO(d);
+        if (typeof Jalali !== 'undefined' && Jalali.toJalaali) {
+            const j = Jalali.toJalaali(d.getFullYear(), d.getMonth()+1, d.getDate());
+            return j.jy + '-' + String(j.jm).padStart(2,'0') + '-' + String(j.jd).padStart(2,'0');
+        }
+        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+
+    // تبدیل شمسی ISO به نمایش فارسی
+    function _fmtJalali(str) {
+        if (!str) return '—';
+        const MONTHS = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+        const toFa = n => String(n).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+        const p = str.split('-');
+        if (p.length === 3) return `${toFa(+p[2])} ${MONTHS[+p[1]-1]||''} ${toFa(+p[0])}`;
+        return str;
+    }
+
+    // باز کردن تقویم شمسی برای input مخفی Export
+    function _openEmpExpPicker(hiddenId, dispBtnId) {
+        const old = document.getElementById('__emp-exp-cal');
+        if (old) { old.remove(); if (old.dataset.for === hiddenId) return; }
+
+        const hidden = document.getElementById(hiddenId);
+        const dispBtn = document.getElementById(dispBtnId);
+        if (!hidden || !dispBtn) return;
+
+        // تاریخ امروز شمسی
+        let d = new Date();
+        try { d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tehran' })); } catch(e) {}
+        const jTodayFull = (typeof Jalali !== 'undefined' && Jalali.toJalaali)
+            ? Jalali.toJalaali(d.getFullYear(), d.getMonth()+1, d.getDate())
+            : { jy: 1404, jm: 1, jd: 1 };
+
+        let initY = jTodayFull.jy, initM = jTodayFull.jm;
+        if (hidden.value) {
+            const p = hidden.value.split('-');
+            if (p.length === 3) { initY = +p[0]; initM = +p[1]; }
+        }
+
+        const popup = document.createElement('div');
+        popup.id = '__emp-exp-cal';
+        popup.dataset.for = hiddenId;
+        popup.style.cssText = 'position:fixed;z-index:99999;background:#1e293b;border:1px solid #334155;border-radius:12px;padding:12px;box-shadow:0 8px 32px rgba(0,0,0,.5);min-width:260px;direction:rtl;font-family:Vazirmatn,sans-serif;';
+        document.body.appendChild(popup);
+
+        const rect = dispBtn.getBoundingClientRect();
+        popup.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+        let left = rect.left + window.scrollX;
+        if (left + 270 > window.innerWidth) left = window.innerWidth - 275;
+        popup.style.left = left + 'px';
+
+        _renderEmpExpCal(hiddenId, dispBtnId, initY, initM, jTodayFull);
+
+        setTimeout(() => {
+            document.addEventListener('click', function closeOut(e) {
+                const p2 = document.getElementById('__emp-exp-cal');
+                if (p2 && !p2.contains(e.target) && e.target !== dispBtn) {
+                    p2.remove();
+                    document.removeEventListener('click', closeOut);
+                }
+            });
+        }, 50);
+    }
+
+    function _renderEmpExpCal(hiddenId, dispBtnId, year, month, jToday) {
+        const popup = document.getElementById('__emp-exp-cal');
+        if (!popup) return;
+        const MNAMES = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+        const days = month <= 6 ? 31 : month <= 11 ? 30 : 29;
+        let firstDow = 0;
+        if (typeof Jalali !== 'undefined' && Jalali.toGregorian) {
+            const g = Jalali.toGregorian(year, month, 1);
+            firstDow = (new Date(g.gy, g.gm-1, g.gd).getDay() + 1) % 7;
+        }
+        const prevM = month === 1 ? 12 : month-1, prevY = month === 1 ? year-1 : year;
+        const nextM = month === 12 ? 1 : month+1, nextY = month === 12 ? year+1 : year;
+        const toFa = n => String(n).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+        const hidden = document.getElementById(hiddenId);
+        let cells = '';
+        for (let i = 0; i < firstDow; i++) cells += '<div></div>';
+        for (let day = 1; day <= days; day++) {
+            const jStr = year + '-' + String(month).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+            const todayStr = jToday.jy + '-' + String(jToday.jm).padStart(2,'0') + '-' + String(jToday.jd).padStart(2,'0');
+            const isSel = hidden && hidden.value === jStr;
+            const isToday = jStr === todayStr;
+            let cls = 'text-center py-1 rounded-lg text-xs cursor-pointer transition-all ';
+            if (isSel) cls += 'bg-green-500 text-white font-bold';
+            else if (isToday) cls += 'bg-blue-600 text-white font-bold';
+            else cls += 'text-white hover:bg-slate-600';
+            cells += `<div class="${cls}" onclick="EmployeeAccountingUI._pickEmpExpDate('${hiddenId}','${dispBtnId}','${jStr}')">${toFa(day)}</div>`;
+        }
+        popup.innerHTML = `
+            <div class="flex items-center justify-between mb-2">
+                <button onclick="EmployeeAccountingUI._renderEmpExpCal('${hiddenId}','${dispBtnId}',${prevY},${prevM},{jy:${jToday.jy},jm:${jToday.jm},jd:${jToday.jd}})"
+                        style="background:#334155;border:none;color:#94a3b8;border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:14px;">›</button>
+                <span style="color:#e2e8f0;font-size:13px;font-weight:700;">${MNAMES[month-1]} ${toFa(year)}</span>
+                <button onclick="EmployeeAccountingUI._renderEmpExpCal('${hiddenId}','${dispBtnId}',${nextY},${nextM},{jy:${jToday.jy},jm:${jToday.jm},jd:${jToday.jd}})"
+                        style="background:#334155;border:none;color:#94a3b8;border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:14px;">‹</button>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;">
+                ${['ش','ی','د','س','چ','پ','ج'].map(d=>`<div style="text-align:center;font-size:10px;color:#64748b;">${d}</div>`).join('')}
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">${cells}</div>`;
+    }
+
+    function _pickEmpExpDate(hiddenId, dispBtnId, jStr) {
+        const hidden = document.getElementById(hiddenId);
+        if (hidden) hidden.value = jStr;
+        const dispBtn = document.getElementById(dispBtnId);
+        if (dispBtn) {
+            const span = dispBtn.querySelector('span') || dispBtn;
+            (span.tagName === 'SPAN' ? span : dispBtn).textContent = _fmtJalali(jStr);
+            dispBtn.classList.add('border-green-400');
+        }
+        document.getElementById('__emp-exp-cal')?.remove();
+    }
+
     return {
         init,
         getEmployeeContent,
@@ -1909,5 +2147,8 @@ const EmployeeAccountingUI = (function() {
         rejectLateRequest,
         showExportEmployeesModal,
         doExportEmployeesCSV,
+        // sidebar access
+        hasSidebarAccess,
+        toggleSidebarAccess,
     };
 })();

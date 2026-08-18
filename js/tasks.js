@@ -124,6 +124,9 @@ const TasksModule = {
                     </div>
                 </div>
 
+                <!-- ═══ وظایف ارسال‌شده از کارمندان برای مدیر ═══ -->
+                ${this.getManagerReceivedTasksSection()}
+
                 <!-- ═══ چک‌لیست کاری مدیر — به صفحه مستقل workChecklist منتقل شده ═══ -->
             </div>
         `;
@@ -264,11 +267,6 @@ const TasksModule = {
                     <h4 class="text-lg font-bold text-white">
                         وظایف ${employee?.name || ''}
                     </h4>
-                    <button onclick="TasksModule.showNewTaskModal('${this.selectedemployee}')" 
-                            class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-3 py-1 rounded-lg text-sm">
-                        <i class="fas fa-plus ml-1"></i>
-                        وظیفه جدید
-                    </button>
                 </div>
                 
                 ${tasks.length === 0 ? `
@@ -794,7 +792,65 @@ const TasksModule = {
             }).catch(e => console.warn('⚠️ getemployeeTasks sync:', e.message));
         }
         const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
-        return tasksData[employeeId] || [];
+        const tasks = tasksData[employeeId] || [];
+
+        // ── بررسی خودکار به‌تأخیرافتاده ──
+        // اگر deadline گذشته باشد و وضعیت هنوز pending یا in_progress باشد → delayed
+        let changed = false;
+        const todayStr = this._getTodayJalaliStr();
+        tasks.forEach((t, idx) => {
+            if ((t.status === 'pending' || t.status === 'in_progress') && t.dueDate) {
+                if (this._isDatePassed(t.dueDate, todayStr)) {
+                    tasks[idx].status = 'delayed';
+                    changed = true;
+                }
+            }
+        });
+        if (changed) {
+            tasksData[employeeId] = tasks;
+            localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
+            // sync به Supabase برای تغییرات
+            if (sb) {
+                tasks.filter(t => t.status === 'delayed').forEach(t => {
+                    sb.updateTaskStatus(t.id, employeeId, 'delayed')
+                      .catch(e => console.warn('⚠️ delayed sync:', e.message));
+                });
+            }
+        }
+
+        return tasks;
+    },
+
+    // ── helper: تاریخ امروز به فرمت شمسی 1404-05-20 ─────────
+    _getTodayJalaliStr() {
+        try {
+            const iranStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Tehran' });
+            const d = new Date(iranStr);
+            if (typeof Jalali !== 'undefined') {
+                return Jalali.toJalaliISO(d);
+            }
+            // fallback ساده
+            return d.getFullYear() + '-' +
+                   String(d.getMonth()+1).padStart(2,'0') + '-' +
+                   String(d.getDate()).padStart(2,'0');
+        } catch(e) {
+            return '';
+        }
+    },
+
+    // ── helper: آیا تاریخ داده شده از امروز گذشته؟ ──────────
+    _isDatePassed(dateStr, todayStr) {
+        if (!dateStr || !todayStr) return false;
+        try {
+            // هر دو باید فرمت YYYY-MM-DD داشته باشند
+            const clean = (s) => s.replace(/\//g, '-').trim();
+            const d = clean(dateStr);
+            const t = clean(todayStr);
+            // مقایسه رشته‌ای برای تاریخ شمسی کافی است (فرمت یکسان)
+            return d < t;
+        } catch(e) {
+            return false;
+        }
     },
     
     saveemployeeTasks(employeeId, tasks) {
@@ -895,20 +951,24 @@ const TasksModule = {
                                 <label class="block text-sm text-gray-300 mb-1">مهلت انجام</label>
                                 <div class="flex flex-col gap-1">
                                     <div class="flex gap-1 mb-1">
-                                        <button type="button" onclick="TasksModule._setTaskDate('task-due-date', -2)"
-                                                class="flex-1 text-xs bg-slate-600 hover:bg-slate-500 text-gray-300 px-2 py-1 rounded-lg"> امروز</button>
-                                        <button type="button" onclick="TasksModule._setTaskDate('task-due-date', -1)"
-                                                class="flex-1 text-xs bg-blue-700 hover:bg-blue-600 text-white px-2 py-1 rounded-lg">فردا</button>
                                         <button type="button" onclick="TasksModule._setTaskDate('task-due-date', 0)"
+                                                class="flex-1 text-xs bg-slate-600 hover:bg-slate-500 text-gray-300 px-2 py-1 rounded-lg">امروز</button>
+                                        <button type="button" onclick="TasksModule._setTaskDate('task-due-date', 1)"
+                                                class="flex-1 text-xs bg-blue-700 hover:bg-blue-600 text-white px-2 py-1 rounded-lg">فردا</button>
+                                        <button type="button" onclick="TasksModule._setTaskDate('task-due-date', 2)"
                                                 class="flex-1 text-xs bg-lime-700 hover:bg-lime-600 text-white px-2 py-1 rounded-lg">پس فردا</button>
                                     </div>
+                                    <input type="hidden" id="task-due-date" value="">
                                     <input type="text"
-                                           id="task-due-date"
+                                           id="task-due-date-jdp"
                                            data-jdp
+                                           data-jdp-target-value-input="#task-due-date"
+                                           data-jdp-target-value-type="jalali"
                                            placeholder="انتخاب تاریخ"
                                            autocomplete="off"
                                            readonly
-                                           class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-right text-white hover:border-lime-500 transition-colors cursor-pointer">
+                                           onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                                           class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-right text-white hover:border-lime-500 transition-colors cursor-pointer text-sm">
                                 </div>
                             </div>
                             <div>
@@ -998,7 +1058,7 @@ const TasksModule = {
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
                         <button onclick="TasksModule.closeModal('new-task-modal')"
-                                class="px-4 py-2 text-gray-400 hover:text-black">انصراف</button>
+                                class="px-4 py-2 text-gray-700 hover:text-black">انصراف</button>
                         <button onclick="TasksModule.createTask()"
                                 class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-4 py-2 rounded-lg font-medium">
                             <i class="fas fa-paper-plane ml-2"></i>ایجاد وظیفه
@@ -1010,40 +1070,160 @@ const TasksModule = {
 
         document.body.insertAdjacentHTML('beforeend', modalHTML);
         // مقداردهی پیش‌فرض: فردا
-        TasksModule._setTaskDate('task-due-date', -1);
-        // راه‌اندازی date picker شمسی
+        TasksModule._setTaskDate('task-due-date', 1);
+        // راه‌اندازی jalalidatepicker
         setTimeout(function() {
-            if (typeof JalaliPicker !== 'undefined') {
-                JalaliPicker.start();
-            } else if (typeof jalaliDatepicker !== 'undefined') {
-                jalaliDatepicker.startWatch();
+            if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
+                jalaliDatepicker.startWatch({
+                    showTodayBtn: true,
+                    showEmptyBtn: true,
+                    showCloseBtn: true,
+                });
             }
-        }, 30);
+        }, 50);
     },
 
-    // ── helper: تنظیم سریع تاریخ شمسی در input ─────────────────
+    // ── helper: تنظیم سریع تاریخ شمسی در input مخفی + نمایش ──
     _setTaskDate(inputId, offset) {
-        var input = document.getElementById(inputId);
-        if (!input) return;
         var d = new Date();
-        // timezone ایران
-        try {
-            var iranStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Tehran' });
-            d = new Date(iranStr);
-        } catch(e) {}
+        try { d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tehran' })); } catch(e) {}
         d.setDate(d.getDate() + offset);
-        // تبدیل به شمسی
         var jStr = '';
         if (typeof Jalali !== 'undefined') {
             jStr = Jalali.toJalaliISO(d);
         } else {
-            jStr = d.getFullYear() + '-' +
-                   String(d.getMonth()+1).padStart(2,'0') + '-' +
-                   String(d.getDate()).padStart(2,'0');
+            jStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
         }
-        input.value = jStr;
-        // fire change برای sync
-        input.dispatchEvent(new Event('change', { bubbles: true }));
+        // ست کردن مقدار در hidden input
+        var hidden = document.getElementById(inputId);
+        if (hidden) hidden.value = jStr;
+        // ست کردن متن نمایشی در input متنی (jdp)
+        var jdpInput = document.getElementById(inputId + '-jdp');
+        if (jdpInput) jdpInput.value = this._formatJalaliDate(jStr);
+        // آپدیت display button قدیمی (اگر وجود داشت)
+        var dispText = document.getElementById(inputId + '-disp-text');
+        if (dispText) dispText.textContent = this._formatJalaliDate(jStr);
+    },
+
+    // ── تقویم شمسی برای مودال وظیفه ──────────────────────────
+    _openTaskDatePicker(hiddenId, dispBtnId) {
+        // اگر تقویم سفارت در دسترسه از همون استفاده کن
+        if (typeof EmbassyModule !== 'undefined' && typeof EmbassyModule._openJalaliPicker === 'function') {
+            EmbassyModule._openJalaliPicker(hiddenId, dispBtnId);
+            // بعد از انتخاب، متن نمایشی رو آپدیت کن
+            var observer = new MutationObserver(function() {
+                var hidden = document.getElementById(hiddenId);
+                if (hidden && hidden.value) {
+                    var dispText = document.getElementById(hiddenId + '-disp-text');
+                    if (dispText) dispText.textContent = TasksModule._formatJalaliDate(hidden.value);
+                }
+            });
+            var hEl = document.getElementById(hiddenId);
+            if (hEl) observer.observe(hEl, { attributes: true, attributeFilter: ['value'] });
+            return;
+        }
+        // fallback: تقویم داخلی tasks
+        this._openSimpleJalaliPicker(hiddenId, dispBtnId);
+    },
+
+    // ── تقویم شمسی ساده (fallback) ───────────────────────────
+    _openSimpleJalaliPicker(hiddenId, dispBtnId) {
+        var old = document.getElementById('__tasks-cal-popup');
+        if (old) { old.remove(); if (old.dataset.for === hiddenId) return; }
+
+        var hidden = document.getElementById(hiddenId);
+        var dispBtn = document.getElementById(dispBtnId);
+        if (!hidden || !dispBtn) return;
+
+        var d = new Date();
+        try { d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tehran' })); } catch(e) {}
+        var jToday = (typeof Jalali !== 'undefined') ? Jalali.toJalaali(d.getFullYear(), d.getMonth()+1, d.getDate()) : {jy:1404,jm:1,jd:1};
+        var initY = jToday.jy, initM = jToday.jm;
+        if (hidden.value) { var p = hidden.value.split('-'); if (p.length===3) { initY=parseInt(p[0]); initM=parseInt(p[1]); } }
+
+        var popup = document.createElement('div');
+        popup.id = '__tasks-cal-popup';
+        popup.dataset.for = hiddenId;
+        popup.style.cssText = 'position:fixed;z-index:99999;background:#1e293b;border:1px solid #334155;border-radius:12px;padding:12px;box-shadow:0 8px 32px rgba(0,0,0,0.5);min-width:260px;direction:rtl;font-family:Vazirmatn,sans-serif;';
+        document.body.appendChild(popup);
+        var rect = dispBtn.getBoundingClientRect();
+        popup.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+        var left = rect.left + window.scrollX;
+        if (left + 270 > window.innerWidth) left = window.innerWidth - 275;
+        popup.style.left = left + 'px';
+
+        this._renderTaskCalPopup(hiddenId, dispBtnId, initY, initM, jToday);
+
+        setTimeout(function() {
+            document.addEventListener('click', function closeOut(e) {
+                var p2 = document.getElementById('__tasks-cal-popup');
+                if (p2 && !p2.contains(e.target) && e.target !== dispBtn) {
+                    p2.remove();
+                    document.removeEventListener('click', closeOut);
+                }
+            });
+        }, 50);
+    },
+
+    _renderTaskCalPopup(hiddenId, dispBtnId, year, month, jToday) {
+        var popup = document.getElementById('__tasks-cal-popup');
+        if (!popup) return;
+        var MONTHS = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+        // محاسبه تعداد روزهای ماه — بدون Jalali.jalaaliMonthLength
+        var daysInMonth = (month <= 6) ? 31 : (month <= 11) ? 30 : 29;
+        var firstDow = 0;
+        if (typeof Jalali !== 'undefined' && typeof Jalali.toGregorian === 'function') {
+            var g = Jalali.toGregorian(year, month, 1);
+            firstDow = new Date(g.gy, g.gm-1, g.gd).getDay(); // 0=Sun
+            firstDow = (firstDow + 1) % 7; // شنبه اول
+        }
+        var prevM = month - 1, prevY = year;
+        if (prevM < 1) { prevM = 12; prevY--; }
+        var nextM = month + 1, nextY = year;
+        if (nextM > 12) { nextM = 1; nextY++; }
+        var cells = '';
+        for (var i = 0; i < firstDow; i++) cells += '<div></div>';
+        for (var day = 1; day <= daysInMonth; day++) {
+            var jStr = year + '-' + String(month).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+            var isPast = jStr < (jToday.jy + '-' + String(jToday.jm).padStart(2,'0') + '-' + String(jToday.jd).padStart(2,'0'));
+            var isToday = (day === jToday.jd && month === jToday.jm && year === jToday.jy);
+            var hidden = document.getElementById(hiddenId);
+            var isSel = hidden && hidden.value === jStr;
+            var cls = 'text-center py-1 rounded-lg text-xs cursor-pointer transition-all ';
+            if (isSel) cls += 'bg-lime-500 text-white font-bold';
+            else if (isToday) cls += 'bg-blue-600 text-white font-bold';
+            else if (isPast) cls += 'text-gray-500 hover:bg-slate-600 text-gray-400';
+            else cls += 'text-white hover:bg-slate-600';
+            var dayFa = String(day).replace(/\d/g, dd => '۰۱۲۳۴۵۶۷۸۹'[dd]);
+            cells += `<div class="${cls}" onclick="TasksModule._selectTaskDate('${hiddenId}','${dispBtnId}','${jStr}')">${dayFa}</div>`;
+        }
+        popup.innerHTML = `
+            <div class="flex items-center justify-between mb-2">
+                <button onclick="TasksModule._renderTaskCalPopup('${hiddenId}','${dispBtnId}',${prevY},${prevM},{jy:${jToday.jy},jm:${jToday.jm},jd:${jToday.jd}})"
+                        style="background:#334155;border:none;color:#94a3b8;border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:14px;">›</button>
+                <span style="color:#e2e8f0;font-size:13px;font-weight:700;">${MONTHS[month-1]} ${year}</span>
+                <button onclick="TasksModule._renderTaskCalPopup('${hiddenId}','${dispBtnId}',${nextY},${nextM},{jy:${jToday.jy},jm:${jToday.jm},jd:${jToday.jd}})"
+                        style="background:#334155;border:none;color:#94a3b8;border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:14px;">‹</button>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;">
+                ${['ش','ی','د','س','چ','پ','ج'].map(d=>`<div style="text-align:center;font-size:10px;color:#64748b;padding:2px;">${d}</div>`).join('')}
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">${cells}</div>
+        `;
+    },
+
+    _selectTaskDate(hiddenId, dispBtnId, jStr) {
+        var hidden = document.getElementById(hiddenId);
+        if (hidden) hidden.value = jStr;
+        var dispText = document.getElementById(hiddenId + '-disp-text');
+        if (dispText) dispText.textContent = this._formatJalaliDate(jStr);
+        var dispBtn = document.getElementById(dispBtnId);
+        if (dispBtn) {
+            dispBtn.classList.add('border-lime-500');
+            dispBtn.classList.remove('border-slate-600');
+        }
+        var popup = document.getElementById('__tasks-cal-popup');
+        if (popup) popup.remove();
     },
 
     // ── انتخاب فایل پیوست برای وظیفه جدید ───────────────────────
@@ -1563,8 +1743,11 @@ const TasksModule = {
         const employeeId = document.getElementById('task-employee').value;
         const title = document.getElementById('task-title').value;
         const description = document.getElementById('task-description').value;
-        const dueDateEl = document.getElementById('task-due-date');
-        const dueDate = dueDateEl ? (dueDateEl.value || '') : '';
+        // اول از hidden input بخون، بعد از jdp input
+        const dueDateHidden = document.getElementById('task-due-date');
+        const dueDateJdp    = document.getElementById('task-due-date-jdp');
+        let dueDate = (dueDateHidden?.value || '').trim();
+        if (!dueDate && dueDateJdp?.value) dueDate = dueDateJdp.value.trim();
         const priority = document.getElementById('task-priority').value;
 
         if (!title.trim()) {
@@ -1918,6 +2101,14 @@ const TasksModule = {
         tasks[idx].approvedAt = new Date().toISOString();
         tasksData[this.selectedemployee] = tasks;
         localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
+
+        // sync به Supabase
+        const sb = this._sb();
+        if (sb) {
+            sb.updateTaskStatus(taskId, this.selectedemployee, 'approved')
+              .catch(e => console.warn('⚠️ approveTask Supabase خطا:', e.message));
+        }
+
         this.refreshContent();
         UTILS.showNotification('وظیفه تأیید شد ✓', 'success');
     },
@@ -1976,6 +2167,13 @@ const TasksModule = {
         tasks[idx].rejectedAt = new Date().toISOString();
         tasksData[this.selectedemployee] = tasks;
         localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
+
+        // sync به Supabase
+        const sb = this._sb();
+        if (sb) {
+            sb.saveEmployeeTask(this.selectedemployee, tasks[idx])
+              .catch(e => console.warn('⚠️ rejectTask Supabase خطا:', e.message));
+        }
 
         // ارسال پیام به کارمند
         const taskTitle = tasks[idx].title || 'وظیفه';
@@ -2344,8 +2542,7 @@ const TasksModule = {
     },
     
     // ایجاد وظیفه از سفارش برای عامل
-    createTaskFromOrder(order, agent) {
-        try {
+    createTaskFromOrder(order, agent) {        try {
             // ایجاد وظیفه جدید از سفارش
             const newTask = {
                 id: UTILS.generateId(),
@@ -2379,6 +2576,163 @@ const TasksModule = {
             console.error('Error creating task from order:', error);
             return null;
         }
+    },
+
+    // ══════════════════════════════════════════════════════════
+    // ── بخش ۶: وظایف ارسال‌شده از کارمندان برای مدیر ─────────
+    // ══════════════════════════════════════════════════════════
+
+    // ذخیره وظیفه از کارمند برای مدیر/همکار
+    saveTaskForManager(taskObj) {
+        const all = JSON.parse(localStorage.getItem('tasks_for_manager') || '[]');
+        all.unshift(taskObj);
+        localStorage.setItem('tasks_for_manager', JSON.stringify(all));
+        // sync به Supabase
+        const sb = this._sb();
+        if (sb && typeof sb.saveTaskForManager === 'function') {
+            sb.saveTaskForManager(taskObj)
+              .catch(e => console.warn('⚠️ saveTaskForManager Supabase خطا:', e.message));
+        }
+    },
+
+    getTasksForManager() {
+        // sync پس‌زمینه از Supabase
+        const sb = this._sb();
+        if (sb && typeof sb.getTasksForManager === 'function') {
+            sb.getTasksForManager().then(tasks => {
+                if (tasks && tasks.length > 0) {
+                    localStorage.setItem('tasks_for_manager', JSON.stringify(tasks));
+                }
+            }).catch(e => console.warn('⚠️ getTasksForManager sync خطا:', e.message));
+        }
+        return JSON.parse(localStorage.getItem('tasks_for_manager') || '[]');
+    },
+
+    updateManagerTaskStatus(taskId, status) {
+        const all = JSON.parse(localStorage.getItem('tasks_for_manager') || '[]');
+        const idx = all.findIndex(t => t.id === taskId);
+        if (idx === -1) return;
+        all[idx].status = status;
+        all[idx].updatedAt = new Date().toISOString();
+        localStorage.setItem('tasks_for_manager', JSON.stringify(all));
+        // sync به Supabase
+        const sb = this._sb();
+        if (sb && typeof sb.updateManagerTaskStatus === 'function') {
+            sb.updateManagerTaskStatus(taskId, status)
+              .catch(e => console.warn('⚠️ updateManagerTaskStatus Supabase خطا:', e.message));
+        }
+        this.refreshManagerReceivedSection();
+    },
+
+    deleteManagerTask(taskId) {
+        if (!confirm('آیا از حذف این وظیفه مطمئن هستید؟')) return;
+        const all = JSON.parse(localStorage.getItem('tasks_for_manager') || '[]');
+        const filtered = all.filter(t => t.id !== taskId);
+        localStorage.setItem('tasks_for_manager', JSON.stringify(filtered));
+        // sync به Supabase
+        const sb = this._sb();
+        if (sb && typeof sb.deleteManagerTask === 'function') {
+            sb.deleteManagerTask(taskId)
+              .catch(e => console.warn('⚠️ deleteManagerTask Supabase خطا:', e.message));
+        }
+        this.refreshManagerReceivedSection();
+    },
+
+    refreshManagerReceivedSection() {
+        const el = document.getElementById('manager-received-tasks-section');
+        if (el) el.outerHTML = this.getManagerReceivedTasksSection();
+    },
+
+    // رندر بخش وظایف دریافتی مدیر
+    getManagerReceivedTasksSection() {
+        const tasks = this.getTasksForManager();
+        const statusColors = {
+            'pending':     'bg-yellow-500/20 text-yellow-300 border-yellow-500/40',
+            'in_progress': 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+            'completed':   'bg-green-500/20 text-green-300 border-green-500/40',
+            'rejected':    'bg-red-500/20 text-red-300 border-red-500/40',
+        };
+        const statusTexts = { pending: 'در انتظار', in_progress: 'در حال انجام', completed: 'تکمیل شده', rejected: 'رد شده' };
+
+        const pendingCount = tasks.filter(t => t.status === 'pending').length;
+
+        return `
+        <div id="manager-received-tasks-section" class="mt-6">
+            <div class="bg-slate-800 rounded-xl shadow-md p-5 border-r-4 border-purple-500">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-inbox text-purple-400"></i>
+                        وظایف تعریف‌شده از سمت کارمندان
+                        ${pendingCount > 0 ? `<span class="bg-purple-600 text-white text-xs rounded-full px-2 py-0.5 animate-pulse">${pendingCount}</span>` : ''}
+                    </h3>
+                    <button onclick="TasksModule.refreshManagerReceivedSection()"
+                            class="text-gray-400 hover:text-white text-sm p-1 rounded" title="بروزرسانی">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+
+                ${tasks.length === 0 ? `
+                <div class="text-center py-8 border border-dashed border-slate-600 rounded-lg">
+                    <i class="fas fa-inbox text-3xl text-slate-500 mb-2 block"></i>
+                    <p class="text-gray-500 text-sm">هنوز وظیفه‌ای از کارمندان دریافت نشده</p>
+                </div>` : `
+                <div class="space-y-3">
+                    ${tasks.map(t => `
+                    <div class="bg-slate-700 rounded-xl p-4 border border-slate-600">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                    <span class="font-semibold text-white">${t.title}</span>
+                                    <span class="text-xs px-2 py-0.5 rounded-full border ${statusColors[t.status] || statusColors.pending}">
+                                        ${statusTexts[t.status] || t.status}
+                                    </span>
+                                    ${t.priority === 'high' ? '<span class="text-xs bg-red-500/20 text-red-300 border border-red-500/40 px-2 py-0.5 rounded-full">فوری</span>' : ''}
+                                </div>
+                                ${t.description ? `<p class="text-sm text-gray-400 mb-2">${t.description}</p>` : ''}
+                                <div class="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
+                                    <span><i class="fas fa-user ml-1 text-purple-400"></i>${t.fromName || 'کارمند'}</span>
+                                    ${t.assignedTo ? `<span><i class="fas fa-arrow-left ml-1 text-lime-400"></i>${t.assignedTo}</span>` : ''}
+                                    ${t.dueDate ? `<span><i class="fas fa-calendar ml-1"></i>${this._formatJalaliDate(t.dueDate)}</span>` : ''}
+                                    <span><i class="fas fa-clock ml-1"></i>${this._timeAgo(t.createdAt)}</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1 flex-shrink-0">
+                                ${t.status === 'pending' ? `
+                                <button onclick="TasksModule.updateManagerTaskStatus('${t.id}','in_progress')"
+                                        title="شروع کار" class="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                <button onclick="TasksModule.updateManagerTaskStatus('${t.id}','completed')"
+                                        title="تکمیل" class="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs">
+                                    <i class="fas fa-check"></i>
+                                </button>` : ''}
+                                ${t.status === 'in_progress' ? `
+                                <button onclick="TasksModule.updateManagerTaskStatus('${t.id}','completed')"
+                                        title="تکمیل" class="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs">
+                                    <i class="fas fa-check"></i>
+                                </button>` : ''}
+                                <button onclick="TasksModule.deleteManagerTask('${t.id}')"
+                                        title="حذف" class="px-2 py-1 bg-red-600/80 hover:bg-red-700 text-white rounded-lg text-xs">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>`).join('')}
+                </div>`}
+            </div>
+        </div>`;
+    },
+
+    // ── helper: زمان سپری‌شده ─────────────────────────────────
+    _timeAgo(isoStr) {
+        if (!isoStr) return '';
+        try {
+            const diff = Math.floor((Date.now() - new Date(isoStr).getTime()) / 1000);
+            if (diff < 60) return 'همین الان';
+            if (diff < 3600) return Math.floor(diff / 60) + ' دقیقه پیش';
+            if (diff < 86400) return Math.floor(diff / 3600) + ' ساعت پیش';
+            return Math.floor(diff / 86400) + ' روز پیش';
+        } catch(e) { return ''; }
     }
 };
 
@@ -2386,6 +2740,7 @@ const TasksModule = {
 window.getTasksContent = function() {
     return TasksModule.getTasksContent();
 };
+
 
 // Export TasksModule to window so other modules can use createTaskFromOrder
 window.TasksModule = TasksModule;
