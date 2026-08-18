@@ -2602,6 +2602,9 @@ const TasksModule = {
             sb.getTasksForManager().then(tasks => {
                 if (tasks && tasks.length > 0) {
                     localStorage.setItem('tasks_for_manager', JSON.stringify(tasks));
+                    // اگر بخش نمایش در DOM موجوده، refresh کن
+                    const el = document.getElementById('manager-received-tasks-section');
+                    if (el) el.outerHTML = this.getManagerReceivedTasksSection();
                 }
             }).catch(e => console.warn('⚠️ getTasksForManager sync خطا:', e.message));
         }

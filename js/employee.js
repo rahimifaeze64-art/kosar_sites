@@ -55,9 +55,11 @@ const EmployeeModule = {
 
         const tasks = this.getMyTasks(userId);
         const stepTasks = tasks.filter(t => t.isStepTask);
-        const regularTasks = tasks.filter(t => !t.isStepTask);
+        // وظایف معمولی: از مدیر (createdBy = mgr) + از همکار (fromId موجود)
+        const regularTasks    = tasks.filter(t => !t.isStepTask && !t.fromId);
+        const receivedTasks   = tasks.filter(t => !t.isStepTask && t.fromId);
         const pendingStepTasks = stepTasks.filter(t => t.status !== 'completed');
-        const doneStepTasks = stepTasks.filter(t => t.status === 'completed');
+        const doneStepTasks    = stepTasks.filter(t => t.status === 'completed');
         
         return `
             <div class="space-y-6">
@@ -199,6 +201,57 @@ const EmployeeModule = {
                         </div>
                     `}
                 </div>
+
+                <!-- ═══ وظایف دریافتی از همکاران ═══ -->
+                ${receivedTasks.length > 0 ? `
+                <div class="bg-slate-800 rounded-lg shadow-md p-4 border-r-4 border-purple-500">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <i class="fas fa-inbox text-purple-400"></i>
+                        وظایف دریافتی از همکاران
+                        <span class="bg-purple-600 text-white text-xs rounded-full px-2 py-0.5">${receivedTasks.filter(t=>t.status==='pending').length}</span>
+                    </h3>
+                    <div class="space-y-3">
+                        ${receivedTasks.map(task => {
+                            const statusColors = { pending:'bg-yellow-500/20 text-yellow-300 border-yellow-500/40', in_progress:'bg-blue-500/20 text-blue-300 border-blue-500/40', completed:'bg-green-500/20 text-green-300 border-green-500/40', rejected:'bg-red-500/20 text-red-300 border-red-500/40', delayed:'bg-orange-500/20 text-orange-300 border-orange-500/40' };
+                            const statusLabels = { pending:'در انتظار', in_progress:'در حال انجام', completed:'تکمیل شده', rejected:'رد شده', delayed:'به تأخیر' };
+                            const sc = statusColors[task.status] || statusColors.pending;
+                            const sl = statusLabels[task.status] || task.status;
+                            return `
+                            <div class="bg-slate-700 rounded-xl p-4 border border-slate-600">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                            <span class="font-semibold text-white text-sm">${task.title}</span>
+                                            <span class="text-xs px-2 py-0.5 rounded-full border ${sc}">${sl}</span>
+                                            ${task.priority === 'high' ? '<span class="text-xs bg-red-500/20 text-red-300 border border-red-500/40 px-2 py-0.5 rounded-full">فوری</span>' : ''}
+                                        </div>
+                                        ${task.description ? `<p class="text-xs text-gray-400 mb-2">${task.description}</p>` : ''}
+                                        <div class="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
+                                            <span><i class="fas fa-user ml-1 text-purple-400"></i>${task.fromName || 'همکار'}</span>
+                                            ${task.dueDate ? `<span><i class="fas fa-calendar ml-1"></i>${task.dueDate}</span>` : ''}
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-1 flex-shrink-0">
+                                        ${task.status === 'pending' ? `
+                                        <button onclick="employeeModule.updateReceivedTaskStatus('${task.id}','${userId}','in_progress')"
+                                                class="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs" title="شروع">
+                                            <i class="fas fa-play"></i>
+                                        </button>
+                                        <button onclick="employeeModule.updateReceivedTaskStatus('${task.id}','${userId}','completed')"
+                                                class="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs" title="انجام شد">
+                                            <i class="fas fa-check"></i>
+                                        </button>` : ''}
+                                        ${task.status === 'in_progress' ? `
+                                        <button onclick="employeeModule.updateReceivedTaskStatus('${task.id}','${userId}','completed')"
+                                                class="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs" title="انجام شد">
+                                            <i class="fas fa-check"></i>
+                                        </button>` : ''}
+                                    </div>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>` : ''}
             </div>
         `;
     },
@@ -2880,6 +2933,25 @@ const EmployeeModule = {
         // فقط از localStorage می‌خونه (fetch اصلی در getMyTasksContent انجام می‌شه)
         const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
         return tasksData[userId] || [];
+    },
+
+    // آپدیت وضعیت وظیفه دریافتی از همکار
+    updateReceivedTaskStatus(taskId, userId, newStatus) {
+        const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+        const tasks = tasksData[userId] || [];
+        const idx = tasks.findIndex(t => t.id === taskId);
+        if (idx === -1) return;
+        tasks[idx].status = newStatus;
+        tasks[idx].updatedAt = new Date().toISOString();
+        tasksData[userId] = tasks;
+        localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
+        // sync به Supabase
+        if (typeof SupabaseDataModule !== 'undefined' && SupabaseDataModule._online()) {
+            SupabaseDataModule.updateTaskStatus(taskId, userId, newStatus)
+                .catch(e => console.warn('⚠️ updateReceivedTaskStatus:', e.message));
+        }
+        this.refreshMyTasks(userId);
+        UTILS.showNotification(newStatus === 'completed' ? 'وظیفه تکمیل شد ✓' : 'وضعیت بروز شد', 'success');
     },
     
     getMyMessages(userId) {
