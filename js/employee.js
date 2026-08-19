@@ -3765,32 +3765,38 @@ const EmployeeModule = {
         // اگر گیرنده مدیر است → در tasks_for_manager ذخیره کن
         const allUsers = typeof HARDCODED_USERS !== 'undefined' ? HARDCODED_USERS : [];
         const assigneeUser = allUsers.find(u => u.id === assigneeId);
+
         if (assigneeUser && assigneeUser.role === 'manager') {
+            // ذخیره محلی برای مدیر
+            const all = JSON.parse(localStorage.getItem('tasks_for_manager') || '[]');
+            if (!all.find(t => t.id === task.id)) all.unshift(task);
+            localStorage.setItem('tasks_for_manager', JSON.stringify(all));
+
+            // sync به Supabase از طریق TasksModule یا مستقیم
+            const sbm = typeof SupabaseDataModule !== 'undefined' ? SupabaseDataModule : null;
+            if (sbm && typeof sbm.saveTaskForManager === 'function') {
+                sbm.saveTaskForManager(task)
+                   .then(() => console.log('✅ وظیفه برای مدیر در Supabase ذخیره شد'))
+                   .catch(e => console.warn('⚠️ saveTaskForManager:', e.message));
+            }
+            // آپدیت DOM مدیر اگر باز باشه
             if (typeof TasksModule !== 'undefined') {
-                TasksModule.saveTaskForManager(task);
-            } else {
-                // fallback مستقیم به Supabase
-                const sbm = (typeof SupabaseDataModule !== 'undefined') ? SupabaseDataModule : null;
-                if (sbm && typeof sbm.saveTaskForManager === 'function') {
-                    sbm.saveTaskForManager(task)
-                       .catch(e => console.warn('⚠️ submitAssignTask Supabase خطا:', e.message));
-                }
-                const all = JSON.parse(localStorage.getItem('tasks_for_manager') || '[]');
-                all.unshift(task);
-                localStorage.setItem('tasks_for_manager', JSON.stringify(all));
+                setTimeout(() => TasksModule.refreshManagerReceivedSection(), 200);
             }
         } else {
             // برای کارمند دیگر → در employee_tasks ذخیره + sync Supabase
             const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
             const arr = tasksData[assigneeId] || [];
-            arr.unshift(task);
+            if (!arr.find(t => t.id === task.id)) arr.unshift(task);
             tasksData[assigneeId] = arr;
             localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
+
             // sync به Supabase
-            const sbm = (typeof SupabaseDataModule !== 'undefined') ? SupabaseDataModule : null;
+            const sbm = typeof SupabaseDataModule !== 'undefined' ? SupabaseDataModule : null;
             if (sbm && typeof sbm.saveEmployeeTask === 'function') {
                 sbm.saveEmployeeTask(assigneeId, task)
-                   .catch(e => console.warn('⚠️ submitAssignTask (employee) Supabase خطا:', e.message));
+                   .then(() => console.log('✅ وظیفه برای کارمند در Supabase ذخیره شد'))
+                   .catch(e => console.warn('⚠️ saveEmployeeTask:', e.message));
             }
         }
 

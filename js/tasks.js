@@ -2585,29 +2585,23 @@ const TasksModule = {
     // ذخیره وظیفه از کارمند برای مدیر/همکار
     saveTaskForManager(taskObj) {
         const all = JSON.parse(localStorage.getItem('tasks_for_manager') || '[]');
-        all.unshift(taskObj);
-        localStorage.setItem('tasks_for_manager', JSON.stringify(all));
+        // جلوگیری از ذخیره تکراری
+        if (!all.find(t => t.id === taskObj.id)) {
+            all.unshift(taskObj);
+            localStorage.setItem('tasks_for_manager', JSON.stringify(all));
+        }
         // sync به Supabase
         const sb = this._sb();
         if (sb && typeof sb.saveTaskForManager === 'function') {
             sb.saveTaskForManager(taskObj)
+              .then(() => console.log('✅ tasks_for_manager ذخیره شد:', taskObj.id))
               .catch(e => console.warn('⚠️ saveTaskForManager Supabase خطا:', e.message));
         }
+        // آپدیت DOM اگر صفحه مدیریت همکاران باز باشه
+        setTimeout(() => this.refreshManagerReceivedSection(), 100);
     },
 
     getTasksForManager() {
-        // sync پس‌زمینه از Supabase
-        const sb = this._sb();
-        if (sb && typeof sb.getTasksForManager === 'function') {
-            sb.getTasksForManager().then(tasks => {
-                if (tasks && tasks.length > 0) {
-                    localStorage.setItem('tasks_for_manager', JSON.stringify(tasks));
-                    // اگر بخش نمایش در DOM موجوده، refresh کن
-                    const el = document.getElementById('manager-received-tasks-section');
-                    if (el) el.outerHTML = this.getManagerReceivedTasksSection();
-                }
-            }).catch(e => console.warn('⚠️ getTasksForManager sync خطا:', e.message));
-        }
         return JSON.parse(localStorage.getItem('tasks_for_manager') || '[]');
     },
 
@@ -2648,7 +2642,23 @@ const TasksModule = {
 
     // رندر بخش وظایف دریافتی مدیر
     getManagerReceivedTasksSection() {
-        const tasks = this.getTasksForManager();
+        // sync از Supabase در پس‌زمینه — فقط یک‌بار هر 30 ثانیه
+        const now = Date.now();
+        if (!this._lastManagerTasksSync || now - this._lastManagerTasksSync > 30000) {
+            this._lastManagerTasksSync = now;
+            const sb = this._sb();
+            if (sb && typeof sb.getTasksForManager === 'function') {
+                sb.getTasksForManager().then(tasks => {
+                    if (tasks && tasks.length > 0) {
+                        localStorage.setItem('tasks_for_manager', JSON.stringify(tasks));
+                        const el = document.getElementById('manager-received-tasks-section');
+                        if (el) el.outerHTML = this.getManagerReceivedTasksSection();
+                    }
+                }).catch(e => console.warn('⚠️ getTasksForManager sync:', e.message));
+            }
+        }
+
+        const tasks = JSON.parse(localStorage.getItem('tasks_for_manager') || '[]');
         const statusColors = {
             'pending':     'bg-yellow-500/20 text-yellow-300 border-yellow-500/40',
             'in_progress': 'bg-blue-500/20 text-blue-300 border-blue-500/40',
@@ -2656,7 +2666,6 @@ const TasksModule = {
             'rejected':    'bg-red-500/20 text-red-300 border-red-500/40',
         };
         const statusTexts = { pending: 'در انتظار', in_progress: 'در حال انجام', completed: 'تکمیل شده', rejected: 'رد شده' };
-
         const pendingCount = tasks.filter(t => t.status === 'pending').length;
 
         return `

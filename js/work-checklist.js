@@ -241,28 +241,14 @@ const WorkChecklistModule = {
 
     async getTasks(itemId) {
         const localKey = 'wc_tasks_' + this.currentUser.id;
-        const localData = (this._localGet(localKey) || []).filter(t => t.item_id === itemId);
+        const localData = (this._localGet(localKey) || [])
+            .filter(t => t.item_id === itemId)
+            .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
-        // اگه localStorage داده داره، فوری برگردون + background sync
+        // اگه localStorage داده داره، فوری برگردون
+        // ⚠️ background sync رو اینجا نمی‌زنیم تا ترتیب drag/drop override نشه
+        // sync فقط وقتی localStorage خالیه انجام می‌شه
         if (localData.length > 0) {
-            if (this.supabase) {
-                this.supabase
-                    .from('checklist_tasks')
-                    .select('*')
-                    .eq('item_id', itemId)
-                    .order('sort_order', { ascending: true })
-                    .then(({ data }) => {
-                        if (data && data.length > 0) {
-                            const allTasks = this._localGet(localKey) || [];
-                            data.forEach(d => {
-                                const idx = allTasks.findIndex(t => t.id === d.id);
-                                if (idx >= 0) allTasks[idx] = d; else allTasks.push(d);
-                            });
-                            this._localSet(localKey, allTasks);
-                        }
-                    })
-                    .catch(() => {});
-            }
             return localData;
         }
 
@@ -286,7 +272,7 @@ const WorkChecklistModule = {
                         if (idx >= 0) allTasks[idx] = d; else allTasks.push(d);
                     });
                     this._localSet(localKey, allTasks);
-                    return data;
+                    return data.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
                 }
             } catch(e) {
                 console.error('❌ [WC] getTasks exception:', e.message);
@@ -371,23 +357,34 @@ const WorkChecklistModule = {
             const taskId = row.dataset.taskId;
             updates.push({ id: taskId, sort_order: idx });
         });
-        // آپدیت Supabase
-        if (this.supabase) {
-            for (const u of updates) {
-                await this.supabase.from('checklist_tasks').update({ sort_order: u.sort_order }).eq('id', u.id);
-            }
-        }
-        // آپدیت localStorage
+
+        // ── ۱. اول localStorage رو آپدیت کن ──────────────────────
         const all = this._localGet('wc_tasks_' + this.currentUser.id) || [];
         updates.forEach(u => {
             const t = all.find(t => t.id === u.id);
             if (t) t.sort_order = u.sort_order;
         });
         this._localSet('wc_tasks_' + this.currentUser.id, all);
-        // بروز کردن badge
+
+        // ── ۲. Supabase رو آپدیت کن ───────────────────────────────
+        if (this.supabase) {
+            // همه آپدیت‌ها رو موازی بفرست
+            await Promise.all(updates.map(u =>
+                this.supabase
+                    .from('checklist_tasks')
+                    .update({ sort_order: u.sort_order })
+                    .eq('id', u.id)
+                    .then(({ error }) => {
+                        if (error) console.warn('⚠️ [WC] sort_order update error:', error.message);
+                    })
+            ));
+        }
+
+        // ── ۳. badge تعداد رو از localStorage بخون (نه از Supabase) ──
         const badge = document.getElementById('wc-item-count-' + itemId);
         if (badge) {
-            const tasks = await this.getTasks(itemId);
+            const tasks = (this._localGet('wc_tasks_' + this.currentUser.id) || [])
+                .filter(t => t.item_id === itemId);
             const done = tasks.filter(t => t.is_done).length;
             badge.textContent = done + '/' + tasks.length;
         }
@@ -603,15 +600,17 @@ const WorkChecklistModule = {
         const countBadge = document.getElementById('wc-item-count-' + itemId);
         if (!container) return;
         const tasks = await this.getTasks(itemId);
+        // مرتب‌سازی بر اساس sort_order
+        const sorted = [...tasks].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
         if (countBadge) {
-            const done = tasks.filter(t => t.is_done).length;
-            countBadge.textContent = done + '/' + tasks.length;
+            const done = sorted.filter(t => t.is_done).length;
+            countBadge.textContent = done + '/' + sorted.length;
         }
-        if (!tasks.length) {
+        if (!sorted.length) {
             container.innerHTML = `<p class="text-black-300/50 text-sm italic py-1">هنوز وظیفه‌ای تعریف نشده</p>`;
             return;
         }
-        container.innerHTML = tasks.map(t => this._buildTaskRow(t)).join('');
+        container.innerHTML = sorted.map(t => this._buildTaskRow(t)).join('');
         this._initDragDrop(container, itemId);
     },
 

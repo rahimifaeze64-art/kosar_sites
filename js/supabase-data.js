@@ -1310,17 +1310,26 @@ const SupabaseDataModule = {
     },
 
     // ── وظایف ارسالی از کارمند برای مدیر ───────────────────
+    // از همان جدول employee_tasks استفاده می‌کنیم — بدون نیاز به جدول جدید
     async getTasksForManager() {
-        const localData = JSON.parse(localStorage.getItem('tasks_for_manager') || '[]');
+        const MGR_KEY = 'tasks_for_manager';
+        const localData = JSON.parse(localStorage.getItem(MGR_KEY) || '[]');
         if (!this._online()) return localData;
         try {
+            // وظایفی که from_id دارند و به مدیر assigned شدند
             const { data, error } = await this._db()
-                .from('tasks_for_manager')
+                .from('employee_tasks')
                 .select('*')
+                .not('from_id', 'is', null)
                 .order('created_at', { ascending: false });
-            if (error) throw error;
+            if (error) {
+                // اگر ستون from_id هنوز در DB نیست، fallback به localStorage
+                if (error.code === 'PGRST116' || error.message.includes('from_id')) {
+                    console.warn('⚠️ ستون from_id هنوز نیست — migration اجرا کنید');
+                }
+                return localData;
+            }
             if (data && data.length > 0) {
-                // merge: ترکیب remote + local (local اولویت)
                 const merged = data.map(r => ({
                     id:          r.id,
                     title:       r.title,
@@ -1330,12 +1339,12 @@ const SupabaseDataModule = {
                     status:      r.status       || 'pending',
                     fromId:      r.from_id      || null,
                     fromName:    r.from_name    || null,
-                    assignedToId: r.assigned_to_id || null,
+                    assignedToId: r.assigned_to || null,
                     assignedTo:  r.assigned_to  || null,
                     updatedAt:   r.updated_at,
                     createdAt:   r.created_at
                 }));
-                localStorage.setItem('tasks_for_manager', JSON.stringify(merged));
+                localStorage.setItem(MGR_KEY, JSON.stringify(merged));
                 return merged;
             }
             return localData;
@@ -1346,31 +1355,30 @@ const SupabaseDataModule = {
     },
 
     async saveTaskForManager(task) {
+        const MGR_KEY = 'tasks_for_manager';
         // ذخیره محلی
-        const all = JSON.parse(localStorage.getItem('tasks_for_manager') || '[]');
+        const all = JSON.parse(localStorage.getItem(MGR_KEY) || '[]');
         const idx = all.findIndex(t => t.id === task.id);
         if (idx >= 0) all[idx] = task; else all.unshift(task);
-        localStorage.setItem('tasks_for_manager', JSON.stringify(all));
+        localStorage.setItem(MGR_KEY, JSON.stringify(all));
 
         if (!this._online()) return true;
         try {
-            const row = {
-                id:             task.id,
-                title:          task.title,
-                description:    task.description    || null,
-                due_date:       task.dueDate        || null,
-                priority:       task.priority       || 'low',
-                status:         task.status         || 'pending',
-                from_id:        task.fromId         || null,
-                from_name:      task.fromName       || null,
-                assigned_to_id: task.assignedToId   || null,
-                assigned_to:    task.assignedTo     || null,
-                updated_at:     new Date().toISOString()
-            };
+            // ذخیره در employee_tasks با from_id و assigned_to = مدیر
+            const row = this._taskToDb(task, task.assignedToId || task.assignedTo || '');
+            row.from_id   = task.fromId   || null;
+            row.from_name = task.fromName || null;
             const { error } = await this._db()
-                .from('tasks_for_manager')
+                .from('employee_tasks')
                 .upsert(row, { onConflict: 'id' });
-            if (error) throw error;
+            if (error) {
+                if (error.code === '23514') {
+                    // constraint violation — بدون from_id امتحان کن
+                    console.warn('⚠️ saveTaskForManager constraint — migration اجرا کنید');
+                } else {
+                    throw error;
+                }
+            }
             return true;
         } catch (e) {
             console.warn('⚠️ saveTaskForManager خطا:', e.message);
@@ -1379,16 +1387,17 @@ const SupabaseDataModule = {
     },
 
     async updateManagerTaskStatus(taskId, status) {
+        const MGR_KEY = 'tasks_for_manager';
         // محلی
-        const all = JSON.parse(localStorage.getItem('tasks_for_manager') || '[]');
+        const all = JSON.parse(localStorage.getItem(MGR_KEY) || '[]');
         const t = all.find(t => t.id === taskId);
         if (t) { t.status = status; t.updatedAt = new Date().toISOString(); }
-        localStorage.setItem('tasks_for_manager', JSON.stringify(all));
+        localStorage.setItem(MGR_KEY, JSON.stringify(all));
 
         if (!this._online()) return true;
         try {
             const { error } = await this._db()
-                .from('tasks_for_manager')
+                .from('employee_tasks')
                 .update({ status, updated_at: new Date().toISOString() })
                 .eq('id', taskId);
             if (error) throw error;
@@ -1400,13 +1409,14 @@ const SupabaseDataModule = {
     },
 
     async deleteManagerTask(taskId) {
-        const all = JSON.parse(localStorage.getItem('tasks_for_manager') || '[]');
-        localStorage.setItem('tasks_for_manager', JSON.stringify(all.filter(t => t.id !== taskId)));
+        const MGR_KEY = 'tasks_for_manager';
+        const all = JSON.parse(localStorage.getItem(MGR_KEY) || '[]');
+        localStorage.setItem(MGR_KEY, JSON.stringify(all.filter(t => t.id !== taskId)));
 
         if (!this._online()) return true;
         try {
             const { error } = await this._db()
-                .from('tasks_for_manager')
+                .from('employee_tasks')
                 .delete()
                 .eq('id', taskId);
             if (error) throw error;

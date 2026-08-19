@@ -140,11 +140,24 @@ const EmployeeAccountingModule = (function() {
             })()
             || 'نامشخص';
 
+        // helper: نمایش ساعت به فرمت ساعت:دقیقه
+        function _fmtH(decHours) {
+            if (typeof WorkHoursModule !== 'undefined' && WorkHoursModule.formatHoursDisplay) {
+                return WorkHoursModule.formatHoursDisplay(decHours);
+            }
+            // fallback
+            const totalMin = Math.round(parseFloat(decHours) * 60);
+            const h = Math.floor(totalMin / 60);
+            const m = totalMin % 60;
+            return m === 0 ? h + ' ساعت' : h + ':' + String(m).padStart(2,'0') + ' ساعت';
+        }
+
         return {
             employeeId,
             employeeName,
-            totalHours: totalHoursSubmitted.toFixed(2),
-            totalHoursApproved: totalHoursApproved.toFixed(2),
+            totalHours: _fmtH(totalHoursSubmitted),
+            totalHoursApproved: _fmtH(totalHoursApproved),
+            totalHoursApprovedRaw: totalHoursApproved,   // برای محاسبات ریاضی
             totalExpenses: totalExpensesSubmitted,
             totalExpensesApproved,
             hourlyRate,
@@ -206,6 +219,19 @@ const EmployeeAccountingModule = (function() {
         return new Intl.NumberFormat('fa-IR').format(Math.round(amount || 0)) + ' تومان';
     }
 
+    // نمایش ساعت به فرمت ساعت:دقیقه (مثلاً 1.75 → "۱:۴۵")
+    function _fmtHours(decHours) {
+        const h = parseFloat(decHours) || 0;
+        if (typeof WorkHoursModule !== 'undefined' && WorkHoursModule.formatHoursDisplay) {
+            return WorkHoursModule.formatHoursDisplay(h);
+        }
+        const totalMin = Math.round(h * 60);
+        const hrs = Math.floor(totalMin / 60);
+        const min = totalMin % 60;
+        const toFa = n => String(n).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+        return min === 0 ? toFa(hrs) + ' ساعت' : toFa(hrs) + ':' + String(min).padStart(2,'0').replace(/\d/g, d=>'۰۱۲۳۴۵۶۷۸۹'[d]) + ' ساعت';
+    }
+
     function formatDate(date) {
         const d = new Date(date);
         const year = d.getFullYear();
@@ -223,6 +249,7 @@ const EmployeeAccountingModule = (function() {
         getEmployeeFinancialSummary,
         getAllEmployeesSummary,
         formatCurrency,
+        formatHoursDisplay: _fmtHours,
         formatDate
     };
 })();
@@ -378,7 +405,7 @@ const EmployeeAccountingUI = (function() {
             const isExpense = entry.type === 'expense';
             const valueCell = isExpense
                 ? `<span class="text-orange-400 font-bold">${EmployeeAccountingModule.formatCurrency(entry.amount || 0)}</span>`
-                : `<span class="text-black-400 font-bold">${entry.totalHours || 0} ساعت</span>`;
+                : `<span class="text-black-400 font-bold">${(typeof WorkHoursModule!=='undefined'&&WorkHoursModule.formatHoursDisplay) ? WorkHoursModule.formatHoursDisplay(parseFloat(entry.totalHours||0)) : (entry.totalHours||0)} ساعت</span>`;
 
             // ستون نوع + badge وضعیت رنگی
             const statusDot = entry.status === 'approved'
@@ -452,7 +479,7 @@ const EmployeeAccountingUI = (function() {
             EmployeeAccountingModule.formatDate(now)
         );
 
-        const hoursPayment = parseFloat(monthlySummary.totalHoursApproved) * monthlySummary.hourlyRate;
+        const hoursPayment = parseFloat(monthlySummary.totalHoursApprovedRaw || monthlySummary.totalHoursApproved) * monthlySummary.hourlyRate;
 
         return `
             <div class="space-y-6">
@@ -480,7 +507,7 @@ const EmployeeAccountingUI = (function() {
                             </div>
                             <div>
                                 <p class="text-black-400 text-sm">جمع ساعات ارسالی</p>
-                                <p class="text-3xl font-bold text-white">${summary.totalHours}</p>
+                                <p class="text-3xl font-bold text-white">${_fmtHours(summary.totalHoursApprovedRaw ?? summary.totalHours)}</p>
                                 <p class="text-black-300 text-xs">${summary.hoursCount} گزارش · ${summary.workDays} روز</p>
                             </div>
                         </div>
@@ -552,7 +579,7 @@ const EmployeeAccountingUI = (function() {
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div class="bg-white/10 rounded-xl p-4">
                             <p class="text-lime-200 text-sm mb-1">ساعات این ماه</p>
-                            <p class="text-2xl font-bold text-white">${monthlySummary.totalHours} ساعت</p>
+                        <p class="text-2xl font-bold text-white">${_fmtHours(monthlySummary.totalHoursApprovedRaw ?? monthlySummary.totalHours)}</p>
                             <p class="text-lime-300 text-xs mt-1">${monthlySummary.hoursCount} گزارش روزانه</p>
                         </div>
                         <div class="bg-white/10 rounded-xl p-4">
@@ -562,7 +589,7 @@ const EmployeeAccountingUI = (function() {
                         <div class="bg-white/10 rounded-xl p-4">
                             <p class="text-lime-200 text-sm mb-1">حقوق ساعات (تأیید × نرخ)</p>
                             <p class="text-2xl font-bold text-black-400">${EmployeeAccountingModule.formatCurrency(hoursPayment)}</p>
-                            <p class="text-lime-300 text-xs mt-1">${monthlySummary.totalHoursApproved} ساعت تأیید × ${EmployeeAccountingModule.formatCurrency(monthlySummary.hourlyRate)}</p>
+                            <p class="text-lime-300 text-xs mt-1">${_fmtHours(monthlySummary.totalHoursApprovedRaw ?? monthlySummary.totalHoursApproved)} تأیید × ${EmployeeAccountingModule.formatCurrency(monthlySummary.hourlyRate)}</p>
                         </div>
                         <div class="bg-white/10 rounded-xl p-4">
                             <p class="text-lime-200 text-sm mb-1">جمع کل این ماه</p>
@@ -659,7 +686,7 @@ const EmployeeAccountingUI = (function() {
         const employeesSummary = EmployeeAccountingModule.getAllEmployeesSummary();
 
         const totalAmount = employeesSummary.reduce((sum, emp) => sum + emp.grandTotal, 0);
-        const totalHours = employeesSummary.reduce((sum, emp) => sum + parseFloat(emp.totalHoursApproved || emp.totalHours), 0);
+        const totalHours  = employeesSummary.reduce((sum, emp) => sum + (emp.totalHoursApprovedRaw || parseFloat(emp.totalHoursApproved) || 0), 0);
         const totalExpenses = employeesSummary.reduce((sum, emp) => sum + emp.totalExpensesApproved, 0);
 
         const employeeRows = employeesSummary.length > 0
@@ -689,8 +716,7 @@ const EmployeeAccountingUI = (function() {
                             </button>
                         </td>
                         <td class="text-center py-4 px-4">
-                            <span class="text-xl font-bold text-black-400">${emp.totalHoursApproved}</span>
-                            <span class="text-black-300 text-sm"> ساعت</span>
+                            <span class="text-xl font-bold text-black-400">${_fmtHours(emp.totalHoursApprovedRaw ?? emp.totalHoursApproved)}</span>
                             <p class="text-black-400/60 text-xs">${emp.hoursCount} گزارش</p>
                         </td>                       
                         <td class="text-center py-4 px-4">
@@ -750,14 +776,12 @@ const EmployeeAccountingUI = (function() {
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-blue-400/20">
                         <i class="fas fa-paper-plane text-black-400 mb-2 block"></i>
                         <p class="text-black-400 text-xs mb-1">ساعات ارسال‌شده</p>
-                        <p class="text-lg font-bold text-black-400">${employeesSummary.reduce((s,e)=>s+parseFloat(e.totalHours||0),0).toFixed(1)}</p>
-                        <p class="text-black-300/60 text-xs">ساعت</p>
+                        <p class="text-lg font-bold text-black-400">${_fmtHours(employeesSummary.reduce((s,e)=>s+(e.totalHoursApprovedRaw||parseFloat(e.totalHours)||0),0))}</p>
                     </div>
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-emerald-400/20">
                         <i class="fas fa-check-circle text-emerald-400 mb-2 block"></i>
                         <p class="text-black-400 text-xs mb-1">ساعات تأیید شده</p>
-                        <p class="text-lg font-bold text-emerald-400">${totalHours.toFixed(1)}</p>
-                        <p class="text-black-300/60 text-xs">ساعت</p>
+                        <p class="text-lg font-bold text-emerald-400">${_fmtHours(totalHours)}</p>
                     </div>
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-orange-400/20">
                         <i class="fas fa-receipt text-orange-400 mb-2 block"></i>
@@ -1422,13 +1446,13 @@ const EmployeeAccountingUI = (function() {
                     <div class="bg-blue-500/10 border border-blue-400/20 rounded-xl p-3 text-center">
                         <i class="fas fa-paper-plane text-blue-400 mb-1 block text-sm"></i>
                         <p class="text-gray-400 text-xs mb-0.5">ساعات ارسال‌شده</p>
-                        <p class="text-xl font-bold text-blue-400">${summary.totalHours}</p>
+                        <p class="text-xl font-bold text-blue-400">${_fmtHours(summary.totalHoursApprovedRaw ?? summary.totalHours)}</p>
                         <p class="text-gray-500 text-xs">${summary.hoursCount} گزارش · ${summary.workDays} روز</p>
                     </div>
                     <div class="bg-emerald-500/10 border border-emerald-400/20 rounded-xl p-3 text-center">
                         <i class="fas fa-check-circle text-emerald-400 mb-1 block text-sm"></i>
                         <p class="text-gray-400 text-xs mb-0.5">ساعات تأیید شده</p>
-                        <p class="text-xl font-bold text-emerald-400">${summary.totalHoursApproved}</p>
+                        <p class="text-xl font-bold text-emerald-400">${_fmtHours(summary.totalHoursApprovedRaw ?? summary.totalHoursApproved)}</p>
                         <p class="text-gray-500 text-xs">× ${EmployeeAccountingModule.formatCurrency(summary.hourlyRate)}/ساعت</p>
                     </div>
                     <div class="bg-orange-500/10 border border-orange-400/20 rounded-xl p-3 text-center">
@@ -1743,8 +1767,8 @@ const EmployeeAccountingUI = (function() {
                         <span class="text-white font-semibold">${emp.employeeName}</span>
                     </div>
                     <div class="flex gap-4 flex-wrap text-sm">
-                        <span class="text-black-400"><i class="fas fa-clock ml-1"></i>${emp.totalHours} ساعت ارسالی</span>
-                        <span class="text-emerald-400"><i class="fas fa-check ml-1"></i>${emp.totalHoursApproved} ساعت تأیید</span>
+                        <span class="text-black-400"><i class="fas fa-clock ml-1"></i>${_fmtHours(emp.totalHoursApprovedRaw ?? emp.totalHours)} ارسالی</span>
+                        <span class="text-emerald-400"><i class="fas fa-check ml-1"></i>${_fmtHours(emp.totalHoursApprovedRaw ?? emp.totalHoursApproved)} تأیید</span>
                         <span class="text-orange-400"><i class="fas fa-receipt ml-1"></i>${EmployeeAccountingModule.formatCurrency(emp.totalExpenses)} هزینه</span>
                         <span class="text-lime-400 font-bold"><i class="fas fa-wallet ml-1"></i>${EmployeeAccountingModule.formatCurrency(emp.grandTotal)} جمع کل</span>
                     </div>

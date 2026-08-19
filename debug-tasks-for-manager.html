@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>Debug: Tasks For Manager</title>
+<style>
+body { font-family: Tahoma, sans-serif; background: #1e293b; color: #e2e8f0; padding: 20px; direction: rtl; }
+.card { background: #334155; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+.green { color: #4ade80; } .red { color: #f87171; } .yellow { color: #fbbf24; } .blue { color: #60a5fa; }
+pre { background: #0f172a; padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 12px; }
+button { background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; margin: 4px; }
+button:hover { background: #2563eb; }
+.btn-green { background: #16a34a; } .btn-green:hover { background: #15803d; }
+.btn-red { background: #dc2626; } .btn-red:hover { background: #b91c1c; }
+</style>
+</head>
+<body>
+<h2>🔍 Debug: وظایف ارسالی از کارمندان</h2>
+
+<div class="card">
+    <h3>۱. وضعیت localStorage</h3>
+    <button onclick="checkLocalStorage()">بررسی localStorage</button>
+    <button class="btn-red" onclick="clearManagerTasks()">پاک کردن tasks_for_manager</button>
+    <div id="ls-result"></div>
+</div>
+
+<div class="card">
+    <h3>۲. تست مستقیم Supabase</h3>
+    <button onclick="testSupabaseRead()">خواندن از Supabase</button>
+    <button class="btn-green" onclick="testSupabaseWrite()">نوشتن تست به Supabase</button>
+    <button class="btn-red" onclick="checkTableExists()">بررسی وجود جدول</button>
+    <div id="sb-result"></div>
+</div>
+
+<div class="card">
+    <h3>۳. شبیه‌سازی ثبت وظیفه</h3>
+    <button class="btn-green" onclick="simulateSave()">ثبت وظیفه آزمایشی</button>
+    <div id="sim-result"></div>
+</div>
+
+<div class="card">
+    <h3>۴. employee_tasks - همه کارمندان</h3>
+    <button onclick="checkAllEmployeeTasks()">بررسی employee_tasks</button>
+    <div id="et-result"></div>
+</div>
+
+<script src="assets/libs/tailwindcss.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/supabase-init.js"></script>
+<script>
+
+function log(id, html) {
+    document.getElementById(id).innerHTML = html;
+}
+
+function checkLocalStorage() {
+    const raw = localStorage.getItem('tasks_for_manager');
+    const data = raw ? JSON.parse(raw) : [];
+    log('ls-result', `
+        <p class="mt-2 ${data.length > 0 ? 'green' : 'yellow'}">تعداد رکورد در localStorage: <b>${data.length}</b></p>
+        <pre>${JSON.stringify(data, null, 2)}</pre>
+    `);
+}
+
+function clearManagerTasks() {
+    localStorage.removeItem('tasks_for_manager');
+    log('ls-result', '<p class="red">پاک شد!</p>');
+}
+
+async function testSupabaseRead() {
+    const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+    if (!client) { log('sb-result', '<p class="red">❌ Supabase client آماده نیست</p>'); return; }
+    try {
+        const { data, error } = await client.from('tasks_for_manager').select('*').order('created_at', { ascending: false });
+        if (error) {
+            log('sb-result', `<p class="red">❌ خطا: ${error.message} (کد: ${error.code})</p>
+            ${error.code === '42P01' ? '<p class="yellow">⚠️ جدول tasks_for_manager در Supabase وجود ندارد! باید migration اجرا شود.</p>' : ''}`);
+        } else {
+            log('sb-result', `<p class="green">✅ تعداد رکورد در Supabase: ${data.length}</p><pre>${JSON.stringify(data, null, 2)}</pre>`);
+        }
+    } catch(e) {
+        log('sb-result', `<p class="red">❌ استثنا: ${e.message}</p>`);
+    }
+}
+
+async function testSupabaseWrite() {
+    const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+    if (!client) { log('sb-result', '<p class="red">❌ Supabase client آماده نیست</p>'); return; }
+    const testRow = {
+        id: 'test_' + Date.now(),
+        title: 'وظیفه آزمایشی',
+        description: 'تست ذخیره‌سازی',
+        priority: 'medium',
+        status: 'pending',
+        from_id: 'emp001',
+        from_name: 'کارمند تست',
+        assigned_to_id: 'mgr001',
+        assigned_to: 'مدیر',
+        created_at: new Date().toISOString()
+    };
+    try {
+        const { data, error } = await client.from('tasks_for_manager').insert([testRow]).select().single();
+        if (error) {
+            log('sb-result', `<p class="red">❌ خطای ذخیره: ${error.message} (${error.code})</p>
+            ${error.code === '42P01' ? '<p class="yellow">⚠️ جدول وجود ندارد - migration را اجرا کنید</p>' : ''}
+            ${error.code === '42501' ? '<p class="yellow">⚠️ مشکل RLS - policy نیاز به بررسی دارد</p>' : ''}`);
+        } else {
+            log('sb-result', `<p class="green">✅ ذخیره موفق در Supabase!</p><pre>${JSON.stringify(data, null, 2)}</pre>`);
+        }
+    } catch(e) {
+        log('sb-result', `<p class="red">❌ استثنا: ${e.message}</p>`);
+    }
+}
+
+async function checkTableExists() {
+    const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+    if (!client) { log('sb-result', '<p class="red">❌ client نیست</p>'); return; }
+    try {
+        const { data, error } = await client
+            .from('information_schema.tables')
+            .select('table_name')
+            .eq('table_schema', 'public')
+            .in('table_name', ['tasks_for_manager', 'employee_tasks']);
+        if (error) throw error;
+        const tables = data.map(r => r.table_name);
+        log('sb-result', `
+            <p class="${tables.includes('tasks_for_manager') ? 'green' : 'red'}">
+                tasks_for_manager: ${tables.includes('tasks_for_manager') ? '✅ موجود' : '❌ وجود ندارد'}
+            </p>
+            <p class="${tables.includes('employee_tasks') ? 'green' : 'red'}">
+                employee_tasks: ${tables.includes('employee_tasks') ? '✅ موجود' : '❌ وجود ندارد'}
+            </p>
+        `);
+    } catch(e) {
+        log('sb-result', `<p class="yellow">⚠️ روش مستقیم کار نکرد، تست دیگری در حال اجرا...</p>`);
+        // fallback: تلاش مستقیم
+        testSupabaseRead();
+    }
+}
+
+function simulateSave() {
+    const task = {
+        id: 'sim_' + Date.now(),
+        title: 'وظیفه شبیه‌سازی شده',
+        description: 'این وظیفه برای آزمایش ثبت شد',
+        dueDate: '1404-06-01',
+        priority: 'medium',
+        status: 'pending',
+        fromId: 'emp001',
+        fromName: 'سارا سادات حسینی',
+        assignedToId: 'mgr001',
+        assignedTo: 'مدیر',
+        createdAt: new Date().toISOString()
+    };
+    // ذخیره در localStorage
+    const all = JSON.parse(localStorage.getItem('tasks_for_manager') || '[]');
+    all.unshift(task);
+    localStorage.setItem('tasks_for_manager', JSON.stringify(all));
+
+    // ذخیره در Supabase
+    const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+    if (client) {
+        const row = {
+            id: task.id, title: task.title, description: task.description,
+            due_date: task.dueDate, priority: task.priority, status: task.status,
+            from_id: task.fromId, from_name: task.fromName,
+            assigned_to_id: task.assignedToId, assigned_to: task.assignedTo,
+            created_at: task.createdAt
+        };
+        client.from('tasks_for_manager').insert([row]).then(({ error }) => {
+            if (error) {
+                log('sim-result', `<p class="red">❌ Supabase خطا: ${error.message}</p><p class="green">✅ در localStorage ذخیره شد</p>`);
+            } else {
+                log('sim-result', `<p class="green">✅ در localStorage و Supabase ذخیره شد!</p><pre>${JSON.stringify(task, null, 2)}</pre>`);
+            }
+        });
+    } else {
+        log('sim-result', `<p class="yellow">⚠️ Supabase در دسترس نیست - فقط localStorage</p><pre>${JSON.stringify(task, null, 2)}</pre>`);
+    }
+}
+
+function checkAllEmployeeTasks() {
+    const all = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+    let html = '';
+    for (const [empId, tasks] of Object.entries(all)) {
+        const withFromId = tasks.filter(t => t.fromId);
+        html += `<p class="blue"><b>${empId}</b>: ${tasks.length} وظیفه کل، ${withFromId.length} از همکار</p>`;
+        if (withFromId.length > 0) {
+            html += `<pre>${JSON.stringify(withFromId, null, 2)}</pre>`;
+        }
+    }
+    if (!html) html = '<p class="yellow">هیچ داده‌ای در employee_tasks وجود ندارد</p>';
+    log('et-result', html);
+}
+
+// Auto-run on load
+setTimeout(() => {
+    checkLocalStorage();
+}, 1000);
+</script>
+</body>
+</html>

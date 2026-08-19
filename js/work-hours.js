@@ -262,6 +262,8 @@ const WorkHoursModule = (function() {
     
     /**
      * محاسبه مجموع ساعات
+     * خروجی: عدد اعشاری بر مبنای 60 (مثلاً ۱:۳۰ = 1.50 نه 1.30)
+     * این فرمت برای ضرب در نرخ ساعتی صحیح است
      */
     function calculateTotalHours(startTime, endTime) {
         if (!startTime || !endTime) return 0;
@@ -270,13 +272,28 @@ const WorkHoursModule = (function() {
         const [endH, endM] = endTime.split(':').map(Number);
         
         const startMinutes = startH * 60 + startM;
-        const endMinutes = endH * 60 + endM;
+        const endMinutes   = endH   * 60 + endM;
         
         const diffMinutes = endMinutes - startMinutes;
         
-        if (diffMinutes < 0) return 0;
+        if (diffMinutes <= 0) return 0;
         
-        return (diffMinutes / 60).toFixed(2);
+        // بر مبنای 60 — 1.5 = یک ساعت و نیم
+        return parseFloat((diffMinutes / 60).toFixed(4));
+    }
+
+    /**
+     * تبدیل ساعت اعشاری به نمایش ساعت:دقیقه
+     * مثال: 1.75 → "۱:۴۵"  |  2.5 → "۲:۳۰"
+     */
+    function formatHoursDisplay(decimalHours) {
+        const h = parseFloat(decimalHours) || 0;
+        const totalMin = Math.round(h * 60);
+        const hours   = Math.floor(totalMin / 60);
+        const minutes = totalMin % 60;
+        const toFa = n => String(n).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+        if (minutes === 0) return toFa(hours) + ' ساعت';
+        return toFa(hours) + ':' + String(minutes).padStart(2,'0').replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]) + ' ساعت';
     }
     
     /**
@@ -415,6 +432,7 @@ const WorkHoursModule = (function() {
         getTotalHoursByEmployee,
         getEmployeeHoursSummary,
         calculateTotalHours,
+        formatHoursDisplay,
         getPersianDate,
         formatDate,
         getAllEntriesByEmployee,
@@ -490,7 +508,7 @@ const WorkHoursUI = (function() {
                             </div>
                             <div>
                                 <p class="text-black-400 text-sm">کل ساعات تأیید شده شده</p>
-                                <p class="text-3xl font-bold text-white">${totalHours}</p>
+                                <p class="text-3xl font-bold text-white">${WorkHoursModule.formatHoursDisplay(parseFloat(totalHours)||0)}</p>
                                 <p class="text-black-300 text-xs">ساعت</p>
                             </div>
                         </div>
@@ -892,7 +910,7 @@ const WorkHoursUI = (function() {
                             </div>
                             <div>
                                 <p class="text-black-400 text-sm">کل ساعات</p>
-                                <p class="text-3xl font-bold text-white">${summary.reduce((sum, s) => sum + s.totalHours, 0).toFixed(1)}</p>
+                                <p class="text-3xl font-bold text-white">${WorkHoursModule.formatHoursDisplay(summary.reduce((sum, s) => sum + s.totalHours, 0))}</p>
                             </div>
                         </div>
                     </div>
@@ -916,7 +934,7 @@ const WorkHoursUI = (function() {
                                         <div>
                                             <p class="text-white font-medium">${entry.employeeName}</p>
                                             <p class="text-black-400 text-sm">${typeof Jalali!=='undefined' ? Jalali.displayDate(entry.date) : entry.date} | ${entry.startTime || '-'} - ${entry.endTime || '-'}</p>
-                                            <p class="text-black-300 text-xs">${entry.totalHours || 0} ساعت</p>
+                                            <p class="text-black-300 text-xs">${WorkHoursModule.formatHoursDisplay(parseFloat(entry.totalHours||0))} ساعت</p>
                                         </div>
                                     </div>
                                     
@@ -1017,7 +1035,7 @@ const WorkHoursUI = (function() {
                                             </div>
                                         </td>
                                         <td class="text-center py-4 px-4">
-                                            <span class="text-2xl font-bold text-emerald-400">${emp.totalHours.toFixed(1)}</span>
+                                            <span class="text-2xl font-bold text-emerald-400">${WorkHoursModule.formatHoursDisplay(emp.totalHours)}</span>
                                             <span class="text-black-300 text-sm"> ساعت</span>
                                         </td>
                                         <td class="text-center py-4 px-4 text-white">${emp.entries}</td>
@@ -1401,7 +1419,8 @@ const WorkHoursUI = (function() {
         
         if (startTime && endTime) {
             const total = WorkHoursModule.calculateTotalHours(startTime, endTime);
-            document.getElementById('totalHoursDisplay').textContent = `${total} ساعت`;
+            const display = WorkHoursModule.formatHoursDisplay(total);
+            document.getElementById('totalHoursDisplay').textContent = display;
         } else {
             document.getElementById('totalHoursDisplay').textContent = '0 ساعت';
         }

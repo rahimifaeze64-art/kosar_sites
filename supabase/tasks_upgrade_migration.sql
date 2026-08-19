@@ -1,7 +1,7 @@
 -- ============================================================
--- tasks_upgrade_migration.sql
--- اضافه کردن ستون‌های جدید به employee_tasks
--- و ایجاد جدول tasks_for_manager
+-- tasks_upgrade_migration.sql  (نسخه ۲ — ساده‌شده)
+-- فقط ستون‌های جدید به جدول موجود employee_tasks اضافه می‌شوند
+-- بدون نیاز به جدول جدید
 -- اجرا در: Supabase Dashboard → SQL Editor
 -- ============================================================
 
@@ -44,40 +44,7 @@ ALTER TABLE public.employee_tasks
     ADD COLUMN IF NOT EXISTS from_name TEXT;
 
 -- ════════════════════════════════════════════════════════════
--- ۳. ایجاد جدول tasks_for_manager
---    وظایفی که کارمندان برای مدیر تعریف می‌کنند
--- ════════════════════════════════════════════════════════════
-CREATE TABLE IF NOT EXISTS public.tasks_for_manager (
-    id              TEXT        PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    title           TEXT        NOT NULL,
-    description     TEXT,
-    due_date        TEXT,
-    priority        TEXT        DEFAULT 'low'
-                    CHECK (priority IN ('low','medium','high')),
-    status          TEXT        DEFAULT 'pending'
-                    CHECK (status IN ('pending','in_progress','completed','rejected')),
-    from_id         TEXT,                        -- شناسه کارمند فرستنده
-    from_name       TEXT,                        -- نام کارمند فرستنده
-    assigned_to_id  TEXT,                        -- شناسه مدیر گیرنده
-    assigned_to     TEXT,                        -- نام گیرنده
-    updated_at      TIMESTAMPTZ DEFAULT NOW(),
-    created_at      TIMESTAMPTZ DEFAULT NOW()
-);
-
--- ════════════════════════════════════════════════════════════
--- ۴. RLS برای tasks_for_manager
--- ════════════════════════════════════════════════════════════
-ALTER TABLE public.tasks_for_manager ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "allow_all_tasks_for_manager" ON public.tasks_for_manager;
-CREATE POLICY "allow_all_tasks_for_manager"
-    ON public.tasks_for_manager
-    FOR ALL
-    USING (true)
-    WITH CHECK (true);
-
--- ════════════════════════════════════════════════════════════
--- ۵. RLS برای employee_tasks (اطمینان از دسترسی anon)
+-- ۳. RLS برای employee_tasks (اطمینان از دسترسی anon)
 -- ════════════════════════════════════════════════════════════
 ALTER TABLE public.employee_tasks ENABLE ROW LEVEL SECURITY;
 
@@ -97,7 +64,7 @@ CREATE POLICY "allow_all_employee_tasks"
     WITH CHECK (true);
 
 -- ════════════════════════════════════════════════════════════
--- ۶. ایندکس‌های بهینه‌سازی
+-- ۴. ایندکس‌های بهینه‌سازی
 -- ════════════════════════════════════════════════════════════
 CREATE INDEX IF NOT EXISTS idx_employee_tasks_status
     ON public.employee_tasks(status);
@@ -105,29 +72,17 @@ CREATE INDEX IF NOT EXISTS idx_employee_tasks_status
 CREATE INDEX IF NOT EXISTS idx_employee_tasks_due_date
     ON public.employee_tasks(due_date);
 
-CREATE INDEX IF NOT EXISTS idx_tasks_for_manager_from_id
-    ON public.tasks_for_manager(from_id);
-
-CREATE INDEX IF NOT EXISTS idx_tasks_for_manager_status
-    ON public.tasks_for_manager(status);
+CREATE INDEX IF NOT EXISTS idx_employee_tasks_from_id
+    ON public.employee_tasks(from_id);
 
 -- ════════════════════════════════════════════════════════════
--- ۷. تأیید ساختار نهایی
+-- ۵. تأیید ستون‌های نهایی جدول employee_tasks
 -- ════════════════════════════════════════════════════════════
 SELECT
     column_name,
     data_type,
-    is_nullable,
-    column_default
+    is_nullable
 FROM information_schema.columns
 WHERE table_schema = 'public'
   AND table_name   = 'employee_tasks'
-ORDER BY ordinal_position;
-
-SELECT
-    column_name,
-    data_type
-FROM information_schema.columns
-WHERE table_schema = 'public'
-  AND table_name   = 'tasks_for_manager'
 ORDER BY ordinal_position;
