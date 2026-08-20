@@ -190,11 +190,54 @@ const CityWorld = (function () {
 
   // کنترل ورودی
   const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false, f: false };
-  const MOVE_SPEED = 8;             // سرعت حرکت
-  const ENTER_DISTANCE = 4.5;       // فاصله ورود به ساختمان
+  const MOVE_SPEED = 8;
+  const ENTER_DISTANCE = 4.5;
 
   // مقیاس minimap
   const MINIMAP_SCALE = 0.04;
+
+  // ─── NPC ───
+  let npcs = [];
+  const NPC_CONFIGS = [
+    { name: 'سارا', role: 'employee', color: 0xff69b4, headColor: 0xffd700, speed: 3.5 },
+    { name: 'زینب', role: 'employee', color: 0x9370db, headColor: 0xffd700, speed: 3.0 },
+    { name: 'فرزاد', role: 'employee', color: 0x20b2aa, headColor: 0xffa07a, speed: 4.0 },
+    { name: 'فاضلی', role: 'employee', color: 0xff8c00, headColor: 0xffa07a, speed: 3.2 },
+    { name: 'دکتر', role: 'employee', color: 0x32cd32, headColor: 0xffd700, speed: 3.8 },
+    { name: 'معصومی', role: 'agent', color: 0x4169e1, headColor: 0xffa07a, speed: 5.0 },
+    { name: '-صادقی', role: 'agent', color: 0x8b0000, headColor: 0xffd700, speed: 4.5 },
+  ];
+
+  // ─── هلی‌کوپتر ───
+  let helicopter = null;
+  let helicopterAngle = 0;
+  let helicopterHeight = 28;
+  let helicopterRadius = 45;
+  const HELI_SPEED = 0.008;
+
+  // ─── تانک ───
+  let tank = null;
+  let tankVelocity = 0;
+  let inTank = false;
+  let nearTank = false;
+  const TANK_SPEED = 6;
+  const TANK_TURN_SPEED = 1.2;
+  const ENTER_TANK_DIST = 5.0;
+
+  // ─── سیستم اسلحه ───
+  let weapon = null;
+  let isAiming = false;
+  let bullets = [];
+  let bulletPool = [];
+  let muzzleFlash = null;
+  let lastShootTime = 0;
+  const SHOOT_COOLDOWN = 120; // ms
+  const BULLET_SPEED = 80;
+  const BULLET_LIFE = 2.5; // ثانیه
+  let mouse = new THREE.Vector2();
+  let raycaster = new THREE.Raycaster();
+  let shotsFired = 0;
+  let kills = 0;
 
   // ─────────────────────────────────────────────
   // ساخت صحنه اصلی
@@ -242,6 +285,13 @@ const CityWorld = (function () {
 
     // ماشین
     _buildCar();
+
+    // ─── سیستم‌های جدید ───────────────────────
+    _buildNPCs();        // NPC کاربران
+    _buildHelicopter();  // هلی‌کوپتر
+    _buildTank();        // تانک
+    _buildWeaponSystem(); // سیستم اسلحه (MP4 + موس)
+    _buildBulletPool();  // استخر گلوله
 
     // ستاره‌های آسمان شبانه (خاموش پیش‌فرض)
     _buildSkyDetails();
@@ -694,25 +744,80 @@ const CityWorld = (function () {
   function _bindEvents(container) {
     window.addEventListener('keydown', e => {
       if (e.key in keys) { keys[e.key] = true; e.preventDefault(); }
-      // ورود با Enter یا Space به ساختمان (فقط پیاده)
-      if ((e.key === 'Enter' || e.key === ' ') && nearBuilding && !inCar) {
+
+      // ورود به ساختمان (فقط پیاده)
+      if ((e.key === 'Enter' || e.key === ' ') && nearBuilding && !inCar && !inTank) {
         _enterBuilding(nearBuilding);
       }
+
       // F = سوار/پیاده ماشین
       if (e.key === 'f' || e.key === 'F') {
-        if (!inCar && nearCar) {
-          _mountCar();
-        } else if (inCar) {
-          _unmountCar();
-        }
+        if (!inCar && !inTank && nearCar)  _mountCar();
+        else if (inCar)                     _unmountCar();
+      }
+
+      // T = سوار/پیاده تانک
+      if (e.key === 't' || e.key === 'T') {
+        if (!inTank && !inCar && nearTank)  _mountTank();
+        else if (inTank)                    _unmountTank();
+      }
+
+      // R = نمای اول شخص / سوم شخص
+      if (e.key === 'r' || e.key === 'R') {
+        _toggleCameraMode();
       }
     });
+
     window.addEventListener('keyup', e => {
       if (e.key in keys) keys[e.key] = false;
     });
 
-    // لمس موبایل
+    // ─── موس: نگاه کردن + شلیک ───────────────
+    container.addEventListener('click', e => {
+      // درخواست pointer lock برای نگاه با موس
+      if (document.pointerLockElement !== container) {
+        container.requestPointerLock();
+        return;
+      }
+      // شلیک
+      const isTankShot = inTank;
+      _shoot(isTankShot); // تانک = گلوله انفجاری
+    });
+
+    container.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      // کلیک راست = نشانه‌گیری toggle
+      isAiming = !isAiming;
+      if (weapon) {
+        weapon.position.set(isAiming ? 0 : 0.35, isAiming ? -0.15 : -0.28, -0.6);
+        weapon.rotation.y = isAiming ? 0 : -0.05;
+      }
+    });
+
+    // ─── pointer lock: حرکت دوربین با موس ───
+    document.addEventListener('mousemove', e => {
+      if (document.pointerLockElement !== container) return;
+      const sens = 0.002;
+      // چرخش کاراکتر / وسیله نقلیه
+      const target = inTank ? tank : inCar ? carMesh : character;
+      if (target) target.rotation.y -= e.movementX * sens;
+    });
+
+    document.addEventListener('pointerlockchange', () => {
+      const locked = document.pointerLockElement === container;
+      const hint = document.getElementById('city-pointer-hint');
+      if (hint) hint.style.display = locked ? 'none' : 'flex';
+    });
+
+    // ─── موبایل: لمس ───────────────────────
     _bindTouchJoystick();
+  }
+
+  // ─── toggle حالت دوربین ───────────────────
+  let _firstPerson = false;
+  function _toggleCameraMode() {
+    _firstPerson = !_firstPerson;
+    _showToast(_firstPerson ? '👁 دوربین اول شخص' : '📷 دوربین سوم شخص');
   }
 
   // ─────────────────────────────────────────────
@@ -847,12 +952,27 @@ const CityWorld = (function () {
   // ─────────────────────────────────────────────
   function _animate() {
     requestAnimationFrame(_animate);
-    const delta = clock.getDelta();
+    const delta = Math.min(clock.getDelta(), 0.05); // cap برای جلوگیری از جهش
 
-    // حرکت کاراکتر
+    // حرکت کاراکتر / ماشین / تانک
     _updateMovement(delta);
 
-    // بررسی نزدیکی به ساختمان
+    // NPC
+    _updateNPCs(delta);
+
+    // هلی‌کوپتر
+    _updateHelicopter(delta);
+
+    // تانک
+    _updateTank(delta);
+
+    // گلوله‌ها
+    _updateBullets(delta);
+
+    // دود
+    _updateSmoke(delta);
+
+    // بررسی نزدیکی به ساختمان / ماشین / تانک
     _checkProximity();
 
     // حرکت ابرها
@@ -867,8 +987,10 @@ const CityWorld = (function () {
     // دوربین سوم شخص
     _updateCamera();
 
-    // ابرها رو نسبت به دوربین بچرخون
+    // sprite ها رو به دوربین نگاه کنن
     labels.forEach(s => s.lookAt(camera.position));
+    // NPC label ها هم
+    npcs.forEach(npc => npc.children.filter(c => c.isSprite).forEach(s => s.lookAt(camera.position)));
 
     renderer.render(scene, camera);
 
@@ -880,7 +1002,9 @@ const CityWorld = (function () {
   // حرکت کاراکتر یا ماشین
   // ─────────────────────────────────────────────
   function _updateMovement(delta) {
-    if (inCar) {
+    if (inTank) {
+      _updateTank(delta); // تانک جداگانه آپدیت می‌شه در _animate
+    } else if (inCar) {
       _updateCarMovement(delta);
     } else {
       _updateCharacterMovement(delta);
@@ -1095,10 +1219,31 @@ const CityWorld = (function () {
         }
       }
 
+      // ─── بررسی نزدیکی تانک ───
+      if (tank) {
+        const tdx = character.position.x - tank.position.x;
+        const tdz = character.position.z - tank.position.z;
+        const tankDist = Math.sqrt(tdx * tdx + tdz * tdz);
+        const wasNearTank = nearTank;
+        nearTank = tankDist < ENTER_TANK_DIST;
+
+        if (nearTank && !nearBuilding && !nearCar) {
+          const enterEl = document.getElementById('city-enter-prompt');
+          if (enterEl) {
+            enterEl.innerHTML = `<span>🪖 برای سوار شدن به تانک <strong>T</strong> بزنید</span>`;
+            enterEl.style.opacity = '1';
+          }
+        } else if (!nearTank && wasNearTank && !nearBuilding && !nearCar) {
+          const enterEl = document.getElementById('city-enter-prompt');
+          if (enterEl) enterEl.style.opacity = '0';
+        }
+      }
+
     } else {
-      // ─── داخل ماشین: فقط ریست ساختمان‌ها ───
+      // ─── داخل ماشین یا تانک: فقط ریست ساختمان‌ها ───
       nearBuilding = null;
       nearCar = false;
+      nearTank = false;
       buildings.forEach(b => {
         if (b.isHighlighted) {
           b.body.material.emissive.set(0x000000);
@@ -1115,7 +1260,18 @@ const CityWorld = (function () {
   // دوربین سوم شخص — پیاده یا ماشین
   // ─────────────────────────────────────────────
   function _updateCamera() {
-    if (inCar) {
+    if (inTank && tank) {
+      // دوربین پشت تانک
+      const dist = 18;
+      const height = 8;
+      const targetX = tank.position.x - Math.sin(tank.rotation.y) * dist;
+      const targetY = tank.position.y + height;
+      const targetZ = tank.position.z - Math.cos(tank.rotation.y) * dist;
+      camera.position.x += (targetX - camera.position.x) * 0.08;
+      camera.position.y += (targetY - camera.position.y) * 0.08;
+      camera.position.z += (targetZ - camera.position.z) * 0.08;
+      camera.lookAt(tank.position.x, tank.position.y + 2, tank.position.z);
+    } else if (inCar) {
       // دوربین پشت ماشین، کمی بالاتر
       const dist = 14;
       const height = 6;
@@ -1134,19 +1290,23 @@ const CityWorld = (function () {
       );
     } else {
       // دوربین پشت کاراکتر
-      const targetX = character.position.x - Math.sin(character.rotation.y) * 14;
-      const targetY = character.position.y + 10;
-      const targetZ = character.position.z - Math.cos(character.rotation.y) * 14;
-
-      camera.position.x += (targetX - camera.position.x) * 0.07;
-      camera.position.y += (targetY - camera.position.y) * 0.07;
-      camera.position.z += (targetZ - camera.position.z) * 0.07;
-
-      camera.lookAt(
-        character.position.x,
-        character.position.y + 1.5,
-        character.position.z
-      );
+      if (_firstPerson) {
+        // اول شخص — دوربین داخل سر کاراکتر
+        camera.position.x += (character.position.x - camera.position.x) * 0.3;
+        camera.position.y += (character.position.y + 1.8 - camera.position.y) * 0.3;
+        camera.position.z += (character.position.z - camera.position.z) * 0.3;
+        camera.rotation.y = character.rotation.y + Math.PI;
+        if (weapon) weapon.visible = true;
+      } else {
+        const targetX = character.position.x - Math.sin(character.rotation.y) * 14;
+        const targetY = character.position.y + 10;
+        const targetZ = character.position.z - Math.cos(character.rotation.y) * 14;
+        camera.position.x += (targetX - camera.position.x) * 0.07;
+        camera.position.y += (targetY - camera.position.y) * 0.07;
+        camera.position.z += (targetZ - camera.position.z) * 0.07;
+        camera.lookAt(character.position.x, character.position.y + 1.5, character.position.z);
+        if (weapon) weapon.visible = true;
+      }
     }
   }
 
@@ -1197,7 +1357,7 @@ const CityWorld = (function () {
     }
 
     // کاراکتر (پیاده)
-    if (!inCar) {
+    if (!inCar && !inTank) {
       const px = cx + character.position.x * S;
       const py = cy + character.position.z * S;
       ctx.fillStyle = '#fbbf24';
@@ -1214,6 +1374,50 @@ const CityWorld = (function () {
       ctx.restore();
     }
 
+    // تانک روی minimap
+    if (tank) {
+      const tx = cx + tank.position.x * S;
+      const ty = cy + tank.position.z * S;
+      ctx.save();
+      ctx.translate(tx, ty);
+      ctx.rotate(-tank.rotation.y);
+      ctx.fillStyle = inTank ? '#4ade80' : '#86efac';
+      ctx.fillRect(-6, -9, 12, 18);
+      ctx.fillStyle = '#166534';
+      ctx.fillRect(-2, -14, 4, 8); // لوله توپ
+      ctx.restore();
+      ctx.fillStyle = '#fff';
+      ctx.font = '9px Tahoma';
+      ctx.textAlign = 'center';
+      ctx.fillText('🪖', tx, ty - 13);
+    }
+
+    // هلی‌کوپتر روی minimap
+    if (helicopter) {
+      const hx = cx + helicopter.position.x * S;
+      const hy = cy + helicopter.position.z * S;
+      ctx.fillStyle = '#60a5fa';
+      ctx.beginPath();
+      ctx.arc(hx, hy, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = '8px Tahoma';
+      ctx.textAlign = 'center';
+      ctx.fillText('🚁', hx, hy - 7);
+    }
+
+    // NPC ها روی minimap — نقطه‌های رنگی
+    npcs.forEach((npc, i) => {
+      if (!npc.visible) return;
+      const nx = cx + npc.position.x * S;
+      const ny = cy + npc.position.z * S;
+      const cfg = NPC_CONFIGS[i];
+      ctx.fillStyle = '#' + (cfg ? cfg.color.toString(16).padStart(6,'0') : 'aaaaaa');
+      ctx.beginPath();
+      ctx.arc(nx, ny, 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
     // border
     ctx.strokeStyle = '#334155';
     ctx.lineWidth = 2;
@@ -1221,10 +1425,723 @@ const CityWorld = (function () {
   }
 
   // ─────────────────────────────────────────────
+  // ساخت NPC — کاربران واقعی سیستم
+  // ─────────────────────────────────────────────
+  function _buildNPCs() {
+    npcs = [];
+
+    NPC_CONFIGS.forEach((cfg, idx) => {
+      const npc = _makeCharacterMesh(cfg.color, cfg.headColor);
+      npc.userData = {
+        name: cfg.name,
+        role: cfg.role,
+        speed: cfg.speed,
+        state: 'walk',       // walk | enter | inside | exit
+        target: null,        // ساختمان مقصد
+        insideTimer: 0,
+        waitTimer: 0,
+        angle: (idx / NPC_CONFIGS.length) * Math.PI * 2,
+        // مسیر NPC
+        path: [],
+        pathIdx: 0,
+      };
+
+      // موقعیت تصادفی اولیه
+      const angle = (idx / NPC_CONFIGS.length) * Math.PI * 2;
+      npc.position.set(
+        Math.cos(angle) * (15 + idx * 4),
+        0,
+        Math.sin(angle) * (15 + idx * 4)
+      );
+
+      // برچسب نام
+      const label = _makeTextSprite(cfg.name + '\n' + (cfg.role === 'agent' ? '🔧 عامل' : '👤 کارمند'),
+        cfg.role === 'agent' ? '#60a5fa' : '#a3e635');
+      label.position.set(0, 3.5, 0);
+      label.scale.set(3, 1.2, 1);
+      npc.add(label);
+
+      scene.add(npc);
+      npcs.push(npc);
+    });
+  }
+
+  // ساخت mesh کاراکتر با رنگ دلخواه
+  function _makeCharacterMesh(bodyColor, headColor) {
+    const group = new THREE.Group();
+
+    // بدن
+    const body = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.3, 0.3, 0.9, 8),
+      new THREE.MeshPhongMaterial({ color: bodyColor })
+    );
+    body.position.y = 1.1; body.castShadow = true;
+    group.add(body);
+
+    // سر
+    const head = new THREE.Mesh(
+      new THREE.SphereGeometry(0.28, 10, 10),
+      new THREE.MeshPhongMaterial({ color: headColor })
+    );
+    head.position.y = 1.9; head.castShadow = true;
+    group.add(head);
+
+    // پاها
+    [-0.15, 0.15].forEach(x => {
+      const leg = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.1, 0.09, 0.75, 6),
+        new THREE.MeshPhongMaterial({ color: 0x1e293b })
+      );
+      leg.position.set(x, 0.38, 0); leg.castShadow = true;
+      group.add(leg);
+    });
+
+    return group;
+  }
+
+  // ─────────────────────────────────────────────
+  // آپدیت NPC در هر فریم
+  // ─────────────────────────────────────────────
+  function _updateNPCs(delta) {
+    npcs.forEach(npc => {
+      const ud = npc.userData;
+
+      if (ud.state === 'inside') {
+        // داخل ساختمون — منتظر
+        ud.insideTimer -= delta;
+        if (ud.insideTimer <= 0) {
+          // بیرون بیا
+          ud.state = 'exit';
+          npc.visible = true;
+          if (ud.target) {
+            npc.position.set(
+              ud.target.group.position.x + (Math.random() - 0.5) * 4,
+              0,
+              ud.target.group.position.z + (Math.random() - 0.5) * 4
+            );
+          }
+          ud.target = null;
+          ud.waitTimer = 2 + Math.random() * 3;
+        }
+        return;
+      }
+
+      if (ud.state === 'exit') {
+        ud.waitTimer -= delta;
+        if (ud.waitTimer <= 0) ud.state = 'walk';
+        return;
+      }
+
+      if (ud.state === 'enter') {
+        // رفتن به سمت در ساختمون
+        if (!ud.target) { ud.state = 'walk'; return; }
+        const tx = ud.target.group.position.x;
+        const tz = ud.target.group.position.z;
+        const dx = tx - npc.position.x;
+        const dz = tz - npc.position.z;
+        const dist = Math.sqrt(dx*dx + dz*dz);
+        if (dist < 2.5) {
+          // رسید — برو داخل
+          npc.visible = false;
+          ud.state = 'inside';
+          ud.insideTimer = 4 + Math.random() * 8;
+        } else {
+          // حرکت به سمت ساختمون
+          const spd = ud.speed * delta;
+          npc.position.x += (dx / dist) * spd;
+          npc.position.z += (dz / dist) * spd;
+          npc.rotation.y = Math.atan2(dx, dz);
+          _animateNPCLegs(npc, delta);
+        }
+        return;
+      }
+
+      // state = 'walk' — قدم زدن تصادفی
+      if (!ud.path || ud.pathIdx >= ud.path.length) {
+        // انتخاب مسیر جدید — گاهی به سمت ساختمون
+        const goToBuilding = Math.random() < 0.3 && buildings.length > 0;
+        if (goToBuilding) {
+          const accBuildings = buildings.filter(b => b.accessible);
+          if (accBuildings.length > 0) {
+            ud.target = accBuildings[Math.floor(Math.random() * accBuildings.length)];
+            ud.state = 'enter';
+            return;
+          }
+        }
+        // مسیر تصادفی
+        ud.path = _generateRandomPath(npc.position, 3 + Math.floor(Math.random() * 4));
+        ud.pathIdx = 0;
+      }
+
+      const wp = ud.path[ud.pathIdx];
+      const dx = wp.x - npc.position.x;
+      const dz = wp.z - npc.position.z;
+      const dist = Math.sqrt(dx*dx + dz*dz);
+
+      if (dist < 0.8) {
+        ud.pathIdx++;
+      } else {
+        const spd = ud.speed * delta;
+        const nx = npc.position.x + (dx / dist) * spd;
+        const nz = npc.position.z + (dz / dist) * spd;
+        if (!_collidesSmall(nx, nz, 0.5)) {
+          npc.position.x = nx;
+          npc.position.z = nz;
+        } else {
+          ud.path = []; // مسیر جدید
+        }
+        npc.rotation.y = Math.atan2(dx, dz);
+        _animateNPCLegs(npc, delta);
+      }
+    });
+  }
+
+  // انیمیشن ساده پاهای NPC
+  let _npcLegTime = 0;
+  function _animateNPCLegs(npc, delta) {
+    _npcLegTime += delta * 6;
+    // پاها: ایندکس ۳ و ۴ (بعد از body, head)
+    const legs = npc.children.filter((c, i) => i >= 2 && i <= 3);
+    legs.forEach((leg, i) => {
+      leg.rotation.x = Math.sin(_npcLegTime + i * Math.PI) * 0.5;
+    });
+  }
+
+  // تولید مسیر تصادفی
+  function _generateRandomPath(start, numPoints) {
+    const path = [];
+    let cx = start.x, cz = start.z;
+    for (let i = 0; i < numPoints; i++) {
+      cx += (Math.random() - 0.5) * 20;
+      cz += (Math.random() - 0.5) * 20;
+      cx = Math.max(-80, Math.min(80, cx));
+      cz = Math.max(-80, Math.min(80, cz));
+      path.push({ x: cx, z: cz });
+    }
+    return path;
+  }
+
+  // collision ساده برای NPC
+  function _collidesSmall(x, z, radius) {
+    return BUILDINGS_CONFIG.some(b => {
+      const dx = x - b.position.x, dz = z - b.position.z;
+      const hw = b.width / 2 + radius, hd = b.depth / 2 + radius;
+      return Math.abs(dx) < hw && Math.abs(dz) < hd;
+    });
+  }
+
+  // ─────────────────────────────────────────────
+  // هلی‌کوپتر
+  // ─────────────────────────────────────────────
+  function _buildHelicopter() {
+    helicopter = new THREE.Group();
+
+    // بدنه اصلی
+    const body = new THREE.Mesh(
+      new THREE.BoxGeometry(2.5, 1.2, 5),
+      new THREE.MeshPhongMaterial({ color: 0x2d4a1e, shininess: 60 })
+    );
+    body.castShadow = true;
+    helicopter.add(body);
+
+    // کابین (شیشه)
+    const cockpit = new THREE.Mesh(
+      new THREE.SphereGeometry(0.9, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2),
+      new THREE.MeshPhongMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.6, shininess: 150 })
+    );
+    cockpit.position.set(0, 0.2, 1.8);
+    helicopter.add(cockpit);
+
+    // دُم
+    const tail = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.25, 0.1, 4.5, 6),
+      new THREE.MeshPhongMaterial({ color: 0x2d4a1e })
+    );
+    tail.rotation.x = Math.PI / 2;
+    tail.position.set(0, 0.1, -3.8);
+    helicopter.add(tail);
+
+    // روتور اصلی (group برای چرخش)
+    const mainRotorGroup = new THREE.Group();
+    mainRotorGroup.name = 'mainRotor';
+    mainRotorGroup.position.set(0, 0.85, 0);
+    for (let i = 0; i < 4; i++) {
+      const blade = new THREE.Mesh(
+        new THREE.BoxGeometry(5.5, 0.08, 0.35),
+        new THREE.MeshPhongMaterial({ color: 0x1a1a2e })
+      );
+      blade.rotation.y = (i / 4) * Math.PI * 2;
+      blade.castShadow = true;
+      mainRotorGroup.add(blade);
+    }
+    helicopter.add(mainRotorGroup);
+
+    // روتور دُم
+    const tailRotorGroup = new THREE.Group();
+    tailRotorGroup.name = 'tailRotor';
+    tailRotorGroup.position.set(0.45, 0.3, -5.8);
+    for (let i = 0; i < 2; i++) {
+      const blade = new THREE.Mesh(
+        new THREE.BoxGeometry(0.08, 1.2, 0.18),
+        new THREE.MeshPhongMaterial({ color: 0x1a1a2e })
+      );
+      blade.rotation.x = (i / 2) * Math.PI;
+      tailRotorGroup.add(blade);
+    }
+    helicopter.add(tailRotorGroup);
+
+    // پایه‌های فرود
+    [[-0.9, 0.9]].forEach(([z1, z2]) => {
+      [-1, 1].forEach(x => {
+        const skid = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.07, 0.07, 2.2, 6),
+          new THREE.MeshPhongMaterial({ color: 0x333 })
+        );
+        skid.rotation.z = Math.PI / 2;
+        skid.position.set(x * 1.1, -0.7, (z1 + z2) / 2);
+        helicopter.add(skid);
+      });
+    });
+
+    // نور چشمک‌زن
+    const heliLight = new THREE.PointLight(0xff0000, 1.5, 8);
+    heliLight.name = 'heliLight';
+    heliLight.position.set(0, -0.5, 2.5);
+    helicopter.add(heliLight);
+
+    // برچسب
+    const heliLabel = _makeTextSprite('🚁 هلی‌کوپتر', '#60a5fa');
+    heliLabel.position.set(0, 3.5, 0);
+    heliLabel.scale.set(4, 1.4, 1);
+    helicopter.add(heliLabel);
+
+    // موقعیت اولیه
+    helicopter.position.set(helicopterRadius, helicopterHeight, 0);
+    scene.add(helicopter);
+  }
+
+  function _updateHelicopter(delta) {
+    if (!helicopter) return;
+    helicopterAngle += HELI_SPEED;
+
+    // حرکت دایره‌ای
+    helicopter.position.x = Math.cos(helicopterAngle) * helicopterRadius;
+    helicopter.position.z = Math.sin(helicopterAngle) * helicopterRadius;
+    // حرکت بالا-پایین ملایم
+    helicopter.position.y = helicopterHeight + Math.sin(helicopterAngle * 3) * 2;
+    // چرخش رو به جهت حرکت
+    helicopter.rotation.y = -helicopterAngle + Math.PI / 2;
+
+    // چرخش روتورها
+    const mr = helicopter.getObjectByName('mainRotor');
+    if (mr) mr.rotation.y += delta * 15;
+    const tr = helicopter.getObjectByName('tailRotor');
+    if (tr) tr.rotation.x += delta * 20;
+
+    // چشمک نور
+    const hl = helicopter.getObjectByName('heliLight');
+    if (hl) hl.intensity = (Math.sin(Date.now() * 0.01) > 0) ? 2 : 0;
+  }
+
+  // ─────────────────────────────────────────────
+  // تانک
+  // ─────────────────────────────────────────────
+  function _buildTank() {
+    tank = new THREE.Group();
+
+    // بدنه اصلی
+    const hull = new THREE.Mesh(
+      new THREE.BoxGeometry(3.8, 1.0, 5.5),
+      new THREE.MeshPhongMaterial({ color: 0x556b2f, shininess: 20 })
+    );
+    hull.position.y = 0.8;
+    hull.castShadow = true;
+    tank.add(hull);
+
+    // برج (turret)
+    const turretBase = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.3, 1.5, 0.7, 8),
+      new THREE.MeshPhongMaterial({ color: 0x4a5e2a })
+    );
+    turretBase.position.y = 1.65;
+    turretBase.castShadow = true;
+    tank.add(turretBase);
+
+    // گنبد برج
+    const turretDome = new THREE.Mesh(
+      new THREE.BoxGeometry(2.2, 0.65, 2.8),
+      new THREE.MeshPhongMaterial({ color: 0x4a5e2a })
+    );
+    turretDome.position.y = 2.15;
+    turretDome.name = 'turretDome';
+    tank.add(turretDome);
+
+    // لوله توپ
+    const barrel = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.12, 0.15, 4.5, 8),
+      new THREE.MeshPhongMaterial({ color: 0x2d3a18 })
+    );
+    barrel.rotation.x = Math.PI / 2;
+    barrel.position.set(0, 0, 2.5);
+    barrel.name = 'barrel';
+    turretDome.add(barrel);
+
+    // چرخ‌ها و زنجیر
+    const trackMat = new THREE.MeshPhongMaterial({ color: 0x1a1a1a });
+    const wheelMat = new THREE.MeshPhongMaterial({ color: 0x333 });
+    [-1.9, 1.9].forEach(x => {
+      // زنجیر (track)
+      const track = new THREE.Mesh(
+        new THREE.BoxGeometry(0.45, 0.7, 5.5),
+        trackMat
+      );
+      track.position.set(x, 0.45, 0);
+      track.castShadow = true;
+      tank.add(track);
+      // چرخ‌ها (۴ تا هر طرف)
+      for (let i = -2; i <= 2; i++) {
+        const wheel = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.42, 0.42, 0.3, 10),
+          wheelMat
+        );
+        wheel.rotation.z = Math.PI / 2;
+        wheel.position.set(x, 0.42, i * 1.2);
+        tank.add(wheel);
+      }
+    });
+
+    // برچسب
+    const tankLabel = _makeTextSprite('🪖  T  سوار شو', '#fbbf24');
+    tankLabel.position.set(0, 4.5, 0);
+    tankLabel.scale.set(5, 1.5, 1);
+    tankLabel.name = 'tankLabel';
+    tank.add(tankLabel);
+    labels.push(tankLabel);
+
+    // موقعیت اولیه تانک
+    tank.position.set(-15, 0, 8);
+    tank.rotation.y = Math.PI / 4;
+    scene.add(tank);
+  }
+
+  function _updateTank(delta) {
+    if (!tank || !inTank) return;
+    const forward = keys.w || keys.ArrowUp;
+    const backward = keys.s || keys.ArrowDown;
+    const turnLeft = keys.a || keys.ArrowLeft;
+    const turnRight = keys.d || keys.ArrowRight;
+
+    if (forward)  tankVelocity = Math.min(tankVelocity + 12 * delta, TANK_SPEED);
+    else if (backward) tankVelocity = Math.max(tankVelocity - 12 * delta, -TANK_SPEED * 0.4);
+    else { tankVelocity *= (1 - 4 * delta); if (Math.abs(tankVelocity) < 0.05) tankVelocity = 0; }
+
+    if (Math.abs(tankVelocity) > 0.1) {
+      const dir = tankVelocity > 0 ? 1 : -1;
+      if (turnLeft)  tank.rotation.y += TANK_TURN_SPEED * delta * dir;
+      if (turnRight) tank.rotation.y -= TANK_TURN_SPEED * delta * dir;
+    }
+
+    if (Math.abs(tankVelocity) > 0.01) {
+      const nx = tank.position.x + Math.sin(tank.rotation.y) * tankVelocity * delta;
+      const nz = tank.position.z + Math.cos(tank.rotation.y) * tankVelocity * delta;
+      if (!_collidesLarge(nx, nz, 3, 3.5)) {
+        tank.position.x = nx; tank.position.z = nz;
+      } else { tankVelocity *= -0.3; }
+      tank.position.x = Math.max(-90, Math.min(90, tank.position.x));
+      tank.position.z = Math.max(-90, Math.min(90, tank.position.z));
+    }
+
+    // چرخش برج با ماوس (اگر در تانک باشیم)
+    if (isAiming) {
+      const dome = tank.getObjectByName('turretDome');
+      if (dome) {
+        // برج دنبال دوربین می‌چرخه
+        dome.rotation.y = -tank.rotation.y + camera.rotation.y;
+      }
+    }
+  }
+
+  function _mountTank() {
+    inTank = true;
+    tankVelocity = 0;
+    character.visible = false;
+    const lbl = tank.getObjectByName('tankLabel');
+    if (lbl) lbl.visible = false;
+    _showToast('🪖 داخل تانک — WASD حرکت، کلیک شلیک، T پیاده');
+    const hint = document.getElementById('city-controls-hint');
+    if (hint) hint.innerHTML = `
+      <p><span class="key">W</span><span class="key">S</span> — گاز / ترمز</p>
+      <p><span class="key">A</span><span class="key">D</span> — فرمان</p>
+      <p><span class="key">کلیک</span> — شلیک توپ</p>
+      <p><span class="key">T</span> — پیاده شدن</p>`;
+  }
+
+  function _unmountTank() {
+    inTank = false; tankVelocity = 0;
+    character.visible = true;
+    character.position.set(tank.position.x + 3, 0, tank.position.z + 3);
+    character.rotation.y = tank.rotation.y;
+    const lbl = tank.getObjectByName('tankLabel');
+    if (lbl) lbl.visible = true;
+    _showToast('🚶 از تانک پیاده شدید');
+  }
+
+  // ─────────────────────────────────────────────
+  // سیستم اسلحه MP4 (شلیک با موس)
+  // ─────────────────────────────────────────────
+  function _buildWeaponSystem() {
+    // اسلحه که به دوربین متصله
+    weapon = new THREE.Group();
+    weapon.name = 'weapon';
+
+    // بدنه اسلحه
+    const body = new THREE.Mesh(
+      new THREE.BoxGeometry(0.12, 0.14, 0.65),
+      new THREE.MeshPhongMaterial({ color: 0x1a1a1a, shininess: 60 })
+    );
+    weapon.add(body);
+
+    // لوله
+    const barrel = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.025, 0.03, 0.55, 6),
+      new THREE.MeshPhongMaterial({ color: 0x0d0d0d })
+    );
+    barrel.rotation.x = Math.PI / 2;
+    barrel.position.set(0, 0.02, 0.55);
+    barrel.name = 'gunBarrel';
+    weapon.add(barrel);
+
+    // دسته
+    const grip = new THREE.Mesh(
+      new THREE.BoxGeometry(0.07, 0.22, 0.09),
+      new THREE.MeshPhongMaterial({ color: 0x2a1a0a })
+    );
+    grip.position.set(0, -0.16, 0.05);
+    weapon.add(grip);
+
+    // خشاب
+    const mag = new THREE.Mesh(
+      new THREE.BoxGeometry(0.06, 0.18, 0.09),
+      new THREE.MeshPhongMaterial({ color: 0x111 })
+    );
+    mag.position.set(0, -0.13, 0.12);
+    weapon.add(mag);
+
+    // دوربین نشانه
+    const scope = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.025, 0.025, 0.22, 6),
+      new THREE.MeshPhongMaterial({ color: 0x333 })
+    );
+    scope.rotation.x = Math.PI / 2;
+    scope.position.set(0, 0.1, 0.2);
+    weapon.add(scope);
+
+    // فلاش مازل
+    muzzleFlash = new THREE.PointLight(0xffaa00, 0, 2);
+    muzzleFlash.position.set(0, 0.02, 0.85);
+    muzzleFlash.name = 'muzzleFlash';
+    weapon.add(muzzleFlash);
+
+    // موقعیت نسبت به دوربین (پایین-راست)
+    weapon.position.set(0.35, -0.28, -0.6);
+    weapon.rotation.y = -0.05;
+    camera.add(weapon);
+
+    // پیش‌نماش (crosshair) در HUD
+    _buildCrosshair();
+  }
+
+  function _buildCrosshair() {
+    const existing = document.getElementById('city-crosshair');
+    if (existing) return;
+    const ch = document.createElement('div');
+    ch.id = 'city-crosshair';
+    ch.style.cssText = `
+      position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+      width:24px;height:24px;pointer-events:none;z-index:600;`;
+    ch.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="4" stroke="#fff" stroke-width="1.5" fill="none" opacity="0.9"/>
+      <line x1="12" y1="2" x2="12" y2="8" stroke="#fff" stroke-width="1.5" opacity="0.9"/>
+      <line x1="12" y1="16" x2="12" y2="22" stroke="#fff" stroke-width="1.5" opacity="0.9"/>
+      <line x1="2" y1="12" x2="8" y2="12" stroke="#fff" stroke-width="1.5" opacity="0.9"/>
+      <line x1="16" y1="12" x2="22" y2="12" stroke="#fff" stroke-width="1.5" opacity="0.9"/>
+    </svg>`;
+    document.body.appendChild(ch);
+
+    // HUD آمار تیراندازی
+    const statsDiv = document.createElement('div');
+    statsDiv.id = 'city-weapon-stats';
+    statsDiv.style.cssText = `
+      position:fixed;bottom:14px;left:50%;transform:translateX(-50%);
+      background:rgba(0,0,0,0.6);color:#fff;font-size:0.75rem;
+      padding:6px 16px;border-radius:8px;z-index:500;pointer-events:none;
+      font-family:Vazirmatn,Tahoma,sans-serif;border:1px solid rgba(255,255,255,0.1);`;
+    statsDiv.innerHTML = `🔫 <span id="city-ammo">∞</span>  💀 <span id="city-kills">0</span>  🎯 <span id="city-shots">0</span>`;
+    document.body.appendChild(statsDiv);
+  }
+
+  // ─────────────────────────────────────────────
+  // استخر گلوله
+  // ─────────────────────────────────────────────
+  function _buildBulletPool() {
+    const bulletGeo = new THREE.SphereGeometry(0.06, 6, 6);
+    const bulletMat = new THREE.MeshBasicMaterial({ color: 0xffee00 });
+    for (let i = 0; i < 40; i++) {
+      const b = new THREE.Mesh(bulletGeo, bulletMat);
+      b.visible = false;
+      b.userData = { active: false, velocity: new THREE.Vector3(), life: 0, isExplosive: false };
+      scene.add(b);
+      bulletPool.push(b);
+    }
+  }
+
+  function _getFreeBullet() {
+    return bulletPool.find(b => !b.userData.active) || null;
+  }
+
+  function _shoot(isExplosive) {
+    const now = Date.now();
+    if (now - lastShootTime < SHOOT_COOLDOWN) return;
+    lastShootTime = now;
+    shotsFired++;
+    const el = document.getElementById('city-shots');
+    if (el) el.textContent = shotsFired;
+
+    const bullet = _getFreeBullet();
+    if (!bullet) return;
+
+    // جهت از مرکز صفحه
+    raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+    const dir = raycaster.ray.direction.clone().normalize();
+
+    // موقعیت شروع = دهانه لوله اسلحه
+    const barrelTip = new THREE.Vector3(0.35, -0.28, -0.6);
+    barrelTip.applyMatrix4(camera.matrixWorld);
+
+    bullet.position.copy(barrelTip);
+    bullet.userData.velocity = dir.multiplyScalar(BULLET_SPEED);
+    bullet.userData.life = BULLET_LIFE;
+    bullet.userData.active = true;
+    bullet.userData.isExplosive = !!isExplosive;
+    bullet.visible = true;
+    bullets.push(bullet);
+
+    // فلاش
+    if (muzzleFlash) { muzzleFlash.intensity = 4; setTimeout(() => { if(muzzleFlash) muzzleFlash.intensity = 0; }, 60); }
+
+    // recoil اسلحه
+    if (weapon) {
+      weapon.position.z += 0.04;
+      setTimeout(() => { if(weapon) weapon.position.z -= 0.04; }, 80);
+    }
+  }
+
+  function _updateBullets(delta) {
+    bullets.forEach((b, idx) => {
+      if (!b.userData.active) return;
+      b.userData.life -= delta;
+      if (b.userData.life <= 0) {
+        _deactivateBullet(b);
+        return;
+      }
+      // حرکت گلوله
+      b.position.x += b.userData.velocity.x * delta;
+      b.position.y += b.userData.velocity.y * delta - 3 * delta; // گرانش ملایم
+      b.position.z += b.userData.velocity.z * delta;
+
+      // برخورد با NPC
+      npcs.forEach(npc => {
+        if (!npc.visible) return;
+        const dx = npc.position.x - b.position.x;
+        const dz = npc.position.z - b.position.z;
+        const dy = npc.position.y + 1 - b.position.y;
+        if (Math.sqrt(dx*dx + dy*dy + dz*dz) < 1.2) {
+          _hitNPC(npc);
+          if (b.userData.isExplosive) _explode(b.position.clone());
+          _deactivateBullet(b);
+        }
+      });
+
+      // برخورد با زمین
+      if (b.position.y < 0) {
+        if (b.userData.isExplosive) _explode(b.position.clone());
+        _deactivateBullet(b);
+      }
+    });
+    // پاکسازی bullets غیرفعال
+    bullets = bullets.filter(b => b.userData.active);
+  }
+
+  function _deactivateBullet(b) {
+    b.userData.active = false;
+    b.visible = false;
+  }
+
+  function _hitNPC(npc) {
+    kills++;
+    const el = document.getElementById('city-kills');
+    if (el) el.textContent = kills;
+    _showToast('💥 هدف اصابت شد!');
+    // NPC زمین می‌خوره
+    npc.rotation.x = -Math.PI / 2;
+    npc.position.y = 0;
+    const ud = npc.userData;
+    ud.state = 'dead';
+    // بعد ۳ ثانیه دوباره بلند می‌شه
+    setTimeout(() => {
+      npc.rotation.x = 0;
+      npc.position.y = 0;
+      ud.state = 'walk';
+      ud.path = [];
+    }, 3000);
+    // افکت دود
+    _spawnSmoke(npc.position.clone());
+  }
+
+  function _explode(pos) {
+    // نور انفجار
+    const boom = new THREE.PointLight(0xff6600, 8, 12);
+    boom.position.copy(pos);
+    scene.add(boom);
+    _showToast('💣 انفجار!');
+    setTimeout(() => scene.remove(boom), 300);
+    // دود
+    for (let i = 0; i < 5; i++) {
+      const sp = pos.clone().add(new THREE.Vector3((Math.random()-0.5)*2, Math.random()*2, (Math.random()-0.5)*2));
+      _spawnSmoke(sp);
+    }
+  }
+
+  // ذرات دود ساده
+  const smokeParticles = [];
+  function _spawnSmoke(pos) {
+    const s = new THREE.Mesh(
+      new THREE.SphereGeometry(0.4 + Math.random() * 0.4, 5, 5),
+      new THREE.MeshBasicMaterial({ color: 0x555, transparent: true, opacity: 0.7 })
+    );
+    s.position.copy(pos);
+    s.userData = { life: 1.5, vy: 1.5 + Math.random() };
+    scene.add(s);
+    smokeParticles.push(s);
+  }
+
+  function _updateSmoke(delta) {
+    smokeParticles.forEach((s, i) => {
+      s.userData.life -= delta;
+      s.position.y += s.userData.vy * delta;
+      s.material.opacity = Math.max(0, s.userData.life / 1.5 * 0.7);
+      s.scale.setScalar(1 + (1.5 - s.userData.life) * 1.5);
+      if (s.userData.life <= 0) {
+        scene.remove(s);
+        smokeParticles.splice(i, 1);
+      }
+    });
+  }
+
+  // ─────────────────────────────────────────────
   // API عمومی
   // ─────────────────────────────────────────────
-  function destroy() {
-    if (renderer) {
+  function destroy() {    if (renderer) {
       renderer.dispose();
       const el = renderer.domElement;
       if (el && el.parentNode) el.parentNode.removeChild(el);

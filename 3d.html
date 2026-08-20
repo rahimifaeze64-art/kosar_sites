@@ -169,6 +169,10 @@
         <p><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> یا فلش‌ها — حرکت</p>
         <p><span class="key">Enter</span> یا <span class="key">Space</span> — ورود به ساختمان</p>
         <p><span class="key">F</span> — سوار ماشین</p>
+        <p><span class="key">T</span> — سوار تانک</p>
+        <p><span class="key">R</span> — تغییر دوربین</p>
+        <p><span class="key">کلیک</span> — شلیک / قفل موس</p>
+        <p><span class="key">راست‌کلیک</span> — نشانه‌گیری</p>
         <p>📍 به در ساختمان نزدیک شوید</p>
     </div>
 
@@ -187,6 +191,17 @@
 
     <!-- دکمه ورود موبایل -->
     <button id="city-enter-btn" onclick="mobileEnter()">⬆</button>
+
+    <!-- راهنمای قفل موس -->
+    <div id="city-pointer-hint" style="
+        position:fixed;inset:0;background:rgba(0,0,0,0.6);
+        display:flex;flex-direction:column;align-items:center;justify-content:center;
+        z-index:800;color:#fff;font-family:Vazirmatn,Tahoma,sans-serif;
+        gap:12px;cursor:pointer;" onclick="document.getElementById('city-canvas-container').requestPointerLock()">
+        <div style="font-size:2.5rem">🖱️</div>
+        <p style="font-size:1.1rem;font-weight:700">برای فعال‌سازی کنترل موس کلیک کنید</p>
+        <p style="font-size:0.8rem;color:#94a3b8">کلیک چپ = قفل موس + شلیک | Esc = خروج از حالت قفل</p>
+    </div>
 
     <!-- ── city-world.js ── -->
     <script src="futures_festures/city-world.js"></script>
