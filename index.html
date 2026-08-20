@@ -930,14 +930,36 @@
 
             localStorage.setItem('empAccAllowedIds', JSON.stringify(selected));
 
-            // بروزرسانی Alpine state بدون reload
+            // بروزرسانی Alpine v3 state — باید روی همان آرایه mutate کنیم تا reactivity trigger بشه
             try {
                 var alpineEl = document.querySelector('[x-data]');
-                if (alpineEl && alpineEl._x_dataStack) {
-                    var data = alpineEl._x_dataStack[0];
-                    if (data) data.empAccAllowedIds = selected;
+                if (alpineEl) {
+                    // Alpine v3: از _x_dataStack استفاده می‌کنیم اما آرایه رو mutate می‌کنیم
+                    var data = null;
+                    if (alpineEl._x_dataStack && alpineEl._x_dataStack[0]) {
+                        data = alpineEl._x_dataStack[0];
+                    } else if (alpineEl.__x && alpineEl.__x.$data) {
+                        data = alpineEl.__x.$data;
+                    }
+                    if (data && Array.isArray(data.empAccAllowedIds)) {
+                        // mutate آرایه موجود برای reactivity
+                        data.empAccAllowedIds.splice(0, data.empAccAllowedIds.length, ...selected);
+                    } else if (data) {
+                        data.empAccAllowedIds = selected;
+                    }
                 }
-            } catch(e) {}
+            } catch(e) { console.warn('Alpine sync error:', e); }
+
+            // همچنین sync با Supabase
+            if (typeof SupabaseDataModule !== 'undefined' &&
+                typeof SupabaseDataModule.setEmpAccAccess === 'function') {
+                // برای هر کارمند که دسترسی داره sync کن
+                selected.forEach(function(empId) {
+                    SupabaseDataModule.setEmpAccAccess(empId, true).catch(function(e) {
+                        console.warn('sync error for', empId, e);
+                    });
+                });
+            }
 
             closeEmpAccAssignModal();
 

@@ -1970,15 +1970,22 @@ const EmployeeAccountingUI = (function() {
 
     function _saveAllowedIds(ids) {
         localStorage.setItem('empAccAllowedIds', JSON.stringify(ids));
-        // آپدیت live در Alpine.js بدون reload
+        // آپدیت live در Alpine.js بدون reload — باید mutate کنیم
         try {
             const alpineEl = document.querySelector('[x-data]');
-            if (alpineEl && alpineEl.__x) {
-                alpineEl.__x.$data.empAccAllowedIds = ids;
-            } else if (alpineEl && alpineEl._x_dataStack) {
-                // Alpine v3
-                const data = alpineEl._x_dataStack[0];
-                if (data) data.empAccAllowedIds = ids;
+            if (alpineEl) {
+                let data = null;
+                if (alpineEl._x_dataStack && alpineEl._x_dataStack[0]) {
+                    data = alpineEl._x_dataStack[0];
+                } else if (alpineEl.__x && alpineEl.__x.$data) {
+                    data = alpineEl.__x.$data;
+                }
+                if (data && Array.isArray(data.empAccAllowedIds)) {
+                    // mutate آرایه موجود برای Alpine v3 reactivity
+                    data.empAccAllowedIds.splice(0, data.empAccAllowedIds.length, ...ids);
+                } else if (data) {
+                    data.empAccAllowedIds = ids;
+                }
             }
         } catch(e) { console.warn('Alpine sync:', e); }
     }
