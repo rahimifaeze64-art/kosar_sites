@@ -2000,6 +2000,16 @@ const EmployeeAccountingUI = (function() {
         }
         _saveAllowedIds(ids);
 
+        // sync به Supabase
+        if (typeof SupabaseDataModule !== 'undefined' &&
+            typeof SupabaseDataModule.setEmpAccAccess === 'function') {
+            SupabaseDataModule.setEmpAccAccess(employeeId, granted)
+                .then(ok => {
+                    if (!ok) console.warn('⚠️ setEmpAccAccess ناموفق — migration را اجرا کنید');
+                })
+                .catch(e => console.warn('⚠️ setEmpAccAccess خطا:', e.message));
+        }
+
         // آپدیت ظاهر دکمه بدون refresh کامل
         if (btn) {
             if (granted) {

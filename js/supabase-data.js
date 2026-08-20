@@ -110,6 +110,76 @@ const SupabaseDataModule = {
     },
 
     // ════════════════════════════════════════════════════════
+    // EMP ACC ACCESS — دسترسی کارمند به صفحه حسابداری کارمندان
+    // ════════════════════════════════════════════════════════
+
+    // خواندن لیست کارمندان مجاز از Supabase + localStorage
+    async getEmpAccAllowedIds() {
+        const localKey = 'empAccAllowedIds';
+        const localIds = JSON.parse(localStorage.getItem(localKey) || '[]');
+
+        if (!this._online()) return localIds;
+        try {
+            const { data, error } = await this._db()
+                .from('profiles')
+                .select('id')
+                .eq('role', 'employee')
+                .eq('emp_acc_access', true);
+            if (error) {
+                // اگه ستون هنوز نیست (migration اجرا نشده)
+                if (error.message.includes('emp_acc_access')) {
+                    console.warn('⚠️ emp_acc_access column missing — run emp_acc_access_migration.sql');
+                    return localIds;
+                }
+                throw error;
+            }
+            const ids = (data || []).map(r => r.id);
+            // merge با local (local ممکنه جدیدتر باشه)
+            const merged = [...new Set([...ids, ...localIds])];
+            localStorage.setItem(localKey, JSON.stringify(merged));
+            return merged;
+        } catch (e) {
+            console.warn('⚠️ getEmpAccAllowedIds خطا:', e.message);
+            return localIds;
+        }
+    },
+
+    // ذخیره وضعیت دسترسی یک کارمند در Supabase
+    async setEmpAccAccess(employeeId, granted) {
+        const localKey = 'empAccAllowedIds';
+        // آپدیت localStorage
+        const ids = JSON.parse(localStorage.getItem(localKey) || '[]');
+        if (granted && !ids.includes(employeeId)) {
+            ids.push(employeeId);
+        } else if (!granted) {
+            const idx = ids.indexOf(employeeId);
+            if (idx !== -1) ids.splice(idx, 1);
+        }
+        localStorage.setItem(localKey, JSON.stringify(ids));
+
+        if (!this._online()) return true;
+        try {
+            const { error } = await this._db()
+                .from('profiles')
+                .update({ emp_acc_access: granted })
+                .eq('id', employeeId);
+            if (error) {
+                if (error.message.includes('emp_acc_access')) {
+                    console.warn('⚠️ emp_acc_access column missing — run migration');
+                } else {
+                    console.warn('⚠️ setEmpAccAccess خطا:', error.message);
+                }
+                return false;
+            }
+            console.log(`✅ emp_acc_access=${granted} برای ${employeeId} ذخیره شد`);
+            return true;
+        } catch (e) {
+            console.warn('⚠️ setEmpAccAccess خطا:', e.message);
+            return false;
+        }
+    },
+
+    // ════════════════════════════════════════════════════════
     // ORDERS
     // ════════════════════════════════════════════════════════
 

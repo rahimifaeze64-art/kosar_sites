@@ -87,6 +87,30 @@
 
     console.log('✅ Supabase کاملاً راه‌اندازی شد');
 
+    // ── sync empAccAllowedIds بعد از آماده شدن Supabase ──────
+    try {
+        if (typeof SupabaseDataModule !== 'undefined' &&
+            typeof SupabaseDataModule.getEmpAccAllowedIds === 'function') {
+            const ids = await SupabaseDataModule.getEmpAccAllowedIds();
+            if (ids) {
+                localStorage.setItem('empAccAllowedIds', JSON.stringify(ids));
+                // آپدیت Alpine state اگه app لود شده باشه
+                try {
+                    const alpineEl = document.querySelector('[x-data]');
+                    if (alpineEl && alpineEl.__x) {
+                        alpineEl.__x.$data.empAccAllowedIds = ids;
+                    } else if (alpineEl && alpineEl._x_dataStack) {
+                        const data = alpineEl._x_dataStack[0];
+                        if (data) data.empAccAllowedIds = ids;
+                    }
+                } catch (_) {}
+                console.log('✅ empAccAllowedIds از Supabase sync شد:', ids);
+            }
+        }
+    } catch (e) {
+        console.warn('⚠️ empAccAllowedIds sync خطا:', e.message);
+    }
+
     // اطلاع‌رسانی به app که داده‌ها آماده‌اند — Alpine می‌تواند refresh کند
     window.dispatchEvent(new CustomEvent('supabase:dataready'));
     console.log('📣 رویداد supabase:dataready ارسال شد');

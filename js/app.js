@@ -236,6 +236,24 @@ function appController() {
           }
         }
 
+        // ── sync empAccAllowedIds از Supabase در پس‌زمینه ─────────
+        // بعد از چند ثانیه که Supabase آماده شد
+        setTimeout(async () => {
+            try {
+                if (typeof SupabaseDataModule !== 'undefined' &&
+                    typeof SupabaseDataModule.getEmpAccAllowedIds === 'function') {
+                    const ids = await SupabaseDataModule.getEmpAccAllowedIds();
+                    if (ids && ids.length >= 0) {
+                        this.empAccAllowedIds = ids;
+                        localStorage.setItem('empAccAllowedIds', JSON.stringify(ids));
+                        console.log('✅ empAccAllowedIds از Supabase لود شد:', ids);
+                    }
+                }
+            } catch (e) {
+                console.warn('⚠️ sync empAccAllowedIds خطا:', e.message);
+            }
+        }, 3000); // بعد از 3 ثانیه که Supabase آماده شده
+
         // Try to initialize API integration
         const enableAPI = false; // Set to true to enable API integration
 
