@@ -312,6 +312,19 @@ function appController() {
         // Load dashboard content
         await this.loadDashboardContent();
 
+        // ── بررسی پارامتر ?page= (برگشت از صفحه 3D) ──────────
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const pageParam = urlParams.get('page');
+            if (pageParam) {
+                // حذف پارامتر از URL بدون reload
+                const cleanUrl = window.location.pathname;
+                window.history.replaceState({}, '', cleanUrl);
+                // رفتن به صفحه مربوطه
+                setTimeout(() => { this.currentPage = pageParam; }, 300);
+            }
+        } catch(e) {}
+
         // اطلاع به CityWorldUI که کاربر مشخص شد
         window.dispatchEvent(new CustomEvent('appUserReady', {
           detail: { role: this.currentUser.role, name: this.currentUser.name }

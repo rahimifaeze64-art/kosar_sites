@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>شهر سه‌بعدی — کوثر</title>
+
+    <!-- بررسی لاگین — اگر لاگین نیست برو landing -->
+    <script>
+    (function() {
+        var saved = localStorage.getItem('currentUser');
+        if (!saved) { window.location.replace('landing.html'); return; }
+        try {
+            var u = JSON.parse(saved);
+            if (!u || !u.id) { localStorage.removeItem('currentUser'); window.location.replace('landing.html'); }
+        } catch(e) { window.location.replace('landing.html'); }
+    })();
+    </script>
+
+    <!-- Three.js از CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.min.js"></script>
+
+    <!-- فونت فارسی -->
+    <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+
+    <!-- CSS صفحه 3D -->
+    <link href="futures_festures/city-world.css" rel="stylesheet">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Vazirmatn', Tahoma, sans-serif; }
+
+        /* ── Loading Screen ── */
+        #loading-screen {
+            position: fixed; inset: 0; z-index: 9999;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 20px; color: #fff;
+            transition: opacity 0.6s ease;
+        }
+        #loading-screen.fade-out { opacity: 0; pointer-events: none; }
+        #loading-screen .logo { font-size: 3rem; }
+        #loading-screen h2 { font-size: 1.4rem; font-weight: 700; color: #a3e635; }
+        #loading-screen p  { font-size: 0.9rem; color: #94a3b8; }
+        #loading-bar-wrap  { width: 220px; height: 4px; background: #1e293b; border-radius: 99px; overflow: hidden; }
+        #loading-bar       { height: 100%; background: linear-gradient(90deg, #65a30d, #a3e635); border-radius: 99px; width: 0%; transition: width 0.4s ease; }
+
+        /* ── Main Container ── */
+        #city-world-overlay { position: fixed; inset: 0; z-index: 100; }
+
+        /* ── HUD Toast ── */
+        #city-toast {
+            position: fixed; top: 70px; left: 50%; transform: translateX(-50%) translateY(-10px);
+            background: rgba(0,0,0,0.8); color: #fff;
+            font-size: 0.9rem; padding: 10px 22px; border-radius: 12px;
+            backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.12);
+            opacity: 0; transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none; z-index: 500; white-space: nowrap; max-width: 90vw;
+        }
+
+        /* ── دکمه بازگشت به سیستم ── */
+        #city-back-btn {
+            position: fixed; top: 14px; right: 16px; z-index: 500;
+            background: rgba(15,23,42,0.85); border: 1px solid rgba(255,255,255,0.15);
+            color: #fff; font-family: 'Vazirmatn', Tahoma, sans-serif;
+            font-size: 0.85rem; padding: 8px 16px; border-radius: 10px;
+            cursor: pointer; display: flex; align-items: center; gap: 6px;
+            backdrop-filter: blur(8px); transition: background 0.2s, transform 0.15s;
+        }
+        #city-back-btn:hover { background: rgba(30,41,59,0.95); transform: scale(1.04); }
+
+        /* ── عنوان HUD ── */
+        #city-hud-title {
+            position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+            z-index: 400; color: #a3e635; font-weight: 700; font-size: 1rem;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.8); pointer-events: none;
+        }
+
+        /* ── راهنمای کنترل‌ها ── */
+        #city-controls-hint {
+            position: fixed; bottom: 80px; left: 16px; z-index: 400;
+            background: rgba(0,0,0,0.6); color: #cbd5e1;
+            font-size: 0.75rem; padding: 10px 14px; border-radius: 10px;
+            backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.08);
+            pointer-events: none; line-height: 1.8;
+        }
+        #city-controls-hint .key {
+            display: inline-block; background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.25); border-radius: 4px;
+            padding: 1px 6px; font-size: 0.7rem; font-family: monospace;
+            margin: 0 2px;
+        }
+
+        /* ── Minimap ── */
+        #city-minimap {
+            position: fixed; bottom: 14px; right: 14px; z-index: 400;
+            width: 130px; height: 130px;
+            background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px; overflow: hidden;
+        }
+        #city-minimap canvas { width: 100%; height: 100%; }
+
+        /* ── Joystick موبایل ── */
+        #city-joystick {
+            display: none;
+            position: fixed; bottom: 24px; left: 24px; z-index: 500;
+            width: 110px; height: 110px;
+            background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.25);
+            border-radius: 50%; touch-action: none; align-items: center; justify-content: center;
+        }
+        #city-joystick-knob {
+            width: 44px; height: 44px; background: rgba(255,255,255,0.35);
+            border-radius: 50%; border: 2px solid rgba(255,255,255,0.5);
+            transition: transform 0.05s;
+        }
+        @media (pointer: coarse) {
+            #city-joystick { display: flex; }
+            #city-controls-hint { display: none; }
+        }
+
+        /* ── دکمه Enter موبایل ── */
+        #city-enter-btn {
+            display: none;
+            position: fixed; bottom: 24px; right: 24px; z-index: 500;
+            width: 70px; height: 70px; border-radius: 50%;
+            background: rgba(163,230,53,0.85); border: 2px solid #a3e635;
+            color: #0f172a; font-size: 1.6rem; cursor: pointer;
+            align-items: center; justify-content: center;
+        }
+        @media (pointer: coarse) { #city-enter-btn { display: flex; } }
+
+        /* ── اطلاعات کاربر ── */
+        #city-user-info {
+            position: fixed; top: 14px; left: 16px; z-index: 400;
+            background: rgba(0,0,0,0.6); color: #94a3b8;
+            font-size: 0.75rem; padding: 6px 12px; border-radius: 8px;
+            backdrop-filter: blur(6px);
+        }
+        #city-user-info span { color: #a3e635; font-weight: 700; }
+    </style>
+</head>
+<body>
+
+    <!-- ── Loading Screen ── -->
+    <div id="loading-screen">
+        <div class="logo">🏙️</div>
+        <h2>در حال بارگذاری شهر سه‌بعدی...</h2>
+        <p>لطفاً چند لحظه صبر کنید</p>
+        <div id="loading-bar-wrap"><div id="loading-bar"></div></div>
+    </div>
+
+    <!-- ── Canvas Container ── -->
+    <div id="city-world-overlay">
+        <div id="city-canvas-container"></div>
+    </div>
+
+    <!-- ── UI Elements ── -->
+    <button id="city-back-btn" onclick="goBack()">
+        <i class="fas fa-arrow-right"></i> بازگشت به سیستم
+    </button>
+
+    <div id="city-hud-title">🏙️ شهر کوثر — به ساختمان نزدیک شو و Enter بزن</div>
+
+    <div id="city-toast"></div>
+
+    <div id="city-controls-hint">
+        <p><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> یا فلش‌ها — حرکت</p>
+        <p><span class="key">Enter</span> یا <span class="key">Space</span> — ورود به ساختمان</p>
+        <p><span class="key">F</span> — سوار ماشین</p>
+        <p>📍 به در ساختمان نزدیک شوید</p>
+    </div>
+
+    <div id="city-minimap">
+        <canvas id="city-minimap-canvas" width="130" height="130"></canvas>
+    </div>
+
+    <div id="city-user-info">
+        کاربر: <span id="city-username">...</span>
+    </div>
+
+    <!-- Joystick موبایل -->
+    <div id="city-joystick">
+        <div id="city-joystick-knob"></div>
+    </div>
+
+    <!-- دکمه ورود موبایل -->
+    <button id="city-enter-btn" onclick="mobileEnter()">⬆</button>
+
+    <!-- ── city-world.js ── -->
+    <script src="futures_festures/city-world.js"></script>
+
+    <script>
+    // ─── خواندن کاربر جاری ────────────────────────────────────
+    var currentUser = {};
+    try { currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}'); }
+    catch(e) {}
+
+    // نمایش نام کاربر در HUD
+    var nameEl = document.getElementById('city-username');
+    if (nameEl) nameEl.textContent = currentUser.name || currentUser.username || '—';
+
+    // ─── Progress Bar ──────────────────────────────────────────
+    var bar = document.getElementById('loading-bar');
+    var progress = 0;
+    var barTimer = setInterval(function() {
+        progress = Math.min(progress + Math.random() * 18, 88);
+        if (bar) bar.style.width = progress + '%';
+    }, 200);
+
+    // ─── صبر برای لود Three.js بعد init ──────────────────────
+    function waitForThreeAndInit() {
+        if (typeof THREE === 'undefined') {
+            setTimeout(waitForThreeAndInit, 100);
+            return;
+        }
+        // Three.js آمادست
+        clearInterval(barTimer);
+        if (bar) bar.style.width = '100%';
+
+        setTimeout(function() {
+            var ls = document.getElementById('loading-screen');
+            if (ls) { ls.classList.add('fade-out'); setTimeout(function(){ ls.style.display='none'; }, 700); }
+
+            // ─── init CityWorld ───────────────────────────────
+            CityWorld.init(
+                'city-canvas-container',
+                function(page) {
+                    // وقتی کاربر وارد ساختمان می‌شه → برو index.html با پارامتر page
+                    window.location.href = 'index.html?page=' + page;
+                },
+                currentUser.role || 'employee'
+            );
+        }, 500);
+    }
+
+    waitForThreeAndInit();
+
+    // ─── بازگشت به سیستم ──────────────────────────────────────
+    function goBack() {
+        window.location.href = 'index.html';
+    }
+
+    // ─── دکمه ورود موبایل ──────────────────────────────────────
+    function mobileEnter() {
+        // شبیه‌سازی کلید Enter
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        setTimeout(function() {
+            window.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
+        }, 100);
+    }
+    </script>
+
+</body>
+</html>
