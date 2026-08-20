@@ -1696,8 +1696,31 @@ const AccountingUI = (function () {
 
 })();
 
-// ── تابع global برای index.html ──────────────────────────────
-function getAccountingContent() {
+// ── JalaliUtils — global برای استفاده در سایر ماژول‌ها ──────
+// (توابع اصلی داخل AccountingUI هستند، اینجا export می‌شن)
+window.JalaliUtils = {
+    toDisplay: function(greg) { return _JU_toDisplay(greg); },
+    toGreg:    function(jy, jm, jd) { return _JU_jalaliToGreg(jy, jm, jd); },
+    currentJalali: function() { return _JU_currentJalali(); },
+    monthDays:     function(y, m) { return _JU_monthDays(y, m); },
+    firstWeekday:  function(y, m) { return _JU_firstWeekday(y, m); },
+    gregToJD:      function(y, m, d) { return _JU_gregToJD(y, m, d); },
+    jdToJalali:    function(jd) { return _JU_jdToJalali(jd); },
+    MONTHS: ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور',
+             'مهر','آبان','آذر','دی','بهمن','اسفند'],
+    DAYS:   ['ش','ی','د','س','چ','پ','ج'],
+};
+
+// توابع محاسباتی مستقل (standalone — بدون وابستگی به closure)
+function _JU_gregToJD(y,m,d){return 367*y-Math.floor(7*(y+Math.floor((m+9)/12))/4)-Math.floor(3*(Math.floor((y+(m-9)/7)/100)+1)/4)+Math.floor(275*m/9)+d+1721028.5;}
+function _JU_jalaliToJD(jy,jm,jd){const eb=jy>=0?jy-474:jy-473,ey=474+eb%2820;return jd+Math.ceil(jm*30.5-0.5)+(ey*682-110)/2816*Math.floor(ey)+Math.floor(ey)-1+Math.floor(eb/2820)*1029983+1948319.5-1;}
+function _JU_jdToJalali(jd){jd=Math.floor(jd)+0.5;const delta=jd-_JU_jalaliToJD(475,1,1),cycle=Math.floor(delta/1029983);let rem=delta%1029983,yc;if(rem===1029982){yc=2820;}else{const a1=Math.floor(rem/366),a2=rem%366;yc=Math.floor((2134*a1+2816*a2+2815)/1028522)+a1+1;}let jy=yc+2820*cycle+474;if(jy<=0)jy--;const yd=jd-_JU_jalaliToJD(jy,1,1)+1,jm=yd<=186?Math.ceil(yd/31):Math.ceil((yd-6)/30),jday=jd-_JU_jalaliToJD(jy,jm,1)+1;return[jy,jm,jday];}
+function _JU_jdToGreg(jd){jd=Math.floor(jd)+0.5;let z=Math.floor(jd+0.5);const aa=Math.floor((z-1867216.25)/36524.25),a=z+1+aa-Math.floor(aa/4),b=a+1524,c=Math.floor((b-122.1)/365.25),dd=Math.floor(365.25*c),e=Math.floor((b-dd)/30.6001),day=b-dd-Math.floor(30.6001*e),month=e<14?e-1:e-13,year=month>2?c-4716:c-4715;return`${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;}
+function _JU_jalaliToGreg(jy,jm,jd){return _JU_jdToGreg(_JU_jalaliToJD(jy,jm,jd));}
+function _JU_currentJalali(){const n=new Date(),jd=_JU_gregToJD(n.getFullYear(),n.getMonth()+1,n.getDate());return _JU_jdToJalali(jd);}
+function _JU_monthDays(y,m){if(m<=6)return 31;if(m<=11)return 30;return((((y-(y>0?474:473))%2820)+474+38)*682)%2816<682?30:29;}
+function _JU_firstWeekday(y,m){const g=_JU_jalaliToGreg(y,m,1),[gy,gm,gd]=g.split('-').map(Number);return(new Date(gy,gm-1,gd).getDay()+1)%7;}
+function _JU_toDisplay(greg){if(!greg)return'';try{const[y,m,d]=greg.split('-').map(Number),jd=_JU_gregToJD(y,m,d),[jy,jm,jday]=_JU_jdToJalali(jd),mo=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];return`${jday} ${mo[jm-1]} ${jy}`;}catch(e){return greg;}}
     // Alpine x-html این را یک‌بار رندر می‌کند؛ init پس از رندر اجرا می‌شود
     setTimeout(() => {
         if (document.getElementById('accounting-app')) {

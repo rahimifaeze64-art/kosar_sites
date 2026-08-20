@@ -345,6 +345,147 @@ const EmployeeAccountingUI = (function() {
 
     let currentUser = null;
 
+    // ── mini jalali date picker (از JalaliUtils global استفاده می‌کنه) ──
+    // ساخت یک inline popup شمسی روی یک container
+    // hiddenId = id فیلد hidden (میلادی)  |  displayId = id فیلد نمایشی
+    function _buildJalaliInput(hiddenId, displayId, initGreg) {
+        const ju = window.JalaliUtils;
+        const todayGreg = new Date().toISOString().split('T')[0];
+        const initVal   = initGreg || todayGreg;
+        const initDisp  = ju ? ju.toDisplay(initVal) : initVal;
+        return `
+            <div class="relative">
+                <input type="text" id="${displayId}" readonly value="${initDisp}"
+                    placeholder="انتخاب تاریخ..."
+                    onclick="EAccJalali.open('${hiddenId}','${displayId}', event)"
+                    class="w-full bg-slate-700 text-white border border-white/20 rounded-xl px-3 py-2 focus:outline-none focus:border-lime-400 cursor-pointer text-right">
+                <input type="hidden" id="${hiddenId}" value="${initVal}">
+            </div>`;
+    }
+
+    // ── مدیریت popup تقویم شمسی ─────────────────────────────
+    window.EAccJalali = (function() {
+        let _hid = '', _dis = '', _cy = 0, _cm = 0;
+
+        function open(hiddenId, displayId, evt) {
+            if (evt) evt.stopPropagation();
+            _hid = hiddenId; _dis = displayId;
+            const ju = window.JalaliUtils;
+            if (!ju) return;
+
+            const val = document.getElementById(hiddenId)?.value;
+            if (val) {
+                try {
+                    const [y,m,d] = val.split('-').map(Number);
+                    const jd = ju.gregToJD(y,m,d);
+                    const [jy,jm] = ju.jdToJalali(jd);
+                    _cy = jy; _cm = jm;
+                } catch(e) { const n=ju.currentJalali(); _cy=n[0]; _cm=n[1]; }
+            } else { const n=ju.currentJalali(); _cy=n[0]; _cm=n[1]; }
+
+            close(); // بستن هر popup باز قبلی
+            _render();
+        }
+
+        function close() {
+            document.getElementById('_eacc_jalali_popup')?.remove();
+            document.getElementById('_eacc_jalali_overlay')?.remove();
+        }
+
+        function _render() {
+            const ju = window.JalaliUtils;
+            const trigger = document.getElementById(_dis);
+            if (!trigger) return;
+
+            // overlay
+            const ov = document.createElement('div');
+            ov.id = '_eacc_jalali_overlay';
+            ov.style.cssText = 'position:fixed;inset:0;z-index:9998;';
+            ov.onclick = close;
+            document.body.appendChild(ov);
+
+            // popup
+            const popup = document.createElement('div');
+            popup.id = '_eacc_jalali_popup';
+            popup.style.cssText = 'position:fixed;z-index:9999;background:#1e293b;border:1px solid rgba(255,255,255,0.2);border-radius:16px;padding:16px;width:272px;box-shadow:0 20px 60px rgba(0,0,0,.6);direction:rtl;';
+            popup.onclick = e => e.stopPropagation();
+
+            const rect = trigger.getBoundingClientRect();
+            const top = rect.bottom + 4;
+            const left = Math.max(8, Math.min(rect.left, window.innerWidth - 280));
+            popup.style.top  = top + 'px';
+            popup.style.left = left + 'px';
+
+            popup.innerHTML = _calHtml(_cy, _cm);
+            document.body.appendChild(popup);
+        }
+
+        function _calHtml(cy, cm) {
+            const ju = window.JalaliUtils;
+            const totalDays = ju.monthDays(cy, cm);
+            const firstDay  = ju.firstWeekday(cy, cm);
+            const [nowJY,nowJM,nowJD] = ju.currentJalali();
+            const selGreg = document.getElementById(_hid)?.value;
+            let selJY=0,selJM=0,selJD=0;
+            if (selGreg) {
+                try {
+                    const [y,m,d]=selGreg.split('-').map(Number);
+                    [selJY,selJM,selJD]=ju.jdToJalali(ju.gregToJD(y,m,d));
+                } catch(e){}
+            }
+
+            let html = `
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <button type="button" onclick="EAccJalali._nav(${cy},${cm},-1)"
+                    style="background:rgba(255,255,255,0.08);border:none;color:#94a3b8;border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:14px;">›</button>
+                <span style="color:#fff;font-weight:700;font-size:14px;">${ju.MONTHS[cm-1]} ${cy}</span>
+                <button type="button" onclick="EAccJalali._nav(${cy},${cm},+1)"
+                    style="background:rgba(255,255,255,0.08);border:none;color:#94a3b8;border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:14px;">‹</button>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;">`;
+
+            ju.DAYS.forEach(d => {
+                html += `<div style="color:#64748b;font-size:11px;padding:4px 0;">${d}</div>`;
+            });
+            for (let i=0; i<firstDay; i++) html += '<div></div>';
+            for (let d=1; d<=totalDays; d++) {
+                const isT = d===nowJD && cm===nowJM && cy===nowJY;
+                const isS = d===selJD && cm===selJM && cy===selJY;
+                const bg = isS ? '#65a30d' : isT ? 'rgba(101,163,13,0.2)' : 'transparent';
+                const clr = isS ? '#fff' : isT ? '#84cc16' : '#e2e8f0';
+                const bord = isT && !isS ? '1px solid #84cc16' : 'none';
+                html += `<button type="button" onclick="EAccJalali.pick(${cy},${cm},${d})"
+                    style="background:${bg};color:${clr};border:${bord};border-radius:8px;padding:5px 2px;cursor:pointer;font-size:12px;transition:background .15s;"
+                    onmouseover="if(!${isS})this.style.background='rgba(255,255,255,0.1)'"
+                    onmouseout="this.style.background='${bg}'">${d}</button>`;
+            }
+            html += '</div>';
+            return html;
+        }
+
+        function _nav(cy, cm, dir) {
+            cm += dir;
+            if (cm < 1) { cm = 12; cy--; }
+            if (cm > 12) { cm = 1;  cy++; }
+            _cy = cy; _cm = cm;
+            const popup = document.getElementById('_eacc_jalali_popup');
+            if (popup) popup.innerHTML = _calHtml(cy, cm);
+        }
+
+        function pick(jy, jm, jd) {
+            const ju = window.JalaliUtils;
+            const greg = ju.toGreg(jy, jm, jd);
+            const disp = `${jd} ${ju.MONTHS[jm-1]} ${jy}`;
+            const hidEl = document.getElementById(_hid);
+            const disEl = document.getElementById(_dis);
+            if (hidEl) hidEl.value = greg;
+            if (disEl) disEl.value = disp;
+            close();
+        }
+
+        return { open, close, pick, _nav };
+    })();
+
     function init() {
         const savedUser = localStorage.getItem('currentUser');
         if (savedUser) {
@@ -1670,17 +1811,15 @@ const EmployeeAccountingUI = (function() {
                     </h3>
                     <button onclick="document.getElementById('work-calendar-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
                 </div>
-                <p class="text-black-300 text-sm mb-4">بازه تاریخ را انتخاب کنید تا سوابق کاری، هزینه‌ها و کسورات نمایش داده شوند.</p>
+                <p class="text-gray-300 text-sm mb-4">بازه تاریخ را انتخاب کنید تا سوابق کاری، هزینه‌ها و کسورات نمایش داده شوند.</p>
                 <div class="grid grid-cols-2 gap-4 mb-5">
                     <div>
-                        <label class="text-black-400 text-sm mb-1 block">از تاریخ</label>
-                        <input type="date" id="cal-from" value="${firstOfMonth}"
-                            class="w-full bg-slate-700 text-white border border-white/20 rounded-xl px-3 py-2 focus:outline-none focus:border-lime-400">
+                        <label class="text-gray-400 text-sm mb-1 block">از تاریخ</label>
+                        ${_buildJalaliInput('cal-from','cal-from-display', firstOfMonth)}
                     </div>
                     <div>
-                        <label class="text-black-400 text-sm mb-1 block">تا تاریخ</label>
-                        <input type="date" id="cal-to" value="${today}"
-                            class="w-full bg-slate-700 text-white border border-white/20 rounded-xl px-3 py-2 focus:outline-none focus:border-lime-400">
+                        <label class="text-gray-400 text-sm mb-1 block">تا تاریخ</label>
+                        ${_buildJalaliInput('cal-to','cal-to-display', today)}
                     </div>
                 </div>
                 <div class="flex gap-3 mb-5">
@@ -1694,13 +1833,17 @@ const EmployeeAccountingUI = (function() {
                 <div id="cal-result" class="space-y-3"></div>
             </div>`;
         document.body.appendChild(modal);
-        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        modal.addEventListener('click', e => { if (e.target === modal) { EAccJalali.close(); modal.remove(); } });
     }
 
     function applyCalendarFilter() {
         const from = document.getElementById('cal-from')?.value;
         const to   = document.getElementById('cal-to')?.value;
         if (!from || !to) { alert('لطفاً هر دو تاریخ را انتخاب کنید'); return; }
+
+        const ju = window.JalaliUtils;
+        const fromDisp = ju ? ju.toDisplay(from) : from;
+        const toDisp   = ju ? ju.toDisplay(to)   : to;
 
         const employeesSummary = EmployeeAccountingModule.getAllEmployeesSummary(from, to);
         const deductions = (() => { try { return JSON.parse(localStorage.getItem('work_deductions')||'[]').filter(d=>d.date>=from&&d.date<=to); } catch { return []; } })();
@@ -1716,7 +1859,7 @@ const EmployeeAccountingUI = (function() {
                         <span class="text-white font-semibold">${emp.employeeName}</span>
                     </div>
                     <div class="flex gap-4 flex-wrap text-sm">
-                        <span class="text-black-400"><i class="fas fa-clock ml-1"></i>${EmployeeAccountingModule.formatHoursDisplay(emp.totalHoursApprovedRaw ?? emp.totalHours)} ارسالی</span>
+                        <span class="text-gray-400"><i class="fas fa-clock ml-1"></i>${EmployeeAccountingModule.formatHoursDisplay(emp.totalHoursApprovedRaw ?? emp.totalHours)} ارسالی</span>
                         <span class="text-emerald-400"><i class="fas fa-check ml-1"></i>${EmployeeAccountingModule.formatHoursDisplay(emp.totalHoursApprovedRaw ?? emp.totalHoursApproved)} تأیید</span>
                         <span class="text-orange-400"><i class="fas fa-receipt ml-1"></i>${EmployeeAccountingModule.formatCurrency(emp.totalExpenses)} هزینه</span>
                         <span class="text-lime-400 font-bold"><i class="fas fa-wallet ml-1"></i>${EmployeeAccountingModule.formatCurrency(emp.grandTotal)} جمع کل</span>
@@ -1725,12 +1868,12 @@ const EmployeeAccountingUI = (function() {
             </div>`).join('');
 
         const dedRows = deductions.length ? deductions.map(d=>`
-            <div class="flex items-center justify-between bg-white/5 rounded-lg p-3 text-sm">
+            <div class="flex items-center justify-between bg-white/5 rounded-lg p-3 text-sm gap-2 flex-wrap">
                 <span class="text-white">${d.employeeName||'—'}</span>
-                <span class="text-black-400 text-xs">${d.date}</span>
+                <span class="text-gray-400 text-xs">${ju ? ju.toDisplay(d.date) : d.date}</span>
                 <span class="text-red-400 font-bold">${Number(d.amount||0).toLocaleString('fa-IR')} ت</span>
-                <span class="text-black-400 text-xs">${d.reason||'—'}</span>
-            </div>`).join('') : '<p class="text-black-300 text-xs text-center py-2">کسوراتی در این بازه ثبت نشده</p>';
+                <span class="text-gray-400 text-xs">${d.reason||'—'}</span>
+            </div>`).join('') : '<p class="text-gray-400 text-xs text-center py-2">کسوراتی در این بازه ثبت نشده</p>';
 
         const resultEl = document.getElementById('cal-result');
         if (resultEl) {
@@ -1738,9 +1881,9 @@ const EmployeeAccountingUI = (function() {
                 <div class="border-t border-white/10 pt-4">
                     <h4 class="text-white font-semibold mb-3 text-sm flex items-center gap-2">
                         <i class="fas fa-chart-bar text-lime-400"></i>
-                        گزارش بازه ${from} تا ${to}
+                        گزارش بازه <span class="text-lime-300">${fromDisp}</span> تا <span class="text-lime-300">${toDisp}</span>
                     </h4>
-                    ${rows || '<p class="text-black-300 text-sm text-center py-4">رکوردی در این بازه یافت نشد</p>'}
+                    ${rows || '<p class="text-gray-400 text-sm text-center py-4">رکوردی در این بازه یافت نشد</p>'}
                     <div class="mt-4 bg-red-500/10 border border-red-400/20 rounded-xl p-3">
                         <h5 class="text-red-300 text-sm font-semibold mb-2 flex items-center gap-1">
                             <i class="fas fa-minus-circle text-xs"></i>کسورات این بازه
@@ -1768,15 +1911,14 @@ const EmployeeAccountingUI = (function() {
                     </h3>
                     <button onclick="document.getElementById('late-request-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
                 </div>
-                <p class="text-black-300 text-sm mb-4">اگر ثبت ساعت کاری یا هزینه‌ای را فراموش کرده‌اید، اینجا درخواست دهید.</p>
+                <p class="text-gray-300 text-sm mb-4">اگر ثبت ساعت کاری یا هزینه‌ای را فراموش کرده‌اید، اینجا درخواست دهید.</p>
                 <div class="space-y-3">
                     <div>
-                        <label class="text-black-400 text-sm mb-1 block">تاریخ فراموش‌شده <span class="text-red-400">*</span></label>
-                        <input type="date" id="lr-date" value="${today}"
-                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400">
+                        <label class="text-gray-400 text-sm mb-1 block">تاریخ فراموش‌شده <span class="text-red-400">*</span></label>
+                        ${_buildJalaliInput('lr-date', 'lr-date-display', today)}
                     </div>
                     <div>
-                        <label class="text-black-400 text-sm mb-1 block">نوع ثبت <span class="text-red-400">*</span></label>
+                        <label class="text-gray-400 text-sm mb-1 block">نوع ثبت <span class="text-red-400">*</span></label>
                         <select id="lr-type" onchange="EmployeeAccountingUI._toggleLateRequestFields()"
                             class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400">
                             <option value="work">ساعت کاری</option>
@@ -1785,25 +1927,25 @@ const EmployeeAccountingUI = (function() {
                     </div>
                     <div id="lr-work-fields" class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="text-black-400 text-sm mb-1 block">ساعت شروع</label>
+                            <label class="text-gray-400 text-sm mb-1 block">ساعت شروع</label>
                             <input type="text" id="lr-start" placeholder="08:00" maxlength="5"
                                 oninput="this.value=this.value.replace(/[^0-9:]/g,''); if(this.value.length===2&&!this.value.includes(':'))this.value+=':';"
                                 class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 font-mono" dir="ltr">
                         </div>
                         <div>
-                            <label class="text-black-400 text-sm mb-1 block">ساعت پایان</label>
+                            <label class="text-gray-400 text-sm mb-1 block">ساعت پایان</label>
                             <input type="text" id="lr-end" placeholder="17:00" maxlength="5"
                                 oninput="this.value=this.value.replace(/[^0-9:]/g,''); if(this.value.length===2&&!this.value.includes(':'))this.value+=':';"
                                 class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 font-mono" dir="ltr">
                         </div>
                     </div>
                     <div id="lr-expense-fields" class="hidden">
-                        <label class="text-black-400 text-sm mb-1 block">مبلغ هزینه (تومان)</label>
+                        <label class="text-gray-400 text-sm mb-1 block">مبلغ هزینه (تومان)</label>
                         <input type="number" id="lr-amount" min="0" step="1000" placeholder="مثال: 200000"
                             class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400">
                     </div>
                     <div>
-                        <label class="text-black-400 text-sm mb-1 block">دلیل فراموشی <span class="text-red-400">*</span></label>
+                        <label class="text-gray-400 text-sm mb-1 block">دلیل فراموشی <span class="text-red-400">*</span></label>
                         <textarea id="lr-reason" rows="2" placeholder="مثال: مشغله کاری زیاد بود، اینترنت قطع بود..."
                             class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 resize-none"></textarea>
                     </div>
@@ -1818,7 +1960,7 @@ const EmployeeAccountingUI = (function() {
                 </div>
             </div>`;
         document.body.appendChild(modal);
-        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        modal.addEventListener('click', e => { if (e.target === modal) { EAccJalali.close(); modal.remove(); } });
     }
 
     function _toggleLateRequestFields() {
