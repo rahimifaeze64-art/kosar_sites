@@ -94,13 +94,24 @@
         }
 
         /* ── Minimap ── */
-        #city-minimap {
+        #city-minimap-wrap {
             position: fixed; bottom: 14px; right: 14px; z-index: 400;
-            width: 130px; height: 130px;
-            background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.15);
+            width: 140px;
+            background: rgba(0,0,0,0.65);
+            border: 1px solid rgba(255,255,255,0.18);
             border-radius: 12px; overflow: hidden;
+            padding: 4px 4px 2px 4px;
         }
-        #city-minimap canvas { width: 100%; height: 100%; }
+        #city-minimap-wrap .map-label {
+            font-size: 0.6rem; color: #94a3b8; text-align: center;
+            display: block; margin-bottom: 2px; font-family: 'Vazirmatn', Tahoma, sans-serif;
+        }
+        /* canvas باید pixel-perfect باشه — نه CSS resize */
+        #city-minimap-canvas {
+            display: block;
+            border-radius: 8px;
+            /* عرض و ارتفاع واقعی با JS تنظیم میشه */
+        }
 
         /* ── Joystick موبایل ── */
         #city-joystick {
@@ -139,6 +150,28 @@
             backdrop-filter: blur(6px);
         }
         #city-user-info span { color: #a3e635; font-weight: 700; }
+
+        /* ── پرامپت ورود / سوار شدن ── */
+        #city-enter-prompt {
+            position: fixed; bottom: 170px; left: 50%; transform: translateX(-50%);
+            z-index: 500; pointer-events: none;
+            background: rgba(15,23,42,0.92);
+            border: 1px solid rgba(99,102,241,0.55);
+            color: #e2e8f0; font-family: 'Vazirmatn', Tahoma, sans-serif;
+            font-size: 0.95rem; padding: 10px 24px; border-radius: 14px;
+            text-align: center; white-space: nowrap;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+            opacity: 0; transition: opacity 0.25s ease;
+            direction: rtl;
+        }
+        #city-enter-prompt strong { color: #6ee7b7; }
+
+        /* ── فلش ورود ── */
+        #city-enter-flash {
+            position: fixed; inset: 0; background: #fff;
+            opacity: 0; pointer-events: none; z-index: 9000;
+        }
     </style>
 </head>
 <body>
@@ -176,12 +209,16 @@
         <p>📍 به در ساختمان نزدیک شوید</p>
     </div>
 
-    <canvas id="city-minimap-canvas" width="130" height="130" style="position:fixed;bottom:14px;right:14px;z-index:400;width:130px;height:130px;background:rgba(0,0,0,0.55);border:1px solid rgba(255,255,255,0.15);border-radius:12px;display:block;"></canvas>
+    <!-- Minimap wrapper — pixel-perfect canvas -->
+    <div id="city-minimap-wrap">
+        <span class="map-label">🗺 نقشه</span>
+        <canvas id="city-minimap-canvas" width="132" height="132"></canvas>
+    </div>
 
     <!-- پرامپت ورود به ساختمان / سوار شدن -->
     <div id="city-enter-prompt"></div>
 
-    <!-- فلش ورود به ساختمان -->
+    <!-- فلش سفید هنگام ورود -->
     <div id="city-enter-flash"></div>
 
     <div id="city-user-info">
@@ -195,6 +232,31 @@
 
     <!-- دکمه ورود موبایل -->
     <button id="city-enter-btn" onclick="mobileEnter()">⬆</button>
+
+    <!-- HUD آمار اسلحه -->
+    <div id="city-weapon-stats" style="
+        position:fixed;bottom:14px;left:50%;transform:translateX(-50%);
+        background:rgba(0,0,0,0.6);color:#fff;font-size:0.75rem;
+        padding:6px 16px;border-radius:8px;z-index:500;pointer-events:none;
+        font-family:Vazirmatn,Tahoma,sans-serif;border:1px solid rgba(255,255,255,0.1);
+        display:flex;gap:14px;align-items:center;">
+        🔫 <span id="city-ammo">∞</span>
+        &nbsp;💀 <span id="city-kills">0</span>
+        &nbsp;🎯 <span id="city-shots">0</span>
+    </div>
+
+    <!-- Crosshair -->
+    <div id="city-crosshair" style="
+        position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+        width:24px;height:24px;pointer-events:none;z-index:600;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="4" stroke="#fff" stroke-width="1.5" fill="none" opacity="0.85"/>
+            <line x1="12" y1="2"  x2="12" y2="8"  stroke="#fff" stroke-width="1.5" opacity="0.85"/>
+            <line x1="12" y1="16" x2="12" y2="22" stroke="#fff" stroke-width="1.5" opacity="0.85"/>
+            <line x1="2"  y1="12" x2="8"  y2="12" stroke="#fff" stroke-width="1.5" opacity="0.85"/>
+            <line x1="16" y1="12" x2="22" y2="12" stroke="#fff" stroke-width="1.5" opacity="0.85"/>
+        </svg>
+    </div>
 
     <!-- راهنمای قفل موس -->
     <div id="city-pointer-hint" style="
@@ -211,6 +273,17 @@
     <script src="futures_festures/city-world.js"></script>
 
     <script>
+    // ─── تنظیم canvas minimap pixel-perfect ──────────────────
+    (function() {
+        var mc = document.getElementById('city-minimap-canvas');
+        if (!mc) return;
+        var size = 132;
+        mc.width  = size;
+        mc.height = size;
+        mc.style.width  = size + 'px';
+        mc.style.height = size + 'px';
+    })();
+
     // ─── خواندن کاربر جاری ────────────────────────────────────
     var currentUser = {};
     try { currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}'); }

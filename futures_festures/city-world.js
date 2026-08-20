@@ -1182,7 +1182,7 @@ const CityWorld = (function () {
   // ─────────────────────────────────────────────
   function _checkProximity() {
     // ─── فقط پیاده: بررسی نزدیکی ساختمان ───
-    if (!inCar) {
+    if (!inCar && !inTank) {
       let closest = null;
       let closestDist = Infinity;
 
@@ -1272,10 +1272,11 @@ const CityWorld = (function () {
       }
 
     } else {
-      // ─── داخل ماشین یا تانک: فقط ریست ساختمان‌ها ───
+      // ─── داخل ماشین یا تانک: فقط ریست ساختمان‌ها و نزدیکی ───
       nearBuilding = null;
       nearCar = false;
       nearTank = false;
+      joystickActive = false;
       buildings.forEach(b => {
         if (b.isHighlighted) {
           b.body.material.emissive.set(0x000000);
@@ -1388,7 +1389,7 @@ const CityWorld = (function () {
       ctx.fillText('🚗', mx, my - 11);
     }
 
-    // کاراکتر (پیاده)
+    // کاراکتر (پیاده) یا موقعیت داخل وسیله
     if (!inCar && !inTank) {
       const px = cx + character.position.x * S;
       const py = cy + character.position.z * S;
@@ -1404,6 +1405,22 @@ const CityWorld = (function () {
       ctx.moveTo(0, -8); ctx.lineTo(-3, 0); ctx.lineTo(3, 0);
       ctx.fill();
       ctx.restore();
+    } else if (inCar && carMesh) {
+      // نشانگر "شما" روی ماشین
+      const px = cx + carMesh.position.x * S;
+      const py = cy + carMesh.position.z * S;
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 9px Tahoma';
+      ctx.textAlign = 'center';
+      ctx.fillText('YOU', px, py + 4);
+    } else if (inTank && tank) {
+      // نشانگر "شما" روی تانک
+      const px = cx + tank.position.x * S;
+      const py = cy + tank.position.z * S;
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 9px Tahoma';
+      ctx.textAlign = 'center';
+      ctx.fillText('YOU', px, py + 4);
     }
 
     // تانک روی minimap
@@ -1984,8 +2001,8 @@ const CityWorld = (function () {
   }
 
   function _buildCrosshair() {
-    const existing = document.getElementById('city-crosshair');
-    if (existing) return;
+    // اگر از HTML از پیش موجوده، دوباره نساز
+    if (document.getElementById('city-crosshair')) return;
     const ch = document.createElement('div');
     ch.id = 'city-crosshair';
     ch.style.cssText = `
@@ -2000,7 +2017,8 @@ const CityWorld = (function () {
     </svg>`;
     document.body.appendChild(ch);
 
-    // HUD آمار تیراندازی
+    // HUD آمار تیراندازی — فقط اگه موجود نیست
+    if (document.getElementById('city-weapon-stats')) return;
     const statsDiv = document.createElement('div');
     statsDiv.id = 'city-weapon-stats';
     statsDiv.style.cssText = `
