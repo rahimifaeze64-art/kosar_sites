@@ -3,10 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <!-- جلوگیری از cache مرورگر -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>شهر سه‌بعدی — کوثر</title>
 
     <!-- بررسی لاگین — اگر لاگین نیست برو landing -->
     <script>
+    // ─── غیرفعال کردن Service Worker و پاک کردن cache ───────
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            registrations.forEach(function(reg) { reg.unregister(); });
+        });
+        // پاک کردن همه cache های مرورگر
+        if ('caches' in window) {
+            caches.keys().then(function(names) {
+                names.forEach(function(name) { caches.delete(name); });
+            });
+        }
+    }
     (function() {
         var saved = localStorage.getItem('currentUser');
         if (!saved) { window.location.replace('landing.html'); return; }
@@ -24,8 +40,9 @@
     <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
     <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
 
-    <!-- CSS صفحه 3D -->
-    <link href="futures_festures/city-world.css" rel="stylesheet">
+    <!-- CSS صفحه 3D — cache-busted -->
+    <link id="city-css" rel="stylesheet">
+    <script>document.getElementById('city-css').href='futures_festures/city-world.css?v='+Date.now();</script>
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
