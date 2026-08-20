@@ -732,26 +732,6 @@
                 </button>
             </div>
             <p class="text-gray-400 text-sm mb-4">کارمندانی که تیک بزنید می‌توانند صفحه حسابداری کارمندان را ببینند.</p>
-            <!-- هشدار migration — در صورت عدم وجود جدول نشون داده میشه -->
-            <div id="emp-acc-migration-warn" style="display:none;"
-                 class="mb-4 p-3 bg-yellow-900/50 border border-yellow-500/40 rounded-xl text-xs text-yellow-300 space-y-2">
-                <p class="font-bold flex items-center gap-2">
-                    <i class="fas fa-exclamation-triangle text-yellow-400"></i>
-                    برای sync بین دستگاه‌ها، این SQL را در Supabase اجرا کنید:
-                </p>
-                <pre id="migration-sql-text" class="bg-black/40 p-2 rounded-lg overflow-x-auto text-green-300 text-xs leading-relaxed whitespace-pre-wrap select-all cursor-copy" onclick="navigator.clipboard.writeText(this.textContent).then(()=>{ this.style.outline='2px solid #22c55e'; setTimeout(()=>this.style.outline='',1000); })">CREATE TABLE IF NOT EXISTS public.app_settings (
-    key        TEXT PRIMARY KEY,
-    value      JSONB NOT NULL DEFAULT 'null',
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "allow_all_app_settings" ON public.app_settings;
-CREATE POLICY "allow_all_app_settings" ON public.app_settings
-    FOR ALL USING (true) WITH CHECK (true);
-INSERT INTO public.app_settings (key, value)
-VALUES ('empAccAllowedIds', '[]') ON CONFLICT (key) DO NOTHING;</pre>
-                <p class="text-gray-400">مسیر: Supabase Dashboard → SQL Editor → اجرا کنید</p>
-            </div>
             <div id="emp-acc-assign-list" class="space-y-2 max-h-72 overflow-y-auto mb-5"></div>
             <div class="flex gap-3">
                 <button onclick="saveEmpAccAssign()"
@@ -902,44 +882,72 @@ VALUES ('empAccAllowedIds', '[]') ON CONFLICT (key) DO NOTHING;</pre>
         var _SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpa3d1Y3Rka2F0Y3h3end4dmZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2NzY1MzcsImV4cCI6MjA5OTI1MjUzN30.HiOMF3J4DSR21qreVrlhCxdXjshzOidhvwv96CeJDd8';
         var _sbHeaders = { 'apikey': _SB_KEY, 'Authorization': 'Bearer ' + _SB_KEY, 'Content-Type': 'application/json' };
 
-        // چک وجود جدول app_settings در Supabase
-        async function _checkAppSettingsTable() {
-            try {
-                var res = await fetch(_SB_URL + '/rest/v1/app_settings?key=eq.empAccAllowedIds&select=key&limit=1', { headers: _sbHeaders });
-                return res.ok; // 200 = جدول هست، 404 = نیست
-            } catch(e) { return false; }
-        }
+        // ── storage: work_hours config row (id='__emp_acc_config__') ──
+        // چون جدول app_settings نداره، از work_hours.description استفاده می‌کنیم
+        var _EMP_ACC_ROW = '__emp_acc_config__';
 
-        // خواندن empAccAllowedIds از Supabase، fallback به localStorage
+        // همیشه جدول موجوده (work_hours)
+        async function _checkAppSettingsTable() { return true; }
+
+        // خواندن empAccAllowedIds از work_hours config row
         async function _fetchEmpAccAllowedIds() {
             try {
-                var res = await fetch(_SB_URL + '/rest/v1/app_settings?key=eq.empAccAllowedIds&select=value', { headers: _sbHeaders });
+                var res = await fetch(
+                    _SB_URL + '/rest/v1/work_hours?id=eq.' + _EMP_ACC_ROW + '&select=description',
+                    { headers: _sbHeaders }
+                );
                 if (res.ok) {
                     var rows = await res.json();
-                    if (rows && rows.length > 0 && Array.isArray(rows[0].value)) {
-                        var ids = rows[0].value;
+                    if (rows && rows.length > 0 && rows[0].description) {
+                        var parsed = JSON.parse(rows[0].description);
+                        var ids = Array.isArray(parsed.empAccAllowedIds) ? parsed.empAccAllowedIds : [];
                         localStorage.setItem('empAccAllowedIds', JSON.stringify(ids));
+                        console.log('✅ empAccAllowedIds از Supabase خوانده شد:', ids);
                         return ids;
                     }
                 }
-            } catch(e) {}
+            } catch(e) { console.warn('_fetchEmpAccAllowedIds خطا:', e.message); }
             // fallback به localStorage
             try { return JSON.parse(localStorage.getItem('empAccAllowedIds') || '[]'); } catch(e) { return []; }
         }
 
-        // ذخیره empAccAllowedIds در Supabase
+        // ذخیره empAccAllowedIds در work_hours config row
         async function _saveEmpAccToSupabase(ids) {
             try {
-                var res = await fetch(_SB_URL + '/rest/v1/app_settings?on_conflict=key', {
-                    method: 'POST',
-                    headers: Object.assign({}, _sbHeaders, { 'Prefer': 'resolution=merge-duplicates' }),
-                    body: JSON.stringify({ key: 'empAccAllowedIds', value: ids, updated_at: new Date().toISOString() })
-                });
-                if (res.ok || res.status === 201) {
-                    console.log('✅ empAccAllowedIds در Supabase ذخیره شد:', ids);
+                var descVal = JSON.stringify({ empAccAllowedIds: ids });
+                // PATCH اگه row وجود داره، POST اگه نداره
+                var patchRes = await fetch(
+                    _SB_URL + '/rest/v1/work_hours?id=eq.' + _EMP_ACC_ROW,
+                    {
+                        method: 'PATCH',
+                        headers: Object.assign({}, _sbHeaders, { 'Prefer': 'return=representation' }),
+                        body: JSON.stringify({ description: descVal, updated_at: new Date().toISOString() })
+                    }
+                );
+                if (patchRes.ok) {
+                    var patched = await patchRes.json();
+                    if (patched && patched.length > 0) {
+                        console.log('✅ empAccAllowedIds در Supabase ذخیره شد:', ids);
+                        return true;
+                    }
+                }
+                // row نبود — POST کن
+                var postRes = await fetch(
+                    _SB_URL + '/rest/v1/work_hours?on_conflict=id',
+                    {
+                        method: 'POST',
+                        headers: Object.assign({}, _sbHeaders, { 'Prefer': 'resolution=merge-duplicates,return=representation' }),
+                        body: JSON.stringify({
+                            id: _EMP_ACC_ROW, employee_id: '__system__', employee_name: 'SYSTEM_CONFIG',
+                            type: 'work', date: '2000-01-01', description: descVal, status: 'approved'
+                        })
+                    }
+                );
+                if (postRes.ok || postRes.status === 201) {
+                    console.log('✅ empAccAllowedIds (new row) در Supabase ذخیره شد:', ids);
                     return true;
                 }
-                console.warn('⚠️ ذخیره در Supabase ناموفق — status:', res.status);
+                console.warn('⚠️ ذخیره در Supabase ناموفق — status:', postRes.status);
                 return false;
             } catch(e) {
                 console.warn('⚠️ ذخیره در Supabase خطا:', e.message);
@@ -968,13 +976,11 @@ VALUES ('empAccAllowedIds', '[]') ON CONFLICT (key) DO NOTHING;</pre>
             var list  = document.getElementById('emp-acc-assign-list');
             if (!modal || !list) return;
 
-            // چک وجود جدول Supabase و نمایش migration warning
-            var warn = document.getElementById('emp-acc-migration-warn');
-            _checkAppSettingsTable().then(function(exists) {
-                if (warn) warn.style.display = exists ? 'none' : 'block';
-            });
+            // نمایش مودال فوری با لودینگ
+            list.innerHTML = '<div class="text-center text-gray-400 py-4"><i class="fas fa-spinner fa-spin ml-2"></i>در حال بارگذاری...</div>';
+            modal.style.display = 'flex';
 
-            // ابتدا از Supabase بخون، اگه نبود از localStorage
+            // خواندن از Supabase و رندر لیست
             _fetchEmpAccAllowedIds().then(function(allowed) {
                 var employees = _getEmployeesForAssign();
                 list.innerHTML = employees.map(function(emp) {

@@ -177,29 +177,26 @@ function setLoading(on) {
 // که لیست دسترسی از سرور گرفته شده، نه فقط از localStorage محلی
 async function _syncEmpAccOnLogin(user) {
     try {
-        const url = 'https://cikwuctdkatcxwzwxvff.supabase.co';
-        const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpa3d1Y3Rka2F0Y3h3end4dmZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2NzY1MzcsImV4cCI6MjA5OTI1MjUzN30.HiOMF3J4DSR21qreVrlhCxdXjshzOidhvwv96CeJDd8';
+        const SB_URL = 'https://cikwuctdkatcxwzwxvff.supabase.co';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpa3d1Y3Rka2F0Y3h3end4dmZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2NzY1MzcsImV4cCI6MjA5OTI1MjUzN30.HiOMF3J4DSR21qreVrlhCxdXjshzOidhvwv96CeJDd8';
+        const hdrs = { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` };
 
+        // خواندن از work_hours config row
         const res = await fetch(
-            `${url}/rest/v1/app_settings?key=eq.empAccAllowedIds&select=value`,
-            { headers: { 'apikey': key, 'Authorization': `Bearer ${key}` } }
+            `${SB_URL}/rest/v1/work_hours?id=eq.__emp_acc_config__&select=description`,
+            { headers: hdrs }
         );
-
         if (res.ok) {
             const rows = await res.json();
-            if (rows && rows.length > 0) {
-                const ids = Array.isArray(rows[0].value) ? rows[0].value : [];
+            if (rows && rows.length > 0 && rows[0].description) {
+                const parsed = JSON.parse(rows[0].description);
+                const ids = Array.isArray(parsed.empAccAllowedIds) ? parsed.empAccAllowedIds : [];
                 localStorage.setItem('empAccAllowedIds', JSON.stringify(ids));
                 console.log('✅ empAccAllowedIds از Supabase لود شد:', ids);
             }
-        } else if (res.status === 404) {
-            // جدول وجود ندارد — نیاز به migration
-            console.warn('⚠️ جدول app_settings وجود ندارد. migration اجرا نشده.');
-            // مقدار localStorage موجود رو حفظ می‌کنیم
         }
     } catch (e) {
         console.warn('⚠️ sync empAccAllowedIds خطا:', e.message);
-        // در صورت خطا، localStorage موجود حفظ می‌شه
     }
 }// ── منطق اصلی ورود ───────────────────────────────────────────
 async function handleLogin(event) {

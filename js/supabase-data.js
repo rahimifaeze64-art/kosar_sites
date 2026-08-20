@@ -117,28 +117,18 @@ const SupabaseDataModule = {
     async getEmpAccAllowedIds() {
         const localKey = 'empAccAllowedIds';
         const localIds = JSON.parse(localStorage.getItem(localKey) || '[]');
-
         if (!this._online()) return localIds;
         try {
             const { data, error } = await this._db()
-                .from('app_settings')
-                .select('value')
-                .eq('key', 'empAccAllowedIds')
+                .from('work_hours')
+                .select('description')
+                .eq('id', '__emp_acc_config__')
                 .single();
-
-            if (error) {
-                // جدول وجود ندارد — fallback به localStorage
-                if (error.code === 'PGRST116' || error.code === '42P01') {
-                    console.warn('⚠️ app_settings table missing — run app_settings_migration.sql');
-                }
-                return localIds;
-            }
-
-            const ids = Array.isArray(data?.value) ? data.value : [];
-            // merge با local در صورت تفاوت
-            const merged = [...new Set([...ids, ...localIds])];
-            localStorage.setItem(localKey, JSON.stringify(merged));
-            return merged;
+            if (error || !data) return localIds;
+            const parsed = JSON.parse(data.description || '{}');
+            const ids = Array.isArray(parsed.empAccAllowedIds) ? parsed.empAccAllowedIds : [];
+            localStorage.setItem(localKey, JSON.stringify(ids));
+            return ids;
         } catch (e) {
             console.warn('⚠️ getEmpAccAllowedIds خطا:', e.message);
             return localIds;
@@ -147,62 +137,34 @@ const SupabaseDataModule = {
 
     async setEmpAccAccess(employeeId, granted) {
         const localKey = 'empAccAllowedIds';
-        // آپدیت localStorage
         const ids = JSON.parse(localStorage.getItem(localKey) || '[]');
-        if (granted && !ids.includes(employeeId)) {
-            ids.push(employeeId);
-        } else if (!granted) {
-            const idx = ids.indexOf(employeeId);
-            if (idx !== -1) ids.splice(idx, 1);
-        }
+        if (granted && !ids.includes(employeeId)) ids.push(employeeId);
+        else if (!granted) { const i = ids.indexOf(employeeId); if (i !== -1) ids.splice(i, 1); }
         localStorage.setItem(localKey, JSON.stringify(ids));
-
-        if (!this._online()) return true;
-        try {
-            const { error } = await this._db()
-                .from('app_settings')
-                .upsert(
-                    { key: 'empAccAllowedIds', value: ids, updated_at: new Date().toISOString() },
-                    { onConflict: 'key' }
-                );
-            if (error) {
-                if (error.code === '42P01') {
-                    console.warn('⚠️ app_settings table missing — run app_settings_migration.sql');
-                } else {
-                    console.warn('⚠️ setEmpAccAccess خطا:', error.message);
-                }
-                return false;
-            }
-            console.log(`✅ empAccAllowedIds=[${ids}] در Supabase ذخیره شد`);
-            return true;
-        } catch (e) {
-            console.warn('⚠️ setEmpAccAccess خطا:', e.message);
-            return false;
-        }
+        return this.syncEmpAccAllowedIds(ids);
     },
 
-    // ذخیره کل لیست empAccAllowedIds یک‌جا در Supabase
     async syncEmpAccAllowedIds(ids) {
         ids = Array.isArray(ids) ? ids : [];
-        const localKey = 'empAccAllowedIds';
-        localStorage.setItem(localKey, JSON.stringify(ids));
+        localStorage.setItem('empAccAllowedIds', JSON.stringify(ids));
         if (!this._online()) return true;
+        const descVal = JSON.stringify({ empAccAllowedIds: ids });
         try {
-            const { error } = await this._db()
-                .from('app_settings')
-                .upsert(
-                    { key: 'empAccAllowedIds', value: ids, updated_at: new Date().toISOString() },
-                    { onConflict: 'key' }
-                );
-            if (error) {
-                if (error.code === '42P01') {
-                    console.warn('⚠️ app_settings table missing — run app_settings_migration.sql');
-                } else {
-                    console.warn('⚠️ syncEmpAccAllowedIds خطا:', error.message);
-                }
-                return false;
+            const { data, error } = await this._db()
+                .from('work_hours')
+                .update({ description: descVal, updated_at: new Date().toISOString() })
+                .eq('id', '__emp_acc_config__')
+                .select('id');
+            if (error) throw error;
+            if (!data || data.length === 0) {
+                // row نبود — insert
+                const { error: e2 } = await this._db().from('work_hours').insert({
+                    id: '__emp_acc_config__', employee_id: '__system__', employee_name: 'SYSTEM_CONFIG',
+                    type: 'work', date: '2000-01-01', description: descVal, status: 'approved'
+                });
+                if (e2) throw e2;
             }
-            console.log(`✅ syncEmpAccAllowedIds=[${ids}] در Supabase ذخیره شد`);
+            console.log('✅ syncEmpAccAllowedIds:', ids);
             return true;
         } catch (e) {
             console.warn('⚠️ syncEmpAccAllowedIds خطا:', e.message);
