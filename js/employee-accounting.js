@@ -507,7 +507,7 @@ const EmployeeAccountingUI = (function() {
                             </div>
                             <div>
                                 <p class="text-black-400 text-sm">جمع ساعات ارسالی</p>
-                                <p class="text-3xl font-bold text-white">${_fmtHours(summary.totalHoursApprovedRaw ?? summary.totalHours)}</p>
+                                <p class="text-3xl font-bold text-white">${EmployeeAccountingModule.formatHoursDisplay(summary.totalHoursApprovedRaw ?? summary.totalHours)}</p>
                                 <p class="text-black-300 text-xs">${summary.hoursCount} گزارش · ${summary.workDays} روز</p>
                             </div>
                         </div>
@@ -579,7 +579,7 @@ const EmployeeAccountingUI = (function() {
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div class="bg-white/10 rounded-xl p-4">
                             <p class="text-lime-200 text-sm mb-1">ساعات این ماه</p>
-                        <p class="text-2xl font-bold text-white">${_fmtHours(monthlySummary.totalHoursApprovedRaw ?? monthlySummary.totalHours)}</p>
+                        <p class="text-2xl font-bold text-white">${EmployeeAccountingModule.formatHoursDisplay(monthlySummary.totalHoursApprovedRaw ?? monthlySummary.totalHours)}</p>
                             <p class="text-lime-300 text-xs mt-1">${monthlySummary.hoursCount} گزارش روزانه</p>
                         </div>
                         <div class="bg-white/10 rounded-xl p-4">
@@ -589,7 +589,7 @@ const EmployeeAccountingUI = (function() {
                         <div class="bg-white/10 rounded-xl p-4">
                             <p class="text-lime-200 text-sm mb-1">حقوق ساعات (تأیید × نرخ)</p>
                             <p class="text-2xl font-bold text-black-400">${EmployeeAccountingModule.formatCurrency(hoursPayment)}</p>
-                            <p class="text-lime-300 text-xs mt-1">${_fmtHours(monthlySummary.totalHoursApprovedRaw ?? monthlySummary.totalHoursApproved)} تأیید × ${EmployeeAccountingModule.formatCurrency(monthlySummary.hourlyRate)}</p>
+                            <p class="text-lime-300 text-xs mt-1">${EmployeeAccountingModule.formatHoursDisplay(monthlySummary.totalHoursApprovedRaw ?? monthlySummary.totalHoursApproved)} تأیید × ${EmployeeAccountingModule.formatCurrency(monthlySummary.hourlyRate)}</p>
                         </div>
                         <div class="bg-white/10 rounded-xl p-4">
                             <p class="text-lime-200 text-sm mb-1">جمع کل این ماه</p>
@@ -716,7 +716,7 @@ const EmployeeAccountingUI = (function() {
                             </button>
                         </td>
                         <td class="text-center py-4 px-4">
-                            <span class="text-xl font-bold text-black-400">${_fmtHours(emp.totalHoursApprovedRaw ?? emp.totalHoursApproved)}</span>
+                            <span class="text-xl font-bold text-black-400">${EmployeeAccountingModule.formatHoursDisplay(emp.totalHoursApprovedRaw ?? emp.totalHoursApproved)}</span>
                             <p class="text-black-400/60 text-xs">${emp.hoursCount} گزارش</p>
                         </td>                       
                         <td class="text-center py-4 px-4">
@@ -776,12 +776,12 @@ const EmployeeAccountingUI = (function() {
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-blue-400/20">
                         <i class="fas fa-paper-plane text-black-400 mb-2 block"></i>
                         <p class="text-black-400 text-xs mb-1">ساعات ارسال‌شده</p>
-                        <p class="text-lg font-bold text-black-400">${_fmtHours(employeesSummary.reduce((s,e)=>s+(e.totalHoursApprovedRaw||parseFloat(e.totalHours)||0),0))}</p>
+                        <p class="text-lg font-bold text-black-400">${EmployeeAccountingModule.formatHoursDisplay(employeesSummary.reduce((s,e)=>s+(e.totalHoursApprovedRaw||parseFloat(e.totalHours)||0),0))}</p>
                     </div>
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-emerald-400/20">
                         <i class="fas fa-check-circle text-emerald-400 mb-2 block"></i>
                         <p class="text-black-400 text-xs mb-1">ساعات تأیید شده</p>
-                        <p class="text-lg font-bold text-emerald-400">${_fmtHours(totalHours)}</p>
+                        <p class="text-lg font-bold text-emerald-400">${EmployeeAccountingModule.formatHoursDisplay(totalHours)}</p>
                     </div>
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-orange-400/20">
                         <i class="fas fa-receipt text-orange-400 mb-2 block"></i>
@@ -1446,13 +1446,13 @@ const EmployeeAccountingUI = (function() {
                     <div class="bg-blue-500/10 border border-blue-400/20 rounded-xl p-3 text-center">
                         <i class="fas fa-paper-plane text-blue-400 mb-1 block text-sm"></i>
                         <p class="text-gray-400 text-xs mb-0.5">ساعات ارسال‌شده</p>
-                        <p class="text-xl font-bold text-blue-400">${_fmtHours(summary.totalHoursApprovedRaw ?? summary.totalHours)}</p>
+                        <p class="text-xl font-bold text-blue-400">${EmployeeAccountingModule.formatHoursDisplay(summary.totalHoursApprovedRaw ?? summary.totalHours)}</p>
                         <p class="text-gray-500 text-xs">${summary.hoursCount} گزارش · ${summary.workDays} روز</p>
                     </div>
                     <div class="bg-emerald-500/10 border border-emerald-400/20 rounded-xl p-3 text-center">
                         <i class="fas fa-check-circle text-emerald-400 mb-1 block text-sm"></i>
                         <p class="text-gray-400 text-xs mb-0.5">ساعات تأیید شده</p>
-                        <p class="text-xl font-bold text-emerald-400">${_fmtHours(summary.totalHoursApprovedRaw ?? summary.totalHoursApproved)}</p>
+                        <p class="text-xl font-bold text-emerald-400">${EmployeeAccountingModule.formatHoursDisplay(summary.totalHoursApprovedRaw ?? summary.totalHoursApproved)}</p>
                         <p class="text-gray-500 text-xs">× ${EmployeeAccountingModule.formatCurrency(summary.hourlyRate)}/ساعت</p>
                     </div>
                     <div class="bg-orange-500/10 border border-orange-400/20 rounded-xl p-3 text-center">
@@ -1767,8 +1767,8 @@ const EmployeeAccountingUI = (function() {
                         <span class="text-white font-semibold">${emp.employeeName}</span>
                     </div>
                     <div class="flex gap-4 flex-wrap text-sm">
-                        <span class="text-black-400"><i class="fas fa-clock ml-1"></i>${_fmtHours(emp.totalHoursApprovedRaw ?? emp.totalHours)} ارسالی</span>
-                        <span class="text-emerald-400"><i class="fas fa-check ml-1"></i>${_fmtHours(emp.totalHoursApprovedRaw ?? emp.totalHoursApproved)} تأیید</span>
+                        <span class="text-black-400"><i class="fas fa-clock ml-1"></i>${EmployeeAccountingModule.formatHoursDisplay(emp.totalHoursApprovedRaw ?? emp.totalHours)} ارسالی</span>
+                        <span class="text-emerald-400"><i class="fas fa-check ml-1"></i>${EmployeeAccountingModule.formatHoursDisplay(emp.totalHoursApprovedRaw ?? emp.totalHoursApproved)} تأیید</span>
                         <span class="text-orange-400"><i class="fas fa-receipt ml-1"></i>${EmployeeAccountingModule.formatCurrency(emp.totalExpenses)} هزینه</span>
                         <span class="text-lime-400 font-bold"><i class="fas fa-wallet ml-1"></i>${EmployeeAccountingModule.formatCurrency(emp.grandTotal)} جمع کل</span>
                     </div>
@@ -2176,3 +2176,4 @@ const EmployeeAccountingUI = (function() {
         toggleSidebarAccess,
     };
 })();
+
