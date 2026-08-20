@@ -633,52 +633,6 @@ const EmployeeAccountingUI = (function() {
                     </ul>
                 </div>
 
-                <!-- درخواست‌های مهلت مجدد کارمند -->
-                ${(() => {
-                    const myReqs = (() => { try {
-                        const u = JSON.parse(localStorage.getItem('currentUser')||'{}');
-                        return JSON.parse(localStorage.getItem('work_late_requests')||'[]').filter(r=>r.employeeId===u.id);
-                    } catch { return []; } })();
-                    if (!myReqs.length) return '';
-                    const statusMap = { pending:'در انتظار', approved:'تأیید شد', rejected:'رد شد' };
-                    const statusCls = { pending:'bg-lime-500/20 text-lime-300', approved:'bg-green-500/20 text-green-300', rejected:'bg-red-500/20 text-red-300' };
-                    const rows = myReqs.slice().reverse().map(r=>`
-                        <tr class="border-b border-white/5 hover:bg-white/5 text-sm">
-                            <td class="py-2 px-3 text-black-300">${r.requestedDate||'—'}</td>
-                            <td class="py-2 px-3">
-                                ${r.entryType==='expense'
-                                    ? '<span class="bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded text-xs">هزینه</span>'
-                                    : '<span class="bg-blue-500/20 text-black-400 px-2 py-0.5 rounded text-xs">ساعت کاری</span>'}
-                            </td>
-                            <td class="py-2 px-3 text-white">
-                                ${r.entryType==='expense'
-                                    ? `${Number(r.amount||0).toLocaleString('fa-IR')} ت`
-                                    : `${r.startTime||'?'} — ${r.endTime||'?'}`}
-                            </td>
-                            <td class="py-2 px-3 text-black-400 text-xs max-w-xs">${r.reason||'—'}</td>
-                            <td class="py-2 px-3 text-center">
-                                <span class="${statusCls[r.status]||statusCls.pending} px-2 py-0.5 rounded-full text-xs">${statusMap[r.status]||r.status}</span>
-                            </td>
-                        </tr>`).join('');
-                    return `
-                    <div class="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-lime-400/20">
-                        <h4 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
-                            <i class="fas fa-clock text-lime-400"></i>درخواست‌های مهلت مجدد من
-                        </h4>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm">
-                                <thead><tr class="border-b border-white/10 text-xs">
-                                    <th class="text-right text-black-400 py-2 px-3">تاریخ</th>
-                                    <th class="text-right text-black-400 py-2 px-3">نوع</th>
-                                    <th class="text-right text-black-400 py-2 px-3">مقدار</th>
-                                    <th class="text-right text-black-400 py-2 px-3">دلیل</th>
-                                    <th class="text-center text-black-400 py-2 px-3">وضعیت</th>
-                                </tr></thead>
-                                <tbody>${rows}</tbody>
-                            </table>
-                        </div>
-                    </div>`;
-                })()}
             </div>`;
     }
 
@@ -869,76 +823,9 @@ const EmployeeAccountingUI = (function() {
                     </div>
                 </div>
 
-                <!-- ── درخواست‌های مهلت مجدد ── -->
-                <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-lime-400/20">
-                    <h3 class="text-xl font-bold text-white mb-5 flex items-center gap-2">
-                        <i class="fas fa-clock text-lime-400"></i>
-                        درخواست‌های مهلت مجدد
-                        <span class="text-black-400 text-sm font-normal mr-2">— درخواست ثبت سوابق فراموش‌شده</span>
-                    </h3>
-                    ${(() => {
-                        const reqs = (() => { try { return JSON.parse(localStorage.getItem('work_late_requests')||'[]'); } catch { return []; } })();
-                        const pending = reqs.filter(r => r.status === 'pending');
-                        const others  = reqs.filter(r => r.status !== 'pending');
-                        if (!reqs.length) return `
-                            <div class="text-center py-8 text-black-300">
-                                <i class="fas fa-inbox text-3xl mb-3 block opacity-40"></i>
-                                <p class="text-sm">هیچ درخواستی وجود ندارد</p>
-                            </div>`;
-
-                        const renderRow = (r) => {
-                            const statusCls = r.status==='approved' ? 'bg-green-500/20 text-green-400' : r.status==='rejected' ? 'bg-red-500/20 text-red-400' : 'bg-lime-500/20 text-lime-400';
-                            const statusTxt = r.status==='approved' ? 'تأیید شد' : r.status==='rejected' ? 'رد شد' : 'در انتظار';
-                            return `<tr class="border-b border-white/5 hover:bg-white/5">
-                                <td class="py-3 px-3 text-white text-sm font-medium">${r.employeeName||'—'}</td>
-                                <td class="py-3 px-3 text-black-300 text-sm">${r.requestedDate||'—'}</td>
-                                <td class="py-3 px-3">
-                                    ${r.entryType==='expense'
-                                        ? `<span class="bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded text-xs">هزینه</span>`
-                                        : `<span class="bg-blue-500/20 text-black-400 px-2 py-0.5 rounded text-xs">ساعت کاری</span>`}
-                                </td>
-                                <td class="py-3 px-3">
-                                    ${r.entryType==='expense'
-                                        ? `<span class="text-orange-400 font-bold text-sm">${Number(r.amount||0).toLocaleString('fa-IR')} ت</span>`
-                                        : `<span class="text-black-400 font-bold text-sm">${r.startTime||'?'} — ${r.endTime||'?'}</span>`}
-                                </td>
-                                <td class="py-3 px-3 text-black-400 text-xs max-w-xs">${r.reason||'—'}</td>
-                                <td class="py-3 px-3 text-center">
-                                    <span class="${statusCls} px-2 py-0.5 rounded-full text-xs">${statusTxt}</span>
-                                </td>
-                                <td class="py-3 px-3 text-center">
-                                    ${r.status==='pending' ? `
-                                    <div class="flex gap-1 justify-center">
-                                        <button onclick="EmployeeAccountingUI.approveLateRequest('${r.id}')"
-                                            class="px-2 py-1 bg-green-500/20 hover:bg-green-500/40 text-green-400 rounded text-xs transition-all">
-                                            <i class="fas fa-check ml-1"></i>تأیید
-                                        </button>
-                                        <button onclick="EmployeeAccountingUI.rejectLateRequest('${r.id}')"
-                                            class="px-2 py-1 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded text-xs transition-all">
-                                            <i class="fas fa-times ml-1"></i>رد
-                                        </button>
-                                    </div>` : '—'}
-                                </td>
-                            </tr>`;
-                        };
-
-                        return `<div class="overflow-x-auto">
-                            <table class="w-full text-sm">
-                                <thead><tr class="border-b border-white/10 text-xs">
-                                    <th class="text-right text-black-400 py-2 px-3 font-medium">کارمند</th>
-                                    <th class="text-right text-black-400 py-2 px-3 font-medium">تاریخ درخواست‌شده</th>
-                                    <th class="text-right text-black-400 py-2 px-3 font-medium">نوع</th>
-                                    <th class="text-right text-black-400 py-2 px-3 font-medium">مقدار</th>
-                                    <th class="text-right text-black-400 py-2 px-3 font-medium">دلیل فراموشی</th>
-                                    <th class="text-center text-black-400 py-2 px-3 font-medium">وضعیت</th>
-                                    <th class="text-center text-black-400 py-2 px-3 font-medium">عملیات</th>
-                                </tr></thead>
-                                <tbody>${[...pending, ...others].map(renderRow).join('')}</tbody>
-                            </table>
-                        </div>`;
-                    })()}
-                </div>
-            </div>`;
+                <!-- ── پایان جدول کارمندان ── -->
+            </div>
+        </div>`;
     }
 
     // ── مودال تسویه ──────────────────────────────────────────
@@ -1492,7 +1379,7 @@ const EmployeeAccountingUI = (function() {
                 <!-- سوابق کاری — با دکمه‌های تأیید/رد inline -->
                 <h4 class="text-white font-semibold mb-3 flex items-center gap-2 text-sm">
                     <i class="fas fa-list text-black-400"></i>سوابق کاری
-                    <span class="text-black-400 text-xs font-normal">(تیک = تأیید | ضربدر = رد)</span>
+                    <span class="text-black-400 text-xs font-normal">(تیک / رد)</span>
                 </h4>
                 <div class="overflow-x-auto mb-5">
                     <table class="w-full text-sm">
@@ -1523,7 +1410,7 @@ const EmployeeAccountingUI = (function() {
 
                 <!-- هدایا -->
                 <h4 class="text-white font-semibold mb-2 flex items-center gap-2 text-sm"><i class="fas fa-gift text-green-400"></i>هدایا</h4>
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto mb-5">
                     <table class="w-full text-sm">
                         <thead><tr class="border-b border-white/10 text-xs">
                             <th class="text-right text-black-400 py-1 px-3">تاریخ</th>
@@ -1533,6 +1420,68 @@ const EmployeeAccountingUI = (function() {
                         <tbody>${giftBlock}</tbody>
                     </table>
                 </div>
+
+                <!-- درخواست‌های مهلت مجدد این کارمند -->
+                ${(() => {
+                    const empReqs = (() => { try { return JSON.parse(localStorage.getItem('work_late_requests')||'[]').filter(r=>r.employeeId===employeeId); } catch { return []; } })();
+                    const pending = empReqs.filter(r=>r.status==='pending');
+                    const others  = empReqs.filter(r=>r.status!=='pending');
+                    const allReqs = [...pending, ...others];
+                    const statusCls = { pending:'bg-lime-500/20 text-lime-400', approved:'bg-green-500/20 text-green-400', rejected:'bg-red-500/20 text-red-400' };
+                    const statusTxt = { pending:'در انتظار', approved:'تأیید شد', rejected:'رد شد' };
+
+                    const rows = allReqs.map(r=>`
+                        <tr class="border-b border-white/5 hover:bg-white/5">
+                            <td class="py-2 px-3 text-gray-300 text-xs">${r.requestedDate||'—'}</td>
+                            <td class="py-2 px-3">
+                                ${r.entryType==='expense'
+                                    ? '<span class="bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded text-xs">هزینه</span>'
+                                    : '<span class="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded text-xs">ساعت کاری</span>'}
+                            </td>
+                            <td class="py-2 px-3 text-white text-xs font-medium">
+                                ${r.entryType==='expense'
+                                    ? `${Number(r.amount||0).toLocaleString('fa-IR')} ت`
+                                    : `${r.startTime||'?'} — ${r.endTime||'?'}`}
+                            </td>
+                            <td class="py-2 px-3 text-gray-400 text-xs max-w-xs">${r.reason||'—'}</td>
+                            <td class="py-2 px-3 text-center">
+                                <span class="${statusCls[r.status]||statusCls.pending} px-2 py-0.5 rounded-full text-xs">${statusTxt[r.status]||r.status}</span>
+                            </td>
+                            <td class="py-2 px-3 text-center">
+                                ${r.status==='pending' ? `
+                                <div class="flex gap-1 justify-center">
+                                    <button onclick="EmployeeAccountingUI.approveLateRequest('${r.id}')"
+                                        class="px-2 py-1 bg-green-500/20 hover:bg-green-500/40 text-green-400 rounded text-xs transition-all">
+                                        <i class="fas fa-check ml-1"></i>تأیید
+                                    </button>
+                                    <button onclick="EmployeeAccountingUI.rejectLateRequest('${r.id}')"
+                                        class="px-2 py-1 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded text-xs transition-all">
+                                        <i class="fas fa-times ml-1"></i>رد
+                                    </button>
+                                </div>` : '—'}
+                            </td>
+                        </tr>`).join('');
+
+                    return `
+                    <h4 class="text-white font-semibold mb-2 flex items-center gap-2 text-sm">
+                        <i class="fas fa-clock text-lime-400"></i>درخواست‌های مهلت مجدد
+                        ${pending.length ? `<span class="bg-lime-500/30 text-lime-300 text-xs px-2 py-0.5 rounded-full">${pending.length} در انتظار</span>` : ''}
+                    </h4>
+                    <div class="overflow-x-auto">
+                        ${allReqs.length ? `
+                        <table class="w-full text-sm">
+                            <thead><tr class="border-b border-white/10 text-xs">
+                                <th class="text-right text-gray-400 py-1 px-3">تاریخ</th>
+                                <th class="text-right text-gray-400 py-1 px-3">نوع</th>
+                                <th class="text-right text-gray-400 py-1 px-3">مقدار</th>
+                                <th class="text-right text-gray-400 py-1 px-3">دلیل</th>
+                                <th class="text-center text-gray-400 py-1 px-3">وضعیت</th>
+                                <th class="text-center text-gray-400 py-1 px-3">عملیات</th>
+                            </tr></thead>
+                            <tbody>${rows}</tbody>
+                        </table>` : `<p class="text-center py-4 text-gray-500 text-xs">درخواستی ثبت نشده</p>`}
+                    </div>`;
+                })()}
             </div>`;
         document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
