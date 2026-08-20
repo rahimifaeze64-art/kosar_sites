@@ -244,15 +244,21 @@ function appController() {
                     typeof SupabaseDataModule.getEmpAccAllowedIds === 'function') {
                     const ids = await SupabaseDataModule.getEmpAccAllowedIds();
                     if (ids && ids.length >= 0) {
+                        // آپدیت از طریق CustomEvent — مطمئن‌ترین روش
                         this.empAccAllowedIds = ids;
-                        localStorage.setItem('empAccAllowedIds', JSON.stringify(ids));
+                        if (typeof window.setEmpAccAllowedIds === 'function') {
+                            window.setEmpAccAllowedIds(ids);
+                        } else {
+                            localStorage.setItem('empAccAllowedIds', JSON.stringify(ids));
+                            window.dispatchEvent(new CustomEvent('emp-acc-updated', { detail: { ids: ids } }));
+                        }
                         console.log('✅ empAccAllowedIds از Supabase لود شد:', ids);
                     }
                 }
             } catch (e) {
                 console.warn('⚠️ sync empAccAllowedIds خطا:', e.message);
             }
-        }, 3000); // بعد از 3 ثانیه که Supabase آماده شده
+        }, 3000);
 
         // Try to initialize API integration
         const enableAPI = false; // Set to true to enable API integration

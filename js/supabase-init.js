@@ -94,22 +94,13 @@
             const ids = await SupabaseDataModule.getEmpAccAllowedIds();
             if (ids) {
                 localStorage.setItem('empAccAllowedIds', JSON.stringify(ids));
-                // آپدیت Alpine state اگه app لود شده باشه
+                // آپدیت Alpine state از طریق CustomEvent
                 try {
-                    const alpineEl = document.querySelector('[x-data]');
-                    if (alpineEl) {
-                        let data = null;
-                        if (alpineEl._x_dataStack && alpineEl._x_dataStack[0]) {
-                            data = alpineEl._x_dataStack[0];
-                        } else if (alpineEl.__x && alpineEl.__x.$data) {
-                            data = alpineEl.__x.$data;
-                        }
-                        if (data && Array.isArray(data.empAccAllowedIds)) {
-                            // mutate آرایه برای Alpine v3 reactivity
-                            data.empAccAllowedIds.splice(0, data.empAccAllowedIds.length, ...ids);
-                        } else if (data) {
-                            data.empAccAllowedIds = ids;
-                        }
+                    if (typeof window.setEmpAccAllowedIds === 'function') {
+                        window.setEmpAccAllowedIds(ids);
+                    } else {
+                        localStorage.setItem('empAccAllowedIds', JSON.stringify(ids));
+                        window.dispatchEvent(new CustomEvent('emp-acc-updated', { detail: { ids: ids } }));
                     }
                 } catch (_) {}
                 console.log('✅ empAccAllowedIds از Supabase sync شد:', ids);

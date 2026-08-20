@@ -138,7 +138,8 @@
     <link href="css/theme-olive.css" rel="stylesheet">
     <link href="css/theme-dark.css" rel="stylesheet">
 </head>
-<body class="bg-gradient-to-br from-blue-900 via-lime-900 to-blue-800 min-h-screen" x-data="appController()">
+<body class="bg-gradient-to-br from-blue-900 via-lime-900 to-blue-800 min-h-screen" x-data="appController()"
+      @emp-acc-updated.window="empAccAllowedIds = $event.detail.ids">
     <!-- Auto-apply theme script -->
     <script src="js/theme-auto-apply.js" id="theme-auto-apply-script"></script>
     
@@ -318,14 +319,14 @@
             </template>
 
             <!-- حسابداری کارمندان - فقط کارمند مجاز (در nav اصلی) -->
-            <template x-if="currentUser.role === 'employee' && empAccAllowedIds.includes(currentUser.id)">
+            <div x-show="currentUser.role === 'employee' && empAccAllowedIds.includes(currentUser.id)">
                 <button @click="currentPage = 'empAccView'"
                         :class="currentPage === 'empAccView' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
                         class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                     <i class="fas fa-users-cog text-lg"></i>
                     <span class="font-medium">حسابداری کارمندان</span>
                 </button>
-            </template>
+            </div>
 
             <!-- سفارت - مدیر و کارمند -->
             <template x-if="currentUser.role === 'manager' || currentUser.role === 'employee'">
@@ -921,6 +922,16 @@
             if (modal) modal.style.display = 'none';
         }
 
+        // ── تابع مرکزی برای آپدیت empAccAllowedIds ──
+        // این تنها راه مطمئن برای آپدیت Alpine state از بیرون است
+        window.setEmpAccAllowedIds = function(ids) {
+            ids = Array.isArray(ids) ? ids : [];
+            localStorage.setItem('empAccAllowedIds', JSON.stringify(ids));
+            // Alpine از طریق CustomEvent آپدیت می‌شه — بدون دستکاری مستقیم state
+            window.dispatchEvent(new CustomEvent('emp-acc-updated', { detail: { ids: ids } }));
+            console.log('✅ empAccAllowedIds آپدیت شد:', ids);
+        };
+
         function saveEmpAccAssign() {
             var list = document.getElementById('emp-acc-assign-list');
             if (!list) return;
@@ -928,36 +939,14 @@
             var selected = Array.from(list.querySelectorAll('input[type=checkbox]:checked'))
                 .map(function(cb) { return cb.value; });
 
-            localStorage.setItem('empAccAllowedIds', JSON.stringify(selected));
+            // آپدیت مرکزی — Alpine state + localStorage + event
+            window.setEmpAccAllowedIds(selected);
 
-            // بروزرسانی Alpine v3 state — باید روی همان آرایه mutate کنیم تا reactivity trigger بشه
-            try {
-                var alpineEl = document.querySelector('[x-data]');
-                if (alpineEl) {
-                    // Alpine v3: از _x_dataStack استفاده می‌کنیم اما آرایه رو mutate می‌کنیم
-                    var data = null;
-                    if (alpineEl._x_dataStack && alpineEl._x_dataStack[0]) {
-                        data = alpineEl._x_dataStack[0];
-                    } else if (alpineEl.__x && alpineEl.__x.$data) {
-                        data = alpineEl.__x.$data;
-                    }
-                    if (data && Array.isArray(data.empAccAllowedIds)) {
-                        // mutate آرایه موجود برای reactivity
-                        data.empAccAllowedIds.splice(0, data.empAccAllowedIds.length, ...selected);
-                    } else if (data) {
-                        data.empAccAllowedIds = selected;
-                    }
-                }
-            } catch(e) { console.warn('Alpine sync error:', e); }
-
-            // همچنین sync با Supabase
+            // sync کل لیست با Supabase
             if (typeof SupabaseDataModule !== 'undefined' &&
-                typeof SupabaseDataModule.setEmpAccAccess === 'function') {
-                // برای هر کارمند که دسترسی داره sync کن
-                selected.forEach(function(empId) {
-                    SupabaseDataModule.setEmpAccAccess(empId, true).catch(function(e) {
-                        console.warn('sync error for', empId, e);
-                    });
+                typeof SupabaseDataModule.syncEmpAccAllowedIds === 'function') {
+                SupabaseDataModule.syncEmpAccAllowedIds(selected).catch(function(e) {
+                    console.warn('Supabase sync error:', e);
                 });
             }
 

@@ -1969,25 +1969,14 @@ const EmployeeAccountingUI = (function() {
     }
 
     function _saveAllowedIds(ids) {
-        localStorage.setItem('empAccAllowedIds', JSON.stringify(ids));
-        // آپدیت live در Alpine.js بدون reload — باید mutate کنیم
-        try {
-            const alpineEl = document.querySelector('[x-data]');
-            if (alpineEl) {
-                let data = null;
-                if (alpineEl._x_dataStack && alpineEl._x_dataStack[0]) {
-                    data = alpineEl._x_dataStack[0];
-                } else if (alpineEl.__x && alpineEl.__x.$data) {
-                    data = alpineEl.__x.$data;
-                }
-                if (data && Array.isArray(data.empAccAllowedIds)) {
-                    // mutate آرایه موجود برای Alpine v3 reactivity
-                    data.empAccAllowedIds.splice(0, data.empAccAllowedIds.length, ...ids);
-                } else if (data) {
-                    data.empAccAllowedIds = ids;
-                }
-            }
-        } catch(e) { console.warn('Alpine sync:', e); }
+        // از تابع مرکزی استفاده می‌کنیم که Alpine state رو از طریق CustomEvent آپدیت می‌کنه
+        if (typeof window.setEmpAccAllowedIds === 'function') {
+            window.setEmpAccAllowedIds(ids);
+        } else {
+            // fallback اگه تابع مرکزی هنوز لود نشده
+            localStorage.setItem('empAccAllowedIds', JSON.stringify(ids));
+            window.dispatchEvent(new CustomEvent('emp-acc-updated', { detail: { ids: ids } }));
+        }
     }
 
     function hasSidebarAccess(employeeId) {

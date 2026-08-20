@@ -181,6 +181,35 @@ const SupabaseDataModule = {
         }
     },
 
+    // ذخیره کل لیست empAccAllowedIds یک‌جا در Supabase
+    async syncEmpAccAllowedIds(ids) {
+        ids = Array.isArray(ids) ? ids : [];
+        const localKey = 'empAccAllowedIds';
+        localStorage.setItem(localKey, JSON.stringify(ids));
+        if (!this._online()) return true;
+        try {
+            const { error } = await this._db()
+                .from('app_settings')
+                .upsert(
+                    { key: 'empAccAllowedIds', value: ids, updated_at: new Date().toISOString() },
+                    { onConflict: 'key' }
+                );
+            if (error) {
+                if (error.code === '42P01') {
+                    console.warn('⚠️ app_settings table missing — run app_settings_migration.sql');
+                } else {
+                    console.warn('⚠️ syncEmpAccAllowedIds خطا:', error.message);
+                }
+                return false;
+            }
+            console.log(`✅ syncEmpAccAllowedIds=[${ids}] در Supabase ذخیره شد`);
+            return true;
+        } catch (e) {
+            console.warn('⚠️ syncEmpAccAllowedIds خطا:', e.message);
+            return false;
+        }
+    },
+
     // ════════════════════════════════════════════════════════
     // ORDERS
     // ════════════════════════════════════════════════════════
