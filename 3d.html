@@ -269,8 +269,14 @@
         <p style="font-size:0.8rem;color:#94a3b8">کلیک چپ = قفل موس + شلیک | Esc = خروج از حالت قفل</p>
     </div>
 
-    <!-- ── city-world.js ── -->
-    <script src="futures_festures/city-world.js"></script>
+    <!-- ── city-world.js — cache-busted ── -->
+    <script>
+    (function() {
+        var s = document.createElement('script');
+        s.src = 'futures_festures/city-world.js?v=' + Date.now();
+        document.head.appendChild(s);
+    })();
+    </script>
 
     <script>
     // ─── تنظیم canvas minimap pixel-perfect ──────────────────
@@ -301,9 +307,9 @@
         if (bar) bar.style.width = progress + '%';
     }, 200);
 
-    // ─── صبر برای لود Three.js بعد init ──────────────────────
+    // ─── صبر برای لود Three.js و city-world.js بعد init ────────
     function waitForThreeAndInit() {
-        if (typeof THREE === 'undefined') {
+        if (typeof THREE === 'undefined' || typeof CityWorld === 'undefined') {
             setTimeout(waitForThreeAndInit, 100);
             return;
         }
