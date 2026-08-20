@@ -1166,7 +1166,7 @@ const CityWorld = (function () {
   // برخورد با margin بزرگتر — برای ماشین
   function _collidesLarge(nx, nz, mw, md) {
     for (const b of buildings) {
-      const { position, width, depth } = b.config;
+      const { position, width, depth } = b.config;  
       const halfW = width  / 2 + mw;
       const halfD = depth  / 2 + md;
       if (
