@@ -368,10 +368,10 @@ const EmployeeAccountingUI = (function() {
         let _hid = '', _dis = '', _cy = 0, _cm = 0;
 
         function open(hiddenId, displayId, evt) {
-            if (evt) evt.stopPropagation();
+            if (evt) { evt.stopPropagation(); evt.preventDefault(); }
             _hid = hiddenId; _dis = displayId;
             const ju = window.JalaliUtils;
-            if (!ju) return;
+            if (!ju) { console.warn('JalaliUtils not loaded'); return; }
 
             const val = document.getElementById(hiddenId)?.value;
             if (val) {
@@ -384,7 +384,8 @@ const EmployeeAccountingUI = (function() {
             } else { const n=ju.currentJalali(); _cy=n[0]; _cm=n[1]; }
 
             close(); // بستن هر popup باز قبلی
-            _render();
+            // requestAnimationFrame تضمین می‌کند که DOM آماده است
+            requestAnimationFrame(_render);
         }
 
         function close() {
@@ -397,23 +398,28 @@ const EmployeeAccountingUI = (function() {
             const trigger = document.getElementById(_dis);
             if (!trigger) return;
 
-            // overlay
+            // overlay شفاف روی کل صفحه
             const ov = document.createElement('div');
             ov.id = '_eacc_jalali_overlay';
-            ov.style.cssText = 'position:fixed;inset:0;z-index:9998;';
+            ov.style.cssText = 'position:fixed;inset:0;z-index:9998;background:transparent;';
             ov.onclick = close;
             document.body.appendChild(ov);
 
-            // popup
+            // popup با z-index بالاتر از مودال
             const popup = document.createElement('div');
             popup.id = '_eacc_jalali_popup';
-            popup.style.cssText = 'position:fixed;z-index:9999;background:#1e293b;border:1px solid rgba(255,255,255,0.2);border-radius:16px;padding:16px;width:272px;box-shadow:0 20px 60px rgba(0,0,0,.6);direction:rtl;';
+            popup.style.cssText = 'position:fixed;z-index:9999;background:#1e293b;border:1px solid rgba(163,230,53,0.3);border-radius:16px;padding:16px;width:272px;box-shadow:0 24px 64px rgba(0,0,0,.8);direction:rtl;';
             popup.onclick = e => e.stopPropagation();
 
+            // موقعیت نسبت به viewport
             const rect = trigger.getBoundingClientRect();
-            const top = rect.bottom + 4;
-            const left = Math.max(8, Math.min(rect.left, window.innerWidth - 280));
-            popup.style.top  = top + 'px';
+            let top  = rect.bottom + 6;
+            let left = rect.left;
+            // جلوگیری از خروج از صفحه
+            if (left + 272 > window.innerWidth - 8)  left = window.innerWidth - 280;
+            if (left < 8) left = 8;
+            if (top + 300 > window.innerHeight) top = rect.top - 310;
+            popup.style.top  = top  + 'px';
             popup.style.left = left + 'px';
 
             popup.innerHTML = _calHtml(_cy, _cm);
@@ -1804,7 +1810,7 @@ const EmployeeAccountingUI = (function() {
         modal.id = 'work-calendar-modal';
         modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4';
         modal.innerHTML = `
-            <div class="bg-slate-800 rounded-2xl p-6 max-w-2xl w-full border border-lime-500/30 shadow-2xl" onclick="event.stopPropagation()">
+            <div class="bg-slate-800 rounded-2xl p-6 max-w-2xl w-full border border-lime-500/30 shadow-2xl overflow-visible" onclick="event.stopPropagation()">
                 <div class="flex items-center justify-between mb-5">
                     <h3 class="text-xl font-bold text-white flex items-center gap-2">
                         <i class="fas fa-calendar-alt text-lime-400"></i>تقویم کاری
@@ -1904,7 +1910,7 @@ const EmployeeAccountingUI = (function() {
         modal.id = 'late-request-modal';
         modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4';
         modal.innerHTML = `
-            <div class="bg-blue-900 rounded-2xl p-6 max-w-lg w-full border border-lime-500/30 shadow-2xl" onclick="event.stopPropagation()">
+            <div class="bg-blue-900 rounded-2xl p-6 max-w-lg w-full border border-lime-500/30 shadow-2xl overflow-visible" onclick="event.stopPropagation()">
                 <div class="flex items-center justify-between mb-5">
                     <h3 class="text-white text-lg font-bold flex items-center gap-2">
                         <i class="fas fa-clock text-lime-400"></i>درخواست مهلت مجدد
