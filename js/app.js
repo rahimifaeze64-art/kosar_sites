@@ -837,12 +837,17 @@ function appController() {
         </div>`;
     },
 
-    // Get employee management accounting content (manager only)
+    // Get employee management accounting content (manager or authorized employee)
     getEmployeeAccountingContent() {
       try {
         debugLogger("Loading employee accounting content...", "info");
 
-        if (this.currentUser.role !== "manager") {
+        const isManager = this.currentUser.role === "manager";
+        const isAllowedEmployee =
+          this.currentUser.role === "employee" &&
+          this.empAccAllowedIds.includes(this.currentUser.id);
+
+        if (!isManager && !isAllowedEmployee) {
           return '<div class="text-lime-500">دسترسی محدود: فقط مدیر</div>';
         }
 
