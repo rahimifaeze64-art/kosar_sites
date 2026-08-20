@@ -20,7 +20,7 @@ const CityWorld = (function () {
       position: { x: 0, z: 0 },
       color: 0x3b82f6,
       roofColor: 0x1d4ed8,
-      width: 4, height: 7, depth: 4,
+      width: 6, height: 10, depth: 6,
     },
     {
       id: 'students',
@@ -28,10 +28,10 @@ const CityWorld = (function () {
       icon: '🎓',
       page: 'students',
       role: ['manager', 'employee'],
-      position: { x: 28, z: 0 },        // ← 12→28
+      position: { x: 50, z: 0 },
       color: 0x10b981,
       roofColor: 0x047857,
-      width: 4, height: 6, depth: 4,
+      width: 5, height: 8, depth: 5,
     },
     {
       id: 'orders',
@@ -39,10 +39,10 @@ const CityWorld = (function () {
       icon: '📋',
       page: 'orders',
       role: ['manager', 'employee'],
-      position: { x: -28, z: 0 },       // ← -12→-28
+      position: { x: -50, z: 0 },
       color: 0xf59e0b,
       roofColor: 0xd97706,
-      width: 4, height: 5, depth: 4,
+      width: 5, height: 7, depth: 5,
     },
     {
       id: 'embassy',
@@ -50,10 +50,10 @@ const CityWorld = (function () {
       icon: '🏛️',
       page: 'embassy',
       role: ['manager', 'employee'],
-      position: { x: 0, z: 30 },        // ← 14→30
+      position: { x: 0, z: 55 },
       color: 0xef4444,
       roofColor: 0xb91c1c,
-      width: 5, height: 8, depth: 5,
+      width: 7, height: 12, depth: 7,
     },
     {
       id: 'accounting',
@@ -61,10 +61,10 @@ const CityWorld = (function () {
       icon: '💰',
       page: 'accounting',
       role: ['manager', 'employee'],
-      position: { x: 0, z: -30 },       // ← -14→-30
+      position: { x: 0, z: -55 },
       color: 0x8b5cf6,
       roofColor: 0x6d28d9,
-      width: 4, height: 6, depth: 4,
+      width: 5, height: 8, depth: 5,
     },
     {
       id: 'tasks',
@@ -72,10 +72,10 @@ const CityWorld = (function () {
       icon: '✅',
       page: 'tasks',
       role: ['manager'],
-      position: { x: 28, z: 30 },       // ← 12,14→28,30
+      position: { x: 50, z: 55 },
       color: 0x06b6d4,
       roofColor: 0x0e7490,
-      width: 4, height: 5, depth: 4,
+      width: 5, height: 7, depth: 5,
     },
     {
       id: 'myTasks',
@@ -83,10 +83,10 @@ const CityWorld = (function () {
       icon: '📌',
       page: 'myTasks',
       role: ['employee'],
-      position: { x: 28, z: -30 },      // ← 12,-14→28,-30
+      position: { x: 50, z: -55 },
       color: 0xf97316,
       roofColor: 0xc2410c,
-      width: 3, height: 5, depth: 3,
+      width: 4, height: 6, depth: 4,
     },
     {
       id: 'chat',
@@ -94,10 +94,10 @@ const CityWorld = (function () {
       icon: '💬',
       page: 'personalChat',
       role: null,
-      position: { x: -28, z: 30 },      // ← -12,14→-28,30
+      position: { x: -50, z: 55 },
       color: 0xec4899,
       roofColor: 0xbe185d,
-      width: 3, height: 4, depth: 3,
+      width: 4, height: 6, depth: 4,
     },
     {
       id: 'workChecklist',
@@ -105,10 +105,10 @@ const CityWorld = (function () {
       icon: '☑️',
       page: 'workChecklist',
       role: ['employee'],
-      position: { x: -28, z: -30 },     // ← -12,-14→-28,-30
+      position: { x: -50, z: -55 },
       color: 0x14b8a6,
       roofColor: 0x0f766e,
-      width: 3, height: 4, depth: 3,
+      width: 4, height: 6, depth: 4,
     },
     {
       id: 'agentTasks',
@@ -116,10 +116,10 @@ const CityWorld = (function () {
       icon: '🔧',
       page: 'agentTasks',
       role: ['agent'],
-      position: { x: 28, z: 0 },
+      position: { x: 80, z: 0 },
       color: 0xa855f7,
       roofColor: 0x7e22ce,
-      width: 4, height: 5, depth: 4,
+      width: 5, height: 7, depth: 5,
     },
     {
       id: 'agentAccounting',
@@ -127,10 +127,10 @@ const CityWorld = (function () {
       icon: '💳',
       page: 'agentAccounting',
       role: ['agent'],
-      position: { x: -28, z: 0 },
+      position: { x: -80, z: 0 },
       color: 0x84cc16,
       roofColor: 0x4d7c0f,
-      width: 4, height: 5, depth: 4,
+      width: 5, height: 7, depth: 5,
     },
     {
       id: 'companyDoor',
@@ -138,10 +138,10 @@ const CityWorld = (function () {
       icon: '🚪',
       page: 'companyDoor',
       role: ['manager', 'employee'],
-      position: { x: 50, z: 0 },        // ← 24→50
+      position: { x: 80, z: 55 },
       color: 0x64748b,
       roofColor: 0x334155,
-      width: 3, height: 4, depth: 3,
+      width: 4, height: 5, depth: 4,
     },
     {
       id: 'profile',
@@ -149,10 +149,10 @@ const CityWorld = (function () {
       icon: '⚙️',
       page: 'profile',
       role: null,
-      position: { x: -50, z: 0 },       // ← -24→-50
+      position: { x: -80, z: -55 },
       color: 0x6b7280,
       roofColor: 0x374151,
-      width: 3, height: 4, depth: 3,
+      width: 4, height: 5, depth: 4,
     },
     {
       id: 'managementChat',
@@ -160,10 +160,10 @@ const CityWorld = (function () {
       icon: '👥',
       page: 'managementChat',
       role: ['manager', 'employee'],
-      position: { x: 0, z: 55 },        // ← 28→55
+      position: { x: 0, z: 90 },
       color: 0x0284c7,
       roofColor: 0x0369a1,
-      width: 4, height: 5, depth: 4,
+      width: 6, height: 9, depth: 6,
     },
   ];
 
@@ -193,8 +193,8 @@ const CityWorld = (function () {
   const MOVE_SPEED = 8;
   const ENTER_DISTANCE = 4.5;
 
-  // مقیاس minimap
-  const MINIMAP_SCALE = 0.04;
+  // مقیاس minimap — برای شهر بزرگتر کوچکتر
+  const MINIMAP_SCALE = 0.022;
 
   // ─── NPC ───
   let npcs = [];
@@ -211,8 +211,8 @@ const CityWorld = (function () {
   // ─── هلی‌کوپتر ───
   let helicopter = null;
   let helicopterAngle = 0;
-  let helicopterHeight = 28;
-  let helicopterRadius = 45;
+  let helicopterHeight = 35;
+  let helicopterRadius = 70;
   const HELI_SPEED = 0.008;
 
   // ─── تانک ───
@@ -251,14 +251,13 @@ const CityWorld = (function () {
 
     // Three.js Core
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x87ceeb); // آسمان آبی روز
-    scene.fog = new THREE.Fog(0x87ceeb, 40, 120);
+    scene.background = new THREE.Color(0x87ceeb);
+    scene.fog = new THREE.Fog(0x87ceeb, 80, 280);
 
     clock = new THREE.Clock();
 
-    // دوربین
-    camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 200);
-    camera.position.set(0, 10, -16);
+    camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 400);
+    camera.position.set(0, 14, -22);
 
     // رندرر
     renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -322,16 +321,16 @@ const CityWorld = (function () {
 
     // خورشید (directional)
     const sun = new THREE.DirectionalLight(0xfff5e0, 1.2);
-    sun.position.set(30, 60, -40);
+    sun.position.set(50, 100, -60);
     sun.castShadow = true;
     sun.shadow.mapSize.width = 2048;
     sun.shadow.mapSize.height = 2048;
     sun.shadow.camera.near = 0.5;
-    sun.shadow.camera.far = 200;
-    sun.shadow.camera.left = -60;
-    sun.shadow.camera.right = 60;
-    sun.shadow.camera.top = 60;
-    sun.shadow.camera.bottom = -60;
+    sun.shadow.camera.far = 350;
+    sun.shadow.camera.left = -150;
+    sun.shadow.camera.right = 150;
+    sun.shadow.camera.top = 150;
+    sun.shadow.camera.bottom = -150;
     scene.add(sun);
 
     // نور پشت (rim)
@@ -344,73 +343,106 @@ const CityWorld = (function () {
   // زمین
   // ─────────────────────────────────────────────
   function _buildGround() {
-    const geo = new THREE.PlaneGeometry(200, 200, 40, 40);
-    const mat = new THREE.MeshLambertMaterial({ color: 0x4ade80 }); // سبز علف
+    // زمین اصلی ۴۰۰×۴۰۰
+    const geo = new THREE.PlaneGeometry(400, 400, 60, 60);
+    const mat = new THREE.MeshLambertMaterial({ color: 0x4ade80 });
     const ground = new THREE.Mesh(geo, mat);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     scene.add(ground);
 
-    // چمن‌های تزئینی
-    for (let i = 0; i < 80; i++) {
-      const gx = (Math.random() - 0.5) * 180;
-      const gz = (Math.random() - 0.5) * 180;
-      // اگر نزدیک ساختمانی باشد skip
+    // درخت‌های پراکنده — تعداد بیشتر برای شهر بزرگ‌تر
+    for (let i = 0; i < 180; i++) {
+      const gx = (Math.random() - 0.5) * 360;
+      const gz = (Math.random() - 0.5) * 360;
       const tooClose = BUILDINGS_CONFIG.some(b => {
         const dx = gx - b.position.x, dz = gz - b.position.z;
-        return Math.sqrt(dx*dx + dz*dz) < 8;
+        return Math.sqrt(dx*dx + dz*dz) < 10;
       });
       if (tooClose) continue;
-      const treeH = 2 + Math.random() * 2;
+      const treeH = 2.5 + Math.random() * 3;
       const trunk = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.15, 0.2, treeH, 6),
+        new THREE.CylinderGeometry(0.15, 0.22, treeH, 6),
         new THREE.MeshLambertMaterial({ color: 0x8B4513 })
       );
       trunk.position.set(gx, treeH / 2, gz);
       trunk.castShadow = true;
       scene.add(trunk);
-
       const crown = new THREE.Mesh(
-        new THREE.ConeGeometry(1 + Math.random(), 2.5 + Math.random(), 6),
-        new THREE.MeshLambertMaterial({ color: 0x228B22 })
+        new THREE.ConeGeometry(1.2 + Math.random() * 0.8, 3 + Math.random() * 1.5, 7),
+        new THREE.MeshLambertMaterial({ color: Math.random() > 0.3 ? 0x228B22 : 0x2d6a2d })
       );
-      crown.position.set(gx, treeH + 1.2, gz);
+      crown.position.set(gx, treeH + 1.5, gz);
       crown.castShadow = true;
       scene.add(crown);
     }
+
+    // پارک‌ها — تکه‌های چمن تیره‌تر
+    const parkMat = new THREE.MeshLambertMaterial({ color: 0x22c55e });
+    [[20, 20], [-20, -20], [20, -70], [-20, 70]].forEach(([px, pz]) => {
+      const park = new THREE.Mesh(new THREE.PlaneGeometry(18, 18), parkMat);
+      park.rotation.x = -Math.PI / 2;
+      park.position.set(px, 0.01, pz);
+      scene.add(park);
+    });
   }
 
   // ─────────────────────────────────────────────
-  // جاده‌ها
+  // جاده‌ها — شبکه گسترده‌تر
   // ─────────────────────────────────────────────
   function _buildRoads() {
-    const roadMat = new THREE.MeshLambertMaterial({ color: 0x374151 });
+    const roadMat  = new THREE.MeshLambertMaterial({ color: 0x374151 });
+    const stripeMat = new THREE.MeshLambertMaterial({ color: 0xffd700 });
     const roadY = 0.02;
 
-    // جاده افقی اصلی
-    const hRoad = new THREE.Mesh(new THREE.PlaneGeometry(100, 5), roadMat);
-    hRoad.rotation.x = -Math.PI / 2;
-    hRoad.position.set(0, roadY, 0);
-    scene.add(hRoad);
+    // جاده‌های اصلی (پهن‌تر)
+    const roads = [
+      { w: 220, h: 7,  x: 0,   z: 0,   rot: 0 },   // افقی مرکزی
+      { w: 7,   h: 220,x: 0,   z: 0,   rot: 0 },   // عمودی مرکزی
+      { w: 180, h: 6,  x: 0,   z: 55,  rot: 0 },   // افقی شمالی
+      { w: 180, h: 6,  x: 0,   z: -55, rot: 0 },   // افقی جنوبی
+      { w: 6,   h: 180,x: 50,  z: 0,   rot: 0 },   // عمودی شرقی
+      { w: 6,   h: 180,x: -50, z: 0,   rot: 0 },   // عمودی غربی
+      { w: 6,   h: 160,x: 80,  z: 0,   rot: 0 },   // عمودی دور
+      { w: 6,   h: 160,x: -80, z: 0,   rot: 0 },
+      { w: 200, h: 6,  x: 0,   z: 90,  rot: 0 },   // افقی دور شمال
+      { w: 200, h: 6,  x: 0,   z: -90, rot: 0 },
+    ];
 
-    // جاده عمودی اصلی
-    const vRoad = new THREE.Mesh(new THREE.PlaneGeometry(5, 100), roadMat);
-    vRoad.rotation.x = -Math.PI / 2;
-    vRoad.position.set(0, roadY, 0);
-    scene.add(vRoad);
+    roads.forEach(r => {
+      const road = new THREE.Mesh(new THREE.PlaneGeometry(r.w, r.h), roadMat);
+      road.rotation.x = -Math.PI / 2;
+      road.position.set(r.x, roadY, r.z);
+      scene.add(road);
+    });
 
-    // خط‌کشی جاده
-    const stripeMat = new THREE.MeshLambertMaterial({ color: 0xffd700 });
-    for (let i = -48; i < 50; i += 6) {
-      const stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 3), stripeMat);
-      stripe.rotation.x = -Math.PI / 2;
-      stripe.position.set(i, roadY + 0.01, 0);
-      scene.add(stripe);
+    // خط‌کشی جاده اصلی (بلندتر)
+    for (let i = -105; i < 110; i += 7) {
+      const s1 = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 3.5), stripeMat);
+      s1.rotation.x = -Math.PI / 2;
+      s1.position.set(i, roadY + 0.01, 0);
+      scene.add(s1);
+      const s2 = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 0.25), stripeMat);
+      s2.rotation.x = -Math.PI / 2;
+      s2.position.set(0, roadY + 0.01, i);
+      scene.add(s2);
+    }
 
-      const stripe2 = new THREE.Mesh(new THREE.PlaneGeometry(3, 0.2), stripeMat);
-      stripe2.rotation.x = -Math.PI / 2;
-      stripe2.position.set(0, roadY + 0.01, i);
-      scene.add(stripe2);
+    // چراغ‌های خیابان
+    const poleM = new THREE.MeshLambertMaterial({ color: 0x555 });
+    const lightM = new THREE.MeshBasicMaterial({ color: 0xffffaa });
+    for (let i = -100; i <= 100; i += 25) {
+      [[i, 5], [i, -5]].forEach(([x, z]) => {
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 6, 6), poleM);
+        pole.position.set(x, 3, z);
+        scene.add(pole);
+        const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), lightM);
+        lamp.position.set(x, 6.3, z);
+        scene.add(lamp);
+        const pl = new THREE.PointLight(0xffffee, 0.6, 18);
+        pl.position.set(x, 6, z);
+        scene.add(pl);
+      });
     }
   }
 
@@ -557,7 +589,7 @@ const CityWorld = (function () {
     arrowSprite.scale.set(2.5, 0.9, 1);
     character.add(arrowSprite);
 
-    character.position.set(0, 0, -6);
+    character.position.set(0, 0, -10);
     scene.add(character);
   }
 
@@ -658,8 +690,8 @@ const CityWorld = (function () {
     carMesh.add(carSprite);
     labels.push(carSprite);
 
-    // موقعیت اولیه ماشین — کنار داشبورد روی جاده
-    carMesh.position.set(8, 0, -10);
+    // موقعیت اولیه ماشین — کنار داشبورد
+    carMesh.position.set(12, 0, -12);
     carMesh.rotation.y = Math.PI / 2;
     scene.add(carMesh);
   }
@@ -669,21 +701,21 @@ const CityWorld = (function () {
   // ─────────────────────────────────────────────
   function _buildSkyDetails() {
     const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 28; i++) {
       const cloudGroup = new THREE.Group();
-      const cx = (Math.random() - 0.5) * 160;
-      const cy = 40 + Math.random() * 20;
-      const cz = (Math.random() - 0.5) * 160;
-      [0, -1.2, 1.2, -0.6, 0.6].forEach((dx, idx) => {
+      const cx = (Math.random() - 0.5) * 340;
+      const cy = 45 + Math.random() * 30;
+      const cz = (Math.random() - 0.5) * 340;
+      [0, -1.5, 1.5, -0.7, 0.7, -2.2, 2.2].forEach((dx) => {
         const puff = new THREE.Mesh(
-          new THREE.SphereGeometry(1.5 + Math.random() * 0.8, 7, 7),
+          new THREE.SphereGeometry(2 + Math.random() * 1.2, 7, 7),
           cloudMat
         );
-        puff.position.set(dx * 1.5, Math.random() * 0.5, (Math.random() - 0.5) * 1.5);
+        puff.position.set(dx * 1.8, Math.random() * 0.8, (Math.random() - 0.5) * 2);
         cloudGroup.add(puff);
       });
       cloudGroup.position.set(cx, cy, cz);
-      cloudGroup.userData.cloudDrift = (Math.random() - 0.5) * 0.003;
+      cloudGroup.userData.cloudDrift = (Math.random() - 0.5) * 0.004;
       scene.add(cloudGroup);
     }
   }
@@ -979,8 +1011,8 @@ const CityWorld = (function () {
     scene.children.forEach(obj => {
       if (obj.userData.cloudDrift) {
         obj.position.x += obj.userData.cloudDrift;
-        if (obj.position.x > 80) obj.position.x = -80;
-        if (obj.position.x < -80) obj.position.x = 80;
+        if (obj.position.x > 180) obj.position.x = -180;
+        if (obj.position.x < -180) obj.position.x = 180;
       }
     });
 
@@ -1003,7 +1035,7 @@ const CityWorld = (function () {
   // ─────────────────────────────────────────────
   function _updateMovement(delta) {
     if (inTank) {
-      _updateTank(delta); // تانک جداگانه آپدیت می‌شه در _animate
+      // تانک فقط در _animate مستقیم آپدیت می‌شه — اینجا skip
     } else if (inCar) {
       _updateCarMovement(delta);
     } else {
@@ -1047,9 +1079,9 @@ const CityWorld = (function () {
         carVelocity *= -0.3; // جهش برگشت
       }
 
-      // باند جهان
-      carMesh.position.x = Math.max(-95, Math.min(95, carMesh.position.x));
-      carMesh.position.z = Math.max(-95, Math.min(95, carMesh.position.z));
+      // باند جهان — بزرگ‌تر برای شهر جدید
+      carMesh.position.x = Math.max(-185, Math.min(185, carMesh.position.x));
+      carMesh.position.z = Math.max(-185, Math.min(185, carMesh.position.z));
 
       // انیمیشن چرخش چرخ‌ها
       const wheelTurn = carVelocity * delta * 2.5;
@@ -1100,8 +1132,8 @@ const CityWorld = (function () {
       const angle = Math.atan2(worldX, worldZ);
       character.rotation.y = angle;
 
-      character.position.x = Math.max(-95, Math.min(95, character.position.x));
-      character.position.z = Math.max(-95, Math.min(95, character.position.z));
+      character.position.x = Math.max(-185, Math.min(185, character.position.x));
+      character.position.z = Math.max(-185, Math.min(185, character.position.z));
 
       // انیمیشن راه رفتن
       const t = performance.now() * 0.008;
@@ -1314,8 +1346,8 @@ const CityWorld = (function () {
   // Minimap 2D
   // ─────────────────────────────────────────────
   function _updateMinimap() {
-    const canvas = document.getElementById('city-minimap');
-    if (!canvas) return;
+    const canvas = document.getElementById('city-minimap-canvas');
+    if (!canvas || typeof canvas.getContext !== 'function') return;
     const ctx = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
     const cx = W / 2, cy = H / 2;
@@ -1446,12 +1478,12 @@ const CityWorld = (function () {
         pathIdx: 0,
       };
 
-      // موقعیت تصادفی اولیه
+      // موقعیت تصادفی اولیه — پراکنده در شهر بزرگ
       const angle = (idx / NPC_CONFIGS.length) * Math.PI * 2;
       npc.position.set(
-        Math.cos(angle) * (15 + idx * 4),
+        Math.cos(angle) * (25 + idx * 8),
         0,
-        Math.sin(angle) * (15 + idx * 4)
+        Math.sin(angle) * (25 + idx * 8)
       );
 
       // برچسب نام
@@ -1612,10 +1644,10 @@ const CityWorld = (function () {
     const path = [];
     let cx = start.x, cz = start.z;
     for (let i = 0; i < numPoints; i++) {
-      cx += (Math.random() - 0.5) * 20;
-      cz += (Math.random() - 0.5) * 20;
-      cx = Math.max(-80, Math.min(80, cx));
-      cz = Math.max(-80, Math.min(80, cz));
+      cx += (Math.random() - 0.5) * 40;
+      cz += (Math.random() - 0.5) * 40;
+      cx = Math.max(-160, Math.min(160, cx));
+      cz = Math.max(-160, Math.min(160, cz));
       path.push({ x: cx, z: cz });
     }
     return path;
@@ -1818,9 +1850,9 @@ const CityWorld = (function () {
     tank.add(tankLabel);
     labels.push(tankLabel);
 
-    // موقعیت اولیه تانک
-    tank.position.set(-15, 0, 8);
-    tank.rotation.y = Math.PI / 4;
+    // موقعیت اولیه تانک — کنار جاده اصلی
+    tank.position.set(-30, 0, 15);
+    tank.rotation.y = Math.PI / 6;
     scene.add(tank);
   }
 
@@ -1847,8 +1879,8 @@ const CityWorld = (function () {
       if (!_collidesLarge(nx, nz, 3, 3.5)) {
         tank.position.x = nx; tank.position.z = nz;
       } else { tankVelocity *= -0.3; }
-      tank.position.x = Math.max(-90, Math.min(90, tank.position.x));
-      tank.position.z = Math.max(-90, Math.min(90, tank.position.z));
+      tank.position.x = Math.max(-185, Math.min(185, tank.position.x));
+      tank.position.z = Math.max(-185, Math.min(185, tank.position.z));
     }
 
     // چرخش برج با ماوس (اگر در تانک باشیم)
