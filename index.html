@@ -732,6 +732,26 @@
                 </button>
             </div>
             <p class="text-gray-400 text-sm mb-4">کارمندانی که تیک بزنید می‌توانند صفحه حسابداری کارمندان را ببینند.</p>
+            <!-- هشدار migration — در صورت عدم وجود جدول نشون داده میشه -->
+            <div id="emp-acc-migration-warn" style="display:none;"
+                 class="mb-4 p-3 bg-yellow-900/50 border border-yellow-500/40 rounded-xl text-xs text-yellow-300 space-y-2">
+                <p class="font-bold flex items-center gap-2">
+                    <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                    برای sync بین دستگاه‌ها، این SQL را در Supabase اجرا کنید:
+                </p>
+                <pre id="migration-sql-text" class="bg-black/40 p-2 rounded-lg overflow-x-auto text-green-300 text-xs leading-relaxed whitespace-pre-wrap select-all cursor-copy" onclick="navigator.clipboard.writeText(this.textContent).then(()=>{ this.style.outline='2px solid #22c55e'; setTimeout(()=>this.style.outline='',1000); })">CREATE TABLE IF NOT EXISTS public.app_settings (
+    key        TEXT PRIMARY KEY,
+    value      JSONB NOT NULL DEFAULT 'null',
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "allow_all_app_settings" ON public.app_settings;
+CREATE POLICY "allow_all_app_settings" ON public.app_settings
+    FOR ALL USING (true) WITH CHECK (true);
+INSERT INTO public.app_settings (key, value)
+VALUES ('empAccAllowedIds', '[]') ON CONFLICT (key) DO NOTHING;</pre>
+                <p class="text-gray-400">مسیر: Supabase Dashboard → SQL Editor → اجرا کنید</p>
+            </div>
             <div id="emp-acc-assign-list" class="space-y-2 max-h-72 overflow-y-auto mb-5"></div>
             <div class="flex gap-3">
                 <button onclick="saveEmpAccAssign()"
@@ -877,6 +897,56 @@
     </script>
     <!-- ═══ تخصیص کارمند به حسابداری کارمندان ═══ -->
     <script>
+        // ── پارامترهای Supabase (مستقل از supabase-config.js) ──
+        var _SB_URL = 'https://cikwuctdkatcxwzwxvff.supabase.co';
+        var _SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpa3d1Y3Rka2F0Y3h3end4dmZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2NzY1MzcsImV4cCI6MjA5OTI1MjUzN30.HiOMF3J4DSR21qreVrlhCxdXjshzOidhvwv96CeJDd8';
+        var _sbHeaders = { 'apikey': _SB_KEY, 'Authorization': 'Bearer ' + _SB_KEY, 'Content-Type': 'application/json' };
+
+        // چک وجود جدول app_settings در Supabase
+        async function _checkAppSettingsTable() {
+            try {
+                var res = await fetch(_SB_URL + '/rest/v1/app_settings?key=eq.empAccAllowedIds&select=key&limit=1', { headers: _sbHeaders });
+                return res.ok; // 200 = جدول هست، 404 = نیست
+            } catch(e) { return false; }
+        }
+
+        // خواندن empAccAllowedIds از Supabase، fallback به localStorage
+        async function _fetchEmpAccAllowedIds() {
+            try {
+                var res = await fetch(_SB_URL + '/rest/v1/app_settings?key=eq.empAccAllowedIds&select=value', { headers: _sbHeaders });
+                if (res.ok) {
+                    var rows = await res.json();
+                    if (rows && rows.length > 0 && Array.isArray(rows[0].value)) {
+                        var ids = rows[0].value;
+                        localStorage.setItem('empAccAllowedIds', JSON.stringify(ids));
+                        return ids;
+                    }
+                }
+            } catch(e) {}
+            // fallback به localStorage
+            try { return JSON.parse(localStorage.getItem('empAccAllowedIds') || '[]'); } catch(e) { return []; }
+        }
+
+        // ذخیره empAccAllowedIds در Supabase
+        async function _saveEmpAccToSupabase(ids) {
+            try {
+                var res = await fetch(_SB_URL + '/rest/v1/app_settings?on_conflict=key', {
+                    method: 'POST',
+                    headers: Object.assign({}, _sbHeaders, { 'Prefer': 'resolution=merge-duplicates' }),
+                    body: JSON.stringify({ key: 'empAccAllowedIds', value: ids, updated_at: new Date().toISOString() })
+                });
+                if (res.ok || res.status === 201) {
+                    console.log('✅ empAccAllowedIds در Supabase ذخیره شد:', ids);
+                    return true;
+                }
+                console.warn('⚠️ ذخیره در Supabase ناموفق — status:', res.status);
+                return false;
+            } catch(e) {
+                console.warn('⚠️ ذخیره در Supabase خطا:', e.message);
+                return false;
+            }
+        }
+
         // لیست کارمندان از HARDCODED_USERS — بعد از لود اسکریپت‌ها
         function _getEmployeesForAssign() {
             try {
@@ -898,21 +968,27 @@
             var list  = document.getElementById('emp-acc-assign-list');
             if (!modal || !list) return;
 
-            var allowed = [];
-            try { allowed = JSON.parse(localStorage.getItem('empAccAllowedIds') || '[]'); } catch(e) {}
+            // چک وجود جدول Supabase و نمایش migration warning
+            var warn = document.getElementById('emp-acc-migration-warn');
+            _checkAppSettingsTable().then(function(exists) {
+                if (warn) warn.style.display = exists ? 'none' : 'block';
+            });
 
-            var employees = _getEmployeesForAssign();
-            list.innerHTML = employees.map(function(emp) {
-                var checked = allowed.includes(emp.id) ? 'checked' : '';
-                return '<label class="flex items-center gap-3 p-3 rounded-xl bg-slate-700 hover:bg-slate-600 cursor-pointer transition-colors">'
-                    + '<input type="checkbox" value="' + emp.id + '" ' + checked
-                    + ' class="w-4 h-4 accent-green-500 flex-shrink-0">'
-                    + '<div class="w-8 h-8 rounded-full bg-green-500/30 flex items-center justify-center text-green-300 font-bold text-sm flex-shrink-0">'
-                    + emp.name.charAt(0)
-                    + '</div>'
-                    + '<span class="text-white font-medium text-sm">' + emp.name + '</span>'
-                    + '</label>';
-            }).join('');
+            // ابتدا از Supabase بخون، اگه نبود از localStorage
+            _fetchEmpAccAllowedIds().then(function(allowed) {
+                var employees = _getEmployeesForAssign();
+                list.innerHTML = employees.map(function(emp) {
+                    var checked = allowed.includes(emp.id) ? 'checked' : '';
+                    return '<label class="flex items-center gap-3 p-3 rounded-xl bg-slate-700 hover:bg-slate-600 cursor-pointer transition-colors">'
+                        + '<input type="checkbox" value="' + emp.id + '" ' + checked
+                        + ' class="w-4 h-4 accent-green-500 flex-shrink-0">'
+                        + '<div class="w-8 h-8 rounded-full bg-green-500/30 flex items-center justify-center text-green-300 font-bold text-sm flex-shrink-0">'
+                        + emp.name.charAt(0)
+                        + '</div>'
+                        + '<span class="text-white font-medium text-sm">' + emp.name + '</span>'
+                        + '</label>';
+                }).join('');
+            });
 
             modal.style.display = 'flex';
         }
@@ -942,13 +1018,18 @@
             // آپدیت مرکزی — Alpine state + localStorage + event
             window.setEmpAccAllowedIds(selected);
 
-            // sync کل لیست با Supabase
-            if (typeof SupabaseDataModule !== 'undefined' &&
-                typeof SupabaseDataModule.syncEmpAccAllowedIds === 'function') {
-                SupabaseDataModule.syncEmpAccAllowedIds(selected).catch(function(e) {
-                    console.warn('Supabase sync error:', e);
-                });
-            }
+            // sync با Supabase از طریق fetch مستقیم
+            _saveEmpAccToSupabase(selected).then(function(ok) {
+                if (!ok) {
+                    // fallback به SupabaseDataModule اگه موجود بود
+                    if (typeof SupabaseDataModule !== 'undefined' &&
+                        typeof SupabaseDataModule.syncEmpAccAllowedIds === 'function') {
+                        SupabaseDataModule.syncEmpAccAllowedIds(selected).catch(function(e) {
+                            console.warn('Supabase sync error:', e);
+                        });
+                    }
+                }
+            });
 
             closeEmpAccAssignModal();
 
