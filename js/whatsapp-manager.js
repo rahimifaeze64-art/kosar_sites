@@ -94,7 +94,7 @@ const WhatsAppManager = {
                 avatar: 'ف',
             },
             {
-                id: 'wa_005',
+                id: 'wa_003',
                 sender: 'هشام لعبدالله',
                 phone: '+964 771 333 4444',
                 text: 'سلام دکتر کی برای تسویه بیام',
@@ -108,7 +108,7 @@ const WhatsAppManager = {
                 avatar: 'ز',
             },
             {
-                id: 'wa_003',
+                id: 'wa_004',
                 sender: '+964 780 111 2222',
                 phone: '+964 780 111 2222',
                 text: '📞 تماس از دست رفته',
@@ -122,7 +122,7 @@ const WhatsAppManager = {
                 avatar: '📞',
             },
             {
-                id: 'wa_004',
+                id: 'wa_005',
                 sender: 'علی حسین',
                 phone: '+964 790 444 5555',
                 text: 'سلام، قیمت ترجمه پایان‌نامه چقدره؟',
