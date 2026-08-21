@@ -94,6 +94,20 @@ const WhatsAppManager = {
                 avatar: 'ف',
             },
             {
+                id: 'wa_005',
+                sender: 'هشام لعبدالله',
+                phone: '+964 771 333 4444',
+                text: 'سلام دکتر کی برای تسویه بیام',
+                category: 'order',
+                priority: 'high',
+                status: 'pending',
+                time: new Date(Date.now() - 86400000).toISOString(),
+                replyAt: null,
+                replyNote: 'ثبت سفارش انجام شد',
+                replied: true,
+                avatar: 'ز',
+            },
+            {
                 id: 'wa_003',
                 sender: '+964 780 111 2222',
                 phone: '+964 780 111 2222',
@@ -120,20 +134,6 @@ const WhatsAppManager = {
                 replyNote: 'ارسال لیست قیمت',
                 replied: false,
                 avatar: 'ع',
-            },
-            {
-                id: 'wa_005',
-                sender: 'هشام لعبدالله',
-                phone: '+964 771 333 4444',
-                text: 'سلام دکتر کی برای تسویه بیام',
-                category: 'order',
-                priority: 'high',
-                status: 'done',
-                time: new Date(Date.now() - 86400000).toISOString(),
-                replyAt: null,
-                replyNote: 'ثبت سفارش انجام شد',
-                replied: true,
-                avatar: 'ز',
             },
         ];
     },
@@ -397,7 +397,7 @@ const WhatsAppManager = {
                     <i class="fas fa-info-circle"></i> نحوه اتصال
                 </p>
                 <ol class="text-gray-300 text-sm space-y-2 list-decimal list-inside">
-                    <li>سرور Node.js را اجرا کنید</li>
+                    <li>برنامه  را اجرا کنید</li>
                     <li>QR Code نمایش داده می‌شود</li>
                     <li>در واتساپ → دستگاه‌های مرتبط → QR اسکن کنید</li>
                     <li>پیام‌ها به‌صورت خودکار دریافت می‌شوند</li>
@@ -412,7 +412,7 @@ const WhatsAppManager = {
                         <p class="text-xs">QR Code بعد از راه‌اندازی سرور نمایش داده می‌شود</p>
                     </div>
                 </div>
-                <p class="text-gray-400 text-xs text-center">برای استفاده باید سرور Node.js روی سیستم یا هاست شما اجرا باشد</p>
+                <p class="text-gray-400 text-xs text-center">برای استفاده باید سرور روی سیستم یا هاست شما اجرا باشد</p>
             </div>
 
             <!-- لینک راه‌اندازی -->
@@ -431,7 +431,7 @@ const WhatsAppManager = {
             <div class="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3">
                 <p class="text-blue-300 text-xs flex items-start gap-2">
                     <i class="fas fa-lightbulb mt-0.5 flex-shrink-0"></i>
-                    در حال حاضر می‌توانید پیام‌ها را <strong class="text-white">دستی</strong> اضافه کنید. اتصال خودکار نیاز به سرور Node.js دارد.
+                    در حال حاضر می‌توانید پیام‌ها را <strong class="text-white">دستی</strong> ا اتصال خودکار نیاز به سرور دارد.
                 </p>
             </div>
         </div>
@@ -827,7 +827,7 @@ const WhatsAppManager = {
             .catch(() => {
                 if (dot) { dot.className = 'w-2 h-2 rounded-full bg-red-400'; }
                 if (text) { text.textContent = 'سرور در دسترس نیست'; }
-                alert('❌ سرور در دسترس نیست. ابتدا سرور Node.js را اجرا کنید.');
+                alert('❌ سرور در دسترس نیست. برنامه را اجرا کنید.');
             });
     },
 
