@@ -92,8 +92,18 @@ function appController() {
             console.log("🔄 Loading orders page...");
             await this.loadOrdersPageWithRetry();
           }
-          if (newPage === "embassy") {
-            // embassy-root همیشه در DOM است (x-show فقط display:none می‌کند)
+          // واتساپ — فقط مدیر
+          if (newPage === 'whatsapp' && this.currentUser.role === 'manager') {
+              this.$nextTick(() => {
+                  const root = document.getElementById('wa-page-root');
+                  if (root && typeof WhatsAppManager !== 'undefined') {
+                      root.innerHTML = WhatsAppManager.getContent();
+                      WhatsAppManager._startBadgeUpdater();
+                  }
+              });
+          }
+
+          if (newPage === "embassy") {            // embassy-root همیشه در DOM است (x-show فقط display:none می‌کند)
             // مستقیم inject می‌کنیم
             const doInit = () => {
               const root = document.getElementById('embassy-root');
@@ -411,6 +421,7 @@ function appController() {
     getPageTitle() {
       const pageTitles = {
         embassy: 'سفارت',
+        whatsapp: 'مدیریت واتساپ',
         dashboard: "داشبورد",
         tasks: "مدیریت همکاران",
         myTasks: "وظایف من",
