@@ -574,21 +574,26 @@ const EmployeeAccountingUI = (function() {
             const timeRange = !isExpense && entry.startTime && entry.endTime
                 ? `<span class="text-black-300/60 text-xs block">${entry.startTime} — ${entry.endTime}</span>` : '';
 
-            // ستون وضعیت: مدیر → دو دکمه تیک/ضربدر | کارمند → فقط نمایش
+            // ستون وضعیت: مدیر → فقط وقتی pending دو دکمه نشون بده | بقیه فقط نمایش
             const actionCell = isManagerView
                 ? `<td class="text-center py-3 px-3">
-                    <div class="flex gap-1 justify-center">
-                        <button onclick="WorkHoursUI.approveEntry('${entry.id}'); EmployeeAccountingUI.refreshContent()"
-                            title="تأیید"
-                            class="w-7 h-7 flex items-center justify-center rounded-lg ${entry.status==='approved' ? 'bg-green-500/40 text-green-300 cursor-default' : 'bg-green-500/20 hover:bg-green-500/50 text-green-400 cursor-pointer'} transition-all">
-                            <i class="fas fa-check text-xs"></i>
-                        </button>
-                        <button onclick="WorkHoursUI.rejectEntry('${entry.id}'); EmployeeAccountingUI.refreshContent()"
-                            title="رد"
-                            class="w-7 h-7 flex items-center justify-center rounded-lg ${entry.status==='rejected' ? 'bg-red-500/40 text-red-300 cursor-default' : 'bg-red-500/20 hover:bg-red-500/50 text-red-400 cursor-pointer'} transition-all">
-                            <i class="fas fa-times text-xs"></i>
-                        </button>
-                    </div>
+                    ${entry.status === 'approved'
+                        ? `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-500/20 text-green-300 text-xs"><i class="fas fa-check-circle"></i> تأیید شده</span>`
+                        : entry.status === 'rejected'
+                            ? `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-500/20 text-red-300 text-xs"><i class="fas fa-times-circle"></i> رد شده</span>`
+                            : `<div class="flex gap-1 justify-center">
+                                <button onclick="WorkHoursUI.approveEntry('${entry.id}'); EmployeeAccountingUI.refreshContent()"
+                                    title="تأیید"
+                                    class="w-7 h-7 flex items-center justify-center rounded-lg bg-green-500/20 hover:bg-green-500/50 text-green-400 cursor-pointer transition-all">
+                                    <i class="fas fa-check text-xs"></i>
+                                </button>
+                                <button onclick="WorkHoursUI.rejectEntry('${entry.id}'); EmployeeAccountingUI.refreshContent()"
+                                    title="رد"
+                                    class="w-7 h-7 flex items-center justify-center rounded-lg bg-red-500/20 hover:bg-red-500/50 text-red-400 cursor-pointer transition-all">
+                                    <i class="fas fa-times text-xs"></i>
+                                </button>
+                              </div>`
+                    }
                   </td>`
                 : `<td class="text-center py-3 px-3">
                     <span class="${statusColors[entry.status]||statusColors.pending} px-3 py-1 rounded-full text-xs">
