@@ -656,7 +656,7 @@ const EmployeeAccountingUI = (function() {
                 + ' onmouseover="this.style.background=\'rgba(255,255,255,0.09)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.05)\'">'
                 + '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
                 + '<i class="fas fa-calendar-alt" style="color:#a3e635;font-size:13px;"></i>'
-                + '<span style="color:#ffffff;font-weight:700;font-size:14px;">'+monthTitle+'</span>'
+                + '<span style="color:#000000ff;font-weight:700;font-size:14px;">'+monthTitle+'</span>'
                 + '<div style="display:flex;gap:5px;flex-wrap:wrap;">'+badges+'</div>'
                 + '</div>'
                 + '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">'
@@ -1687,7 +1687,7 @@ const EmployeeAccountingUI = (function() {
                 +' onmouseover="this.style.background=\'rgba(255,255,255,0.09)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.05)\'">'
                 +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
                 +'<i class="fas fa-calendar-alt" style="color:#a3e635;font-size:13px;"></i>'
-                +'<span style="color:#ffffff;font-weight:700;font-size:14px;">'+monthTitle+'</span>'
+                +'<span style="color:#000000ff;font-weight:700;font-size:14px;">'+monthTitle+'</span>'
                 +'<div style="display:flex;gap:5px;flex-wrap:wrap;">'+badges+'</div>'
                 +'</div>'
                 +'<div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">'
@@ -1802,7 +1802,7 @@ const EmployeeAccountingUI = (function() {
                 </div>
 
                 <!-- سوابق کاری — ماه‌بندی شده با accordion -->
-                <h4 style="color:#ffffff;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-size:14px;">
+                <h4 style="color:#000000ff;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-size:14px;">
                     <i class="fas fa-calendar-alt" style="color:#a3e635;"></i>سوابق کاری
                     <span style="color:#9ca3af;font-size:11px;font-weight:400;">(${entries.length} رکورد)</span>
                 </h4>
