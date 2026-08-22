@@ -1716,18 +1716,16 @@ const EmployeeAccountingUI = (function() {
                             <option value="no_pending">بدون موارد در انتظار</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="text-gray-400 text-xs mb-1 block">شامل جزئیات سوابق</label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" id="emp-exp-details" class="accent-green-500 w-4 h-4">
-                            <span class="text-gray-300 text-sm">اضافه کردن ردیف جزئیات هر سابقه</span>
-                        </label>
+                    <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                        <p class="text-blue-300 text-xs flex items-center gap-2">
+                            <i class="fas fa-info-circle"></i>
+                            خروجی شامل <strong class="text-white">سه بخش</strong> است: خلاصه کارمندان، جزئیات کامل سوابق، و کسورات/هدایا
+                        </p>
                     </div>
-                </div>
                 <div class="flex gap-3 mt-5">
                     <button onclick="EmployeeAccountingUI.doExportEmployeesCSV()"
                         class="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 rounded-xl transition-all">
-                        <i class="fas fa-download ml-1"></i>دانلود CSV
+                        <i class="fas fa-download ml-1"></i>دانلود Excel کامل
                     </button>
                     <button onclick="document.getElementById('emp-export-modal').remove()"
                         class="px-5 bg-gray-600 hover:bg-gray-500 text-white py-2.5 rounded-xl">انصراف</button>
@@ -1747,7 +1745,6 @@ const EmployeeAccountingUI = (function() {
         const from      = document.getElementById('emp-exp-from')?.value   || '';
         const to        = document.getElementById('emp-exp-to')?.value     || '';
         const statusFlt = document.getElementById('emp-exp-status')?.value || '';
-        const inclDet   = document.getElementById('emp-exp-details')?.checked || false;
         const selIds    = Array.from(document.getElementById('emp-exp-names')?.selectedOptions || []).map(o=>o.value);
 
         const settlements = (() => { try { return JSON.parse(localStorage.getItem('work_settlements')||'[]'); } catch { return []; } })();
@@ -1759,50 +1756,183 @@ const EmployeeAccountingUI = (function() {
         if (statusFlt==='has_pending') summary = summary.filter(e=>(e.pendingHours+e.pendingExpenses)>0);
         if (statusFlt==='no_pending')  summary = summary.filter(e=>(e.pendingHours+e.pendingExpenses)===0);
 
-        const summaryHeaders = ['نام کارمند','نرخ ساعتی','جمع ساعات ارسالی','ساعات تأیید شده',
-            'هزینه‌های تأیید (تومان)','مبلغ ساعات (تومان)','جمع مبلغ کل (تومان)',
-            'جمع هدایا (تومان)','جمع کسورات (تومان)','تسویه شده (تومان)','مانده طلب (تومان)',
-            'در انتظار (ساعت)','در انتظار (هزینه)'];
+        const statusMap = { pending:'در انتظار', approved:'تأیید شده', rejected:'رد شده' };
+        const escCell   = v => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-        const allRows = [summaryHeaders];
+        // ══════════════════════════════════════════════════
+        // بخش ۱ — جدول خلاصه کارمندان
+        // ══════════════════════════════════════════════════
+        const summaryHeaders = [
+            'نام کارمند','نرخ ساعتی (تومان)',
+            'جمع ساعات ارسالی','ساعات تأیید شده','ساعات در انتظار','ساعات رد شده',
+            'جمع هزینه ارسالی (تومان)','هزینه تأیید شده (تومان)','هزینه در انتظار (تومان)','هزینه رد شده (تومان)',
+            'مبلغ ساعات تأیید (تومان)','جمع کل قابل پرداخت (تومان)',
+            'جمع هدایا (تومان)','جمع کسورات (تومان)','تسویه شده (تومان)','مانده طلب (تومان)'
+        ];
 
-        summary.forEach(emp => {
-            const paid = settlements.filter(s=>s.employeeId===emp.employeeId).reduce((s,r)=>s+Number(r.amount||0),0);
-            const ded  = deductions.filter(d=>d.employeeId===emp.employeeId).reduce((s,d)=>s+Number(d.amount||0),0);
-            const gift = gifts.filter(g=>g.employeeId===emp.employeeId).reduce((s,g)=>s+Number(g.amount||0),0);
+        const summaryRows = summary.map(emp => {
+            const paid     = settlements.filter(s=>s.employeeId===emp.employeeId).reduce((s,r)=>s+Number(r.amount||0),0);
+            const ded      = deductions.filter(d=>d.employeeId===emp.employeeId).reduce((s,d)=>s+Number(d.amount||0),0);
+            const gift     = gifts.filter(g=>g.employeeId===emp.employeeId).reduce((s,g)=>s+Number(g.amount||0),0);
 
-            allRows.push([emp.employeeName, emp.hourlyRate, emp.totalHours, emp.totalHoursApproved,
-                Math.round(emp.totalExpensesApproved), Math.round(emp.totalAmount), Math.round(emp.grandTotal),
-                Math.round(gift), Math.round(ded), Math.round(paid),
-                Math.round(emp.grandTotal + gift - ded - paid), emp.pendingHours, emp.pendingExpenses]);
+            // محاسبه دقیق ساعات/هزینه‌های هر وضعیت
+            const allEnts  = WorkHoursModule.getAllEntriesByEmployee(emp.employeeId);
+            const hoursAll = allEnts.filter(e=>e.type!=='expense');
+            const expsAll  = allEnts.filter(e=>e.type==='expense');
 
-            if (inclDet) {
-                const statusMap = { pending:'در انتظار', approved:'تأیید شده', rejected:'رد شده' };
-                let ents = WorkHoursModule.getAllEntriesByEmployee(emp.employeeId);
-                if (from) ents = ents.filter(e=>e.date>=from);
-                if (to)   ents = ents.filter(e=>e.date<=to);
-                if (ents.length) {
-                    allRows.push(['--- جزئیات سوابق ---','نوع','تاریخ','ساعت شروع','ساعت پایان','ساعت کل','مبلغ (تومان)','شرح','وضعیت']);
-                    ents.forEach(e => allRows.push([emp.employeeName, e.type==='expense'?'هزینه':'ساعت کاری',
-                        e.date||'', e.startTime||'', e.endTime||'', e.totalHours||'',
-                        e.type==='expense'?Math.round(e.amount||0):'', e.description||'', statusMap[e.status]||e.status||'']));
-                }
-                const empDeds = deductions.filter(d=>d.employeeId===emp.employeeId);
-                if (empDeds.length) {
-                    allRows.push(['--- کسورات ---','تاریخ','مبلغ (تومان)','علت']);
-                    empDeds.forEach(d => allRows.push([emp.employeeName, d.date||'', Math.round(d.amount||0), d.reason||'']));
-                }
-                const empGifts = gifts.filter(g=>g.employeeId===emp.employeeId);
-                if (empGifts.length) {
-                    allRows.push(['--- هدایا ---','تاریخ','مبلغ (تومان)','توضیح']);
-                    empGifts.forEach(g => allRows.push([emp.employeeName, g.date||'', Math.round(g.amount||0), g.reason||'']));
-                }
-            }
+            const hoursApproved = hoursAll.filter(e=>e.status==='approved').reduce((s,e)=>s+parseFloat(e.totalHours||0),0);
+            const hoursPending  = hoursAll.filter(e=>e.status==='pending').reduce((s,e)=>s+parseFloat(e.totalHours||0),0);
+            const hoursRejected = hoursAll.filter(e=>e.status==='rejected').reduce((s,e)=>s+parseFloat(e.totalHours||0),0);
+            const hoursTotal    = hoursApproved + hoursPending + hoursRejected;
+
+            const expsApproved  = expsAll.filter(e=>e.status==='approved').reduce((s,e)=>s+Number(e.amount||0),0);
+            const expsPending   = expsAll.filter(e=>e.status==='pending').reduce((s,e)=>s+Number(e.amount||0),0);
+            const expsRejected  = expsAll.filter(e=>e.status==='rejected').reduce((s,e)=>s+Number(e.amount||0),0);
+            const expsTotal     = expsApproved + expsPending + expsRejected;
+
+            const hoursAmount   = hoursApproved * (emp.hourlyRate || 0);
+            const grandTotal    = hoursAmount + expsApproved;
+            const remaining     = grandTotal + gift - ded - paid;
+
+            return [
+                emp.employeeName,
+                emp.hourlyRate,
+                +hoursTotal.toFixed(2), +hoursApproved.toFixed(2), +hoursPending.toFixed(2), +hoursRejected.toFixed(2),
+                Math.round(expsTotal), Math.round(expsApproved), Math.round(expsPending), Math.round(expsRejected),
+                Math.round(hoursAmount), Math.round(grandTotal),
+                Math.round(gift), Math.round(ded), Math.round(paid), Math.round(remaining)
+            ];
         });
 
-        _downloadRtlExcel(allRows[0], allRows.slice(1), `employees_${new Date().toISOString().substring(0,10)}.xls`);
+        // ══════════════════════════════════════════════════
+        // بخش ۲ — جدول جزئیات سوابق (همه ردیف‌ها)
+        // ══════════════════════════════════════════════════
+        const detailHeaders = [
+            'نام کارمند','نوع سابقه','تاریخ',
+            'ساعت شروع','ساعت پایان','مدت (ساعت)',
+            'مبلغ هزینه (تومان)','شرح / توضیح','وضعیت'
+        ];
+
+        const detailRows = [];
+        summary.forEach(emp => {
+            let ents = WorkHoursModule.getAllEntriesByEmployee(emp.employeeId);
+            // فیلتر بازه تاریخ — مقایسه string شمسی (YYYY/MM/DD یا YYYY-MM-DD)
+            if (from) ents = ents.filter(e => (e.date||'').replace(/\//g,'-') >= from.replace(/\//g,'-'));
+            if (to)   ents = ents.filter(e => (e.date||'').replace(/\//g,'-') <= to.replace(/\//g,'-'));
+
+            // مرتب‌سازی: تاریخ صعودی، هزینه‌ها بعد از ساعات
+            ents.sort((a,b) => {
+                const da = (a.date||'').replace(/\//g,'-');
+                const db = (b.date||'').replace(/\//g,'-');
+                if (da !== db) return da < db ? -1 : 1;
+                if (a.type !== b.type) return a.type === 'expense' ? 1 : -1;
+                return 0;
+            });
+
+            ents.forEach(e => {
+                detailRows.push([
+                    emp.employeeName,
+                    e.type === 'expense' ? 'هزینه' : 'ساعت کاری',
+                    e.date || '—',
+                    e.type !== 'expense' ? (e.startTime || '—') : '',
+                    e.type !== 'expense' ? (e.endTime   || '—') : '',
+                    e.type !== 'expense' ? (parseFloat(e.totalHours||0).toFixed(2)) : '',
+                    e.type === 'expense' ? Math.round(e.amount||0) : '',
+                    e.description || '',
+                    statusMap[e.status] || e.status || ''
+                ]);
+            });
+        });
+
+        // ══════════════════════════════════════════════════
+        // بخش ۳ — جدول کسورات و هدایا
+        // ══════════════════════════════════════════════════
+        const adjHeaders = ['نام کارمند','نوع','تاریخ','مبلغ (تومان)','توضیح / علت'];
+        const adjRows    = [];
+        summary.forEach(emp => {
+            deductions.filter(d=>d.employeeId===emp.employeeId).forEach(d =>
+                adjRows.push([emp.employeeName, 'کسورات', d.date||'—', Math.round(d.amount||0), d.reason||'']));
+            gifts.filter(g=>g.employeeId===emp.employeeId).forEach(g =>
+                adjRows.push([emp.employeeName, 'هدیه / پاداش', g.date||'—', Math.round(g.amount||0), g.reason||'']));
+            settlements.filter(s=>s.employeeId===emp.employeeId).forEach(s =>
+                adjRows.push([emp.employeeName, 'تسویه حساب', s.date||'—', Math.round(s.amount||0), s.note||'']));
+        });
+
+        // ══════════════════════════════════════════════════
+        // ساخت فایل Excel با سه جدول در یک شیت
+        // ══════════════════════════════════════════════════
+        const dateRange = (from||'…') + ' تا ' + (to||'…');
+        const thStyle   = 'background:#1a56db;color:#fff;padding:6px 10px;border:1px solid #ccc;white-space:nowrap;text-align:right;';
+        const tdStyle   = 'padding:5px 10px;border:1px solid #ddd;white-space:nowrap;text-align:right;';
+        const secStyle  = 'background:#0f2d6b;color:#a3e635;padding:8px 12px;font-size:13px;font-weight:bold;border:2px solid #a3e635;';
+
+        function buildTable(headers, rows, emptyMsg) {
+            const hRow = headers.map(h=>`<th style="${thStyle}">${escCell(h)}</th>`).join('');
+            if (!rows.length) {
+                return `<table style="border-collapse:collapse;width:100%;direction:rtl;margin-bottom:30px;">
+                    <thead><tr>${hRow}</tr></thead>
+                    <tbody><tr><td colspan="${headers.length}" style="${tdStyle}text-align:center;color:#999;">${emptyMsg}</td></tr></tbody>
+                </table>`;
+            }
+            const dRows = rows.map(r =>
+                '<tr>' + r.map((c,i) => {
+                    // رنگ‌بندی ستون وضعیت
+                    let extra = '';
+                    if (headers[i] === 'وضعیت') {
+                        if (c === 'تأیید شده') extra = 'color:#16a34a;font-weight:bold;';
+                        else if (c === 'رد شده') extra = 'color:#dc2626;font-weight:bold;';
+                        else if (c === 'در انتظار') extra = 'color:#2563eb;font-weight:bold;';
+                    }
+                    if (headers[i] === 'نوع سابقه' && c === 'هزینه') extra = 'color:#d97706;';
+                    return `<td style="${tdStyle}${extra}">${escCell(c)}</td>`;
+                }).join('') + '</tr>'
+            ).join('\n');
+            return `<table style="border-collapse:collapse;width:100%;direction:rtl;margin-bottom:30px;">
+                <thead><tr>${hRow}</tr></thead>
+                <tbody>${dRows}</tbody>
+            </table>`;
+        }
+
+        const html = `<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: Tahoma, Arial, sans-serif; direction: rtl; background:#fff; padding:20px; }
+  h2   { color:#1a56db; margin:20px 0 6px; font-size:14px; }
+  p.sub{ color:#666; font-size:11px; margin:0 0 8px; }
+</style>
+</head>
+<body>
+
+<h1 style="color:#0f2d6b;font-size:16px;margin-bottom:4px;">گزارش حسابداری کارمندان</h1>
+<p style="color:#555;font-size:11px;margin:0 0 24px;">بازه: ${escCell(dateRange)} &nbsp;|&nbsp; تاریخ تهیه: ${new Date().toLocaleDateString('fa-IR')}</p>
+
+<h2>▌ بخش اول — خلاصه مالی کارمندان</h2>
+<p class="sub">یک ردیف به ازای هر کارمند — شامل جمع ساعات، هزینه‌ها و مانده</p>
+${buildTable(summaryHeaders, summaryRows, 'هیچ کارمندی یافت نشد')}
+
+<h2>▌ بخش دوم — جزئیات کامل سوابق (تمام ردیف‌های ارسالی)</h2>
+<p class="sub">همه ساعات و هزینه‌های ارسال‌شده توسط کارمندان — تأیید شده، در انتظار، رد شده</p>
+${buildTable(detailHeaders, detailRows, 'هیچ سابقه‌ای در این بازه یافت نشد')}
+
+<h2>▌ بخش سوم — کسورات، هدایا و تسویه‌حساب</h2>
+<p class="sub">تمام تعدیلات مالی ثبت‌شده برای کارمندان</p>
+${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
+
+</body>
+</html>`;
+
+        const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+        const a    = document.createElement('a');
+        a.href     = URL.createObjectURL(blob);
+        a.download = `حسابداری-کارمندان-${new Date().toISOString().substring(0,10)}.xls`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+
         document.getElementById('emp-export-modal')?.remove();
-        showNotification('فایل Excel دانلود شد ✓', 'success');
+        showNotification(`فایل Excel دانلود شد — ${detailRows.length} ردیف جزئیات ✓`, 'success');
     }
 
     // ── تقویم کاری (فیلتر بازه تاریخ) ──────────────────────
