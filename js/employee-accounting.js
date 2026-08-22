@@ -538,157 +538,136 @@ const EmployeeAccountingUI = (function() {
 
     // ── accordion ماهانه — هر ماه شمسی یک باکس کشویی ──────
     function renderMonthlyAccordion(entries, employeeId) {
-        const MONTHS_FA = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور',
-                           'مهر','آبان','آذر','دی','بهمن','اسفند'];
+        var MONTHS_FA = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
 
-        if (!entries || entries.length === 0) {
-            return `<div class="text-center py-10 text-gray-400">
-                        <i class="fas fa-inbox text-4xl mb-3 opacity-30"></i>
-                        <p>هیچ سابقه‌ای ثبت نشده</p>
-                    </div>`;
+        function toJalaliKey(dateStr) {
+            if (!dateStr) return '0000-00';
+            var s = String(dateStr).trim().replace(/\./g,'-').replace(/\//g,'-');
+            // اعداد فارسی → لاتین
+            s = s.replace(/[۰-۹]/g,function(d){return String.fromCharCode(d.charCodeAt(0)-1728);})
+                 .replace(/[٠-٩]/g,function(d){return String.fromCharCode(d.charCodeAt(0)-1584);});
+            var parts = s.split('-');
+            if (parts.length < 3) return '0000-00';
+            var y = parseInt(parts[0],10), m = parseInt(parts[1],10), d = parseInt(parts[2],10);
+            if (!y || !m) return '0000-00';
+            if (y >= 1300 && y <= 1500) return y+'-'+String(m).padStart(2,'0');
+            if (y >= 1900 && y <= 2100) {
+                if (typeof Jalali!=='undefined' && Jalali.toJalaali) {
+                    try { var j=Jalali.toJalaali(y,m,d); return j.jy+'-'+String(j.jm).padStart(2,'0'); } catch(e){}
+                }
+                return (y-621)+'-'+String(m).padStart(2,'0');
+            }
+            return '0000-00';
         }
 
-        // گروه‌بندی بر اساس ماه شمسی (key: "1403/06" → شهریور ۱۴۰۳)
-        const monthGroups = {};
-        entries.forEach(e => {
-            const dateStr = (e.date || '').replace(/-/g, '/');
-            // فرمت تاریخ: 1403/06/15 یا 1403-06-15
-            const parts = dateStr.split('/');
-            if (parts.length < 2) { // تاریخ ناقص → در "نامشخص" قرار بده
-                const key = '0000/00';
-                if (!monthGroups[key]) monthGroups[key] = [];
-                monthGroups[key].push(e);
-                return;
-            }
-            const key = `${parts[0]}/${parts[1].padStart(2,'0')}`;
+        if (!entries || entries.length === 0) {
+            return '<div style="text-align:center;padding:40px 0;color:#e5e7eb;"><i class="fas fa-inbox" style="font-size:2rem;opacity:.3;display:block;margin-bottom:8px;"></i><p>هیچ سابقه‌ای ثبت نشده</p></div>';
+        }
+
+        var monthGroups = {};
+        entries.forEach(function(e) {
+            var key = toJalaliKey(e.date || '');
             if (!monthGroups[key]) monthGroups[key] = [];
             monthGroups[key].push(e);
         });
 
-        // مرتب‌سازی ماه‌ها — جدیدترین اول
-        const sortedKeys = Object.keys(monthGroups).sort((a,b) => b.localeCompare(a));
+        var sortedKeys = Object.keys(monthGroups).sort(function(a,b){ return b.localeCompare(a); });
 
-        // آخرین ماه را باز نگه‌دار
-        const latestKey = sortedKeys[0];
+        return sortedKeys.map(function(key, idx) {
+            var ents = monthGroups[key];
+            var isOpen = idx === 0;
 
-        return sortedKeys.map((key, idx) => {
-            const ents = monthGroups[key];
-            const isOpen = idx === 0; // اولین (جدیدترین) ماه باز
-
-            // عنوان ماه
-            let monthTitle = 'نامشخص';
-            if (key !== '0000/00') {
-                const [yr, mo] = key.split('/');
-                const moNum = parseInt(mo, 10);
-                monthTitle = `${MONTHS_FA[moNum - 1] || mo}  ${yr}`;
+            var monthTitle = 'تاریخ نامشخص';
+            if (key !== '0000-00') {
+                var kp = key.split('-');
+                var moNum = parseInt(kp[1],10);
+                monthTitle = (MONTHS_FA[moNum-1] || kp[1]) + '  ' + kp[0];
             }
 
-            // آمار ماه
-            const hoursEntries  = ents.filter(e => e.type !== 'expense');
-            const expEntries    = ents.filter(e => e.type === 'expense');
-            const totalHours    = hoursEntries.reduce((s,e) => s + parseFloat(e.totalHours||0), 0);
-            const totalExp      = expEntries.reduce((s,e)  => s + Number(e.amount||0), 0);
-            const approvedCount = ents.filter(e => e.status === 'approved').length;
-            const pendingCount  = ents.filter(e => e.status === 'pending').length;
-            const rejectedCount = ents.filter(e => e.status === 'rejected').length;
+            var hoursE  = ents.filter(function(e){ return e.type !== 'expense'; });
+            var expE    = ents.filter(function(e){ return e.type === 'expense'; });
+            var totH    = hoursE.reduce(function(s,e){ return s+parseFloat(e.totalHours||0); }, 0);
+            var totExp  = expE.reduce(function(s,e){ return s+Number(e.amount||0); }, 0);
+            var appCnt  = ents.filter(function(e){ return e.status==='approved'; }).length;
+            var penCnt  = ents.filter(function(e){ return e.status==='pending';  }).length;
+            var rejCnt  = ents.filter(function(e){ return e.status==='rejected'; }).length;
 
-            // badge‌های آماری
-            const badges = [
-                pendingCount  > 0 ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-400/20"><span class="w-1.5 h-1.5 rounded-full bg-blue-400 inline-block"></span>${pendingCount} در انتظار</span>` : '',
-                approvedCount > 0 ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-300 border border-green-400/20"><span class="w-1.5 h-1.5 rounded-full bg-green-400 inline-block"></span>${approvedCount} تأیید</span>` : '',
-                rejectedCount > 0 ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/20 text-red-300 border border-red-400/20"><span class="w-1.5 h-1.5 rounded-full bg-red-400 inline-block"></span>${rejectedCount} رد</span>` : '',
+            function mkBadge(clr, label) {
+                return '<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:'+clr+'22;color:'+clr+';border:1px solid '+clr+'44;">'
+                     + '<span style="width:6px;height:6px;border-radius:50%;background:'+clr+';display:inline-block;flex-shrink:0;"></span>'+label+'</span>';
+            }
+
+            var badges = [
+                penCnt > 0 ? mkBadge('#60a5fa', penCnt+' در انتظار') : '',
+                appCnt > 0 ? mkBadge('#4ade80', appCnt+' تأیید') : '',
+                rejCnt > 0 ? mkBadge('#f87171', rejCnt+' رد') : '',
             ].filter(Boolean).join('');
 
-            const summaryInfo = [
-                hoursEntries.length > 0 ? `<span class="text-gray-400 text-xs"><i class="fas fa-clock ml-1 text-lime-400"></i>${totalHours.toFixed(1)} ساعت</span>` : '',
-                expEntries.length   > 0 ? `<span class="text-gray-400 text-xs"><i class="fas fa-receipt ml-1 text-orange-400"></i>${Number(totalExp).toLocaleString('fa-IR')} ت</span>` : '',
-            ].filter(Boolean).join('<span class="text-gray-600 mx-2">|</span>');
+            var summaryParts = [
+                hoursE.length > 0 ? '<span style="color:#a3e635;font-size:12px;"><i class="fas fa-clock" style="margin-left:3px;font-size:11px;"></i>'+totH.toFixed(1)+' ساعت</span>' : '',
+                expE.length   > 0 ? '<span style="color:#fb923c;font-size:12px;"><i class="fas fa-receipt" style="margin-left:3px;font-size:11px;"></i>'+Number(totExp).toLocaleString('fa-IR')+' ت</span>' : '',
+            ].filter(Boolean).join('<span style="color:#4b5563;margin:0 6px;">|</span>');
 
-            const accordionId = `acc-month-${key.replace('/','_')}`;
+            var accId = 'acc-month-' + key.replace('-','_');
+            var bdrClr = penCnt > 0 ? '#60a5fa' : appCnt===ents.length ? '#4ade80' : rejCnt > 0 ? '#f87171' : '#ffffff22';
 
-            // ردیف‌های داخل جدول
-            const rows = ents.map(e => {
-                // رنگ وضعیت
-                const statusCfg = {
-                    approved: { bg: 'bg-green-500/15', text: 'text-green-300', border: 'border-green-400/20', dot: 'bg-green-400', label: 'تأیید شده' },
-                    pending:  { bg: 'bg-blue-500/15',  text: 'text-blue-300',  border: 'border-blue-400/20',  dot: 'bg-blue-400',  label: 'در انتظار' },
-                    rejected: { bg: 'bg-red-500/15',   text: 'text-red-300',   border: 'border-red-400/20',   dot: 'bg-red-400',   label: 'رد شده' },
+            var rows = ents.map(function(e) {
+                var stCfg = {
+                    approved: { bg:'rgba(34,197,94,0.12)',  txt:'#86efac', bdr:'rgba(74,222,128,0.3)',  dot:'#4ade80', lbl:'تأیید شده' },
+                    pending:  { bg:'rgba(59,130,246,0.12)', txt:'#93c5fd', bdr:'rgba(96,165,250,0.3)',  dot:'#60a5fa', lbl:'در انتظار' },
+                    rejected: { bg:'rgba(239,68,68,0.12)',  txt:'#fca5a5', bdr:'rgba(248,113,113,0.3)', dot:'#f87171', lbl:'رد شده'    },
                 };
-                const sc = statusCfg[e.status] || statusCfg.pending;
-                const isExp = e.type === 'expense';
+                var sc = stCfg[e.status] || stCfg.pending;
+                var isExp = e.type === 'expense';
 
-                const typeCell = isExp
-                    ? `<span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-orange-500/20 text-orange-300"><i class="fas fa-receipt text-xs"></i>هزینه</span>`
-                    : `<span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-blue-500/20 text-blue-300"><i class="fas fa-clock text-xs"></i>ساعت کاری</span>`;
+                var typeBadge = isExp
+                    ? '<span style="background:rgba(249,115,22,.2);color:#fdba74;padding:2px 7px;border-radius:6px;font-size:11px;white-space:nowrap;"><i class="fas fa-receipt" style="font-size:10px;margin-left:3px;"></i>هزینه</span>'
+                    : '<span style="background:rgba(59,130,246,.2);color:#93c5fd;padding:2px 7px;border-radius:6px;font-size:11px;white-space:nowrap;"><i class="fas fa-clock" style="font-size:10px;margin-left:3px;"></i>ساعت کاری</span>';
 
-                const valueCell = isExp
-                    ? `<span class="font-bold text-orange-300">${Number(e.amount||0).toLocaleString('fa-IR')} ت</span>`
-                    : `<span class="font-bold text-lime-300">${parseFloat(e.totalHours||0).toFixed(1)} <span class="text-xs font-normal text-gray-400">ساعت</span></span>
-                       ${e.startTime && e.endTime ? `<br><span class="text-gray-500 text-xs">${e.startTime} — ${e.endTime}</span>` : ''}`;
+                var valPart = isExp
+                    ? '<span style="color:#fb923c;font-weight:700;">'+Number(e.amount||0).toLocaleString('fa-IR')+' ت</span>'
+                    : '<span style="color:#a3e635;font-weight:700;">'+parseFloat(e.totalHours||0).toFixed(1)+'</span><span style="color:#9ca3af;font-size:11px;margin-right:2px;"> ساعت</span>'
+                      + (e.startTime && e.endTime ? '<br><span style="color:#9ca3af;font-size:11px;">'+e.startTime+'—'+e.endTime+'</span>' : '');
 
-                const statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${sc.bg} ${sc.text} border ${sc.border}">
-                    <span class="w-1.5 h-1.5 rounded-full ${sc.dot} inline-block"></span>${sc.label}
-                </span>`;
+                var stBadge = '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;background:'+sc.bg+';color:'+sc.txt+';border:1px solid '+sc.bdr+';white-space:nowrap;">'
+                            + '<span style="width:6px;height:6px;border-radius:50%;background:'+sc.dot+';display:inline-block;flex-shrink:0;"></span>'+sc.lbl+'</span>';
 
-                return `<tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    <td class="py-2.5 px-3">${typeCell}</td>
-                    <td class="py-2.5 px-3 text-gray-600 text-sm">${e.date || '—'}</td>
-                    <td class="py-2.5 px-3">${valueCell}</td>
-                    <td class="py-2.5 px-3 text-gray-400 text-xs max-w-xs truncate">${e.description || '—'}</td>
-                    <td class="py-2.5 px-3 text-center">${statusBadge}</td>
-                </tr>`;
+                return '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);" onmouseover="this.style.background=\'rgba(255,255,255,0.03)\'" onmouseout="this.style.background=\'transparent\'">'
+                    + '<td style="padding:8px 12px;white-space:nowrap;">'+typeBadge+'</td>'
+                    + '<td style="padding:8px 12px;color:#e5e7eb;font-size:13px;white-space:nowrap;">'+(e.date||'—')+'</td>'
+                    + '<td style="padding:8px 12px;white-space:nowrap;">'+valPart+'</td>'
+                    + '<td style="padding:8px 12px;color:#e5e7eb;font-size:13px;word-break:break-word;white-space:normal;line-height:1.5;min-width:120px;">'+(e.description||'—')+'</td>'
+                    + '<td style="padding:8px 12px;text-align:center;white-space:nowrap;">'+stBadge+'</td>'
+                    + '</tr>';
             }).join('');
 
-            // رنگ بوردر چپ accordion بر اساس وضعیت غالب
-            const borderColor = pendingCount > 0
-                ? 'border-r-blue-400/60'
-                : approvedCount === ents.length
-                    ? 'border-r-green-400/60'
-                    : rejectedCount > 0
-                        ? 'border-r-red-400/40'
-                        : 'border-r-white/10';
+            var thead = '<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.02);">'
+                + '<th style="text-align:right;color:#9ca3af;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">نوع</th>'
+                + '<th style="text-align:right;color:#9ca3af;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">تاریخ</th>'
+                + '<th style="text-align:right;color:#9ca3af;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">مقدار</th>'
+                + '<th style="text-align:right;color:#9ca3af;font-weight:600;padding:7px 12px;font-size:11px;">شرح</th>'
+                + '<th style="text-align:center;color:#9ca3af;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">وضعیت</th>'
+                + '</tr></thead>';
 
-            return `
-            <div class="rounded-xl border border-white/10 border-r-2 ${borderColor} overflow-hidden mb-3">
-                <!-- هدر accordion -->
-                <button type="button"
-                    onclick="(function(btn){
-                        var body = document.getElementById('${accordionId}');
-                        var icon = btn.querySelector('.acc-chevron');
-                        var open = body.style.display !== 'none';
-                        body.style.display = open ? 'none' : 'block';
-                        icon.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
-                    })(this)"
-                    class="w-full flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 transition-colors text-right">
-                    <div class="flex items-center gap-3 flex-wrap">
-                        <i class="fas fa-calendar text-lime-400 text-sm"></i>
-                        <span class="text-white font-semibold text-sm">${monthTitle}</span>
-                        <div class="flex items-center gap-1.5 flex-wrap">${badges}</div>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="flex items-center gap-2">${summaryInfo}</div>
-                        <i class="fas fa-chevron-down acc-chevron text-gray-400 text-xs transition-transform duration-200"
-                           style="transform: rotate(${isOpen ? '180deg' : '0deg'})"></i>
-                    </div>
-                </button>
-                <!-- بدنه accordion -->
-                <div id="${accordionId}" style="display:${isOpen ? 'block' : 'none'}">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
-                            <thead>
-                                <tr class="border-b border-white/10 bg-white/3">
-                                    <th class="text-right text-black-500 font-medium py-2 px-3 text-xs">نوع</th>
-                                    <th class="text-right text-black-500 font-medium py-2 px-3 text-xs">تاریخ</th>
-                                    <th class="text-right text-black-500 font-medium py-2 px-3 text-xs">مقدار</th>
-                                    <th class="text-right text-black-500 font-medium py-2 px-3 text-xs">شرح</th>
-                                    <th class="text-center text-black-500 font-medium py-2 px-3 text-xs">وضعیت</th>
-                                </tr>
-                            </thead>
-                            <tbody>${rows}</tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>`;
+            return '<div style="border:1px solid rgba(255,255,255,0.1);border-right:3px solid '+bdrClr+';border-radius:12px;overflow:hidden;margin-bottom:10px;">'
+                + '<button type="button"'
+                + ' onclick="(function(btn){var b=document.getElementById(\''+accId+'\');var ic=btn.querySelector(\'.acc-icon\');var op=b.style.display!==\'none\';b.style.display=op?\'none\':\'block\';ic.style.transform=op?\'rotate(0deg)\':\'rotate(180deg)\';})(this)"'
+                + ' style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:rgba(255,255,255,0.05);border:none;cursor:pointer;text-align:right;gap:8px;"'
+                + ' onmouseover="this.style.background=\'rgba(255,255,255,0.09)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.05)\'">'
+                + '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
+                + '<i class="fas fa-calendar-alt" style="color:#a3e635;font-size:13px;"></i>'
+                + '<span style="color:#ffffff;font-weight:700;font-size:14px;">'+monthTitle+'</span>'
+                + '<div style="display:flex;gap:5px;flex-wrap:wrap;">'+badges+'</div>'
+                + '</div>'
+                + '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">'
+                + '<div style="display:flex;align-items:center;gap:8px;">'+summaryParts+'</div>'
+                + '<i class="fas fa-chevron-down acc-icon" style="color:#9ca3af;font-size:11px;transition:transform .2s;transform:rotate('+(isOpen?'180deg':'0deg')+');"></i>'
+                + '</div>'
+                + '</button>'
+                + '<div id="'+accId+'" style="display:'+(isOpen?'block':'none')+';"><div style="overflow-x:auto;">'
+                + '<table style="width:100%;border-collapse:collapse;table-layout:auto;">'+thead+'<tbody>'+rows+'</tbody></table>'
+                + '</div></div>'
+                + '</div>';
         }).join('');
     }
 
@@ -1575,6 +1554,152 @@ const EmployeeAccountingUI = (function() {
         refreshContent();
     }
 
+    // ── accordion ماهانه با دکمه تأیید/رد — برای مودال جزئیات مالی مدیر ──
+    function renderMonthlyAccordionManager(entries, employeeId) {
+        var MONTHS_FA = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+
+        function toJalaliKey(dateStr) {
+            if (!dateStr) return '0000-00';
+            var s = String(dateStr).trim().replace(/\./g,'-').replace(/\//g,'-');
+            s = s.replace(/[۰-۹]/g,function(d){return String.fromCharCode(d.charCodeAt(0)-1728);})
+                 .replace(/[٠-٩]/g,function(d){return String.fromCharCode(d.charCodeAt(0)-1584);});
+            var parts = s.split('-');
+            if (parts.length < 3) return '0000-00';
+            var y=parseInt(parts[0],10), m=parseInt(parts[1],10), d=parseInt(parts[2],10);
+            if (!y||!m) return '0000-00';
+            if (y>=1300&&y<=1500) return y+'-'+String(m).padStart(2,'0');
+            if (y>=1900&&y<=2100) {
+                if (typeof Jalali!=='undefined'&&Jalali.toJalaali) {
+                    try { var j=Jalali.toJalaali(y,m,d); return j.jy+'-'+String(j.jm).padStart(2,'0'); } catch(e){}
+                }
+                return (y-621)+'-'+String(m).padStart(2,'0');
+            }
+            return '0000-00';
+        }
+
+        if (!entries||entries.length===0) {
+            return '<div style="text-align:center;padding:32px;color:#e5e7eb;"><i class="fas fa-inbox" style="font-size:2rem;opacity:.3;display:block;margin-bottom:8px;"></i><p>سابقه‌ای ثبت نشده</p></div>';
+        }
+
+        var monthGroups = {};
+        entries.forEach(function(e) {
+            var k = toJalaliKey(e.date||'');
+            if (!monthGroups[k]) monthGroups[k]=[];
+            monthGroups[k].push(e);
+        });
+
+        var sortedKeys = Object.keys(monthGroups).sort(function(a,b){return b.localeCompare(a);});
+
+        return sortedKeys.map(function(key, idx) {
+            var ents   = monthGroups[key];
+            var isOpen = idx===0;
+
+            var monthTitle = 'تاریخ نامشخص';
+            if (key!=='0000-00') {
+                var kp=key.split('-'), moNum=parseInt(kp[1],10);
+                monthTitle=(MONTHS_FA[moNum-1]||kp[1])+'  '+kp[0];
+            }
+
+            var hoursE = ents.filter(function(e){return e.type!=='expense';});
+            var expE   = ents.filter(function(e){return e.type==='expense';});
+            var totH   = hoursE.reduce(function(s,e){return s+parseFloat(e.totalHours||0);},0);
+            var totExp = expE.reduce(function(s,e){return s+Number(e.amount||0);},0);
+            var appCnt = ents.filter(function(e){return e.status==='approved';}).length;
+            var penCnt = ents.filter(function(e){return e.status==='pending';}).length;
+            var rejCnt = ents.filter(function(e){return e.status==='rejected';}).length;
+
+            function mkBadge(clr,label){
+                return '<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:'+clr+'22;color:'+clr+';border:1px solid '+clr+'44;"><span style="width:6px;height:6px;border-radius:50%;background:'+clr+';display:inline-block;flex-shrink:0;"></span>'+label+'</span>';
+            }
+
+            var badges=[
+                penCnt>0?mkBadge('#60a5fa',penCnt+' در انتظار'):'',
+                appCnt>0?mkBadge('#4ade80',appCnt+' تأیید'):'',
+                rejCnt>0?mkBadge('#f87171',rejCnt+' رد'):'',
+            ].filter(Boolean).join('');
+
+            var sumParts=[
+                hoursE.length>0?'<span style="color:#a3e635;font-size:12px;"><i class="fas fa-clock" style="margin-left:3px;font-size:10px;"></i>'+totH.toFixed(1)+' ساعت</span>':'',
+                expE.length>0?'<span style="color:#fb923c;font-size:12px;"><i class="fas fa-receipt" style="margin-left:3px;font-size:10px;"></i>'+Number(totExp).toLocaleString('fa-IR')+' ت</span>':'',
+            ].filter(Boolean).join('<span style="color:#374151;margin:0 5px;">|</span>');
+
+            var accId='acc-mgr-'+key.replace('-','_');
+            var bdrClr=penCnt>0?'#60a5fa':appCnt===ents.length?'#4ade80':rejCnt>0?'#f87171':'#ffffff22';
+
+            var rows = ents.map(function(e) {
+                var stCfg={
+                    approved:{bg:'rgba(34,197,94,0.12)',txt:'#86efac',bdr:'rgba(74,222,128,0.3)',dot:'#4ade80',lbl:'تأیید شده'},
+                    pending: {bg:'rgba(59,130,246,0.12)',txt:'#93c5fd',bdr:'rgba(96,165,250,0.3)',dot:'#60a5fa',lbl:'در انتظار'},
+                    rejected:{bg:'rgba(239,68,68,0.12)',txt:'#fca5a5',bdr:'rgba(248,113,113,0.3)',dot:'#f87171',lbl:'رد شده'},
+                };
+                var sc=stCfg[e.status]||stCfg.pending;
+                var isExp=e.type==='expense';
+
+                var typeBadge=isExp
+                    ?'<span style="background:rgba(249,115,22,.2);color:#fdba74;padding:2px 7px;border-radius:6px;font-size:11px;white-space:nowrap;"><i class="fas fa-receipt" style="font-size:10px;margin-left:3px;"></i>هزینه</span>'
+                    :'<span style="background:rgba(59,130,246,.2);color:#93c5fd;padding:2px 7px;border-radius:6px;font-size:11px;white-space:nowrap;"><i class="fas fa-clock" style="font-size:10px;margin-left:3px;"></i>ساعت کاری</span>';
+
+                var valPart=isExp
+                    ?'<span style="color:#fb923c;font-weight:700;">'+Number(e.amount||0).toLocaleString('fa-IR')+' ت</span>'
+                    :'<span style="color:#a3e635;font-weight:700;">'+parseFloat(e.totalHours||0).toFixed(1)+'</span><span style="color:#9ca3af;font-size:11px;margin-right:2px;"> ساعت</span>'
+                      +(e.startTime&&e.endTime?'<br><span style="color:#9ca3af;font-size:11px;">'+e.startTime+'—'+e.endTime+'</span>':'');
+
+                // دکمه عملیات: pending → تأیید/رد | approved/rejected → badge
+                var actionCell;
+                if (e.status==='approved') {
+                    actionCell='<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;background:rgba(34,197,94,0.12);color:#86efac;border:1px solid rgba(74,222,128,0.3);white-space:nowrap;"><span style="width:6px;height:6px;border-radius:50%;background:#4ade80;display:inline-block;"></span>تأیید شده</span>';
+                } else if (e.status==='rejected') {
+                    actionCell='<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;background:rgba(239,68,68,0.12);color:#fca5a5;border:1px solid rgba(248,113,113,0.3);white-space:nowrap;"><span style="width:6px;height:6px;border-radius:50%;background:#f87171;display:inline-block;"></span>رد شده</span>';
+                } else {
+                    actionCell='<div style="display:flex;gap:4px;justify-content:center;">'
+                        +'<button onclick="WorkHoursUI.approveEntry(\''+e.id+'\'); EmployeeAccountingUI.refreshDetailModal(\''+employeeId+'\')" title="تأیید"'
+                        +' style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(34,197,94,0.2);color:#4ade80;border:none;cursor:pointer;"'
+                        +' onmouseover="this.style.background=\'rgba(34,197,94,0.4)\'" onmouseout="this.style.background=\'rgba(34,197,94,0.2)\'">'
+                        +'<i class="fas fa-check" style="font-size:11px;"></i></button>'
+                        +'<button onclick="WorkHoursUI.rejectEntry(\''+e.id+'\'); EmployeeAccountingUI.refreshDetailModal(\''+employeeId+'\')" title="رد"'
+                        +' style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(239,68,68,0.2);color:#f87171;border:none;cursor:pointer;"'
+                        +' onmouseover="this.style.background=\'rgba(239,68,68,0.4)\'" onmouseout="this.style.background=\'rgba(239,68,68,0.2)\'">'
+                        +'<i class="fas fa-times" style="font-size:11px;"></i></button>'
+                        +'</div>';
+                }
+
+                return '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);" onmouseover="this.style.background=\'rgba(255,255,255,0.03)\'" onmouseout="this.style.background=\'transparent\'">'
+                    +'<td style="padding:8px 12px;white-space:nowrap;">'+typeBadge+'</td>'
+                    +'<td style="padding:8px 12px;color:#e5e7eb;font-size:13px;white-space:nowrap;">'+(e.date||'—')+'</td>'
+                    +'<td style="padding:8px 12px;white-space:nowrap;">'+valPart+'</td>'
+                    +'<td style="padding:8px 12px;color:#e5e7eb;font-size:13px;word-break:break-word;white-space:normal;line-height:1.5;min-width:120px;">'+(e.description||'—')+'</td>'
+                    +'<td style="padding:8px 12px;text-align:center;white-space:nowrap;">'+actionCell+'</td>'
+                    +'</tr>';
+            }).join('');
+
+            var thead='<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.02);">'
+                +'<th style="text-align:right;color:#9ca3af;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">نوع</th>'
+                +'<th style="text-align:right;color:#9ca3af;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">تاریخ</th>'
+                +'<th style="text-align:right;color:#9ca3af;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">مقدار</th>'
+                +'<th style="text-align:right;color:#9ca3af;font-weight:600;padding:7px 12px;font-size:11px;">شرح</th>'
+                +'<th style="text-align:center;color:#9ca3af;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">عملیات</th>'
+                +'</tr></thead>';
+
+            return '<div style="border:1px solid rgba(255,255,255,0.1);border-right:3px solid '+bdrClr+';border-radius:12px;overflow:hidden;margin-bottom:10px;">'
+                +'<button type="button"'
+                +' onclick="(function(btn){var b=document.getElementById(\''+accId+'\');var ic=btn.querySelector(\'.acc-icon\');var op=b.style.display!==\'none\';b.style.display=op?\'none\':\'block\';ic.style.transform=op?\'rotate(0deg)\':\'rotate(180deg)\';})(this)"'
+                +' style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:rgba(255,255,255,0.05);border:none;cursor:pointer;text-align:right;gap:8px;"'
+                +' onmouseover="this.style.background=\'rgba(255,255,255,0.09)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.05)\'">'
+                +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
+                +'<i class="fas fa-calendar-alt" style="color:#a3e635;font-size:13px;"></i>'
+                +'<span style="color:#ffffff;font-weight:700;font-size:14px;">'+monthTitle+'</span>'
+                +'<div style="display:flex;gap:5px;flex-wrap:wrap;">'+badges+'</div>'
+                +'</div>'
+                +'<div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">'
+                +'<div style="display:flex;align-items:center;gap:8px;">'+sumParts+'</div>'
+                +'<i class="fas fa-chevron-down acc-icon" style="color:#9ca3af;font-size:11px;transition:transform .2s;transform:rotate('+(isOpen?'180deg':'0deg')+');"></i>'
+                +'</div></button>'
+                +'<div id="'+accId+'" style="display:'+(isOpen?'block':'none')+';"><div style="overflow-x:auto;">'
+                +'<table style="width:100%;border-collapse:collapse;table-layout:auto;">'+thead+'<tbody>'+rows+'</tbody></table>'
+                +'</div></div></div>';
+        }).join('');
+    }
+
     function showEmployeeDetails(employeeId) {
         const summary    = EmployeeAccountingModule.getEmployeeFinancialSummary(employeeId);
         const entries    = WorkHoursModule.getAllEntriesByEmployee(employeeId);
@@ -1593,18 +1718,18 @@ const EmployeeAccountingUI = (function() {
         <tr class="border-b border-white/5">
             <td class="py-2 px-3 text-white text-xs">${d.date||'—'}</td>
             <td class="py-2 px-3 text-red-300 font-bold text-xs">${Number(d.amount||0).toLocaleString('fa-IR')} ت</td>
-            <td class="py-2 px-3 text-black-400 text-xs">${d.reason||'—'}</td>
+            <td class="py-2 px-3 text-white text-xs">${d.reason||'—'}</td>
             <td class="py-2 px-3 text-center">
                 <button onclick="EmployeeAccountingUI.deleteDeduction('${d.id}')" class="text-red-400 hover:text-red-300 text-xs"><i class="fas fa-trash"></i></button>
             </td>
-        </tr>`).join('') : `<tr><td colspan="4" class="text-center py-3 text-black-300 text-xs">کسوراتی ثبت نشده</td></tr>`;
+        </tr>`).join('') : `<tr><td colspan="4" class="text-center py-3 text-white text-xs">کسوراتی ثبت نشده</td></tr>`;
 
         const giftBlock = gifts.length ? gifts.map(g=>`
         <tr class="border-b border-white/5">
             <td class="py-2 px-3 text-white text-xs">${g.date||'—'}</td>
             <td class="py-2 px-3 text-green-300 font-bold text-xs">${Number(g.amount||0).toLocaleString('fa-IR')} ت</td>
-            <td class="py-2 px-3 text-black-400 text-xs">${g.reason||'—'}</td>
-        </tr>`).join('') : `<tr><td colspan="3" class="text-center py-3 text-black-300 text-xs">هدیه‌ای ثبت نشده</td></tr>`;
+            <td class="py-2 px-3 text-white text-xs">${g.reason||'—'}</td>
+        </tr>`).join('') : `<tr><td colspan="3" class="text-center py-3 text-white text-xs">هدیه‌ای ثبت نشده</td></tr>`;
 
         const modal = document.createElement('div');
         modal.id = 'employee-details-modal';
@@ -1676,22 +1801,13 @@ const EmployeeAccountingUI = (function() {
                     </div>
                 </div>
 
-                <!-- سوابق کاری — با دکمه‌های تأیید/رد inline -->
-                <h4 class="text-white font-semibold mb-3 flex items-center gap-2 text-sm">
-                    <i class="fas fa-list text-black-400"></i>سوابق کاری
-                    <span class="text-black-400 text-xs font-normal">(تیک / رد)</span>
+                <!-- سوابق کاری — ماه‌بندی شده با accordion -->
+                <h4 style="color:#ffffff;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-size:14px;">
+                    <i class="fas fa-calendar-alt" style="color:#a3e635;"></i>سوابق کاری
+                    <span style="color:#9ca3af;font-size:11px;font-weight:400;">(${entries.length} رکورد)</span>
                 </h4>
-                <div class="overflow-x-auto mb-5">
-                    <table class="w-full text-sm">
-                        <thead><tr class="border-b border-white/10 text-xs">
-                            <th class="text-right text-black-400 py-2 px-3">نوع / وضعیت</th>
-                            <th class="text-right text-black-400 py-2 px-3">تاریخ</th>
-                            <th class="text-right text-black-400 py-2 px-3">مقدار</th>
-                            <th class="text-right text-black-400 py-2 px-3">شرح</th>
-                            <th class="text-center text-black-400 py-2 px-3">عملیات</th>
-                        </tr></thead>
-                        <tbody>${renderEntriesList(entries, true)}</tbody>
-                    </table>
+                <div class="mb-5">
+                    ${renderMonthlyAccordionManager(entries, employeeId)}
                 </div>
 
                 <!-- کسورات -->
@@ -2557,6 +2673,11 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
         rejectLateRequest,
         showExportEmployeesModal,
         doExportEmployeesCSV,
+        // refresh modal after approve/reject
+        refreshDetailModal: function(employeeId) {
+            document.getElementById('employee-details-modal')?.remove();
+            setTimeout(function(){ showEmployeeDetails(employeeId); }, 80);
+        },
         // sidebar access
         hasSidebarAccess,
         toggleSidebarAccess,
