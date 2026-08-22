@@ -458,7 +458,7 @@ const EmployeeAccountingUI = (function() {
                 const isT = d===nowJD && cm===nowJM && cy===nowJY;
                 const isS = d===selJD && cm===selJM && cy===selJY;
                 const bg = isS ? '#65a30d' : isT ? 'rgba(101,163,13,0.2)' : 'transparent';
-                const clr = isS ? '#fff' : isT ? '#84cc16' : '#e2e8f0';
+                const clr = isS ? '#fff' : isT ? '#000000ff' : '#e2e8f0';
                 const bord = isT && !isS ? '1px solid #84cc16' : 'none';
                 html += `<button type="button" onclick="EAccJalali.pick(${cy},${cm},${d})"
                     style="background:${bg};color:${clr};border:${bord};border-radius:8px;padding:5px 2px;cursor:pointer;font-size:12px;transition:background .15s;"
@@ -536,77 +536,237 @@ const EmployeeAccountingUI = (function() {
         setTimeout(() => notification.remove(), 3000);
     }
 
-    function renderEntriesList(entries, isManagerView = false) {
-        const statusColors = {
-            pending:  'bg-blue-500/20 text-black-300 border border-blue-400/30',
-            approved: 'bg-green-500/20 text-green-300 border border-green-400/30',
-            rejected: 'bg-red-500/20 text-red-300 border border-red-400/30'
-        };
-        const statusTexts = { pending: 'در انتظار', approved: 'تأیید شده', rejected: 'رد شده' };
+    // ── accordion ماهانه — هر ماه شمسی یک باکس کشویی ──────
+    function renderMonthlyAccordion(entries, employeeId) {
+        const MONTHS_FA = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور',
+                           'مهر','آبان','آذر','دی','بهمن','اسفند'];
 
         if (!entries || entries.length === 0) {
-            return '<tr><td colspan="6" class="text-center py-8 text-black-400">رکوردی یافت نشد</td></tr>';
+            return `<div class="text-center py-10 text-gray-400">
+                        <i class="fas fa-inbox text-4xl mb-3 opacity-30"></i>
+                        <p>هیچ سابقه‌ای ثبت نشده</p>
+                    </div>`;
+        }
+
+        // گروه‌بندی بر اساس ماه شمسی (key: "1403/06" → شهریور ۱۴۰۳)
+        const monthGroups = {};
+        entries.forEach(e => {
+            const dateStr = (e.date || '').replace(/-/g, '/');
+            // فرمت تاریخ: 1403/06/15 یا 1403-06-15
+            const parts = dateStr.split('/');
+            if (parts.length < 2) { // تاریخ ناقص → در "نامشخص" قرار بده
+                const key = '0000/00';
+                if (!monthGroups[key]) monthGroups[key] = [];
+                monthGroups[key].push(e);
+                return;
+            }
+            const key = `${parts[0]}/${parts[1].padStart(2,'0')}`;
+            if (!monthGroups[key]) monthGroups[key] = [];
+            monthGroups[key].push(e);
+        });
+
+        // مرتب‌سازی ماه‌ها — جدیدترین اول
+        const sortedKeys = Object.keys(monthGroups).sort((a,b) => b.localeCompare(a));
+
+        // آخرین ماه را باز نگه‌دار
+        const latestKey = sortedKeys[0];
+
+        return sortedKeys.map((key, idx) => {
+            const ents = monthGroups[key];
+            const isOpen = idx === 0; // اولین (جدیدترین) ماه باز
+
+            // عنوان ماه
+            let monthTitle = 'نامشخص';
+            if (key !== '0000/00') {
+                const [yr, mo] = key.split('/');
+                const moNum = parseInt(mo, 10);
+                monthTitle = `${MONTHS_FA[moNum - 1] || mo}  ${yr}`;
+            }
+
+            // آمار ماه
+            const hoursEntries  = ents.filter(e => e.type !== 'expense');
+            const expEntries    = ents.filter(e => e.type === 'expense');
+            const totalHours    = hoursEntries.reduce((s,e) => s + parseFloat(e.totalHours||0), 0);
+            const totalExp      = expEntries.reduce((s,e)  => s + Number(e.amount||0), 0);
+            const approvedCount = ents.filter(e => e.status === 'approved').length;
+            const pendingCount  = ents.filter(e => e.status === 'pending').length;
+            const rejectedCount = ents.filter(e => e.status === 'rejected').length;
+
+            // badge‌های آماری
+            const badges = [
+                pendingCount  > 0 ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-400/20"><span class="w-1.5 h-1.5 rounded-full bg-blue-400 inline-block"></span>${pendingCount} در انتظار</span>` : '',
+                approvedCount > 0 ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-300 border border-green-400/20"><span class="w-1.5 h-1.5 rounded-full bg-green-400 inline-block"></span>${approvedCount} تأیید</span>` : '',
+                rejectedCount > 0 ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/20 text-red-300 border border-red-400/20"><span class="w-1.5 h-1.5 rounded-full bg-red-400 inline-block"></span>${rejectedCount} رد</span>` : '',
+            ].filter(Boolean).join('');
+
+            const summaryInfo = [
+                hoursEntries.length > 0 ? `<span class="text-gray-400 text-xs"><i class="fas fa-clock ml-1 text-lime-400"></i>${totalHours.toFixed(1)} ساعت</span>` : '',
+                expEntries.length   > 0 ? `<span class="text-gray-400 text-xs"><i class="fas fa-receipt ml-1 text-orange-400"></i>${Number(totalExp).toLocaleString('fa-IR')} ت</span>` : '',
+            ].filter(Boolean).join('<span class="text-gray-600 mx-2">|</span>');
+
+            const accordionId = `acc-month-${key.replace('/','_')}`;
+
+            // ردیف‌های داخل جدول
+            const rows = ents.map(e => {
+                // رنگ وضعیت
+                const statusCfg = {
+                    approved: { bg: 'bg-green-500/15', text: 'text-green-300', border: 'border-green-400/20', dot: 'bg-green-400', label: 'تأیید شده' },
+                    pending:  { bg: 'bg-blue-500/15',  text: 'text-blue-300',  border: 'border-blue-400/20',  dot: 'bg-blue-400',  label: 'در انتظار' },
+                    rejected: { bg: 'bg-red-500/15',   text: 'text-red-300',   border: 'border-red-400/20',   dot: 'bg-red-400',   label: 'رد شده' },
+                };
+                const sc = statusCfg[e.status] || statusCfg.pending;
+                const isExp = e.type === 'expense';
+
+                const typeCell = isExp
+                    ? `<span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-orange-500/20 text-orange-300"><i class="fas fa-receipt text-xs"></i>هزینه</span>`
+                    : `<span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-blue-500/20 text-blue-300"><i class="fas fa-clock text-xs"></i>ساعت کاری</span>`;
+
+                const valueCell = isExp
+                    ? `<span class="font-bold text-orange-300">${Number(e.amount||0).toLocaleString('fa-IR')} ت</span>`
+                    : `<span class="font-bold text-lime-300">${parseFloat(e.totalHours||0).toFixed(1)} <span class="text-xs font-normal text-gray-400">ساعت</span></span>
+                       ${e.startTime && e.endTime ? `<br><span class="text-gray-500 text-xs">${e.startTime} — ${e.endTime}</span>` : ''}`;
+
+                const statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${sc.bg} ${sc.text} border ${sc.border}">
+                    <span class="w-1.5 h-1.5 rounded-full ${sc.dot} inline-block"></span>${sc.label}
+                </span>`;
+
+                return `<tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+                    <td class="py-2.5 px-3">${typeCell}</td>
+                    <td class="py-2.5 px-3 text-gray-600 text-sm">${e.date || '—'}</td>
+                    <td class="py-2.5 px-3">${valueCell}</td>
+                    <td class="py-2.5 px-3 text-gray-400 text-xs max-w-xs truncate">${e.description || '—'}</td>
+                    <td class="py-2.5 px-3 text-center">${statusBadge}</td>
+                </tr>`;
+            }).join('');
+
+            // رنگ بوردر چپ accordion بر اساس وضعیت غالب
+            const borderColor = pendingCount > 0
+                ? 'border-r-blue-400/60'
+                : approvedCount === ents.length
+                    ? 'border-r-green-400/60'
+                    : rejectedCount > 0
+                        ? 'border-r-red-400/40'
+                        : 'border-r-white/10';
+
+            return `
+            <div class="rounded-xl border border-white/10 border-r-2 ${borderColor} overflow-hidden mb-3">
+                <!-- هدر accordion -->
+                <button type="button"
+                    onclick="(function(btn){
+                        var body = document.getElementById('${accordionId}');
+                        var icon = btn.querySelector('.acc-chevron');
+                        var open = body.style.display !== 'none';
+                        body.style.display = open ? 'none' : 'block';
+                        icon.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
+                    })(this)"
+                    class="w-full flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 transition-colors text-right">
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <i class="fas fa-calendar text-lime-400 text-sm"></i>
+                        <span class="text-white font-semibold text-sm">${monthTitle}</span>
+                        <div class="flex items-center gap-1.5 flex-wrap">${badges}</div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-2">${summaryInfo}</div>
+                        <i class="fas fa-chevron-down acc-chevron text-gray-400 text-xs transition-transform duration-200"
+                           style="transform: rotate(${isOpen ? '180deg' : '0deg'})"></i>
+                    </div>
+                </button>
+                <!-- بدنه accordion -->
+                <div id="${accordionId}" style="display:${isOpen ? 'block' : 'none'}">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-white/10 bg-white/3">
+                                    <th class="text-right text-black-500 font-medium py-2 px-3 text-xs">نوع</th>
+                                    <th class="text-right text-black-500 font-medium py-2 px-3 text-xs">تاریخ</th>
+                                    <th class="text-right text-black-500 font-medium py-2 px-3 text-xs">مقدار</th>
+                                    <th class="text-right text-black-500 font-medium py-2 px-3 text-xs">شرح</th>
+                                    <th class="text-center text-black-500 font-medium py-2 px-3 text-xs">وضعیت</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function renderEntriesList(entries, isManagerView = false) {
+        // رنگ‌های inline style — برای اطمینان از اعمال صحیح
+        const statusStyle = {
+            pending:  'background:rgba(59,130,246,0.15);color:#93c5fd;border:1px solid rgba(96,165,250,0.3);',
+            approved: 'background:rgba(34,197,94,0.15);color:#86efac;border:1px solid rgba(74,222,128,0.3);',
+            rejected: 'background:rgba(239,68,68,0.15);color:#fca5a5;border:1px solid rgba(248,113,113,0.3);',
+        };
+        const statusTexts = { pending: 'در انتظار', approved: 'تأیید شده', rejected: 'رد شده' };
+        const statusDotColor = { pending: '#60a5fa', approved: '#4ade80', rejected: '#ed7474ff' };
+
+        if (!entries || entries.length === 0) {
+            return '<tr><td colspan="6" class="text-center py-8 text-gray-400">رکوردی یافت نشد</td></tr>';
         }
 
         return entries.map(entry => {
             const isExpense = entry.type === 'expense';
             const valueCell = isExpense
-                ? `<span class="text-orange-400 font-bold">${EmployeeAccountingModule.formatCurrency(entry.amount || 0)}</span>`
-                : `<span class="text-black-400 font-bold">${(typeof WorkHoursModule!=='undefined'&&WorkHoursModule.formatHoursDisplay) ? WorkHoursModule.formatHoursDisplay(parseFloat(entry.totalHours||0)) : (entry.totalHours||0)} ساعت</span>`;
+                ? `<span style="color:#ee2d2dff;font-weight:700;">${EmployeeAccountingModule.formatCurrency(entry.amount || 0)}</span>`
+                : `<span style="color:#1e8601ff;font-weight:700;">${(typeof WorkHoursModule!=='undefined'&&WorkHoursModule.formatHoursDisplay) ? WorkHoursModule.formatHoursDisplay(parseFloat(entry.totalHours||0)) : (entry.totalHours||0)} ساعت</span>`;
 
-            // ستون نوع + badge وضعیت رنگی
-            const statusDot = entry.status === 'approved'
-                ? '<span class="inline-block w-2 h-2 rounded-full bg-green-400 ml-1"></span>'
-                : entry.status === 'rejected'
-                    ? '<span class="inline-block w-2 h-2 rounded-full bg-red-400 ml-1"></span>'
-                    : '<span class="inline-block w-2 h-2 rounded-full bg-blue-400 ml-1"></span>';
+            const stStyle = statusStyle[entry.status] || statusStyle.pending;
+            const stText  = statusTexts[entry.status] || entry.status;
+            const dotClr  = statusDotColor[entry.status] || statusDotColor.pending;
 
-            const typeCell = isExpense
-                ? `<div class="flex flex-col gap-1">
-                    <span class="bg-orange-500/20 text-orange-400 px-2 py-1 rounded text-xs inline-flex items-center"><i class="fas fa-receipt ml-1"></i>هزینه</span>
-                    <span class="${statusColors[entry.status]||statusColors.pending} px-2 py-0.5 rounded text-xs inline-flex items-center">${statusDot}${statusTexts[entry.status]||entry.status}</span>
-                  </div>`
-                : `<div class="flex flex-col gap-1">
-                    <span class="bg-blue-500/20 text-black-400 px-2 py-1 rounded text-xs inline-flex items-center"><i class="fas fa-clock ml-1"></i>ساعت کاری</span>
-                    <span class="${statusColors[entry.status]||statusColors.pending} px-2 py-0.5 rounded text-xs inline-flex items-center">${statusDot}${statusTexts[entry.status]||entry.status}</span>
-                  </div>`;
+            const typeBadge = isExpense
+                ? `<span style="background:rgba(221, 214, 18, 0.2);color:#fdba74;padding:2px 8px;border-radius:6px;font-size:11px;display:inline-flex;align-items:center;gap:4px;"><i class="fas fa-receipt" style="font-size:10px;"></i>هزینه</span>`
+                : `<span style="background:rgba(59,130,246,0.2);color:#93c5fd;padding:2px 8px;border-radius:6px;font-size:11px;display:inline-flex;align-items:center;gap:4px;"><i class="fas fa-clock" style="font-size:10px;"></i>ساعت کاری</span>`;
+
+            const typeCell = `<div style="display:flex;flex-direction:column;gap:4px;">
+                ${typeBadge}
+                <span style="${stStyle}padding:2px 8px;border-radius:6px;font-size:11px;display:inline-flex;align-items:center;gap:4px;">
+                    <span style="width:6px;height:6px;border-radius:50%;background:${dotClr};display:inline-block;flex-shrink:0;"></span>${stText}
+                </span>
+              </div>`;
 
             const timeRange = !isExpense && entry.startTime && entry.endTime
-                ? `<span class="text-black-300/60 text-xs block">${entry.startTime} — ${entry.endTime}</span>` : '';
+                ? `<span style="color:#6b7280;font-size:11px;display:block;">${entry.startTime} — ${entry.endTime}</span>` : '';
 
-            // ستون وضعیت: مدیر → فقط وقتی pending دو دکمه نشون بده | بقیه فقط نمایش
+            // ستون عملیات — مدیر: pending → دو دکمه | بقیه → badge ثابت
             const actionCell = isManagerView
                 ? `<td class="text-center py-3 px-3">
                     ${entry.status === 'approved'
-                        ? `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-500/20 text-green-300 text-xs"><i class="fas fa-check-circle"></i> تأیید شده</span>`
+                        ? `<span style="${statusStyle.approved}padding:4px 10px;border-radius:20px;font-size:11px;display:inline-flex;align-items:center;gap:5px;"><i class="fas fa-check-circle" style="color:#4ade80;"></i> تأیید شده</span>`
                         : entry.status === 'rejected'
-                            ? `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-500/20 text-red-300 text-xs"><i class="fas fa-times-circle"></i> رد شده</span>`
-                            : `<div class="flex gap-1 justify-center">
+                            ? `<span style="${statusStyle.rejected}padding:4px 10px;border-radius:20px;font-size:11px;display:inline-flex;align-items:center;gap:5px;"><i class="fas fa-times-circle" style="color:#f87171;"></i> رد شده</span>`
+                            : `<div style="display:flex;gap:4px;justify-content:center;">
                                 <button onclick="WorkHoursUI.approveEntry('${entry.id}'); EmployeeAccountingUI.refreshContent()"
                                     title="تأیید"
-                                    class="w-7 h-7 flex items-center justify-center rounded-lg bg-green-500/20 hover:bg-green-500/50 text-green-400 cursor-pointer transition-all">
-                                    <i class="fas fa-check text-xs"></i>
+                                    style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(34,197,94,0.2);color:#4ade80;border:none;cursor:pointer;transition:background .2s;"
+                                    onmouseover="this.style.background='rgba(34,197,94,0.4)'"
+                                    onmouseout="this.style.background='rgba(34,197,94,0.2)'">
+                                    <i class="fas fa-check" style="font-size:11px;"></i>
                                 </button>
                                 <button onclick="WorkHoursUI.rejectEntry('${entry.id}'); EmployeeAccountingUI.refreshContent()"
                                     title="رد"
-                                    class="w-7 h-7 flex items-center justify-center rounded-lg bg-red-500/20 hover:bg-red-500/50 text-red-400 cursor-pointer transition-all">
-                                    <i class="fas fa-times text-xs"></i>
+                                    style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(239,68,68,0.2);color:#f87171;border:none;cursor:pointer;transition:background .2s;"
+                                    onmouseover="this.style.background='rgba(255, 0, 0, 0.83)'"
+                                    onmouseout="this.style.background='rgba(239,68,68,0.2)'">
+                                    <i class="fas fa-times" style="font-size:11px;"></i>
                                 </button>
                               </div>`
                     }
                   </td>`
                 : `<td class="text-center py-3 px-3">
-                    <span class="${statusColors[entry.status]||statusColors.pending} px-3 py-1 rounded-full text-xs">
-                        ${statusTexts[entry.status]||entry.status}
+                    <span style="${stStyle}padding:4px 12px;border-radius:20px;font-size:11px;display:inline-flex;align-items:center;gap:5px;">
+                        <span style="width:6px;height:6px;border-radius:50%;background:${dotClr};display:inline-block;"></span>${stText}
                     </span>
                   </td>`;
 
             return `
-                <tr class="border-b border-white/5 hover:bg-white/5">
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
                     <td class="py-3 px-3">${typeCell}</td>
-                    <td class="py-3 px-4 text-white text-sm">${entry.date}${timeRange}</td>
+                    <td class="py-3 px-4" style="color:##000000ff;font-size:14px;">${entry.date || '—'}${timeRange}</td>
                     <td class="py-3 px-4">${valueCell}</td>
-                    <td class="py-3 px-4 text-black-400 text-sm whitespace-pre-wrap break-words max-w-xs">${entry.description || '—'}</td>
+                    <td class="py-3 px-4" style="color:#000000ff;font-size:13px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${entry.description || '—'}</td>
                     ${actionCell}
                 </tr>`;
         }).join('');
@@ -752,24 +912,12 @@ const EmployeeAccountingUI = (function() {
                 </div>
 
                 <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-                    <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                        <i class="fas fa-list text-black-400"></i>
-                        جزئیات سوابق
+                    <h3 class="text-xl font-bold text-white mb-5 flex items-center gap-2">
+                        <i class="fas fa-calendar-alt text-lime-400"></i>
+                        سوابق ماهانه
+                        <span class="text-gray-400 text-sm font-normal mr-2">(${allEntries.length} رکورد)</span>
                     </h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead>
-                                <tr class="border-b border-white/10">
-                                    <th class="text-right text-black-400 font-medium py-3 px-4">نوع</th>
-                                    <th class="text-right text-black-400 font-medium py-3 px-4">تاریخ</th>
-                                    <th class="text-right text-black-400 font-medium py-3 px-4">ساعت/مبلغ</th>
-                                    <th class="text-right text-black-400 font-medium py-3 px-4">شرح</th>
-                                    <th class="text-center text-black-400 font-medium py-3 px-4">وضعیت</th>
-                                </tr>
-                            </thead>
-                            <tbody>${renderEntriesList(allEntries)}</tbody>
-                        </table>
-                    </div>
+                    ${renderMonthlyAccordion(allEntries, currentUser.id)}
                 </div>
 
                 <div class="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
@@ -1584,7 +1732,7 @@ const EmployeeAccountingUI = (function() {
 
                     const rows = allReqs.map(r=>`
                         <tr class="border-b border-white/5 hover:bg-white/5">
-                            <td class="py-2 px-3 text-gray-300 text-xs">${r.requestedDate||'—'}</td>
+                            <td class="py-2 px-3 text-gray-600 text-xs">${r.requestedDate||'—'}</td>
                             <td class="py-2 px-3">
                                 ${r.entryType==='expense'
                                     ? '<span class="bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded text-xs">هزینه</span>'
@@ -1864,7 +2012,7 @@ const EmployeeAccountingUI = (function() {
         const dateRange = (from||'…') + ' تا ' + (to||'…');
         const thStyle   = 'background:#1a56db;color:#fff;padding:6px 10px;border:1px solid #ccc;white-space:nowrap;text-align:right;';
         const tdStyle   = 'padding:5px 10px;border:1px solid #ddd;white-space:nowrap;text-align:right;';
-        const secStyle  = 'background:#0f2d6b;color:#a3e635;padding:8px 12px;font-size:13px;font-weight:bold;border:2px solid #a3e635;';
+        const secStyle  = 'background:#0f2d6b;color:#a3e635;padding:8px 12px;font-size:13px;font-weight:bold;border:2px solid #1e8601ff;';
 
         function buildTable(headers, rows, emptyMsg) {
             const hRow = headers.map(h=>`<th style="${thStyle}">${escCell(h)}</th>`).join('');
@@ -1952,7 +2100,7 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
                     </h3>
                     <button onclick="document.getElementById('work-calendar-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
                 </div>
-                <p class="text-gray-300 text-sm mb-4">بازه تاریخ را انتخاب کنید تا سوابق کاری، هزینه‌ها و کسورات نمایش داده شوند.</p>
+                <p class="text-gray-600 text-sm mb-4">بازه تاریخ را انتخاب کنید تا سوابق کاری، هزینه‌ها و کسورات نمایش داده شوند.</p>
                 <div class="grid grid-cols-2 gap-4 mb-5">
                     <div>
                         <label class="text-gray-400 text-sm mb-1 block">از تاریخ</label>
@@ -2052,7 +2200,7 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
                     </h3>
                     <button onclick="document.getElementById('late-request-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
                 </div>
-                <p class="text-gray-300 text-sm mb-4">اگر ثبت ساعت کاری یا هزینه‌ای را فراموش کرده‌اید، اینجا درخواست دهید.</p>
+                <p class="text-gray-600 text-sm mb-4">اگر ثبت ساعت کاری یا هزینه‌ای را فراموش کرده‌اید، اینجا درخواست دهید.</p>
                 <div class="space-y-3">
                     <div>
                         <label class="text-gray-400 text-sm mb-1 block">تاریخ فراموش‌شده <span class="text-red-400">*</span></label>
