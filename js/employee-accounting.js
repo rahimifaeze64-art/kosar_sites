@@ -561,7 +561,7 @@ const EmployeeAccountingUI = (function() {
         }
 
         if (!entries || entries.length === 0) {
-            return '<div style="text-align:center;padding:40px 0;color:#e5e7eb;"><i class="fas fa-inbox" style="font-size:2rem;opacity:.3;display:block;margin-bottom:8px;"></i><p>هیچ سابقه‌ای ثبت نشده</p></div>';
+            return '<div style="text-align:center;padding:40px 0;color:#000000ff;"><i class="fas fa-inbox" style="font-size:2rem;opacity:.3;display:block;margin-bottom:8px;"></i><p>هیچ سابقه‌ای ثبت نشده</p></div>';
         }
 
         var monthGroups = {};
@@ -634,9 +634,9 @@ const EmployeeAccountingUI = (function() {
 
                 return '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);" onmouseover="this.style.background=\'rgba(255,255,255,0.03)\'" onmouseout="this.style.background=\'transparent\'">'
                     + '<td style="padding:8px 12px;white-space:nowrap;">'+typeBadge+'</td>'
-                    + '<td style="padding:8px 12px;color:#e5e7eb;font-size:13px;white-space:nowrap;">'+(e.date||'—')+'</td>'
+                    + '<td style="padding:8px 12px;color:#000000ff;font-size:13px;white-space:nowrap;">'+(e.date||'—')+'</td>'
                     + '<td style="padding:8px 12px;white-space:nowrap;">'+valPart+'</td>'
-                    + '<td style="padding:8px 12px;color:#e5e7eb;font-size:13px;word-break:break-word;white-space:normal;line-height:1.5;min-width:120px;">'+(e.description||'—')+'</td>'
+                    + '<td style="padding:8px 12px;color:#000000ff;font-size:13px;word-break:break-word;white-space:normal;line-height:1.5;min-width:120px;">'+(e.description||'—')+'</td>'
                     + '<td style="padding:8px 12px;text-align:center;white-space:nowrap;">'+stBadge+'</td>'
                     + '</tr>';
             }).join('');
@@ -1578,7 +1578,7 @@ const EmployeeAccountingUI = (function() {
         }
 
         if (!entries||entries.length===0) {
-            return '<div style="text-align:center;padding:32px;color:#e5e7eb;"><i class="fas fa-inbox" style="font-size:2rem;opacity:.3;display:block;margin-bottom:8px;"></i><p>سابقه‌ای ثبت نشده</p></div>';
+            return '<div style="text-align:center;padding:32px;color:#000000ff;"><i class="fas fa-inbox" style="font-size:2rem;opacity:.3;display:block;margin-bottom:8px;"></i><p>سابقه‌ای ثبت نشده</p></div>';
         }
 
         var monthGroups = {};
@@ -1665,9 +1665,9 @@ const EmployeeAccountingUI = (function() {
 
                 return '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);" onmouseover="this.style.background=\'rgba(255,255,255,0.03)\'" onmouseout="this.style.background=\'transparent\'">'
                     +'<td style="padding:8px 12px;white-space:nowrap;">'+typeBadge+'</td>'
-                    +'<td style="padding:8px 12px;color:#e5e7eb;font-size:13px;white-space:nowrap;">'+(e.date||'—')+'</td>'
+                    +'<td style="padding:8px 12px;color:#000000ff;font-size:13px;white-space:nowrap;">'+(e.date||'—')+'</td>'
                     +'<td style="padding:8px 12px;white-space:nowrap;">'+valPart+'</td>'
-                    +'<td style="padding:8px 12px;color:#e5e7eb;font-size:13px;word-break:break-word;white-space:normal;line-height:1.5;min-width:120px;">'+(e.description||'—')+'</td>'
+                    +'<td style="padding:8px 12px;color:#000000ff;font-size:13px;word-break:break-word;white-space:normal;line-height:1.5;min-width:120px;">'+(e.description||'—')+'</td>'
                     +'<td style="padding:8px 12px;text-align:center;white-space:nowrap;">'+actionCell+'</td>'
                     +'</tr>';
             }).join('');
