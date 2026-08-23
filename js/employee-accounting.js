@@ -626,8 +626,8 @@ const EmployeeAccountingUI = (function() {
 
                 var valPart = isExp
                     ? '<span style="color:#fb923c;font-weight:700;">'+Number(e.amount||0).toLocaleString('fa-IR')+' ت</span>'
-                    : '<span style="color:#a3e635;font-weight:700;">'+parseFloat(e.totalHours||0).toFixed(1)+'</span><span style="color:#9ca3af;font-size:11px;margin-right:2px;"> ساعت</span>'
-                      + (e.startTime && e.endTime ? '<br><span style="color:#9ca3af;font-size:11px;">'+e.startTime+'—'+e.endTime+'</span>' : '');
+                    : '<span style="color:#a3e635;font-weight:700;">'+parseFloat(e.totalHours||0).toFixed(1)+'</span><span style="color:#000000ff;font-size:11px;margin-right:2px;"> ساعت</span>'
+                      + (e.startTime && e.endTime ? '<br><span style="color:#000000ff;font-size:11px;">'+e.startTime+'—'+e.endTime+'</span>' : '');
 
                 var stBadge = '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;background:'+sc.bg+';color:'+sc.txt+';border:1px solid '+sc.bdr+';white-space:nowrap;">'
                             + '<span style="width:6px;height:6px;border-radius:50%;background:'+sc.dot+';display:inline-block;flex-shrink:0;"></span>'+sc.lbl+'</span>';
@@ -642,11 +642,11 @@ const EmployeeAccountingUI = (function() {
             }).join('');
 
             var thead = '<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.02);">'
-                + '<th style="text-align:right;color:#9ca3af;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">نوع</th>'
-                + '<th style="text-align:right;color:#9ca3af;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">تاریخ</th>'
-                + '<th style="text-align:right;color:#9ca3af;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">مقدار</th>'
-                + '<th style="text-align:right;color:#9ca3af;font-weight:600;padding:7px 12px;font-size:11px;">شرح</th>'
-                + '<th style="text-align:center;color:#9ca3af;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">وضعیت</th>'
+                + '<th style="text-align:right;color:#000000ff;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">نوع</th>'
+                + '<th style="text-align:right;color:#000000ff;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">تاریخ</th>'
+                + '<th style="text-align:right;color:#000000ff;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">مقدار</th>'
+                + '<th style="text-align:right;color:#000000ff;font-weight:600;padding:7px 12px;font-size:11px;">شرح</th>'
+                + '<th style="text-align:center;color:#000000ff;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">وضعیت</th>'
                 + '</tr></thead>';
 
             return '<div style="border:1px solid rgba(255,255,255,0.1);border-right:3px solid '+bdrClr+';border-radius:12px;overflow:hidden;margin-bottom:10px;">'
@@ -661,7 +661,7 @@ const EmployeeAccountingUI = (function() {
                 + '</div>'
                 + '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">'
                 + '<div style="display:flex;align-items:center;gap:8px;">'+summaryParts+'</div>'
-                + '<i class="fas fa-chevron-down acc-icon" style="color:#9ca3af;font-size:11px;transition:transform .2s;transform:rotate('+(isOpen?'180deg':'0deg')+');"></i>'
+                + '<i class="fas fa-chevron-down acc-icon" style="color:#000000ff;font-size:11px;transition:transform .2s;transform:rotate('+(isOpen?'180deg':'0deg')+');"></i>'
                 + '</div>'
                 + '</button>'
                 + '<div id="'+accId+'" style="display:'+(isOpen?'block':'none')+';"><div style="overflow-x:auto;">'
@@ -1641,8 +1641,8 @@ const EmployeeAccountingUI = (function() {
 
                 var valPart=isExp
                     ?'<span style="color:#fb923c;font-weight:700;">'+Number(e.amount||0).toLocaleString('fa-IR')+' ت</span>'
-                    :'<span style="color:#a3e635;font-weight:700;">'+parseFloat(e.totalHours||0).toFixed(1)+'</span><span style="color:#9ca3af;font-size:11px;margin-right:2px;"> ساعت</span>'
-                      +(e.startTime&&e.endTime?'<br><span style="color:#9ca3af;font-size:11px;">'+e.startTime+'—'+e.endTime+'</span>':'');
+                    :'<span style="color:#a3e635;font-weight:700;">'+parseFloat(e.totalHours||0).toFixed(1)+'</span><span style="color:#000000ff;font-size:11px;margin-right:2px;"> ساعت</span>'
+                      +(e.startTime&&e.endTime?'<br><span style="color:#000000ff;font-size:11px;">'+e.startTime+'—'+e.endTime+'</span>':'');
 
                 // دکمه عملیات: pending → تأیید/رد | approved/rejected → badge
                 var actionCell;
@@ -1673,11 +1673,11 @@ const EmployeeAccountingUI = (function() {
             }).join('');
 
             var thead='<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.02);">'
-                +'<th style="text-align:right;color:#9ca3af;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">نوع</th>'
-                +'<th style="text-align:right;color:#9ca3af;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">تاریخ</th>'
-                +'<th style="text-align:right;color:#9ca3af;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">مقدار</th>'
-                +'<th style="text-align:right;color:#9ca3af;font-weight:600;padding:7px 12px;font-size:11px;">شرح</th>'
-                +'<th style="text-align:center;color:#9ca3af;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">عملیات</th>'
+                +'<th style="text-align:right;color:#000000ff;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">نوع</th>'
+                +'<th style="text-align:right;color:#000000ff;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">تاریخ</th>'
+                +'<th style="text-align:right;color:#000000ff;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">مقدار</th>'
+                +'<th style="text-align:right;color:#000000ff;font-weight:600;padding:7px 12px;font-size:11px;">شرح</th>'
+                +'<th style="text-align:center;color:#000000ff;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">عملیات</th>'
                 +'</tr></thead>';
 
             return '<div style="border:1px solid rgba(255,255,255,0.1);border-right:3px solid '+bdrClr+';border-radius:12px;overflow:hidden;margin-bottom:10px;">'
@@ -1692,7 +1692,7 @@ const EmployeeAccountingUI = (function() {
                 +'</div>'
                 +'<div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">'
                 +'<div style="display:flex;align-items:center;gap:8px;">'+sumParts+'</div>'
-                +'<i class="fas fa-chevron-down acc-icon" style="color:#9ca3af;font-size:11px;transition:transform .2s;transform:rotate('+(isOpen?'180deg':'0deg')+');"></i>'
+                +'<i class="fas fa-chevron-down acc-icon" style="color:#000000ff;font-size:11px;transition:transform .2s;transform:rotate('+(isOpen?'180deg':'0deg')+');"></i>'
                 +'</div></button>'
                 +'<div id="'+accId+'" style="display:'+(isOpen?'block':'none')+';"><div style="overflow-x:auto;">'
                 +'<table style="width:100%;border-collapse:collapse;table-layout:auto;">'+thead+'<tbody>'+rows+'</tbody></table>'
@@ -1804,7 +1804,7 @@ const EmployeeAccountingUI = (function() {
                 <!-- سوابق کاری — ماه‌بندی شده با accordion -->
                 <h4 style="color:#000000ff;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-size:14px;">
                     <i class="fas fa-calendar-alt" style="color:#a3e635;"></i>سوابق کاری
-                    <span style="color:#9ca3af;font-size:11px;font-weight:400;">(${entries.length} رکورد)</span>
+                    <span style="color:#000000ff;font-size:11px;font-weight:400;">(${entries.length} رکورد)</span>
                 </h4>
                 <div class="mb-5">
                     ${renderMonthlyAccordionManager(entries, employeeId)}
