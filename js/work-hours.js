@@ -2145,74 +2145,59 @@ const WorkHoursUI = (function() {
     }
 
     function setQuickDate(hiddenId, dispBtnId, offset) {
-        // ── تاریخ امروز در تهران (بدون بازی با timezone object) ──
-        // از toLocaleString برای گرفتن تاریخ میلادی صحیح تهران استفاده می‌کنیم
-        var tehranStr;
-        try {
-            tehranStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Tehran' });
-        } catch(e) {
-            tehranStr = new Date().toLocaleString();
+        // دقیقاً همان روش Jalali.todayJalali() — از new Date() مستقیم
+        var now = new Date();
+        var j = Jalali.toJalaali(now.getFullYear(), now.getMonth() + 1, now.getDate());
+
+        // اعمال offset روزانه در شمسی با کمک daysInMonth
+        var jy = j.jy, jm = j.jm, jd = j.jd + offset;
+
+        // normalize: اگر jd زیر ۱ شد به ماه قبل برو
+        while (jd < 1) {
+            jm--;
+            if (jm < 1) { jm = 12; jy--; }
+            jd += (jm <= 6 ? 31 : jm <= 11 ? 30 : 29);
         }
-        // tehranStr مثل "8/23/2026, 3:45:00 PM"
-        var tehranDate = new Date(tehranStr);
-
-        // اعمال offset روزانه (offset=-1 → دیروز، offset=-2 → پریروز)
-        tehranDate.setDate(tehranDate.getDate() + offset);
-
-        var gy = tehranDate.getFullYear();
-        var gm = tehranDate.getMonth() + 1;
-        var gd = tehranDate.getDate();
-
-        // تبدیل میلادی به شمسی ISO (YYYY-MM-DD)
-        var jStr;
-        if (typeof Jalali !== 'undefined' && typeof Jalali.toJalaali === 'function') {
-            var j = Jalali.toJalaali(gy, gm, gd);
-            jStr = j.jy + '-' + String(j.jm).padStart(2,'0') + '-' + String(j.jd).padStart(2,'0');
-        } else {
-            // fallback تقریبی
-            jStr = (gy - 621) + '-' + String(gm).padStart(2,'0') + '-' + String(gd).padStart(2,'0');
+        // normalize: اگر jd از ماه رد شد (نباید بشه ولی برای امنیت)
+        var maxD = jm <= 6 ? 31 : jm <= 11 ? 30 : 29;
+        while (jd > maxD) {
+            jd -= maxD;
+            jm++;
+            if (jm > 12) { jm = 1; jy++; }
+            maxD = jm <= 6 ? 31 : jm <= 11 ? 30 : 29;
         }
+
+        var pad = function(n){ return n < 10 ? '0'+n : String(n); };
+        var jStr = jy + '-' + pad(jm) + '-' + pad(jd);
 
         // ذخیره در hidden input
         var hidden = document.getElementById(hiddenId);
         if (hidden) hidden.value = jStr;
 
-        // نمایش شمسی خوانا
-        var display;
-        if (typeof Jalali !== 'undefined' && typeof Jalali.toJalaali === 'function') {
-            var jj = Jalali.toJalaali(gy, gm, gd);
-            var MONTHS = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
-            var toFa = function(n){ return String(n).replace(/\d/g, function(d){ return '۰۱۲۳۴۵۶۷۸۹'[d]; }); };
-            display = toFa(jj.jd) + ' ' + MONTHS[jj.jm - 1] + ' ' + toFa(jj.jy);
-        } else {
-            display = jStr;
-        }
+        // نمایش شمسی خوانا (فارسی)
+        var MONTHS = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+        var toFa = function(n){ return String(n).replace(/\d/g, function(d){ return '۰۱۲۳۴۵۶۷۸۹'[d]; }); };
+        var display = toFa(jd) + ' ' + MONTHS[jm - 1] + ' ' + toFa(jy);
 
-        // offset=-1 → دیروز → span: hiddenId-disp-text  (دکمه اول)
-        // offset=-2 → پریروز → span: hiddenId-pdisp-text (دکمه دوم)
+        // offset=-1 → دیروز → span اول ، offset=-2 → پریروز → span دوم
         var isYesterday = (offset === -1);
-        var activeSpanId = isYesterday ? (hiddenId + '-disp-text')  : (hiddenId + '-pdisp-text');
-        var clearSpanId  = isYesterday ? (hiddenId + '-pdisp-text') : (hiddenId + '-disp-text');
-
-        var activeSpan = document.getElementById(activeSpanId);
-        var clearSpan  = document.getElementById(clearSpanId);
+        var activeSpan = document.getElementById(hiddenId + (isYesterday ? '-disp-text' : '-pdisp-text'));
+        var clearSpan  = document.getElementById(hiddenId + (isYesterday ? '-pdisp-text' : '-disp-text'));
         if (activeSpan) activeSpan.textContent = display;
         if (clearSpan)  clearSpan.textContent  = '';
 
-        // هایلایت: reset همه دکمه‌ها سپس فعال‌سازی دکمه انتخاب‌شده
+        // هایلایت دکمه انتخاب‌شده
         var container = hidden ? hidden.parentElement : null;
         if (container) {
-            var btns = container.querySelectorAll('button[type="button"]');
-            btns.forEach(function(btn) {
+            container.querySelectorAll('button[type="button"]').forEach(function(btn){
                 btn.classList.remove('ring-2','ring-lime-400','ring-orange-400','bg-white/30');
                 btn.classList.add('bg-white/10');
             });
-            // دیروز = دکمه اول (btns[0]) ، پریروز = دکمه دوم (btns[1])
+            var btns = container.querySelectorAll('button[type="button"]');
             var targetBtn = isYesterday ? btns[0] : btns[1];
-            var ringColor = isYesterday ? 'ring-lime-400' : 'ring-orange-400';
             if (targetBtn) {
                 targetBtn.classList.remove('bg-white/10');
-                targetBtn.classList.add('bg-white/30', 'ring-2', ringColor);
+                targetBtn.classList.add('bg-white/30','ring-2', isYesterday ? 'ring-lime-400' : 'ring-orange-400');
             }
         }
     }
