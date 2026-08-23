@@ -558,14 +558,14 @@ const WorkHoursUI = (function() {
                                         onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp-btn',-1)"
                                         class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                     <i class="fas fa-calendar-minus text-yellow-400"></i>
-                                    <span>دیروز</span>
+                                    <span>پریروز</span>
                                     <span id="workDate-disp-text" class="text-xs text-gray-300 font-normal"></span>
                                 </button>
                                 <button type="button"
                                         onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp-btn',-2)"
                                         class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                     <i class="fas fa-calendar-times text-orange-400"></i>
-                                    <span>پریروز</span>
+                                    <span>دیروز</span>
                                     <span id="workDate-pdisp-text" class="text-xs text-gray-300 font-normal"></span>
                                 </button>
                             </div>
@@ -640,14 +640,14 @@ const WorkHoursUI = (function() {
                                             onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp-btn',-1)"
                                             class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                         <i class="fas fa-calendar-minus text-yellow-400"></i>
-                                        <span>دیروز</span>
+                                        <span>پریروز</span>
                                         <span id="deductionDate-disp-text" class="text-xs text-gray-300 font-normal"></span>
                                     </button>
                                     <button type="button"
                                             onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp-btn',-2)"
                                             class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                         <i class="fas fa-calendar-times text-orange-400"></i>
-                                        <span>پریروز</span>
+                                        <span>دیروز</span>
                                         <span id="deductionDate-pdisp-text" class="text-xs text-gray-300 font-normal"></span>
                                     </button>
                                 </div>
@@ -696,14 +696,14 @@ const WorkHoursUI = (function() {
                                         onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp-btn',-1)"
                                         class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                     <i class="fas fa-calendar-minus text-yellow-400"></i>
-                                    <span>دیروز</span>
+                                    <span>پریروز</span>
                                     <span id="expenseDate-disp-text" class="text-xs text-gray-300 font-normal"></span>
                                 </button>
                                 <button type="button"
                                         onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp-btn',-2)"
                                         class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                     <i class="fas fa-calendar-times text-orange-400"></i>
-                                    <span>پریروز</span>
+                                    <span>دیروز</span>
                                     <span id="expenseDate-pdisp-text" class="text-xs text-gray-300 font-normal"></span>
                                 </button>
                             </div>
@@ -2145,42 +2145,60 @@ const WorkHoursUI = (function() {
     }
 
     function setQuickDate(hiddenId, dispBtnId, offset) {
+        // محاسبه تاریخ صحیح
+        // offset=-1 → دیروز ، offset=-2 → پریروز
         var d = _wh_iranToday();
         d.setDate(d.getDate() + offset);
-        var jStr = (typeof Jalali !== 'undefined') ? Jalali.toJalaliISO(d) : (d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));
+
+        // تبدیل به شمسی ISO (YYYY-MM-DD)
+        var jStr;
+        if (typeof Jalali !== 'undefined' && typeof Jalali.toJalaliISO === 'function') {
+            jStr = Jalali.toJalaliISO(d);
+        } else if (typeof Jalali !== 'undefined' && typeof Jalali.toJalaali === 'function') {
+            var j = Jalali.toJalaali(d.getFullYear(), d.getMonth()+1, d.getDate());
+            jStr = j.jy + '-' + String(j.jm).padStart(2,'0') + '-' + String(j.jd).padStart(2,'0');
+        } else {
+            // fallback: تقریبی شمسی
+            jStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        }
+
+        // ذخیره در hidden input
         var hidden = document.getElementById(hiddenId);
         if (hidden) hidden.value = jStr;
 
-        // نمایش تاریخ روی دکمه انتخاب‌شده
-        var label = offset === -1 ? 'دیروز' : offset === -2 ? 'پریروز' : 'امروز';
-        var display = (typeof Jalali !== 'undefined') ? Jalali.toJalaliDisplay(d) : jStr;
+        // نمایش شمسی خوانا
+        var display;
+        if (typeof Jalali !== 'undefined' && typeof Jalali.toJalaliDisplay === 'function') {
+            display = Jalali.toJalaliDisplay(d);
+        } else {
+            display = jStr;
+        }
 
-        // تعیین id span متن بر اساس offset
-        var textSpanId = offset === -1 ? (hiddenId + '-disp-text') : (hiddenId + '-pdisp-text');
-        // پاک کردن span دیگر
-        var otherSpanId = offset === -1 ? (hiddenId + '-pdisp-text') : (hiddenId + '-disp-text');
+        // offset=-1 → دیروز → span: hiddenId-disp-text  (دکمه اول)
+        // offset=-2 → پریروز → span: hiddenId-pdisp-text (دکمه دوم)
+        var isYesterday = (offset === -1);
+        var activeSpanId = isYesterday ? (hiddenId + '-disp-text')  : (hiddenId + '-pdisp-text');
+        var clearSpanId  = isYesterday ? (hiddenId + '-pdisp-text') : (hiddenId + '-disp-text');
 
-        var textSpan  = document.getElementById(textSpanId);
-        var otherSpan = document.getElementById(otherSpanId);
-        if (textSpan)  textSpan.textContent  = display;
-        if (otherSpan) otherSpan.textContent  = '';
+        var activeSpan = document.getElementById(activeSpanId);
+        var clearSpan  = document.getElementById(clearSpanId);
+        if (activeSpan) activeSpan.textContent = display;
+        if (clearSpan)  clearSpan.textContent  = '';
 
-        // هایلایت دکمه فعال — همه دکمه‌های هم‌گروه را reset کن
+        // هایلایت: reset همه دکمه‌ها سپس فعال‌سازی دکمه انتخاب‌شده
         var container = hidden ? hidden.parentElement : null;
         if (container) {
-            container.querySelectorAll('button[type="button"]').forEach(function(btn) {
-                btn.classList.remove('ring-2','ring-lime-400','bg-white/30');
+            var btns = container.querySelectorAll('button[type="button"]');
+            btns.forEach(function(btn) {
+                btn.classList.remove('ring-2','ring-lime-400','ring-orange-400','bg-white/30');
                 btn.classList.add('bg-white/10');
             });
-            // دکمه کلیک‌شده را هایلایت کن
-            var clickedId = offset === -1 ? dispBtnId : null;
-            if (offset === -1) {
-                var activeBtn = document.getElementById(dispBtnId);
-                if (activeBtn) { activeBtn.classList.remove('bg-white/10'); activeBtn.classList.add('bg-white/30','ring-2','ring-lime-400'); }
-            } else {
-                // پریروز: دومین دکمه در container
-                var btns = container.querySelectorAll('button[type="button"]');
-                if (btns[1]) { btns[1].classList.remove('bg-white/10'); btns[1].classList.add('bg-white/30','ring-2','ring-orange-400'); }
+            // دیروز = دکمه اول (btns[0]) ، پریروز = دکمه دوم (btns[1])
+            var targetBtn = isYesterday ? btns[0] : btns[1];
+            var ringColor = isYesterday ? 'ring-lime-400' : 'ring-orange-400';
+            if (targetBtn) {
+                targetBtn.classList.remove('bg-white/10');
+                targetBtn.classList.add('bg-white/30', 'ring-2', ringColor);
             }
         }
     }
