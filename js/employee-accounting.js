@@ -306,32 +306,73 @@ const EmployeeAccountingExport = (function() {
         const deductions  = (() => { try { return JSON.parse(localStorage.getItem('work_deductions')||'[]'); } catch { return []; } })();
         const gifts       = (() => { try { return JSON.parse(localStorage.getItem('work_gifts')||'[]'); } catch { return []; } })();
 
-        const headers = ['نام کارمند','نرخ ساعتی (تومان)','جمع ساعات ارسالی','ساعات تأیید شده',
-            'هزینه‌های تأیید (تومان)','مبلغ ساعات (تومان)','جمع مبلغ کل (تومان)',
-            'جمع هدایا (تومان)','جمع کسورات (تومان)','تسویه شده (تومان)','مانده طلب (تومان)'];
+        const headers = [
+            'نام کارمند','نرخ ساعتی (تومان)',
+            'جمع ساعات ارسالی (عدد)','ساعات تأیید شده (عدد)','ساعات در انتظار (عدد)','ساعات رد شده (عدد)',
+            'جمع هزینه ارسالی (تومان)','هزینه تأیید شده (تومان)','هزینه در انتظار (تومان)','هزینه رد شده (تومان)',
+            'مبلغ ساعات تأیید (تومان)','جمع کل قابل پرداخت (تومان)',
+            'جمع هدایا (تومان)','جمع کسورات (تومان)','تسویه شده (تومان)','مانده طلب (تومان)'
+        ];
 
         const rows = summary.map(emp => {
             const paid = settlements.filter(s=>s.employeeId===emp.employeeId).reduce((s,r)=>s+Number(r.amount||0),0);
             const ded  = deductions.filter(d=>d.employeeId===emp.employeeId).reduce((s,d)=>s+Number(d.amount||0),0);
             const gift = gifts.filter(g=>g.employeeId===emp.employeeId).reduce((s,g)=>s+Number(g.amount||0),0);
-            return [emp.employeeName, emp.hourlyRate, emp.totalHours, emp.totalHoursApproved,
-                Math.round(emp.totalExpensesApproved), Math.round(emp.totalAmount),
-                Math.round(emp.grandTotal), Math.round(gift), Math.round(ded),
-                Math.round(paid), Math.round(emp.grandTotal + gift - ded - paid)];
+
+            // محاسبه جزئیات کامل از entries مستقیم
+            const allEnts    = WorkHoursModule.getAllEntriesByEmployee(emp.employeeId);
+            const hoursAll   = allEnts.filter(e=>e.type!=='expense');
+            const expsAll    = allEnts.filter(e=>e.type==='expense');
+            const hApproved  = hoursAll.filter(e=>e.status==='approved').reduce((s,e)=>s+parseFloat(e.totalHours||0),0);
+            const hPending   = hoursAll.filter(e=>e.status==='pending').reduce((s,e)=>s+parseFloat(e.totalHours||0),0);
+            const hRejected  = hoursAll.filter(e=>e.status==='rejected').reduce((s,e)=>s+parseFloat(e.totalHours||0),0);
+            const hTotal     = hApproved + hPending + hRejected;
+            const eApproved  = expsAll.filter(e=>e.status==='approved').reduce((s,e)=>s+Number(e.amount||0),0);
+            const ePending   = expsAll.filter(e=>e.status==='pending').reduce((s,e)=>s+Number(e.amount||0),0);
+            const eRejected  = expsAll.filter(e=>e.status==='rejected').reduce((s,e)=>s+Number(e.amount||0),0);
+            const eTotal     = eApproved + ePending + eRejected;
+            const hoursAmt   = hApproved * (emp.hourlyRate || 0);
+            const grandTotal = hoursAmt + eApproved;
+            const remaining  = grandTotal + gift - ded - paid;
+
+            return [
+                emp.employeeName, emp.hourlyRate,
+                +hTotal.toFixed(2), +hApproved.toFixed(2), +hPending.toFixed(2), +hRejected.toFixed(2),
+                Math.round(eTotal), Math.round(eApproved), Math.round(ePending), Math.round(eRejected),
+                Math.round(hoursAmt), Math.round(grandTotal),
+                Math.round(gift), Math.round(ded), Math.round(paid), Math.round(remaining)
+            ];
         });
 
         _downloadRtlExcel(headers, rows, 'employee-summary.xls');
     }
 
     function exportEmployeeEntriesCSV(employeeId, employeeName) {
-        const entries   = WorkHoursModule.getAllEntriesByEmployee(employeeId);
+        // دریافت مستقیم از storage بدون فیلتر
+        let entries = [];
+        try { entries = (WorkHoursModule.getWorkHours ? WorkHoursModule.getWorkHours() : []).filter(e => e.employeeId === employeeId); } catch(_) {}
+        if (!entries.length) entries = WorkHoursModule.getAllEntriesByEmployee(employeeId);
+
+        // مرتب‌سازی: تاریخ صعودی
+        entries.sort((a,b) => {
+            const da = String(a.date||'').replace(/\//g,'-');
+            const db = String(b.date||'').replace(/\//g,'-');
+            if (da !== db) return da < db ? -1 : 1;
+            if (a.type !== b.type) return a.type === 'expense' ? 1 : -1;
+            return 0;
+        });
+
         const statusMap = { pending: 'در انتظار', approved: 'تأیید شده', rejected: 'رد شده' };
-        const headers   = ['نوع','تاریخ','ساعت شروع','ساعت پایان','ساعت کل','مبلغ (تومان)','شرح','وضعیت'];
+        const headers   = ['نوع','تاریخ','ساعت شروع','ساعت پایان','مدت (ساعت)','مبلغ هزینه (تومان)','شرح','وضعیت'];
         const rows = entries.map(e => [
             e.type === 'expense' ? 'هزینه' : 'ساعت کاری',
-            e.date || '', e.startTime || '', e.endTime || '', e.totalHours || '',
+            e.date || '',
+            e.type !== 'expense' ? (e.startTime || '') : '',
+            e.type !== 'expense' ? (e.endTime   || '') : '',
+            e.type !== 'expense' ? +parseFloat(e.totalHours||0).toFixed(2) : '',
             e.type === 'expense' ? Math.round(e.amount || 0) : '',
-            e.description || '', statusMap[e.status] || e.status
+            e.description || '',
+            statusMap[e.status] || e.status || ''
         ]);
         const safeName = (employeeName || employeeId || 'employee').replace(/[^\w\u0600-\u06FF]/g, '_');
         _downloadRtlExcel(headers, rows, `entries-${safeName}.xls`);
@@ -2078,34 +2119,60 @@ const EmployeeAccountingUI = (function() {
         ];
 
         const detailRows = [];
-        summary.forEach(emp => {
-            let ents = WorkHoursModule.getAllEntriesByEmployee(emp.employeeId);
-            // فیلتر بازه تاریخ — مقایسه string شمسی (YYYY/MM/DD یا YYYY-MM-DD)
-            if (from) ents = ents.filter(e => (e.date||'').replace(/\//g,'-') >= from.replace(/\//g,'-'));
-            if (to)   ents = ents.filter(e => (e.date||'').replace(/\//g,'-') <= to.replace(/\//g,'-'));
 
-            // مرتب‌سازی: تاریخ صعودی، هزینه‌ها بعد از ساعات
-            ents.sort((a,b) => {
-                const da = (a.date||'').replace(/\//g,'-');
-                const db = (b.date||'').replace(/\//g,'-');
-                if (da !== db) return da < db ? -1 : 1;
-                if (a.type !== b.type) return a.type === 'expense' ? 1 : -1;
-                return 0;
-            });
+        // ── نگاشت employeeId → نام کامل از لیست کارمندان ──
+        const empNameMap = {};
+        summary.forEach(emp => { empNameMap[emp.employeeId] = emp.employeeName; });
+        // fallback از HARDCODED_USERS
+        if (typeof HARDCODED_USERS !== 'undefined') {
+            HARDCODED_USERS.forEach(u => { if (!empNameMap[u.id]) empNameMap[u.id] = u.name || u.username || u.id; });
+        }
+        try {
+            JSON.parse(localStorage.getItem('edu_system_users') || '[]')
+                .forEach(u => { if (!empNameMap[u.id]) empNameMap[u.id] = u.name || u.username || u.id; });
+        } catch (_) {}
 
-            ents.forEach(e => {
-                detailRows.push([
-                    emp.employeeName,
-                    e.type === 'expense' ? 'هزینه' : 'ساعت کاری',
-                    e.date || '—',
-                    e.type !== 'expense' ? (e.startTime || '—') : '',
-                    e.type !== 'expense' ? (e.endTime   || '—') : '',
-                    e.type !== 'expense' ? (parseFloat(e.totalHours||0).toFixed(2)) : '',
-                    e.type === 'expense' ? Math.round(e.amount||0) : '',
-                    e.description || '',
-                    statusMap[e.status] || e.status || ''
-                ]);
-            });
+        // ── دریافت همه entries از localStorage/Supabase بدون فیلتر ──
+        let allEntriesGlobal = [];
+        try { allEntriesGlobal = WorkHoursModule.getWorkHours ? WorkHoursModule.getWorkHours() : []; } catch(_) {}
+
+        // فیلتر بر اساس کارمندان انتخاب‌شده (selIds)
+        if (selIds.length) {
+            allEntriesGlobal = allEntriesGlobal.filter(e => selIds.includes(e.employeeId));
+        }
+
+        // فیلتر بازه تاریخ — مقایسه رشته‌ای با پشتیبانی از فرمت‌های مختلف
+        function _normDate(d) { return String(d||'').trim().replace(/\//g,'-').replace(/[۰-۹]/g,c=>String.fromCharCode(c.charCodeAt(0)-1728)); }
+        if (from) allEntriesGlobal = allEntriesGlobal.filter(e => _normDate(e.date) >= _normDate(from));
+        if (to)   allEntriesGlobal = allEntriesGlobal.filter(e => _normDate(e.date) <= _normDate(to));
+
+        // فیلتر وضعیت اگر لازم باشد (اختیاری — فقط روی summary اعمال می‌شد)
+        // در بخش detail همه وضعیت‌ها را نشان می‌دهیم
+
+        // مرتب‌سازی: نام کارمند → تاریخ → نوع
+        allEntriesGlobal.sort((a,b) => {
+            const na = empNameMap[a.employeeId] || a.employeeId || '';
+            const nb = empNameMap[b.employeeId] || b.employeeId || '';
+            if (na !== nb) return na.localeCompare(nb, 'fa');
+            const da = _normDate(a.date), db = _normDate(b.date);
+            if (da !== db) return da < db ? -1 : 1;
+            if (a.type !== b.type) return a.type === 'expense' ? 1 : -1;
+            return 0;
+        });
+
+        allEntriesGlobal.forEach(e => {
+            const empName = empNameMap[e.employeeId] || e.employeeName || e.employeeId || 'نامشخص';
+            detailRows.push([
+                empName,
+                e.type === 'expense' ? 'هزینه' : 'ساعت کاری',
+                e.date || '—',
+                e.type !== 'expense' ? (e.startTime || '—') : '',
+                e.type !== 'expense' ? (e.endTime   || '—') : '',
+                e.type !== 'expense' ? (parseFloat(e.totalHours||0).toFixed(2)) : '',
+                e.type === 'expense' ? Math.round(e.amount||0) : '',
+                e.description || '',
+                statusMap[e.status] || e.status || ''
+            ]);
         });
 
         // ══════════════════════════════════════════════════
@@ -2113,13 +2180,16 @@ const EmployeeAccountingUI = (function() {
         // ══════════════════════════════════════════════════
         const adjHeaders = ['نام کارمند','نوع','تاریخ','مبلغ (تومان)','توضیح / علت'];
         const adjRows    = [];
-        summary.forEach(emp => {
-            deductions.filter(d=>d.employeeId===emp.employeeId).forEach(d =>
-                adjRows.push([emp.employeeName, 'کسورات', d.date||'—', Math.round(d.amount||0), d.reason||'']));
-            gifts.filter(g=>g.employeeId===emp.employeeId).forEach(g =>
-                adjRows.push([emp.employeeName, 'هدیه / پاداش', g.date||'—', Math.round(g.amount||0), g.reason||'']));
-            settlements.filter(s=>s.employeeId===emp.employeeId).forEach(s =>
-                adjRows.push([emp.employeeName, 'تسویه حساب', s.date||'—', Math.round(s.amount||0), s.note||'']));
+        // استفاده از همه کارمندان (نه فقط فیلتر شده) برای کسورات/هدایا/تسویه
+        const adjEmpIds = selIds.length ? selIds : Object.keys(empNameMap);
+        adjEmpIds.forEach(empId => {
+            const empName = empNameMap[empId] || empId;
+            deductions.filter(d=>d.employeeId===empId).forEach(d =>
+                adjRows.push([empName, 'کسورات', d.date||'—', Math.round(d.amount||0), d.reason||'']));
+            gifts.filter(g=>g.employeeId===empId).forEach(g =>
+                adjRows.push([empName, 'هدیه / پاداش', g.date||'—', Math.round(g.amount||0), g.reason||'']));
+            settlements.filter(s=>s.employeeId===empId).forEach(s =>
+                adjRows.push([empName, 'تسویه حساب', s.date||'—', Math.round(s.amount||0), s.note||'']));
         });
 
         // ══════════════════════════════════════════════════
