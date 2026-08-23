@@ -252,8 +252,140 @@ const EmployeeModule = {
                         }).join('')}
                     </div>
                 </div>` : ''}
+
+                <!-- ═══ وظایف ارسال‌شده توسط این کارمند ═══ -->
+                ${this.getMyCreatedTasksSection(userId)}
             </div>
         `;
+    },
+
+    // ══════════════════════════════════════════════════════════
+    // بخش «وظایفی که من ثبت کرده‌ام» — برای نمایش در پایین صفحه وظایف من
+    // ══════════════════════════════════════════════════════════
+    getMyCreatedTasksSection(userId) {
+        // ۱. وظایف ارسال‌شده برای مدیر (در tasks_for_manager با fromId = userId)
+        const tasksForManager = JSON.parse(localStorage.getItem('tasks_for_manager') || '[]')
+            .filter(t => t.fromId === userId);
+
+        // ۲. وظایف ارسال‌شده برای همکاران (در employee_tasks با fromId = userId)
+        const allEmpTasks = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+        const tasksForColleagues = [];
+        Object.keys(allEmpTasks).forEach(empId => {
+            if (empId === userId) return; // وظایف خود کارمند — نه
+            const arr = allEmpTasks[empId] || [];
+            arr.filter(t => t.fromId === userId).forEach(t => tasksForColleagues.push(t));
+        });
+
+        const allCreated = [...tasksForManager, ...tasksForColleagues]
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        const pendingCount = allCreated.filter(t => t.status === 'pending').length;
+
+        const statusColors = {
+            'pending':     'bg-yellow-500/20 text-yellow-300 border-yellow-500/40',
+            'in_progress': 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+            'completed':   'bg-green-500/20 text-green-300 border-green-500/40',
+            'rejected':    'bg-red-500/20 text-red-300 border-red-500/40',
+            'delayed':     'bg-orange-500/20 text-orange-300 border-orange-500/40',
+            'approved':    'bg-teal-500/20 text-teal-300 border-teal-500/40',
+        };
+        const statusLabels = {
+            pending:     'در انتظار',
+            in_progress: 'در حال انجام',
+            completed:   'تکمیل شده',
+            rejected:    'رد شده',
+            delayed:     'به تأخیر افتاده',
+            approved:    'تأیید نهایی',
+        };
+
+        return `
+        <div id="my-created-tasks-section" class="mt-2">
+            <div class="bg-slate-800 rounded-xl shadow-md p-5 border-r-4 border-cyan-500">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-paper-plane text-cyan-400"></i>
+                        وظایفی که من ثبت کرده‌ام
+                        ${pendingCount > 0
+                            ? `<span class="bg-cyan-600 text-white text-xs rounded-full px-2 py-0.5 animate-pulse">${pendingCount}</span>`
+                            : `<span class="bg-slate-600 text-gray-300 text-xs rounded-full px-2 py-0.5">${allCreated.length}</span>`}
+                    </h3>
+                    <button onclick="employeeModule.refreshMyCreatedTasks('${userId}')"
+                            class="text-gray-400 hover:text-white text-sm p-1 rounded" title="بروزرسانی">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+
+                ${allCreated.length === 0 ? `
+                <div class="text-center py-8 border border-dashed border-slate-600 rounded-lg">
+                    <i class="fas fa-paper-plane text-3xl text-slate-500 mb-2 block"></i>
+                    <p class="text-gray-500 text-sm">هنوز وظیفه‌ای برای دیگران ثبت نکرده‌اید</p>
+                    <p class="text-gray-600 text-xs mt-1">با کلیک روی «ثبت وظیفه جدید» می‌توانید وظیفه‌ای برای مدیر یا همکاران تعریف کنید</p>
+                </div>` : `
+                <div class="space-y-3">
+                    ${allCreated.map(t => {
+                        const sc = statusColors[t.status] || statusColors.pending;
+                        const sl = statusLabels[t.status] || t.status;
+                        const isForManager = tasksForManager.some(m => m.id === t.id);
+                        const recipientLabel = isForManager
+                            ? `<span class="text-xs bg-lime-700/30 text-lime-300 border border-lime-600/40 px-2 py-0.5 rounded-full"><i class="fas fa-user-tie ml-1"></i>مدیر</span>`
+                            : `<span class="text-xs bg-cyan-700/30 text-cyan-300 border border-cyan-600/40 px-2 py-0.5 rounded-full"><i class="fas fa-user ml-1"></i>${t.assignedTo || 'همکار'}</span>`;
+                        const timeAgo = (() => {
+                            if (!t.createdAt) return '';
+                            try {
+                                const diff = Math.floor((Date.now() - new Date(t.createdAt).getTime()) / 1000);
+                                if (diff < 60) return 'همین الان';
+                                if (diff < 3600) return Math.floor(diff / 60) + ' دقیقه پیش';
+                                if (diff < 86400) return Math.floor(diff / 3600) + ' ساعت پیش';
+                                return Math.floor(diff / 86400) + ' روز پیش';
+                            } catch(e) { return ''; }
+                        })();
+                        return `
+                        <div class="bg-slate-700 rounded-xl p-4 border border-slate-600">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                        <span class="font-semibold text-white text-sm">${t.title}</span>
+                                        <span class="text-xs px-2 py-0.5 rounded-full border ${sc}">${sl}</span>
+                                        ${t.priority === 'high' ? '<span class="text-xs bg-red-500/20 text-red-300 border border-red-500/40 px-2 py-0.5 rounded-full">فوری</span>' : ''}
+                                    </div>
+                                    ${t.description ? `<p class="text-xs text-gray-400 mb-2 line-clamp-2">${t.description}</p>` : ''}
+                                    <div class="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
+                                        <span class="flex items-center gap-1">
+                                            <i class="fas fa-arrow-left text-cyan-400"></i>
+                                            ارسال به: ${recipientLabel}
+                                        </span>
+                                        ${t.dueDate ? `<span><i class="fas fa-calendar ml-1"></i>${t.dueDate}</span>` : ''}
+                                        <span><i class="fas fa-clock ml-1"></i>${timeAgo}</span>
+                                    </div>
+                                </div>
+                                <!-- آیکون وضعیت -->
+                                <div class="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full
+                                    ${t.status === 'completed' || t.status === 'approved'
+                                        ? 'bg-green-500/20 text-green-400'
+                                        : t.status === 'rejected'
+                                            ? 'bg-red-500/20 text-red-400'
+                                            : t.status === 'in_progress'
+                                                ? 'bg-blue-500/20 text-blue-400'
+                                                : 'bg-yellow-500/20 text-yellow-400'}">
+                                    <i class="fas ${
+                                        t.status === 'completed' || t.status === 'approved' ? 'fa-check-circle' :
+                                        t.status === 'rejected'    ? 'fa-times-circle' :
+                                        t.status === 'in_progress' ? 'fa-spinner'      :
+                                                                     'fa-clock'
+                                    } text-sm"></i>
+                                </div>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>`}
+            </div>
+        </div>`;
+    },
+
+    // refresh بخش وظایف ارسال‌شده
+    refreshMyCreatedTasks(userId) {
+        const el = document.getElementById('my-created-tasks-section');
+        if (el) el.outerHTML = this.getMyCreatedTasksSection(userId);
     },
 
     // کارت مرحله دانشجو در کارتابل
@@ -3802,6 +3934,9 @@ const EmployeeModule = {
 
         document.getElementById('assign-task-modal')?.remove();
         UTILS.showNotification(`وظیفه برای ${assigneeName} ثبت شد ✓`, 'success');
+
+        // بروزرسانی بخش «وظایفی که من ثبت کرده‌ام» در صفحه وظایف من
+        setTimeout(() => this.refreshMyCreatedTasks(fromUserId), 200);
     },
     
     // Submit agent task
