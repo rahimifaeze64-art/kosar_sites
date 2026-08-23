@@ -2145,21 +2145,32 @@ const WorkHoursUI = (function() {
     }
 
     function setQuickDate(hiddenId, dispBtnId, offset) {
-        // محاسبه تاریخ صحیح
-        // offset=-1 → دیروز ، offset=-2 → پریروز
-        var d = _wh_iranToday();
-        d.setDate(d.getDate() + offset);
+        // ── تاریخ امروز در تهران (بدون بازی با timezone object) ──
+        // از toLocaleString برای گرفتن تاریخ میلادی صحیح تهران استفاده می‌کنیم
+        var tehranStr;
+        try {
+            tehranStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Tehran' });
+        } catch(e) {
+            tehranStr = new Date().toLocaleString();
+        }
+        // tehranStr مثل "8/23/2026, 3:45:00 PM"
+        var tehranDate = new Date(tehranStr);
 
-        // تبدیل به شمسی ISO (YYYY-MM-DD)
+        // اعمال offset روزانه (offset=-1 → دیروز، offset=-2 → پریروز)
+        tehranDate.setDate(tehranDate.getDate() + offset);
+
+        var gy = tehranDate.getFullYear();
+        var gm = tehranDate.getMonth() + 1;
+        var gd = tehranDate.getDate();
+
+        // تبدیل میلادی به شمسی ISO (YYYY-MM-DD)
         var jStr;
-        if (typeof Jalali !== 'undefined' && typeof Jalali.toJalaliISO === 'function') {
-            jStr = Jalali.toJalaliISO(d);
-        } else if (typeof Jalali !== 'undefined' && typeof Jalali.toJalaali === 'function') {
-            var j = Jalali.toJalaali(d.getFullYear(), d.getMonth()+1, d.getDate());
+        if (typeof Jalali !== 'undefined' && typeof Jalali.toJalaali === 'function') {
+            var j = Jalali.toJalaali(gy, gm, gd);
             jStr = j.jy + '-' + String(j.jm).padStart(2,'0') + '-' + String(j.jd).padStart(2,'0');
         } else {
-            // fallback: تقریبی شمسی
-            jStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+            // fallback تقریبی
+            jStr = (gy - 621) + '-' + String(gm).padStart(2,'0') + '-' + String(gd).padStart(2,'0');
         }
 
         // ذخیره در hidden input
@@ -2168,8 +2179,11 @@ const WorkHoursUI = (function() {
 
         // نمایش شمسی خوانا
         var display;
-        if (typeof Jalali !== 'undefined' && typeof Jalali.toJalaliDisplay === 'function') {
-            display = Jalali.toJalaliDisplay(d);
+        if (typeof Jalali !== 'undefined' && typeof Jalali.toJalaali === 'function') {
+            var jj = Jalali.toJalaali(gy, gm, gd);
+            var MONTHS = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+            var toFa = function(n){ return String(n).replace(/\d/g, function(d){ return '۰۱۲۳۴۵۶۷۸۹'[d]; }); };
+            display = toFa(jj.jd) + ' ' + MONTHS[jj.jm - 1] + ' ' + toFa(jj.jy);
         } else {
             display = jStr;
         }
