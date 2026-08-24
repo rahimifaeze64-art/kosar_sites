@@ -352,18 +352,20 @@ const PersonalNotesModule = {
         const pinCount = this.state.notes.filter(n => n.pinned).length;
 
         return `
-        <div style="max-width:1200px; margin:0 auto;">
+        <div style="max-width:100%; width:100%; overflow-x:hidden; box-sizing:border-box; padding:0 4px;">
+        <div style="max-width:1200px; margin:0 auto; width:100%; box-sizing:border-box;">
 
           ${this.buildStatsBar(total, pinCount)}
           ${this.buildToolbar()}
           ${this.buildCategoryTabs()}
 
-          <div style="display:flex; gap:20px; align-items:flex-start;">
-            <div style="flex:1; min-width:0;">
+          <div style="display:flex; gap:20px; align-items:flex-start; width:100%; box-sizing:border-box;">
+            <div style="flex:1; min-width:0; width:100%; overflow:hidden;">
               ${this.state.showForm ? this.buildNoteForm() : ''}
               ${notes.length === 0 ? this.buildEmptyState() : this.buildNotesList(notes)}
             </div>
           </div>
+        </div>
         </div>
         ${this.buildStyles()}`;
     },
@@ -378,33 +380,33 @@ const PersonalNotesModule = {
         const topCat = Object.entries(catCounts).sort((a,b)=>b[1]-a[1])[0];
 
         return `
-        <div class="pn-stats-bar">
+        <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:16px; width:100%; box-sizing:border-box;">
           <div class="pn-stat-card" style="background:linear-gradient(135deg, #42ac69ff, #42ac69ff);">
-            <i class="fas fa-thumbtack" style="font-size:1.5rem;opacity:.8;"></i>
-            <div>
-              <div style="font-size:1.8rem;font-weight:700;">${total}</div>
-              <div style="font-size:.75rem;opacity:.85;">کل یادداشت‌ها</div>
+            <i class="fas fa-sticky-note" style="font-size:1.3rem;opacity:.8;flex-shrink:0;"></i>
+            <div style="min-width:0;">
+              <div style="font-size:1.6rem;font-weight:700;">${total}</div>
+              <div style="font-size:.72rem;opacity:.85;white-space:nowrap;">کل یادداشت‌ها</div>
             </div>
           </div>
           <div class="pn-stat-card" style="background:linear-gradient(135deg, #42ac69ff, #42ac69ff);">
-            <i class="fas fa-thumbtack" style="font-size:1.5rem;opacity:.8;"></i>
-            <div>
-              <div style="font-size:1.8rem;font-weight:700;">${pinCount}</div>
-              <div style="font-size:.75rem;opacity:.85;">پین‌شده</div>
+            <i class="fas fa-thumbtack" style="font-size:1.3rem;opacity:.8;flex-shrink:0;"></i>
+            <div style="min-width:0;">
+              <div style="font-size:1.6rem;font-weight:700;">${pinCount}</div>
+              <div style="font-size:.72rem;opacity:.85;white-space:nowrap;">پین‌شده</div>
             </div>
           </div>
           <div class="pn-stat-card" style="background:linear-gradient(135deg, #42ac69ff, #42ac69ff);">
-            <i class="fas fa-thumbtack" style="font-size:1.5rem;opacity:.8;"></i>
-            <div>
-              <div style="font-size:1.8rem;font-weight:700;">${this.state.categories.length}</div>
-              <div style="font-size:.75rem;opacity:.85;">دسته‌بندی</div>
+            <i class="fas fa-tags" style="font-size:1.3rem;opacity:.8;flex-shrink:0;"></i>
+            <div style="min-width:0;">
+              <div style="font-size:1.6rem;font-weight:700;">${this.state.categories.length}</div>
+              <div style="font-size:.72rem;opacity:.85;white-space:nowrap;">دسته‌بندی</div>
             </div>
           </div>
           <div class="pn-stat-card" style="background:linear-gradient(135deg, #42ac69ff, #42ac69ff);">
-            <i class="fas fa-thumbtack" style="font-size:1.5rem;opacity:.8;"></i>
-            <div>
-              <div style="font-size:1.1rem;font-weight:700;">${topCat ? topCat[0] : '—'}</div>
-              <div style="font-size:.75rem;opacity:.85;">پرکارترین دسته</div>
+            <i class="fas fa-star" style="font-size:1.3rem;opacity:.8;flex-shrink:0;"></i>
+            <div style="min-width:0;overflow:hidden;">
+              <div style="font-size:1rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${topCat ? topCat[0] : '—'}</div>
+              <div style="font-size:.72rem;opacity:.85;white-space:nowrap;">پرکارترین دسته</div>
             </div>
           </div>
         </div>`;
@@ -414,40 +416,49 @@ const PersonalNotesModule = {
     // ─── نوار ابزار ──────────────────────────────────────────
     buildToolbar() {
         return `
-        <div class="pn-toolbar">
-          <!-- جستجو -->
-          <div style="position:relative;flex:1;min-width:0;">
-            <i class="fas fa-search" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#94a3b8;"></i>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;
+                    background:#fff;padding:12px;border-radius:14px;
+                    box-shadow:0 1px 6px rgba(0,0,0,.06);width:100%;box-sizing:border-box;">
+
+          <!-- ردیف اول: جستجو -->
+          <div style="position:relative;width:100%;">
+            <i class="fas fa-search" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#94a3b8;pointer-events:none;"></i>
             <input id="pnSearch" type="text" placeholder="جستجو در یادداشت‌ها..."
                    value="${this.escHtml(this.state.searchQuery)}"
                    style="width:100%;padding:10px 38px 10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;
-                          font-family:inherit;font-size:.9rem;outline:none;background:#fff;color:#1e293b;
+                          font-family:inherit;font-size:.9rem;outline:none;background:#f8fafc;color:#1e293b;
                           box-sizing:border-box;">
           </div>
 
-          <!-- مرتب‌سازی -->
-          <select id="pnSort" style="padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;
-                                     font-family:inherit;font-size:.85rem;background:#fff;color:#334155;cursor:pointer;">
-            <option value="oldest"  ${this.state.sortMode==='oldest' ?'selected':''}>قدیمی‌ترین اول (صف)</option>
-            <option value="newest"  ${this.state.sortMode==='newest' ?'selected':''}>جدیدترین اول</option>
-            <option value="alpha"   ${this.state.sortMode==='alpha'  ?'selected':''}>الفبایی</option>
-            <option value="pinned"  ${this.state.sortMode==='pinned' ?'selected':''}>پین‌شده اول</option>
-          </select>
+          <!-- ردیف دوم: مرتب‌سازی + نمای گرید/لیست + دکمه جدید -->
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
 
-          <!-- نمای گرید/لیست -->
-          <div style="display:flex;gap:4px;border:1.5px solid #e2e8f0;border-radius:10px;overflow:hidden;">
-            <button id="pnViewGrid" class="pn-view-btn ${this.state.viewMode==='grid'?'active':''}" title="نمای کارت">
-              <i class="fas fa-th-large"></i>
+            <!-- مرتب‌سازی -->
+            <select id="pnSort" style="flex:1;min-width:0;padding:9px 10px;border:1.5px solid #e2e8f0;
+                                       border-radius:10px;font-family:inherit;font-size:.82rem;
+                                       background:#f8fafc;color:#334155;cursor:pointer;box-sizing:border-box;">
+              <option value="oldest"  ${this.state.sortMode==='oldest' ?'selected':''}>قدیمی‌ترین اول</option>
+              <option value="newest"  ${this.state.sortMode==='newest' ?'selected':''}>جدیدترین اول</option>
+              <option value="alpha"   ${this.state.sortMode==='alpha'  ?'selected':''}>الفبایی</option>
+              <option value="pinned"  ${this.state.sortMode==='pinned' ?'selected':''}>پین‌شده اول</option>
+            </select>
+
+            <!-- نمای گرید/لیست -->
+            <div style="display:flex;gap:2px;border:1.5px solid #e2e8f0;border-radius:10px;overflow:hidden;flex-shrink:0;">
+              <button id="pnViewGrid" class="pn-view-btn ${this.state.viewMode==='grid'?'active':''}" title="نمای کارت">
+                <i class="fas fa-th-large"></i>
+              </button>
+              <button id="pnViewList" class="pn-view-btn ${this.state.viewMode==='list'?'active':''}" title="نمای لیست">
+                <i class="fas fa-list"></i>
+              </button>
+            </div>
+
+            <!-- دکمه یادداشت جدید -->
+            <button id="pnBtnNew" class="pn-btn-primary" style="flex-shrink:0;white-space:nowrap;">
+              <i class="fas fa-plus"></i> جدید
             </button>
-            <button id="pnViewList" class="pn-view-btn ${this.state.viewMode==='list'?'active':''}" title="نمای لیست">
-              <i class="fas fa-list"></i>
-            </button>
+
           </div>
-
-          <!-- دکمه یادداشت جدید -->
-          <button id="pnBtnNew" class="pn-btn-primary">
-            <i class="fas fa-plus"></i> یادداشت جدید
-          </button>
         </div>`;
     },
 
@@ -587,7 +598,7 @@ const PersonalNotesModule = {
         if (this.state.viewMode === 'list') return this.buildNotesListView(notes);
 
         const cards = notes.map(n => this.buildNoteCard(n)).join('');
-        return `<div class="pn-grid">${cards}</div>`;
+        return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr));gap:14px;width:100%;box-sizing:border-box;">${cards}</div>`;
     },
 
     buildNoteCard(n) {
