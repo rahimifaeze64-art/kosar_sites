@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.alkawsar.edu_system"
-    compileSdk = 35       // آخرین نسخه stable
+    compileSdk = 35
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -19,7 +19,7 @@ android {
 
     defaultConfig {
         applicationId = "com.alkawsar.edu_system"
-        minSdk = 26           // Android 8.0 — پشتیبانی از اکثر گوشی‌های فعال
+        minSdk = 21
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
@@ -27,12 +27,9 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true        // حذف کدهای بلااستفاده → APK کوچک‌تر
-            isShrinkResources = true      // حذف resource های بلااستفاده
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            // ProGuard خاموش — Flutter+WebView با minify اغلب crash می‌کند
+            isMinifyEnabled = false
+            isShrinkResources = false
             signingConfig = signingConfigs.getByName("debug")
         }
     }

@@ -5,14 +5,12 @@ import 'webview_screen.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Android 12+ edge-to-edge: محتوا زیر status bar و navigation bar می‌رود
+  // Android 15 edge-to-edge (اجباری در targetSdk=35)
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
       systemNavigationBarColor: Colors.transparent,
-      systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
 

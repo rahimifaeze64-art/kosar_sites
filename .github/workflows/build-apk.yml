@@ -33,17 +33,12 @@ jobs:
         working-directory: flutter_app
         run: flutter pub get
 
-      - name: Generate launcher icons
-        working-directory: flutter_app
-        run: dart run flutter_launcher_icons
-
-      # لوگو را 2x زوم کن برای adaptive icon foreground
+      # لوگو را 3x زوم کن برای adaptive icon foreground
       - name: Create zoomed adaptive icon foreground
         run: |
           pip install Pillow --quiet
           python3 - <<'EOF'
           from PIL import Image
-          import os
 
           src = "flutter_app/assets/icon.png"
           out = "flutter_app/assets/icon_foreground.png"
@@ -51,39 +46,31 @@ jobs:
           img = Image.open(src).convert("RGBA")
           w, h = img.size
 
-          # کانواس adaptive icon = 108dp، safe zone = 72dp مرکز
-          # برای پر کردن safe zone لوگو رو 2x زوم می‌کنیم
-          scale = 2.0
+          scale = 3.0
           new_w = int(w * scale)
           new_h = int(h * scale)
 
-          # resize با کیفیت بالا
           zoomed = img.resize((new_w, new_h), Image.LANCZOS)
 
-          # کانواس خروجی = اندازه اصلی (transparent)
           canvas = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-
-          # مرکزکردن لوگوی بزرگ‌شده روی کانواس
           offset_x = (w - new_w) // 2
           offset_y = (h - new_h) // 2
           canvas.paste(zoomed, (offset_x, offset_y), zoomed)
-
           canvas.save(out)
-          print(f"✓ icon_foreground.png saved ({w}x{h})")
+          print(f"✓ icon_foreground.png saved ({w}x{h}), zoom=3x")
           EOF
 
-      # pubspec را به‌روز کن تا از foreground جدید استفاده کنه
-      - name: Update pubspec for zoomed foreground
+      # pubspec را موقت برای foreground بزرگ‌شده آپدیت کن
+      - name: Update pubspec adaptive icon foreground path
         run: |
           sed -i 's|adaptive_icon_foreground: "assets/icon.png"|adaptive_icon_foreground: "assets/icon_foreground.png"|' \
             flutter_app/pubspec.yaml
 
-      # مجدداً آیکن‌ها را بساز با foreground بزرگ‌شده
-      - name: Regenerate launcher icons with zoomed foreground
+      - name: Generate launcher icons
         working-directory: flutter_app
         run: dart run flutter_launcher_icons
 
-      # ic_launcher_round را از ic_launcher کپی کن (برای Android 7.1+)
+      # ic_launcher_round را از ic_launcher کپی کن
       - name: Copy ic_launcher as ic_launcher_round
         run: |
           for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
@@ -91,23 +78,22 @@ jobs:
             dst="flutter_app/android/app/src/main/res/mipmap-${density}/ic_launcher_round.png"
             if [ -f "$src" ]; then
               cp "$src" "$dst"
-              echo "✓ copied mipmap-${density}/ic_launcher_round.png"
+              echo "✓ mipmap-${density}/ic_launcher_round.png"
             fi
           done
 
-      - name: Build release APK (arm64 only - smallest size)
+      - name: Build release APK
         working-directory: flutter_app
         run: |
           flutter build apk \
             --release \
             --split-per-abi \
-            --target-platform android-arm64 \
-            --no-tree-shake-icons
+            --target-platform android-arm64
 
       - name: Show APK size
         run: |
-          echo "=== APK files ==="
-          find flutter_app/build/app/outputs/flutter-apk -name "*.apk" -exec ls -lh {} \;
+          find flutter_app/build/app/outputs/flutter-apk -name "*release*.apk" \
+            -exec ls -lh {} \;
 
       - name: Upload APK as artifact
         uses: actions/upload-artifact@v4

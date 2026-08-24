@@ -14,7 +14,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
   bool _hasMainError = false;
 
   // ← آدرس صفحه لاگین سایت خود را اینجا وارد کنید
-  static const String webAppUrl = 'http://alkowthar.info/login';
+  static const String webAppUrl = 'http://alkawthar.info/login.html';
 
   @override
   void initState() {
