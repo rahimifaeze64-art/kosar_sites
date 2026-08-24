@@ -598,7 +598,7 @@ const PersonalNotesModule = {
         if (this.state.viewMode === 'list') return this.buildNotesListView(notes);
 
         const cards = notes.map(n => this.buildNoteCard(n)).join('');
-        return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr));gap:14px;width:100%;box-sizing:border-box;">${cards}</div>`;
+        return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr));gap:14px;width:100%;box-sizing:border-box;align-items:start;">${cards}</div>`;
     },
 
     buildNoteCard(n) {
@@ -608,13 +608,14 @@ const PersonalNotesModule = {
             pink:'#fce7f3',   purple:'#f3e8ff', orange:'#ffedd5'
         };
         const cardBg = n.color && bgMap[n.color] ? bgMap[n.color] : '#ffffff';
-        const preview = n.content.length > 120 ? n.content.substring(0,120) + '...' : n.content;
+        const hasMore = n.content.length > 120;
+        const preview = hasMore ? n.content.substring(0, 120) : n.content;
         const tags = (n.tags || []).map(t =>
             `<span class="pn-tag">${this.escHtml(t)}</span>`
         ).join('');
 
         return `
-        <div class="pn-card" data-id="${n.id}" style="background:${cardBg};">
+        <div class="pn-card" data-id="${n.id}" style="background:${cardBg};align-self:start;">
           <!-- هدر کارت -->
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
             <span class="pn-cat-label" style="background:${col.light};color:${col.text};border:1px solid ${col.border};">
@@ -640,19 +641,30 @@ const PersonalNotesModule = {
             ${this.escHtml(n.title)}
           </h4>
 
-          <!-- پیش‌نمایش متن -->
-          <p style="font-size:.85rem;color:#475569;line-height:1.6;margin:0 0 10px;
-                    white-space:pre-wrap;word-break:break-word;">
-            ${this.escHtml(preview)}
-          </p>
+          <!-- متن یادداشت -->
+          <p id="pn-text-${n.id}" style="font-size:.85rem;color:#475569;line-height:1.6;margin:0 0 10px;
+                    white-space:pre-wrap;word-break:break-word;">${this.escHtml(preview)}</p>
 
           <!-- برچسب‌ها -->
           ${tags ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">${tags}</div>` : ''}
 
-          <!-- تاریخ -->
-          <div style="font-size:.75rem;color:#94a3b8;border-top:1px solid #f1f5f9;padding-top:8px;margin-top:auto;">
-            <i class="fas fa-clock" style="margin-left:4px;"></i>
-            ${this.timeAgo(n.updatedAt)}
+          <!-- فوتر: تاریخ + دکمه بیشتر -->
+          <div style="display:flex;justify-content:space-between;align-items:center;
+                      border-top:1px solid #f1f5f9;padding-top:8px;margin-top:auto;">
+            <span style="font-size:.75rem;color:#94a3b8;">
+              <i class="fas fa-clock" style="margin-left:4px;"></i>
+              ${this.timeAgo(n.updatedAt)}
+            </span>
+            ${hasMore ? `
+            <button id="pn-btn-${n.id}" data-expanded="0"
+              onclick="pnToggleExpand('${n.id}', event)"
+              style="background:none;border:none;color:#3b82f6;font-family:inherit;font-size:.78rem;
+                     cursor:pointer;display:flex;align-items:center;gap:3px;padding:2px 4px;
+                     border-radius:6px;transition:background .15s;"
+              onmouseover="this.style.background='#eff6ff'"
+              onmouseout="this.style.background='none'">
+              <i class="fas fa-chevron-down" style="font-size:.65rem;"></i> بیشتر
+            </button>` : ''}
           </div>
         </div>`;
     },
@@ -716,6 +728,31 @@ const PersonalNotesModule = {
 
     // ─── رویدادها ─────────────────────────────────────────────
     attachEvents() {
+        // ── تابع global برای toggle بیشتر/کمتر ──────────────
+        window.pnToggleExpand = (id, event) => {
+            if (event) { event.stopPropagation(); event.preventDefault(); }
+            const note = this.state.notes.find(n => n.id === id);
+            if (!note) return;
+            const p   = document.getElementById('pn-text-' + id);
+            const btn = document.getElementById('pn-btn-' + id);
+            if (!p || !btn) return;
+            const expanded = btn.dataset.expanded === '1';
+            if (expanded) {
+                // کوچک کردن
+                const preview = note.content.length > 120
+                    ? note.content.substring(0, 120)
+                    : note.content;
+                p.textContent = preview;
+                btn.dataset.expanded = '0';
+                btn.innerHTML = '<i class="fas fa-chevron-down" style="font-size:.65rem;"></i> بیشتر';
+            } else {
+                // باز کردن
+                p.textContent = note.content;
+                btn.dataset.expanded = '1';
+                btn.innerHTML = '<i class="fas fa-chevron-up" style="font-size:.65rem;"></i> کمتر';
+            }
+        };
+
         // جستجو
         const search = document.getElementById('pnSearch');
         if (search) {
