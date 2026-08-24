@@ -581,6 +581,17 @@ const EmployeeAccountingUI = (function() {
     function renderMonthlyAccordion(entries, employeeId) {
         var MONTHS_FA = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
 
+        // helper: نمایش ساعت به فرمت ساعت:دقیقه
+        function _fmtH(decHours) {
+            if (typeof WorkHoursModule !== 'undefined' && WorkHoursModule.formatHoursDisplay) {
+                return WorkHoursModule.formatHoursDisplay(decHours);
+            }
+            var totalMin = Math.round(parseFloat(decHours) * 60);
+            var h = Math.floor(totalMin / 60);
+            var m = totalMin % 60;
+            return m === 0 ? h + ' ساعت' : h + ':' + String(m).padStart(2,'0') + ' ساعت';
+        }
+
         function toJalaliKey(dateStr) {
             if (!dateStr) return '0000-00';
             var s = String(dateStr).trim().replace(/\./g,'-').replace(/\//g,'-');
@@ -1598,6 +1609,17 @@ const EmployeeAccountingUI = (function() {
     // ── accordion ماهانه با دکمه تأیید/رد — برای مودال جزئیات مالی مدیر ──
     function renderMonthlyAccordionManager(entries, employeeId) {
         var MONTHS_FA = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+
+        // helper: نمایش ساعت به فرمت ساعت:دقیقه
+        function _fmtH(decHours) {
+            if (typeof WorkHoursModule !== 'undefined' && WorkHoursModule.formatHoursDisplay) {
+                return WorkHoursModule.formatHoursDisplay(decHours);
+            }
+            var totalMin = Math.round(parseFloat(decHours) * 60);
+            var h = Math.floor(totalMin / 60);
+            var m = totalMin % 60;
+            return m === 0 ? h + ' ساعت' : h + ':' + String(m).padStart(2,'0') + ' ساعت';
+        }
 
         function toJalaliKey(dateStr) {
             if (!dateStr) return '0000-00';
