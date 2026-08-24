@@ -37,6 +37,52 @@ jobs:
         working-directory: flutter_app
         run: dart run flutter_launcher_icons
 
+      # لوگو را 2x زوم کن برای adaptive icon foreground
+      - name: Create zoomed adaptive icon foreground
+        run: |
+          pip install Pillow --quiet
+          python3 - <<'EOF'
+          from PIL import Image
+          import os
+
+          src = "flutter_app/assets/icon.png"
+          out = "flutter_app/assets/icon_foreground.png"
+
+          img = Image.open(src).convert("RGBA")
+          w, h = img.size
+
+          # کانواس adaptive icon = 108dp، safe zone = 72dp مرکز
+          # برای پر کردن safe zone لوگو رو 2x زوم می‌کنیم
+          scale = 2.0
+          new_w = int(w * scale)
+          new_h = int(h * scale)
+
+          # resize با کیفیت بالا
+          zoomed = img.resize((new_w, new_h), Image.LANCZOS)
+
+          # کانواس خروجی = اندازه اصلی (transparent)
+          canvas = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+
+          # مرکزکردن لوگوی بزرگ‌شده روی کانواس
+          offset_x = (w - new_w) // 2
+          offset_y = (h - new_h) // 2
+          canvas.paste(zoomed, (offset_x, offset_y), zoomed)
+
+          canvas.save(out)
+          print(f"✓ icon_foreground.png saved ({w}x{h})")
+          EOF
+
+      # pubspec را به‌روز کن تا از foreground جدید استفاده کنه
+      - name: Update pubspec for zoomed foreground
+        run: |
+          sed -i 's|adaptive_icon_foreground: "assets/icon.png"|adaptive_icon_foreground: "assets/icon_foreground.png"|' \
+            flutter_app/pubspec.yaml
+
+      # مجدداً آیکن‌ها را بساز با foreground بزرگ‌شده
+      - name: Regenerate launcher icons with zoomed foreground
+        working-directory: flutter_app
+        run: dart run flutter_launcher_icons
+
       # ic_launcher_round را از ic_launcher کپی کن (برای Android 7.1+)
       - name: Copy ic_launcher as ic_launcher_round
         run: |
