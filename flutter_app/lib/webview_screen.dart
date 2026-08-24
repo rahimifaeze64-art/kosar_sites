@@ -12,32 +12,32 @@ class _NavItem {
 
 // ── صفحات هر نقش ──────────────────────────────
 const List<_NavItem> _managerPages = [
-  _NavItem('dashboard',    Icons.dashboard_rounded,              'داشبورد'),
-  _NavItem('students',     Icons.school_rounded,                 'دانشجویان'),
   _NavItem('tasks',        Icons.task_alt_rounded,               'کارمندان'),
-  _NavItem('managementChat', Icons.forum_rounded,                'گفتگو'),
+  _NavItem('personalNotes',Icons.sticky_note_2_rounded,          'یادداشت'),
   _NavItem('workChecklist',Icons.fact_check_rounded,             'چک‌لیست'),
+  _NavItem('managementChat', Icons.forum_rounded,                'گفتگو'),
   _NavItem('accounting',   Icons.calculate_rounded,              'حسابداری'),
   _NavItem('embassy',      Icons.account_balance_rounded,        'سفارت'),
   _NavItem('orders',       Icons.list_alt_rounded,               'سفارشات'),
   _NavItem('companyDoor',  Icons.door_front_door_rounded,        'در شرکت'),
+  _NavItem('students',     Icons.school_rounded,                 'دانشجویان'),
   _NavItem('whatsapp',     Icons.message_rounded,                'واتساپ'),
   _NavItem('users',        Icons.manage_accounts_rounded,        'کاربران'),
-  _NavItem('personalNotes',Icons.sticky_note_2_rounded,          'یادداشت'),
+  _NavItem('dashboard',    Icons.dashboard_rounded,              'داشبورد'),
   _NavItem('profile',      Icons.settings_rounded,               'تنظیمات'),
 ];
 
 const List<_NavItem> _employeePages = [
-  _NavItem('dashboard',    Icons.dashboard_rounded,              'داشبورد'),
-  _NavItem('students',     Icons.school_rounded,                 'دانشجویان'),
   _NavItem('myTasks',      Icons.checklist_rounded,              'وظایف من'),
+  _NavItem('personalNotes',Icons.sticky_note_2_rounded,          'یادداشت'),
+  _NavItem('workChecklist',Icons.fact_check_rounded,             'چک‌لیست'),
   _NavItem('managementChat', Icons.forum_rounded,                'گفتگو'),
   _NavItem('workHours',    Icons.access_time_rounded,            'ساعت کاری'),
-  _NavItem('workChecklist',Icons.fact_check_rounded,             'چک‌لیست'),
+  _NavItem('students',     Icons.school_rounded,                 'دانشجویان'),
   _NavItem('embassy',      Icons.account_balance_rounded,        'سفارت'),
   _NavItem('orders',       Icons.list_alt_rounded,               'سفارشات'),
   _NavItem('companyDoor',  Icons.door_front_door_rounded,        'در شرکت'),
-  _NavItem('personalNotes',Icons.sticky_note_2_rounded,          'یادداشت'),
+  _NavItem('dashboard',    Icons.dashboard_rounded,              'داشبورد'),
   _NavItem('profile',      Icons.settings_rounded,               'تنظیمات'),
 ];
 
