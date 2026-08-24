@@ -231,25 +231,25 @@
                 </button>
             </template>
 
-            <!-- وظایف عامل‌ها - فقط همکار-->
-            <template x-if="currentUser.role === 'employee'">
+            <!-- وظایف عامل‌ها - غیرفعال شد -->
+            <!-- <template x-if="currentUser.role === 'employee'">
                 <button @click="currentPage = 'agentTasksManagement'"
                         :class="currentPage === 'agentTasksManagement' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
                         class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                     <i class="fas fa-tasks text-lg"></i>
                     <span class="font-medium">وظایف عامل‌ها</span>
                 </button>
-            </template>
+            </template> -->
 
 
 
-            <!-- گفتگو شخصی - همه نقش‌ها -->
-            <button @click="currentPage = 'personalChat'"
+            <!-- گفتگو شخصی - غیرفعال شد -->
+            <!-- <button @click="currentPage = 'personalChat'"
                     :class="currentPage === 'personalChat' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
                     class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                 <i class="fas fa-comments text-lg"></i>
                 <span class="font-medium">گفتگو شخصی</span>
-            </button>
+            </button> -->
 
             <!-- یادداشت شخصی - همه نقش‌ها -->
             <button @click="currentPage = 'personalNotes'"
@@ -339,14 +339,14 @@
                 </button>
             </template>
 
-            <!-- دارالترجمه - مدیر و کارمند -->
-            <template x-if="currentUser.role === 'manager' || currentUser.role === 'employee'">
+            <!-- دارالترجمه - غیرفعال شد -->
+            <!-- <template x-if="currentUser.role === 'manager' || currentUser.role === 'employee'">
                 <a href="daroltarjome.html" target="_blank"
                    class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl text-black-100 hover:bg-white hover:bg-opacity-10 transition-all duration-200">
                     <i class="fas fa-language text-lg"></i>
                     <span class="font-medium">دارالترجمه</span>
                 </a>
-            </template>
+            </template> -->
 
             <!-- واتساپ - فقط مدیر -->
             <template x-if="currentUser.role === 'manager'">
@@ -394,11 +394,12 @@
                         <span class="font-medium">سفارشات</span>
                     </button>
 
-                    <a href="archive.html"
+                    <!-- بایگانی فایل‌ها - غیرفعال شد -->
+                    <!-- <a href="archive.html"
                        class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl text-black-100 hover:bg-white hover:bg-opacity-10 transition-all duration-200">
                         <i class="fas fa-archive text-lg"></i>
                         <span class="font-medium">بایگانی فایل‌ها</span>
-                    </a>
+                    </a> -->
 
                     <!-- حسابداری - فقط مدیر با dropdown -->
                     <template x-if="currentUser.role === 'manager'">
