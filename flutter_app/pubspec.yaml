@@ -1,5 +1,5 @@
 name: edu_system_app
-description: اپلیکیشن سیستم مدیریت تحصیلی
+description: اپلیکیشن الکوثر
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -9,36 +9,31 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
+
   # WebView
   webview_flutter: ^4.4.2
-  
-  # اشتراک‌گذاری فایل
-  receive_sharing_intent: ^1.5.3
-  share_plus: ^7.2.1
-  
-  # دسترسی به فایل‌ها
-  file_picker: ^6.1.1
-  path_provider: ^2.1.1
-  
-  # HTTP برای آپلود
-  http: ^1.1.2
-  dio: ^5.4.0
-  
-  # مدیریت مجوزها
-  permission_handler: ^11.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
 
+  # ساخت آیکن اپ از فایل تصویری
+  flutter_launcher_icons: ^0.14.1
+
 flutter:
   uses-material-design: true
-  
+
   assets:
     - assets/icon.png
-  
-  # آیکون اپ
-  # assets:
-  #   - assets/logo.png
+
+# تنظیم آیکن اپ
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: false
+  image_path: "assets/icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icon.png"
+  web:
+    generate: false
