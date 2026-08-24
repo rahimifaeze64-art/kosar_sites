@@ -645,7 +645,7 @@ const EmployeeAccountingUI = (function() {
             ].filter(Boolean).join('');
 
             var summaryParts = [
-                hoursE.length > 0 ? '<span style="color:#a3e635;font-size:12px;"><i class="fas fa-clock" style="margin-left:3px;font-size:11px;"></i>'+totH.toFixed(1)+' ساعت</span>' : '',
+                hoursE.length > 0 ? '<span style="color:#a3e635;font-size:12px;"><i class="fas fa-clock" style="margin-left:3px;font-size:11px;"></i>'+_fmtH(totH)+' ساعت</span>' : '',
                 expE.length   > 0 ? '<span style="color:#fb923c;font-size:12px;"><i class="fas fa-receipt" style="margin-left:3px;font-size:11px;"></i>'+Number(totExp).toLocaleString('fa-IR')+' ت</span>' : '',
             ].filter(Boolean).join('<span style="color:#4b5563;margin:0 6px;">|</span>');
 
@@ -667,7 +667,7 @@ const EmployeeAccountingUI = (function() {
 
                 var valPart = isExp
                     ? '<span style="color:#fb923c;font-weight:700;">'+Number(e.amount||0).toLocaleString('fa-IR')+' ت</span>'
-                    : '<span style="color:#a3e635;font-weight:700;">'+parseFloat(e.totalHours||0).toFixed(1)+'</span><span style="color:#000000ff;font-size:11px;margin-right:2px;"> ساعت</span>'
+                    : '<span style="color:#a3e635;font-weight:700;">'+_fmtH(parseFloat(e.totalHours||0))+'</span><span style="color:#000000ff;font-size:11px;margin-right:2px;"> ساعت</span>'
                       + (e.startTime && e.endTime ? '<br><span style="color:#000000ff;font-size:11px;">'+e.startTime+'—'+e.endTime+'</span>' : '');
 
                 var stBadge = '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;background:'+sc.bg+';color:'+sc.txt+';border:1px solid '+sc.bdr+';white-space:nowrap;">'
@@ -1660,7 +1660,7 @@ const EmployeeAccountingUI = (function() {
             ].filter(Boolean).join('');
 
             var sumParts=[
-                hoursE.length>0?'<span style="color:#a3e635;font-size:12px;"><i class="fas fa-clock" style="margin-left:3px;font-size:10px;"></i>'+totH.toFixed(1)+' ساعت</span>':'',
+                hoursE.length>0?'<span style="color:#a3e635;font-size:12px;"><i class="fas fa-clock" style="margin-left:3px;font-size:10px;"></i>'+_fmtH(totH)+' ساعت</span>':'',
                 expE.length>0?'<span style="color:#fb923c;font-size:12px;"><i class="fas fa-receipt" style="margin-left:3px;font-size:10px;"></i>'+Number(totExp).toLocaleString('fa-IR')+' ت</span>':'',
             ].filter(Boolean).join('<span style="color:#374151;margin:0 5px;">|</span>');
 
@@ -1682,7 +1682,7 @@ const EmployeeAccountingUI = (function() {
 
                 var valPart=isExp
                     ?'<span style="color:#fb923c;font-weight:700;">'+Number(e.amount||0).toLocaleString('fa-IR')+' ت</span>'
-                    :'<span style="color:#a3e635;font-weight:700;">'+parseFloat(e.totalHours||0).toFixed(1)+'</span><span style="color:#000000ff;font-size:11px;margin-right:2px;"> ساعت</span>'
+                    :'<span style="color:#a3e635;font-weight:700;">'+_fmtH(parseFloat(e.totalHours||0))+'</span><span style="color:#000000ff;font-size:11px;margin-right:2px;"> ساعت</span>'
                       +(e.startTime&&e.endTime?'<br><span style="color:#000000ff;font-size:11px;">'+e.startTime+'—'+e.endTime+'</span>':'');
 
                 // دکمه عملیات: pending → تأیید/رد | approved/rejected → badge
