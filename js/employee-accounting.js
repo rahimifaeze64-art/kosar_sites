@@ -2373,7 +2373,6 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
     // ── درخواست مهلت مجدد (برای کارمند) ─────────────────────
     function showLateRequestModal() {
         document.getElementById('late-request-modal')?.remove();
-        const today = new Date().toISOString().split('T')[0];
 
         const modal = document.createElement('div');
         modal.id = 'late-request-modal';
@@ -2386,11 +2385,23 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
                     </h3>
                     <button onclick="document.getElementById('late-request-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
                 </div>
-                <p class="text-gray-600 text-sm mb-4">اگر ثبت ساعت کاری یا هزینه‌ای را فراموش کرده‌اید، اینجا درخواست دهید.</p>
+                <p class="text-gray-400 text-sm mb-4">اگر ثبت ساعت کاری یا هزینه‌ای را فراموش کرده‌اید، اینجا درخواست دهید.</p>
                 <div class="space-y-3">
                     <div>
                         <label class="text-gray-400 text-sm mb-1 block">تاریخ فراموش‌شده <span class="text-red-400">*</span></label>
-                        ${_buildJalaliInput('lr-date', 'lr-date-display', today)}
+                        <!-- hidden: مقدار میلادی که jalalidatepicker پر می‌کند -->
+                        <input type="hidden" id="lr-date">
+                        <!-- فیلد نمایشی شمسی — jalalidatepicker آن را مدیریت می‌کند -->
+                        <input type="text"
+                               id="lr-date-jdp"
+                               data-jdp
+                               data-jdp-target-value-input="#lr-date"
+                               data-jdp-target-value-type="gregorian"
+                               placeholder="انتخاب تاریخ شمسی"
+                               autocomplete="off"
+                               readonly
+                               onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                               class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 cursor-pointer text-sm text-right">
                     </div>
                     <div>
                         <label class="text-gray-400 text-sm mb-1 block">نوع ثبت <span class="text-red-400">*</span></label>
@@ -2435,7 +2446,14 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
                 </div>
             </div>`;
         document.body.appendChild(modal);
-        modal.addEventListener('click', e => { if (e.target === modal) { EAccJalali.close(); modal.remove(); } });
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+        // راه‌اندازی jalalidatepicker برای input تاریخ modal
+        if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
+            setTimeout(function() {
+                jalaliDatepicker.startWatch({ showTodayBtn: true, showEmptyBtn: true, showCloseBtn: true });
+            }, 50);
+        }
     }
 
     function _toggleLateRequestFields() {
@@ -2453,16 +2471,31 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
 
     function saveLateRequest() {
         const u      = (() => { try { return JSON.parse(localStorage.getItem('currentUser')||'{}'); } catch { return {}; } })();
-        const date   = document.getElementById('lr-date')?.value;
+        const dateGreg = document.getElementById('lr-date')?.value;        // میلادی از jalalidatepicker
+        const dateJdp  = document.getElementById('lr-date-jdp')?.value;    // شمسی نمایشی
         const type   = document.getElementById('lr-type')?.value;
         const reason = document.getElementById('lr-reason')?.value?.trim();
-        if (!date || !reason) { alert('تاریخ و دلیل فراموشی الزامی است'); return; }
+
+        if (!dateGreg || !reason) { alert('تاریخ و دلیل فراموشی الزامی است'); return; }
+
+        // تبدیل میلادی به شمسی برای ذخیره‌سازی سازگار با بقیه سیستم
+        let requestedDate = dateGreg;
+        try {
+            const ju = window.JalaliUtils;
+            if (ju && ju.gregToJD && ju.jdToJalali) {
+                const [y,m,d] = dateGreg.split('-').map(Number);
+                const jd = ju.gregToJD(y, m, d);
+                const [jy, jm, jday] = ju.jdToJalali(jd);
+                const pad = n => n < 10 ? '0'+n : String(n);
+                requestedDate = jy + '-' + pad(jm) + '-' + pad(jday);
+            }
+        } catch(e) { requestedDate = dateGreg; }
 
         const record = {
             id:            'lr_' + Date.now(),
             employeeId:    u.id   || '',
             employeeName:  u.name || '',
-            requestedDate: date,
+            requestedDate,
             entryType:     type,
             startTime:     type==='work'    ? (document.getElementById('lr-start')?.value||'') : '',
             endTime:       type==='work'    ? (document.getElementById('lr-end')?.value||'')   : '',
