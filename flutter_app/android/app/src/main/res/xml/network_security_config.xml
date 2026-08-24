@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- فقط HTTPS مجاز است — سایت باید SSL داشته باشد -->
-    <base-config cleartextTrafficPermitted="false">
+    <!-- HTTP مجاز است (سایت بدون SSL) -->
+    <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>

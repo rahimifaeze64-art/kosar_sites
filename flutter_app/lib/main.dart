@@ -5,12 +5,14 @@ import 'webview_screen.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // نمایش edge-to-edge — محتوا زیر status bar و navigation bar می‌رود
+  // Android 12+ edge-to-edge: محتوا زیر status bar و navigation bar می‌رود
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
       systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
 
@@ -26,7 +28,7 @@ class MyApp extends StatelessWidget {
       title: 'الکوثر',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1565C0)),
         useMaterial3: true,
       ),
       home: const WebViewScreen(),
