@@ -1,4 +1,4 @@
-/**
+﻿/**
  * سیستم ساعات کاری
  * مدیریت ثبت و نمایش ساعات کاری کارمندان
  * ذخیره‌سازی: Supabase (اصلی) + localStorage (کش/آفلاین)
@@ -555,17 +555,17 @@ const WorkHoursUI = (function() {
                             <div class="flex gap-2">
                                 <button type="button"
                                         id="workDate-disp-btn"
-                                        onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp-btn',-1)"
+                                        onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp-btn',-4)"
                                         class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                     <i class="fas fa-calendar-minus text-yellow-400"></i>
-                                    <span>پریروز</span>
+                                    <span>دیروز</span>
                                     <span id="workDate-disp-text" class="text-xs text-gray-300 font-normal"></span>
                                 </button>
                                 <button type="button"
-                                        onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp-btn',-2)"
+                                        onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp-btn',-3)"
                                         class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                     <i class="fas fa-calendar-times text-orange-400"></i>
-                                    <span>دیروز</span>
+                                    <span>امروز</span>
                                     <span id="workDate-pdisp-text" class="text-xs text-gray-300 font-normal"></span>
                                 </button>
                             </div>
@@ -637,17 +637,17 @@ const WorkHoursUI = (function() {
                                 <div class="flex gap-2">
                                     <button type="button"
                                             id="deductionDate-disp-btn"
-                                            onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp-btn',-1)"
+                                            onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp-btn',-4)"
                                             class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                         <i class="fas fa-calendar-minus text-yellow-400"></i>
-                                        <span>پریروز</span>
+                                        <span>دیروز</span>
                                         <span id="deductionDate-disp-text" class="text-xs text-gray-300 font-normal"></span>
                                     </button>
                                     <button type="button"
-                                            onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp-btn',-2)"
+                                            onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp-btn',-3)"
                                             class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                         <i class="fas fa-calendar-times text-orange-400"></i>
-                                        <span>دیروز</span>
+                                        <span>امروز</span>
                                         <span id="deductionDate-pdisp-text" class="text-xs text-gray-300 font-normal"></span>
                                     </button>
                                 </div>
@@ -693,17 +693,17 @@ const WorkHoursUI = (function() {
                             <div class="flex gap-2">
                                 <button type="button"
                                         id="expenseDate-disp-btn"
-                                        onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp-btn',-1)"
+                                        onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp-btn',-4)"
                                         class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                     <i class="fas fa-calendar-minus text-yellow-400"></i>
-                                    <span>پریروز</span>
+                                    <span>دیروز</span>
                                     <span id="expenseDate-disp-text" class="text-xs text-gray-300 font-normal"></span>
                                 </button>
                                 <button type="button"
-                                        onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp-btn',-2)"
+                                        onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp-btn',-3)"
                                         class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                     <i class="fas fa-calendar-times text-orange-400"></i>
-                                    <span>دیروز</span>
+                                    <span>امروز</span>
                                     <span id="expenseDate-pdisp-text" class="text-xs text-gray-300 font-normal"></span>
                                 </button>
                             </div>
@@ -2179,10 +2179,10 @@ const WorkHoursUI = (function() {
         var toFa = function(n){ return String(n).replace(/\d/g, function(d){ return '۰۱۲۳۴۵۶۷۸۹'[d]; }); };
         var display = toFa(jd) + ' ' + MONTHS[jm - 1] + ' ' + toFa(jy);
 
-        // offset=-1 → دیروز → span اول ، offset=-2 → پریروز → span دوم
-        var isYesterday = (offset === -1);
-        var activeSpan = document.getElementById(hiddenId + (isYesterday ? '-disp-text' : '-pdisp-text'));
-        var clearSpan  = document.getElementById(hiddenId + (isYesterday ? '-pdisp-text' : '-disp-text'));
+        // offset=-3 → امروز → span/btn دوم ، offset=-4 → دیروز → span/btn اول
+        var isYesterday = (offset === -3);
+        var activeSpan = document.getElementById(hiddenId + (isYesterday ? '-pdisp-text' : '-disp-text'));
+        var clearSpan  = document.getElementById(hiddenId + (isYesterday ? '-disp-text' : '-pdisp-text'));
         if (activeSpan) activeSpan.textContent = display;
         if (clearSpan)  clearSpan.textContent  = '';
 
@@ -2194,10 +2194,11 @@ const WorkHoursUI = (function() {
                 btn.classList.add('bg-white/10');
             });
             var btns = container.querySelectorAll('button[type="button"]');
-            var targetBtn = isYesterday ? btns[0] : btns[1];
+            // btns[0] = دیروز ، btns[1] = امروز
+            var targetBtn = isYesterday ? btns[1] : btns[0];
             if (targetBtn) {
                 targetBtn.classList.remove('bg-white/10');
-                targetBtn.classList.add('bg-white/30','ring-2', isYesterday ? 'ring-lime-400' : 'ring-orange-400');
+                targetBtn.classList.add('bg-white/30','ring-2', isYesterday ? 'ring-orange-400' : 'ring-lime-400');
             }
         }
     }
