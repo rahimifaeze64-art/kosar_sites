@@ -416,7 +416,7 @@ const PersonalNotesModule = {
         return `
         <div class="pn-toolbar">
           <!-- جستجو -->
-          <div style="position:relative;flex:1;min-width:200px;">
+          <div style="position:relative;flex:1;min-width:0;">
             <i class="fas fa-search" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#94a3b8;"></i>
             <input id="pnSearch" type="text" placeholder="جستجو در یادداشت‌ها..."
                    value="${this.escHtml(this.state.searchQuery)}"
@@ -474,10 +474,10 @@ const PersonalNotesModule = {
 
         return `
         <div style="margin-bottom:16px;">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;">
             ${tabs}
             <button id="pnBtnAddCat" class="pn-cat-tab" title="افزودن دسته‌بندی جدید"
-                    style="border-style:dashed;color:#94a3b8;">
+                    style="border-style:dashed;color:#94a3b8;flex-shrink:0;">
               <i class="fas fa-plus" style="font-size:.7rem;"></i> دسته جدید
             </button>
           </div>
@@ -1084,10 +1084,58 @@ const PersonalNotesModule = {
         .pn-view-btn.active { background: #3b82f6; color: #fff; }
         .pn-view-btn:hover:not(.active) { background: #e2e8f0; }
         /* ── Responsive ── */
-        @media (max-width: 600px) {
-            .pn-grid { grid-template-columns: 1fr; }
-            .pn-stats-bar { grid-template-columns: repeat(2, 1fr); }
-            .pn-toolbar { flex-direction: column; align-items: stretch; }
+        @media (max-width: 768px) {
+            .pn-stats-bar {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+                margin-bottom: 14px;
+            }
+            .pn-stat-card {
+                padding: 12px 14px;
+                gap: 10px;
+            }
+            .pn-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 10px 12px;
+                gap: 8px;
+            }
+            .pn-toolbar > div,
+            .pn-toolbar > select,
+            .pn-toolbar > button {
+                width: 100% !important;
+                min-width: unset !important;
+                box-sizing: border-box;
+            }
+            #pnBtnNew {
+                justify-content: center;
+            }
+            .pn-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            .pn-form-card {
+                padding: 14px;
+            }
+            .pn-list-row {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+        }
+        @media (max-width: 400px) {
+            .pn-stats-bar {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            .pn-stat-card {
+                padding: 10px;
+                gap: 8px;
+                border-radius: 10px;
+            }
+            .pn-cat-tab {
+                padding: 5px 10px;
+                font-size: .78rem;
+            }
         }
         </style>`;
     },
