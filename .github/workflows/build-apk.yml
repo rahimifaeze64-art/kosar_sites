@@ -37,6 +37,18 @@ jobs:
         working-directory: flutter_app
         run: dart run flutter_launcher_icons
 
+      # ic_launcher_round را از ic_launcher کپی کن (برای Android 7.1+)
+      - name: Copy ic_launcher as ic_launcher_round
+        run: |
+          for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            src="flutter_app/android/app/src/main/res/mipmap-${density}/ic_launcher.png"
+            dst="flutter_app/android/app/src/main/res/mipmap-${density}/ic_launcher_round.png"
+            if [ -f "$src" ]; then
+              cp "$src" "$dst"
+              echo "✓ copied mipmap-${density}/ic_launcher_round.png"
+            fi
+          done
+
       - name: Build release APK (arm64 only - smallest size)
         working-directory: flutter_app
         run: |
