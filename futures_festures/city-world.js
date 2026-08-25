@@ -340,6 +340,8 @@ const CityWorld = (function () {
   let jetSpeed = 0;
   const JET_MIN_FLY = 17;    // زیر این سرعت واماندگی
   const JET_MAX_SPD = 74;
+  const JET_MAP_EDGE = 168;  // زمین ۴۰۰×۴۰۰ است؛ جت نباید از این بگذره
+  let _jetEdgeToast = 0;
 
   // ─── گفتگو با NPC ───
   let nearNPC = null;
@@ -357,8 +359,8 @@ const CityWorld = (function () {
 
   // ─── موانع استاتیک (جت و...) خارج از BUILDINGS_CONFIG ───
   const staticColliders = [];
-  function _addCollider(x, z, hw, hd) {
-    staticColliders.push({ x, z, hw, hd });
+  function _addCollider(x, z, hw, hd, onlyWhenParked) {
+    staticColliders.push({ x, z, hw, hd, onlyWhenParked: !!onlyWhenParked });
   }
 
   // ─────────────────────────────────────────────
@@ -421,6 +423,7 @@ const CityWorld = (function () {
 
     // رویدادها
     _bindEvents(container);
+    _buildDialogUI();
 
     // شروع loop
     _running = true;
@@ -1042,7 +1045,7 @@ const CityWorld = (function () {
       if (e.key in keys) { keys[e.key] = true; e.preventDefault(); }
 
       // ورود به ساختمان (فقط پیاده — Enter)
-      if (e.key === 'Enter' && nearBuilding && !inCar && !inTank && !inHeli) {
+      if (e.key === 'Enter' && nearBuilding && !inCar && !inTank && !inHeli && !dialogOpen) {
         _enterBuilding(nearBuilding);
       }
 
@@ -1270,8 +1273,8 @@ const CityWorld = (function () {
     const hint = document.getElementById('city-controls-hint');
     if (hint) hint.innerHTML = `
       <p><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> یا فلش‌ها — حرکت (<span class="key">Shift</span> دویدن)</p>
-      <p><span class="key">Space</span> — پرش · <span class="key">Enter</span> — ورود به ساختمان</p>
-      <p><span class="key">F</span> ماشین · <span class="key">T</span> تانک · <span class="key">H</span> هلی‌کوپتر (کنار پد)</p>
+      <p><span class="key">Space</span> — پرش · <span class="key">E</span> — گفتگو با NPC</p>
+      <p><span class="key">F</span> ماشین · <span class="key">T</span> تانک · <span class="key">H</span> هلی · <span class="key">J</span> جنگنده (بیس هوایی)</p>
       <p>📍 به در ساختمان نزدیک شوید</p>
     `;
   }
@@ -1521,6 +1524,7 @@ const CityWorld = (function () {
       ) return true;
     }
     for (const c of staticColliders) {
+      if (c.onlyWhenParked && jetState !== 'parked') continue;
       if (nx > c.x - c.hw && nx < c.x + c.hw && nz > c.z - c.hd && nz < c.z + c.hd) return true;
     }
     return false;
@@ -1538,6 +1542,7 @@ const CityWorld = (function () {
       ) return true;
     }
     for (const c of staticColliders) {
+      if (c.onlyWhenParked && jetState !== 'parked') continue;
       if (nx > c.x - c.hw - mw && nx < c.x + c.hw + mw && nz > c.z - c.hd - md && nz < c.z + c.hd + md) return true;
     }
     return false;
@@ -1702,6 +1707,7 @@ const CityWorld = (function () {
       nearCar = false;
       nearTank = false;
       nearHeli = false;
+      nearJet = false;
       nearNPC = null;
       joystickActive = false;
       buildings.forEach(b => {
@@ -1923,8 +1929,8 @@ const CityWorld = (function () {
     g.position.set(128, 0, 0);
     scene.add(g);
 
-    // برخورد با بدنه جت
-    _addCollider(128 - 23, 22, 3.2, 6);
+    // برخورد با بدنه جت — فقط وقتی پارک شده
+    _addCollider(105, 22, 3.2, 6, true);
   }
 
   function _makeFighterJet() {
@@ -2108,6 +2114,21 @@ const CityWorld = (function () {
       ctx.fillText('🪖', tx, ty - 13);
     }
 
+    // جنگنده روی minimap
+    if (fighterJet) {
+      const jx = cx + fighterJet.position.x * S;
+      const jy = cy + fighterJet.position.z * S;
+      ctx.save();
+      ctx.translate(jx, jy);
+      ctx.rotate(-fighterJet.rotation.y + Math.PI / 2);
+      ctx.fillStyle = inJet ? '#38bdf8' : '#94a3b8';
+      ctx.beginPath();
+      ctx.moveTo(0, -8); ctx.lineTo(-4, 6); ctx.lineTo(0, 3); ctx.lineTo(4, 6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
     // هلی‌کوپتر روی minimap
     if (helicopter) {
       const hx = cx + helicopter.position.x * S;
@@ -2147,8 +2168,8 @@ const CityWorld = (function () {
     npcs = [];
 
     NPC_CONFIGS.forEach((cfg, idx) => {
-      const npc = _makeCharacterMesh(cfg.color);
-      // تنوع قد — مثل آدم‌های واقعی
+      const npc = _makeCharacterMesh(cfg.color, { name: cfg.name, agent: cfg.role === 'agent' });
+      // تنوع قد و اندام — مثل آدم‌های واقعی
       npc.scale.setScalar(0.93 + Math.random() * 0.15);
 
       npc.userData = {
@@ -2161,6 +2182,9 @@ const CityWorld = (function () {
         waitTimer: 0,
         angle: (idx / NPC_CONFIGS.length) * Math.PI * 2,
         phase: Math.random() * Math.PI * 2, // فاز گام هر NPC
+        blinkT: 1 + Math.random() * 3,
+        blinkPhase: 0,
+        lastLineIdx: -1,
         // مسیر NPC
         path: [],
         pathIdx: 0,
@@ -2186,19 +2210,25 @@ const CityWorld = (function () {
     });
   }
 
-  // ساخت انسان واقع‌گرایانه — اسکلت کامل با تنوع ظاهری
-  function _makeCharacterMesh(shirtColor) {
+  // ساخت انسان واقع‌گرایانه — صورت کامل، لباس با جزییات، اکسسوری تصادفی
+  function _makeCharacterMesh(shirtColor, person) {
+    person = person || {};
+    const FEMALE = ['سارا', 'زینب'];
+    const isFemale = FEMALE.includes(person.name);
+
     const SKIN_TONES = [0xf1c27d, 0xe0ac69, 0xc68642, 0x8d5524, 0xffdbac];
     const HAIR_COLORS = [0x1b1512, 0x2b1d16, 0x4a3120, 0x111116, 0x5a4632];
     const PANT_COLORS = [0x1e293b, 0x334155, 0x3f3f46, 0x27272a];
+    const HIJAB_COLORS = [0xdc2626, 0x7c3aed, 0x0891b2, 0xdb2777, 0x16a34a];
     const skin = SKIN_TONES[Math.floor(Math.random() * SKIN_TONES.length)];
     const hairC = HAIR_COLORS[Math.floor(Math.random() * HAIR_COLORS.length)];
     const pantC = PANT_COLORS[Math.floor(Math.random() * PANT_COLORS.length)];
+    const shirtDark = new THREE.Color(shirtColor).multiplyScalar(0.72).getHex();
 
     const group = new THREE.Group();
     const all = [];
 
-    // ─── لگن (ریز حرکت) ───
+    // ─── لگن + کمربند ───
     const hips = new THREE.Group();
     hips.position.y = 0.92;
     group.add(hips);
@@ -2210,7 +2240,20 @@ const CityWorld = (function () {
     pelvis.castShadow = true;
     hips.add(pelvis);
 
-    // ─── تنه — کمر باریک، شانه پهن ───
+    const belt = new THREE.Mesh(
+      new THREE.BoxGeometry(0.38, 0.05, 0.24),
+      new THREE.MeshPhongMaterial({ color: 0x292524 })
+    );
+    belt.position.y = 0.1;
+    hips.add(belt);
+    const buckle = new THREE.Mesh(
+      new THREE.BoxGeometry(0.06, 0.04, 0.02),
+      new THREE.MeshPhongMaterial({ color: 0xcaa54a, shininess: 90 })
+    );
+    buckle.position.set(0, 0.1, 0.125);
+    hips.add(buckle);
+
+    // ─── تنه — کمر باریک، سینه پهن + یقه V ───
     const torso = new THREE.Mesh(
       new THREE.CylinderGeometry(0.24, 0.19, 0.6, 10),
       new THREE.MeshPhongMaterial({ color: shirtColor })
@@ -2219,6 +2262,7 @@ const CityWorld = (function () {
     torso.castShadow = true;
     torso.name = 'torsoMesh';
     hips.add(torso);
+
     const chest = new THREE.Mesh(
       new THREE.BoxGeometry(0.5, 0.24, 0.27),
       new THREE.MeshPhongMaterial({ color: shirtColor })
@@ -2226,6 +2270,26 @@ const CityWorld = (function () {
     chest.position.y = 0.66;
     chest.castShadow = true;
     hips.add(chest);
+
+    // یقه
+    const collarV = new THREE.Mesh(
+      new THREE.ConeGeometry(0.09, 0.14, 4),
+      new THREE.MeshPhongMaterial({ color: shirtDark })
+    );
+    collarV.rotation.x = Math.PI;
+    collarV.rotation.y = Math.PI / 4;
+    collarV.position.set(0, 0.76, 0.115);
+    hips.add(collarV);
+
+    // دکمه‌ها
+    for (let i = 0; i < 3; i++) {
+      const btn = new THREE.Mesh(
+        new THREE.SphereGeometry(0.018, 6, 6),
+        new THREE.MeshPhongMaterial({ color: 0xe7e5e4 })
+      );
+      btn.position.set(0, 0.62 - i * 0.11, 0.132);
+      hips.add(btn);
+    }
 
     // ─── گردن و سر ───
     const neck = new THREE.Mesh(
@@ -2240,28 +2304,121 @@ const CityWorld = (function () {
     hips.add(headGrp);
 
     const skull = new THREE.Mesh(
-      new THREE.SphereGeometry(0.16, 14, 14),
+      new THREE.SphereGeometry(0.16, 16, 14),
       new THREE.MeshPhongMaterial({ color: skin })
     );
-    skull.scale.set(0.92, 1.05, 0.98);
+    skull.scale.set(0.9, 1.06, 0.96);
     skull.castShadow = true;
     headGrp.add(skull);
 
-    const hair = new THREE.Mesh(
-      new THREE.SphereGeometry(0.168, 14, 8, 0, Math.PI * 2, 0, Math.PI / 1.85),
-      new THREE.MeshPhongMaterial({ color: hairC })
-    );
-    hair.position.y = 0.01;
-    headGrp.add(hair);
-
-    const eyeM = new THREE.MeshBasicMaterial({ color: 0x14141c });
-    [-0.058, 0.058].forEach(ex => {
-      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.021, 6, 6), eyeM);
-      eye.position.set(ex, 0.02, 0.135);
-      headGrp.add(eye);
+    // گوش‌ها
+    [-1, 1].forEach(s => {
+      const ear = new THREE.Mesh(new THREE.SphereGeometry(0.032, 8, 8),
+        new THREE.MeshPhongMaterial({ color: skin }));
+      ear.position.set(s * 0.145, -0.005, 0);
+      ear.scale.set(0.5, 1, 0.8);
+      headGrp.add(ear);
     });
 
-    // ─── پاها: ران → زانو → ساق + کفش ───
+    // مو یا حجاب
+    if (isFemale) {
+      const hc = HIJAB_COLORS[Math.floor(Math.random() * HIJAB_COLORS.length)];
+      const hijab = new THREE.Mesh(
+        new THREE.SphereGeometry(0.175, 14, 12, 0, Math.PI * 2, 0, Math.PI / 1.55),
+        new THREE.MeshPhongMaterial({ color: hc })
+      );
+      hijab.position.y = 0.005;
+      headGrp.add(hijab);
+      // پارچه کنار صورت
+      const drape = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.13, 0.16, 0.22, 10, 1, true),
+        new THREE.MeshPhongMaterial({ color: hc, side: THREE.DoubleSide })
+      );
+      drape.position.set(0, -0.1, -0.02);
+      headGrp.add(drape);
+    } else {
+      const hair = new THREE.Mesh(
+        new THREE.SphereGeometry(0.168, 14, 8, 0, Math.PI * 2, 0, Math.PI / 1.85),
+        new THREE.MeshPhongMaterial({ color: hairC })
+      );
+      hair.position.y = 0.01;
+      headGrp.add(hair);
+      // خط ریش سبک برای بعضی‌ها
+      if (Math.random() < 0.35) {
+        const beard = new THREE.Mesh(
+          new THREE.SphereGeometry(0.152, 12, 8, 0, Math.PI * 2, Math.PI / 2.4, Math.PI / 2),
+          new THREE.MeshPhongMaterial({ color: hairC })
+        );
+        beard.scale.set(0.88, 0.7, 0.94);
+        beard.position.set(0, -0.01, 0.012);
+        headGrp.add(beard);
+      }
+      // کلاه/کیپ برای بعضی‌ها
+      if (Math.random() < 0.25) {
+        const capM = new THREE.MeshPhongMaterial({ color: 0x1f2937 });
+        const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.165, 0.17, 0.09, 12), capM);
+        cap.position.y = 0.135;
+        headGrp.add(cap);
+        const brim = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.02, 0.14), capM);
+        brim.position.set(0, 0.1, 0.15);
+        headGrp.add(brim);
+      }
+    }
+
+    // ─── صورت: چشم، ابرو، بینی، دهان ───
+    const eyeM = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const pupilM = new THREE.MeshBasicMaterial({ color: 0x14141c });
+    const eyes = [];
+    [-0.058, 0.058].forEach(ex => {
+      const white = new THREE.Mesh(new THREE.SphereGeometry(0.026, 8, 8), eyeM);
+      white.position.set(ex, 0.02, 0.128);
+      white.scale.z = 0.6;
+      headGrp.add(white);
+      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.012, 6, 6), pupilM);
+      pupil.position.set(ex, 0.02, 0.148);
+      headGrp.add(pupil);
+      eyes.push(white);
+
+      // ابرو
+      const brow = new THREE.Mesh(
+        new THREE.BoxGeometry(0.045, 0.008, 0.01),
+        new THREE.MeshPhongMaterial({ color: hairC })
+      );
+      brow.position.set(ex, 0.062, 0.142);
+      headGrp.add(brow);
+    });
+
+    // بینی
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.06, 6),
+      new THREE.MeshPhongMaterial({ color: skin }));
+    nose.rotation.x = Math.PI / 2;
+    nose.position.set(0, -0.015, 0.15);
+    headGrp.add(nose);
+
+    // دهان
+    const mouth = new THREE.Mesh(
+      new THREE.BoxGeometry(0.05, 0.007, 0.008),
+      new THREE.MeshBasicMaterial({ color: 0x8c4a4a })
+    );
+    mouth.position.set(0, -0.075, 0.142);
+    headGrp.add(mouth);
+
+    // عینک برای بعضی‌ها
+    let hasGlasses = false;
+    if (Math.random() < 0.4) {
+      hasGlasses = true;
+      const gm = new THREE.MeshPhongMaterial({ color: 0x1f2937 });
+      [-0.058, 0.058].forEach(ex => {
+        const frame = new THREE.Mesh(new THREE.TorusGeometry(0.032, 0.005, 6, 14), gm);
+        frame.position.set(ex, 0.02, 0.15);
+        headGrp.add(frame);
+      });
+      const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.005, 0.005), gm);
+      bridge.position.set(0, 0.025, 0.152);
+      headGrp.add(bridge);
+    }
+
+    // ─── پاها: ران → زانو → ساق + کفش با پاشنه ───
     const legs = [], knees = [];
     [-0.115, 0.115].forEach(x => {
       const hip = new THREE.Group();
@@ -2289,23 +2446,39 @@ const CityWorld = (function () {
       knee.add(shin);
 
       const shoe = new THREE.Mesh(
-        new THREE.BoxGeometry(0.13, 0.08, 0.25),
+        new THREE.BoxGeometry(0.125, 0.07, 0.24),
         new THREE.MeshPhongMaterial({ color: 0x18181b })
       );
       shoe.position.set(0, -0.42, 0.05);
       shoe.castShadow = true;
       knee.add(shoe);
 
+      // زیره کفش
+      const sole = new THREE.Mesh(
+        new THREE.BoxGeometry(0.13, 0.025, 0.25),
+        new THREE.MeshPhongMaterial({ color: 0xd6d3d1 })
+      );
+      sole.position.set(0, -0.462, 0.05);
+      knee.add(sole);
+
       legs.push(hip); knees.push(knee); all.push(hip, knee);
     });
 
-    // ─── دست‌ها: شانه → آرنج → ساعد + دست ───
+    // ─── دست‌ها: شانه (توپی) → بازو → آرنج → ساعد + آستین ───
     const arms = [], elbows = [];
     [-0.29, 0.29].forEach(x => {
       const sh = new THREE.Group();
       sh.position.set(x, 0.64, 0);
       sh.rotation.z = x > 0 ? -0.09 : 0.09;
       hips.add(sh);
+
+      // توپ شانه
+      const shoulderBall = new THREE.Mesh(
+        new THREE.SphereGeometry(0.075, 10, 10),
+        new THREE.MeshPhongMaterial({ color: shirtColor })
+      );
+      shoulderBall.castShadow = true;
+      sh.add(shoulderBall);
 
       const upper = new THREE.Mesh(
         new THREE.CylinderGeometry(0.055, 0.048, 0.32, 8),
@@ -2327,6 +2500,14 @@ const CityWorld = (function () {
       fore.castShadow = true;
       el.add(fore);
 
+      // آستین کوتاه سر آستین
+      const cuff = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.05, 0.05, 0.06, 8),
+        new THREE.MeshPhongMaterial({ color: shirtDark })
+      );
+      cuff.position.y = -0.03;
+      el.add(cuff);
+
       const hand = new THREE.Mesh(
         new THREE.SphereGeometry(0.052, 8, 8),
         new THREE.MeshPhongMaterial({ color: skin })
@@ -2337,8 +2518,22 @@ const CityWorld = (function () {
       arms.push(sh); elbows.push(el); all.push(sh, el);
     });
 
-    // تورسو برای خم شدن — پیوت جدا لازم نیست؛ خود mesh حول مرکزش کمی می‌خوره
-    group.userData.limbs = { legs, knees, arms, elbows, all, headGrp, torso };
+    // کوله‌پشتی برای عامل‌ها
+    if (person.agent) {
+      const pack = new THREE.Mesh(
+        new THREE.BoxGeometry(0.3, 0.38, 0.14),
+        new THREE.MeshPhongMaterial({ color: 0x44403c })
+      );
+      pack.position.set(0, 0.42, -0.2);
+      pack.castShadow = true;
+      hips.add(pack);
+    }
+
+    group.userData.limbs = {
+      legs, knees, arms, elbows, all,
+      headGrp, torso, chest, eyes,
+      hasGlasses, isFemale,
+    };
     return group;
   }
 
@@ -2360,9 +2555,15 @@ const CityWorld = (function () {
       if (L.elbows[i]) L.elbows[i].rotation.x = -0.35 - Math.max(0, Math.sin(ph)) * 0.35;
     });
 
-    // خم شدن ملایم تنه به جلو + تکون سر
-    if (L.torso) L.torso.rotation.x = 0.05 + amp * 0.06;
-    if (L.headGrp) L.headGrp.rotation.y = Math.sin(phase * 0.5) * 0.06;
+    // خم شدن ملایم تنه به جلو + تاب تنه و سر موقع گام
+    if (L.torso) {
+      L.torso.rotation.x = 0.05 + amp * 0.06;
+      L.torso.rotation.z = Math.sin(phase) * 0.04;
+    }
+    if (L.headGrp) {
+      L.headGrp.rotation.y = Math.sin(phase * 0.5) * 0.06;
+      L.headGrp.rotation.z = -Math.sin(phase) * 0.025;
+    }
 
     // باب عمودی — فقط وقتی روی زمین (پرش خراب نشه)
     if (grp.position.y < 0.02) {
@@ -2478,11 +2679,49 @@ const CityWorld = (function () {
     });
   }
 
-  // انیمیشن NPC — گام واقعی با فاز مستقل
+  // انیمیشن NPC — گام واقعی، نفس، پلک‌زدن و نگاه به بازیکن
   function _animateNPC(npc, delta) {
     const ud = npc.userData;
-    ud.phase += delta * (ud.speed * 2.2 + 3);
-    _animHumanoid(npc, ud.phase, 0.5);
+    const L = npc.userData.limbs;
+    if (!L) return;
+    const now = performance.now() * 0.001;
+
+    if (ud.state === 'walk' || ud.state === 'enter') {
+      ud.phase += delta * (ud.speed * 2.2 + 3);
+      _animHumanoid(npc, ud.phase, 0.5);
+    } else {
+      // ایستاده — تنفس آرام + تکون دست خفیف
+      const br = 1 + Math.sin(now * 2 + ud.phase) * 0.02;
+      if (L.chest) L.chest.scale.set(br, 1, br);
+      L.arms.forEach((sh, i) => { sh.rotation.x = Math.sin(now * 1.4 + i * 2.1) * 0.05; });
+      npc.position.y = 0;
+    }
+
+    // پلک زدن دوره‌ای
+    ud.blinkT -= delta;
+    if (ud.blinkT <= 0) {
+      ud.blinkT = 2.5 + Math.random() * 3.5;
+      ud.blinkPhase = 0.13;
+    }
+    if (ud.blinkPhase > 0) {
+      ud.blinkPhase -= delta;
+      const closed = ud.blinkPhase > 0;
+      if (L.eyes) L.eyes.forEach(e => { e.scale.y = closed ? 0.12 : 1; });
+    }
+
+    // سرش رو به سمت بازیکن می‌چرخونه وقتی نزدیکی
+    if (character && npc.visible && character.visible !== undefined) {
+      const dx = character.position.x - npc.position.x;
+      const dz = character.position.z - npc.position.z;
+      const d = Math.sqrt(dx * dx + dz * dz);
+      if (d < 7) {
+        let a = Math.atan2(dx, dz) - npc.rotation.y;
+        while (a >  Math.PI) a -= Math.PI * 2;
+        while (a < -Math.PI) a += Math.PI * 2;
+        a = Math.max(-0.9, Math.min(0.9, a));
+        L.headGrp.rotation.y += (a - L.headGrp.rotation.y) * Math.min(1, delta * 6);
+      }
+    }
   }
 
   // تولید مسیر تصادفی
@@ -2803,6 +3042,84 @@ const CityWorld = (function () {
   }
 
   // ─────────────────────────────────────────────
+  // دیالوگ با NPC — مکالمه ساده فارسی
+  // ─────────────────────────────────────────────
+  function _buildDialogUI() {
+    if (document.getElementById('city-npc-dialog')) return;
+    const box = document.createElement('div');
+    box.id = 'city-npc-dialog';
+    box.style.cssText = `
+      position:fixed; bottom:110px; left:50%; transform:translateX(-50%) translateY(20px);
+      width:min(440px, 90vw); background:rgba(15,23,42,0.95); border:1px solid rgba(99,102,241,0.5);
+      border-radius:16px; padding:18px 22px; z-index:700; direction:rtl;
+      font-family:Vazirmatn,Tahoma,sans-serif; color:#e2e8f0; opacity:0; pointer-events:none;
+      transition:opacity .25s ease, transform .25s ease;
+      box-shadow:0 8px 40px rgba(0,0,0,.6); backdrop-filter:blur(12px);`;
+    box.innerHTML = `
+      <div id="npc-dlg-head" style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span id="npc-dlg-dot" style="width:14px;height:14px;border-radius:50%;flex:none;"></span>
+        <strong id="npc-dlg-name" style="font-size:1rem;"></strong>
+        <span id="npc-dlg-role" style="font-size:.68rem;background:rgba(99,102,241,.3);border:1px solid rgba(99,102,241,.45);
+              padding:2px 9px;border-radius:999px;color:#c7d2fe;"></span>
+        <button id="npc-dlg-close" style="margin-right:auto;background:rgba(255,255,255,.1);border:none;color:#94a3b8;
+                width:26px;height:26px;border-radius:8px;cursor:pointer;font-size:.85rem;">✕</button>
+      </div>
+      <p id="npc-dlg-text" style="margin:0 0 12px;line-height:2;font-size:.92rem;"></p>
+      <div style="font-size:.7rem;color:#64748b;">E یا Esc — بستن · نزدیک بمون تا ادامه بده</div>`;
+    document.body.appendChild(box);
+
+    document.getElementById('npc-dlg-close').addEventListener('click', (e) => {
+      e.stopPropagation();
+      _closeDialog();
+    });
+    box.addEventListener('click', (e) => e.stopPropagation());
+  }
+
+  function _openDialog(npc) {
+    if (!npc) return;
+    _buildDialogUI();
+    dialogOpen = true;
+
+    // خروج از pointer lock تا موس آزاد شه
+    if (document.exitPointerLock && document.pointerLockElement) {
+      try { document.exitPointerLock(); } catch (err) {}
+    }
+
+    const ud = npc.userData;
+    const lines = NPC_DIALOGUES[ud.name] || NPC_FALLBACK_LINES;
+    // بدون تکرار خط قبلی
+    let idx = Math.floor(Math.random() * lines.length);
+    if (lines.length > 1 && idx === ud.lastLineIdx) idx = (idx + 1) % lines.length;
+    ud.lastLineIdx = idx;
+
+    const dot = document.getElementById('npc-dlg-dot');
+    const cfgIdx = npcs.indexOf(npc);
+    const hex = '#' + (NPC_CONFIGS[cfgIdx] ? NPC_CONFIGS[cfgIdx].color.toString(16).padStart(6, '0') : '888888');
+    dot.style.background = hex;
+    dot.style.boxShadow = '0 0 10px ' + hex;
+
+    document.getElementById('npc-dlg-name').textContent = ud.name + ':';
+    document.getElementById('npc-dlg-role').textContent =
+      ud.role === 'agent' ? '🔧 عامل' : '👤 کارمند';
+    document.getElementById('npc-dlg-text').textContent = '«' + lines[idx] + '»';
+
+    const el = document.getElementById('city-npc-dialog');
+    el.style.opacity = '1';
+    el.style.pointerEvents = 'auto';
+    el.style.transform = 'translateX(-50%) translateY(0)';
+  }
+
+  function _closeDialog() {
+    dialogOpen = false;
+    const el = document.getElementById('city-npc-dialog');
+    if (el) {
+      el.style.opacity = '0';
+      el.style.pointerEvents = 'none';
+      el.style.transform = 'translateX(-50%) translateY(20px)';
+    }
+  }
+
+  // ─────────────────────────────────────────────
   // جنگنده — سوار شدن، پرواز، فرود خودکار
   // ─────────────────────────────────────────────
   function _mountJet() {
@@ -2877,6 +3194,7 @@ const CityWorld = (function () {
         // رفتن به نقطه ورود باند (جنوب باند، بالا)
         const ok = _jetFlyToward(128, 32, 108, delta, 40);
         jetSpeed = Math.min(JET_MAX_SPD, Math.max(jetSpeed, 34));
+        _clampJetBounds();
         if (ok) { jetState = 'final'; }
         break;
       }
@@ -2924,10 +3242,32 @@ const CityWorld = (function () {
     const yaw = fighterJet.rotation.y;
     const nx = fighterJet.position.x + Math.sin(yaw) * jetSpeed * delta;
     const nz = fighterJet.position.z + Math.cos(yaw) * jetSpeed * delta;
-    fighterJet.position.x = Math.max(-190, Math.min(190, nx));
-    fighterJet.position.z = Math.max(-190, Math.min(190, nz));
+    fighterJet.position.x = nx;
+    fighterJet.position.z = nz;
+    _clampJetBounds();
     // روی زمین ارتفاع صفر
     if (jetState === 'roll') fighterJet.position.y = 0;
+  }
+
+  // جت هیچ‌وقت از محدوده زمین اصلی خارج نمی‌شه
+  function _clampJetBounds() {
+    const p = fighterJet.position;
+    let hit = false;
+    if (p.x >  JET_MAP_EDGE) { p.x = JET_MAP_EDGE; hit = true; }
+    if (p.x < -JET_MAP_EDGE) { p.x = -JET_MAP_EDGE; hit = true; }
+    if (p.z >  JET_MAP_EDGE) { p.z = JET_MAP_EDGE; hit = true; }
+    if (p.z < -JET_MAP_EDGE) { p.z = -JET_MAP_EDGE; hit = true; }
+    if (hit && Date.now() - _jetEdgeToast > 3000) {
+      _jetEdgeToast = Date.now();
+      jetSpeed *= 0.8;
+      _showToast('🚧 مرز شهر! برگرد سمت باند');
+      // چرخش ملایم به سمت مرکز تا گیر نکنه
+      const toCenter = Math.atan2(-p.x, -p.z);
+      let diff = toCenter - fighterJet.rotation.y;
+      while (diff >  Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      fighterJet.rotation.y += diff * 0.25;
+    }
   }
 
   // پرواز به سمت نقطه — برمی‌گرداند true وقتی رسید
@@ -3014,9 +3354,8 @@ const CityWorld = (function () {
     const targetPitch = grounded ? 0 : (-climb * 0.28 - (jetSpeed / JET_MAX_SPD) * 0.04);
     fighterJet.rotation.x += (targetPitch - fighterJet.rotation.x) * Math.min(1, delta * 3);
 
-    // مرز جهان
-    fighterJet.position.x = Math.max(-190, Math.min(190, fighterJet.position.x));
-    fighterJet.position.z = Math.max(-190, Math.min(190, fighterJet.position.z));
+    // مرز جهان — جت داخل مپ می‌مونه
+    _clampJetBounds();
 
     // برخورد با ساختمان‌ها در ارتفاع کم
     if (fighterJet.position.y < 22) {
@@ -3482,9 +3821,16 @@ const CityWorld = (function () {
     birdFlocks.length = 0; lampLights.length = 0;
     staticColliders.length = 0;
     nearBuilding = null; nearCar = false; nearTank = false; nearHeli = false;
-    inCar = inTank = inHeli = false;
+    nearJet = false; nearNPC = null;
+    inCar = inTank = inHeli = inJet = false;
+    dialogOpen = false;
     heliState = 'patrol'; rotorSpeed = 0;
+    jetState = 'parked'; jetSpeed = 0;
+    fighterJet = null;
     vertVel = 0;
+    _closeDialog();
+    const dlgEl = document.getElementById('city-npc-dialog');
+    if (dlgEl && dlgEl.parentNode) dlgEl.parentNode.removeChild(dlgEl);
   }
 
   return { init, destroy };
