@@ -2435,17 +2435,18 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
                     </div>
                     <div id="lr-work-fields" class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="text-gray-400 text-sm mb-1 block">ساعت شروع</label>
-                            <input type="text" id="lr-start" placeholder="08:00" maxlength="5"
+                            <label class="text-gray-400 text-sm mb-1 block">ساعت شروع <span class="text-gray-500 text-xs">(اختیاری)</span></label>
+                            <input type="text" id="lr-start" placeholder="مثال: 08:00" maxlength="5"
                                 oninput="this.value=this.value.replace(/[^0-9:]/g,''); if(this.value.length===2&&!this.value.includes(':'))this.value+=':';"
                                 class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 font-mono" dir="ltr">
                         </div>
                         <div>
-                            <label class="text-gray-400 text-sm mb-1 block">ساعت پایان</label>
-                            <input type="text" id="lr-end" placeholder="17:00" maxlength="5"
+                            <label class="text-gray-400 text-sm mb-1 block">ساعت پایان <span class="text-gray-500 text-xs">(اختیاری)</span></label>
+                            <input type="text" id="lr-end" placeholder="مثال: 17:00" maxlength="5"
                                 oninput="this.value=this.value.replace(/[^0-9:]/g,''); if(this.value.length===2&&!this.value.includes(':'))this.value+=':';"
                                 class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 font-mono" dir="ltr">
                         </div>
+                        <p class="col-span-2 text-gray-500 text-xs">اگر ساعت وارد نشود، مقدار پیش‌فرض ۸:۰۰ تا ۱۷:۰۰ ثبت می‌شود و مدیر می‌تواند ویرایش کند.</p>
                     </div>
                     <div id="lr-expense-fields" class="hidden">
                         <label class="text-gray-400 text-sm mb-1 block">مبلغ هزینه (تومان)</label>
@@ -2527,7 +2528,13 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
             createdAt: new Date().toISOString()
         };
 
-        if (type==='work' && (!record.startTime || !record.endTime)) { alert('ساعت شروع و پایان الزامی است'); return; }
+        if (type==='work' && (!record.startTime || !record.endTime)) {
+            // اگر ساعت خالی بود مقدار پیش‌فرض بگذار تا ثبت انجام شود
+            // مدیر می‌تواند بعداً در ویرایش تنظیم کند
+            if (!record.startTime) record.startTime = '08:00';
+            if (!record.endTime)   record.endTime   = '17:00';
+            record.reason = (record.reason || '') + ' [ساعت توسط کارمند وارد نشد — نیاز به تأیید مدیر]';
+        }
         if (type==='expense' && !record.amount) { alert('مبلغ هزینه الزامی است'); return; }
 
         const list = (() => { try { return JSON.parse(localStorage.getItem('work_late_requests')||'[]'); } catch { return []; } })();
