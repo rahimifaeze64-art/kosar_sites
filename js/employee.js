@@ -577,21 +577,21 @@ const EmployeeModule = {
                             <i class="fas fa-user-plus ml-2"></i>
                             اضافه کردن دانشجو
                         </button>
-                        <a href="flowchart.html" 
+                        <button onclick="window._alpineSetPage && window._alpineSetPage('flowchartView')"
                                 class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all inline-flex items-center">
                             <i class="fas fa-project-diagram ml-2"></i>
                             فلوچارت
-                        </a>
+                        </button>
                         <button onclick="employeeModule.showStepsManagementModal();" 
                                 class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-4 py-2 rounded-lg text-sm font-medium transition-all">
                             <i class="fas fa-tasks ml-2"></i>
                             مدیریت مراحل
                         </button>
-                        <a href="student-progress-tracking.html" 
+                        <button onclick="window._alpineSetPage && window._alpineSetPage('sheetView')"
                                 class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all inline-flex items-center">
                             <i class="fas fa-th-list ml-2"></i>
                             نمای شیت
-                        </a>
+                        </button>
                     </div>
                 </div>
                 
@@ -619,85 +619,127 @@ const EmployeeModule = {
                 
                 <!-- Filter Section -->
                 <div class="bg-slate-800 rounded-lg shadow-md p-4">
-                    <h3 class="text-lg font-bold text-white mb-4">
-                        <i class="fas fa-filter text-lime-400 ml-2"></i>
-                        فیلترها
-                    </h3>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <!-- Search by name -->
-                        <div class="md:col-span-3">
-                            <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <i class="fas fa-search ml-1 text-lime-400"></i>
-                                جستجوی نام دانشجو
-                            </label>
-                            <div class="relative">
-                                <input type="text"
-                                       id="filter-student-name"
-                                       placeholder="نام دانشجو را تایپ کنید..."
-                                       oninput="employeeModule.applyStudentFilter()"
-                                       class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-4 py-2.5 pr-10 focus:outline-none focus:ring-2 focus:ring-lime-500 placeholder-gray-500">
-                                <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                    <!-- هدر با toggle -->
+                    <div class="flex items-center justify-between mb-3 cursor-pointer"
+                         onclick="document.getElementById('filter-body').classList.toggle('hidden')">
+                        <h3 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fas fa-filter text-lime-400"></i>
+                            فیلترها و جستجو
+                            <span id="filter-active-badge" class="hidden bg-lime-500 text-gray-900 text-xs font-bold px-2 py-0.5 rounded-full">فعال</span>
+                        </h3>
+                        <i class="fas fa-chevron-down text-gray-400 text-sm transition-transform" id="filter-chevron"></i>
+                    </div>
+
+                    <div id="filter-body" class="space-y-4">
+                        <!-- ردیف ۱: جستجو -->
+                        <div class="relative">
+                            <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                            <input type="text" id="filter-student-name"
+                                   placeholder="جستجوی نام، شناسه، شماره پاسپورت..."
+                                   oninput="employeeModule.applyStudentFilter()"
+                                   class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-4 py-2.5 pr-10
+                                          focus:outline-none focus:ring-2 focus:ring-lime-500 placeholder-gray-500">
+                        </div>
+
+                        <!-- ردیف ۲: فیلترهای اصلی -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-400 mb-1">مسیر</label>
+                                <select id="filter-type" onchange="employeeModule.updateFilterStepOptions(); employeeModule.applyStudentFilter()"
+                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm
+                                               focus:outline-none focus:ring-2 focus:ring-lime-500">
+                                    <option value="all">همه مسیرها</option>
+                                    <option value="educational">فارغ‌التحصیلی</option>
+                                    <option value="defense">گردش دفاع</option>
+                                    <option value="requirements">ملزومات</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-400 mb-1">مرحله فعلی</label>
+                                <select id="filter-step" onchange="employeeModule.applyStudentFilter()"
+                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm
+                                               focus:outline-none focus:ring-2 focus:ring-lime-500">
+                                    <option value="all">همه مراحل</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-400 mb-1">وضعیت</label>
+                                <select id="filter-status" onchange="employeeModule.applyStudentFilter()"
+                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm
+                                               focus:outline-none focus:ring-2 focus:ring-lime-500">
+                                    <option value="all">همه</option>
+                                    <option value="active">فعال</option>
+                                    <option value="inactive">خاتمه یافته</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-400 mb-1">فیلد خالی</label>
+                                <select id="filter-empty-field" onchange="employeeModule.applyStudentFilter()"
+                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm
+                                               focus:outline-none focus:ring-2 focus:ring-lime-500">
+                                    <option value="all">بدون فیلتر</option>
+                                    <option value="passportNumber">شماره پاسپورت</option>
+                                    <option value="birthDate">تاریخ تولد</option>
+                                    <option value="email">ایمیل</option>
+                                    <option value="phone">تماس</option>
+                                    <option value="university">دانشگاه</option>
+                                    <option value="field">رشته</option>
+                                </select>
                             </div>
                         </div>
 
-                        <!-- Filter Type -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">نوع مسیر</label>
-                            <select id="filter-type" onchange="employeeModule.updateFilterStepOptions()" 
-                                    class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-lime-500">
-                                <option value="all">همه</option>
-                                <option value="educational">فارغ التحصیلی</option>
-                                <option value="defense">گردش دفاع</option>
-                                <option value="requirements">ملزومات</option>
-                            </select>
+                        <!-- ردیف ۳: فیلترهای پیشرفته -->
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-400 mb-1">پیشرفت مسیر</label>
+                                <select id="filter-progress" onchange="employeeModule.applyStudentFilter()"
+                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm
+                                               focus:outline-none focus:ring-2 focus:ring-lime-500">
+                                    <option value="all">همه</option>
+                                    <option value="not_started">شروع نشده (0%)</option>
+                                    <option value="in_progress">در حال انجام (1-99%)</option>
+                                    <option value="completed">تکمیل شده (100%)</option>
+                                    <option value="half">بیش از ۵۰٪</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-400 mb-1">دانشگاه</label>
+                                <select id="filter-university" onchange="employeeModule.applyStudentFilter()"
+                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm
+                                               focus:outline-none focus:ring-2 focus:ring-lime-500">
+                                    <option value="all">همه دانشگاه‌ها</option>
+                                    ${[...new Set(students.map(s => s.university).filter(Boolean))].map(u =>
+                                        `<option value="${u}">${u}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-400 mb-1">مقطع</label>
+                                <select id="filter-degree" onchange="employeeModule.applyStudentFilter()"
+                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm
+                                               focus:outline-none focus:ring-2 focus:ring-lime-500">
+                                    <option value="all">همه مقاطع</option>
+                                    ${[...new Set(students.map(s => s.degree).filter(Boolean))].map(d =>
+                                        `<option value="${d}">${d}</option>`).join('')}
+                                </select>
+                            </div>
                         </div>
-                        
-                        <!-- Filter Step -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">مرحله</label>
-                            <select id="filter-step" 
-                                    class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-lime-500">
-                                <option value="all">همه مراحل</option>
-                            </select>
-                        </div>
-                        
-                        <!-- Filter by Empty Fields -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">فیلتر فیلدهای خالی</label>
-                            <select id="filter-empty-field" 
-                                    class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-lime-500">
-                                <option value="all">همه</option>
-                                <option value="passportImage">تصویر پاسپورت</option>
-                                <option value="administrativeOrder">تصویر امر اداری</option>
-                                <option value="studentPhoto">عکس دانشجو</option>
-                                <option value="passportNumber">شماره پاسپورت</option>
-                                <option value="birthDate">تاریخ تولد</option>
-                                <option value="email">ایمیل</option>
-                                <option value="phone">شماره تماس</option>
-                                <option value="university">دانشگاه</option>
-                                <option value="field">رشته تحصیلی</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <!-- Filter Results Info -->
-                    <div class="mt-4 flex items-center justify-between">
-                        <p class="text-sm text-gray-400">
-                            <span id="filter-count">${students.length}</span> دانشجو یافت شد
-                        </p>
-                        <div class="flex items-center gap-3">
-                            <button onclick="employeeModule.applyStudentFilter()" 
-                                    class="bg-lime-600 hover:bg-lime-700 text-gray-900 text-sm px-4 py-2 rounded-lg transition-all">
-                                <i class="fas fa-filter ml-1"></i>
-                                فیلتر
-                            </button>
-                            <button onclick="employeeModule.clearStudentFilter()" 
-                                    class="text-sm text-lime-400 hover:text-lime-300">
-                                <i class="fas fa-times ml-1"></i>
-                                پاک کردن فیلتر
-                            </button>
-                        </div>
+
+                        <!-- نتیجه + دکمه‌ها -->
+                        <div class="flex items-center justify-between pt-1 border-t border-slate-700">
+                            <p class="text-sm text-gray-400">
+                                <i class="fas fa-users text-lime-400 ml-1"></i>
+                                <span id="filter-count">${students.length}</span> دانشجو
+                            </p>
+                            <div class="flex gap-2">
+                                <button onclick="employeeModule.applyStudentFilter()"
+                                        class="bg-lime-600 hover:bg-lime-700 text-gray-900 text-sm px-4 py-2 rounded-lg transition-all font-medium">
+                                    <i class="fas fa-filter ml-1"></i>اعمال
+                                </button>
+                                <button onclick="employeeModule.clearStudentFilter()"
+                                        class="bg-slate-700 hover:bg-slate-600 text-gray-300 text-sm px-4 py-2 rounded-lg transition-all">
+                                    <i class="fas fa-times ml-1"></i>پاک کردن
+                                </button>
+                            </div>
                     </div>
                 </div>
                 
@@ -726,36 +768,131 @@ const EmployeeModule = {
                     
                     <!-- Active Students -->
                     <div id="students-list-container-active">
-                        ${students.filter(s => s.active).length === 0 ? `
-                            <div class="text-center py-8">
-                                <i class="fas fa-user-graduate text-4xl text-gray-500 mb-4"></i>
-                                <p class="text-gray-400">هنوز دانشجوی فعالی ثبت نشده است</p>
-                            </div>
-                        ` : `
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                ${students.filter(s => s.active).map(student => this.getStudentCardWithProgress(student)).join('')}
-                            </div>
-                        `}
+                        ${this._renderStudentTable(students.filter(s => s.active), 'هنوز دانشجوی فعالی ثبت نشده است')}
                     </div>
                     
                     <!-- Inactive Students -->
                     <div id="students-list-container-inactive" style="display: none;">
-                        ${students.filter(s => !s.active).length === 0 ? `
-                            <div class="text-center py-8">
-                                <i class="fas fa-user-graduate text-4xl text-gray-500 mb-4"></i>
-                                <p class="text-gray-400">دانشجوی خاتمه یافته‌ای وجود ندارد</p>
-                            </div>
-                        ` : `
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                ${students.filter(s => !s.active).map(student => this.getStudentCardWithProgress(student)).join('')}
-                            </div>
-                        `}
+                        ${this._renderStudentTable(students.filter(s => !s.active), 'دانشجوی خاتمه یافته‌ای وجود ندارد')}
                     </div>
                 </div>
             </div>
         `;
     },
     
+    // ── تعیین مسیر فعلی دانشجو ──────────────────────────────
+    _getStudentActivePath(s) {
+        // اگر currentPath صریح تعریف شده
+        if (s.currentPath) return s.currentPath;
+
+        // اگر requirementsSteps داره و هنوز تکمیل نشده → requirements
+        const req = s.requirementsSteps || [];
+        if (req.length > 0 && req.some(x => !x.completed)) return 'requirements';
+
+        // اگر defenseSteps داره و هنوز تکمیل نشده → defense
+        const def = s.defenseSteps || this.getDefaultDefenseSteps2();
+        if (def.length > 0 && def.some(x => !x.completed)) return 'defense';
+
+        // پیش‌فرض: educational (فارغ‌التحصیلی)
+        return 'educational';
+    },
+
+    // ── نمای ستونی (جدول) لیست دانشجویان ─────────────────────
+    _renderStudentTable(students, emptyMsg) {
+        if (!students || students.length === 0) return `
+            <div class="text-center py-10">
+                <i class="fas fa-user-graduate text-4xl text-gray-500 mb-4"></i>
+                <p class="text-gray-400">${emptyMsg}</p>
+            </div>`;
+
+        const pathLabels = {
+            requirements: { label: 'ملزومات',        color: 'bg-orange-500/20 text-orange-400 border-orange-500/30' },
+            defense:      { label: 'گردش دفاع',      color: 'bg-blue-500/20   text-blue-400   border-blue-500/30'   },
+            educational:  { label: 'فارغ‌التحصیلی', color: 'bg-green-500/20  text-green-400  border-green-500/30'  },
+        };
+
+        const rows = students.map(s => {
+            const activePath = this._getStudentActivePath(s);
+            const pathInfo   = pathLabels[activePath] || pathLabels.educational;
+
+            // مراحل مسیر فعلی
+            let steps = [];
+            if (activePath === 'requirements') steps = s.requirementsSteps || (this.getDefaultRequirementsSteps ? this.getDefaultRequirementsSteps() : []);
+            else if (activePath === 'defense') steps = s.defenseSteps     || this.getDefaultDefenseSteps2();
+            else                               steps = s.educationalSteps  || this.getDefaultEducationalSteps();
+
+            const done = steps.filter(x => x.completed).length;
+            const pct  = steps.length ? Math.round(done / steps.length * 100) : 0;
+            const curStep = steps.find(x => !x.completed);
+
+            const barColor = activePath === 'requirements' ? 'bg-orange-500'
+                           : activePath === 'defense'      ? 'bg-blue-500'
+                                                           : 'bg-green-500';
+
+            const statusBadge = s.active
+                ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-500/20 text-green-400 border border-green-500/30"><span class="w-1.5 h-1.5 rounded-full bg-green-400 inline-block"></span>فعال</span>`
+                : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-500/20 text-gray-400 border border-gray-500/30"><span class="w-1.5 h-1.5 rounded-full bg-gray-400 inline-block"></span>خاتمه</span>`;
+
+            const pathBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${pathInfo.color}">${pathInfo.label}</span>`;
+
+            return `
+            <tr class="border-b border-slate-700 hover:bg-slate-700/50 transition-colors">
+                <td class="px-4 py-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-full bg-lime-600 flex items-center justify-center text-gray-900 font-bold text-sm flex-shrink-0">
+                            ${s.name ? s.name.charAt(0) : 'د'}
+                        </div>
+                        <div>
+                            <div class="font-semibold text-white text-sm">${s.name || '—'}</div>
+                            <div class="text-xs text-gray-400">${s.studentId || ''}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-4 py-3 text-sm text-gray-300">${s.university || '—'}</td>
+                <td class="px-4 py-3 text-sm text-gray-300">${s.field || '—'}</td>
+                <td class="px-4 py-3 text-sm text-gray-300 hidden md:table-cell">${s.phone || '—'}</td>
+                <td class="px-4 py-3">${pathBadge}</td>
+                <td class="px-4 py-3">
+                    <div class="min-w-[110px]">
+                        <div class="flex items-center gap-2 mb-0.5">
+                            <div class="flex-1 bg-slate-600 rounded-full h-1.5">
+                                <div class="h-1.5 rounded-full ${barColor}" style="width:${pct}%"></div>
+                            </div>
+                            <span class="text-xs font-bold text-gray-300 w-8 text-left">${pct}%</span>
+                        </div>
+                        <div class="text-xs text-gray-500 truncate max-w-[130px]">${curStep ? curStep.name : '✓ تکمیل شده'}</div>
+                    </div>
+                </td>
+                <td class="px-4 py-3 text-center">${statusBadge}</td>
+                <td class="px-4 py-3 text-center">
+                    <button onclick="employeeModule.editStudentProfile('${s.id}')"
+                        class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all">
+                        <i class="fas fa-edit ml-1"></i>ویرایش
+                    </button>
+                </td>
+            </tr>`;
+        }).join('');
+
+        return `
+        <div class="overflow-x-auto rounded-lg">
+            <table class="w-full text-right">
+                <thead>
+                    <tr class="bg-slate-900/60 text-gray-400 text-xs">
+                        <th class="px-4 py-3 text-right font-semibold">نام دانشجو</th>
+                        <th class="px-4 py-3 text-right font-semibold">دانشگاه</th>
+                        <th class="px-4 py-3 text-right font-semibold">رشته</th>
+                        <th class="px-4 py-3 text-right font-semibold hidden md:table-cell">تماس</th>
+                        <th class="px-4 py-3 text-right font-semibold">مسیر</th>
+                        <th class="px-4 py-3 text-right font-semibold">پیشرفت</th>
+                        <th class="px-4 py-3 text-center font-semibold">وضعیت</th>
+                        <th class="px-4 py-3 text-center font-semibold">عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>`;
+    },
+
     // Get student card
     getStudentCard(student) {
         return `
@@ -1480,13 +1617,28 @@ const EmployeeModule = {
             <div class="bg-slate-700 rounded-lg p-4">
                 <h4 class="font-bold text-white mb-3">
                     <i class="fas fa-toggle-on text-lime-400 ml-2"></i>
-                    وضعیت
+                    وضعیت و مسیر تحصیلی
                 </h4>
-                <label class="flex items-center cursor-pointer">
-                    <input type="checkbox" id="edit-active" ${student.active ? 'checked' : ''}
-                           class="w-5 h-5 text-lime-600 bg-slate-600 border-slate-500 rounded">
-                    <span class="mr-3 text-white">دانشجو فعال است</span>
-                </label>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-300 mb-2">مسیر فعلی دانشجو</label>
+                        <select id="edit-current-path"
+                                class="w-full bg-slate-600 border border-slate-500 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-lime-400">
+                            <option value=""         ${!student.currentPath                        ? 'selected' : ''}>خودکار (بر اساس مراحل)</option>
+                            <option value="requirements" ${student.currentPath==='requirements'    ? 'selected' : ''}>ملزومات</option>
+                            <option value="defense"      ${student.currentPath==='defense'         ? 'selected' : ''}>گردش دفاع</option>
+                            <option value="educational"  ${student.currentPath==='educational'     ? 'selected' : ''}>فارغ‌التحصیلی</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">تعیین دستی مسیر — «خودکار» بر اساس وضعیت مراحل تعیین می‌شود</p>
+                    </div>
+                    <div class="flex items-center">
+                        <label class="flex items-center cursor-pointer mt-4">
+                            <input type="checkbox" id="edit-active" ${student.active ? 'checked' : ''}
+                                   class="w-5 h-5 text-lime-600 bg-slate-600 border-slate-500 rounded">
+                            <span class="mr-3 text-white">دانشجو فعال است</span>
+                        </label>
+                    </div>
+                </div>
             </div>
         `;
     },
@@ -2765,16 +2917,40 @@ const EmployeeModule = {
                         </div>
                     </div>
                     
-                    <div class="p-6 border-t border-slate-700 flex justify-end space-x-3 space-x-reverse">
-                        <button onclick="employeeModule.closeModal('edit-student-modal')" 
-                                class="px-4 py-2 text-gray-400 hover:text-white">
-                            انصراف
-                        </button>
-                        <button onclick="employeeModule.saveStudentProfile('${studentId}')" 
-                                class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-4 py-2 rounded-lg">
-                            <i class="fas fa-save ml-2"></i>
-                            ذخیره تغییرات
-                        </button>
+                    <div class="p-6 border-t border-slate-700 flex flex-wrap justify-between items-center gap-3">
+                        <!-- دکمه‌های تکمیل سریع مسیر -->
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="employeeModule.completeEntirePath('${studentId}', 'requirements')"
+                                    class="bg-orange-600/20 hover:bg-orange-600/40 text-orange-400 border border-orange-500/30
+                                           px-3 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1"
+                                    title="همه مراحل ملزومات را تکمیل کن">
+                                <i class="fas fa-check-double"></i> تکمیل ملزومات
+                            </button>
+                            <button onclick="employeeModule.completeEntirePath('${studentId}', 'defense')"
+                                    class="bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30
+                                           px-3 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1"
+                                    title="همه مراحل گردش دفاع را تکمیل کن">
+                                <i class="fas fa-check-double"></i> تکمیل گردش دفاع
+                            </button>
+                            <button onclick="employeeModule.completeEntirePath('${studentId}', 'educational')"
+                                    class="bg-green-600/20 hover:bg-green-600/40 text-green-400 border border-green-500/30
+                                           px-3 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1"
+                                    title="همه مراحل فارغ‌التحصیلی را تکمیل کن">
+                                <i class="fas fa-check-double"></i> تکمیل فارغ‌التحصیلی
+                            </button>
+                        </div>
+                        <!-- دکمه‌های اصلی -->
+                        <div class="flex gap-2">
+                            <button onclick="employeeModule.closeModal('edit-student-modal')" 
+                                    class="px-4 py-2 text-gray-400 hover:text-white">
+                                انصراف
+                            </button>
+                            <button onclick="employeeModule.saveStudentProfile('${studentId}')" 
+                                    class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-4 py-2 rounded-lg">
+                                <i class="fas fa-save ml-2"></i>
+                                ذخیره تغییرات
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2805,6 +2981,7 @@ const EmployeeModule = {
             degree: document.getElementById('edit-degree').value,
             email: document.getElementById('edit-email').value,
             active: document.getElementById('edit-active').checked,
+            currentPath: document.getElementById('edit-current-path')?.value || '',
             defenseWorkflow: student.defenseWorkflow,
             graduationWorkflow: student.graduationWorkflow,
             educationalSteps: student.educationalSteps,
@@ -2831,7 +3008,65 @@ const EmployeeModule = {
         this.refreshStudents();
         UTILS.showNotification('پروفایل دانشجو با موفقیت به‌روزرسانی شد', 'success');
     },
-    
+
+    // ── تکمیل یکجای همه مراحل یک مسیر ──────────────────────
+    completeEntirePath(studentId, pathType) {
+        const typeNames = { defense: 'گردش دفاع', educational: 'فارغ‌التحصیلی', requirements: 'ملزومات' };
+        const typeName  = typeNames[pathType] || pathType;
+
+        if (!confirm(`آیا مطمئنید که می‌خواهید همه مراحل «${typeName}» را برای این دانشجو تکمیل کنید؟`)) return;
+
+        // بارگذاری از localStorage
+        const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
+        const student = studentsData[studentId];
+        if (!student) { UTILS.showNotification('دانشجو یافت نشد', 'error'); return; }
+
+        const now = new Date().toLocaleDateString('fa-IR');
+
+        let steps;
+        if (pathType === 'defense') {
+            if (!student.defenseSteps) student.defenseSteps = this.getDefaultDefenseSteps2();
+            steps = student.defenseSteps;
+        } else if (pathType === 'educational') {
+            if (!student.educationalSteps) student.educationalSteps = this.getDefaultEducationalSteps();
+            steps = student.educationalSteps;
+        } else if (pathType === 'requirements') {
+            if (!student.requirementsSteps) student.requirementsSteps = this.getDefaultRequirementsSteps ? this.getDefaultRequirementsSteps() : [];
+            steps = student.requirementsSteps;
+        } else {
+            UTILS.showNotification('نوع مسیر نامعتبر است', 'error');
+            return;
+        }
+
+        if (!steps || steps.length === 0) {
+            UTILS.showNotification('مراحلی برای این مسیر تعریف نشده', 'warning');
+            return;
+        }
+
+        // همه مراحل رو تکمیل کن
+        steps.forEach(step => {
+            step.completed  = true;
+            step.date       = step.date || now;
+            step.completedAt = step.completedAt || new Date().toISOString();
+        });
+
+        studentsData[studentId] = student;
+        localStorage.setItem('students_data', JSON.stringify(studentsData));
+
+        // آپدیت نمای شیت (prog_key)
+        try {
+            const progKey = `prog_${studentId}_${pathType}`;
+            const prog = steps.map(() => ({ status: 2 }));
+            localStorage.setItem(progKey, JSON.stringify(prog));
+        } catch(e) { console.warn('prog update error:', e); }
+
+        UTILS.showNotification(`✅ همه مراحل «${typeName}» تکمیل شد`, 'success');
+
+        // بستن modal و refresh
+        this.closeModal('edit-student-modal');
+        this.refreshStudents();
+    },
+
     // Toggle progress step
     toggleProgressStep(step, checked) {
         if (step === 'defense') {
@@ -5021,12 +5256,16 @@ EmployeeModule.applyStepsToAllStudents = function(type, newSteps) {
     console.log(`✅ Applied ${type} steps to ${Object.keys(studentsData).length} students`);
 };
 
-// Update applyStudentFilter to include empty field filter and name search
+// Update applyStudentFilter to include all advanced filters
 EmployeeModule.applyStudentFilter = function() {
-    const filterTypeElement      = document.getElementById('filter-type');
-    const filterStepElement      = document.getElementById('filter-step');
+    const filterTypeElement       = document.getElementById('filter-type');
+    const filterStepElement       = document.getElementById('filter-step');
     const filterEmptyFieldElement = document.getElementById('filter-empty-field');
-    const filterNameElement      = document.getElementById('filter-student-name');
+    const filterNameElement       = document.getElementById('filter-student-name');
+    const filterStatusElement     = document.getElementById('filter-status');
+    const filterProgressElement   = document.getElementById('filter-progress');
+    const filterUniversityElement = document.getElementById('filter-university');
+    const filterDegreeElement     = document.getElementById('filter-degree');
 
     if (!filterTypeElement || !filterStepElement) {
         console.warn('Filter elements not found');
@@ -5037,37 +5276,96 @@ EmployeeModule.applyStudentFilter = function() {
     const filterStep       = filterStepElement.value;
     const filterEmptyField = filterEmptyFieldElement ? filterEmptyFieldElement.value : 'all';
     const filterName       = filterNameElement ? filterNameElement.value.trim().toLowerCase() : '';
+    const filterStatus     = filterStatusElement ? filterStatusElement.value : 'all';
+    const filterProgress   = filterProgressElement ? filterProgressElement.value : 'all';
+    const filterUniversity = filterUniversityElement ? filterUniversityElement.value : 'all';
+    const filterDegree     = filterDegreeElement ? filterDegreeElement.value : 'all';
 
     const students = this.getAllStudents();
-
-    console.log(`🔍 Filtering ${students.length} students — name:"${filterName}" type:${filterType} step:${filterStep} emptyField:${filterEmptyField}`);
-
     let filteredStudents = students;
 
-    // ── فیلتر نام دانشجو ──────────────────────────────────────
+    // ── فیلتر نام / شناسه / پاسپورت ──────────────────────────
     if (filterName) {
         filteredStudents = filteredStudents.filter(s => {
-            const name = (s.name || '').toLowerCase();
-            return name.includes(filterName);
+            const name  = (s.name || '').toLowerCase();
+            const sid   = (s.studentId || '').toLowerCase();
+            const pass  = (s.passportNumber || '').toLowerCase();
+            return name.includes(filterName) || sid.includes(filterName) || pass.includes(filterName);
         });
     }
 
+    // ── فیلتر وضعیت فعال/غیرفعال ─────────────────────────────
+    if (filterStatus === 'active')   filteredStudents = filteredStudents.filter(s => s.active);
+    if (filterStatus === 'inactive') filteredStudents = filteredStudents.filter(s => !s.active);
+
+    // ── فیلتر دانشگاه ─────────────────────────────────────────
+    if (filterUniversity !== 'all') {
+        filteredStudents = filteredStudents.filter(s => s.university === filterUniversity);
+    }
+
+    // ── فیلتر مقطع ────────────────────────────────────────────
+    if (filterDegree !== 'all') {
+        filteredStudents = filteredStudents.filter(s => s.degree === filterDegree);
+    }
+
     // ── فیلتر نوع مسیر / مرحله ────────────────────────────────
-    if (filterType === 'educational' && filterStep !== 'all') {
-        const selectedStepIndex = parseInt(filterStep);
+    if (filterType !== 'all') {
+        // فقط دانشجویانی که مسیر فعلی‌شان با filterType مطابق است
+        filteredStudents = filteredStudents.filter(s =>
+            this._getStudentActivePath(s) === filterType
+        );
+
+        const getSteps = (s) => {
+            if (filterType === 'educational') return s.educationalSteps || this.getDefaultEducationalSteps();
+            if (filterType === 'defense')     return s.defenseSteps     || this.getDefaultDefenseSteps2();
+            if (filterType === 'requirements') return s.requirementsSteps || (this.getDefaultRequirementsSteps ? this.getDefaultRequirementsSteps() : []);
+            return [];
+        };
+
+        if (filterStep !== 'all') {
+            if (filterStep === 'completed') {
+                filteredStudents = filteredStudents.filter(s => {
+                    const steps = getSteps(s);
+                    return steps.length > 0 && steps.every(st => st.completed);
+                });
+            } else {
+                const selectedIdx = parseInt(filterStep);
+                filteredStudents = filteredStudents.filter(s => {
+                    const steps = getSteps(s);
+                    const curIdx = steps.findIndex(st => !st.completed);
+                    return curIdx === selectedIdx;
+                });
+            }
+        }
+
+        // ── فیلتر پیشرفت ──────────────────────────────────────
+        if (filterProgress !== 'all') {
+            filteredStudents = filteredStudents.filter(s => {
+                const steps = getSteps(s);
+                if (!steps.length) return filterProgress === 'not_started';
+                const pct = (steps.filter(st => st.completed).length / steps.length) * 100;
+                if (filterProgress === 'not_started') return pct === 0;
+                if (filterProgress === 'completed')   return pct === 100;
+                if (filterProgress === 'in_progress') return pct > 0 && pct < 100;
+                if (filterProgress === 'half')        return pct >= 50;
+                return true;
+            });
+        }
+    } else if (filterProgress !== 'all') {
+        // اگر مسیر انتخاب نشده، پیشرفت روی مسیر فعلی هر دانشجو اعمال بشه
         filteredStudents = filteredStudents.filter(s => {
-            const steps = s.educationalSteps || this.getDefaultEducationalSteps();
-            const currentStepIndex = steps.findIndex(step => !step.completed);
-            if (filterStep === 'completed') return currentStepIndex === -1;
-            return currentStepIndex >= selectedStepIndex || currentStepIndex === -1;
-        });
-    } else if (filterType === 'defense' && filterStep !== 'all') {
-        const selectedStepIndex = parseInt(filterStep);
-        filteredStudents = filteredStudents.filter(s => {
-            const steps = s.defenseSteps || this.getDefaultDefenseSteps2();
-            const currentStepIndex = steps.findIndex(step => !step.completed);
-            if (filterStep === 'completed') return currentStepIndex === -1;
-            return currentStepIndex >= selectedStepIndex || currentStepIndex === -1;
+            const path = this._getStudentActivePath(s);
+            let steps = [];
+            if (path === 'requirements') steps = s.requirementsSteps || (this.getDefaultRequirementsSteps ? this.getDefaultRequirementsSteps() : []);
+            else if (path === 'defense') steps = s.defenseSteps     || this.getDefaultDefenseSteps2();
+            else                         steps = s.educationalSteps  || this.getDefaultEducationalSteps();
+            if (!steps.length) return filterProgress === 'not_started';
+            const pct = (steps.filter(st => st.completed).length / steps.length) * 100;
+            if (filterProgress === 'not_started') return pct === 0;
+            if (filterProgress === 'completed')   return pct === 100;
+            if (filterProgress === 'in_progress') return pct > 0 && pct < 100;
+            if (filterProgress === 'half')        return pct >= 50;
+            return true;
         });
     }
 
@@ -5079,56 +5377,45 @@ EmployeeModule.applyStudentFilter = function() {
         });
     }
 
-    console.log(`📊 Filtered result: ${filteredStudents.length} students`);
+    // ── نشانگر فعال بودن فیلتر ────────────────────────────────
+    const isFiltered = filterName || filterStatus !== 'all' || filterType !== 'all' ||
+                       filterStep !== 'all' || filterEmptyField !== 'all' ||
+                       filterProgress !== 'all' || filterUniversity !== 'all' || filterDegree !== 'all';
+    const badge = document.getElementById('filter-active-badge');
+    if (badge) badge.classList.toggle('hidden', !isFiltered);
 
     // ── آپدیت counter ──────────────────────────────────────────
     const countSpan = document.getElementById('filter-count');
     if (countSpan) countSpan.textContent = filteredStudents.length;
 
-    // ── آپدیت هر دو container (active / inactive) ─────────────
+    // ── رندر نتایج ────────────────────────────────────────────
     const activeContainer   = document.getElementById('students-list-container-active');
     const inactiveContainer = document.getElementById('students-list-container-inactive');
 
-    // تعیین کدام tab فعاله
-    const activeTab = document.getElementById('student-list-tab-active');
-    const showingActive = !activeTab || activeTab.classList.contains('border-green-500') || activeTab.classList.contains('text-green-400');
-
-    const renderGrid = (list, emptyMsg) => {
-        if (!list.length) return `
-            <div class="text-center py-8">
-                <i class="fas fa-search text-4xl text-gray-500 mb-4"></i>
-                <p class="text-gray-400">${emptyMsg}</p>
-                ${filterName ? `<p class="text-sm text-gray-500 mt-1">نتیجه‌ای برای "<span class="text-lime-400">${filterName}</span>" یافت نشد</p>` : ''}
-            </div>`;
-        return `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            ${list.map(s => this.getStudentCardWithProgress(s)).join('')}
-        </div>`;
-    };
+    const renderTable = (list, emptyMsg) => this._renderStudentTable(list, emptyMsg);
 
     if (activeContainer) {
         const active = filteredStudents.filter(s => s.active);
-        activeContainer.innerHTML = renderGrid(active, 'دانشجوی فعالی با این فیلتر یافت نشد');
+        activeContainer.innerHTML = renderTable(active, 'دانشجوی فعالی با این فیلتر یافت نشد');
     }
     if (inactiveContainer) {
         const inactive = filteredStudents.filter(s => !s.active);
-        inactiveContainer.innerHTML = renderGrid(inactive, 'دانشجوی خاتمه‌یافته‌ای با این فیلتر یافت نشد');
-    }
-
-    // legacy container (اگه هنوز جایی استفاده بشه)
-    const legacyContainer = document.getElementById('students-list-container');
-    if (legacyContainer && !activeContainer) {
-        legacyContainer.innerHTML = renderGrid(filteredStudents, 'دانشجویی با این فیلتر یافت نشد');
+        inactiveContainer.innerHTML = renderTable(inactive, 'دانشجوی خاتمه‌یافته‌ای با این فیلتر یافت نشد');
     }
 };
 
-// Update clearStudentFilter to reset empty field filter too
+// Update clearStudentFilter to reset all filters
 EmployeeModule.clearStudentFilter = function() {
-    const nameInput = document.getElementById('filter-student-name');
-    if (nameInput) nameInput.value = '';
-    document.getElementById('filter-type').value = 'all';
-    document.getElementById('filter-step').value = 'all';
-    const filterEmptyField = document.getElementById('filter-empty-field');
-    if (filterEmptyField) filterEmptyField.value = 'all';
+    const ids = ['filter-student-name', 'filter-type', 'filter-step',
+                 'filter-empty-field', 'filter-status', 'filter-progress',
+                 'filter-university', 'filter-degree'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = id === 'filter-student-name' ? '' : 'all';
+    });
+    const badge = document.getElementById('filter-active-badge');
+    if (badge) badge.classList.add('hidden');
+    this.updateFilterStepOptions();
     this.applyStudentFilter();
 };
 

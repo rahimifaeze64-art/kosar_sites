@@ -268,7 +268,7 @@
                 <span class="font-medium">تکمیل نشده</span>
             </div>
             <div class="flex items-center gap-2">
-                <div class="progress-circle current"><i class="fas fa-spinner fa-spin"></i></div>
+                <div class="progress-circle current"><i class="fas fa-hourglass-half"></i></div>
                 <span class="font-medium">در حال انجام</span>
             </div>
             <div class="flex items-center gap-2">
@@ -309,6 +309,16 @@
     </script>
     
     <script>
+        // ── تعیین مسیر فعال دانشجو (همان منطق employee.js) ────
+        function _getActivePath(s) {
+            if (s.currentPath) return s.currentPath;
+            const req = s.requirementsSteps || [];
+            if (req.length > 0 && req.some(x => !x.completed)) return 'requirements';
+            const def = s.defenseSteps || [];
+            if (def.length > 0 && def.some(x => !x.completed)) return 'defense';
+            return 'educational';
+        }
+
         // ── مراحل پیش‌فرض (اگر مدیر هیچ تغییری نداده باشد) ─────────────────
         const DEFAULT_STEPS = {
             defense: [
@@ -411,16 +421,35 @@
                         if (s.role === 'student') {
                             const existing = rawList.find(r => r.id === s.id);
                             if (existing) {
-                                existing.name  = s.name  || existing.name;
-                                existing.major = s.field || existing.major;
-                                existing.avatar = (s.name || existing.name)?.charAt(0) || 'د';
+                                existing.name        = s.name  || existing.name;
+                                existing.major       = s.field || existing.major;
+                                existing.avatar      = (s.name || existing.name)?.charAt(0) || 'د';
+                                existing.currentPath = s.currentPath || null;
+                                // کپی مراحل برای تشخیص مسیر
+                                existing.defenseSteps      = s.defenseSteps      || [];
+                                existing.educationalSteps  = s.educationalSteps  || [];
+                                existing.requirementsSteps = s.requirementsSteps || [];
                             } else {
-                                rawList.push({ id: s.id, name: s.name, major: s.field || '-', avatar: s.name?.charAt(0) || 'د' });
+                                rawList.push({
+                                    id: s.id, name: s.name, major: s.field || '-',
+                                    avatar: s.name?.charAt(0) || 'د',
+                                    currentPath:       s.currentPath || null,
+                                    defenseSteps:      s.defenseSteps      || [],
+                                    educationalSteps:  s.educationalSteps  || [],
+                                    requirementsSteps: s.requirementsSteps || [],
+                                });
                             }
                         }
                     });
                 }
             } catch (e) {}
+
+            // ۳. تعیین مسیر فعال هر دانشجو
+            rawList.forEach(s => {
+                if (!s._activePath) {
+                    s._activePath = _getActivePath(s);
+                }
+            });
 
             students = rawList.map(s => ({
                 ...s,
@@ -496,8 +525,8 @@
             headerHTML += '<th>%</th></tr>';
             thead.innerHTML = headerHTML;
             
-            // Filter
-            let filtered = students;
+            // Filter — فقط دانشجویانی که این مسیر برایشان فعال است
+            let filtered = students.filter(s => s._activePath === currentPath);
             if (searchTerm) {
                 filtered = filtered.filter(s => s.name.includes(searchTerm) || s.major.includes(searchTerm));
             }
@@ -538,7 +567,7 @@
                     const status = stage?.status ?? STATUS_INCOMPLETE;
                     let cls = 'incomplete', icon = '<i class="fas fa-times"></i>';
                     if (status === STATUS_COMPLETED) { cls = 'completed'; icon = '<i class="fas fa-check"></i>'; }
-                    else if (status === STATUS_CURRENT) { cls = 'current'; icon = '<i class="fas fa-spinner fa-spin"></i>'; }
+                    else if (status === STATUS_CURRENT) { cls = 'current'; icon = '<i class="fas fa-hourglass-half"></i>'; }
                     
                     bodyHTML += `<td>
                         <div class="progress-circle ${cls}" onclick="toggleStage('${student.id}', ${i})">${icon}</div>
@@ -564,46 +593,71 @@
             const current = prog[stageIndex]?.status ?? STATUS_INCOMPLETE;
             
             // Cycle: incomplete → current → completed → incomplete
-            if (current === STATUS_INCOMPLETE) prog[stageIndex].status = STATUS_CURRENT;
-            else if (current === STATUS_CURRENT) prog[stageIndex].status = STATUS_COMPLETED;
-            else prog[stageIndex].status = STATUS_INCOMPLETE;
+            if (current === STATUS_INCOMPLETE)      prog[stageIndex].status = STATUS_CURRENT;
+            else if (current === STATUS_CURRENT)    prog[stageIndex].status = STATUS_COMPLETED;
+            else                                    prog[stageIndex].status = STATUS_INCOMPLETE;
             
             saveProgress(studentId, currentPath, prog);
 
-            // ── اگر وضعیت به "تکمیل شده" رسید و StepAssignmentModule موجود است،
-            //    وظیفه مرحله بعدی را برای کارمند تخصیص‌یافته ایجاد کن
+            // ── sync وضعیت به students_data ──────────────────────────────────
+            try {
+                const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
+                if (!studentsData[studentId]) {
+                    studentsData[studentId] = { id: studentId, name: student.name, field: student.major, role: 'student' };
+                }
+                const stepKeyMap = { defense: 'defenseSteps', educational: 'educationalSteps', requirements: 'requirementsSteps' };
+                const stepKey = stepKeyMap[currentPath];
+                if (stepKey && studentsData[studentId][stepKey] && studentsData[studentId][stepKey][stageIndex] !== undefined) {
+                    const newStatus = prog[stageIndex].status;
+                    studentsData[studentId][stepKey][stageIndex].completed = (newStatus === STATUS_COMPLETED);
+                    if (newStatus === STATUS_COMPLETED) {
+                        studentsData[studentId][stepKey][stageIndex].date = new Date().toLocaleDateString('fa-IR');
+                    } else {
+                        studentsData[studentId][stepKey][stageIndex].date = null;
+                    }
+                    localStorage.setItem('students_data', JSON.stringify(studentsData));
+                }
+            } catch(e) { console.warn('students_data sync error:', e); }
+
+            // ── اگر وضعیت به "تکمیل شده" رسید، وظیفه مرحله بعدی را trigger کن
             if (prog[stageIndex].status === STATUS_COMPLETED && window.StepAssignmentModule) {
-                // sync کردن با students_data تا StepAssignmentModule از نام دانشجو مطلع شود
                 try {
                     const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
                     if (!studentsData[studentId]) {
                         studentsData[studentId] = { id: studentId, name: student.name, field: student.major };
                         localStorage.setItem('students_data', JSON.stringify(studentsData));
                     }
-                    // دریافت steps واقعی از employee module اگر موجود باشد
-                    const stepType = currentPath; // defense | educational | requirements
-                    const nextIndex = stageIndex + 1;
-                    const nextStepName = STEPS[stepType][nextIndex] || '';
-                    window.StepAssignmentModule.triggerNextStepTask(studentId, stepType, stageIndex, { nextStepName });
+                    const nextStepName = STEPS[currentPath][stageIndex + 1] || '';
+                    window.StepAssignmentModule.triggerNextStepTask(studentId, currentPath, stageIndex, { nextStepName });
                 } catch(e) { console.warn('StepAssignment trigger error:', e); }
             }
+
+            // آپدیت مسیر فعال بعد از تغییر وضعیت
+            student._activePath = _getActivePath(student);
 
             renderTable();
             updateStats();
         }
         
         function updateStats() {
-            const total = students.length;
+            // فقط دانشجویانی که مسیر فعلی‌شان با currentPath مطابق است
+            const relevant = students.filter(s => s._activePath === currentPath);
+            const total = relevant.length;
+            if (total === 0) {
+                document.getElementById('total-students').textContent = 0;
+                document.getElementById('avg-progress').textContent = '0%';
+                document.getElementById('in-progress-count').textContent = 0;
+                document.getElementById('completed-count').textContent = 0;
+                return;
+            }
             let sum = 0, inProg = 0, done = 0;
-            
-            students.forEach(s => {
+            relevant.forEach(s => {
                 const prog = s.progress[currentPath];
                 const d = prog.filter(p => p.status === STATUS_COMPLETED).length;
                 sum += (d / prog.length) * 100;
                 if (d === prog.length) done++;
                 else if (d > 0) inProg++;
             });
-            
             document.getElementById('total-students').textContent = total;
             document.getElementById('avg-progress').textContent = Math.round(sum / total) + '%';
             document.getElementById('in-progress-count').textContent = inProg;

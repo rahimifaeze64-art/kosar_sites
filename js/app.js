@@ -183,7 +183,53 @@ function appController() {
                   }, 100);
               });
           }
+          // نمای شیت داخلی
+          if (newPage === 'sheetView') {
+              this.$nextTick(() => {
+                  const container = document.getElementById('sheet-view-container');
+                  if (!container) return;
+                  container.innerHTML = `
+                    <div class="space-y-4">
+                      <div class="flex items-center gap-3 mb-2">
+                        <button onclick="window._alpineSetPage('students')"
+                          class="flex items-center gap-2 text-orange-400 hover:text-orange-300 text-sm font-medium transition-all">
+                          <i class="fas fa-arrow-right"></i> بازگشت به مدیریت دانشجویان
+                        </button>
+                      </div>
+                      <iframe src="student-progress-tracking.html"
+                        style="width:100%;height:85vh;border:none;border-radius:12px;background:#fff;"
+                        title="نمای شیت"></iframe>
+                    </div>`;
+              });
+          }
+          // فلوچارت داخلی
+          if (newPage === 'flowchartView') {
+              this.$nextTick(() => {
+                  const container = document.getElementById('flowchart-view-container');
+                  if (!container) return;
+                  container.innerHTML = `
+                    <div class="space-y-4">
+                      <div class="flex items-center gap-3 mb-2">
+                        <button onclick="window._alpineSetPage('students')"
+                          class="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 text-sm font-medium transition-all">
+                          <i class="fas fa-arrow-right"></i> بازگشت به مدیریت دانشجویان
+                        </button>
+                      </div>
+                      <iframe src="flowchart.html"
+                        style="width:100%;height:85vh;border:none;border-radius:12px;background:#fff;"
+                        title="فلوچارت"></iframe>
+                    </div>`;
+              });
+          }
         });
+
+        // تابع global برای تغییر صفحه از خارج Alpine
+        window._alpineSetPage = (page) => {
+            const el = document.querySelector('[x-data]');
+            if (el && typeof Alpine !== 'undefined') {
+                try { Alpine.$data(el).currentPage = page; } catch(e) {}
+            }
+        };
 
         // Listen for window resize
         window.addEventListener("resize", () => {
