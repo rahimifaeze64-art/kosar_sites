@@ -208,6 +208,66 @@ const CityWorld = (function () {
     { name: '-صادقی', role: 'agent', color: 0x8b0000, headColor: 0xffd700, speed: 4.5 },
   ];
 
+  // ─── دیالوگ‌های فارسی NPCها ───
+  const NPC_DIALOGUES = {
+    'سارا': [
+      'سلام! امروز سفارش‌های جدید زیادی اومده، حسابی شلوغه!',
+      'نمی‌دونی دفتر حسابداری کجاست؟ یه بار رفتم گم شدم!',
+      'هوا امروز عالیه، وسوسه می‌شم زودتر برم خونه!',
+      'اگه گزارش‌ها رو ندیدی، حتماً یه نگاه بنداز.',
+      'می‌گم، تو ماشین جدید رو دیدی؟ بهم می‌رسه تندتر از قبلیه!',
+    ],
+    'زینب': [
+      'سلام عزیزم! چطوری؟ خسته که نیستی؟',
+      'دیروز تا دیر مشغول پرونده‌ها بودم... پشمم ریخت!',
+      'دانشجوهای ترم جدید رسیدن؛ فضای دانشگاهی شده!',
+      'چایی می‌خوری؟ من همین الان دارم دم می‌کنم.',
+      'مواظب باش، فاضلی الان حال‌وحالای خرید ماشین داره!',
+    ],
+    'فرزاد': [
+      'سلام! سرت شلوغ نیست؟ یه سوال فنی داشتم.',
+      'سرور دیشب کند بود، فکر کنم هلی‌کوپترِ گزارش‌ها رو سنگین کرده!',
+      'برو پایین شهرداری، هواش خنکه، یه نفس تازه بکش.',
+      'من اگه جای تو بودم اول سراغ داشبورد می‌رفتم.',
+      'شنیدی می‌خوان برای بخش وظایف اتاق جدید بگیرن؟',
+    ],
+    'فاضلی': [
+      'سلام سلام! خوبی داداش؟',
+      'دارم دنبال یه ماشین خوب می‌گردم... پیشنهادی داری؟',
+      'امروزم حسابی ورزش کردم، صبح پارک دویدم!',
+      'حسابداری گفت آخر ماه تسویه‌کنیم! چه خبر خوبی.',
+      'یه سر به چت مدیریت بزن، پیام داری.',
+    ],
+    'دکتر': [
+      'سلام. امیدوارم حالت عالی باشه.',
+      'هر روز حداقل سی دقیقه پیاده‌روی کن — مثل من!',
+      'استرس کاری رو با کار گروهی کم کنید، نه با قهوه!',
+      'گزارش سلامت ماهانه رو دیدی؟ آمارها بهتر شده.',
+      'اگر سرگیجه داری، اول آب بخور بعد سر کار برگرد!',
+    ],
+    'معصومی': [
+      'سلام. مأموریتی داشتی یا گشتن می‌زنی؟',
+      'حسابداری عامل هنوز گزارش این هفته رو نفرستاده...',
+      'جنگنده رو دیدی؟ یکی از بهترین نمونه‌هاست، ولی بی‌اجازه دست نزن!',
+      'امنیت ساختمان سفارت رو چک کردی؟',
+      'کارمون زیاده ولی تمیز. مواظب خودت باش.',
+    ],
+    '-صادقی': [
+      'هوم... توکی؟ خوش اومدی.',
+      'اسرار شرکت تو سفارته! یادت نره.',
+      'دیشب مأموریت شبانه داشتیم؛ خوابم نمیاد.',
+      'اگه دنبال آدمی، من همونجام... ولی قیمت داره!',
+      'تانک سواری بلدی؟ من بلدم. یه زمانی...',
+    ],
+  };
+  const NPC_FALLBACK_LINES = [
+    'سلام! روزت بخیر!',
+    'امروز شهر خلوت‌تره، نه؟',
+    'هوای خوشی داره!',
+    'کارها زیاده ولی حالش هست!',
+    'موفق باشی!',
+  ];
+
   // ─── هلی‌کوپتر ───
   let helicopter = null;
   let helicopterAngle = 0;
@@ -271,6 +331,19 @@ const CityWorld = (function () {
   let nearHeli = false;
   let rotorSpeed = 0;
   let heliWaitTimer = 0;
+
+  // ─── جت جنگنده ───
+  let fighterJet = null;
+  let jetState = 'parked';   // parked | roll | climb | player | approach | final
+  let inJet = false;
+  let nearJet = false;
+  let jetSpeed = 0;
+  const JET_MIN_FLY = 17;    // زیر این سرعت واماندگی
+  const JET_MAX_SPD = 74;
+
+  // ─── گفتگو با NPC ───
+  let nearNPC = null;
+  let dialogOpen = false;
 
   // ─── مدیریت listenerها برای destroy تمیز ───
   const _listeners = [];
@@ -985,6 +1058,21 @@ const CityWorld = (function () {
         else if (inTank)                               _unmountTank();
       }
 
+      // J = سوار جنگنده / فرود خودکار
+      if (e.key === 'j' || e.key === 'J') {
+        if (!inJet && !inCar && !inTank && !inHeli && nearJet && jetState === 'parked')  _mountJet();
+        else if (inJet)                                                                   _requestJetLand();
+      }
+
+      // E = گفتگو با NPC نزدیک / بستن دیالوگ
+      if (e.key === 'e' || e.key === 'E') {
+        if (dialogOpen)              _closeDialog();
+        else if (nearNPC && !inCar && !inTank && !inHeli && !inJet) _openDialog(nearNPC);
+      }
+
+      // Esc = بستن دیالوگ
+      if (e.key === 'Escape' && dialogOpen) _closeDialog();
+
       // H = سوار شدن به هلی‌کوپتر / فرود خودکار
       if (e.key === 'h' || e.key === 'H') {
         if (!inHeli && !inCar && !inTank && nearHeli && heliState === 'landed')  _mountHelicopter();
@@ -1010,9 +1098,9 @@ const CityWorld = (function () {
         container.requestPointerLock();
         return;
       }
-      // شلیک فقط داخل تانک یا هلی‌کوپتر
-      if (!inTank && !inHeli) {
-        _showToast('🔒 برای شلیک باید داخل تانک یا هلی‌کوپتر باشید');
+      // شلیک فقط داخل تانک، هلی‌کوپتر یا جنگنده
+      if (!inTank && !inHeli && !inJet) {
+        if (!dialogOpen) _showToast('🔒 برای شلیک داخل تانک، هلی‌کوپتر یا جنگنده باشید');
         return;
       }
       _shoot(inTank); // تانک = گلوله انفجاری
@@ -1062,8 +1150,8 @@ const CityWorld = (function () {
         viewPitch = Math.max(0.03, Math.min(1.25, viewPitch));
       } else {
         // داخل وسیله: موس وسیله رو می‌چرخونه + زاویه دوربین
-        const target = inHeli ? helicopter : inTank ? tank : carMesh;
-        if (target) target.rotation.y -= e.movementX * sens;
+        const target = inJet ? fighterJet : inHeli ? helicopter : inTank ? tank : carMesh;
+        if (target && !dialogOpen) target.rotation.y -= e.movementX * sens;
         viewPitch += e.movementY * sens * 0.9;
         viewPitch = Math.max(0.03, Math.min(1.1, viewPitch));
       }
@@ -1236,6 +1324,9 @@ const CityWorld = (function () {
     // هلی‌کوپتر
     _updateHelicopter(delta);
 
+    // جنگنده
+    _updateJet(delta);
+
     // گلوله‌ها
     _updateBullets(delta);
 
@@ -1278,10 +1369,11 @@ const CityWorld = (function () {
   // حرکت کاراکتر یا ماشین
   // ─────────────────────────────────────────────
   function _updateMovement(delta) {
-    if (inHeli)      _updateHelicopterFlight(delta);
+    if (inJet)       { /* پرواز جت در _updateJet */ }
+    else if (inHeli) _updateHelicopterFlight(delta);
     else if (inTank) _updateTank(delta);
     else if (inCar)  _updateCarMovement(delta);
-    else             _updateCharacterMovement(delta);
+    else if (!dialogOpen) _updateCharacterMovement(delta);
   }
 
   // حرکت ماشین
@@ -1565,12 +1657,52 @@ const CityWorld = (function () {
         }
       }
 
+      // ─── بررسی نزدیکی جنگنده ───
+      if (fighterJet) {
+        const jdx = character.position.x - fighterJet.position.x;
+        const jdz = character.position.z - fighterJet.position.z;
+        nearJet = Math.sqrt(jdx * jdx + jdz * jdz) < 8;
+
+        const enterEl = document.getElementById('city-enter-prompt');
+        if (nearJet && jetState === 'parked' && !nearBuilding && !nearCar && !nearTank && !nearHeli) {
+          if (enterEl) {
+            enterEl.innerHTML = `<span>✈️ برای سوار شدن به جنگنده <strong>J</strong> بزنید</span>`;
+            enterEl.style.opacity = '1';
+          }
+        } else if (!nearJet && enterEl && enterEl.innerHTML.includes('جنگنده')) {
+          enterEl.style.opacity = '0';
+        }
+      }
+
+      // ─── بررسی نزدیکی NPC برای گفتگو ───
+      nearNPC = null;
+      let bestDist = 3.6;
+      npcs.forEach(npc => {
+        if (!npc.visible || npc.userData.state === 'dead') return;
+        const dx = npc.position.x - character.position.x;
+        const dz = npc.position.z - character.position.z;
+        const d = Math.sqrt(dx * dx + dz * dz);
+        if (d < bestDist) { bestDist = d; nearNPC = npc; }
+      });
+
+      if (nearNPC && !dialogOpen && !nearBuilding && !nearCar && !nearTank && !nearHeli && !nearJet) {
+        const enterEl = document.getElementById('city-enter-prompt');
+        if (enterEl) {
+          enterEl.innerHTML = `<span>💬 گفتگو با <strong>${nearNPC.userData.name}</strong> — E</span>`;
+          enterEl.style.opacity = '1';
+        }
+      } else if (!nearNPC) {
+        const enterEl = document.getElementById('city-enter-prompt');
+        if (enterEl && enterEl.innerHTML.includes('گفتگو')) enterEl.style.opacity = '0';
+      }
+
     } else {
-      // ─── داخل ماشین یا تانک: فقط ریست ساختمان‌ها و نزدیکی ───
+      // ─── داخل وسیله: فقط ریست ساختمان‌ها و نزدیکی ───
       nearBuilding = null;
       nearCar = false;
       nearTank = false;
       nearHeli = false;
+      nearNPC = null;
       joystickActive = false;
       buildings.forEach(b => {
         if (b.isHighlighted) {
@@ -1588,7 +1720,23 @@ const CityWorld = (function () {
   // دوربین سوم شخص — پیاده یا ماشین
   // ─────────────────────────────────────────────
   function _updateCamera() {
-    if (inHeli && helicopter) {
+    if (inJet && fighterJet) {
+      // دوربین تعقیبی پشت جت — با سرعت دورتر
+      const jyaw = fighterJet.rotation.y;
+      const back = 15 + jetSpeed * 0.1;
+      const up = 4.5 + viewPitch * 8;
+      const tx = fighterJet.position.x - Math.sin(jyaw) * back;
+      const ty = fighterJet.position.y + up;
+      const tz = fighterJet.position.z - Math.cos(jyaw) * back;
+      camera.position.x += (tx - camera.position.x) * 0.09;
+      camera.position.y += (ty - camera.position.y) * 0.09;
+      camera.position.z += (tz - camera.position.z) * 0.09;
+      camera.lookAt(
+        fighterJet.position.x + Math.sin(jyaw) * 6,
+        fighterJet.position.y + 1,
+        fighterJet.position.z + Math.cos(jyaw) * 6
+      );
+    } else if (inHeli && helicopter) {
       // دوربین پشت و بالای هلی‌کوپتر
       const dist = 22, height = 9 + viewPitch * 11;
       const tx = helicopter.position.x - Math.sin(helicopter.rotation.y) * dist;
@@ -1655,17 +1803,19 @@ const CityWorld = (function () {
       }
     }
 
-    // ─── زوم نشانه‌گیری (FOV) ───
-    const targetFov = (isAiming && (inTank || inHeli)) ? 42 : 60;
+    // ─── زوم نشانه‌گیری (FOV) + افکت سرعت جت ───
+    let targetFov = 60;
+    if (inJet) targetFov = 62 + (jetSpeed / JET_MAX_SPD) * 18;
+    if (isAiming && (inTank || inHeli || inJet)) targetFov = 42;
     if (Math.abs(camera.fov - targetFov) > 0.05) {
       camera.fov += (targetFov - camera.fov) * Math.min(1, 0.18);
       camera.updateProjectionMatrix();
     }
   }
 
-  // HUD حالت رزم — اسلحه/کراسهیر فقط داخل تانک یا هلی
+  // HUD حالت رزم — اسلحه/کراسهیر فقط داخل تانک، هلی یا جت
   function _updateCombatHUD() {
-    const combat = !!(inTank || inHeli);
+    const combat = !!(inTank || inHeli || inJet);
     if (weapon && weapon.visible !== combat) weapon.visible = combat;
     const ch = document.getElementById('city-crosshair');
     if (ch) {
@@ -1750,11 +1900,11 @@ const CityWorld = (function () {
     yl.position.set(-12, 0.045, 22);
     g.add(yl);
 
-    // ─── جت جنگنده ───
-    const jet = _makeFighterJet();
-    jet.position.set(-23, 0, 22);
-    jet.rotation.y = Math.PI / 2; // دماغه رو به تاکسی‌وی
-    g.add(jet);
+    // ─── جت جنگنده — مستقیم در صحنه برای مختصات جهانی ───
+    fighterJet = _makeFighterJet();
+    fighterJet.position.set(105, 0, 22);      // روی سکوی پارک
+    fighterJet.rotation.y = Math.PI / 2;       // دماغه رو به باند
+    scene.add(fighterJet);
 
     // برچسب‌ها
     const lbl = _makeTextSprite('🛬 باند فرود', '#93c5fd');
@@ -2653,6 +2803,233 @@ const CityWorld = (function () {
   }
 
   // ─────────────────────────────────────────────
+  // جنگنده — سوار شدن، پرواز، فرود خودکار
+  // ─────────────────────────────────────────────
+  function _mountJet() {
+    if (!fighterJet || jetState !== 'parked') return;
+    inJet = true;
+    character.visible = false;
+    jetSpeed = 0;
+    jetState = 'roll'; // روی باند شروع به حرکت می‌کنه
+    _showToast('✈️ در حال حرکت روی باند... نگه دار بریم!');
+    const hint = document.getElementById('city-controls-hint');
+    if (hint) hint.innerHTML = `
+      <p><span class="key">W</span><span class="key">S</span> — گاز / ترمز</p>
+      <p><span class="key">A</span><span class="key">D</span> / موس — چرخش و کج‌شدن</p>
+      <p><span class="key">Space</span> / <span class="key">Shift</span> — اوج گرفتن / شیرجه</p>
+      <p><span class="key">چپ‌کلیک</span> — شلیک · <span class="key">J</span> — فرود خودکار</p>`;
+  }
+
+  function _requestJetLand() {
+    if (jetState !== 'player' && jetState !== 'climb') return;
+    jetState = 'approach';
+    _showToast('🛬 در حال بازگشت به باند برای فرود...');
+  }
+
+  function _finishJetExit() {
+    inJet = false;
+    jetState = 'parked';
+    jetSpeed = 0;
+    character.visible = true;
+    character.position.set(fighterJet.position.x - 6, 0, fighterJet.position.z + 4);
+    vertVel = 0;
+    _showToast('🚶 از جنگنده پیاده شدید — چه پروازی!');
+    _resetControlsHint();
+  }
+
+  // ماشین حالت‌های جت (autopilot + زمین)
+  function _updateJet(delta) {
+    if (!fighterJet) return;
+
+    switch (jetState) {
+      case 'parked':
+        jetSpeed = 0;
+        break;
+
+      case 'roll': {
+        // خزش روی باند تا رسیدن به محور باند
+        jetSpeed = Math.min(jetSpeed + 20 * delta, 30);
+        _jetMoveForward(delta);
+        // هم‌تراز شدن با محور باند (رو به شرق، x افزایشی)
+        fighterJet.rotation.y += ((Math.PI / 2) - fighterJet.rotation.y) * Math.min(1, delta * 2);
+        fighterJet.rotation.z *= (1 - delta * 3);
+        if (fighterJet.position.x >= 118 && jetSpeed >= JET_MIN_FLY) {
+          jetState = 'climb';
+          _showToast('🛫 برخاست! کنترل دست شماست');
+        }
+        break;
+      }
+
+      case 'climb': {
+        jetSpeed = Math.min(jetSpeed + 14 * delta, JET_MAX_SPD);
+        _jetMoveForward(delta);
+        fighterJet.position.y += 16 * delta;
+        fighterJet.rotation.x += ((-0.18) - fighterJet.rotation.x) * Math.min(1, delta * 2);
+        if (fighterJet.position.y >= 35) {
+          fighterJet.position.y = 35;
+          jetState = 'player';
+          _showToast('✈️ W/S گاز · A/D چرخش · Space/Shift ارتفاع · J فرود');
+        }
+        break;
+      }
+
+      case 'approach': {
+        // رفتن به نقطه ورود باند (جنوب باند، بالا)
+        const ok = _jetFlyToward(128, 32, 108, delta, 40);
+        jetSpeed = Math.min(JET_MAX_SPD, Math.max(jetSpeed, 34));
+        if (ok) { jetState = 'final'; }
+        break;
+      }
+
+      case 'final': {
+        // شیب نهایی: کاهش ارتفاع در امتداد باند به سمت z=10
+        jetSpeed += (26 - jetSpeed) * Math.min(1, delta * 1.5);
+        const jx = fighterJet.position.x;
+        fighterJet.rotation.y += ((Math.PI / 2) - fighterJet.rotation.y) * Math.min(1, delta * 2.5);
+
+        const nx = jx + (128 - jx) * Math.min(1, delta * 2);
+        const nz = fighterJet.position.z - jetSpeed * delta;
+        const progress = Math.max(0, Math.min(1, (108 - fighterJet.position.z) / 96));
+        const ny = Math.max(1.4, 32 * (1 - progress));
+
+        fighterJet.position.set(nx, ny, nz);
+        fighterJet.rotation.x += ((-0.05) - fighterJet.rotation.x) * Math.min(1, delta * 2);
+
+        if (fighterJet.position.z <= 12 || ny <= 1.45) {
+          // تماس با زمین
+          fighterJet.position.y = 0;
+          fighterJet.rotation.x = 0;
+          fighterJet.rotation.z = 0;
+          _showToast('🛬 فرود موفق!');
+          _spawnSmoke(new THREE.Vector3(
+            fighterJet.position.x - Math.sin(fighterJet.rotation.y) * 3,
+            0.3,
+            fighterJet.position.z - Math.cos(fighterJet.rotation.y) * 3
+          ));
+          setTimeout(() => { if (inJet) _finishJetExit(); }, 700);
+          jetState = 'parked';
+          jetSpeed = 0;
+        }
+        break;
+      }
+
+      case 'player':
+        _updateJetFlight(delta);
+        break;
+    }
+  }
+
+  // حرکت مستقیم به سمت جهت فیوزلاژ
+  function _jetMoveForward(delta) {
+    const yaw = fighterJet.rotation.y;
+    const nx = fighterJet.position.x + Math.sin(yaw) * jetSpeed * delta;
+    const nz = fighterJet.position.z + Math.cos(yaw) * jetSpeed * delta;
+    fighterJet.position.x = Math.max(-190, Math.min(190, nx));
+    fighterJet.position.z = Math.max(-190, Math.min(190, nz));
+    // روی زمین ارتفاع صفر
+    if (jetState === 'roll') fighterJet.position.y = 0;
+  }
+
+  // پرواز به سمت نقطه — برمی‌گرداند true وقتی رسید
+  function _jetFlyToward(tx, ty, tz, delta, speed) {
+    const dx = tx - fighterJet.position.x;
+    const dy = ty - fighterJet.position.y;
+    const dz = tz - fighterJet.position.z;
+    const distH = Math.sqrt(dx * dx + dz * dz);
+    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+
+    // چرخش نرم به سمت هدف
+    const targetYaw = Math.atan2(dx, dz);
+    let diff = targetYaw - fighterJet.rotation.y;
+    while (diff >  Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    fighterJet.rotation.y += diff * Math.min(1, delta * 1.8);
+
+    const step = Math.min(speed * delta, dist);
+    fighterJet.position.x += (dx / dist) * step;
+    fighterJet.position.y += (dy / dist) * step;
+    fighterJet.position.z += (dz / dist) * step;
+    return dist < 8;
+  }
+
+  // کنترل دستی بازیکن
+  function _updateJetFlight(delta) {
+    if (jetState !== 'player') return;
+
+    const grounded = fighterJet.position.y <= 0.05;
+    const throttle = (keys.w || keys.ArrowUp) ? 1 : (keys.s || keys.ArrowDown) ? -1 : 0;
+    const turn = (keys.a || keys.ArrowLeft) ? 1 : (keys.d || keys.ArrowRight) ? -1 : 0;
+    let climb = 0;
+    if (keys[' ']) climb = 1;
+    else if (keys.Shift) climb = -1;
+
+    // گاز
+    jetSpeed += throttle * 22 * delta;
+    jetSpeed = Math.max(grounded ? 0 : 6, Math.min(JET_MAX_SPD, jetSpeed));
+
+    // چرخش — رو زمین فقط با سرعت، تو هوا آزادتر
+    const turnRate = grounded ? 0.7 : 1.15;
+    if (Math.abs(turn) > 0 && (jetSpeed > 4 || !grounded)) {
+      fighterJet.rotation.y += turn * turnRate * delta * (grounded ? Math.min(1, jetSpeed / 12) : 1);
+    }
+
+    // کج‌شدن بصری (bank)
+    const targetBank = grounded ? 0 : -turn * 0.55;
+    fighterJet.rotation.z += (targetBank - fighterJet.rotation.z) * Math.min(1, delta * 3);
+
+    // ارتفاع
+    if (!grounded || (climb > 0 && jetSpeed >= JET_MIN_FLY)) {
+      const liftFactor = Math.min(1, jetSpeed / (JET_MIN_FLY * 1.6));
+      let vy = climb * 14 * liftFactor;
+      // واماندگی — سرعت کم = سقوط
+      if (jetSpeed < JET_MIN_FLY) {
+        vy -= (JET_MIN_FLY - jetSpeed) * 0.9;
+        if (Date.now() - jetToastCd > 2500) {
+          jetToastCd = Date.now();
+          _showToast('⚠️ واماندگی! سرعت بیشتر (W)');
+        }
+      } else if (climb === 0) {
+        vy -= 1.5; // آرام پایین میاد
+      }
+      fighterJet.position.y += vy * delta;
+    }
+
+    // برخورد با زمین/سقف
+    const ceiling = 130;
+    if (fighterJet.position.y >= ceiling) { fighterJet.position.y = ceiling; }
+    if (fighterJet.position.y <= 0) {
+      if (jetSpeed > JET_MIN_FLY + 8) {
+        // فرود سریع — لرزش و کند شدن
+        fighterJet.position.y = 0;
+        jetSpeed *= 0.4;
+        _showToast('💥 برخورد! آهسته‌تر فرود بیا');
+        _spawnSmoke(fighterJet.position.clone().add(new THREE.Vector3(0, 0.5, 2)));
+      } else {
+        fighterJet.position.y = 0;
+        if (climb >= 0) fighterJet.rotation.x *= (1 - Math.min(1, delta * 4));
+      }
+    }
+
+    // تیلت دماغه با کلایمب
+    const targetPitch = grounded ? 0 : (-climb * 0.28 - (jetSpeed / JET_MAX_SPD) * 0.04);
+    fighterJet.rotation.x += (targetPitch - fighterJet.rotation.x) * Math.min(1, delta * 3);
+
+    // مرز جهان
+    fighterJet.position.x = Math.max(-190, Math.min(190, fighterJet.position.x));
+    fighterJet.position.z = Math.max(-190, Math.min(190, fighterJet.position.z));
+
+    // برخورد با ساختمان‌ها در ارتفاع کم
+    if (fighterJet.position.y < 22) {
+      const nx = fighterJet.position.x + Math.sin(fighterJet.rotation.y) * jetSpeed * delta * 2; // پیش‌بینی
+      const nz = fighterJet.position.z + Math.cos(fighterJet.rotation.y) * jetSpeed * delta * 2;
+      if (_collidesLarge(nx, nz, 3, 3)) {
+        jetSpeed *= 0.5;
+        _showToast('⚠️ نزدیک ساختمان‌ها ارتفاع بگیر!');
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────
   // تانک
   // ─────────────────────────────────────────────
   function _buildTank() {
@@ -2916,8 +3293,8 @@ const CityWorld = (function () {
   function _shoot(isExplosive) {
     const now = Date.now();
     if (now - lastShootTime < SHOOT_COOLDOWN) return;
-    // فقط داخل تانک یا هلی‌کوپتر قابل شلیک
-    if (!inTank && !inHeli) return;
+    // فقط داخل تانک، هلی‌کوپتر یا جنگنده قابل شلیک
+    if (!inTank && !inHeli && !inJet) return;
     lastShootTime = now;
     shotsFired++;
     const el = document.getElementById('city-shots');
@@ -2941,12 +3318,16 @@ const CityWorld = (function () {
     } else if (inHeli && helicopter) {
       origin = helicopter.position.clone().add(new THREE.Vector3(0, -1.4, 0));
       origin.add(dir.clone().multiplyScalar(2.5));
+    } else if (inJet && fighterJet) {
+      // از توپ‌های دماغه جنگنده
+      const nose = new THREE.Vector3(Math.sin(fighterJet.rotation.y) * 5, 0.9, Math.cos(fighterJet.rotation.y) * 5);
+      origin = fighterJet.position.clone().add(nose);
     } else {
       return;
     }
 
     bullet.position.copy(origin);
-    bullet.userData.velocity = dir.multiplyScalar(BULLET_SPEED);
+    bullet.userData.velocity = dir.clone().multiplyScalar(inJet ? BULLET_SPEED * 1.6 : BULLET_SPEED);
     bullet.userData.life = BULLET_LIFE;
     bullet.userData.active = true;
     bullet.userData.isExplosive = !!isExplosive;
