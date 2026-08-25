@@ -339,6 +339,54 @@ const CityWorld = (function () {
   // ─── گفتگو با NPC ───
   let nearNPC = null;
   let dialogOpen = false;
+  let dialogNPC = null;
+
+  // ─── سیستم پیشرفته NPC (معماری Codrops) ───
+  // اگر مدل ریک‌شده Mixamo (.glb) داشتید آدرس را اینجا بگذارید؛
+  // در غیر این صورت اسکلت رویه‌ای با همین نام استخوان‌ها استفاده می‌شود.
+  const NPC_MODEL_URL = '';
+  const NECK_MAX_DEG = 50;   // محدوده چرخش گردن
+  const SPINE_MAX_DEG = 30;  // محدوده چرخش کمر
+
+  // کلیپ‌های ری‌اکشن رویه‌ای — t نرمال‌شده ۰..۱
+  const NPC_REACTIONS = {
+    nod: {
+      dur: 0.9,
+      fn: (t) => ({ neck: { x: Math.sin(t * Math.PI * 3) * 0.28 } }),
+    },
+    lookAround: {
+      dur: 2.6,
+      fn: (t) => ({ neck: { y: Math.sin(t * Math.PI * 2) * 0.75 }, spine: { y: Math.sin(t * Math.PI * 2) * 0.18 } }),
+    },
+    shrug: {
+      dur: 1.3,
+      fn: (t) => ({
+        armR: { z: -0.55 }, armL: { z: 0.55 },
+        elbR: { x: -0.5 }, elbL: { x: -0.5 },
+        neck: { x: -0.08 },
+      }),
+    },
+    wave: {
+      dur: 2.0,
+      fn: (t) => ({
+        armR: { x: -0.2, z: -2.45 },
+        elbR: { x: -1.05 },
+        handWave: Math.sin(t * Math.PI * 7) * 0.45,
+        neck: { x: -0.05 },
+      }),
+    },
+    talk: {
+      dur: 1.0,
+      loop: true,
+      fn: (t) => ({
+        mouth: Math.max(0, Math.sin(t * Math.PI * 8)) * 0.5,
+        armR: { x: -0.35, z: -0.25 },
+        elbR: { x: -0.85 + Math.sin(t * Math.PI * 4) * 0.25 },
+        neck: { x: Math.sin(t * Math.PI * 4) * 0.07 },
+        spine: { x: 0.04 },
+      }),
+    },
+  };
 
   // ─── مدیریت listenerها برای destroy تمیز ───
   const _listeners = [];
@@ -438,8 +486,8 @@ const CityWorld = (function () {
   // نور
   // ─────────────────────────────────────────────
   function _buildLights() {
-    // نور محیطی ملایم
-    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    // نور نیم‌کره (آسمان/زمین) + خورشید سایه‌انداز
+    scene.add(new THREE.HemisphereLight(0xbfd9ff, 0x4a5240, 0.6));
 
     // خورشید (directional)
     const sun = new THREE.DirectionalLight(0xfff5e0, 1.2);
@@ -2293,6 +2341,64 @@ const CityWorld = (function () {
       scene.add(npc);
       npcs.push(npc);
     });
+
+    // ─── هوک اختیاری: مدل واقعی Mixamo (.glb ریک‌شده) ───
+    // اگر NPC_MODEL_URL تنظیم شده باشد و SkeletonUtils موجود باشد،
+    // کاراکتر GLB جایگزین بدنه رویه‌ای می‌شود؛ لایه‌ها بدون تغییر کار می‌کنند.
+    if (NPC_MODEL_URL && typeof THREE.GLTFLoader === 'function') {
+      try {
+        new THREE.GLTFLoader().load(NPC_MODEL_URL, _applyGltfModelToNPCs, undefined, () => {});
+      } catch (err) { /* fallback رویه‌ای */ }
+    }
+  }
+
+  // اعمال مدل GLB ریک‌شده روی همه NPCها
+  function _applyGltfModelToNPCs(gltf) {
+    if (!THREE.SkeletonUtils) return; // کلون امن اسکلت بدون این ممکن نیست
+
+    const src = gltf.scene;
+    const bbox = new THREE.Box3().setFromObject(src);
+    const h = Math.max(0.1, bbox.max.y - bbox.min.y);
+    const s = 1.8 / h;
+
+    npcs.forEach(npc => {
+      const model = THREE.SkeletonUtils.clone(src);
+      model.scale.setScalar(s);
+      model.traverse(o => {
+        if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }
+      });
+      npc.add(model);
+
+      // Mixer + کلیپ‌ها — تراک‌های Neck/Spine حذف می‌شوند تا
+      // لایه‌های tracking/ری‌اکشن مستقل کنترلشان کنند
+      const mixer = new THREE.AnimationMixer(model);
+      const actions = {};
+      (gltf.animations || []).forEach(clip => {
+        const filtered = clip.clone();
+        filtered.tracks = filtered.tracks.filter(
+          tr => !/^mixamorig(Neck|HeadTop)?\.?(Neck|Spine)/i.test(tr.name) &&
+                !/(mixamorigNeck|mixamorigSpine)\./i.test(tr.name)
+        );
+        actions[clip.name] = mixer.clipAction(filtered);
+      });
+      const idleKey = Object.keys(actions).find(k => /idle/i.test(k)) || Object.keys(actions)[0];
+      if (idleKey) actions[idleKey].play();
+
+      npc.userData.gltf = { mixer, actions };
+
+      // مفاصل واقعی اسکلت → همان رجیستری که لایه‌ها استفاده می‌کنند
+      ['mixamorigNeck', 'mixamorigSpine', 'mixamorigHead',
+       'mixamorigLeftArm', 'mixamorigRightArm',
+       'mixamorigLeftForeArm', 'mixamorigRightForeArm'].forEach(n => {
+        const bone = model.getObjectByName(n);
+        if (bone) npc.userData.joints[n] = bone;
+      });
+
+      // مخفی کردن بدنه رویه‌ای (اسپرایت برچسب می‌ماند)
+      npc.children.forEach(c => {
+        if (c !== model && !c.isSprite) c.visible = false;
+      });
+    });
   }
 
   // ساخت انسان واقع‌گرایانه — صورت کامل، لباس با جزییات، اکسسوری تصادفی
@@ -2338,23 +2444,28 @@ const CityWorld = (function () {
     buckle.position.set(0, 0.1, 0.125);
     hips.add(buckle);
 
-    // ─── تنه — کمر باریک، سینه پهن + یقه V ───
+    // ─── ستون فقرات (mixamorigSpine) — کل بالاتنه روی این پیوت ───
+    const spinePivot = new THREE.Group();
+    spinePivot.position.y = 0.12;
+    hips.add(spinePivot);
+
+    // تنه — کمر باریک، سینه پهن
     const torso = new THREE.Mesh(
       new THREE.CylinderGeometry(0.24, 0.19, 0.6, 10),
       new THREE.MeshPhongMaterial({ color: shirtColor })
     );
-    torso.position.y = 0.4;
+    torso.position.y = 0.28;
     torso.castShadow = true;
     torso.name = 'torsoMesh';
-    hips.add(torso);
+    spinePivot.add(torso);
 
     const chest = new THREE.Mesh(
       new THREE.BoxGeometry(0.5, 0.24, 0.27),
       new THREE.MeshPhongMaterial({ color: shirtColor })
     );
-    chest.position.y = 0.66;
+    chest.position.y = 0.54;
     chest.castShadow = true;
-    hips.add(chest);
+    spinePivot.add(chest);
 
     // یقه
     const collarV = new THREE.Mesh(
@@ -2363,8 +2474,8 @@ const CityWorld = (function () {
     );
     collarV.rotation.x = Math.PI;
     collarV.rotation.y = Math.PI / 4;
-    collarV.position.set(0, 0.76, 0.115);
-    hips.add(collarV);
+    collarV.position.set(0, 0.64, 0.115);
+    spinePivot.add(collarV);
 
     // دکمه‌ها
     for (let i = 0; i < 3; i++) {
@@ -2372,21 +2483,25 @@ const CityWorld = (function () {
         new THREE.SphereGeometry(0.018, 6, 6),
         new THREE.MeshPhongMaterial({ color: 0xe7e5e4 })
       );
-      btn.position.set(0, 0.62 - i * 0.11, 0.132);
-      hips.add(btn);
+      btn.position.set(0, 0.5 - i * 0.11, 0.132);
+      spinePivot.add(btn);
     }
 
-    // ─── گردن و سر ───
-    const neck = new THREE.Mesh(
+    // ─── گردن (mixamorigNeck) و سر (mixamorigHead) جدا برای tracking مستقل ───
+    const neckMesh = new THREE.Mesh(
       new THREE.CylinderGeometry(0.06, 0.075, 0.12, 8),
       new THREE.MeshPhongMaterial({ color: skin })
     );
-    neck.position.y = 0.8;
-    hips.add(neck);
+    neckMesh.position.y = 0.66;
+    spinePivot.add(neckMesh);
+
+    const neckPivot = new THREE.Group();
+    neckPivot.position.y = 0.7;
+    spinePivot.add(neckPivot);
 
     const headGrp = new THREE.Group();
-    headGrp.position.y = 0.95;
-    hips.add(headGrp);
+    headGrp.position.y = 0.22;
+    neckPivot.add(headGrp);
 
     const skull = new THREE.Mesh(
       new THREE.SphereGeometry(0.16, 16, 14),
@@ -2487,6 +2602,7 @@ const CityWorld = (function () {
     );
     mouth.position.set(0, -0.075, 0.142);
     headGrp.add(mouth);
+    const mouthMesh = mouth;
 
     // عینک برای بعضی‌ها
     let hasGlasses = false;
@@ -2553,9 +2669,9 @@ const CityWorld = (function () {
     const arms = [], elbows = [];
     [-0.29, 0.29].forEach(x => {
       const sh = new THREE.Group();
-      sh.position.set(x, 0.64, 0);
+      sh.position.set(x, 0.52, 0);   // نسبت به ستون فقرات
       sh.rotation.z = x > 0 ? -0.09 : 0.09;
-      hips.add(sh);
+      spinePivot.add(sh);
 
       // توپ شانه
       const shoulderBall = new THREE.Mesh(
@@ -2603,20 +2719,37 @@ const CityWorld = (function () {
       arms.push(sh); elbows.push(el); all.push(sh, el);
     });
 
-    // کوله‌پشتی برای عامل‌ها
+    // کوله‌پشتی برای عامل‌ها — روی ستون فقرات تا با خم‌شدن حرکت کنه
     if (person.agent) {
       const pack = new THREE.Mesh(
         new THREE.BoxGeometry(0.3, 0.38, 0.14),
         new THREE.MeshPhongMaterial({ color: 0x44403c })
       );
-      pack.position.set(0, 0.42, -0.2);
+      pack.position.set(0, 0.3, -0.2);
       pack.castShadow = true;
-      hips.add(pack);
+      spinePivot.add(pack);
     }
 
+    // ─── رجیستری مفاصل با نام‌گذاری Mixamo (برای GLB آینده و tracking) ───
+    group.userData.joints = {
+      'mixamorigHips': hips,
+      'mixamorigSpine': spinePivot,
+      'mixamorigNeck': neckPivot,
+      'mixamorigHead': headGrp,
+      'mixamorigLeftArm': arms[0],
+      'mixamorigRightArm': arms[1],
+      'mixamorigLeftForeArm': elbows[0],
+      'mixamorigRightForeArm': elbows[1],
+      'mixamorigLeftUpLeg': legs[0],
+      'mixamorigRightUpLeg': legs[1],
+      'mixamorigLeftLeg': knees[0],
+      'mixamorigRightLeg': knees[1],
+    };
+
+    all.push(spinePivot, neckPivot);
     group.userData.limbs = {
       legs, knees, arms, elbows, all,
-      headGrp, torso, chest, eyes,
+      headGrp, neckPivot, spine: spinePivot, torso, chest, eyes, mouth: mouthMesh,
       hasGlasses, isFemale,
     };
     return group;
@@ -2640,14 +2773,13 @@ const CityWorld = (function () {
       if (L.elbows[i]) L.elbows[i].rotation.x = -0.35 - Math.max(0, Math.sin(ph)) * 0.35;
     });
 
-    // خم شدن ملایم تنه به جلو + تاب تنه و سر موقع گام
-    if (L.torso) {
-      L.torso.rotation.x = 0.05 + amp * 0.06;
-      L.torso.rotation.z = Math.sin(phase) * 0.04;
+    // خم شدن ملایم بالاتنه از مفصل کمر + تاب موقع گام
+    if (L.spine) {
+      L.spine.rotation.x = 0.04 + amp * 0.06;
+      L.spine.rotation.z = Math.sin(phase) * 0.035;
     }
     if (L.headGrp) {
       L.headGrp.rotation.y = Math.sin(phase * 0.5) * 0.06;
-      L.headGrp.rotation.z = -Math.sin(phase) * 0.025;
     }
 
     // باب عمودی — فقط وقتی روی زمین (پرش خراب نشه)
@@ -2697,7 +2829,28 @@ const CityWorld = (function () {
       if (ud.state === 'exit') {
         ud.waitTimer -= delta;
         if (ud.waitTimer <= 0) ud.state = 'walk';
+        // ری‌اکشن‌های محیطی وقتی ایستاده — نگاه به اطراف، تکان سر
+        ud.ambT = (ud.ambT || 2) - delta;
+        if (ud.ambT <= 0) {
+          ud.ambT = 4 + Math.random() * 6;
+          _playReaction(npc, Math.random() < 0.55 ? 'lookAround' : 'nod');
+        }
         return;
+      }
+
+      // ─── حالت گفتگو: کاملاً می‌ایسته و رو به بازیکن می‌چرخه ───
+      if (ud.state === 'talking') {
+        if (character) {
+          const targetYaw = Math.atan2(
+            character.position.x - npc.position.x,
+            character.position.z - npc.position.z
+          );
+          let dy = targetYaw - npc.rotation.y;
+          while (dy >  Math.PI) dy -= Math.PI * 2;
+          while (dy < -Math.PI) dy += Math.PI * 2;
+          npc.rotation.y += dy * Math.min(1, delta * 5);
+        }
+        return; // هیچ حرکتی نداره تا دیالوگ بسته بشه
       }
 
       if (ud.state === 'enter') {
@@ -2764,48 +2917,184 @@ const CityWorld = (function () {
     });
   }
 
-  // انیمیشن NPC — گام واقعی، نفس، پلک‌زدن و نگاه به بازیکن
+  // انیمیشن NPC — پایه + لایه ری‌اکشن + لایه tracking (معماری Codrops)
   function _animateNPC(npc, delta) {
     const ud = npc.userData;
     const L = npc.userData.limbs;
     if (!L) return;
     const now = performance.now() * 0.001;
 
-    if (ud.state === 'walk' || ud.state === 'enter') {
+    // ─── ۱) لایه پایه: مدل GLB یا اسکلت رویه‌ای ───
+    if (ud.gltf) {
+      // انیمیشن‌های میکسامو با AnimationMixer + Clock (سرعت مستقل از فریم)
+      ud.gltf.mixer.update(delta);
+    } else if (ud.state === 'walk' || ud.state === 'enter') {
       ud.phase += delta * (ud.speed * 2.2 + 3);
       _animHumanoid(npc, ud.phase, 0.5);
     } else {
-      // ایستاده — تنفس آرام + تکون دست خفیف
-      const br = 1 + Math.sin(now * 2 + ud.phase) * 0.02;
+      // ایستاده/گفتگو — تنفس آرام
+      const br = 1 + Math.sin(now * 2 + ud.phase) * 0.025;
       if (L.chest) L.chest.scale.set(br, 1, br);
-      L.arms.forEach((sh, i) => { sh.rotation.x = Math.sin(now * 1.4 + i * 2.1) * 0.05; });
+      L.arms.forEach((sh, i) => { sh.rotation.x = Math.sin(now * 1.4 + i * 2.1) * 0.04; });
       npc.position.y = 0;
-    }
 
-    // پلک زدن دوره‌ای
-    ud.blinkT -= delta;
-    if (ud.blinkT <= 0) {
-      ud.blinkT = 2.5 + Math.random() * 3.5;
-      ud.blinkPhase = 0.13;
-    }
-    if (ud.blinkPhase > 0) {
-      ud.blinkPhase -= delta;
-      const closed = ud.blinkPhase > 0;
-      if (L.eyes) L.eyes.forEach(e => { e.scale.y = closed ? 0.12 : 1; });
-    }
-
-    // سرش رو به سمت بازیکن می‌چرخونه وقتی نزدیکی
-    if (character && npc.visible && character.visible !== undefined) {
-      const dx = character.position.x - npc.position.x;
-      const dz = character.position.z - npc.position.z;
-      const d = Math.sqrt(dx * dx + dz * dz);
-      if (d < 7) {
-        let a = Math.atan2(dx, dz) - npc.rotation.y;
-        while (a >  Math.PI) a -= Math.PI * 2;
-        while (a < -Math.PI) a += Math.PI * 2;
-        a = Math.max(-0.9, Math.min(0.9, a));
-        L.headGrp.rotation.y += (a - L.headGrp.rotation.y) * Math.min(1, delta * 6);
+      // برگشت نرم بالاتنه به حالت خنثی (جلوگیری از انباشت لایه‌ها)
+      const dcy = Math.min(1, delta * 5);
+      if (L.spine) {
+        L.spine.rotation.x *= (1 - dcy);
+        L.spine.rotation.z *= (1 - dcy);
       }
+      if (L.headGrp) L.headGrp.rotation.y *= (1 - dcy);
+    }
+
+    // ─── ۲) لایه ری‌اکشن (کلیپ رویه‌ای با crossfade وزنی) ───
+    _applyReactionLayer(npc, delta);
+
+    // ─── ۳) لایه آگاهی: گردن و کمر به سمت بازیکن ───
+    _applyTrackingLayer(npc, delta);
+
+    // ─── پلک زدن دوره‌ای (فقط رویه‌ای — مدل GLB خودش دارد) ───
+    if (!ud.gltf) {
+      ud.blinkT -= delta;
+      if (ud.blinkT <= 0) {
+        ud.blinkT = 2.5 + Math.random() * 3.5;
+        ud.blinkPhase = 0.13;
+      }
+      if (ud.blinkPhase > 0) {
+        ud.blinkPhase -= delta;
+        const closed = ud.blinkPhase > 0;
+        if (L.eyes) L.eyes.forEach(e => { e.scale.y = closed ? 0.12 : 1; });
+      }
+    }
+  }
+
+  // شروع یک کلیپ ری‌اکشن — currentlyAnimating جلوی تداخل می‌گیره
+  function _playReaction(npc, name, opts) {
+    const def = NPC_REACTIONS[name];
+    if (!def) return false;
+    const ud = npc.userData;
+    if (ud.reac && !ud.reac.loop && ud.reac.t < ud.reac.dur * 0.7) return false;
+
+    // مسیر GLB: اگر کلیپ همنام در میکسامو بود، crossfade به آن
+    if (ud.gltf && ud.gltf.actions[name]) {
+      const a = ud.gltf.actions[name];
+      a.reset().setLoop(def.loop ? THREE.LoopRepeat : THREE.LoopOnce, def.loop ? Infinity : 1);
+      a.clampWhenFinished = true;
+      a.fadeIn(0.25).play();
+      ud.reac = { name, t: 0, dur: def.dur, loop: !!def.loop, fn: def.fn, useClip: true };
+      return true;
+    }
+
+    ud.reac = { name, t: 0, dur: def.dur, loop: !!def.loop, fn: def.fn };
+    return true;
+  }
+
+  // اعمال افست‌های کلیپ فعال روی مفاصل (additive روی لایه پایه)
+  function _applyReactionLayer(npc, delta) {
+    const ud = npc.userData;
+    const R = ud.reac;
+    if (!R) return;
+
+    R.t += delta / R.dur;
+    let w = 1;
+    if (!R.loop) {
+      if (R.t >= 1) {
+        // خروج نرم از کلیپ GLB در صورت وجود
+        if (R.useClip && ud.gltf && ud.gltf.actions[R.name]) {
+          ud.gltf.actions[R.name].fadeOut(0.25);
+        }
+        ud.reac = null;
+        return;
+      }
+      w = Math.sin(R.t * Math.PI); // ورود/خروج نرم (crossfade)
+    } else if (R.t >= 1) {
+      R.t %= 1;
+    }
+
+    // کلیپ GLB خودش بدنه را حرکت می‌دهد؛ فقط افست رویه‌ای حذف می‌شود
+    if (R.useClip) return;
+
+    const off = R.fn(Math.min(1, R.t));
+    const J = ud.joints, L = ud.limbs;
+    if (!J || !L) return;
+
+    if (off.neck && J['mixamorigNeck']) {
+      J['mixamorigNeck'].rotation.x += (off.neck.x || 0) * w;
+      J['mixamorigNeck'].rotation.y += (off.neck.y || 0) * w;
+    }
+    if (off.spine && J['mixamorigSpine']) {
+      J['mixamorigSpine'].rotation.x += (off.spine.x || 0) * w;
+      J['mixamorigSpine'].rotation.y += (off.spine.y || 0) * w;
+    }
+    if (off.armR && J['mixamorigRightArm']) {
+      J['mixamorigRightArm'].rotation.x += (off.armR.x || 0) * w;
+      J['mixamorigRightArm'].rotation.z += ((off.armR.z || 0)) * w;
+    }
+    if (off.armL && J['mixamorigLeftArm']) {
+      J['mixamorigLeftArm'].rotation.x += (off.armL.x || 0) * w;
+      J['mixamorigLeftArm'].rotation.z += (off.armL.z || 0) * w;
+    }
+    if (off.elbR && J['mixamorigRightForeArm']) J['mixamorigRightForeArm'].rotation.x += off.elbR.x * w;
+    if (off.elbL && J['mixamorigLeftForeArm']) J['mixamorigLeftForeArm'].rotation.x += off.elbL.x * w;
+    if (off.handWave && J['mixamorigRightArm']) {
+      // تاب دست هنگام سلام دادن — چرخش حول محور بازو
+      J['mixamorigRightArm'].rotation.y += off.handWave * w;
+    }
+    if (off.mouth && L.mouth) {
+      L.mouth.scale.y = 1 + off.mouth * w * 6;
+    }
+  }
+
+  // محاسبه هدف گردن/کمر به سمت بازیکن (الگوی getMouseDegrees/moveJoint)
+  function _computeTrackingTargets(npc) {
+    if (!character || !npc.visible) return null;
+    const dx = character.position.x - npc.position.x;
+    const dz = character.position.z - npc.position.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    if (dist > 8) return null;
+
+    // اختلاف زاویه در فضای محلی NPC
+    let yawDiff = Math.atan2(dx, dz) - npc.rotation.y;
+    while (yawDiff >  Math.PI) yawDiff -= Math.PI * 2;
+    while (yawDiff < -Math.PI) yawDiff += Math.PI * 2;
+    // اگر بازیکن پشت سرشه، فقط تا سقف مجاز برگرده
+    const pctY = Math.max(-1, Math.min(1, yawDiff / (Math.PI * 0.75)));
+
+    // pitch بر اساس ارتفاع سر بازیکن نسبت به سر NPC
+    const headWorldY = npc.position.y + 1.75 * npc.scale.y;
+    const dy = (character.position.y + 1.6) - headWorldY;
+    const pctX = Math.max(-1, Math.min(1, dy / Math.max(2, dist)));
+
+    return {
+      neckY: (pctY * NECK_MAX_DEG) * (Math.PI / 180),
+      neckX: (-pctX * NECK_MAX_DEG * 0.5) * (Math.PI / 180),
+      spineY: (pctY * SPINE_MAX_DEG) * (Math.PI / 180),
+      spineX: (-pctX * SPINE_MAX_DEG * 0.4) * (Math.PI / 180),
+    };
+  }
+
+  function _applyTrackingLayer(npc, delta) {
+    const ud = npc.userData;
+    const target = _computeTrackingTargets(npc);
+    ud.trackCur = ud.trackCur || { neckY: 0, neckX: 0, spineY: 0, spineX: 0 };
+    const cur = ud.trackCur;
+    const lerpF = Math.min(1, delta * 4); // نرم مثل moveJoint
+
+    ['neckY', 'neckX', 'spineY', 'spineX'].forEach(k => {
+      const t = target ? target[k] : 0;
+      cur[k] += (t - cur[k]) * lerpF;
+    });
+
+    const J = ud.joints;
+    if (!J) return;
+    // additive روی هر چیزی که لایه‌های قبلی گذاشتن
+    if (J['mixamorigNeck']) {
+      J['mixamorigNeck'].rotation.y += cur.neckY;
+      J['mixamorigNeck'].rotation.x += cur.neckX;
+    }
+    if (J['mixamorigSpine']) {
+      J['mixamorigSpine'].rotation.y += cur.spineY;
+      J['mixamorigSpine'].rotation.x += cur.spineX;
     }
   }
 
@@ -3316,10 +3605,34 @@ const CityWorld = (function () {
     el.style.opacity = '1';
     el.style.pointerEvents = 'auto';
     el.style.transform = 'translateX(-50%) translateY(0)';
+
+    // ─── فریز NPC: می‌ایسته، رو می‌چرخه و ژست حرف‌زدن می‌گیره ───
+    dialogNPC = npc;
+    if (ud.state !== 'talking') ud.prevState = ud.state;
+    ud.state = 'talking';
+    ud.path = [];
+    _startTalkLoop(npc);
+  }
+
+  // حلقه ژست گفتگو — تا وقتی دیالوگ بازه
+  function _startTalkLoop(npc) {
+    const def = NPC_REACTIONS.talk;
+    npc.userData.reac = { name: 'talk', t: 0, dur: def.dur, loop: true, fn: def.fn };
   }
 
   function _closeDialog() {
     dialogOpen = false;
+
+    // ─── آزادسازی NPC: سلام خداحافظی و ادامه مسیر ───
+    if (dialogNPC) {
+      const ud = dialogNPC.userData;
+      ud.reac = null;                       // پایان حلقه talk (currentlyAnimating آزاد شد)
+      _playReaction(dialogNPC, 'wave');     // خداحافظی — additive روی راه رفتن
+      ud.state = 'walk';
+      ud.path = [];                          // مسیر تازه انتخاب می‌کنه
+      dialogNPC = null;
+    }
+
     const el = document.getElementById('city-npc-dialog');
     if (el) {
       el.style.opacity = '0';
