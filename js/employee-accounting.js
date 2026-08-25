@@ -521,11 +521,21 @@ const EmployeeAccountingUI = (function() {
 
         function pick(jy, jm, jd) {
             const ju = window.JalaliUtils;
-            const greg = ju.toGreg(jy, jm, jd);
-            const disp = `${jd} ${ju.MONTHS[jm-1]} ${jy}`;
+            let greg = '';
+            try {
+                greg = ju ? ju.toGreg(jy, jm, jd) : '';
+            } catch(e) {
+                // fallback: تبدیل دستی شمسی به میلادی
+                greg = '';
+            }
+            // اگر تبدیل میلادی ناموفق بود، فرمت شمسی رو در hidden بذار
+            const MONTHS_FA = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+            const disp = `${jd} ${ju ? ju.MONTHS[jm-1] : MONTHS_FA[jm-1]} ${jy}`;
+            const jalaliISO = `${jy}-${String(jm).padStart(2,'0')}-${String(jd).padStart(2,'0')}`;
             const hidEl = document.getElementById(_hid);
             const disEl = document.getElementById(_dis);
-            if (hidEl) hidEl.value = greg;
+            // hidden field: اگر greg داریم میلادی، وگرنه شمسی ISO
+            if (hidEl) hidEl.value = greg || jalaliISO;
             if (disEl) disEl.value = disp;
             close();
         }
@@ -2479,20 +2489,17 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
     }
 
     function saveLateRequest() {
-        const u      = (() => { try { return JSON.parse(localStorage.getItem('currentUser')||'{}'); } catch { return {}; } })();
-        const dateGreg = document.getElementById('lr-date')?.value;        // میلادی از EAccJalali
-        const dateJdp  = document.getElementById('lr-date-jdp')?.value;    // شمسی نمایشی
-        const type   = document.getElementById('lr-type')?.value;
-        const reason = document.getElementById('lr-reason')?.value?.trim();
+        const u        = (() => { try { return JSON.parse(localStorage.getItem('currentUser')||'{}'); } catch { return {}; } })();
+        const dateGreg = (document.getElementById('lr-date')?.value || '').trim();
+        const dateJdp  = (document.getElementById('lr-date-jdp')?.value || '').trim();
+        const type     = document.getElementById('lr-type')?.value;
+        const reason   = document.getElementById('lr-reason')?.value?.trim();
 
-        // بررسی: اگر hidden field خالی بود ولی display field مقدار داره → تاریخ انتخاب شده
+        // هر کدام که مقدار داشت کافیه
         const hasDate = !!(dateGreg || dateJdp);
 
-        if (!hasDate || !reason) {
-            if (!hasDate) alert('لطفاً تاریخ فراموش‌شده را از تقویم انتخاب کنید');
-            else alert('دلیل فراموشی الزامی است');
-            return;
-        }
+        if (!hasDate) { alert('لطفاً تاریخ فراموش‌شده را از تقویم انتخاب کنید'); return; }
+        if (!reason)  { alert('دلیل فراموشی الزامی است'); return; }
 
         // تبدیل به شمسی برای ذخیره‌سازی سازگار با بقیه سیستم
         let requestedDate = dateGreg || dateJdp || '';
