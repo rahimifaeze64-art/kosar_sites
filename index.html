@@ -669,7 +669,23 @@
                         </div>
 
         <!-- سطح ۱: حسابداری شخصی مدیر -->
-                        <div x-show="accPage === 'personal'" x-effect="if(accPage==='personal') { $nextTick(() => { if(typeof AccountingUI!=='undefined') AccountingUI.init(); }); }">
+                        <div x-show="accPage === 'personal'"
+                             x-effect="if(accPage==='personal'){
+                                 $nextTick(function(){
+                                     var tryInit = function(n){
+                                         var c = document.getElementById('accounting-app');
+                                         if(c && typeof AccountingUI !== 'undefined'){
+                                             AccountingUI.init();
+                                         } else if(n > 0){
+                                             setTimeout(function(){ tryInit(n-1); }, 100);
+                                         }
+                                     };
+                                     tryInit(10);
+                                 });
+                             }">
+                            <button @click="accPage = 'main'" class="mb-4 flex items-center gap-2 text-gray-300 hover:text-white text-sm">
+                                <i class="fas fa-arrow-right"></i> بازگشت به حسابداری
+                            </button>
                             <div id="accounting-app" dir="rtl" class="p-4 md:p-6">
                                 <div class="flex items-center justify-center py-20">
                                     <i class="fas fa-spinner fa-spin text-3xl text-blue-500"></i>
