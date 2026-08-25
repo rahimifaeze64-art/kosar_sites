@@ -2411,19 +2411,13 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
                 <div class="space-y-3">
                     <div>
                         <label class="text-gray-400 text-sm mb-1 block">تاریخ فراموش‌شده <span class="text-red-400">*</span></label>
-                        <!-- hidden: مقدار میلادی که jalalidatepicker پر می‌کند -->
-                        <input type="hidden" id="lr-date">
-                        <!-- فیلد نمایشی شمسی — jalalidatepicker آن را مدیریت می‌کند -->
-                        <input type="text"
-                               id="lr-date-jdp"
-                               data-jdp
-                               data-jdp-target-value-input="#lr-date"
-                               data-jdp-target-value-type="gregorian"
-                               placeholder="انتخاب تاریخ شمسی"
-                               autocomplete="off"
-                               readonly
-                               onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
-                               class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 cursor-pointer text-sm text-right">
+                        <div class="relative">
+                            <input type="text" id="lr-date-jdp" readonly
+                                placeholder="انتخاب تاریخ شمسی"
+                                onclick="EAccJalali.open('lr-date','lr-date-jdp', event)"
+                                class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 cursor-pointer text-sm text-right">
+                            <input type="hidden" id="lr-date">
+                        </div>
                     </div>
                     <div>
                         <label class="text-gray-400 text-sm mb-1 block">نوع ثبت <span class="text-red-400">*</span></label>
@@ -2446,7 +2440,6 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
                                 oninput="this.value=this.value.replace(/[^0-9:]/g,''); if(this.value.length===2&&!this.value.includes(':'))this.value+=':';"
                                 class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 font-mono" dir="ltr">
                         </div>
-                        <p class="col-span-2 text-gray-500 text-xs">اگر ساعت وارد نشود، مقدار پیش‌فرض ۸:۰۰ تا ۱۷:۰۰ ثبت می‌شود و مدیر می‌تواند ویرایش کند.</p>
                     </div>
                     <div id="lr-expense-fields" class="hidden">
                         <label class="text-gray-400 text-sm mb-1 block">مبلغ هزینه (تومان)</label>
@@ -2469,14 +2462,7 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
                 </div>
             </div>`;
         document.body.appendChild(modal);
-        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-
-        // راه‌اندازی jalalidatepicker برای input تاریخ modal
-        if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
-            setTimeout(function() {
-                jalaliDatepicker.startWatch({ showTodayBtn: true, showEmptyBtn: true, showCloseBtn: true });
-            }, 50);
-        }
+        modal.addEventListener('click', e => { if (e.target === modal) { EAccJalali.close(); modal.remove(); } });
     }
 
     function _toggleLateRequestFields() {
@@ -2494,25 +2480,45 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
 
     function saveLateRequest() {
         const u      = (() => { try { return JSON.parse(localStorage.getItem('currentUser')||'{}'); } catch { return {}; } })();
-        const dateGreg = document.getElementById('lr-date')?.value;        // میلادی از jalalidatepicker
+        const dateGreg = document.getElementById('lr-date')?.value;        // میلادی از EAccJalali
         const dateJdp  = document.getElementById('lr-date-jdp')?.value;    // شمسی نمایشی
         const type   = document.getElementById('lr-type')?.value;
         const reason = document.getElementById('lr-reason')?.value?.trim();
 
-        if (!dateGreg || !reason) { alert('تاریخ و دلیل فراموشی الزامی است'); return; }
+        // بررسی: اگر hidden field خالی بود ولی display field مقدار داره → تاریخ انتخاب شده
+        const hasDate = !!(dateGreg || dateJdp);
 
-        // تبدیل میلادی به شمسی برای ذخیره‌سازی سازگار با بقیه سیستم
-        let requestedDate = dateGreg;
+        if (!hasDate || !reason) {
+            if (!hasDate) alert('لطفاً تاریخ فراموش‌شده را از تقویم انتخاب کنید');
+            else alert('دلیل فراموشی الزامی است');
+            return;
+        }
+
+        // تبدیل به شمسی برای ذخیره‌سازی سازگار با بقیه سیستم
+        let requestedDate = dateGreg || dateJdp || '';
         try {
             const ju = window.JalaliUtils;
-            if (ju && ju.gregToJD && ju.jdToJalali) {
-                const [y,m,d] = dateGreg.split('-').map(Number);
-                const jd = ju.gregToJD(y, m, d);
-                const [jy, jm, jday] = ju.jdToJalali(jd);
-                const pad = n => n < 10 ? '0'+n : String(n);
-                requestedDate = jy + '-' + pad(jm) + '-' + pad(jday);
+            if (ju) {
+                if (dateGreg && dateGreg.includes('-') && parseInt(dateGreg.split('-')[0]) > 1500) {
+                    // میلادی → شمسی
+                    const [y,m,d] = dateGreg.split('-').map(Number);
+                    const jd = ju.gregToJD(y, m, d);
+                    const [jy, jm, jday] = ju.jdToJalali(jd);
+                    const pad = n => n < 10 ? '0'+n : String(n);
+                    requestedDate = jy + '-' + pad(jm) + '-' + pad(jday);
+                } else if (dateJdp && !dateGreg) {
+                    // شمسی نمایشی (مثل "۱۴ مرداد ۱۴۰۴") → تبدیل
+                    // اگر فرمت YYYY-MM-DD باشه مستقیم استفاده کن
+                    const match = dateJdp.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+                    if (match) {
+                        const pad = n => String(n).padStart(2,'0');
+                        requestedDate = match[1] + '-' + pad(match[2]) + '-' + pad(match[3]);
+                    } else {
+                        requestedDate = dateJdp; // هر فرمتی بود همان
+                    }
+                }
             }
-        } catch(e) { requestedDate = dateGreg; }
+        } catch(e) { requestedDate = dateGreg || dateJdp || ''; }
 
         const record = {
             id:            'lr_' + Date.now(),
