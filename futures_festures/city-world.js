@@ -309,15 +309,8 @@ const CityWorld = (function () {
   let viewYaw = Math.PI;    // افق — دوربین پشت کاراکتر
   let viewPitch = 0.42;     // بالا/پایین
 
-  // ─── چرخه شب و روز + محیط ───
-  let dayTime = 0.25;
-  const DAY_LENGTH = 420; // چرخه کامل — روز حدود ۶۲٪ و شب حدود ۳۸٪
-  let sunLight = null, ambientLight = null, fountainRef = null, windowMat = null;
-  const SKY_DAY = new THREE.Color(0x87ceeb);
-  const SKY_NIGHT = new THREE.Color(0x0b1026);
-  const FOG_DAY = new THREE.Color(0xa5d3ef);
-  const FOG_NIGHT = new THREE.Color(0x131c36);
-  const lampLights = [];
+  // ─── محیط ───
+  let fountainRef = null;
   const birdFlocks = [];
 
   // ─── هلی‌کوپتر قابل پرواز ───
@@ -446,8 +439,7 @@ const CityWorld = (function () {
   // ─────────────────────────────────────────────
   function _buildLights() {
     // نور محیطی ملایم
-    ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    scene.add(ambientLight);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
 
     // خورشید (directional)
     const sun = new THREE.DirectionalLight(0xfff5e0, 1.2);
@@ -461,7 +453,6 @@ const CityWorld = (function () {
     sun.shadow.camera.right = 150;
     sun.shadow.camera.top = 150;
     sun.shadow.camera.bottom = -150;
-    sunLight = sun;
     scene.add(sun);
 
     // نور پشت (rim)
@@ -563,21 +554,25 @@ const CityWorld = (function () {
       scene.add(s2);
     }
 
-    // چراغ‌های خیابان
-    const poleM = new THREE.MeshLambertMaterial({ color: 0x555 });
-    const lightM = new THREE.MeshBasicMaterial({ color: 0xffffaa });
+    // چراغ‌های خیابان — فقط مدل، بدون نور (همیشه روز)
+    const poleM = new THREE.MeshLambertMaterial({ color: 0x555555 });
+    const armM  = new THREE.MeshLambertMaterial({ color: 0x444444 });
+    const lightM = new THREE.MeshBasicMaterial({ color: 0xfdf6d8 });
     for (let i = -100; i <= 100; i += 25) {
       [[i, 5], [i, -5]].forEach(([x, z]) => {
-        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 6, 6), poleM);
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 6, 8), poleM);
         pole.position.set(x, 3, z);
+        pole.castShadow = true;
         scene.add(pole);
-        const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), lightM);
-        lamp.position.set(x, 6.3, z);
-        scene.add(lamp);
-        const pl = new THREE.PointLight(0xffffee, 0, 20);
-        pl.position.set(x, 6, z);
-        scene.add(pl);
-        lampLights.push(pl);
+        // بازوی افقی به سمت جاده
+        const inward = z > 0 ? -1 : 1;
+        const arm = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 1.4), armM);
+        arm.position.set(x, 5.95, z + inward * 0.7);
+        scene.add(arm);
+        // سر چراغ
+        const lampHead = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.1, 0.7), lightM);
+        lampHead.position.set(x, 5.88, z + inward * 1.3);
+        scene.add(lampHead);
       });
     }
   }
@@ -628,7 +623,6 @@ const CityWorld = (function () {
       // پنجره‌ها
       if (accessible) {
         const winMat = new THREE.MeshPhongMaterial({ color: 0x93c5fd, emissive: 0x1e40af, emissiveIntensity: 0.3, shininess: 100 });
-        windowMat = winMat;
         const winPositions = [
           { x: -cfg.width * 0.25, y: cfg.height * 0.45 },
           { x: cfg.width * 0.25, y: cfg.height * 0.45 },
@@ -692,93 +686,211 @@ const CityWorld = (function () {
   }
 
   // ─────────────────────────────────────────────
-  // ساخت ماشین
+  // ساخت ماشین — سدان مدرن با جزییات کامل
   // ─────────────────────────────────────────────
   function _buildCar() {
     carMesh = new THREE.Group();
 
-    // بدنه اصلی (پایین)
-    const bodyLow = new THREE.Mesh(
-      new THREE.BoxGeometry(2.2, 0.7, 4.5),
-      new THREE.MeshPhongMaterial({ color: 0xe53e3e, shininess: 80 })
-    );
-    bodyLow.position.y = 0.65;
-    bodyLow.castShadow = true;
-    carMesh.add(bodyLow);
+    const paintM   = new THREE.MeshPhongMaterial({ color: 0xd62828, shininess: 120 });
+    const paintDk  = new THREE.MeshPhongMaterial({ color: 0x9d1b1b, shininess: 90 });
+    const glassM   = new THREE.MeshPhongMaterial({ color: 0xa8cdf0, transparent: true, opacity: 0.55, shininess: 150 });
+    const trimM    = new THREE.MeshPhongMaterial({ color: 0x1f2937 });
+    const chromeM  = new THREE.MeshPhongMaterial({ color: 0xd1d5db, shininess: 140 });
+    const tireM    = new THREE.MeshPhongMaterial({ color: 0x141414, shininess: 15 });
 
-    // بدنه بالا (کابین)
-    const bodyTop = new THREE.Mesh(
-      new THREE.BoxGeometry(1.7, 0.6, 2.4),
-      new THREE.MeshPhongMaterial({ color: 0xc53030, shininess: 60 })
-    );
-    bodyTop.position.set(0, 1.25, -0.1);
-    bodyTop.castShadow = true;
-    carMesh.add(bodyTop);
+    // ─── بدنه سه‌حجمه: شاسی + کاپوت + صندوق ───
+    const lower = new THREE.Mesh(new THREE.BoxGeometry(2.15, 0.52, 4.6), paintM);
+    lower.position.y = 0.64;
+    lower.castShadow = true;
+    carMesh.add(lower);
 
-    // شیشه جلو
-    const windshield = new THREE.Mesh(
-      new THREE.BoxGeometry(1.6, 0.55, 0.08),
-      new THREE.MeshPhongMaterial({ color: 0x93c5fd, transparent: true, opacity: 0.55, shininess: 120 })
-    );
-    windshield.position.set(0, 1.22, 1.12);
-    windshield.rotation.x = 0.35;
+    // کاپوت با شیب ملایم
+    const hood = new THREE.Mesh(new THREE.BoxGeometry(2.02, 0.16, 1.35), paintM);
+    hood.position.set(0, 0.97, 1.5);
+    hood.rotation.x = -0.07;
+    hood.castShadow = true;
+    carMesh.add(hood);
+
+    // صندوق عقب
+    const trunkLid = new THREE.Mesh(new THREE.BoxGeometry(2.02, 0.18, 1.1), paintM);
+    trunkLid.position.set(0, 0.99, -1.72);
+    trunkLid.castShadow = true;
+    carMesh.add(trunkLid);
+
+    // ─── کابین + سقف ───
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.82, 0.56, 2.25), paintDk);
+    cabin.position.set(0, 1.32, -0.12);
+    cabin.castShadow = true;
+    carMesh.add(cabin);
+
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(1.68, 0.08, 1.95), paintM);
+    roof.position.set(0, 1.63, -0.12);
+    roof.castShadow = true;
+    carMesh.add(roof);
+
+    // ─── شیشه‌ها ───
+    const windshield = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.62, 0.07), glassM);
+    windshield.position.set(0, 1.3, 1.03);
+    windshield.rotation.x = 0.42;
     carMesh.add(windshield);
 
-    // شیشه عقب
-    const rearGlass = new THREE.Mesh(
-      new THREE.BoxGeometry(1.6, 0.5, 0.08),
-      new THREE.MeshPhongMaterial({ color: 0x93c5fd, transparent: true, opacity: 0.45, shininess: 120 })
-    );
-    rearGlass.position.set(0, 1.22, -1.32);
-    rearGlass.rotation.x = -0.35;
+    const rearGlass = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.55, 0.07), glassM);
+    rearGlass.position.set(0, 1.31, -1.28);
+    rearGlass.rotation.x = -0.48;
     carMesh.add(rearGlass);
 
-    // چرخ‌ها (4 تا)
-    const wheelGeo = new THREE.CylinderGeometry(0.38, 0.38, 0.28, 14);
-    const wheelMat = new THREE.MeshPhongMaterial({ color: 0x1a1a1a, shininess: 20 });
-    const rimMat  = new THREE.MeshPhongMaterial({ color: 0xd1d5db, shininess: 80 });
+    // شیشه‌های کناری (جلو و عقب هر طرف)
+    [-1, 1].forEach(s => {
+      [[0.55, 0.78], [-0.82, 0.72]].forEach(([wz, ww]) => {
+        const sw = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.38, ww), glassM);
+        sw.position.set(s * 0.92, 1.34, wz);
+        carMesh.add(sw);
+      });
+      // ستون B وسط
+      const bPillar = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.52, 0.09), trimM);
+      bPillar.position.set(s * 0.92, 1.32, -0.12);
+      carMesh.add(bPillar);
+    });
 
+    // خط شکست بدنه (character line)
+    [-1, 1].forEach(s => {
+      const line = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.04, 4.2), trimM);
+      line.position.set(s * 1.076, 0.86, 0);
+      carMesh.add(line);
+    });
+
+    // ─── سپرها + جلوپنجره ───
+    const bumperF = new THREE.Mesh(new THREE.BoxGeometry(2.24, 0.26, 0.32), trimM);
+    bumperF.position.set(0, 0.5, 2.36);
+    bumperF.castShadow = true;
+    carMesh.add(bumperF);
+
+    const bumperR = new THREE.Mesh(new THREE.BoxGeometry(2.24, 0.26, 0.32), trimM);
+    bumperR.position.set(0, 0.5, -2.36);
+    bumperR.castShadow = true;
+    carMesh.add(bumperR);
+
+    // جلوپنجره با پره‌های کروم
+    const grille = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.28, 0.07), trimM);
+    grille.position.set(0, 0.78, 2.33);
+    carMesh.add(grille);
+    for (let i = 0; i < 4; i++) {
+      const slat = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.03, 0.02), chromeM);
+      slat.position.set(0, 0.68 + i * 0.07, 2.37);
+      carMesh.add(slat);
+    }
+
+    // ─── چراغ‌ها ───
+    const headM = new THREE.MeshPhongMaterial({ color: 0xfef9c3, emissive: 0xfde047, emissiveIntensity: 0.75, shininess: 100 });
+    [-0.74, 0.74].forEach(x => {
+      const hl = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.17, 0.09), headM);
+      hl.position.set(x, 0.83, 2.33);
+      carMesh.add(hl);
+      // مه‌شکن گرد
+      const fog = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.04, 10),
+        new THREE.MeshPhongMaterial({ color: 0xfff7ed, emissive: 0xfef3c7, emissiveIntensity: 0.4 }));
+      fog.rotation.x = Math.PI / 2;
+      fog.position.set(x, 0.44, 2.42);
+      carMesh.add(fog);
+    });
+
+    // نوار چراغ عقب سرتاسری قرمز + دنده معکوس
+    const tailStrip = new THREE.Mesh(new THREE.BoxGeometry(1.85, 0.13, 0.07),
+      new THREE.MeshPhongMaterial({ color: 0x7f1d1d, emissive: 0xdc2626, emissiveIntensity: 0.65 }));
+    tailStrip.position.set(0, 0.88, -2.34);
+    carMesh.add(tailStrip);
+    const reverse = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.09, 0.05),
+      new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.3 }));
+    reverse.position.set(0, 0.88, -2.36);
+    carMesh.add(reverse);
+
+    // ─── آینه‌های جانبی ───
+    [-1, 1].forEach(s => {
+      const stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.14, 6), trimM);
+      stalk.rotation.z = Math.PI / 2;
+      stalk.position.set(s * 1.0, 1.42, 0.72);
+      carMesh.add(stalk);
+      const mirror = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.11, 0.05), trimM);
+      mirror.position.set(s * 1.1, 1.43, 0.72);
+      carMesh.add(mirror);
+      const glassBit = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.08, 0.04), chromeM);
+      glassBit.position.set(s * 1.19, 1.43, 0.72);
+      carMesh.add(glassBit);
+    });
+
+    // اگزوز دوقلو + پلاک
+    [-0.62, 0.62].forEach(x => {
+      const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.22, 10), chromeM);
+      pipe.rotation.x = Math.PI / 2;
+      pipe.position.set(x, 0.34, -2.45);
+      carMesh.add(pipe);
+    });
+    const plateF = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.14, 0.03),
+      new THREE.MeshBasicMaterial({ color: 0xf5f5f4 }));
+    plateF.position.set(0, 0.5, 2.53);
+    carMesh.add(plateF);
+    const plateR = plateF.clone();
+    plateR.position.z = -2.53;
+    carMesh.add(plateR);
+
+    // آنتن روی سقف عقب
+    const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.012, 0.45, 4), trimM);
+    antenna.position.set(-0.6, 1.88, -0.95);
+    antenna.rotation.z = 0.12;
+    carMesh.add(antenna);
+
+    // ─── چرخ‌ها: لاستیک + رینگ حلقه‌ای + دیسک + توپی ───
+    const wheels = [];
     const wheelPos = [
-      { x:  1.2, z:  1.5 },  // جلو-راست
-      { x: -1.2, z:  1.5 },  // جلو-چپ
-      { x:  1.2, z: -1.5 },  // عقب-راست
-      { x: -1.2, z: -1.5 },  // عقب-چپ
+      { x:  1.05, z:  1.52, front: true },
+      { x: -1.05, z:  1.52, front: true },
+      { x:  1.05, z: -1.52, front: false },
+      { x: -1.05, z: -1.52, front: false },
     ];
+    // قوس چرخ تیره روی بدنه (well)
     wheelPos.forEach(wp => {
-      const wheelGroup = new THREE.Group();
+      const well = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.66, 1.0), tireM);
+      well.position.set(wp.x > 0 ? 1.06 : -1.06, 0.66, wp.z);
+      carMesh.add(well);
+    });
+    wheelPos.forEach(wp => {
+      const wg = new THREE.Group();
+      wg.position.set(wp.x, 0.38, wp.z);
+      wg.userData.front = wp.front;
 
-      const tire = new THREE.Mesh(wheelGeo, wheelMat);
+      const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.26, 20), tireM);
       tire.rotation.z = Math.PI / 2;
       tire.castShadow = true;
-      wheelGroup.add(tire);
+      wg.add(tire);
 
-      // رینگ
-      const rim = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.22, 0.22, 0.3, 8),
-        rimMat
-      );
-      rim.rotation.z = Math.PI / 2;
-      wheelGroup.add(rim);
+      // حلقه رینگ کروم
+      const rimRing = new THREE.Mesh(new THREE.TorusGeometry(0.21, 0.035, 8, 18), chromeM);
+      rimRing.rotation.y = Math.PI / 2;
+      wg.add(rimRing);
 
-      wheelGroup.position.set(wp.x, 0.38, wp.z);
-      carMesh.add(wheelGroup);
+      // دیسک داخلی تیره
+      const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.27, 14),
+        new THREE.MeshPhongMaterial({ color: 0x374151 }));
+      disc.rotation.z = Math.PI / 2;
+      wg.add(disc);
+
+      // پره‌ها — ۵ تا
+      for (let i = 0; i < 5; i++) {
+        const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.29, 0.05, 0.045), chromeM);
+        spoke.rotation.x = (i / 5) * Math.PI * 2;
+        wg.add(spoke);
+      }
+
+      // توپ مرکز
+      const hubCap = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), chromeM);
+      hubCap.position.x = wp.x > 0 ? 0.1 : -0.1;
+      wg.add(hubCap);
+
+      carMesh.add(wg);
+      wheels.push(wg);
     });
 
-    // چراغ جلو (زرد)
-    const headlightMat = new THREE.MeshPhongMaterial({ color: 0xfef08a, emissive: 0xfde047, emissiveIntensity: 0.6 });
-    [-0.65, 0.65].forEach(xOff => {
-      const hl = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.2, 0.08), headlightMat);
-      hl.position.set(xOff, 0.72, 2.3);
-      carMesh.add(hl);
-    });
-
-    // چراغ عقب (قرمز)
-    const taillightMat = new THREE.MeshPhongMaterial({ color: 0xfca5a5, emissive: 0xef4444, emissiveIntensity: 0.5 });
-    [-0.65, 0.65].forEach(xOff => {
-      const tl = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.2, 0.08), taillightMat);
-      tl.position.set(xOff, 0.72, -2.31);
-      carMesh.add(tl);
-    });
+    carMesh.userData.wheels = wheels;
 
     // تابلوی "F برای سوار شدن" روی ماشین
     const carSprite = _makeTextSprite('🚗  F  سوار شو', '#fbbf24');
@@ -925,38 +1037,9 @@ const CityWorld = (function () {
   }
 
   // ─────────────────────────────────────────────
-  // محیط پویا — چرخه شب/روز، پرنده‌ها، فواره
+  // محیط پویا — پرنده‌ها و فواره (همیشه روز)
   // ─────────────────────────────────────────────
   function _updateEnvironment(delta) {
-    dayTime = (dayTime + delta / DAY_LENGTH) % 1;
-    const sunElev = Math.sin(dayTime * Math.PI * 2);   // ارتفاع خورشید
-    // روز طولانی‌تر: آستانه پایین‌تر یعنی خورشید دیرتر غروب و زودتر طلوع می‌کنه
-    const daylight = Math.min(1, Math.max(0, (sunElev + 0.35) / 1.25));
-    const dusk = Math.max(0, 1 - Math.abs(sunElev) * 3.2); // طلوع/غروب طلایی
-
-    if (sunLight) {
-      sunLight.intensity = 0.12 + daylight * 1.15;
-      sunLight.color.setRGB(1, 0.96 - dusk * 0.18, 0.88 - dusk * 0.4);
-      sunLight.position.set(
-        Math.cos(dayTime * Math.PI * 2) * 140,
-        Math.max(10, sunElev * 140),
-        -60
-      );
-    }
-    if (ambientLight) ambientLight.intensity = 0.15 + daylight * 0.38;
-
-    if (scene.background && scene.background.isColor) {
-      scene.background.copy(SKY_NIGHT).lerp(SKY_DAY, daylight);
-    }
-    if (scene.fog && scene.fog.color) {
-      scene.fog.color.copy(FOG_NIGHT).lerp(FOG_DAY, daylight);
-    }
-
-    // چراغ خیابان و پنجره‌ها شب روشن می‌شن
-    const night = 1 - daylight;
-    for (const l of lampLights) l.intensity = night * 0.7;
-    if (windowMat) windowMat.emissiveIntensity = 0.15 + night * 0.9;
-
     // پرنده‌ها
     const now = performance.now() * 0.001;
     birdFlocks.forEach(flock => {
@@ -1419,14 +1502,16 @@ const CityWorld = (function () {
       carMesh.position.x = Math.max(-185, Math.min(185, carMesh.position.x));
       carMesh.position.z = Math.max(-185, Math.min(185, carMesh.position.z));
 
-      // انیمیشن چرخش چرخ‌ها
-      const wheelTurn = carVelocity * delta * 2.5;
-      carMesh.children.forEach((child, idx) => {
-        // ایندکس‌های ۲ تا ۵ = چرخ‌ها
-        if (idx >= 2 && idx <= 5 && child.children.length > 0) {
-          child.children[0].rotation.x += wheelTurn;
-        }
-      });
+      // چرخش لاستیک‌ها + فرمان چرخ‌های جلو
+      const wheelTurn = carVelocity * delta * 2.2;
+      const wheels = carMesh.userData.wheels || [];
+      wheels.forEach(w => { if (w.children[0]) w.children[0].rotation.x += wheelTurn; });
+
+      const steerIn = ((keys.a || keys.ArrowLeft) ? 1 : 0) - ((keys.d || keys.ArrowRight) ? 1 : 0);
+      carMesh.userData.steer = (carMesh.userData.steer || 0) +
+        (steerIn * 0.38 - (carMesh.userData.steer || 0)) * Math.min(1, delta * 8);
+      if (wheels[0]) wheels[0].rotation.y = carMesh.userData.steer;
+      if (wheels[1]) wheels[1].rotation.y = carMesh.userData.steer;
     }
   }
 
@@ -2753,83 +2838,200 @@ const CityWorld = (function () {
   }
 
   // ─────────────────────────────────────────────
-  // هلی‌کوپتر
+  // هلی‌کوپتر — بدنه واقعی با نورافکن متحرک
   // ─────────────────────────────────────────────
   function _buildHelicopter() {
     helicopter = new THREE.Group();
 
-    // بدنه اصلی
-    const body = new THREE.Mesh(
-      new THREE.BoxGeometry(2.5, 1.2, 5),
-      new THREE.MeshPhongMaterial({ color: 0x2d4a1e, shininess: 60 })
-    );
-    body.castShadow = true;
-    helicopter.add(body);
+    const bodyM  = new THREE.MeshPhongMaterial({ color: 0x3d4f2f, shininess: 70 });
+    const bodyDk = new THREE.MeshPhongMaterial({ color: 0x2c3a22, shininess: 50 });
+    const glassM = new THREE.MeshPhongMaterial({ color: 0x9fd3f5, transparent: true, opacity: 0.5, shininess: 160 });
+    const darkM  = new THREE.MeshPhongMaterial({ color: 0x1a1a2e });
+    const steelM = new THREE.MeshPhongMaterial({ color: 0x9ca3af, shininess: 120 });
 
-    // کابین (شیشه)
-    const cockpit = new THREE.Mesh(
-      new THREE.SphereGeometry(0.9, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2),
-      new THREE.MeshPhongMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.6, shininess: 150 })
-    );
-    cockpit.position.set(0, 0.2, 1.8);
-    helicopter.add(cockpit);
+    // ─── بدنه اصلی بیضی کشیده ───
+    const hull = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 14), bodyM);
+    hull.scale.set(1.12, 0.88, 2.25);
+    hull.castShadow = true;
+    helicopter.add(hull);
 
-    // دُم
-    const tail = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.25, 0.1, 4.5, 6),
-      new THREE.MeshPhongMaterial({ color: 0x2d4a1e })
-    );
-    tail.rotation.x = Math.PI / 2;
-    tail.position.set(0, 0.1, -3.8);
-    helicopter.add(tail);
+    // کف صاف زیر بدنه
+    const belly = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.3, 3.6), bodyDk);
+    belly.position.y = -0.62;
+    belly.castShadow = true;
+    helicopter.add(belly);
 
-    // روتور اصلی (group برای چرخش)
+    // ─── کابین شیشه‌ای حبابی جلو + فریم‌ها ───
+    const canopy = new THREE.Mesh(
+      new THREE.SphereGeometry(0.92, 16, 12, 0, Math.PI * 2, 0, Math.PI / 1.7),
+      glassM
+    );
+    canopy.scale.set(0.98, 0.85, 1.15);
+    canopy.position.set(0, 0.28, 1.15);
+    helicopter.add(canopy);
+
+    // فریم شیشه‌ها
+    [-0.5, 0, 0.5].forEach((fx, i) => {
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.62, 0.06), bodyDk);
+      frame.position.set(fx * 0.95, 0.42, 1.72 - i * 0.28);
+      frame.rotation.x = -0.35;
+      helicopter.add(frame);
+    });
+
+    // پنجره‌های گرد کناری
+    [-1, 1].forEach(s => {
+      const win = new THREE.Mesh(new THREE.CircleGeometry(0.26, 14), glassM);
+      win.position.set(s * 1.08, 0.22, 0.35);
+      win.rotation.y = s * Math.PI / 2;
+      helicopter.add(win);
+    });
+
+    // درهای کنار + دستگیره
+    [-1, 1].forEach(s => {
+      const doorLine = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.75, 0.03), darkM);
+      doorLine.position.set(s * 1.11, -0.05, 0.85);
+      helicopter.add(doorLine);
+      const handle = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.04, 0.16), steelM);
+      handle.position.set(s * 1.13, 0.05, 0.45);
+      helicopter.add(handle);
+    });
+
+    // ─── موتور و اگزوز ───
+    const engine = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.5, 1.7), bodyDk);
+    engine.position.set(0, 0.78, -0.5);
+    engine.castShadow = true;
+    helicopter.add(engine);
+    const intake = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.1, 10), darkM);
+    intake.rotation.x = Math.PI / 2;
+    intake.position.set(-0.35, 0.82, 0.4);
+    helicopter.add(intake);
+    [-0.45, 0.45].forEach(x => {
+      const ex = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.45, 8), steelM);
+      ex.position.set(x, 0.68, -1.45);
+      ex.rotation.x = 0.5;
+      helicopter.add(ex);
+    });
+
+    // ─── دم بوم + فین + استابیلایزر ───
+    const boom = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.32, 4.3, 10), bodyM);
+    boom.rotation.x = Math.PI / 2;
+    boom.position.set(0, 0.12, -3.65);
+    boom.castShadow = true;
+    helicopter.add(boom);
+
+    const finV = new THREE.Mesh(new THREE.BoxGeometry(0.07, 1.25, 0.85), bodyM);
+    finV.position.set(0, 0.78, -5.35);
+    finV.rotation.x = 0.25;
+    finV.castShadow = true;
+    helicopter.add(finV);
+
+    const hStabL = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.06, 0.45), bodyM);
+    hStabL.position.set(0, 0.38, -4.95);
+    helicopter.add(hStabL);
+
+    // ─── دکل روتور اصلی ───
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.55, 8), darkM);
+    mast.position.y = 1.15;
+    helicopter.add(mast);
+
+    // ─── روتور اصلی (نام حفظ شده) ───
     const mainRotorGroup = new THREE.Group();
     mainRotorGroup.name = 'mainRotor';
-    mainRotorGroup.position.set(0, 0.85, 0);
+    mainRotorGroup.position.y = 1.48;
+
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.3, 0.2, 10), darkM);
+    mainRotorGroup.add(hub);
     for (let i = 0; i < 4; i++) {
-      const blade = new THREE.Mesh(
-        new THREE.BoxGeometry(5.5, 0.08, 0.35),
-        new THREE.MeshPhongMaterial({ color: 0x1a1a2e })
-      );
-      blade.rotation.y = (i / 4) * Math.PI * 2;
+      const armPivot = new THREE.Group();
+      armPivot.rotation.y = (i / 4) * Math.PI * 2;
+
+      const blade = new THREE.Mesh(new THREE.BoxGeometry(5.4, 0.07, 0.34), darkM);
+      blade.position.x = 2.85;   // از توپ به بیرون
+      blade.rotation.z = 0.04;   // کونینگ ملایم رو به بالا
       blade.castShadow = true;
-      mainRotorGroup.add(blade);
+      armPivot.add(blade);
+
+      const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.3, 6), steelM);
+      grip.rotation.z = Math.PI / 2;
+      grip.position.x = 0.35;
+      armPivot.add(grip);
+
+      mainRotorGroup.add(armPivot);
     }
     helicopter.add(mainRotorGroup);
 
-    // روتور دُم
+    // ─── روتور دُم (۳ پرده) ───
     const tailRotorGroup = new THREE.Group();
     tailRotorGroup.name = 'tailRotor';
-    tailRotorGroup.position.set(0.45, 0.3, -5.8);
-    for (let i = 0; i < 2; i++) {
-      const blade = new THREE.Mesh(
-        new THREE.BoxGeometry(0.08, 1.2, 0.18),
-        new THREE.MeshPhongMaterial({ color: 0x1a1a2e })
-      );
-      blade.rotation.x = (i / 2) * Math.PI;
-      tailRotorGroup.add(blade);
+    tailRotorGroup.position.set(0.24, 0.85, -5.45);
+    for (let i = 0; i < 3; i++) {
+      const pivot = new THREE.Group();
+      pivot.rotation.x = (i / 3) * Math.PI * 2;
+      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.35, 0.13), darkM);
+      blade.position.y = 0.68;
+      pivot.add(blade);
+      tailRotorGroup.add(pivot);
     }
+    const trHub = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), steelM);
+    tailRotorGroup.add(trHub);
     helicopter.add(tailRotorGroup);
 
-    // پایه‌های فرود
-    [[-0.9, 0.9]].forEach(([z1, z2]) => {
-      [-1, 1].forEach(x => {
-        const skid = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.07, 0.07, 2.2, 6),
-          new THREE.MeshPhongMaterial({ color: 0x333 })
-        );
-        skid.rotation.z = Math.PI / 2;
-        skid.position.set(x * 1.1, -0.7, (z1 + z2) / 2);
-        helicopter.add(skid);
+    // ─── اسکیدهای فرود با نوخاسته جلو ───
+    [-1, 1].forEach(s => {
+      const skid = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 3.1, 8), darkM);
+      skid.rotation.x = Math.PI / 2;
+      skid.position.set(s * 0.95, -1.02, 0);
+      skid.castShadow = true;
+      helicopter.add(skid);
+
+      const tipF = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.035, 0.5, 8), darkM);
+      tipF.rotation.x = -Math.PI / 3.2;
+      tipF.position.set(s * 0.95, -0.86, 1.62);
+      helicopter.add(tipF);
+
+      // استرات‌های اتصال اسکید به بدنه
+      [[-1.02, 1.0], [1.02, 1.0], [-1.02, -1.1], [1.02, -1.1]].forEach(([sx, sz]) => {
+        const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.78, 6), steelM);
+        strut.position.set(s * Math.abs(sx), -0.64, sz);
+        strut.rotation.z = s * 0.3;   // شیب به بیرون
+        strut.castShadow = true;
+        helicopter.add(strut);
       });
     });
 
-    // نور چشمک‌زن
+    // ─── نورافکن جلو با پرتو مخروطی (نام searchBeam) ───
+    const spotHousing = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.19, 0.18, 10), darkM);
+    spotHousing.position.set(0, -0.52, 1.75);
+    spotHousing.rotation.x = 1.1;
+    helicopter.add(spotHousing);
+
+    const beamPivot = new THREE.Group();
+    beamPivot.name = 'searchBeam';
+    beamPivot.position.set(0, -0.52, 1.75);
+    const beam = new THREE.Mesh(
+      new THREE.ConeGeometry(0.55, 3.4, 12, 1, true),
+      new THREE.MeshBasicMaterial({ color: 0xfff8d8, transparent: true, opacity: 0.1, side: THREE.DoubleSide })
+    );
+    beam.position.y = -1.7; // مخروط رو به پایین-جلو
+    beam.rotation.x = Math.PI;
+    beamPivot.add(beam);
+    beamPivot.rotation.x = 0.55;
+    helicopter.add(beamPivot);
+
+    // چراغ چشمک‌زن (نام heliLight حفظ شده)
     const heliLight = new THREE.PointLight(0xff0000, 1.5, 8);
     heliLight.name = 'heliLight';
-    heliLight.position.set(0, -0.5, 2.5);
+    heliLight.position.set(0, -0.3, 2.3);
     helicopter.add(heliLight);
+    const beaconMesh = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 8),
+      new THREE.MeshBasicMaterial({ color: 0xff2222 }));
+    beaconMesh.position.set(0, 1.02, -1.2);
+    helicopter.add(beaconMesh);
+
+    // آنتن زیر دم
+    const antWire = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.5, 4), darkM);
+    antWire.position.set(0, -0.35, -3.2);
+    helicopter.add(antWire);
 
     // برچسب
     const heliLabel = _makeTextSprite('🚁 هلی‌کوپتر', '#60a5fa');
@@ -2887,9 +3089,16 @@ const CityWorld = (function () {
     const tr = helicopter.getObjectByName('tailRotor');
     if (tr) tr.rotation.x += delta * rotorSpeed * 2.5;
 
-    // چشمک نور
+    // چشمک نور قرمز
     const hl = helicopter.getObjectByName('heliLight');
     if (hl) hl.intensity = (rotorSpeed > 2 && Math.sin(Date.now() * 0.01) > 0) ? 2 : 0;
+
+    // نورافکن جست‌وجو با چرخش خودکار
+    const beamPivot = helicopter.getObjectByName('searchBeam');
+    if (beamPivot) {
+      beamPivot.rotation.x = 0.55 + Math.sin(Date.now() * 0.0012) * 0.22;
+      beamPivot.rotation.y = Math.sin(Date.now() * 0.0007) * 0.45;
+    }
 
     const px = HELI_PAD_POS.x, pz = HELI_PAD_POS.z;
 
@@ -3369,71 +3578,160 @@ const CityWorld = (function () {
   }
 
   // ─────────────────────────────────────────────
-  // تانک
+  // تانک نبرد — زره شیب‌دار، چرخ‌های متحرک، برجک کامل
   // ─────────────────────────────────────────────
   function _buildTank() {
     tank = new THREE.Group();
+    tank.userData.wheels = [];
 
-    // بدنه اصلی
-    const hull = new THREE.Mesh(
-      new THREE.BoxGeometry(3.8, 1.0, 5.5),
-      new THREE.MeshPhongMaterial({ color: 0x556b2f, shininess: 20 })
-    );
-    hull.position.y = 0.8;
+    const hullM   = new THREE.MeshPhongMaterial({ color: 0x4d5c2e, shininess: 30 });
+    const hullDk  = new THREE.MeshPhongMaterial({ color: 0x3a4722, shininess: 25 });
+    const trackM  = new THREE.MeshPhongMaterial({ color: 0x17181c, shininess: 10 });
+    const steelM  = new THREE.MeshPhongMaterial({ color: 0x6b7280, shininess: 110 });
+    const wheelM  = new THREE.MeshPhongMaterial({ color: 0x22252b, shininess: 20 });
+
+    // ─── شاسی اصلی ───
+    const hull = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.85, 5.4), hullM);
+    hull.position.y = 0.98;
     hull.castShadow = true;
     tank.add(hull);
 
-    // برج (turret)
-    const turretBase = new THREE.Mesh(
-      new THREE.CylinderGeometry(1.3, 1.5, 0.7, 8),
-      new THREE.MeshPhongMaterial({ color: 0x4a5e2a })
-    );
-    turretBase.position.y = 1.65;
-    turretBase.castShadow = true;
-    tank.add(turretBase);
+    // زره شیب‌دار جلو (glacis)
+    const glacis = new THREE.Mesh(new THREE.BoxGeometry(3.45, 0.14, 1.9), hullM);
+    glacis.position.set(0, 1.22, 2.55);
+    glacis.rotation.x = -0.55;
+    glacis.castShadow = true;
+    tank.add(glacis);
 
-    // گنبد برج
-    const turretDome = new THREE.Mesh(
-      new THREE.BoxGeometry(2.2, 0.65, 2.8),
-      new THREE.MeshPhongMaterial({ color: 0x4a5e2a })
-    );
-    turretDome.position.y = 2.15;
-    turretDome.name = 'turretDome';
-    tank.add(turretDome);
+    // زره عقب
+    const rearPlate = new THREE.Mesh(new THREE.BoxGeometry(3.45, 0.12, 1.3), hullM);
+    rearPlate.position.set(0, 1.05, -2.75);
+    rearPlate.rotation.x = 0.35;
+    tank.add(rearPlate);
 
-    // لوله توپ
-    const barrel = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.12, 0.15, 4.5, 8),
-      new THREE.MeshPhongMaterial({ color: 0x2d3a18 })
-    );
-    barrel.rotation.x = Math.PI / 2;
-    barrel.position.set(0, 0, 2.5);
-    barrel.name = 'barrel';
-    turretDome.add(barrel);
+    // جعبه تجهیزات عقب با بندها
+    const stowBox = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.5, 0.95), hullDk);
+    stowBox.position.set(-0.6, 1.62, -2.15);
+    stowBox.castShadow = true;
+    tank.add(stowBox);
+    [0, 1].forEach(i => {
+      const strap = new THREE.Mesh(new THREE.BoxGeometry(1.54, 0.06, 0.08), trackM);
+      strap.position.set(-0.6, 1.62, -2.42 + i * 0.5);
+      tank.add(strap);
+    });
 
-    // چرخ‌ها و زنجیر
-    const trackMat = new THREE.MeshPhongMaterial({ color: 0x1a1a1a });
-    const wheelMat = new THREE.MeshPhongMaterial({ color: 0x333 });
-    [-1.9, 1.9].forEach(x => {
-      // زنجیر (track)
-      const track = new THREE.Mesh(
-        new THREE.BoxGeometry(0.45, 0.7, 5.5),
-        trackMat
-      );
-      track.position.set(x, 0.45, 0);
-      track.castShadow = true;
-      tank.add(track);
-      // چرخ‌ها (۴ تا هر طرف)
-      for (let i = -2; i <= 2; i++) {
-        const wheel = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.42, 0.42, 0.3, 10),
-          wheelMat
-        );
-        wheel.rotation.z = Math.PI / 2;
-        wheel.position.set(x, 0.42, i * 1.2);
-        tank.add(wheel);
+    // ریل‌های جانبی (side skirts)
+    [-1, 1].forEach(s => {
+      const skirt = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.6, 5.2), hullDk);
+      skirt.position.set(s * 1.86, 1.18, 0);
+      skirt.castShadow = true;
+      tank.add(skirt);
+    });
+
+    // ─── زنجیرها با انتهای گرد ───
+    [-1, 1].forEach(s => {
+      const trackMain = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.72, 4.8), trackM);
+      trackMain.position.set(s * 1.93, 0.56, 0);
+      trackMain.castShadow = true;
+      tank.add(trackMain);
+
+      [[2.4], [-2.4]].forEach(([tz]) => {
+        const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.37, 0.37, 0.55, 14), trackM);
+        cap.rotation.z = Math.PI / 2;
+        cap.position.set(s * 1.93, 0.56, tz);
+        tank.add(cap);
+      });
+
+      // چرخ‌های حرکت بیرون‌زده — قابل چرخش
+      for (let i = 0; i < 5; i++) {
+        const w = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.16, 14), wheelM);
+        w.rotation.z = Math.PI / 2;
+        w.position.set(s * 2.24, 0.5, -1.9 + i * 0.95);
+        w.castShadow = true;
+        tank.add(w);
+        tank.userData.wheels.push(w);
+
+        // توپی چرخ
+        const hubDot = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.18, 8), steelM);
+        hubDot.rotation.z = Math.PI / 2;
+        hubDot.position.copy(w.position);
+        tank.add(hubDot);
       }
     });
+
+    // ─── برجک ───
+    const turretDome = new THREE.Group();
+    turretDome.name = 'turretDome';
+    turretDome.position.y = 1.62;
+
+    const tBase = new THREE.Mesh(new THREE.CylinderGeometry(1.28, 1.48, 0.55, 14), hullM);
+    tBase.position.y = 0.12;
+    tBase.castShadow = true;
+    turretDome.add(tBase);
+
+    // پیشانی شیب‌دار برجک
+    const wedge = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.55, 1.15), hullM);
+    wedge.position.set(0, 0.42, 0.6);
+    wedge.rotation.x = 0.16;
+    wedge.castShadow = true;
+    turretDome.add(wedge);
+
+    // منتل (محل لوله)
+    const mantlet = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.46, 0.32), hullDk);
+    mantlet.position.set(0, 0.42, 1.22);
+    turretDome.add(mantlet);
+
+    // لوله توپ
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.145, 4.4, 12), hullDk);
+    barrel.rotation.x = Math.PI / 2;
+    barrel.position.set(0, 0.44, 3.15);
+    barrel.name = 'barrel';
+    barrel.castShadow = true;
+    turretDome.add(barrel);
+
+    // ترمز دهانه (muzzle brake) دوتکه
+    [4.85, 5.1].forEach((bz, i) => {
+      const brake = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.36, i === 0 ? 0.16 : 0.22), steelM);
+      brake.position.set(0, 0.44, bz - 1.65);
+      turretDome.add(brake);
+    });
+
+    // مسلسل هم‌محور
+    const coax = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.95, 6), steelM);
+    coax.rotation.x = Math.PI / 2;
+    coax.position.set(0.42, 0.38, 1.55);
+    turretDome.add(coax);
+
+    // گنبد فرمانده + درپوش
+    const cupola = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.38, 0.28, 10), hullM);
+    cupola.position.set(-0.35, 0.68, -0.35);
+    turretDome.add(cupola);
+    const hatch = new THREE.Mesh(new THREE.CylinderGeometry(0.31, 0.31, 0.06, 10), hullDk);
+    hatch.position.set(-0.35, 0.84, -0.35);
+    hatch.rotation.z = 0.18; // کمی باز
+    turretDome.add(hatch);
+
+    // پرژکتورهای دودزا دو طرف
+    [-1, 1].forEach(s => {
+      for (let i = 0; i < 3; i++) {
+        const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.22, 6), steelM);
+        tube.position.set(s * 1.05, 0.3, 0.85 - i * 0.18);
+        tube.rotation.z = s * 0.9;
+        turretDome.add(tube);
+      }
+    });
+
+    // آنتن‌ها
+    [[-0.9, -0.7, 0.15], [0.85, -0.75, -0.1]].forEach(([ax, az, tilt]) => {
+      const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.02, 1.0, 4), darkAntenna());
+      ant.position.set(ax, 0.95, az);
+      ant.rotation.x = tilt;
+      turretDome.add(ant);
+    });
+
+    function darkAntenna() { return new THREE.MeshPhongMaterial({ color: 0x111111 }); }
+
+    tank.add(turretDome);
 
     // برچسب
     const tankLabel = _makeTextSprite('🪖  T  سوار شو', '#fbbf24');
@@ -3474,6 +3772,11 @@ const CityWorld = (function () {
       } else { tankVelocity *= -0.3; }
       tank.position.x = Math.max(-185, Math.min(185, tank.position.x));
       tank.position.z = Math.max(-185, Math.min(185, tank.position.z));
+
+      // چرخش چرخ‌های حرکت با سرعت واقعی
+      const tw = tank.userData.wheels || [];
+      const spin = (tankVelocity > 0 ? -1 : 1) * Math.abs(tankVelocity) * delta * 2.6;
+      tw.forEach(w => { w.rotation.x += spin; });
     }
 
     // برجک تانک همیشه نرم دنبال جهت دوربین
@@ -3814,11 +4117,11 @@ const CityWorld = (function () {
     }
     scene = null; camera = null; renderer = null;
     character = null; carMesh = null; tank = null; helicopter = null;
-    weapon = null; muzzleFlash = null; fountainRef = null; sunLight = null; ambientLight = null; windowMat = null;
+    weapon = null; muzzleFlash = null; fountainRef = null;
     buildings = []; labels = []; npcs = [];
     bullets = []; bulletPool = [];
     smokeParticles.length = 0;
-    birdFlocks.length = 0; lampLights.length = 0;
+    birdFlocks.length = 0;
     staticColliders.length = 0;
     nearBuilding = null; nearCar = false; nearTank = false; nearHeli = false;
     nearJet = false; nearNPC = null;
