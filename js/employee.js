@@ -566,53 +566,54 @@ const EmployeeModule = {
         return `
             <div class="space-y-6">
                 <!-- Header -->
-                <div class="flex justify-between items-center">
-                    <h2 class="text-2xl font-bold text-white">
-                        <i class="fas fa-user-graduate text-lime-400 ml-2"></i>
+                <div class="flex flex-wrap gap-3 items-start justify-between">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-user-graduate text-lime-400"></i>
                         مدیریت دانشجویان
                     </h2>
-                    <div class="flex space-x-3 space-x-reverse">
+                    <div class="flex flex-wrap gap-2">
                         <button onclick="employeeModule.showAddStudentModal();" 
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all">
-                            <i class="fas fa-user-plus ml-2"></i>
-                            اضافه کردن دانشجو
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1">
+                            <i class="fas fa-user-plus"></i>
+                            <span class="hidden sm:inline">اضافه کردن دانشجو</span>
+                            <span class="sm:hidden">جدید</span>
                         </button>
                         <button onclick="window._alpineSetPage && window._alpineSetPage('flowchartView')"
-                                class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all inline-flex items-center">
-                            <i class="fas fa-project-diagram ml-2"></i>
-                            فلوچارت
+                                class="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1">
+                            <i class="fas fa-project-diagram"></i>
+                            <span class="hidden sm:inline">فلوچارت</span>
                         </button>
                         <button onclick="employeeModule.showStepsManagementModal();" 
-                                class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-4 py-2 rounded-lg text-sm font-medium transition-all">
-                            <i class="fas fa-tasks ml-2"></i>
-                            مدیریت مراحل
+                                class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1">
+                            <i class="fas fa-tasks"></i>
+                            <span class="hidden sm:inline">مدیریت مراحل</span>
                         </button>
                         <button onclick="window._alpineSetPage && window._alpineSetPage('sheetView')"
-                                class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all inline-flex items-center">
-                            <i class="fas fa-th-list ml-2"></i>
-                            نمای شیت
+                                class="bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1">
+                            <i class="fas fa-th-list"></i>
+                            <span class="hidden sm:inline">نمای شیت</span>
                         </button>
                     </div>
                 </div>
                 
                 <!-- Stats Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="bg-slate-800 rounded-lg p-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-slate-800 rounded-lg p-3">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-gray-400 text-sm">دانشجویان فعال</p>
-                                <p class="text-2xl font-bold text-green-400">${students.filter(s => s.active).length}</p>
+                                <p class="text-gray-400 text-xs">دانشجویان فعال</p>
+                                <p class="text-xl font-bold text-green-400">${students.filter(s => s.active).length}</p>
                             </div>
-                            <i class="fas fa-user-check text-3xl text-green-400"></i>
+                            <i class="fas fa-user-check text-2xl text-green-400 opacity-70"></i>
                         </div>
                     </div>
-                    <div class="bg-slate-800 rounded-lg p-4">
+                    <div class="bg-slate-800 rounded-lg p-3">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-gray-400 text-sm">دانشجویان غیرفعال</p>
-                                <p class="text-2xl font-bold text-gray-400">${students.filter(s => !s.active).length}</p>
+                                <p class="text-gray-400 text-xs">خاتمه یافته</p>
+                                <p class="text-xl font-bold text-gray-400">${students.filter(s => !s.active).length}</p>
                             </div>
-                            <i class="fas fa-user-times text-3xl text-gray-400"></i>
+                            <i class="fas fa-user-times text-2xl text-gray-400 opacity-70"></i>
                         </div>
                     </div>
                 </div>
@@ -811,30 +812,72 @@ const EmployeeModule = {
             educational:  { label: 'فارغ‌التحصیلی', color: 'bg-green-500/20  text-green-400  border-green-500/30'  },
         };
 
-        const rows = students.map(s => {
+        // ── helper مشترک برای هر دانشجو ──────────────────────
+        const _buildRow = (s) => {
             const activePath = this._getStudentActivePath(s);
             const pathInfo   = pathLabels[activePath] || pathLabels.educational;
-
-            // مراحل مسیر فعلی
             let steps = [];
             if (activePath === 'requirements') steps = s.requirementsSteps || (this.getDefaultRequirementsSteps ? this.getDefaultRequirementsSteps() : []);
             else if (activePath === 'defense') steps = s.defenseSteps     || this.getDefaultDefenseSteps2();
             else                               steps = s.educationalSteps  || this.getDefaultEducationalSteps();
-
-            const done = steps.filter(x => x.completed).length;
-            const pct  = steps.length ? Math.round(done / steps.length * 100) : 0;
+            const done    = steps.filter(x => x.completed).length;
+            const pct     = steps.length ? Math.round(done / steps.length * 100) : 0;
             const curStep = steps.find(x => !x.completed);
-
             const barColor = activePath === 'requirements' ? 'bg-orange-500'
-                           : activePath === 'defense'      ? 'bg-blue-500'
-                                                           : 'bg-green-500';
+                           : activePath === 'defense'      ? 'bg-blue-500' : 'bg-green-500';
+            return { s, activePath, pathInfo, pct, curStep, barColor };
+        };
 
+        // ── کارت موبایل (< md) ────────────────────────────────
+        const mobileCards = students.map(s => {
+            const { pathInfo, pct, curStep, barColor } = _buildRow(s);
+            return `
+            <div class="bg-slate-700 rounded-xl p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-lime-600 flex items-center justify-center text-gray-900 font-bold text-sm flex-shrink-0">
+                            ${s.name ? s.name.charAt(0) : 'د'}
+                        </div>
+                        <div>
+                            <div class="font-semibold text-white text-sm">${s.name || '—'}</div>
+                            <div class="text-xs text-gray-400">${s.studentId || ''}</div>
+                        </div>
+                    </div>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${pathInfo.color}">${pathInfo.label}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-gray-400">
+                    <div class="truncate"><i class="fas fa-university ml-1 text-lime-400"></i>${s.university || '—'}</div>
+                    <div class="truncate"><i class="fas fa-book ml-1 text-lime-400"></i>${s.field || '—'}</div>
+                    <div class="truncate"><i class="fas fa-phone ml-1 text-lime-400"></i>${s.phone || '—'}</div>
+                    <div>${s.active
+                        ? `<span class="text-green-400"><i class="fas fa-circle text-xs ml-1"></i>فعال</span>`
+                        : `<span class="text-gray-500"><i class="fas fa-circle text-xs ml-1"></i>خاتمه</span>`
+                    }</div>
+                </div>
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-xs text-gray-400">پیشرفت</span>
+                        <span class="text-xs font-bold text-gray-300">${pct}%</span>
+                    </div>
+                    <div class="w-full bg-slate-600 rounded-full h-1.5 mb-1">
+                        <div class="h-1.5 rounded-full ${barColor}" style="width:${pct}%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 truncate">${curStep ? curStep.name : '✓ تکمیل شده'}</div>
+                </div>
+                <button onclick="employeeModule.editStudentProfile('${s.id}')"
+                    class="w-full bg-lime-600 hover:bg-lime-700 text-gray-900 py-2 rounded-lg text-xs font-semibold transition-all">
+                    <i class="fas fa-edit ml-1"></i>ویرایش پروفایل
+                </button>
+            </div>`;
+        }).join('');
+
+        // ── ردیف جدول دسکتاپ (>= md) ────────────────────────
+        const tableRows = students.map(s => {
+            const { pathInfo, pct, curStep, barColor } = _buildRow(s);
             const statusBadge = s.active
                 ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-500/20 text-green-400 border border-green-500/30"><span class="w-1.5 h-1.5 rounded-full bg-green-400 inline-block"></span>فعال</span>`
                 : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-500/20 text-gray-400 border border-gray-500/30"><span class="w-1.5 h-1.5 rounded-full bg-gray-400 inline-block"></span>خاتمه</span>`;
-
             const pathBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${pathInfo.color}">${pathInfo.label}</span>`;
-
             return `
             <tr class="border-b border-slate-700 hover:bg-slate-700/50 transition-colors">
                 <td class="px-4 py-3">
@@ -850,7 +893,7 @@ const EmployeeModule = {
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-300">${s.university || '—'}</td>
                 <td class="px-4 py-3 text-sm text-gray-300">${s.field || '—'}</td>
-                <td class="px-4 py-3 text-sm text-gray-300 hidden md:table-cell">${s.phone || '—'}</td>
+                <td class="px-4 py-3 text-sm text-gray-300">${s.phone || '—'}</td>
                 <td class="px-4 py-3">${pathBadge}</td>
                 <td class="px-4 py-3">
                     <div class="min-w-[110px]">
@@ -874,21 +917,26 @@ const EmployeeModule = {
         }).join('');
 
         return `
-        <div class="overflow-x-auto rounded-lg">
+        <!-- موبایل: کارت -->
+        <div class="grid grid-cols-1 gap-3 md:hidden">
+            ${mobileCards}
+        </div>
+        <!-- دسکتاپ: جدول -->
+        <div class="hidden md:block overflow-x-auto rounded-lg">
             <table class="w-full text-right">
                 <thead>
                     <tr class="bg-slate-900/60 text-gray-400 text-xs">
                         <th class="px-4 py-3 text-right font-semibold">نام دانشجو</th>
                         <th class="px-4 py-3 text-right font-semibold">دانشگاه</th>
                         <th class="px-4 py-3 text-right font-semibold">رشته</th>
-                        <th class="px-4 py-3 text-right font-semibold hidden md:table-cell">تماس</th>
+                        <th class="px-4 py-3 text-right font-semibold">تماس</th>
                         <th class="px-4 py-3 text-right font-semibold">مسیر</th>
                         <th class="px-4 py-3 text-right font-semibold">پیشرفت</th>
                         <th class="px-4 py-3 text-center font-semibold">وضعیت</th>
                         <th class="px-4 py-3 text-center font-semibold">عملیات</th>
                     </tr>
                 </thead>
-                <tbody>${rows}</tbody>
+                <tbody>${tableRows}</tbody>
             </table>
         </div>`;
     },
