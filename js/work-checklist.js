@@ -40,6 +40,7 @@ const WorkChecklistModule = {
             return;
         }
         console.log('✅ [WC] calling render...');
+        await this._syncInboxFromSupabase();
         await this.render();
         console.log('✅ [WC] render done');
         this._initializing = false;
@@ -1450,7 +1451,7 @@ const WorkChecklistModule = {
             : 'اشتراک‌گذاری لغو شد');
     },
 
-    // ─── Share record helpers (localStorage) ─────────────────────
+    // ─── Share record helpers (localStorage + Supabase) ──────────
     // کلید: wc_shares_{ownerId}   → { 'category:catId': [userId,...], 'item:itemId': [...] }
     _getShareRecord(type, id) {
         const map = this._localGet('wc_shares_' + this.currentUser.id) || {};
@@ -1458,13 +1459,34 @@ const WorkChecklistModule = {
     },
 
     _addShareRecord(type, id, targetUserId, meta) {
+        // ── localStorage ──
         const map  = this._localGet('wc_shares_' + this.currentUser.id) || {};
         const key  = type + ':' + id;
         if (!map[key]) map[key] = [];
         if (!map[key].includes(targetUserId)) map[key].push(targetUserId);
         this._localSet('wc_shares_' + this.currentUser.id, map);
 
-        // ثبت در "inbox" مخاطب
+        // ── Supabase ──
+        if (this.supabase) {
+            this.supabase
+                .from('checklist_shares')
+                .upsert({
+                    owner_id:   this.currentUser.id,
+                    target_id:  targetUserId,
+                    owner_name: this.currentUser.name || this.currentUser.username || 'همکار',
+                    share_type: type,
+                    ref_id:     id,
+                    ref_name:   meta.catName || meta.itemName || id,
+                    ref_icon:   meta.catIcon || meta.itemIcon || 'fas fa-share-alt',
+                    ref_color:  meta.catColor || 'blue',
+                }, { onConflict: 'owner_id,target_id,share_type,ref_id' })
+                .then(({ error }) => {
+                    if (error) console.warn('⚠️ [WC] share upsert error:', error.message);
+                    else console.log('✅ [WC] share saved to Supabase');
+                });
+        }
+
+        // ── inbox مخاطب (localStorage) ──
         const inbox = this._localGet('wc_inbox_' + targetUserId) || [];
         const exists = inbox.find(r => r.type === type && r.id === id && r.ownerId === this.currentUser.id);
         if (!exists) {
@@ -1483,7 +1505,7 @@ const WorkChecklistModule = {
     },
 
     _removeShareRecord(type, id, targetUserId) {
-        // از share map مالک
+        // ── localStorage مالک ──
         const map = this._localGet('wc_shares_' + this.currentUser.id) || {};
         const key = type + ':' + id;
         if (map[key]) {
@@ -1491,12 +1513,57 @@ const WorkChecklistModule = {
             if (map[key].length === 0) delete map[key];
             this._localSet('wc_shares_' + this.currentUser.id, map);
         }
-        // از inbox مخاطب
+
+        // ── Supabase ──
+        if (this.supabase) {
+            this.supabase
+                .from('checklist_shares')
+                .delete()
+                .eq('owner_id',   this.currentUser.id)
+                .eq('target_id',  targetUserId)
+                .eq('share_type', type)
+                .eq('ref_id',     id)
+                .then(({ error }) => {
+                    if (error) console.warn('⚠️ [WC] share delete error:', error.message);
+                });
+        }
+
+        // ── inbox مخاطب ──
         const inbox = this._localGet('wc_inbox_' + targetUserId) || [];
         this._localSet('wc_inbox_' + targetUserId, inbox.filter(r => !(r.type === type && r.id === id && r.ownerId === this.currentUser.id)));
     },
 
-    // ─── کپی داده به localStorage کاربر مقصد ────────────────────
+    // sync shares دریافتی از Supabase برای کاربر فعلی
+    async _syncInboxFromSupabase() {
+        if (!this.supabase || !this.currentUser) return;
+        try {
+            const { data, error } = await this.supabase
+                .from('checklist_shares')
+                .select('*')
+                .eq('target_id', this.currentUser.id);
+            if (error || !data) return;
+
+            const inbox = [];
+            data.forEach(row => {
+                inbox.push({
+                    type:      row.share_type,
+                    id:        row.ref_id,
+                    ownerId:   row.owner_id,
+                    ownerName: row.owner_name || 'همکار',
+                    name:      row.ref_name   || row.ref_id,
+                    icon:      row.ref_icon   || 'fas fa-share-alt',
+                    color:     row.ref_color  || 'blue',
+                    sharedAt:  row.created_at,
+                });
+            });
+            this._localSet('wc_inbox_' + this.currentUser.id, inbox);
+            console.log('✅ [WC] inbox synced from Supabase:', inbox.length);
+        } catch(e) {
+            console.warn('⚠️ [WC] _syncInboxFromSupabase:', e.message);
+        }
+    },
+
+    // ─── کپی داده به localStorage و Supabase کاربر مقصد ─────────
     _copyCategoryToUser(cat, targetUserId) {
         const key  = 'wc_categories_' + targetUserId;
         const list = this._localGet(key) || [];
@@ -1504,6 +1571,13 @@ const WorkChecklistModule = {
         const copy = { ...cat, user_id: targetUserId, shared_from: this.currentUser.id };
         if (idx >= 0) list[idx] = copy; else list.push(copy);
         this._localSet(key, list);
+
+        // Supabase: upsert با user_id مقصد
+        if (this.supabase) {
+            this.supabase.from('checklist_categories')
+                .upsert({ ...copy })
+                .then(({ error }) => { if (error) console.warn('⚠️ [WC] copy cat to supabase:', error.message); });
+        }
     },
 
     _copyItemToUser(item, targetUserId) {
@@ -1513,6 +1587,12 @@ const WorkChecklistModule = {
         const copy = { ...item, user_id: targetUserId, shared_from: this.currentUser.id };
         if (idx >= 0) list[idx] = copy; else list.push(copy);
         this._localSet(key, list);
+
+        if (this.supabase) {
+            this.supabase.from('checklist_items')
+                .upsert({ ...copy })
+                .then(({ error }) => { if (error) console.warn('⚠️ [WC] copy item to supabase:', error.message); });
+        }
     },
 
     _copyTaskToUser(task, targetUserId) {
@@ -1522,6 +1602,12 @@ const WorkChecklistModule = {
         const copy = { ...task, user_id: targetUserId, shared_from: this.currentUser.id };
         if (idx >= 0) list[idx] = copy; else list.push(copy);
         this._localSet(key, list);
+
+        if (this.supabase) {
+            this.supabase.from('checklist_tasks')
+                .upsert({ ...copy })
+                .then(({ error }) => { if (error) console.warn('⚠️ [WC] copy task to supabase:', error.message); });
+        }
     },
 
     // ─── Toast notification ───────────────────────────────────────
