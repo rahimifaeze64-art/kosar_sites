@@ -55,14 +55,24 @@ const WorkChecklistModule = {
         // اگه localStorage داده داره، فوری برگردون + background sync
         if (localData.length > 0) {
             if (this.supabase) {
-                // background sync بدون انتظار
+                // background sync — فقط داده‌های خود کاربر رو replace کن، shared رو حفظ کن
                 this.supabase
                     .from('checklist_categories')
                     .select('*')
                     .eq('user_id', this.currentUser.id)
                     .order('created_at', { ascending: true })
                     .then(({ data }) => {
-                        if (data && data.length > 0) this._localSet(localKey, data);
+                        if (data && data.length > 0) {
+                            const current = this._localGet(localKey) || [];
+                            // حفظ آیتم‌های shared (shared_from موجود و متفاوت با کاربر فعلی)
+                            const sharedItems = current.filter(c => c.shared_from && c.shared_from !== this.currentUser.id);
+                            // merge: داده‌های Supabase + shared items
+                            const merged = [...data];
+                            sharedItems.forEach(s => {
+                                if (!merged.find(m => m.id === s.id)) merged.push(s);
+                            });
+                            this._localSet(localKey, merged);
+                        }
                     })
                     .catch(() => {});
             }
@@ -87,8 +97,13 @@ const WorkChecklistModule = {
                 const { data, error } = await Promise.race([supabasePromise, timeoutPromise]);
                 console.log('🔍 [WC] getCategories Supabase: data:', data?.length, '| error:', error?.message);
                 if (!error && data) {
-                    this._localSet(localKey, data);
-                    return data;
+                    // حفظ shared items هنگام ست کردن از Supabase
+                    const current = this._localGet(localKey) || [];
+                    const sharedItems = current.filter(c => c.shared_from && c.shared_from !== this.currentUser.id);
+                    const merged = [...data];
+                    sharedItems.forEach(s => { if (!merged.find(m => m.id === s.id)) merged.push(s); });
+                    this._localSet(localKey, merged);
+                    return merged;
                 }
             } catch(e) {
                 console.error('❌ [WC] getCategories exception:', e.message);
@@ -420,12 +435,141 @@ const WorkChecklistModule = {
                         <i class="fas fa-spinner fa-spin text-3xl text-lime-400"></i>
                     </div>
                 </div>
+
+                <!-- ═══ چک‌لیست‌های به اشتراک گذاشته شده ═══ -->
+                <div id="wc-shared-section"></div>
             </div>`;
         await this.renderCategories();
+        await this.renderSharedSection();
+    },
+
+    async renderSharedSection() {
+        const el = document.getElementById('wc-shared-section');
+        if (!el || !this.currentUser) return;
+
+        const inbox = this._localGet('wc_inbox_' + this.currentUser.id) || [];
+        const sharedCats  = inbox.filter(r => r.type === 'category');
+        const sharedItems = inbox.filter(r => r.type === 'item');
+
+        if (inbox.length === 0) { el.innerHTML = ''; return; }
+
+        const catsHTML = await Promise.all(sharedCats.map(async rec => {
+            const catItems = (this._localGet('wc_items_' + this.currentUser.id) || [])
+                .filter(i => i.category_id === rec.id && i.shared_from);
+            const itemsHtml = catItems.map(item => this._buildSharedItemCard(item, rec.ownerName)).join('');
+            return `
+            <div class="rounded-2xl border border-purple-500/30 bg-purple-900/10 p-5 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <i class="${rec.icon || 'fas fa-folder'} text-xl text-purple-400"></i>
+                        <div>
+                            <h4 class="text-white font-bold">${this._esc(rec.name)}</h4>
+                            <p class="text-xs text-purple-300 mt-0.5">
+                                <i class="fas fa-user-friends ml-1"></i>از ${this._esc(rec.ownerName)}
+                            </p>
+                        </div>
+                    </div>
+                    <span class="text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full">دسته‌بندی مشترک</span>
+                </div>
+                ${catItems.length > 0
+                    ? `<div class="space-y-2">${itemsHtml}</div>`
+                    : `<p class="text-gray-500 text-sm text-center py-3 italic">آیتمی موجود نیست</p>`}
+            </div>`;
+        }));
+
+        const standaloneItems = sharedItems.filter(rec => !sharedCats.find(c => c.id === rec.catId));
+        const itemsOnlyHTML = standaloneItems.map(rec => {
+            const item = (this._localGet('wc_items_' + this.currentUser.id) || []).find(i => i.id === rec.id);
+            if (!item) return '';
+            return `
+            <div class="rounded-2xl border border-blue-500/30 bg-blue-900/10 p-4">
+                ${this._buildSharedItemCard(item, rec.ownerName)}
+            </div>`;
+        }).filter(Boolean).join('');
+
+        el.innerHTML = `
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xl font-bold text-white flex items-center gap-3">
+                    <span class="bg-purple-500/20 p-2 rounded-xl">
+                        <i class="fas fa-share-alt text-purple-400"></i>
+                    </span>
+                    چک‌لیست‌های به اشتراک گذاشته شده
+                    <span class="bg-purple-600 text-white text-xs rounded-full px-2 py-0.5">${inbox.length}</span>
+                </h3>
+                <button onclick="WorkChecklistModule.renderSharedSection()"
+                        class="text-gray-400 hover:text-white text-sm p-1 rounded" title="بروزرسانی">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+            ${catsHTML.join('')}
+            ${itemsOnlyHTML}
+        </div>`;
+    },
+
+    _buildSharedItemCard(item, ownerName) {
+        return `
+        <div class="bg-white/5 rounded-xl border border-white/10 overflow-hidden" id="wc-shared-item-${item.id}">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-white/10 cursor-pointer"
+                 onclick="WorkChecklistModule.toggleSharedItemExpand('${item.id}')">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-chevron-left text-xs text-gray-400 transition-transform duration-200"
+                       id="wc-shared-chevron-${item.id}"></i>
+                    <i class="${item.icon || 'fas fa-list-check'} text-purple-300 text-sm"></i>
+                    <span class="text-white font-medium">${this._esc(item.name)}</span>
+                    <span class="bg-purple-500/20 text-purple-300 text-xs px-2 py-0.5 rounded-full"
+                          id="wc-shared-count-${item.id}">...</span>
+                </div>
+                <span class="text-xs text-gray-500 flex-shrink-0" onclick="event.stopPropagation()">
+                    <i class="fas fa-user ml-1 text-purple-400"></i>${this._esc(ownerName || '')}
+                </span>
+            </div>
+            <div class="hidden px-4 py-3 space-y-2" id="wc-shared-tasks-panel-${item.id}">
+                <div id="wc-shared-tasks-list-${item.id}" class="space-y-2">
+                    <i class="fas fa-spinner fa-spin text-xs text-purple-400"></i>
+                </div>
+                <div class="flex gap-2 mt-3">
+                    <input type="text" id="wc-shared-new-task-${item.id}"
+                           placeholder="وظیفه جدید..."
+                           onkeydown="if(event.key==='Enter') WorkChecklistModule.addTask('${item.id}')"
+                           class="flex-1 bg-white/10 text-white placeholder-gray-500 text-sm px-3 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-purple-500"/>
+                    <button onclick="WorkChecklistModule.addTask('${item.id}')"
+                            class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm transition-all">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+        </div>`;
+    },
+
+    async toggleSharedItemExpand(itemId) {
+        const panel   = document.getElementById('wc-shared-tasks-panel-' + itemId);
+        const chevron = document.getElementById('wc-shared-chevron-' + itemId);
+        if (!panel) return;
+        const isHidden = panel.classList.contains('hidden');
+        panel.classList.toggle('hidden');
+        if (chevron) chevron.style.transform = isHidden ? 'rotate(-90deg)' : '';
+        if (isHidden) {
+            const container  = document.getElementById('wc-shared-tasks-list-' + itemId);
+            const countBadge = document.getElementById('wc-shared-count-' + itemId);
+            const tasks = await this.getTasks(itemId);
+            const sorted = [...tasks].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+            if (countBadge) {
+                const done = sorted.filter(t => t.is_done).length;
+                countBadge.textContent = done + '/' + sorted.length;
+            }
+            if (container) {
+                if (!sorted.length) {
+                    container.innerHTML = `<p class="text-gray-500 text-sm italic py-1">هنوز وظیفه‌ای تعریف نشده</p>`;
+                } else {
+                    container.innerHTML = sorted.map(t => this._buildTaskRow(t)).join('');
+                    this._initDragDrop(container, itemId);
+                }
+            }
+        }
     },
 
     async renderCategories() {
-        console.log('🔍 [WC] renderCategories() — currentUser:', this.currentUser?.id);
         if (!this.currentUser || !this.currentUser.id) {
             console.warn('⚠️ renderCategories: currentUser ندارد، skip');
             return;
