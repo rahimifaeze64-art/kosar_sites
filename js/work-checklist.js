@@ -501,11 +501,30 @@ const WorkChecklistModule = {
                 <div class="flex items-center gap-3">
                     <i class="${cat.icon || 'fas fa-folder'} text-xl ${iconColors[clr] || iconColors.lime}"></i>
                     <h3 class="text-white font-bold text-lg">${this._esc(cat.name)}</h3>
+                    ${(() => {
+                        const shareMap = this._localGet('wc_shares_' + this.currentUser.id) || {};
+                        const shareKey = 'category:' + cat.id;
+                        const sharedWith = shareMap[shareKey] || [];
+                        const isSharedFrom = cat.shared_from && cat.shared_from !== this.currentUser.id;
+                        if (sharedWith.length > 0) {
+                            return `<span class="text-xs bg-lime-500/20 text-lime-300 border border-lime-500/30 px-2 py-0.5 rounded-full flex items-center gap-1"><i class="fas fa-share-alt text-xs"></i>${sharedWith.length} نفر</span>`;
+                        }
+                        if (isSharedFrom) {
+                            const allUsers = typeof HARDCODED_USERS !== 'undefined' ? HARDCODED_USERS : [];
+                            const owner = allUsers.find(u => u.id === cat.shared_from);
+                            return `<span class="text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-full flex items-center gap-1"><i class="fas fa-user-friends text-xs"></i>${owner ? owner.name : 'همکار'}</span>`;
+                        }
+                        return '';
+                    })()}
                 </div>
                 <div class="flex items-center gap-2">
                     <button onclick="WorkChecklistModule.showAddItemModal('${cat.id}')"
                             class="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-sm transition-all flex items-center gap-1" title="افزودن آیتم">
                         <i class="fas fa-plus text-xs"></i> آیتم
+                    </button>
+                    <button onclick="WorkChecklistModule.showShareCategoryModal('${cat.id}')"
+                            class="text-lime-400 hover:text-white p-1.5 rounded-lg hover:bg-lime-500/20 transition-all" title="اشتراک‌گذاری دسته‌بندی">
+                        <i class="fas fa-share-alt text-sm"></i>
                     </button>
                     <button onclick="WorkChecklistModule.showEditCategoryModal('${cat.id}')"
                             class="text-gray-300 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-all" title="ویرایش">
@@ -555,8 +574,20 @@ const WorkChecklistModule = {
                     <i class="${item.icon || 'fas fa-list-check'} text-black-300 text-sm"></i>
                     <span class="text-white font-medium">${this._esc(item.name)}</span>
                     <span class="bg-lime-500/20 text-lime-300 text-xs px-2 py-0.5 rounded-full" id="wc-item-count-${item.id}">...</span>
+                    ${(() => {
+                        const shareMap = this._localGet('wc_shares_' + this.currentUser.id) || {};
+                        const sharedWith = shareMap['item:' + item.id] || [];
+                        const isSharedFrom = item.shared_from && item.shared_from !== this.currentUser.id;
+                        if (sharedWith.length > 0) return `<span class="text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 px-1.5 py-0.5 rounded-full"><i class="fas fa-share-alt text-xs ml-0.5"></i>${sharedWith.length}</span>`;
+                        if (isSharedFrom) return `<span class="text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded-full"><i class="fas fa-user-friends text-xs"></i></span>`;
+                        return '';
+                    })()}
                 </div>
                 <div class="flex items-center gap-1" onclick="event.stopPropagation()">
+                    <button onclick="WorkChecklistModule.showShareItemModal('${item.id}')"
+                            class="text-blue-400 hover:text-white p-1 rounded hover:bg-blue-500/20 transition-all" title="اشتراک‌گذاری">
+                        <i class="fas fa-share-alt text-xs"></i>
+                    </button>
                     <button onclick="WorkChecklistModule.showEditItemModal('${item.id}')"
                             class="text-black-300 hover:text-white p-1 rounded hover:bg-white/10 transition-all" title="ویرایش">
                         <i class="fas fa-edit text-xs"></i>
@@ -1042,6 +1073,320 @@ const WorkChecklistModule = {
             .replace(/>/g,'&gt;')
             .replace(/"/g,'&quot;')
             .replace(/'/g,'&#39;');
+    },
+
+    // ═══════════════════════════════════════════════════════════
+    // ─── Share (به اشتراک‌گذاری) ─────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+
+    // دریافت لیست همه کاربران (مدیر + کارمندان) به جز خود کاربر فعلی
+    _getShareableUsers() {
+        const allUsers = typeof HARDCODED_USERS !== 'undefined' ? HARDCODED_USERS : [];
+        return allUsers.filter(u =>
+            u.active !== false &&
+            u.id !== this.currentUser.id &&
+            (u.role === 'manager' || u.role === 'employee')
+        );
+    },
+
+    // ─── share یک دسته‌بندی ─────────────────────────────────────
+    async showShareCategoryModal(catId) {
+        const cats = await this.getCategories();
+        const cat  = cats.find(c => c.id === catId);
+        if (!cat) return;
+
+        const users    = this._getShareableUsers();
+        const existing = this._getShareRecord('category', catId);   // {sharedWith:[userId,...]}
+
+        const html = `
+        <div class="fixed inset-0 bg-black/70 z-[999] flex items-center justify-center p-4"
+             id="wc-modal-overlay"
+             onclick="if(event.target.id==='wc-modal-overlay') WorkChecklistModule.closeModal()">
+          <div class="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-white/10 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-white font-bold text-lg flex items-center gap-2">
+                <i class="fas fa-share-alt text-lime-400"></i>
+                اشتراک‌گذاری دسته‌بندی
+              </h3>
+              <button onclick="WorkChecklistModule.closeModal()" class="text-gray-400 hover:text-white">
+                <i class="fas fa-times text-xl"></i>
+              </button>
+            </div>
+            <p class="text-gray-400 text-sm mb-4">
+              دسته‌بندی <span class="text-white font-medium">«${this._esc(cat.name)}»</span>
+              را با چه کسی به اشتراک بگذاریم؟
+            </p>
+            <div class="space-y-2 max-h-56 overflow-y-auto mb-5">
+              ${users.length === 0
+                ? '<p class="text-gray-500 text-sm text-center py-4">کاربر دیگری یافت نشد</p>'
+                : users.map(u => {
+                    const isShared = existing.includes(u.id);
+                    return `
+                  <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-700 cursor-pointer transition-all">
+                    <input type="checkbox" value="${u.id}" ${isShared ? 'checked' : ''}
+                           class="w-4 h-4 accent-lime-500 wc-share-user-cb">
+                    <div class="w-8 h-8 rounded-full bg-lime-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                      ${u.name.charAt(0)}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-white text-sm font-medium">${this._esc(u.name)}</p>
+                      <p class="text-gray-500 text-xs">${u.role === 'manager' ? 'مدیر' : 'کارمند'}</p>
+                    </div>
+                    ${isShared ? '<span class="text-xs text-lime-400"><i class="fas fa-check-circle"></i></span>' : ''}
+                  </label>`;
+                }).join('')}
+            </div>
+            <div class="flex gap-3">
+              <button onclick="WorkChecklistModule._saveShareCategory('${catId}')"
+                      class="flex-1 bg-lime-600 hover:bg-lime-700 text-white py-2.5 rounded-xl font-medium transition-all">
+                <i class="fas fa-share-alt ml-2"></i>ذخیره اشتراک‌گذاری
+              </button>
+              <button onclick="WorkChecklistModule.closeModal()"
+                      class="bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-xl transition-all">
+                انصراف
+              </button>
+            </div>
+          </div>
+        </div>`;
+        document.getElementById('modals-container').insertAdjacentHTML('beforeend', html);
+    },
+
+    async _saveShareCategory(catId) {
+        const checked = [...document.querySelectorAll('.wc-share-user-cb:checked')].map(cb => cb.value);
+        const cats    = await this.getCategories();
+        const cat     = cats.find(c => c.id === catId);
+        if (!cat) return;
+
+        const allItems = this._localGet('wc_items_' + this.currentUser.id) || [];
+        const catItems = allItems.filter(i => i.category_id === catId);
+        const allTasks = this._localGet('wc_tasks_' + this.currentUser.id) || [];
+
+        checked.forEach(targetUserId => {
+            // ثبت رکورد share برای دسته
+            this._addShareRecord('category', catId, targetUserId, {
+                ownerName: this.currentUser.name || this.currentUser.username,
+                ownerId:   this.currentUser.id,
+                catName:   cat.name,
+                catIcon:   cat.icon,
+                catColor:  cat.color,
+            });
+
+            // ثبت رکورد share برای همه آیتم‌های دسته
+            catItems.forEach(item => {
+                this._addShareRecord('item', item.id, targetUserId, {
+                    ownerName:  this.currentUser.name || this.currentUser.username,
+                    ownerId:    this.currentUser.id,
+                    catId,
+                    itemName:   item.name,
+                    itemIcon:   item.icon,
+                });
+                // کپی آیتم در localStorage مخاطب
+                this._copyItemToUser(item, targetUserId);
+                // کپی تسک‌های این آیتم
+                const itemTasks = allTasks.filter(t => t.item_id === item.id);
+                itemTasks.forEach(t => this._copyTaskToUser(t, targetUserId));
+            });
+
+            // کپی دسته در localStorage مخاطب
+            this._copyCategoryToUser(cat, targetUserId);
+        });
+
+        // حذف share از کسانی که unchecked شدند
+        const allUsers  = this._getShareableUsers();
+        const unchecked = allUsers.map(u => u.id).filter(uid => !checked.includes(uid));
+        unchecked.forEach(targetUserId => {
+            this._removeShareRecord('category', catId, targetUserId);
+        });
+
+        this.closeModal();
+        this._showShareToast(checked.length > 0
+            ? `دسته‌بندی با ${checked.length} نفر به اشتراک گذاشته شد`
+            : 'اشتراک‌گذاری لغو شد');
+        await this.renderCategories();
+    },
+
+    // ─── share یک آیتم ──────────────────────────────────────────
+    async showShareItemModal(itemId) {
+        const allItems = this._localGet('wc_items_' + this.currentUser.id) || [];
+        const item     = allItems.find(i => i.id === itemId);
+        if (!item) return;
+
+        const users    = this._getShareableUsers();
+        const existing = this._getShareRecord('item', itemId);
+
+        const html = `
+        <div class="fixed inset-0 bg-black/70 z-[999] flex items-center justify-center p-4"
+             id="wc-modal-overlay"
+             onclick="if(event.target.id==='wc-modal-overlay') WorkChecklistModule.closeModal()">
+          <div class="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-white/10 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-white font-bold text-lg flex items-center gap-2">
+                <i class="fas fa-share-alt text-blue-400"></i>
+                اشتراک‌گذاری آیتم
+              </h3>
+              <button onclick="WorkChecklistModule.closeModal()" class="text-gray-400 hover:text-white">
+                <i class="fas fa-times text-xl"></i>
+              </button>
+            </div>
+            <p class="text-gray-400 text-sm mb-4">
+              آیتم <span class="text-white font-medium">«${this._esc(item.name)}»</span>
+              را با چه کسی به اشتراک بگذاریم؟
+            </p>
+            <div class="space-y-2 max-h-56 overflow-y-auto mb-5">
+              ${users.length === 0
+                ? '<p class="text-gray-500 text-sm text-center py-4">کاربر دیگری یافت نشد</p>'
+                : users.map(u => {
+                    const isShared = existing.includes(u.id);
+                    return `
+                  <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-700 cursor-pointer transition-all">
+                    <input type="checkbox" value="${u.id}" ${isShared ? 'checked' : ''}
+                           class="w-4 h-4 accent-blue-500 wc-share-user-cb">
+                    <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                      ${u.name.charAt(0)}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-white text-sm font-medium">${this._esc(u.name)}</p>
+                      <p class="text-gray-500 text-xs">${u.role === 'manager' ? 'مدیر' : 'کارمند'}</p>
+                    </div>
+                    ${isShared ? '<span class="text-xs text-blue-400"><i class="fas fa-check-circle"></i></span>' : ''}
+                  </label>`;
+                }).join('')}
+            </div>
+            <div class="flex gap-3">
+              <button onclick="WorkChecklistModule._saveShareItem('${itemId}')"
+                      class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-medium transition-all">
+                <i class="fas fa-share-alt ml-2"></i>ذخیره اشتراک‌گذاری
+              </button>
+              <button onclick="WorkChecklistModule.closeModal()"
+                      class="bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-xl transition-all">
+                انصراف
+              </button>
+            </div>
+          </div>
+        </div>`;
+        document.getElementById('modals-container').insertAdjacentHTML('beforeend', html);
+    },
+
+    async _saveShareItem(itemId) {
+        const checked = [...document.querySelectorAll('.wc-share-user-cb:checked')].map(cb => cb.value);
+        const allItems = this._localGet('wc_items_' + this.currentUser.id) || [];
+        const item     = allItems.find(i => i.id === itemId);
+        if (!item) return;
+        const allTasks = this._localGet('wc_tasks_' + this.currentUser.id) || [];
+
+        // پیدا کردن دسته مادر برای کپی
+        const cats = await this.getCategories();
+        const cat  = cats.find(c => c.id === item.category_id);
+
+        checked.forEach(targetUserId => {
+            this._addShareRecord('item', itemId, targetUserId, {
+                ownerName: this.currentUser.name || this.currentUser.username,
+                ownerId:   this.currentUser.id,
+                itemName:  item.name,
+                itemIcon:  item.icon,
+                catId:     item.category_id,
+            });
+            // کپی دسته مادر (اگر وجود داشت) در localStorage مخاطب
+            if (cat) this._copyCategoryToUser(cat, targetUserId);
+            // کپی خود آیتم
+            this._copyItemToUser(item, targetUserId);
+            // کپی تسک‌های این آیتم
+            const itemTasks = allTasks.filter(t => t.item_id === itemId);
+            itemTasks.forEach(t => this._copyTaskToUser(t, targetUserId));
+        });
+
+        // حذف اشتراک از کسانی که unchecked شدند
+        const allUsers  = this._getShareableUsers();
+        const unchecked = allUsers.map(u => u.id).filter(uid => !checked.includes(uid));
+        unchecked.forEach(uid => this._removeShareRecord('item', itemId, uid));
+
+        this.closeModal();
+        this._showShareToast(checked.length > 0
+            ? `آیتم با ${checked.length} نفر به اشتراک گذاشته شد`
+            : 'اشتراک‌گذاری لغو شد');
+    },
+
+    // ─── Share record helpers (localStorage) ─────────────────────
+    // کلید: wc_shares_{ownerId}   → { 'category:catId': [userId,...], 'item:itemId': [...] }
+    _getShareRecord(type, id) {
+        const map = this._localGet('wc_shares_' + this.currentUser.id) || {};
+        return map[type + ':' + id] || [];
+    },
+
+    _addShareRecord(type, id, targetUserId, meta) {
+        const map  = this._localGet('wc_shares_' + this.currentUser.id) || {};
+        const key  = type + ':' + id;
+        if (!map[key]) map[key] = [];
+        if (!map[key].includes(targetUserId)) map[key].push(targetUserId);
+        this._localSet('wc_shares_' + this.currentUser.id, map);
+
+        // ثبت در "inbox" مخاطب
+        const inbox = this._localGet('wc_inbox_' + targetUserId) || [];
+        const exists = inbox.find(r => r.type === type && r.id === id && r.ownerId === this.currentUser.id);
+        if (!exists) {
+            inbox.push({
+                type,
+                id,
+                ownerId:   this.currentUser.id,
+                ownerName: meta.ownerName || 'همکار',
+                name:      meta.catName || meta.itemName || id,
+                icon:      meta.catIcon || meta.itemIcon || 'fas fa-share-alt',
+                color:     meta.catColor || 'blue',
+                sharedAt:  new Date().toISOString(),
+            });
+            this._localSet('wc_inbox_' + targetUserId, inbox);
+        }
+    },
+
+    _removeShareRecord(type, id, targetUserId) {
+        // از share map مالک
+        const map = this._localGet('wc_shares_' + this.currentUser.id) || {};
+        const key = type + ':' + id;
+        if (map[key]) {
+            map[key] = map[key].filter(uid => uid !== targetUserId);
+            if (map[key].length === 0) delete map[key];
+            this._localSet('wc_shares_' + this.currentUser.id, map);
+        }
+        // از inbox مخاطب
+        const inbox = this._localGet('wc_inbox_' + targetUserId) || [];
+        this._localSet('wc_inbox_' + targetUserId, inbox.filter(r => !(r.type === type && r.id === id && r.ownerId === this.currentUser.id)));
+    },
+
+    // ─── کپی داده به localStorage کاربر مقصد ────────────────────
+    _copyCategoryToUser(cat, targetUserId) {
+        const key  = 'wc_categories_' + targetUserId;
+        const list = this._localGet(key) || [];
+        const idx  = list.findIndex(c => c.id === cat.id);
+        const copy = { ...cat, user_id: targetUserId, shared_from: this.currentUser.id };
+        if (idx >= 0) list[idx] = copy; else list.push(copy);
+        this._localSet(key, list);
+    },
+
+    _copyItemToUser(item, targetUserId) {
+        const key  = 'wc_items_' + targetUserId;
+        const list = this._localGet(key) || [];
+        const idx  = list.findIndex(i => i.id === item.id);
+        const copy = { ...item, user_id: targetUserId, shared_from: this.currentUser.id };
+        if (idx >= 0) list[idx] = copy; else list.push(copy);
+        this._localSet(key, list);
+    },
+
+    _copyTaskToUser(task, targetUserId) {
+        const key  = 'wc_tasks_' + targetUserId;
+        const list = this._localGet(key) || [];
+        const idx  = list.findIndex(t => t.id === task.id);
+        const copy = { ...task, user_id: targetUserId, shared_from: this.currentUser.id };
+        if (idx >= 0) list[idx] = copy; else list.push(copy);
+        this._localSet(key, list);
+    },
+
+    // ─── Toast notification ───────────────────────────────────────
+    _showShareToast(msg) {
+        const toast = document.createElement('div');
+        toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-700 border border-lime-500/40 text-white px-6 py-3 rounded-xl shadow-2xl z-[9999] flex items-center gap-2 text-sm font-medium animate-fade-in';
+        toast.innerHTML = `<i class="fas fa-check-circle text-lime-400"></i>${msg}`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
     },
 
     // ─── Public content getter (for app.js) ───────────────────────

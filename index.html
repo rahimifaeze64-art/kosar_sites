@@ -112,6 +112,7 @@
                 'js/agent-orders.js',
                 'js/company-door.js',
                 'js/whatsapp-manager.js',
+                'js/registrations.js',
                 'js/app.js',
                 'js/supabase-init.js',
                 'js/theme-auto-apply.js',
@@ -306,6 +307,16 @@
                         class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                     <i class="fas fa-clipboard-check text-lg"></i>
                     <span class="font-medium">وظایف من</span>
+                </button>
+            </template>
+
+            <!-- ثبت‌نام‌ها - مدیر و کارمند -->
+            <template x-if="currentUser.role === 'manager' || currentUser.role === 'employee'">
+                <button @click="currentPage = 'registrations'"
+                        :class="currentPage === 'registrations' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
+                        class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
+                    <i class="fas fa-user-plus text-lg"></i>
+                    <span class="font-medium">ثبت‌نام‌ها</span>
                 </button>
             </template>
 
@@ -765,6 +776,11 @@
                 <div class="flex items-center justify-center py-16">
                     <i class="fas fa-spinner fa-spin text-3xl text-lime-400"></i>
                 </div>
+            </div>
+
+            <!-- Registrations Page (Manager and Employee) -->
+            <div x-show="currentPage === 'registrations' && (currentUser.role === 'manager' || currentUser.role === 'employee')"
+                 x-html="typeof RegistrationsModule !== 'undefined' ? RegistrationsModule.getContent() : '<div class=\'text-center py-12\'><i class=\'fas fa-spinner fa-spin text-3xl text-lime-400\'></i></div>'">
             </div>
 
             <!-- Door Control Page (Manager and Employee) -->

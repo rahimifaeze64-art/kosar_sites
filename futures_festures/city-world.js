@@ -194,7 +194,7 @@ const CityWorld = (function () {
   const ENTER_DISTANCE = 4.5;
 
   // مقیاس minimap — برای شهر بزرگتر کوچکتر
-  const MINIMAP_SCALE = 0.022;
+  const MINIMAP_SCALE = 0.016;
 
   // ─── NPC ───
   let npcs = [];
@@ -312,6 +312,27 @@ const CityWorld = (function () {
   // ─── محیط ───
   let fountainRef = null;
   const birdFlocks = [];
+  const policeStations = [];
+  let _policeFlagRef = null;
+  let _skyscraperBeacons = null;
+
+  // ─── شهر بزرگ‌تر ───
+  const WORLD_EDGE = 272;      // مرز زمین ۶۰۰×۶۰۰
+  let fountainOn = true;
+
+  // ─── ترافیک و عابران ───
+  const trafficCars = [];
+  const pedestrians = [];
+  let crosswalkSpots = [];
+
+  // ─── سگ همراه ───
+  let dog = null;
+  let dogSit = false;
+
+  // ─── فیزیک اشیا ───
+  let football = null;
+  const barrels = [];
+  const BALL_HOME = { x: -125, z: -104 };
 
   // ─── هلی‌کوپتر قابل پرواز ───
   const HELI_PAD_POS = { x: 30, z: -30 };
@@ -333,7 +354,7 @@ const CityWorld = (function () {
   let jetSpeed = 0;
   const JET_MIN_FLY = 17;    // زیر این سرعت واماندگی
   const JET_MAX_SPD = 74;
-  const JET_MAP_EDGE = 168;  // زمین ۴۰۰×۴۰۰ است؛ جت نباید از این بگذره
+  const JET_MAP_EDGE = 235;  // زمین ۶۰۰×۶۰۰ است؛ جت نباید از این بگذره
   let _jetEdgeToast = 0;
 
   // ─── گفتگو با NPC ───
@@ -417,11 +438,11 @@ const CityWorld = (function () {
     // Three.js Core
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87ceeb);
-    scene.fog = new THREE.Fog(0x87ceeb, 80, 280);
+    scene.fog = new THREE.Fog(0x87ceeb, 100, 400);
 
     clock = new THREE.Clock();
 
-    camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 400);
+    camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 700);
     camera.position.set(0, 14, -22);
 
     // رندرر
@@ -461,6 +482,13 @@ const CityWorld = (function () {
     _buildSkyDetails();
     _buildBirds();
     _buildAirbase();
+    _buildCityPark();
+    _buildPoliceStation();
+    _buildSkyscrapers();
+    _buildTraffic();
+    _buildPedestrians();
+    _buildDog();
+    _buildPhysicsProps();
 
     // رویدادها
     _bindEvents(container);
@@ -513,23 +541,26 @@ const CityWorld = (function () {
   // زمین
   // ─────────────────────────────────────────────
   function _buildGround() {
-    // زمین اصلی ۴۰۰×۴۰۰
-    const geo = new THREE.PlaneGeometry(400, 400, 60, 60);
+    // زمین اصلی ۶۰۰×۶۰۰ — شهر بزرگ
+    const geo = new THREE.PlaneGeometry(600, 600, 80, 80);
     const mat = new THREE.MeshLambertMaterial({ color: 0x4ade80 });
     const ground = new THREE.Mesh(geo, mat);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     scene.add(ground);
 
-    // درخت‌های پراکنده — تعداد بیشتر برای شهر بزرگ‌تر
-    for (let i = 0; i < 180; i++) {
-      const gx = (Math.random() - 0.5) * 360;
-      const gz = (Math.random() - 0.5) * 360;
+    // درخت‌های پراکنده — پخش در کل شهر بزرگ
+    for (let i = 0; i < 260; i++) {
+      const gx = (Math.random() - 0.5) * 540;
+      const gz = (Math.random() - 0.5) * 540;
       const tooClose = BUILDINGS_CONFIG.some(b => {
         const dx = gx - b.position.x, dz = gz - b.position.z;
         return Math.sqrt(dx*dx + dz*dz) < 10;
       });
-      if (tooClose) continue;
+      // دور از پارک بزرگ و بیس هوایی هم باشه
+      const inPark = Math.abs(gx + 125) < 42 && Math.abs(gz + 118) < 42;
+      const inAirbase = gx > 100 && Math.abs(gz) < 85;
+      if (tooClose || inPark || inAirbase) continue;
       const treeH = 2.5 + Math.random() * 3;
       const trunk = new THREE.Mesh(
         new THREE.CylinderGeometry(0.15, 0.22, treeH, 6),
@@ -569,7 +600,7 @@ const CityWorld = (function () {
     const stripeMat = new THREE.MeshLambertMaterial({ color: 0xffd700 });
     const roadY = 0.02;
 
-    // جاده‌های اصلی (پهن‌تر)
+    // جاده‌های اصلی — شبکه شهر بزرگ
     const roads = [
       { w: 220, h: 7,  x: 0,   z: 0,   rot: 0 },   // افقی مرکزی
       { w: 7,   h: 220,x: 0,   z: 0,   rot: 0 },   // عمودی مرکزی
@@ -581,17 +612,25 @@ const CityWorld = (function () {
       { w: 6,   h: 160,x: -80, z: 0,   rot: 0 },
       { w: 200, h: 6,  x: 0,   z: 90,  rot: 0 },   // افقی دور شمال
       { w: 200, h: 6,  x: 0,   z: -90, rot: 0 },
+      // ─── کمربندی و محله‌های جدید ───
+      { w: 320, h: 6,  x: -20, z: 140, rot: 0 },   // بیرونی شمال
+      { w: 320, h: 6,  x: -20, z: -140,rot: 0 },   // بیرونی جنوب
+      { w: 6,   h: 320,x: 140, z: 0,   rot: 0 },   // بیرونی شرق
+      { w: 6,   h: 320,x: -140,z: 0,   rot: 0 },   // بیرونی غرب
+      { w: 120, h: 5,  x: 75,  z: 118, rot: 0 },   // خیابان برج‌ها
+      { w: 5,   h: 110,x: 122, z: -112,rot: 0 },   // خیابان پلیس‌گاه
     ];
 
     roads.forEach(r => {
       const road = new THREE.Mesh(new THREE.PlaneGeometry(r.w, r.h), roadMat);
       road.rotation.x = -Math.PI / 2;
       road.position.set(r.x, roadY, r.z);
+      road.receiveShadow = true;
       scene.add(road);
     });
 
-    // خط‌کشی جاده اصلی (بلندتر)
-    for (let i = -105; i < 110; i += 7) {
+    // خط‌کشی جاده اصلی
+    for (let i = -148; i < 152; i += 7) {
       const s1 = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 3.5), stripeMat);
       s1.rotation.x = -Math.PI / 2;
       s1.position.set(i, roadY + 0.01, 0);
@@ -602,26 +641,46 @@ const CityWorld = (function () {
       scene.add(s2);
     }
 
-    // چراغ‌های خیابان — فقط مدل، بدون نور (همیشه روز)
+    // ─── خط عابر (زیبرا) در تقاطع‌های شلوغ ───
+    crosswalkSpots = [
+      [0, 8, true], [0, -8, true],
+      [-8, 55, false], [8, 55, false],
+      [-8, -55, false], [8, -55, false],
+    ];
+    crosswalkSpots.forEach(([cx, cz, horiz]) => {
+      for (let i = -3; i <= 3; i++) {
+        const st = new THREE.Mesh(
+          horiz ? new THREE.PlaneGeometry(0.9, 4.2) : new THREE.PlaneGeometry(4.2, 0.9),
+          new THREE.MeshBasicMaterial({ color: 0xe5e7eb })
+        );
+        st.rotation.x = -Math.PI / 2;
+        if (horiz) st.position.set(cx + i * 1.35, roadY + 0.02, cz);
+        else       st.position.set(cx, roadY + 0.02, cz + i * 1.35);
+        scene.add(st);
+      }
+    });
+
+    // چراغ‌های خیابان — دو محور x و z برای شهر بزرگ
     const poleM = new THREE.MeshLambertMaterial({ color: 0x555555 });
     const armM  = new THREE.MeshLambertMaterial({ color: 0x444444 });
     const lightM = new THREE.MeshBasicMaterial({ color: 0xfdf6d8 });
-    for (let i = -100; i <= 100; i += 25) {
-      [[i, 5], [i, -5]].forEach(([x, z]) => {
-        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 6, 8), poleM);
-        pole.position.set(x, 3, z);
-        pole.castShadow = true;
-        scene.add(pole);
-        // بازوی افقی به سمت جاده
-        const inward = z > 0 ? -1 : 1;
-        const arm = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 1.4), armM);
-        arm.position.set(x, 5.95, z + inward * 0.7);
-        scene.add(arm);
-        // سر چراغ
-        const lampHead = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.1, 0.7), lightM);
-        lampHead.position.set(x, 5.88, z + inward * 1.3);
-        scene.add(lampHead);
-      });
+    function _lamp(x, z, axis) {
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 6, 8), poleM);
+      pole.position.set(x, 3, z);
+      pole.castShadow = true;
+      scene.add(pole);
+      const inward = axis === 'x' ? (z > 0 ? -1 : 1) : (x > 0 ? -1 : 1);
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(axis === 'x' ? 0.08 : 1.4, 0.08, axis === 'x' ? 1.4 : 0.08), armM);
+      arm.position.set(x + (axis === 'z' ? inward * 0.7 : 0), 5.95, z + (axis === 'x' ? inward * 0.7 : 0));
+      scene.add(arm);
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.1, 0.7), lightM);
+      if (axis === 'z') { head.rotation.y = Math.PI / 2; head.scale.set(2, 1, 0.5); }
+      head.position.set(x + (axis === 'z' ? inward * 1.3 : 0), 5.88, z + (axis === 'x' ? inward * 1.3 : 0));
+      scene.add(head);
+    }
+    for (let i = -130; i <= 130; i += 26) {
+      [[i, 5], [i, -5]].forEach(([x, z]) => _lamp(x, z, 'x'));
+      [[5, i], [-5, i]].forEach(([x, z]) => _lamp(x, z, 'z'));
     }
   }
 
@@ -1107,7 +1166,7 @@ const CityWorld = (function () {
     });
 
     // فواره
-    if (fountainRef) {
+    if (fountainRef && fountainOn) {
       const jet = fountainRef.getObjectByName('jet');
       if (jet) {
         const p = 1 + Math.sin(now * 6) * 0.08;
@@ -1115,6 +1174,27 @@ const CityWorld = (function () {
       }
       const water = fountainRef.getObjectByName('water');
       if (water) water.position.y = 0.72 + Math.sin(now * 2) * 0.02;
+    }
+
+    // پرچم پلیس در باد
+    if (_policeFlagRef) {
+      _policeFlagRef.rotation.y = Math.sin(now * 3) * 0.25;
+      _policeFlagRef.scale.x = 1 + Math.sin(now * 6) * 0.06;
+    }
+
+    // چراغ گردان ماشین‌های پلیس — قرمز/آبی متناوب
+    for (const st of policeStations) {
+      const swap = Math.floor(now * 4) % 2 === 0;
+      st.lightBars.forEach(({ redL, bluL }) => {
+        redL.material.emissiveIntensity = swap ? 2 : 0.15;
+        bluL.material.emissiveIntensity = swap ? 0.15 : 2;
+      });
+    }
+
+    // بیکن قرمز بلندترین برج‌ها
+    if (_skyscraperBeacons) {
+      const on = Math.sin(now * 3) > 0;
+      _skyscraperBeacons.forEach(b => { b.visible = on; });
     }
   }
 
@@ -1206,6 +1286,23 @@ const CityWorld = (function () {
 
       // Esc = بستن دیالوگ
       if (e.key === 'Escape' && dialogOpen) _closeDialog();
+
+      // G = سگ: نشستن / دنبالم
+      if (e.key === 'g' || e.key === 'G') {
+        dogSit = !dogSit;
+        _showToast(dogSit ? '🐕 نشست! صبر می‌کنه' : '🐕 بیا دنبالم!');
+      }
+
+      // V = روشن/خاموش کردن فواره پارک
+      if (e.key === 'v' || e.key === 'V') {
+        if (!fountainRef || Math.abs(character.position.x - 20) > 12 ||
+            Math.abs(character.position.z - 20) > 12) {
+          if (fountainOn) _showToast('ℹ️ باید نزدیک فواره باشی (پارک اصلی)');
+        } else {
+          fountainOn = !fountainOn;
+          _showToast(fountainOn ? '⛲ فواره روشن شد' : '💧 فواره خاموش شد');
+        }
+      }
 
       // H = سوار شدن به هلی‌کوپتر / فرود خودکار
       if (e.key === 'h' || e.key === 'H') {
@@ -1405,6 +1502,7 @@ const CityWorld = (function () {
     if (hint) hint.innerHTML = `
       <p><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> یا فلش‌ها — حرکت (<span class="key">Shift</span> دویدن)</p>
       <p><span class="key">Space</span> — پرش · <span class="key">E</span> — گفتگو با NPC</p>
+      <p><span class="key">G</span> سگ · <span class="key">V</span> فواره · ⚽ توپ را هل بده!</p>
       <p><span class="key">F</span> ماشین · <span class="key">T</span> تانک · <span class="key">H</span> هلی · <span class="key">J</span> جنگنده (بیس هوایی)</p>
       <p>📍 به در ساختمان نزدیک شوید</p>
     `;
@@ -1454,6 +1552,12 @@ const CityWorld = (function () {
 
     // NPC
     _updateNPCs(delta);
+
+    // ترافیک، عابرها، سگ، فیزیک
+    _updateTraffic(delta);
+    _updatePedestrians(delta);
+    _updateDog(delta);
+    _updatePhysics(delta);
 
     // هلی‌کوپتر
     _updateHelicopter(delta);
@@ -1547,8 +1651,8 @@ const CityWorld = (function () {
       }
 
       // باند جهان — بزرگ‌تر برای شهر جدید
-      carMesh.position.x = Math.max(-185, Math.min(185, carMesh.position.x));
-      carMesh.position.z = Math.max(-185, Math.min(185, carMesh.position.z));
+      carMesh.position.x = Math.max(-WORLD_EDGE, Math.min(WORLD_EDGE, carMesh.position.x));
+      carMesh.position.z = Math.max(-WORLD_EDGE, Math.min(WORLD_EDGE, carMesh.position.z));
 
       // چرخش لاستیک‌ها + فرمان چرخ‌های جلو
       const wheelTurn = carVelocity * delta * 2.2;
@@ -1604,8 +1708,8 @@ const CityWorld = (function () {
       while (diff < -Math.PI) diff += Math.PI * 2;
       character.rotation.y += diff * Math.min(1, delta * 12);
 
-      character.position.x = Math.max(-185, Math.min(185, character.position.x));
-      character.position.z = Math.max(-185, Math.min(185, character.position.z));
+      character.position.x = Math.max(-WORLD_EDGE, Math.min(WORLD_EDGE, character.position.x));
+      character.position.z = Math.max(-WORLD_EDGE, Math.min(WORLD_EDGE, character.position.z));
 
       animT = performance.now() * 0.001 * (running ? 13 : 8);
     }
@@ -2150,8 +2254,749 @@ const CityWorld = (function () {
   }
 
   // ─────────────────────────────────────────────
-  // Minimap 2D
+  // پارک بزرگ شهری — برکه، مسیر، درخت، زمین فوتبال
   // ─────────────────────────────────────────────
+  function _buildCityPark() {
+    const PX = -125, PZ = -118, R = 40;
+    const park = new THREE.Group();
+
+    // چمن تیره‌تر
+    const grass = new THREE.Mesh(new THREE.CircleGeometry(R, 32),
+      new THREE.MeshLambertMaterial({ color: 0x1f9d4f }));
+    grass.rotation.x = -Math.PI / 2;
+    grass.position.y = 0.02;
+    grass.receiveShadow = true;
+    park.add(grass);
+
+    // مسیرهای شن‌ریز صلیبی
+    const pathM = new THREE.MeshLambertMaterial({ color: 0xc9b48a });
+    [[0, 0, 2 * R - 8, 3], [0, 0, 3, 2 * R - 8]].forEach(([px, pz, w, h]) => {
+      const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), pathM);
+      p.rotation.x = -Math.PI / 2;
+      p.position.set(px, 0.04, pz);
+      park.add(p);
+    });
+
+    // حلقه مسیر دور برکه
+    const ring = new THREE.Mesh(new THREE.RingGeometry(11, 13, 28), pathM);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(-12, 0.04, 10);
+    park.add(ring);
+
+    // ─── برکه با سنگ‌چین ───
+    const pond = new THREE.Mesh(new THREE.CircleGeometry(10.5, 26),
+      new THREE.MeshPhongMaterial({ color: 0x2f86c9, shininess: 140, transparent: true, opacity: 0.9 }));
+    pond.rotation.x = -Math.PI / 2;
+    pond.position.set(-12, 0.05, 10);
+    park.add(pond);
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2;
+      const stone = new THREE.Mesh(new THREE.SphereGeometry(0.5 + Math.random() * 0.25, 6, 5),
+        new THREE.MeshLambertMaterial({ color: 0x8d99ae }));
+      stone.scale.y = 0.55;
+      stone.position.set(-12 + Math.cos(a) * 10.7, 0.15, 10 + Math.sin(a) * 10.7);
+      stone.castShadow = true;
+      park.add(stone);
+    }
+
+    // ─── گل‌کاری‌های رنگی ───
+    const flowerColors = [0xef4444, 0xf59e0b, 0xec4899, 0x8b5cf6, 0xffffff];
+    for (let bed = 0; bed < 4; bed++) {
+      const bx = [-24, 24, -22, 22][bed];
+      const bz = [-26, 26, 24, -24][bed];
+      const soil = new THREE.Mesh(new THREE.CircleGeometry(3.2, 14),
+        new THREE.MeshLambertMaterial({ color: 0x5b4636 }));
+      soil.rotation.x = -Math.PI / 2;
+      soil.position.set(bx, 0.05, bz);
+      park.add(soil);
+      for (let f = 0; f < 14; f++) {
+        const fl = new THREE.Mesh(new THREE.SphereGeometry(0.16, 6, 5),
+          new THREE.MeshBasicMaterial({ color: flowerColors[(bed + f) % flowerColors.length] }));
+        fl.position.set(bx + (Math.random() - 0.5) * 5, 0.35, bz + (Math.random() - 0.5) * 5);
+        park.add(fl);
+        const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3, 4),
+          new THREE.MeshLambertMaterial({ color: 0x166534 }));
+        stem.position.set(fl.position.x, 0.18, fl.position.z);
+        park.add(stem);
+      }
+    }
+
+    // ─── درخت‌های انبوه پارک ───
+    for (let i = 0; i < 34; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const rr = 18 + Math.random() * (R - 22);
+      const tx = Math.cos(a) * rr, tz = Math.sin(a) * rr;
+      if (Math.abs(tx) < 4 || Math.abs(tz) < 4) continue; // روی مسیر نیفتد
+      const th = 3 + Math.random() * 2.5;
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.24, th, 7),
+        new THREE.MeshLambertMaterial({ color: 0x7c5a3a }));
+      trunk.position.set(tx, th / 2, tz);
+      trunk.castShadow = true;
+      park.add(trunk);
+      const crown = new THREE.Mesh(new THREE.SphereGeometry(1.5 + Math.random(), 8, 7),
+        new THREE.MeshLambertMaterial({ color: [0x228b22, 0x2d8a3a, 0x1f7a33][i % 3] }));
+      crown.position.set(tx, th + 1.1, tz);
+      crown.castShadow = true;
+      park.add(crown);
+    }
+
+    // نیمکت‌ها دور برکه
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2 + 0.4;
+      const bench = new THREE.Group();
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(2, 0.1, 0.55),
+        new THREE.MeshPhongMaterial({ color: 0x92400e }));
+      seat.position.y = 0.52;
+      seat.castShadow = true;
+      bench.add(seat);
+      const backr = new THREE.Mesh(new THREE.BoxGeometry(2, 0.45, 0.09),
+        new THREE.MeshPhongMaterial({ color: 0x92400e }));
+      backr.position.set(0, 0.8, -0.24);
+      bench.add(backr);
+      bench.position.set(-12 + Math.cos(a) * 14.5, 0, 10 + Math.sin(a) * 14.5);
+      bench.lookAt(-12, 0, 10);
+      park.add(bench);
+    }
+
+    // ─── زمین فوتبال کوچک + دو دروازه ───
+    const field = new THREE.Mesh(new THREE.PlaneGeometry(30, 18),
+      new THREE.MeshLambertMaterial({ color: 0x23a55a }));
+    field.rotation.x = -Math.PI / 2;
+    field.position.set(BALL_HOME.x - PX, 0.03, BALL_HOME.z - PZ);
+    park.add(field);
+
+    // خطوط زمین
+    const lineM = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    [[0, -8.6, 29, 0.25], [0, 8.6, 29, 0.25], [-14.4, 0, 0.25, 17], [14.4, 0, 0.25, 17], [0, 0, 0.25, 0.01]].forEach(([lx, lz, lw, lh]) => {
+      const ln = new THREE.Mesh(new THREE.PlaneGeometry(lw, lh || 17), lineM);
+      ln.rotation.x = -Math.PI / 2;
+      ln.position.set(lx, 0.05, lz);
+      park.add(ln);
+    });
+    const centerCirc = new THREE.Mesh(new THREE.RingGeometry(2.4, 2.65, 20), lineM);
+    centerCirc.rotation.x = -Math.PI / 2;
+    centerCirc.position.set(0, 0.05, 0);
+    park.add(centerCirc);
+
+    // دروازه‌ها
+    [[-14.4], [14.4]].forEach(([gx]) => {
+      const goal = new THREE.Group();
+      const postM = new THREE.MeshPhongMaterial({ color: 0xffffff });
+      [-3.4, 3.4].forEach(py => {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 2.3, 8), postM);
+        post.position.set(0, 1.15, py);
+        post.castShadow = true;
+        goal.add(post);
+      });
+      const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 6.8, 8), postM);
+      bar.rotation.x = Math.PI / 2;
+      bar.position.set(0, 2.3, 0);
+      goal.add(bar);
+      const net = new THREE.Mesh(new THREE.PlaneGeometry(6.6, 2.2),
+        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.22, side: THREE.DoubleSide }));
+      net.position.set(gx > 0 ? -0.9 : 0.9, 1.1, 0);
+      net.rotation.y = Math.PI / 2;
+      goal.add(net);
+      goal.position.set(gx, 0, 0);
+      park.add(goal);
+    });
+
+    // نیمکت ذخیره کنار زمین
+    const dugout = new THREE.Mesh(new THREE.BoxGeometry(6, 1.6, 1.2),
+      new THREE.MeshPhongMaterial({ color: 0x334155 }));
+    dugout.position.set(-4, 0.8, 11.5);
+    dugout.castShadow = true;
+    park.add(dugout);
+
+    // پرچم‌های رنگی دور زمین
+    for (let i = 0; i < 4; i++) {
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.2, 6),
+        new THREE.MeshLambertMaterial({ color: 0xdddddd }));
+      const fxp = [-15, 15][i % 2];
+      const fzp = [-9.5, 9.5][Math.floor(i / 2)];
+      pole.position.set(fxp, 1.1, fzp);
+      park.add(pole);
+      const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.4),
+        new THREE.MeshBasicMaterial({ color: [0xef4444, 0x3b82f6, 0x22c55e, 0xf59e0b][i], side: THREE.DoubleSide }));
+      flag.position.set(fxp + 0.36, 1.95, fzp);
+      park.add(flag);
+    }
+
+    park.position.set(PX, 0, PZ);
+    scene.add(park);
+
+    // برچسب
+    const plbl = _makeTextSprite('🌳 پارک شهر', '#86efac');
+    plbl.position.set(PX, 14, PZ - R);
+    plbl.scale.set(6, 2, 1);
+    scene.add(plbl);
+    labels.push(plbl);
+  }
+
+  // ─────────────────────────────────────────────
+  // مرکز پلیس — ساختمان + ماشین‌های گشتی با چراغ گردان
+  // ─────────────────────────────────────────────
+  function _buildPoliceStation() {
+    const PX = 122, PZ = -112;
+    const st = new THREE.Group();
+
+    const wallM  = new THREE.MeshPhongMaterial({ color: 0xe2e8f0, shininess: 30 });
+    const blueM  = new THREE.MeshPhongMaterial({ color: 0x1d4ed8, shininess: 60 });
+    const glassM = new THREE.MeshPhongMaterial({ color: 0x93c5fd, transparent: true, opacity: 0.55, shininess: 130 });
+
+    // بدنه اصلی
+    const main = new THREE.Mesh(new THREE.BoxGeometry(20, 9, 13), wallM);
+    main.position.y = 4.5;
+    main.castShadow = true;
+    main.receiveShadow = true;
+    st.add(main);
+
+    // نوار آبی دور ساختمان
+    const band = new THREE.Mesh(new THREE.BoxGeometry(20.2, 1.1, 13.2), blueM);
+    band.position.y = 6.8;
+    st.add(band);
+
+    // طبقه دوم عقب‌نشسته
+    const top = new THREE.Mesh(new THREE.BoxGeometry(14, 3.2, 9), wallM);
+    top.position.set(0, 10.4, -1);
+    top.castShadow = true;
+    st.add(top);
+    const topBand = new THREE.Mesh(new THREE.BoxGeometry(14.2, 0.7, 9.2), blueM);
+    topBand.position.set(0, 9.2, -1);
+    st.add(topBand);
+
+    // ورودی با ستون‌ها و پله
+    [-2.6, 2.6].forEach(x => {
+      const col = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.5, 5.4, 12), wallM);
+      col.position.set(x, 2.7, 7.1);
+      col.castShadow = true;
+      st.add(col);
+    });
+    const porch = new THREE.Mesh(new THREE.BoxGeometry(7, 0.5, 2.6), blueM);
+    porch.position.set(0, 5.6, 7.2);
+    porch.castShadow = true;
+    st.add(porch);
+    [[7.9, 4.6], [7.5, 4.75]].length; // (بدون اثر)
+    for (let s = 0; s < 3; s++) {
+      const step = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.22, 0.8), wallM);
+      step.position.set(0, 0.11 + s * 0.22, 8.1 + s * 0.75);
+      st.add(step);
+    }
+    const doorG = new THREE.Mesh(new THREE.BoxGeometry(3.4, 3.4, 0.14), glassM);
+    doorG.position.set(0, 1.85, 6.62);
+    st.add(doorG);
+
+    // پنجره‌ها
+    for (let r = 0; r < 2; r++) {
+      for (let c = 0; c < 5; c++) {
+        if (r === 0 && c === 2) continue; // جای در
+        const win = new THREE.Mesh(new THREE.BoxGeometry(2, 1.4, 0.1), glassM);
+        win.position.set(-8 + c * 4, r === 0 ? 3.6 : 10.4, r === 0 ? 6.56 : 3.56);
+        st.add(win);
+      }
+    }
+
+    // دکل پرچم با پرچم آبی
+    const fpole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 12, 8), steelGray());
+    fpole.position.set(9, 6, 5);
+    fpole.castShadow = true;
+    st.add(fpole);
+    const flag = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.4),
+      new THREE.MeshPhongMaterial({ color: 0x2563eb, side: THREE.DoubleSide }));
+    flag.position.set(10.2, 10.8, 5);
+    flag.name = 'policeFlag';
+    _policeFlagRef = flag;
+    st.add(flag);
+
+    function steelGray() { return new THREE.MeshPhongMaterial({ color: 0x94a3b8, shininess: 100 }); }
+
+    // ماشین‌های گشتی با چراغ گردان
+    st.userData.lightBars = [];
+    [[-6.5, 12.5, 0], [6.5, 12.5, 0]].forEach(([cx, cz]) => {
+      const car = new THREE.Group();
+      const whiteM = new THREE.MeshPhongMaterial({ color: 0xf8fafc, shininess: 110 });
+      const blackM = new THREE.MeshPhongMaterial({ color: 0x111827 });
+
+      const body = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.55, 4.6), whiteM);
+      body.position.y = 0.62;
+      body.castShadow = true;
+      car.add(body);
+      const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.55, 2.4), blackM);
+      cabin.position.set(0, 1.15, -0.2);
+      car.add(cabin);
+      // درها سفید-مشکی
+      [-1, 1].forEach(s => {
+        const panel = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.4, 1.7), whiteM);
+        panel.position.set(s * 1.07, 0.68, 0);
+        car.add(panel);
+      });
+      // چراغ گردان
+      const barBase = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.08, 0.3), blackM);
+      barBase.position.set(0, 1.5, -0.2);
+      car.add(barBase);
+      const redL = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.16, 0.26),
+        new THREE.MeshPhongMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 1 }));
+      redL.position.set(-0.27, 1.62, -0.2);
+      car.add(redL);
+      const bluL = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.16, 0.26),
+        new THREE.MeshPhongMaterial({ color: 0x0044ff, emissive: 0x0044ff, emissiveIntensity: 1 }));
+      bluL.position.set(0.27, 1.62, -0.2);
+      car.add(bluL);
+      st.userData.lightBars.push({ redL, bluL });
+
+      // چرخ‌ها
+      [[1.02, 1.5], [-1.02, 1.5], [1.02, -1.5], [-1.02, -1.5]].forEach(([wx, wz]) => {
+        const w = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.24, 12), blackM);
+        w.rotation.z = Math.PI / 2;
+        w.position.set(wx, 0.36, wz);
+        car.add(w);
+      });
+
+      car.position.set(cx, 0, cz);
+      car.rotation.y = Math.PI;
+      st.add(car);
+      _addCollider(PX + cx, PZ + cz, 1.6, 2.8);
+    });
+
+    st.position.set(PX, 0, PZ);
+    scene.add(st);
+    policeStations.push(st.userData);
+
+    _addCollider(PX, PZ, 10.2, 6.8);
+    _addCollider(PX, PZ - 1, 7.2, 4.8, false, 10.4); // طبقه دوم فقط ارتفاعی — بی‌اثر برای برخورد ۲بعدی
+
+    const lbl = _makeTextSprite('🚓 مرکز پلیس', '#93c5fd');
+    lbl.position.set(PX, 15.5, PZ);
+    lbl.scale.set(6, 2, 1);
+    scene.add(lbl);
+    labels.push(lbl);
+  }
+
+  // ─────────────────────────────────────────────
+  // برج‌های اداری بلند — اسکای‌لاین شرق شهر
+  // ─────────────────────────────────────────────
+  function _buildSkyscrapers() {
+    const group = new THREE.Group();
+    let winTex = null;
+    try {
+      const cv = document.createElement('canvas');
+      cv.width = 64; cv.height = 128;
+      const cx2 = cv.getContext('2d');
+      cx2.fillStyle = '#0f172a';
+      cx2.fillRect(0, 0, 64, 128);
+      for (let y = 4; y < 124; y += 10) {
+        for (let x = 4; x < 60; x += 10) {
+          cx2.fillStyle = Math.random() > 0.25 ? '#ffd97a' : '#334155';
+          cx2.fillRect(x, y, 6, 6);
+        }
+      }
+      winTex = new THREE.CanvasTexture(cv);
+      winTex.wrapS = winTex.wrapT = THREE.RepeatWrapping;
+    } catch (err) {}
+
+    const towers = [
+      { x: 70,  z: 150, w: 14, d: 14, h: 46 },
+      { x: 96,  z: 158, w: 12, d: 12, h: 38 },
+      { x: 118, z: 146, w: 15, d: 13, h: 54 },
+      { x: 58,  z: 168, w: 11, d: 11, h: 30 },
+      { x: 88,  z: 132, w: 13, d: 11, h: 34 },
+      { x: 132, z: 165, w: 12, d: 12, h: 42 },
+      // اداری متوسط غرب پارک
+      { x: -170, z: -60, w: 12, d: 12, h: 20 },
+      { x: -172, z: -88, w: 11, d: 14, h: 16 },
+    ];
+
+    towers.forEach((t, i) => {
+      const tw = new THREE.Group();
+      const bodyM = new THREE.MeshPhongMaterial({
+        color: [0xcbd5e1, 0xb7c3d4, 0xd7dde6, 0xaebccb][i % 4],
+        shininess: 80,
+      });
+      const glassTower = new THREE.MeshPhongMaterial({
+        color: 0x7ea6cc, shininess: 150,
+        map: winTex || null, emissiveMap: winTex || null,
+        emissive: 0xffe9a8, emissiveIntensity: 0.55,
+      });
+      if (winTex && t.w >= 12) glassTower.map.repeat.set(Math.round(t.w / 4), Math.round(t.h / 4));
+
+      // بدنه اصلی
+      const body = new THREE.Mesh(new THREE.BoxGeometry(t.w, t.h, t.d),
+        winTex ? glassTower : bodyM);
+      body.position.y = t.h / 2;
+      body.castShadow = true;
+      body.receiveShadow = true;
+      tw.add(body);
+
+      // بخش بالایی عقب‌نشسته
+      const crown = new THREE.Mesh(new THREE.BoxGeometry(t.w * 0.72, t.h * 0.12, t.d * 0.72), bodyM);
+      crown.position.y = t.h + t.h * 0.06;
+      crown.castShadow = true;
+      tw.add(crown);
+
+      // آنتن + چراغ چشمک‌زن بلندترین‌ها
+      if (t.h > 40) {
+        const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.2, 8, 6), steelMat());
+        ant.position.y = t.h + t.h * 0.12 + 4;
+        tw.add(ant);
+        const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 8),
+          new THREE.MeshBasicMaterial({ color: 0xff3333 }));
+        beacon.position.y = ant.position.y + 4.2;
+        beacon.name = 'beacon';
+        tw.add(beacon);
+        group.userData.beacons = group.userData.beacons || [];
+        group.userData.beacons.push(beacon);
+      }
+
+      // ورودی شیشه‌ای بزرگ
+      const ent = new THREE.Mesh(new THREE.BoxGeometry(t.w * 0.4, 3.2, 0.3),
+        new THREE.MeshPhongMaterial({ color: 0x1e3a5f, transparent: true, opacity: 0.8, shininess: 160 }));
+      ent.position.set(0, 1.6, t.d / 2 + 0.1);
+      tw.add(ent);
+      const canopy = new THREE.Mesh(new THREE.BoxGeometry(t.w * 0.5, 0.2, 2.2), steelMat());
+      canopy.position.set(0, 3.5, t.d / 2 + 1.1);
+      tw.add(canopy);
+
+      tw.position.set(t.x, 0, t.z);
+      group.add(tw);
+      _addCollider(t.x, t.z, t.w / 2 + 0.5, t.d / 2 + 0.5);
+    });
+
+    function steelMat() { return new THREE.MeshPhongMaterial({ color: 0x94a3b8, shininess: 110 }); }
+
+    scene.add(group);
+    _skyscraperBeacons = group.userData.beacons || [];
+
+    const lbl = _makeTextSprite('🏢 برج‌های اداری', '#cbd5e1');
+    lbl.position.set(95, 66, 150);
+    lbl.scale.set(7, 2.2, 1);
+    scene.add(lbl);
+    labels.push(lbl);
+  }
+
+  // ─────────────────────────────────────────────
+  // سگ همراه — دنبال کردن، نشستن، تکان دم کنار NPC
+  // ─────────────────────────────────────────────
+  function _buildDog() {
+    dog = new THREE.Group();
+
+    const furM  = new THREE.MeshPhongMaterial({ color: 0xb07a45, shininess: 25 });
+    const furDk = new THREE.MeshPhongMaterial({ color: 0x8a5c30 });
+    const darkM = new THREE.MeshBasicMaterial({ color: 0x1a1a1a });
+
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 10), furM);
+    body.scale.set(0.85, 0.8, 1.55);
+    body.position.y = 0.62;
+    body.castShadow = true;
+    dog.add(body);
+
+    const headG = new THREE.Group();
+    headG.position.set(0, 0.95, 0.62);
+    headG.name = 'dogHead';
+    const skull = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 10), furM);
+    skull.castShadow = true;
+    headG.add(skull);
+    const snout = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.14, 0.26), furDk);
+    snout.position.set(0, -0.05, 0.28);
+    headG.add(snout);
+    const nose = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), darkM);
+    nose.position.set(0, -0.02, 0.42);
+    headG.add(nose);
+    [-1, 1].forEach(s => {
+      const ear = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.22, 6), furDk);
+      ear.position.set(s * 0.16, 0.26, -0.02);
+      ear.rotation.z = s * -0.35;
+      headG.add(ear);
+    });
+    [-0.11, 0.11].forEach(ex => {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 6), darkM);
+      eye.position.set(ex, 0.08, 0.24);
+      headG.add(eye);
+    });
+    dog.add(headG);
+
+    const collar = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.04, 8, 16),
+      new THREE.MeshPhongMaterial({ color: 0xdc2626 }));
+    collar.position.set(0, 0.82, 0.48);
+    collar.rotation.x = Math.PI / 2;
+    dog.add(collar);
+
+    const tailBase = new THREE.Group();
+    tailBase.name = 'tailA';
+    tailBase.position.set(0, 0.78, -0.72);
+    const t1 = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.4, 6), furM);
+    t1.rotation.x = Math.PI / 2.6;
+    t1.position.z = -0.18;
+    tailBase.add(t1);
+    const tailB = new THREE.Group();
+    tailB.name = 'tailB';
+    tailB.position.z = -0.38;
+    const t2 = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.05, 0.35, 6), furDk);
+    t2.rotation.x = Math.PI / 2.8;
+    t2.position.z = -0.15;
+    tailB.add(t2);
+    tailBase.add(tailB);
+    dog.add(tailBase);
+
+    const legs = [];
+    [[-0.22, 0.42], [0.22, 0.42], [-0.22, -0.45], [0.22, -0.45]].forEach(([lx, lz], i) => {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.05, 0.42, 6),
+        i < 2 ? furM : furDk);
+      leg.position.set(lx, 0.21, lz);
+      leg.castShadow = true;
+      dog.add(leg);
+      legs.push(leg);
+    });
+    dog.userData.legs = legs;
+
+    dog.position.set(3, 0, -7);
+    scene.add(dog);
+  }
+
+  function _updateDog(delta) {
+    if (!dog || !character) return;
+    const now = performance.now() * 0.001;
+
+    const dxp = character.position.x - dog.position.x;
+    const dzp = character.position.z - dog.position.z;
+    const distP = Math.sqrt(dxp * dxp + dzp * dzp);
+
+    let nearNPCd = Infinity;
+    for (const n of npcs) {
+      if (!n.visible) continue;
+      const d = Math.sqrt((n.position.x - dog.position.x) ** 2 + (n.position.z - dog.position.z) ** 2);
+      if (d < nearNPCd) nearNPCd = d;
+    }
+
+    if (dogSit) {
+      dog.rotation.x += (-0.45 - dog.rotation.x) * Math.min(1, delta * 5);
+      dog.userData.legs.forEach((l, i) => { l.rotation.x = i < 2 ? -1.1 : 0; });
+    } else {
+      dog.rotation.x *= (1 - Math.min(1, delta * 5));
+
+      if (distP > 3.2) {
+        const runSpeed = Math.min(11, distP * 2.2);
+        const nx = dxp / distP, nz = dzp / distP;
+        dog.position.x += nx * runSpeed * delta;
+        dog.position.z += nz * runSpeed * delta;
+        const ty = Math.atan2(dxp, dzp);
+        let dy = ty - dog.rotation.y;
+        while (dy >  Math.PI) dy -= Math.PI * 2;
+        while (dy < -Math.PI) dy += Math.PI * 2;
+        dog.rotation.y += dy * Math.min(1, delta * 9);
+
+        const ph = now * 13;
+        dog.userData.legs.forEach((l, i) => {
+          l.rotation.x = Math.sin(ph + (i % 2) * Math.PI + Math.floor(i / 2) * Math.PI) * 0.7;
+        });
+        dog.position.y = Math.abs(Math.sin(now * 9)) * 0.12;
+      } else {
+        dog.userData.legs.forEach(l => { l.rotation.x *= (1 - Math.min(1, delta * 6)); });
+        dog.position.y = 0;
+        const ty = Math.atan2(dxp, dzp);
+        let dy = ty - dog.rotation.y;
+        while (dy >  Math.PI) dy -= Math.PI * 2;
+        while (dy < -Math.PI) dy += Math.PI * 2;
+        dog.rotation.y += dy * Math.min(1, delta * 3);
+      }
+    }
+
+    // تکان دم — کنار NPC شدیدتر!
+    const wagRate = nearNPCd < 5 ? 16 : 7;
+    const wagAmp = dogSit ? 0.5 : (nearNPCd < 5 ? 0.85 : 0.4);
+    const tailA = dog.getObjectByName('tailA');
+    const tailB = dog.getObjectByName('tailB');
+    if (tailA) tailA.rotation.y = Math.sin(now * wagRate) * wagAmp;
+    if (tailB) tailB.rotation.y = Math.sin(now * wagRate + 0.6) * wagAmp * 1.3;
+
+    const dh = dog.getObjectByName('dogHead');
+    if (dh && !dogSit) dh.rotation.x = Math.sin(now * 2.2) * 0.12;
+
+    dog.position.x = Math.max(-WORLD_EDGE + 5, Math.min(WORLD_EDGE - 5, dog.position.x));
+    dog.position.z = Math.max(-WORLD_EDGE + 5, Math.min(WORLD_EDGE - 5, dog.position.z));
+  }
+
+  // ─────────────────────────────────────────────
+  // فیزیک اشیا — توپ فوتبال، بشکه‌ها، فواره کلیکی
+  // ─────────────────────────────────────────────
+  function _buildPhysicsProps() {
+    football = new THREE.Group();
+    const ballMat = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 60 });
+    football.add(new THREE.Mesh(new THREE.SphereGeometry(0.5, 18, 14), ballMat));
+    const patchM = new THREE.MeshPhongMaterial({ color: 0x111111 });
+    for (let i = 0; i < 6; i++) {
+      const patch = new THREE.Mesh(new THREE.CircleGeometry(0.19, 6), patchM);
+      const a = (i / 6) * Math.PI;
+      patch.position.set(Math.cos(a) * 0.49, Math.sin(a) * 0.49, i % 2 ? 0.3 : -0.3);
+      patch.lookAt(0, 0, 0);
+      patch.translateZ(0.005);
+      football.add(patch);
+    }
+    football.position.set(BALL_HOME.x, 0.5, BALL_HOME.z);
+    football.castShadow = true;
+    football.userData = { vel: new THREE.Vector3(), scored: false };
+    scene.add(football);
+
+    const barrelSpots = [
+      [112, -98], [114.5, -97], [113, -100.5],
+      [60, 128], [63, 129.5],
+    ];
+    barrelSpots.forEach(([bx, bz]) => {
+      const b = new THREE.Group();
+      const metal = new THREE.MeshPhongMaterial({
+        color: [0x8a5a2b, 0x3f6f6f, 0x6b7280][barrels.length % 3], shininess: 40
+      });
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 1.15, 14), metal);
+      body.position.y = 0.575;
+      body.castShadow = true;
+      b.add(body);
+      [0.25, 0.9].forEach(ry => {
+        const rib = new THREE.Mesh(new THREE.TorusGeometry(0.56, 0.03, 6, 18),
+          new THREE.MeshPhongMaterial({ color: 0x333333 }));
+        rib.rotation.x = Math.PI / 2;
+        rib.position.y = ry;
+        b.add(rib);
+      });
+      b.position.set(bx, 0, bz);
+      b.userData = { vel: new THREE.Vector3(), r: 0.62 };
+      scene.add(b);
+      barrels.push(b);
+    });
+  }
+
+  function _updatePhysics(delta) {
+    // ─── توپ فوتبال ───
+    if (football) {
+      const v = football.userData.vel;
+
+      // شوت با تماس بدنی موقع حرکت
+      if (character) {
+        const dx = football.position.x - character.position.x;
+        const dz = football.position.z - character.position.z;
+        const d = Math.sqrt(dx * dx + dz * dz);
+        const moving = keys.w || keys.a || keys.s || keys.d ||
+                       keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight;
+        if (d < 1.15 && d > 0.01 && moving && v.length() < 2) {
+          const p = keys.Shift ? 16 : 9;
+          v.x += (dx / d) * p;
+          v.z += (dz / d) * p;
+          v.y += 2.5;
+        }
+      }
+
+      v.y -= 22 * delta;
+      football.position.x += v.x * delta;
+      football.position.y += v.y * delta;
+      football.position.z += v.z * delta;
+
+      const groundY = 0.5;
+      if (football.position.y <= groundY) {
+        football.position.y = groundY;
+        if (v.y < -1) v.y = -v.y * 0.52; else v.y = 0;
+        const fr = Math.pow(0.32, delta);
+        v.x *= fr; v.z *= fr;
+        if (v.length() < 0.15) v.set(0, 0, 0);
+      }
+
+      if (_collides(football.position.x, football.position.z)) {
+        v.x *= -0.55; v.z *= -0.55;
+        football.position.x -= v.x * delta * 2;
+        football.position.z -= v.z * delta * 2;
+      }
+      if (Math.abs(football.position.x) > WORLD_EDGE - 3) {
+        v.x *= -0.5;
+        football.position.x = Math.sign(football.position.x) * (WORLD_EDGE - 3);
+      }
+      if (Math.abs(football.position.z) > WORLD_EDGE - 3) {
+        v.z *= -0.5;
+        football.position.z = Math.sign(football.position.z) * (WORLD_EDGE - 3);
+      }
+
+      // گل در دروازه‌های پارک
+      const relX = football.position.x - BALL_HOME.x;
+      const relZ = football.position.z - BALL_HOME.z;
+      if (!football.userData.scored &&
+          ((Math.abs(relX + 14.4) < 0.7 && Math.abs(relZ) < 3.2) ||
+           (Math.abs(relX - 14.4) < 0.7 && Math.abs(relZ) < 3.2)) &&
+          football.position.y < 2.2) {
+        football.userData.scored = true;
+        _showToast('🥅 گللل! چه ضربه‌ای!');
+        _spawnSmoke(new THREE.Vector3(relX + BALL_HOME.x, 1.5, relZ + BALL_HOME.z));
+        setTimeout(() => {
+          if (!football) return;
+          football.position.set(BALL_HOME.x, 0.5, BALL_HOME.z);
+          football.userData.vel.set(0, 0, 0);
+          football.userData.scored = false;
+        }, 1400);
+      }
+
+      const sp = Math.sqrt(v.x * v.x + v.z * v.z);
+      if (sp > 0.05) {
+        football.rotateOnWorldAxis(
+          new THREE.Vector3(v.z / sp, 0, -v.x / sp).normalize(),
+          (sp / 0.5) * delta
+        );
+      }
+    }
+
+    // ─── بشکه‌های قابل هل دادن ───
+    for (const b of barrels) {
+      const u = b.userData.vel;
+      if (character) {
+        const dx = b.position.x - character.position.x;
+        const dz = b.position.z - character.position.z;
+        const d = Math.sqrt(dx * dx + dz * dz);
+        const minD = u.r + 0.55;
+        if (d < minD && d > 0.01) {
+          const push = (minD - d) * 300;
+          u.x += (dx / d) * push * delta;
+          u.z += (dz / d) * push * delta;
+          b.position.x += (dx / d) * (minD - d);
+          b.position.z += (dz / d) * (minD - d);
+        }
+      }
+      for (const o of barrels) {
+        if (o === b) continue;
+        const dx = b.position.x - o.position.x;
+        const dz = b.position.z - o.position.z;
+        const d = Math.sqrt(dx * dx + dz * dz);
+        const minD = u.r * 2;
+        if (d < minD && d > 0.01) {
+          const f = (minD - d) / 2;
+          b.position.x += (dx / d) * f;
+          b.position.z += (dz / d) * f;
+          o.position.x -= (dx / d) * f;
+          o.position.z -= (dz / d) * f;
+          u.multiplyScalar(0.7);
+        }
+      }
+
+      b.position.x += u.x * delta;
+      b.position.z += u.z * delta;
+      const fr = Math.pow(0.05, delta);
+      u.x *= fr; u.z *= fr;
+
+      const sp = Math.sqrt(u.x * u.x + u.z * u.z);
+      if (sp > 0.1) {
+        b.rotateOnWorldAxis(new THREE.Vector3(u.z / sp, 0, -u.x / sp).normalize(), (sp / 0.55) * delta);
+      }
+      if (_collides(b.position.x, b.position.z)) {
+        b.position.x -= u.x * delta * 2;
+        b.position.z -= u.z * delta * 2;
+        u.multiplyScalar(-0.4);
+      }
+      b.position.x = Math.max(-WORLD_EDGE + 4, Math.min(WORLD_EDGE - 4, b.position.x));
+      b.position.z = Math.max(-WORLD_EDGE + 4, Math.min(WORLD_EDGE - 4, b.position.z));
+    }
+
+    // ─── فواره کلیکی ───
+    if (fountainRef) {
+      const jet = fountainRef.getObjectByName('jet');
+      const water = fountainRef.getObjectByName('water');
+      if (jet) jet.visible = fountainOn;
+      if (water) water.material.opacity = fountainOn ? 0.75 : 0.4;
+    }
+  }
+
   function _updateMinimap() {
     const canvas = document.getElementById('city-minimap-canvas');
     if (!canvas || typeof canvas.getContext !== 'function') return;
@@ -2262,6 +3107,42 @@ const CityWorld = (function () {
       ctx.restore();
     }
 
+    // ─── لندمارک‌ها ───
+    // پارک بزرگ (مربع سبز)
+    const pkx = cx + (-125) * S, pkz = cy + (-118) * S;
+    ctx.fillStyle = 'rgba(34,197,94,0.55)';
+    ctx.fillRect(pkx - 40 * S / 2 - 20, pkz - 20, 40 * S + 40, 40);
+    // مرکز پلیس
+    const pcx = cx + 122 * S, pcz = cy + (-112) * S;
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(pcx - 4, pcz - 4, 8, 8);
+    ctx.fillStyle = '#fff'; ctx.font = '7px Tahoma'; ctx.textAlign = 'center';
+    ctx.fillText('🚓', pcx, pcz - 6);
+    // برج‌ها
+    ctx.fillStyle = '#94a3b8';
+    [[70,150],[96,158],[118,146],[88,132],[132,165]].forEach(([tx2,tz2]) => {
+      ctx.fillRect(cx + tx2 * S - 2.5, cy + tz2 * S - 2.5, 5, 5);
+    });
+
+    // توپ فوتبال
+    if (football) {
+      const bxx = cx + football.position.x * S;
+      const bzz = cy + football.position.z * S;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(bxx, bzz, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#111'; ctx.lineWidth = 1; ctx.stroke();
+    }
+
+    // سگ همراه 🐶
+    if (dog) {
+      const dxx = cx + dog.position.x * S;
+      const dzz = cy + dog.position.z * S;
+      ctx.fillStyle = '#b07a45';
+      ctx.beginPath(); ctx.arc(dxx, dzz, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = '7px Tahoma'; ctx.textAlign = 'center';
+      ctx.fillText('🐶', dxx, dzz - 5);
+    }
+
     // هلی‌کوپتر روی minimap
     if (helicopter) {
       const hx = cx + helicopter.position.x * S;
@@ -2305,11 +3186,12 @@ const CityWorld = (function () {
       // تنوع قد و اندام — مثل آدم‌های واقعی
       npc.scale.setScalar(0.93 + Math.random() * 0.15);
 
-      npc.userData = {
+      // ادغام با داده‌های اسکلت سازنده (limbs/joints) — بازنویسی نشود!
+      Object.assign(npc.userData, {
         name: cfg.name,
         role: cfg.role,
         speed: cfg.speed,
-        state: 'walk',       // walk | enter | inside | exit
+        state: 'walk',       // walk | enter | inside | exit | talking
         target: null,        // ساختمان مقصد
         insideTimer: 0,
         waitTimer: 0,
@@ -2318,10 +3200,11 @@ const CityWorld = (function () {
         blinkT: 1 + Math.random() * 3,
         blinkPhase: 0,
         lastLineIdx: -1,
+        ambT: 2 + Math.random() * 3,
         // مسیر NPC
         path: [],
         pathIdx: 0,
-      };
+      });
 
       // موقعیت تصادفی اولیه — پراکنده در شهر بزرگ
       const angle = (idx / NPC_CONFIGS.length) * Math.PI * 2;
@@ -2352,10 +3235,236 @@ const CityWorld = (function () {
     }
   }
 
+  // ─────────────────────────────────────────────
+  // ترافیک شهری — ماشین‌های NPC با حلقه مسیر، ترمز و پیچ
+  // ─────────────────────────────────────────────
+  function mkRectLoop(x1, z1, x2, z2, inset) {
+    return [
+      { x: x1 + inset, z: z1 + inset },
+      { x: x2 - inset, z: z1 + inset },
+      { x: x2 - inset, z: z2 - inset },
+      { x: x1 + inset, z: z2 - inset },
+    ];
+  }
+
+  function _buildTraffic() {
+    const loops = [
+      mkRectLoop(-52, -52, 52, 52, 3.4),     // هسته مرکزی
+      mkRectLoop(-84, 55, 84, 90, 3.4),      // نوار شمالی
+      mkRectLoop(-84, -90, 84, -55, 3.4),    // نوار جنوبی
+      mkRectLoop(52, -138, 138, -58, 3.4),   // شرق دور
+    ];
+    const colors = [0x2563eb, 0x059669, 0xd97706, 0x7c3aed, 0xdc2626, 0x0891b2, 0xdb2777, 0x65a30d];
+    let ci = 0;
+
+    loops.forEach((pts, li) => {
+      const count = li === 0 ? 3 : 2;
+      for (let i = 0; i < count; i++) {
+        const car = _makeTrafficCar(colors[ci++ % colors.length]);
+        const startPt = pts[(i * 2) % pts.length];
+        car.position.set(startPt.x, 0, startPt.z);
+        car.userData = {
+          path: pts,
+          idx: 1,
+          speed: 8 + Math.random() * 3.5,
+          cur: 0, // سرعت فعلی برای ترمز
+          yaw: Math.atan2(
+            pts[1].x - pts[0].x, pts[1].z - pts[0].z
+          ),
+        };
+        car.rotation.y = car.userData.yaw;
+        scene.add(car);
+        trafficCars.push(car);
+      }
+    });
+  }
+
+  function _makeTrafficCar(color) {
+    const g = new THREE.Group();
+    const paint = new THREE.MeshPhongMaterial({ color, shininess: 100 });
+    const darkM = new THREE.MeshPhongMaterial({ color: 0x111827 });
+    const glass = new THREE.MeshPhongMaterial({ color: 0xa8cdf0, transparent: true, opacity: 0.5, shininess: 140 });
+
+    const body = new THREE.Mesh(new THREE.BoxGeometry(2, 0.6, 4.3), paint);
+    body.position.y = 0.62;
+    body.castShadow = true;
+    g.add(body);
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.55, 2.1), paint);
+    cabin.position.set(0, 1.18, -0.15);
+    cabin.castShadow = true;
+    g.add(cabin);
+    const ws = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.5, 0.06), glass);
+    ws.position.set(0, 1.16, 0.92);
+    ws.rotation.x = 0.4;
+    g.add(ws);
+
+    // چراغ‌ها
+    const headM = new THREE.MeshBasicMaterial({ color: 0xfff3c4 });
+    [-0.62, 0.62].forEach(x => {
+      const h = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.14, 0.05), headM);
+      h.position.set(x, 0.72, 2.17);
+      g.add(h);
+    });
+    const tailM = new THREE.MeshBasicMaterial({ color: 0xff4444 });
+    [-0.62, 0.62].forEach(x => {
+      const t = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.12, 0.05), tailM);
+      t.position.set(x, 0.74, -2.17);
+      g.add(t);
+    });
+
+    [[0.95, 1.42], [-0.95, 1.42], [0.95, -1.42], [-0.95, -1.42]].forEach(([wx, wz]) => {
+      const w = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.22, 10), darkM);
+      w.rotation.z = Math.PI / 2;
+      w.position.set(wx, 0.34, wz);
+      w.castShadow = true;
+      g.add(w);
+    });
+
+    return g;
+  }
+
+  function _updateTraffic(delta) {
+    for (const car of trafficCars) {
+      const ud = car.userData;
+      const target = ud.path[ud.idx];
+      const dx = target.x - car.position.x;
+      const dz = target.z - car.position.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+
+      if (dist < 5) {
+        ud.idx = (ud.idx + 1) % ud.path.length;
+        continue;
+      }
+
+      // پیچ نرم به سمت وِی‌پوینت
+      const desiredYaw = Math.atan2(dx, dz);
+      let diff = desiredYaw - ud.yaw;
+      while (diff >  Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      ud.yaw += Math.max(-2.2 * delta, Math.min(2.2 * delta, diff));
+      const turning = Math.abs(diff) > 0.45;
+
+      // ─── ترمز پشت موانع: ماشین دیگر / بازیکن / سگ ───
+      let blocked = false;
+      const fx = Math.sin(ud.yaw), fz = Math.cos(ud.yaw);
+      const checkAhead = (ox, oz, range) => {
+        const ax = ox - car.position.x;
+        const az = oz - car.position.z;
+        const d = Math.sqrt(ax * ax + az * az);
+        if (d > range) return false;
+        const dot = (ax / d) * fx + (az / d) * fz;
+        return dot > 0.75; // جلوی ماشین
+      };
+      for (const other of trafficCars) {
+        if (other === car) continue;
+        if (checkAhead(other.position.x, other.position.z, 8)) { blocked = true; break; }
+      }
+      if (!blocked && character && checkAhead(character.position.x, character.position.z, 6)) blocked = true;
+      if (!blocked && dog && checkAhead(dog.position.x, dog.position.z, 5)) blocked = true;
+
+      const cruise = turning ? ud.speed * 0.45 : ud.speed;
+      ud.cur += ((blocked ? 0 : cruise) - ud.cur) * Math.min(1, delta * (blocked ? 6 : 2));
+
+      if (ud.cur > 0.02) {
+        car.position.x += Math.sin(ud.yaw) * ud.cur * delta;
+        car.position.z += Math.cos(ud.yaw) * ud.cur * delta;
+        car.rotation.y = ud.yaw;
+        // کج شدن ملایم در پیچ
+        car.rotation.z += ((-Math.sin(diff)) * 0.06 - car.rotation.z) * Math.min(1, delta * 3);
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // عابرهای پیاده — تردد روی خط عابر
+  // ─────────────────────────────────────────────
+  function _buildPedestrians() {
+    const routes = [
+      // عبور از زیبرای افقی مرکزی (حرکت در محور z)
+      [{ x: 2.5, z: -14 }, { x: 2.5, z: 14 }],
+      [{ x: -2.5, z: 14 }, { x: -2.5, z: -14 }],
+      // زیبرای شمالی
+      [{ x: 8, z: 48 }, { x: 8, z: 62 }],
+      [{ x: -8, z: 62 }, { x: -8, z: 48 }],
+      // زیبرای جنوبی
+      [{ x: 8, z: -48 }, { x: 8, z: -62 }],
+      [{ x: -8, z: -62 }, { x: -8, z: -48 }],
+    ];
+    const names = ['عابر', 'رهگذر', 'همسایه', 'مسافر', 'دونده', 'خریدار'];
+
+    routes.forEach((route, i) => {
+      const p = _makeCharacterMesh([0xf59e0b, 0x10b981, 0x3b82f6, 0xec4899][i % 4], {});
+      p.scale.setScalar(0.94 + Math.random() * 0.1);
+      const a = route[0];
+      p.position.set(a.x, 0, a.z);
+      Object.assign(p.userData, {
+        name: names[i % names.length],
+        role: 'civilian',
+        crosser: true,
+        route,
+        ri: 1,
+        waitT: Math.random() * 2,
+        phase: Math.random() * Math.PI * 2,
+        blinkT: 2 + Math.random() * 3,
+        blinkPhase: 0,
+        state: 'walk',
+      });
+      scene.add(p);
+      pedestrians.push(p);
+    });
+  }
+
+  function _updatePedestrians(delta) {
+    for (const p of pedestrians) {
+      const ud = p.userData;
+      const tgt = ud.route[ud.ri];
+      const dx = tgt.x - p.position.x;
+      const dz = tgt.z - p.position.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+
+      if (dist < 0.7) {
+        // ایست در لبه پیاده‌رو — گاهی طولانی (منتظر ترافیک)
+        ud.waitT -= delta;
+        if (ud.waitT <= 0) {
+          ud.ri = (ud.ri + 1) % ud.route.length;
+          ud.waitT = 1 + Math.random() * 3.5;
+        }
+        _animateNPC(p, delta); // تنفس/نگاه حتی در ایستادن
+        continue;
+      }
+
+      // قبل از قدم گذاشتن روی جاده، اجازه بگیر از ترافیک
+      const onRoadZ = Math.abs(p.position.z) < 5 || Math.abs(p.position.z - 55) < 4 || Math.abs(p.position.z + 55) < 4;
+      if (onRoadZ) {
+        const danger = trafficCars.some(c =>
+          Math.abs(c.position.x - p.position.x) < 5 &&
+          Math.abs(c.position.z - p.position.z) < 5
+        );
+        if (danger) {
+          _animateNPC(p, delta);
+          continue;
+        }
+      }
+
+      const spd = 1.9 * delta;
+      p.position.x += (dx / dist) * spd;
+      p.position.z += (dz / dist) * spd;
+      const ty = Math.atan2(dx, dz);
+      let dy = ty - p.rotation.y;
+      while (dy >  Math.PI) dy -= Math.PI * 2;
+      while (dy < -Math.PI) dy += Math.PI * 2;
+      p.rotation.y += dy * Math.min(1, delta * 8);
+
+      ud.phase += delta * 6.5;
+      _animHumanoid(p, ud.phase, 0.45);
+      _applyReactionLayer(p, delta);
+      _applyTrackingLayer(p, delta);
+    }
+  }
+
   // اعمال مدل GLB ریک‌شده روی همه NPCها
   function _applyGltfModelToNPCs(gltf) {
     if (!THREE.SkeletonUtils) return; // کلون امن اسکلت بدون این ممکن نیست
-
     const src = gltf.scene;
     const bbox = new THREE.Box3().setFromObject(src);
     const h = Math.max(0.1, bbox.max.y - bbox.min.y);
@@ -3535,8 +4644,8 @@ const CityWorld = (function () {
     }
 
     helicopter.position.y = Math.max(HELI_MIN_ALT, Math.min(HELI_MAX_ALT, helicopter.position.y + up * 14 * delta));
-    helicopter.position.x = Math.max(-185, Math.min(185, helicopter.position.x));
-    helicopter.position.z = Math.max(-185, Math.min(185, helicopter.position.z));
+    helicopter.position.x = Math.max(-260, Math.min(260, helicopter.position.x));
+    helicopter.position.z = Math.max(-260, Math.min(260, helicopter.position.z));
   }
 
   // ─────────────────────────────────────────────
@@ -4083,8 +5192,8 @@ const CityWorld = (function () {
       if (!_collidesLarge(nx, nz, 3, 3.5)) {
         tank.position.x = nx; tank.position.z = nz;
       } else { tankVelocity *= -0.3; }
-      tank.position.x = Math.max(-185, Math.min(185, tank.position.x));
-      tank.position.z = Math.max(-185, Math.min(185, tank.position.z));
+      tank.position.x = Math.max(-WORLD_EDGE, Math.min(WORLD_EDGE, tank.position.x));
+      tank.position.z = Math.max(-WORLD_EDGE, Math.min(WORLD_EDGE, tank.position.z));
 
       // چرخش چرخ‌های حرکت با سرعت واقعی
       const tw = tank.userData.wheels || [];
@@ -4436,6 +5545,11 @@ const CityWorld = (function () {
     smokeParticles.length = 0;
     birdFlocks.length = 0;
     staticColliders.length = 0;
+    trafficCars.length = 0;
+    pedestrians.length = 0;
+    barrels.length = 0;
+    policeStations.length = 0;
+    dog = null; football = null; _policeFlagRef = null; _skyscraperBeacons = null;
     nearBuilding = null; nearCar = false; nearTank = false; nearHeli = false;
     nearJet = false; nearNPC = null;
     inCar = inTank = inHeli = inJet = false;

@@ -216,6 +216,31 @@ async function handleFormSubmit(event) {
             master_certificate:  masterCertificatePath,
         }, regId);
 
+        // ── ذخیره محلی برای نمایش در پنل داخلی ──
+        try {
+            const localRecord = {
+                id:                  saved.registration_id || regId,
+                middle_name:         formData.get('middle_name'),
+                last_name:           formData.get('last_name'),
+                religion:            formData.get('religion'),
+                phone:               formData.get('phone'),
+                email:               formData.get('email'),
+                address_iraq:        formData.get('address_iraq'),
+                job:                 formData.get('job'),
+                marital_status:      formData.get('marital_status'),
+                university_type:     formData.get('university_type'),
+                degree:              formData.get('degree'),
+                major:               formData.get('major'),
+                previous_university: formData.get('previous_university'),
+                bachelor_gpa:        formData.get('bachelor_gpa'),
+                status:              'new',
+                createdAt:           new Date().toISOString(),
+            };
+            const existing = JSON.parse(localStorage.getItem('registrations_data') || '[]');
+            existing.unshift(localRecord);
+            localStorage.setItem('registrations_data', JSON.stringify(existing));
+        } catch(e) { console.warn('localStorage save failed:', e); }
+
         hideLoading();
         form.reset();
         // پاک کردن preview فایل‌ها
