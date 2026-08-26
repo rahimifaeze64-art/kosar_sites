@@ -310,16 +310,6 @@
                 </button>
             </template>
 
-            <!-- ثبت‌نام‌ها - مدیر و کارمند -->
-            <template x-if="currentUser.role === 'manager' || currentUser.role === 'employee'">
-                <button @click="currentPage = 'registrations'"
-                        :class="currentPage === 'registrations' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
-                        class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
-                    <i class="fas fa-user-plus text-lg"></i>
-                    <span class="font-medium">ثبت‌نام‌ها</span>
-                </button>
-            </template>
-
             <!-- حسابداری من - فقط عامل -->
             <template x-if="currentUser.role === 'agent'">
                 <button @click="currentPage = 'agentAccounting'"
