@@ -54,14 +54,14 @@ function hideMessages() {
 async function uploadFile(file, registrationId, fieldName) {
     if (!file) return null;
 
-    const ext      = file.name.split('.').pop();
+    const ext      = file.name.split('.').pop().toLowerCase();
     const filePath = `${registrationId}/${fieldName}.${ext}`;
 
     const { data, error } = await supabase.storage
         .from(BUCKET_NAME)
         .upload(filePath, file, {
             cacheControl: '3600',
-            upsert: false,
+            upsert: true,          // اگر قبلاً آپلود شده، override کن
             contentType: file.type
         });
 
@@ -70,8 +70,12 @@ async function uploadFile(file, registrationId, fieldName) {
         throw new Error(`فشل رفع الملف: ${fieldName}`);
     }
 
-    // برگرداندن path (برای دسترسی بعدی با getSignedUrl)
-    return data.path;
+    // bucket عمومی است — public URL برمی‌گردانیم
+    const { data: urlData } = supabase.storage
+        .from(BUCKET_NAME)
+        .getPublicUrl(data.path);
+
+    return urlData.publicUrl || data.path;
 }
 
 // ── ذخیره رکورد در جدول student_registrations ──────────────

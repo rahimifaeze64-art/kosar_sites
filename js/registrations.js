@@ -492,23 +492,17 @@ const RegistrationsModule = {
     },
 
     /* ─── باز کردن فایل از Supabase Storage ─── */
-    openFile(filePath) {
-        if (!filePath) return;
-        // اگر URL کامل باشد مستقیم باز کن
-        if (filePath.startsWith('http')) {
-            window.open(filePath, '_blank');
+    openFile(url) {
+        if (!url) return;
+        // public URL یا هر URL کامل را مستقیم باز کن
+        if (url.startsWith('http')) {
+            window.open(url, '_blank');
             return;
         }
-        // وگرنه signed URL بگیر
-        const sb = typeof SupabaseDataModule !== 'undefined' ? SupabaseDataModule : null;
-        if (sb && typeof sb.getRegistrationFileUrl === 'function') {
-            sb.getRegistrationFileUrl(filePath).then(url => {
-                if (url) window.open(url, '_blank');
-                else alert('خطا در دریافت لینک فایل');
-            });
-        } else {
-            alert('سرویس فایل در دسترس نیست');
-        }
+        // اگر فقط path باشد، public URL بساز
+        const SUPABASE_URL = 'https://xqcsmtqcaqucszapimmr.supabase.co';
+        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/student-documents/${url}`;
+        window.open(publicUrl, '_blank');
     },
 
     toggleStep(id, stepKey, checked) {
