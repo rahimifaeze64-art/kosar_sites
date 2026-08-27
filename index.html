@@ -363,6 +363,16 @@
                 </button>
             </template>
 
+            <!-- ثبت‌نام‌ها - فقط مدیر -->
+            <template x-if="currentUser.role === 'manager'">
+                <button @click="currentPage = 'registrations'"
+                        :class="currentPage === 'registrations' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
+                        class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
+                    <i class="fas fa-user-plus text-lg"></i>
+                    <span class="font-medium">ثبت‌نام‌ها</span>
+                </button>
+            </template>
+
             <!-- مدیریت کاربران - فقط مدیر -->
             <template x-if="currentUser.role === 'manager'">
                 <button @click="currentPage = 'users'"
@@ -768,8 +778,8 @@
                 </div>
             </div>
 
-            <!-- Registrations Page (Manager and Employee) -->
-            <div x-show="currentPage === 'registrations' && (currentUser.role === 'manager' || currentUser.role === 'employee')"
+            <!-- Registrations Page (Manager Only) -->
+            <div x-show="currentPage === 'registrations' && currentUser.role === 'manager'"
                  x-html="typeof RegistrationsModule !== 'undefined' ? RegistrationsModule.getContent() : '<div class=\'text-center py-12\'><i class=\'fas fa-spinner fa-spin text-3xl text-lime-400\'></i></div>'">
             </div>
 

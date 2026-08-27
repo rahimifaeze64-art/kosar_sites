@@ -468,6 +468,7 @@ function appController() {
       const pageTitles = {
         embassy: 'سفارت',
         whatsapp: 'مدیریت واتساپ',
+        registrations: 'ثبت‌نام‌ها',
         dashboard: "داشبورد",
         tasks: "مدیریت همکاران",
         myTasks: "وظایف من",
@@ -487,6 +488,7 @@ function appController() {
         profile: "پروفایل کاربری",
         users: "مدیریت کاربران",
         students: "مدیریت دانشجویان",
+        companyDoor: "در شرکت",
         agentTasks:
           this.currentUser && this.currentUser.role === "agent"
             ? "وظایف من"

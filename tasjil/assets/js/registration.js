@@ -218,23 +218,37 @@ async function handleFormSubmit(event) {
 
         // ── ذخیره محلی برای نمایش در پنل داخلی ──
         try {
+            const childrenVal = formData.get('children_count');
             const localRecord = {
-                id:                  saved.registration_id || regId,
-                middle_name:         formData.get('middle_name'),
-                last_name:           formData.get('last_name'),
-                religion:            formData.get('religion'),
-                phone:               formData.get('phone'),
-                email:               formData.get('email'),
-                address_iraq:        formData.get('address_iraq'),
-                job:                 formData.get('job'),
-                marital_status:      formData.get('marital_status'),
-                university_type:     formData.get('university_type'),
-                degree:              formData.get('degree'),
-                major:               formData.get('major'),
-                previous_university: formData.get('previous_university'),
-                bachelor_gpa:        formData.get('bachelor_gpa'),
-                status:              'new',
-                createdAt:           new Date().toISOString(),
+                id:                     saved.registration_id || regId,
+                registration_id:        saved.registration_id || regId,
+                // شخصی
+                middle_name:            formData.get('middle_name')         || '',
+                last_name:              formData.get('last_name')           || '',
+                religion:               formData.get('religion')            || '',
+                phone:                  formData.get('phone')               || '',
+                email:                  formData.get('email')               || '',
+                address_iraq:           formData.get('address_iraq')        || '',
+                job:                    formData.get('job')                 || '',
+                marital_status:         formData.get('marital_status')      || '',
+                children_count:         childrenVal ? parseInt(childrenVal) : null,
+                // دانشگاهی
+                university_type:        formData.get('university_type')     || '',
+                degree:                 formData.get('degree')              || '',
+                major:                  formData.get('major')               || '',
+                previous_university:    formData.get('previous_university') || '',
+                master_university:      formData.get('master_university')   || '',
+                bachelor_gpa:           formData.get('bachelor_gpa')        || '',
+                master_gpa:             formData.get('master_gpa')          || '',
+                // مسیر فایل‌ها در Storage
+                passport_url:           passportPath            || '',
+                personal_photo_url:     photoPath               || '',
+                transcript_url:         transcriptPath          || '',
+                master_transcript_url:  masterTranscriptPath    || '',
+                master_certificate_url: masterCertificatePath   || '',
+                // وضعیت
+                status:                 'new',
+                createdAt:              new Date().toISOString(),
             };
             const existing = JSON.parse(localStorage.getItem('registrations_data') || '[]');
             existing.unshift(localRecord);

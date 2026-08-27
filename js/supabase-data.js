@@ -1583,7 +1583,66 @@ const SupabaseDataModule = {
             const all = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
             return all[employeeId] || [];
         } catch { return []; }
-    }
+    },
+
+    // ════════════════════════════════════════════════════════
+    // STUDENT REGISTRATIONS  (فرم tasjil)
+    // ════════════════════════════════════════════════════════
+
+    async getRegistrations() {
+        if (!this._online()) {
+            try { return JSON.parse(localStorage.getItem('registrations_data') || '[]'); } catch { return []; }
+        }
+        try {
+            const { data, error } = await this._db()
+                .from('student_registrations')
+                .select('*')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            return data || [];
+        } catch (e) {
+            console.warn('⚠️ getRegistrations خطا:', e.message);
+            try { return JSON.parse(localStorage.getItem('registrations_data') || '[]'); } catch { return []; }
+        }
+    },
+
+    async updateRegistrationStatus(registrationId, status) {
+        try {
+            const all = JSON.parse(localStorage.getItem('registrations_data') || '[]');
+            const r = all.find(x => x.id === registrationId || x.registration_id === registrationId);
+            if (r) { r.status = status; r.updatedAt = new Date().toISOString(); }
+            localStorage.setItem('registrations_data', JSON.stringify(all));
+        } catch (e) { /* ignore */ }
+
+        if (!this._online()) return true;
+        try {
+            const { error } = await this._db()
+                .from('student_registrations')
+                .update({ status, updated_at: new Date().toISOString() })
+                .eq('registration_id', registrationId);
+            if (error) throw error;
+            return true;
+        } catch (e) {
+            console.warn('⚠️ updateRegistrationStatus خطا:', e.message);
+            return false;
+        }
+    },
+
+    async getRegistrationFileUrl(filePath) {
+        if (!filePath || !this._online()) return null;
+        try {
+            const { data, error } = await this._db()
+                .storage
+                .from('student-documents')
+                .createSignedUrl(filePath, 3600);
+            if (error) throw error;
+            return data.signedUrl;
+        } catch (e) {
+            console.warn('⚠️ getRegistrationFileUrl خطا:', e.message);
+            return null;
+        }
+    },
+
 };
 
 console.log('📦 supabase-data.js بارگذاری شد');

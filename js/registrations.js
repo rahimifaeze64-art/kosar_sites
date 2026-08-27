@@ -1,21 +1,18 @@
 /**
  * RegistrationsModule — مدیریت ثبت‌نام‌های دریافت‌شده از فرم registration.html
- * داده‌ها از localStorage['registrations_data'] خوانده می‌شوند
- * (registration.js فرم همین کلید را پر می‌کند)
+ * داده‌ها از Supabase (student_registrations) + localStorage['registrations_data'] خوانده می‌شوند
  */
 const RegistrationsModule = {
 
     STORAGE_KEY: 'registrations_data',
 
-    // وضعیت‌های ممکن برای هر دانشجو
     STATUS_LIST: [
-        { key: 'new',        label: 'سفارش ثبت‌نام',    color: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
-        { key: 'result',     label: 'اعلام نتیجه',       color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40' },
-        { key: 'registered', label: 'ثبت‌نام دانشگاه',  color: 'bg-green-500/20 text-green-300 border-green-500/40' },
-        { key: 'cancelled',  label: 'انصراف',             color: 'bg-red-500/20 text-red-300 border-red-500/40' },
+        { key: 'new',        label: 'سفارش ثبت‌نام',   color: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
+        { key: 'result',     label: 'اعلام نتیجه',      color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40' },
+        { key: 'registered', label: 'ثبت‌نام دانشگاه', color: 'bg-green-500/20 text-green-300 border-green-500/40' },
+        { key: 'cancelled',  label: 'انصراف',            color: 'bg-red-500/20 text-red-300 border-red-500/40' },
     ],
 
-    // مراحل پیگیری
     STEPS: [
         { key: 'step1',  label: 'ثبت‌نام اولیه' },
         { key: 'step2',  label: 'قبول اولی' },
@@ -33,7 +30,6 @@ const RegistrationsModule = {
 
     /* ─────────────────── Data helpers ─────────────────── */
     getAll() {
-        // sync از Supabase در پس‌زمینه
         this._syncFromSupabase();
         try {
             return JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '[]');
@@ -47,38 +43,81 @@ const RegistrationsModule = {
         const now = Date.now();
         if (this._lastSync && now - this._lastSync < 30000) return;
         this._lastSync = now;
-        this._syncing = true;
+        this._syncing  = true;
+
         sb.getRegistrations().then(rows => {
             this._syncing = false;
             if (!rows || rows.length === 0) return;
-            // merge: local record اولویت دارد (وضعیت و مراحل تغییر داده شده)
+
             const local = JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '[]');
+
             rows.forEach(r => {
-                const mapped = {
-                    id:                  r.registration_id || r.id,
-                    middle_name:         r.middle_name,
-                    last_name:           r.last_name,
-                    religion:            r.religion,
-                    phone:               r.phone,
-                    email:               r.email,
-                    address_iraq:        r.address_iraq,
-                    job:                 r.job,
-                    marital_status:      r.marital_status,
-                    university_type:     r.university_type,
-                    degree:              r.degree,
-                    major:               r.major,
-                    previous_university: r.previous_university,
-                    bachelor_gpa:        r.bachelor_gpa,
-                    status:              r.status || 'new',
-                    createdAt:           r.created_at || r.createdAt,
-                };
-                if (!local.find(l => l.id === mapped.id)) local.push(mapped);
+                const mapped = this._mapSupabaseRow(r);
+                const idx = local.findIndex(l => l.id === mapped.id);
+                if (idx === -1) {
+                    local.push(mapped);
+                } else {
+                    // فیلدهای Supabase که در local کامل نیستند رو merge کن
+                    // ولی status و steps محلی را حفظ کن
+                    const preserved = {
+                        status:              local[idx].status,
+                        updatedAt:           local[idx].updatedAt,
+                        referrer:            local[idx].referrer,
+                        agent:               local[idx].agent,
+                        agent_share:         local[idx].agent_share,
+                        agent_share_confirmed: local[idx].agent_share_confirmed,
+                        final_price:         local[idx].final_price,
+                        paid:                local[idx].paid,
+                        notes:               local[idx].notes,
+                    };
+                    // step keys
+                    this.STEPS.forEach(s => {
+                        if (local[idx][s.key] !== undefined) preserved[s.key] = local[idx][s.key];
+                    });
+                    local[idx] = Object.assign({}, mapped, preserved);
+                }
             });
+
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(local));
-            // refresh UI اگر صفحه باز باشد
             const el = document.getElementById('registrations-list');
             if (el) this.renderList();
         }).catch(e => { this._syncing = false; console.warn('registrations sync:', e.message); });
+    },
+
+    /** تبدیل رکورد Supabase به فرمت محلی — همه فیلدها */
+    _mapSupabaseRow(r) {
+        return {
+            id:                     r.registration_id || String(r.id),
+            db_id:                  r.id,
+            registration_id:        r.registration_id,
+            // شخصی
+            middle_name:            r.middle_name        || '',
+            last_name:              r.last_name          || '',
+            religion:               r.religion           || '',
+            phone:                  r.phone              || '',
+            email:                  r.email              || '',
+            address_iraq:           r.address_iraq       || '',
+            job:                    r.job                || '',
+            marital_status:         r.marital_status     || '',
+            children_count:         r.children_count     ?? null,
+            // دانشگاهی
+            university_type:        r.university_type    || '',
+            degree:                 r.degree             || '',
+            major:                  r.major              || '',
+            previous_university:    r.previous_university || '',
+            master_university:      r.master_university  || '',
+            bachelor_gpa:           r.bachelor_gpa       || '',
+            master_gpa:             r.master_gpa         || '',
+            // فایل‌ها
+            passport_url:           r.passport_url           || '',
+            personal_photo_url:     r.personal_photo_url     || '',
+            transcript_url:         r.transcript_url         || '',
+            master_transcript_url:  r.master_transcript_url  || '',
+            master_certificate_url: r.master_certificate_url || '',
+            // وضعیت
+            status:    r.status || 'new',
+            createdAt: r.created_at || r.createdAt || '',
+        };
     },
 
     save(list) {
@@ -93,7 +132,7 @@ const RegistrationsModule = {
         const all = this.getAll();
         const idx = all.findIndex(r => r.id === id);
         if (idx === -1) return;
-        all[idx][field] = value;
+        all[idx][field]    = value;
         all[idx].updatedAt = new Date().toISOString();
         this.save(all);
     },
@@ -118,10 +157,14 @@ const RegistrationsModule = {
                     <i class="fas fa-user-plus text-lime-400"></i>
                     ثبت‌نام‌ها
                 </h2>
-                <div class="flex gap-2">
-                    <input type="text" id="reg-search" placeholder="جستجو نام یا شماره..."
+                <div class="flex gap-2 flex-wrap">
+                    <input type="text" id="reg-search" placeholder="جستجو نام، شماره یا ایمیل..."
                            oninput="RegistrationsModule.renderList()"
-                           class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm w-48 focus:outline-none focus:border-lime-500 placeholder-gray-500">
+                           class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm w-52 focus:outline-none focus:border-lime-500 placeholder-gray-500">
+                    <button onclick="RegistrationsModule.forceSync()"
+                            class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-xs flex items-center gap-1">
+                        <i class="fas fa-sync-alt"></i> بروزرسانی
+                    </button>
                     <button onclick="RegistrationsModule.addSampleData()"
                             class="bg-slate-600 hover:bg-slate-500 text-gray-300 px-3 py-2 rounded-lg text-xs">
                         <i class="fas fa-database ml-1"></i>داده نمونه
@@ -132,7 +175,7 @@ const RegistrationsModule = {
             <!-- Stats -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 ${this.STATUS_LIST.map(s => `
-                <div class="rounded-xl p-3 text-center border ${s.color} cursor-pointer"
+                <div class="rounded-xl p-3 text-center border ${s.color} cursor-pointer hover:opacity-80 transition-opacity"
                      onclick="RegistrationsModule.filterByStatus('${s.key}')">
                     <p class="text-2xl font-bold">${counts[s.key]}</p>
                     <p class="text-xs mt-0.5">${s.label}</p>
@@ -161,9 +204,19 @@ const RegistrationsModule = {
         </div>
 
         <!-- Detail Modal -->
-        <div id="reg-detail-modal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 overflow-y-auto">
-            <div class="bg-slate-800 rounded-2xl w-full max-w-2xl border border-slate-600 shadow-2xl max-h-[90vh] overflow-y-auto" id="reg-detail-inner"></div>
+        <div id="reg-detail-modal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
+             onclick="if(event.target===this) RegistrationsModule.closeDetail()">
+            <div class="bg-slate-800 rounded-2xl w-full max-w-3xl border border-slate-600 shadow-2xl max-h-[92vh] overflow-y-auto"
+                 id="reg-detail-inner"></div>
         </div>`;
+    },
+
+    /* ─────────── بروزرسانی دستی از Supabase ─────────── */
+    forceSync() {
+        this._lastSync = null;
+        this._syncing  = false;
+        this._syncFromSupabase();
+        if (typeof UTILS !== 'undefined') UTILS.showNotification('در حال دریافت اطلاعات از سرور...', 'info');
     },
 
     /* ─────────── Filter ─────────── */
@@ -171,15 +224,12 @@ const RegistrationsModule = {
 
     filterByStatus(status) {
         this._currentFilter = status;
-        // هایلایت دکمه فعال
         ['all', ...this.STATUS_LIST.map(s => s.key)].forEach(k => {
             const btn = document.getElementById('reg-filter-' + k);
             if (!btn) return;
-            if (k === status) {
-                btn.className = 'px-4 py-1.5 rounded-lg text-sm font-medium bg-lime-600 text-gray-900';
-            } else {
-                btn.className = 'px-4 py-1.5 rounded-lg text-sm font-medium bg-slate-700 text-gray-300 hover:bg-slate-600';
-            }
+            btn.className = k === status
+                ? 'px-4 py-1.5 rounded-lg text-sm font-medium bg-lime-600 text-gray-900'
+                : 'px-4 py-1.5 rounded-lg text-sm font-medium bg-slate-700 text-gray-300 hover:bg-slate-600';
         });
         this.renderList();
     },
@@ -191,7 +241,9 @@ const RegistrationsModule = {
         if (search) list = list.filter(r =>
             (r.middle_name || '').toLowerCase().includes(search) ||
             (r.last_name   || '').toLowerCase().includes(search) ||
-            (r.phone       || '').includes(search)
+            (r.phone       || '').includes(search) ||
+            (r.email       || '').toLowerCase().includes(search) ||
+            (r.major       || '').toLowerCase().includes(search)
         );
         const el = document.getElementById('registrations-list');
         if (el) el.innerHTML = this._renderRows(list);
@@ -209,6 +261,13 @@ const RegistrationsModule = {
             const st = this.getStatusInfo(r.status || 'new');
             const completedSteps = this.STEPS.filter(s => r[s.key]).length;
             const progress = Math.round((completedSteps / this.STEPS.length) * 100);
+            const isPhD = r.degree === 'phd';
+
+            // نشانگر فایل‌ها
+            const fileCount = [
+                r.passport_url, r.personal_photo_url, r.transcript_url,
+                r.master_transcript_url, r.master_certificate_url
+            ].filter(Boolean).length;
 
             return `
             <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 hover:border-slate-500 transition-all cursor-pointer"
@@ -218,12 +277,21 @@ const RegistrationsModule = {
                         <div class="flex items-center gap-2 flex-wrap mb-1">
                             <span class="font-semibold text-white">${r.middle_name || ''} ${r.last_name || ''}</span>
                             <span class="text-xs px-2 py-0.5 rounded-full border ${st.color}">${st.label}</span>
-                            ${r.degree === 'phd' ? '<span class="text-xs bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded-full">دکتری</span>' : '<span class="text-xs bg-blue-500/20 text-blue-300 border border-blue-500/40 px-2 py-0.5 rounded-full">ارشد</span>'}
+                            <span class="text-xs px-2 py-0.5 rounded-full border ${isPhD ? 'bg-purple-500/20 text-purple-300 border-purple-500/40' : 'bg-blue-500/20 text-blue-300 border-blue-500/40'}">
+                                ${isPhD ? 'دکتری' : 'ارشد'}
+                            </span>
+                            ${r.university_type ? `<span class="text-xs px-2 py-0.5 rounded-full bg-slate-600/60 text-gray-300">${r.university_type}</span>` : ''}
                         </div>
-                        <div class="flex items-center gap-4 text-xs text-gray-400 flex-wrap mb-2">
+                        <div class="flex items-center gap-4 text-xs text-gray-400 flex-wrap mb-1">
                             <span><i class="fas fa-phone ml-1 text-lime-400"></i>${r.phone || '—'}</span>
                             <span><i class="fas fa-envelope ml-1 text-blue-400"></i>${r.email || '—'}</span>
                             <span><i class="fas fa-graduation-cap ml-1 text-yellow-400"></i>${r.major || '—'}</span>
+                        </div>
+                        <div class="flex items-center gap-4 text-xs text-gray-500 flex-wrap mb-2">
+                            <span><i class="fas fa-map-marker-alt ml-1"></i>${r.address_iraq || '—'}</span>
+                            <span><i class="fas fa-briefcase ml-1"></i>${r.job || '—'}</span>
+                            ${r.religion ? `<span><i class="fas fa-star-and-crescent ml-1"></i>${r.religion}</span>` : ''}
+                            ${fileCount > 0 ? `<span class="text-lime-500"><i class="fas fa-paperclip ml-1"></i>${fileCount} فایل</span>` : ''}
                         </div>
                         <!-- Progress bar -->
                         <div class="flex items-center gap-2">
@@ -242,23 +310,87 @@ const RegistrationsModule = {
     },
 
     /* ─────────── Detail Modal ─────────── */
+    closeDetail() {
+        document.getElementById('reg-detail-modal')?.classList.add('hidden');
+    },
+
     openDetail(id) {
         const r = this.getById(id);
         if (!r) return;
 
-        const st = this.getStatusInfo(r.status || 'new');
+        const st    = this.getStatusInfo(r.status || 'new');
+        const isPhD = r.degree === 'phd';
 
         const stepsHTML = this.STEPS.map(s => `
             <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-700 cursor-pointer">
                 <input type="checkbox" ${r[s.key] ? 'checked' : ''}
                        onchange="RegistrationsModule.toggleStep('${id}','${s.key}',this.checked)"
                        class="w-4 h-4 accent-lime-500">
-                <span class="text-sm text-gray-200 ${r[s.key] ? 'line-through text-gray-500' : ''}">${s.label}</span>
+                <span class="text-sm ${r[s.key] ? 'line-through text-gray-500' : 'text-gray-200'}">${s.label}</span>
             </label>`).join('');
 
-        const statusOptionsHTML = this.STATUS_LIST.map(s => `
-            <option value="${s.key}" ${(r.status || 'new') === s.key ? 'selected' : ''}>${s.label}</option>`
+        const statusOptionsHTML = this.STATUS_LIST.map(s =>
+            `<option value="${s.key}" ${(r.status || 'new') === s.key ? 'selected' : ''}>${s.label}</option>`
         ).join('');
+
+        // ─── فیلدهای اطلاعات کامل ───
+        const infoFields = [
+            { label: 'تلفن',              val: r.phone,               icon: 'fa-phone',          color: 'text-lime-400' },
+            { label: 'ایمیل',             val: r.email,               icon: 'fa-envelope',       color: 'text-blue-400' },
+            { label: 'دین',               val: r.religion,            icon: 'fa-star-and-crescent', color: 'text-yellow-400' },
+            { label: 'تخصص',              val: r.major,               icon: 'fa-graduation-cap', color: 'text-yellow-400' },
+            { label: 'مقطع',              val: isPhD ? 'دکتری' : 'ارشد', icon: 'fa-user-graduate', color: 'text-purple-400' },
+            { label: 'نوع دانشگاه',       val: r.university_type,     icon: 'fa-university',     color: 'text-cyan-400' },
+            { label: 'آدرس عراق',         val: r.address_iraq,        icon: 'fa-map-marker-alt', color: 'text-red-400' },
+            { label: 'شغل',               val: r.job,                 icon: 'fa-briefcase',      color: 'text-orange-400' },
+            { label: 'وضعیت تأهل',        val: r.marital_status,      icon: 'fa-heart',          color: 'text-pink-400' },
+            { label: 'تعداد فرزند',       val: r.children_count != null ? String(r.children_count) : '', icon: 'fa-baby', color: 'text-pink-300' },
+            { label: 'دانشگاه بکالوریوس', val: r.previous_university, icon: 'fa-school',         color: 'text-green-400' },
+            { label: 'معدل بکالوریوس',    val: r.bachelor_gpa,        icon: 'fa-chart-bar',      color: 'text-green-400' },
+            ...(isPhD ? [
+                { label: 'دانشگاه ارشد',  val: r.master_university,   icon: 'fa-school',         color: 'text-indigo-400' },
+                { label: 'معدل ارشد',     val: r.master_gpa,          icon: 'fa-chart-bar',      color: 'text-indigo-400' },
+            ] : []),
+        ];
+
+        const infoHTML = infoFields
+            .filter(f => f.val)
+            .map(f => `
+                <div class="bg-slate-600/40 rounded-lg p-3">
+                    <p class="text-xs text-gray-400 mb-1"><i class="fas ${f.icon} ml-1 ${f.color}"></i>${f.label}</p>
+                    <p class="text-white font-medium text-sm break-all">${f.val}</p>
+                </div>`).join('');
+
+        // ─── فایل‌ها ───
+        const fileFields = [
+            { label: 'جواز السفر',          url: r.passport_url,           icon: 'fa-passport' },
+            { label: 'صورة الشخصية',        url: r.personal_photo_url,     icon: 'fa-user-circle' },
+            { label: 'كشف البكالوريوس',     url: r.transcript_url,         icon: 'fa-file-alt' },
+            { label: 'كشف الماجستير',       url: r.master_transcript_url,  icon: 'fa-file-alt' },
+            { label: 'وثيقة الماجستير',     url: r.master_certificate_url, icon: 'fa-certificate' },
+        ].filter(f => f.url);
+
+        const filesHTML = fileFields.length > 0 ? `
+            <div class="bg-slate-700 rounded-xl p-4">
+                <h4 class="text-white font-semibold mb-3 flex items-center gap-2">
+                    <i class="fas fa-paperclip text-lime-400"></i>
+                    مستندات آپلود شده
+                </h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    ${fileFields.map(f => `
+                    <button type="button"
+                            onclick="RegistrationsModule.openFile('${f.url}')"
+                            class="flex items-center gap-3 bg-slate-600 hover:bg-slate-500 rounded-lg px-3 py-2.5 text-sm text-white transition-colors text-right">
+                        <i class="fas ${f.icon} text-lime-400 text-base flex-shrink-0"></i>
+                        <span class="flex-1 truncate">${f.label}</span>
+                        <i class="fas fa-external-link-alt text-xs text-gray-400"></i>
+                    </button>`).join('')}
+                </div>
+            </div>` : `
+            <div class="bg-slate-700/50 rounded-xl p-4 text-center text-gray-500 text-sm">
+                <i class="fas fa-folder-open text-2xl mb-2 block"></i>
+                فایلی آپلود نشده
+            </div>`;
 
         document.getElementById('reg-detail-inner').innerHTML = `
             <div class="p-6 space-y-5" dir="rtl">
@@ -268,10 +400,14 @@ const RegistrationsModule = {
                         <h3 class="text-xl font-bold text-white">${r.middle_name || ''} ${r.last_name || ''}</h3>
                         <div class="flex gap-2 mt-1 flex-wrap">
                             <span class="text-xs px-2 py-0.5 rounded-full border ${st.color}">${st.label}</span>
+                            <span class="text-xs px-2 py-0.5 rounded-full border ${isPhD ? 'bg-purple-500/20 text-purple-300 border-purple-500/40' : 'bg-blue-500/20 text-blue-300 border-blue-500/40'}">
+                                ${isPhD ? 'دکتری' : 'ارشد'}
+                            </span>
+                            ${r.registration_id ? `<span class="text-xs text-gray-500 font-mono">${r.registration_id}</span>` : ''}
                         </div>
                     </div>
-                    <button onclick="document.getElementById('reg-detail-modal').classList.add('hidden')"
-                            class="text-gray-400 hover:text-white text-xl flex-shrink-0">
+                    <button onclick="RegistrationsModule.closeDetail()"
+                            class="text-gray-400 hover:text-white text-xl flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-700">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -285,24 +421,19 @@ const RegistrationsModule = {
                     </select>
                 </div>
 
-                <!-- اطلاعات -->
-                <div class="bg-slate-700 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                    ${[
-                        ['تلفن',        r.phone],
-                        ['ایمیل',       r.email],
-                        ['تخصص',        r.major],
-                        ['مقطع',        r.degree === 'phd' ? 'دکتری' : 'ارشد'],
-                        ['آدرس عراق',   r.address_iraq],
-                        ['دانشگاه قبلی',r.previous_university],
-                        ['دین',         r.religion],
-                        ['وضعیت تاهل',  r.marital_status],
-                        ['شغل',         r.job],
-                    ].map(([lbl, val]) => val ? `
-                        <div>
-                            <p class="text-gray-500 text-xs">${lbl}</p>
-                            <p class="text-white font-medium">${val}</p>
-                        </div>` : '').join('')}
+                <!-- اطلاعات کامل -->
+                <div class="bg-slate-700 rounded-xl p-4">
+                    <h4 class="text-white font-semibold mb-3 flex items-center gap-2">
+                        <i class="fas fa-id-card text-blue-400"></i>
+                        اطلاعات ثبت‌نام
+                    </h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        ${infoHTML || '<p class="text-gray-500 text-sm col-span-2">اطلاعاتی موجود نیست</p>'}
+                    </div>
                 </div>
+
+                <!-- مستندات -->
+                ${filesHTML}
 
                 <!-- مراحل پیگیری -->
                 <div class="bg-slate-700 rounded-xl p-4">
@@ -320,11 +451,11 @@ const RegistrationsModule = {
                         اطلاعات مکمل
                     </h4>
                     ${[
-                        { key: 'referrer',    label: 'معرف',         icon: 'fa-user-tag',     color: 'text-yellow-400' },
-                        { key: 'agent',       label: 'عامل',         icon: 'fa-user-tie',     color: 'text-blue-400'   },
-                        { key: 'agent_share', label: 'سهم عامل',     icon: 'fa-percent',      color: 'text-orange-400' },
-                        { key: 'final_price', label: 'مبلغ نهایی',   icon: 'fa-money-bill',   color: 'text-green-400'  },
-                        { key: 'paid',        label: 'پرداختی',      icon: 'fa-wallet',       color: 'text-emerald-400'},
+                        { key: 'referrer',    label: 'معرف',       icon: 'fa-user-tag',   color: 'text-yellow-400' },
+                        { key: 'agent',       label: 'عامل',       icon: 'fa-user-tie',   color: 'text-blue-400'   },
+                        { key: 'agent_share', label: 'سهم عامل',   icon: 'fa-percent',    color: 'text-orange-400' },
+                        { key: 'final_price', label: 'مبلغ نهایی', icon: 'fa-money-bill', color: 'text-green-400'  },
+                        { key: 'paid',        label: 'پرداختی',    icon: 'fa-wallet',     color: 'text-emerald-400'},
                     ].map(f => `
                     <div>
                         <label class="block text-xs text-gray-400 mb-1">
@@ -335,15 +466,13 @@ const RegistrationsModule = {
                                class="w-full bg-slate-600 border border-slate-500 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-lime-500">
                     </div>`).join('')}
 
-                    <!-- سهم عامل چک‌باکس -->
-                    <label class="flex items-center gap-3 cursor-pointer mt-1">
+                    <label class="flex items-center gap-3 cursor-pointer">
                         <input type="checkbox" ${r.agent_share_confirmed ? 'checked' : ''}
                                onchange="RegistrationsModule.updateField('${id}','agent_share_confirmed',this.checked)"
                                class="w-4 h-4 accent-lime-500">
                         <span class="text-sm text-gray-300">سهم عامل تأیید شده</span>
                     </label>
 
-                    <!-- توضیحات -->
                     <div>
                         <label class="block text-xs text-gray-400 mb-1">
                             <i class="fas fa-comment-dots ml-1 text-gray-400"></i>توضیحات
@@ -355,27 +484,45 @@ const RegistrationsModule = {
                 </div>
 
                 <div class="text-xs text-gray-600 text-left">
-                    ثبت: ${r.createdAt ? new Date(r.createdAt).toLocaleString('fa-IR') : ''}
+                    ثبت: ${r.createdAt ? new Date(r.createdAt).toLocaleString('fa-IR') : '—'}
                 </div>
             </div>`;
 
         document.getElementById('reg-detail-modal').classList.remove('hidden');
     },
 
+    /* ─── باز کردن فایل از Supabase Storage ─── */
+    openFile(filePath) {
+        if (!filePath) return;
+        // اگر URL کامل باشد مستقیم باز کن
+        if (filePath.startsWith('http')) {
+            window.open(filePath, '_blank');
+            return;
+        }
+        // وگرنه signed URL بگیر
+        const sb = typeof SupabaseDataModule !== 'undefined' ? SupabaseDataModule : null;
+        if (sb && typeof sb.getRegistrationFileUrl === 'function') {
+            sb.getRegistrationFileUrl(filePath).then(url => {
+                if (url) window.open(url, '_blank');
+                else alert('خطا در دریافت لینک فایل');
+            });
+        } else {
+            alert('سرویس فایل در دسترس نیست');
+        }
+    },
+
     toggleStep(id, stepKey, checked) {
         this.updateField(id, stepKey, checked);
-        // refresh checkboxes text style بدون close modal
-        const labels = document.querySelectorAll('#reg-detail-inner label input[type=checkbox]');
-        labels.forEach(inp => {
+        // refresh style چک‌باکس‌ها بدون بستن modal
+        document.querySelectorAll('#reg-detail-inner label input[type=checkbox]').forEach(inp => {
             const span = inp.nextElementSibling;
-            if (span) {
-                if (inp.checked) {
-                    span.classList.add('line-through', 'text-gray-500');
-                    span.classList.remove('text-gray-200');
-                } else {
-                    span.classList.remove('line-through', 'text-gray-500');
-                    span.classList.add('text-gray-200');
-                }
+            if (!span) return;
+            if (inp.checked) {
+                span.classList.add('line-through', 'text-gray-500');
+                span.classList.remove('text-gray-200');
+            } else {
+                span.classList.remove('line-through', 'text-gray-500');
+                span.classList.add('text-gray-200');
             }
         });
         this.renderList();
@@ -383,11 +530,19 @@ const RegistrationsModule = {
 
     changeStatus(id, status) {
         this.updateField(id, 'status', status);
-        // آپدیت badge در modal
-        const r = this.getById(id);
+        const r  = this.getById(id);
         const st = this.getStatusInfo(status);
+        // آپدیت badge در modal
         const badge = document.querySelector('#reg-detail-inner .rounded-full.border');
-        if (badge) { badge.className = `text-xs px-2 py-0.5 rounded-full border ${st.color}`; badge.textContent = st.label; }
+        if (badge && badge.textContent.trim() !== (r?.registration_id || '')) {
+            badge.className  = `text-xs px-2 py-0.5 rounded-full border ${st.color}`;
+            badge.textContent = st.label;
+        }
+        // sync به Supabase
+        const sb = typeof SupabaseDataModule !== 'undefined' ? SupabaseDataModule : null;
+        if (sb && typeof sb.updateRegistrationStatus === 'function') {
+            sb.updateRegistrationStatus(id, status).catch(e => console.warn('status sync:', e));
+        }
         this.renderList();
     },
 
@@ -395,22 +550,29 @@ const RegistrationsModule = {
     addSampleData() {
         const list = this.getAll();
         const sample = {
-            id:               'reg_sample_' + Date.now(),
-            middle_name:      'علی محمد حسین',
-            last_name:        'الزیدی',
-            religion:         'شيعي',
-            phone:            '+9647812345678',
-            email:            'ali@example.com',
-            address_iraq:     'بغداد - الکرخ',
-            job:              'معلم',
-            marital_status:   'متزوج',
-            university_type:  'نفقة خاصة',
-            degree:           'master',
-            major:            'مدیریت کسب‌وکار',
+            id:                  'reg_sample_' + Date.now(),
+            registration_id:     'REG-SAMPLE-' + Date.now(),
+            middle_name:         'علی محمد حسین',
+            last_name:           'الزیدی',
+            religion:            'شيعي',
+            phone:               '+9647812345678',
+            email:               'ali@example.com',
+            address_iraq:        'بغداد - الکرخ',
+            job:                 'معلم',
+            marital_status:      'متزوج',
+            children_count:      2,
+            university_type:     'نفقة خاصة',
+            degree:              'master',
+            major:               'مدیریت کسب‌وکار',
             previous_university: 'جامعة بغداد',
-            bachelor_gpa:     '3.5',
-            status:           'new',
-            createdAt:        new Date().toISOString(),
+            bachelor_gpa:        '3.5',
+            master_university:   '',
+            master_gpa:          '',
+            passport_url:        '',
+            personal_photo_url:  '',
+            transcript_url:      '',
+            status:              'new',
+            createdAt:           new Date().toISOString(),
         };
         list.unshift(sample);
         this.save(list);

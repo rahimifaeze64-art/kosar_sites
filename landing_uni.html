@@ -64,22 +64,34 @@
 
   <!-- HEADER -->
   <header id="header" class="fixed top-0 inset-x-0 z-50">
-    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[72px] flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <a href="landing.html" class="flex items-center gap-2 shrink-0" aria-label="العودة">
-          <span class="w-9 h-9 rounded-lg bg-gold/15 text-gold-dark flex items-center justify-center"><i class="fa-solid fa-arrow-right fa-sm"></i></span>
-          <span class="text-slate-600 dark:text-slate-300 font-medium text-sm hidden sm:inline">العودة</span>
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[64px] flex items-center justify-between overflow-hidden">
+      <!-- Logo + back -->
+      <div class="flex items-center gap-2 min-w-0">
+        <a href="landing.html" class="flex items-center gap-1.5 shrink-0" aria-label="العودة">
+          <span class="w-8 h-8 rounded-lg bg-gold/15 text-gold-dark flex items-center justify-center"><i class="fa-solid fa-arrow-right fa-sm"></i></span>
+          <span class="text-slate-600 dark:text-slate-300 font-medium text-sm hidden md:inline">العودة</span>
         </a>
-        <a href="landing.html" class="flex items-center gap-3 shrink-0">
-          <span class="w-[88px] h-[88px] rounded-none overflow-hidden shrink-0"><img src="assets/logo_main.jpg" alt="لوگو شركة الكوثر" class="w-full h-full object-cover"></span>
+        <a href="landing.html" class="flex items-center gap-2 shrink-0 mr-1">
+          <span class="w-10 h-10 sm:w-14 sm:h-14 rounded-lg overflow-hidden shrink-0"><img src="assets/logo_main.jpg" alt="لوگو شركة الكوثر" class="w-full h-full object-cover"></span>
           <span class="leading-tight hidden sm:block">
-            <span class="block font-black text-navy dark:text-white text-lg">شركة الكوثر</span>
+            <span class="block font-black text-navy dark:text-white text-base">شركة الكوثر</span>
             <span class="block text-xs text-gold-dark dark:text-gold font-medium">للخدمات الجامعية</span>
           </span>
         </a>
       </div>
-      <div class="flex items-center gap-3">
-        <button id="darkToggle" type="button" class="w-10 h-10 rounded-full border border-navy/20 dark:border-white/20 flex items-center justify-center text-navy dark:text-gold hover:bg-navy/5 transition-colors" aria-label="تبديل الوضع الليلي">
+
+      <!-- Actions -->
+      <div class="flex items-center gap-2 shrink-0">
+        <!-- دکمه تسجیل - زرد و برجسته -->
+        <a href="tasjil/templates/registration.html"
+           class="inline-flex items-center gap-1.5 px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl font-extrabold text-sm transition-all shadow-lg active:scale-95
+                  bg-[#c9a84c] hover:bg-[#b8973e] text-white shadow-[#c9a84c]/40">
+          <i class="fa-solid fa-user-plus text-sm"></i>
+          <span>تسجيل</span>
+        </a>
+        <button id="darkToggle" type="button"
+                class="w-9 h-9 rounded-full border border-navy/20 dark:border-white/20 flex items-center justify-center text-navy dark:text-gold hover:bg-navy/5 transition-colors shrink-0"
+                aria-label="تبديل الوضع الليلي">
           <i class="fa-solid fa-moon dark:hidden"></i><i class="fa-solid fa-sun hidden dark:inline"></i>
         </button>
       </div>
@@ -88,7 +100,7 @@
 
   <main>
     <!-- HERO -->
-    <section class="hero-pattern min-h-screen flex items-center pt-[72px] bg-slate-50 dark:bg-navy-dark">
+    <section class="hero-pattern min-h-screen flex items-center pt-[64px] bg-slate-50 dark:bg-navy-dark">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 w-full text-center">
         <span class="reveal inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gold/15 text-gold-dark dark:text-gold font-bold text-sm mb-6">
           <i class="fa-solid fa-award"></i> خدمات أكاديمية موثوقة للطلاب الدوليين
@@ -101,6 +113,12 @@
           نقدم خدمات جامعية شاملة تشمل كتابة الرسائل، الترجمة والتوثيق، الاستشارات الأكاديمية، ومتابعة كافة الإجراءات الجامعية بسرية تامة واحترافية عالية.
         </p>
         <div class="reveal reveal-delay-3 mt-9 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <!-- دکمه تسجیل — اصلی و برجسته -->
+          <a href="tasjil/templates/registration.html"
+             class="w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-lg transition-all shadow-xl active:scale-95
+                    bg-[#c9a84c] hover:bg-[#b8973e] text-white shadow-[#c9a84c]/35">
+            <i class="fa-solid fa-user-plus ml-2"></i> سجّل الآن
+          </a>
           <a href="#services" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-navy text-white font-bold text-lg hover:bg-navy-light transition-colors shadow-lg shadow-navy/25">
             اكتشف خدماتنا <i class="fa-solid fa-arrow-down mr-2 text-gold"></i>
           </a>
