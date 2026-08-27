@@ -499,7 +499,7 @@ const RegistrationsModule = {
             window.open(url, '_blank');
             return;
         }
-        // اگر فقط path باشد، public URL بساز
+        // اگر فقط path باشد، public URL بساز (پروژه اصلی)
         const SUPABASE_URL = 'https://xqcsmtqcaqucszapimmr.supabase.co';
         const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/student-documents/${url}`;
         window.open(publicUrl, '_blank');

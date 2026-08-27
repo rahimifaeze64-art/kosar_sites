@@ -43,6 +43,9 @@ const WorkChecklistModule = {
         await this._syncInboxFromSupabase();
         await this.render();
         console.log('✅ [WC] render done');
+        // بعد از sync، shared section رو دوباره رندر کن
+        // (چون sync async بود و ممکنه بعد از render اول تموم شده باشه)
+        await this.renderSharedSection();
         this._initializing = false;
         this._initialized = true;
     },
@@ -1632,15 +1635,14 @@ const WorkChecklistModule = {
     async _syncInboxFromSupabase() {
         if (!this.supabase || !this.currentUser) return;
         try {
-            const { data, error } = await this.supabase
+            // ── ۱. inbox: share‌هایی که به من ارسال شده ──────────────
+            const { data: inboxData, error: inboxErr } = await this.supabase
                 .from('checklist_shares')
                 .select('*')
                 .eq('target_id', this.currentUser.id);
-            if (error || !data) return;
 
-            const inbox = [];
-            data.forEach(row => {
-                inbox.push({
+            if (!inboxErr && inboxData) {
+                const inbox = inboxData.map(row => ({
                     type:      row.share_type,
                     id:        row.ref_id,
                     ownerId:   row.owner_id,
@@ -1649,10 +1651,36 @@ const WorkChecklistModule = {
                     icon:      row.ref_icon   || 'fas fa-share-alt',
                     color:     row.ref_color  || 'blue',
                     sharedAt:  row.created_at,
+                }));
+                this._localSet('wc_inbox_' + this.currentUser.id, inbox);
+                console.log('✅ [WC] inbox synced from Supabase:', inbox.length);
+            }
+
+            // ── ۲. sent: share‌هایی که من ارسال کردم ────────────────
+            const { data: sentData, error: sentErr } = await this.supabase
+                .from('checklist_shares')
+                .select('*')
+                .eq('owner_id', this.currentUser.id);
+
+            if (!sentErr && sentData && sentData.length > 0) {
+                // ساخت shareMap از داده Supabase
+                const shareMap = {};
+                sentData.forEach(row => {
+                    const key = row.share_type + ':' + row.ref_id;
+                    if (!shareMap[key]) shareMap[key] = [];
+                    if (!shareMap[key].includes(row.target_id)) {
+                        shareMap[key].push(row.target_id);
+                    }
                 });
-            });
-            this._localSet('wc_inbox_' + this.currentUser.id, inbox);
-            console.log('✅ [WC] inbox synced from Supabase:', inbox.length);
+                // merge با localStorage (که ممکنه اطلاعات بیشتری داشته باشه)
+                const localMap = this._localGet('wc_shares_' + this.currentUser.id) || {};
+                Object.keys(shareMap).forEach(key => {
+                    localMap[key] = shareMap[key];
+                });
+                this._localSet('wc_shares_' + this.currentUser.id, localMap);
+                console.log('✅ [WC] sent shares synced from Supabase:', sentData.length);
+            }
+
         } catch(e) {
             console.warn('⚠️ [WC] _syncInboxFromSupabase:', e.message);
         }

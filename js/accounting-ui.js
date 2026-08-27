@@ -1729,6 +1729,3 @@ function _JU_currentJalali(){const n=new Date(),jd=_JU_gregToJD(n.getFullYear(),
 function _JU_monthDays(y,m){if(m<=6)return 31;if(m<=11)return 30;return((((y-(y>0?474:473))%2820)+474+38)*682)%2816<682?30:29;}
 function _JU_firstWeekday(y,m){const g=_JU_jalaliToGreg(y,m,1),[gy,gm,gd]=g.split('-').map(Number);return(new Date(gy,gm-1,gd).getDay()+1)%7;}
 function _JU_toDisplay(greg){if(!greg)return'';try{const[y,m,d]=greg.split('-').map(Number),jd=_JU_gregToJD(y,m,d),[jy,jm,jday]=_JU_jdToJalali(jd),mo=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];return`${jday} ${mo[jm-1]} ${jy}`;}catch(e){return greg;}}
-    // Alpine x-html این را یک‌بار رندر می‌کند؛ init پس از رندر اجرا می‌شود
-    // (کد orphan حذف شد — init از index.html فراخوانی می‌شود)
-}
