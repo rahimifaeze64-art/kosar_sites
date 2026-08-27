@@ -165,6 +165,51 @@ const CityWorld = (function () {
       roofColor: 0x0369a1,
       width: 6, height: 9, depth: 6,
     },
+    // ─── منطقه دانشگاهی (شمال‌شرق شهر) ───
+    {
+      id: 'university',
+      label: 'دانشگاه',
+      icon: '🏛️',
+      page: 'students',
+      role: ['manager', 'employee'],
+      position: { x: 200, z: 205 },
+      color: 0x7c3aed,
+      roofColor: 0x5b21b6,
+      width: 8, height: 14, depth: 8,
+    },
+    {
+      id: 'faculty',
+      label: 'دانشکده',
+      icon: '🎓',
+      page: 'students',
+      role: ['manager', 'employee'],
+      position: { x: 180, z: 178 },
+      color: 0x8b5cf6,
+      roofColor: 0x6d28d9,
+      width: 6, height: 10, depth: 6,
+    },
+    {
+      id: 'universityLibrary',
+      label: 'کتابخانه',
+      icon: '📚',
+      page: 'orders',
+      role: ['manager', 'employee'],
+      position: { x: 220, z: 228 },
+      color: 0xb45309,
+      roofColor: 0x92400e,
+      width: 6, height: 11, depth: 6,
+    },
+    {
+      id: 'researchCenter',
+      label: 'پژوهشگاه',
+      icon: '🔬',
+      page: 'orders',
+      role: ['manager', 'employee'],
+      position: { x: 236, z: 188 },
+      color: 0x0d9488,
+      roofColor: 0x0f766e,
+      width: 5, height: 8, depth: 5,
+    },
   ];
 
   // ─────────────────────────────────────────────
@@ -199,13 +244,62 @@ const CityWorld = (function () {
   // ─── NPC ───
   let npcs = [];
   const NPC_CONFIGS = [
-    { name: 'سارا', role: 'employee', color: 0xff69b4, headColor: 0xffd700, speed: 3.5 },
-    { name: 'زینب', role: 'employee', color: 0x9370db, headColor: 0xffd700, speed: 3.0 },
-    { name: 'فرزاد', role: 'employee', color: 0x20b2aa, headColor: 0xffa07a, speed: 4.0 },
-    { name: 'فاضلی', role: 'employee', color: 0xff8c00, headColor: 0xffa07a, speed: 3.2 },
-    { name: 'دکتر', role: 'employee', color: 0x32cd32, headColor: 0xffd700, speed: 3.8 },
-    { name: 'معصومی', role: 'agent', color: 0x4169e1, headColor: 0xffa07a, speed: 5.0 },
-    { name: '-صادقی', role: 'agent', color: 0x8b0000, headColor: 0xffd700, speed: 4.5 },
+    {
+      name: 'سارا', role: 'employee', color: 0xff69b4, headColor: 0xffd700, speed: 3.5,
+      gender: 'female',
+      gait: 'sway',        // ریتم گام
+      energy: 0.62,        // شور و نشاط
+      perk: 'phone',       // ژست روزمره
+      stance: 0.5,
+    },
+    {
+      name: 'زینب', role: 'employee', color: 0x9370db, headColor: 0xffd700, speed: 3.0,
+      gender: 'female',
+      gait: 'calm',
+      energy: 0.55,
+      perk: 'lookAround',
+      stance: 0.45,
+    },
+    {
+      name: 'فرزاد', role: 'employee', color: 0x20b2aa, headColor: 0xffa07a, speed: 4.0,
+      gender: 'male',
+      gait: 'brisk',
+      energy: 0.9,
+      perk: 'scratch',
+      stance: 0.6,
+    },
+    {
+      name: 'فاضلی', role: 'employee', color: 0xff8c00, headColor: 0xffa07a, speed: 3.2,
+      gender: 'male',
+      gait: 'casual',
+      energy: 0.5,
+      perk: 'armsCrossed',
+      stance: 0.7,
+    },
+    {
+      name: 'دکتر', role: 'employee', color: 0x32cd32, headColor: 0xffd700, speed: 3.8,
+      gender: 'male',
+      gait: 'steady',      // ایستاده و قائم — حالت پزشک
+      energy: 0.42,
+      perk: 'stretch',
+      stance: 0.35,
+    },
+    {
+      name: 'معصومی', role: 'agent', color: 0x4169e1, headColor: 0xffa07a, speed: 5.0,
+      gender: 'male',
+      gait: 'brisk',
+      energy: 0.95,
+      perk: 'watch',
+      stance: 0.55,
+    },
+    {
+      name: '-صادقی', role: 'agent', color: 0x8b0000, headColor: 0xffd700, speed: 4.5,
+      gender: 'male',
+      gait: 'sneak',      // قدم‌های سنگین و آرام
+      energy: 0.48,
+      perk: 'glanceSides',
+      stance: 0.75,
+    },
   ];
 
   // ─── دیالوگ‌های فارسی NPCها ───
@@ -407,6 +501,105 @@ const CityWorld = (function () {
         spine: { x: 0.04 },
       }),
     },
+    // ─── ژست‌های روزمره واقع‌گرایانه ───
+    armsCrossed: {
+      dur: 2.4,
+      fn: (t) => ({
+        armR: { x: -0.95, z: 0.05 }, armL: { x: -0.95, z: -0.05 },
+        elbR: { x: -1.35 }, elbL: { x: -1.35 },
+        spine: { x: 0.06, y: 0 },
+        shoulder: 0.12,
+      }),
+    },
+    lookDown: {
+      dur: 1.6,
+      fn: (t) => ({
+        neck: { x: 0.52, y: 0 }, spine: { x: 0.16, y: 0 },
+        head: { x: -0.06 },
+      }),
+    },
+    checkPhone: {
+      dur: 2.2,
+      loop: true,
+      fn: (t) => ({
+        armR: { x: -0.72, z: -0.5 },
+        elbR: { x: -1.1 + Math.sin(t * Math.PI * 3) * 0.06 },
+        head: { x: -0.1 },
+        neck: { x: 0.42, y: -0.08 },
+        spine: { x: 0.18, y: 0 },
+        browL: 0.12,
+      }),
+    },
+    scratch: {
+      dur: 1.25,
+      fn: (t) => ({
+        armR: { x: 0.35, z: -1.7 },
+        elbR: { x: -1.75 },
+        head: { x: -0.05 },
+        neck: { x: -0.28, y: 0 },
+      }),
+    },
+    yawn: {
+      dur: 2.2,
+      fn: (t) => ({
+        mouth: 0.9,
+        head: { x: -0.28 },
+        neck: { x: -0.12 },
+        armR: { x: -1.0, z: -0.1 }, armL: { x: -1.0, z: 0.1 },
+        elbR: { x: -0.35 }, elbL: { x: -0.35 },
+        spine: { x: -0.1 },
+      }),
+    },
+    stretch: {
+      dur: 2.8,
+      fn: (t) => ({
+        armR: { x: -1.4, z: -0.15 }, armL: { x: -1.4, z: 0.15 },
+        elbR: { x: -0.1 }, elbL: { x: -0.1 },
+        spine: { x: -0.2, y: 0 },
+        head: { x: -0.3 },
+        mouth: 0.4,
+      }),
+    },
+    hairFlip: {
+      dur: 1.15,
+      fn: (t) => ({
+        head: { x: 0.42 },
+        neck: { x: 0.1, y: -0.55 },
+        armR: { x: -0.25, z: -0.85 },
+        elbR: { x: -1.55 },
+        spine: { x: 0.05, y: 0.12 },
+      }),
+    },
+    glanceWatch: {
+      dur: 1.4,
+      fn: (t) => ({
+        armR: { x: -0.55, z: 0.55 },
+        elbR: { x: -1.45 },
+        head: { x: -0.08 },
+        neck: { x: 0.3, y: 0.25 },
+      }),
+    },
+    glanceSides: {
+      dur: 2.0,
+      fn: (t) => ({
+        neck: { y: Math.sin(t * Math.PI * 2.2) * 0.85, x: 0.05 },
+        spine: { y: Math.sin(t * Math.PI * 2.2) * 0.22 },
+        brow: 0.08,
+      }),
+    },
+    sneeze: {
+      dur: 0.9,
+      fn: (t) => ({
+        neck: { x: Math.sin(t * Math.PI * 3) * 0.4 },
+        head: { x: Math.sin(t * Math.PI * 3) * 0.2 },
+        mouth: Math.max(0, Math.sin(t * Math.PI * 2)) * 0.9,
+        armR: { x: -0.5, z: -0.15 }, armL: { x: -0.5, z: 0.15 },
+        elbR: { x: -0.7 }, elbL: { x: -0.7 },
+        spine: { x: 0.08 },
+      }),
+    },
+    // رجیستری گام هر شخصیت — برای راه‌رفتن‌های متفاوت
+    // (Q = شخصیت انرژی/نشاط، به‌صورت ضریب‌های انیمیشن)
   };
 
   // ─── مدیریت listenerها برای destroy تمیز ───
@@ -3182,16 +3375,27 @@ const CityWorld = (function () {
     npcs = [];
 
     NPC_CONFIGS.forEach((cfg, idx) => {
-      const npc = _makeCharacterMesh(cfg.color, { name: cfg.name, agent: cfg.role === 'agent' });
-      // تنوع قد و اندام — مثل آدم‌های واقعی
-      npc.scale.setScalar(0.93 + Math.random() * 0.15);
+      // seed ثابت هر شخصیت — چهره و اندام پایدار و متمایز (نه هر بار تازه)
+      const S = (idx * 37 + 11) >>> 0;
+      const npc = _makeCharacterMesh(cfg.color, {
+        name: cfg.name,
+        agent: cfg.role === 'agent',
+        gender: cfg.gender,
+        seed: S,
+      });
+      // تنوع قد و اندام — ثابت برای هر شخصیت
+      npc.scale.setScalar(0.92 + ((S % 19) * 0.006));
 
       // ادغام با داده‌های اسکلت سازنده (limbs/joints) — بازنویسی نشود!
       Object.assign(npc.userData, {
         name: cfg.name,
         role: cfg.role,
         speed: cfg.speed,
-        state: 'walk',       // walk | enter | inside | exit | talking
+        gait: cfg.gait,
+        energy: cfg.energy,
+        perk: cfg.perk,
+        stance: cfg.stance,
+        state: 'walk',       // walk | enter | inside | exit | talking | paused
         target: null,        // ساختمان مقصد
         insideTimer: 0,
         waitTimer: 0,
@@ -3201,6 +3405,13 @@ const CityWorld = (function () {
         blinkPhase: 0,
         lastLineIdx: -1,
         ambT: 2 + Math.random() * 3,
+        // ─── رفتار طبیعی ───
+        cur: cfg.speed,                        // سرعت فعلی (نرم تغییر می‌کنه)
+        baseSpeed: cfg.speed,
+        idmT: 2 + Math.random() * 5,           // تا ژست بعدی (سکون)
+        pauseT: 3 + Math.random() * 4,         // تا توقف برای یک نگاه
+        bx: 0,                                 // وزن آونگ بدن هنگام ایستادن
+        lookT: 0,
         // مسیر NPC
         path: [],
         pathIdx: 0,
@@ -3514,16 +3725,30 @@ const CityWorld = (function () {
   function _makeCharacterMesh(shirtColor, person) {
     person = person || {};
     const FEMALE = ['سارا', 'زینب'];
-    const isFemale = FEMALE.includes(person.name);
+    const isFemale = FEMALE.includes(person.name) || person.gender === 'female';
+
+    // ─── RNG seed ثابت برای هر شخصیت (چهره پایدار و متمایز) ───
+    let _mr = (person.seed || 7) >>> 0;
+    const rnd = () => {
+      _mr = (_mr * 1664525 + 1013904223) >>> 0;
+      return _mr / 4294967296;
+    };
 
     const SKIN_TONES = [0xf1c27d, 0xe0ac69, 0xc68642, 0x8d5524, 0xffdbac];
     const HAIR_COLORS = [0x1b1512, 0x2b1d16, 0x4a3120, 0x111116, 0x5a4632];
     const PANT_COLORS = [0x1e293b, 0x334155, 0x3f3f46, 0x27272a];
     const HIJAB_COLORS = [0xdc2626, 0x7c3aed, 0x0891b2, 0xdb2777, 0x16a34a];
-    const skin = SKIN_TONES[Math.floor(Math.random() * SKIN_TONES.length)];
-    const hairC = HAIR_COLORS[Math.floor(Math.random() * HAIR_COLORS.length)];
-    const pantC = PANT_COLORS[Math.floor(Math.random() * PANT_COLORS.length)];
+    const EYE_COLORS = [0x2b2b33, 0x4a3b1e, 0x1f3b2c, 0x3a2d1b];
+    const skin = SKIN_TONES[Math.floor(rnd() * SKIN_TONES.length)];
+    const hairC = HAIR_COLORS[Math.floor(rnd() * HAIR_COLORS.length)];
+    const pantC = PANT_COLORS[Math.floor(rnd() * PANT_COLORS.length)];
+    const eyeC = EYE_COLORS[Math.floor(rnd() * EYE_COLORS.length)];
     const shirtDark = new THREE.Color(shirtColor).multiplyScalar(0.72).getHex();
+
+    // ─── تنوع اندام (شانه/سینه/لگن) — ثابت و توپر ───
+    const broad = 0.85 + rnd() * 0.35;   // پهنای شانه/سینه
+    const hipW = 0.85 + rnd() * 0.3;     // پهنای لگن
+    const headW = 0.9 + rnd() * 0.18;    // پهنای سر
 
     const group = new THREE.Group();
     const all = [];
@@ -3539,6 +3764,7 @@ const CityWorld = (function () {
     );
     pelvis.castShadow = true;
     hips.add(pelvis);
+    pelvis.scale.set(hipW > 1 ? hipW : 1, 1, hipW);
 
     const belt = new THREE.Mesh(
       new THREE.BoxGeometry(0.38, 0.05, 0.24),
@@ -3575,6 +3801,9 @@ const CityWorld = (function () {
     chest.position.y = 0.54;
     chest.castShadow = true;
     spinePivot.add(chest);
+    // پهنای شانه / سینه — مرد پهن‌تر، زن باریک‌تر
+    chest.scale.set(isFemale ? broad * 0.82 : broad, 1, 1 + (broad - 1) * 0.5);
+    torso.scale.set(1, 1, 1 + (isFemale ? (broad - 1) * 0.4 : 0));
 
     // یقه
     const collarV = new THREE.Mesh(
@@ -3616,9 +3845,19 @@ const CityWorld = (function () {
       new THREE.SphereGeometry(0.16, 16, 14),
       new THREE.MeshPhongMaterial({ color: skin })
     );
-    skull.scale.set(0.9, 1.06, 0.96);
+    skull.scale.set(0.9 * headW, 1.06 + rnd() * 0.08, 0.96 * (0.92 + rnd() * 0.14));
     skull.castShadow = true;
     headGrp.add(skull);
+
+    // فک — برای صورت‌های مربعی‌تر
+    const jawW = 0.15 + rnd() * 0.05;
+    const jaw = new THREE.Mesh(
+      new THREE.SphereGeometry(jawW, 12, 10),
+      new THREE.MeshPhongMaterial({ color: skin })
+    );
+    jaw.scale.set(1.5, 0.55, 1);
+    jaw.position.set(0, -0.16, 0);
+    headGrp.add(jaw);
 
     // گوش‌ها
     [-1, 1].forEach(s => {
@@ -3631,7 +3870,7 @@ const CityWorld = (function () {
 
     // مو یا حجاب
     if (isFemale) {
-      const hc = HIJAB_COLORS[Math.floor(Math.random() * HIJAB_COLORS.length)];
+      const hc = HIJAB_COLORS[Math.floor(rnd() * HIJAB_COLORS.length)];
       const hijab = new THREE.Mesh(
         new THREE.SphereGeometry(0.175, 14, 12, 0, Math.PI * 2, 0, Math.PI / 1.55),
         new THREE.MeshPhongMaterial({ color: hc })
@@ -3653,17 +3892,18 @@ const CityWorld = (function () {
       hair.position.y = 0.01;
       headGrp.add(hair);
       // خط ریش سبک برای بعضی‌ها
-      if (Math.random() < 0.35) {
+      if (rnd() < 0.4) {
+        const beardW = 0.85 + rnd() * 0.2;
         const beard = new THREE.Mesh(
           new THREE.SphereGeometry(0.152, 12, 8, 0, Math.PI * 2, Math.PI / 2.4, Math.PI / 2),
           new THREE.MeshPhongMaterial({ color: hairC })
         );
-        beard.scale.set(0.88, 0.7, 0.94);
+        beard.scale.set(0.88 * beardW, 0.7, 0.94);
         beard.position.set(0, -0.01, 0.012);
         headGrp.add(beard);
       }
       // کلاه/کیپ برای بعضی‌ها
-      if (Math.random() < 0.25) {
+      if (rnd() < 0.28) {
         const capM = new THREE.MeshPhongMaterial({ color: 0x1f2937 });
         const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.165, 0.17, 0.09, 12), capM);
         cap.position.y = 0.135;
@@ -3676,55 +3916,83 @@ const CityWorld = (function () {
 
     // ─── صورت: چشم، ابرو، بینی، دهان ───
     const eyeM = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    const pupilM = new THREE.MeshBasicMaterial({ color: 0x14141c });
+    const pupilM = new THREE.MeshBasicMaterial({ color: eyeC });
     const eyes = [];
-    [-0.058, 0.058].forEach(ex => {
-      const white = new THREE.Mesh(new THREE.SphereGeometry(0.026, 8, 8), eyeM);
-      white.position.set(ex, 0.02, 0.128);
-      white.scale.z = 0.6;
+    const brows = [];
+    const eyeSep = 0.054 + rnd() * 0.016;       // فاصله چشم‌ها — بسته به چهره
+    const eyeSize = 0.023 + rnd() * 0.008;      // اندازه چشم
+    const eyeY = 0.02 + rnd() * 0.012;          // ارتفاع چشم روی صورت
+    const browY = 0.062 + rnd() * 0.015;         // ارتفاع ابرو
+    [-1, 1].forEach(s => {
+      const ex = s * eyeSep;
+      const white = new THREE.Mesh(new THREE.SphereGeometry(eyeSize, 8, 8), eyeM);
+      white.position.set(ex, eyeY, 0.128);
+      white.scale.set(1, 0.82, 0.6);
+      white.name = 'eyeWhite';
       headGrp.add(white);
-      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.012, 6, 6), pupilM);
-      pupil.position.set(ex, 0.02, 0.148);
+      const pupil = new THREE.Mesh(new THREE.SphereGeometry(eyeSize * 0.48, 6, 6), pupilM);
+      pupil.position.set(ex, eyeY, 0.148);
+      pupil.name = 'pupil';
       headGrp.add(pupil);
       eyes.push(white);
 
-      // ابرو
+      // ابرو — با قوس طبیعی و لبه‌ی مورب
       const brow = new THREE.Mesh(
-        new THREE.BoxGeometry(0.045, 0.008, 0.01),
+        new THREE.BoxGeometry(0.05, 0.0085, 0.01),
         new THREE.MeshPhongMaterial({ color: hairC })
       );
-      brow.position.set(ex, 0.062, 0.142);
+      brow.position.set(ex, browY, 0.142);
+      brow.rotation.z = -s * (0.05 + rnd() * 0.12);    // برخی ابروها مورب
+      brow.castShadow = true;
+      brow.userData.baseScale = 1;
       headGrp.add(brow);
+      brows.push(brow);
     });
 
-    // بینی
-    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.06, 6),
+    // بینی — سایز متفاوت
+    const noseW = 0.02 + rnd() * 0.008;
+    const noseLen = 0.05 + rnd() * 0.03;
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(noseW, noseLen, 6),
       new THREE.MeshPhongMaterial({ color: skin }));
     nose.rotation.x = Math.PI / 2;
-    nose.position.set(0, -0.015, 0.15);
+    nose.position.set(0, -0.012 - rnd() * 0.012, 0.15);
     headGrp.add(nose);
 
-    // دهان
+    // گونه‌ی برجسته‌تر برای بعضی چهره‌ها
+    if (rnd() < 0.5) {
+      [-1, 1].forEach(s => {
+        const cheek = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 8),
+          new THREE.MeshPhongMaterial({ color: skin }));
+        cheek.scale.set(0.6, 0.9, 0.5);
+        cheek.position.set(s * 0.075, -0.045, 0.09);
+        headGrp.add(cheek);
+      });
+    }
+
+    // دهان — عرض متفاوت
+    const mouthW = 0.05 + rnd() * 0.012;
     const mouth = new THREE.Mesh(
-      new THREE.BoxGeometry(0.05, 0.007, 0.008),
+      new THREE.BoxGeometry(mouthW, 0.008, 0.008),
       new THREE.MeshBasicMaterial({ color: 0x8c4a4a })
     );
-    mouth.position.set(0, -0.075, 0.142);
+    mouth.position.set(0, -0.078 + rnd() * 0.006, 0.142);
     headGrp.add(mouth);
     const mouthMesh = mouth;
+    const browL = brows[0], browR = brows[1];
 
     // عینک برای بعضی‌ها
     let hasGlasses = false;
-    if (Math.random() < 0.4) {
+    if (rnd() < 0.38) {
       hasGlasses = true;
       const gm = new THREE.MeshPhongMaterial({ color: 0x1f2937 });
-      [-0.058, 0.058].forEach(ex => {
-        const frame = new THREE.Mesh(new THREE.TorusGeometry(0.032, 0.005, 6, 14), gm);
-        frame.position.set(ex, 0.02, 0.15);
+      [-1, 1].forEach(s => {
+        const frame = new THREE.Mesh(new THREE.TorusGeometry(0.033, 0.005, 6, 14), gm);
+        frame.scale.set(1, 0.86, 0.8);
+        frame.position.set(s * eyeSep, eyeY, 0.15);
         headGrp.add(frame);
       });
       const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.005, 0.005), gm);
-      bridge.position.set(0, 0.025, 0.152);
+      bridge.position.set(0, eyeY + 0.005, 0.152);
       headGrp.add(bridge);
     }
 
@@ -3860,7 +4128,13 @@ const CityWorld = (function () {
       legs, knees, arms, elbows, all,
       headGrp, neckPivot, spine: spinePivot, torso, chest, eyes, mouth: mouthMesh,
       hasGlasses, isFemale,
+      browL, browR, brows, headW, browY,
     };
+
+    // مقیاس پایه ابروها برای انیمیشن برخاستن ابرو
+    if (browL) { browL.baseScale = 1; browL.userData.baseScale = 1; }
+    if (browR) { browR.baseScale = 1; browR.userData.baseScale = 1; }
+
     return group;
   }
 
@@ -4152,6 +4426,26 @@ const CityWorld = (function () {
     if (off.mouth && L.mouth) {
       L.mouth.scale.y = 1 + off.mouth * w * 6;
     }
+    if (off.head && J['mixamorigHead']) {
+      J['mixamorigHead'].rotation.x += (off.head.x || 0) * w;
+      J['mixamorigHead'].rotation.y += (off.head.y || 0) * w;
+    }
+    // شانه: بالا آمدن هر دو شانه (مثلاً هنگام شانه بالا انداختن)
+    if (off.shoulder && J['mixamorigRightArm'] && J['mixamorigLeftArm']) {
+      J['mixamorigRightArm'].rotation.z += off.shoulder * w;
+      J['mixamorigLeftArm'].rotation.z += -off.shoulder * w;
+    }
+    // چرخش لگن (وزن جابه‌جا می‌شه) — برای ایستادن زنده
+    if (off.hip && J['mixamorigHips']) {
+      J['mixamorigHips'].rotation.y += (off.hip.y || 0) * w;
+    }
+    // ابرو: برخاستن طبیعی
+    if (off.brow && L.browL && L.browR) {
+      const raise = off.brow * w;
+      L.browL.scale.y = L.browL.baseScale + raise;
+      L.browR.scale.y = L.browR.baseScale + raise;
+    }
+    if (off.browL && L.browL) L.browL.scale.y = L.browL.baseScale + off.browL * w;
   }
 
   // محاسبه هدف گردن/کمر به سمت بازیکن (الگوی getMouseDegrees/moveJoint)

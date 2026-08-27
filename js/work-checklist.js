@@ -448,12 +448,86 @@ const WorkChecklistModule = {
         const el = document.getElementById('wc-shared-section');
         if (!el || !this.currentUser) return;
 
-        const inbox = this._localGet('wc_inbox_' + this.currentUser.id) || [];
+        // ── ۱. دریافتی‌ها (inbox) ──────────────────────────────────
+        const inbox       = this._localGet('wc_inbox_' + this.currentUser.id) || [];
         const sharedCats  = inbox.filter(r => r.type === 'category');
         const sharedItems = inbox.filter(r => r.type === 'item');
 
-        if (inbox.length === 0) { el.innerHTML = ''; return; }
+        // ── ۲. ارسالی‌ها (چیزهایی که خودم به اشتراک گذاشتم) ─────
+        const myShareMap   = this._localGet('wc_shares_' + this.currentUser.id) || {};
+        const myShareKeys  = Object.keys(myShareMap).filter(k => myShareMap[k] && myShareMap[k].length > 0);
+        const myCats       = await this.getCategories();
+        const myItems      = this._localGet('wc_items_' + this.currentUser.id) || [];
+        const allUsers     = typeof HARDCODED_USERS !== 'undefined' ? HARDCODED_USERS : [];
 
+        // ── ۳. بخش ارسالی‌ها ──────────────────────────────────────
+        const sentHTML = myShareKeys.map(key => {
+            const [type, refId] = key.split(':');
+            const sharedWith = myShareMap[key] || [];
+            const userNames  = sharedWith.map(uid => {
+                const u = allUsers.find(x => x.id === uid);
+                return u ? u.name : uid;
+            });
+
+            if (type === 'category') {
+                const cat = myCats.find(c => c.id === refId);
+                if (!cat) return '';
+                const catItems = myItems.filter(i => i.category_id === refId);
+                return `
+                <div class="rounded-xl border border-lime-500/25 bg-lime-900/10 p-4">
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <div class="flex items-center gap-2">
+                            <i class="${cat.icon || 'fas fa-folder'} text-lime-400"></i>
+                            <span class="text-white font-medium text-sm">${this._esc(cat.name)}</span>
+                            <span class="text-xs bg-lime-500/20 text-lime-300 border border-lime-500/30 px-2 py-0.5 rounded-full">
+                                دسته‌بندی
+                            </span>
+                            <span class="text-xs text-gray-500">${catItems.length} آیتم</span>
+                        </div>
+                        <div class="flex items-center gap-1 flex-wrap">
+                            ${userNames.map(n => `
+                            <span class="text-xs bg-slate-600 text-gray-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <i class="fas fa-user text-xs text-lime-400"></i>${this._esc(n)}
+                            </span>`).join('')}
+                            <button onclick="WorkChecklistModule.showShareCategoryModal('${refId}')"
+                                    class="text-xs text-lime-400 hover:text-white px-2 py-0.5 rounded border border-lime-500/30 hover:bg-lime-500/20 transition-all">
+                                <i class="fas fa-edit text-xs"></i> ویرایش
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            }
+
+            if (type === 'item') {
+                const item = myItems.find(i => i.id === refId);
+                if (!item) return '';
+                return `
+                <div class="rounded-xl border border-blue-500/25 bg-blue-900/10 p-4">
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <div class="flex items-center gap-2">
+                            <i class="${item.icon || 'fas fa-list-check'} text-blue-400"></i>
+                            <span class="text-white font-medium text-sm">${this._esc(item.name)}</span>
+                            <span class="text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-full">
+                                آیتم
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-1 flex-wrap">
+                            ${userNames.map(n => `
+                            <span class="text-xs bg-slate-600 text-gray-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <i class="fas fa-user text-xs text-blue-400"></i>${this._esc(n)}
+                            </span>`).join('')}
+                            <button onclick="WorkChecklistModule.showShareItemModal('${refId}')"
+                                    class="text-xs text-blue-400 hover:text-white px-2 py-0.5 rounded border border-blue-500/30 hover:bg-blue-500/20 transition-all">
+                                <i class="fas fa-edit text-xs"></i> ویرایش
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            }
+            return '';
+        }).filter(Boolean).join('');
+
+        // ── ۴. بخش دریافتی‌ها ─────────────────────────────────────
         const catsHTML = await Promise.all(sharedCats.map(async rec => {
             const catItems = (this._localGet('wc_items_' + this.currentUser.id) || [])
                 .filter(i => i.category_id === rec.id && i.shared_from);
@@ -488,23 +562,44 @@ const WorkChecklistModule = {
             </div>`;
         }).filter(Boolean).join('');
 
+        // ── ۵. ترکیب نهایی ────────────────────────────────────────
+        const hasSent     = sentHTML.length > 0;
+        const hasReceived = inbox.length > 0;
+
+        if (!hasSent && !hasReceived) { el.innerHTML = ''; return; }
+
         el.innerHTML = `
-        <div class="space-y-4">
-            <div class="flex items-center justify-between">
+        <div class="space-y-5">
+            ${hasSent ? `
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-bold text-white flex items-center gap-3">
+                        <span class="bg-lime-500/20 p-2 rounded-xl">
+                            <i class="fas fa-share-alt text-lime-400"></i>
+                        </span>
+                        چک‌لیست‌های به اشتراک گذاشته‌شده توسط من
+                        <span class="bg-lime-600 text-white text-xs rounded-full px-2 py-0.5">${myShareKeys.length}</span>
+                    </h3>
+                    <button onclick="WorkChecklistModule.renderSharedSection()"
+                            class="text-gray-400 hover:text-white text-sm p-1 rounded" title="بروزرسانی">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div class="space-y-2">${sentHTML}</div>
+            </div>` : ''}
+
+            ${hasReceived ? `
+            <div class="space-y-3">
                 <h3 class="text-xl font-bold text-white flex items-center gap-3">
                     <span class="bg-purple-500/20 p-2 rounded-xl">
-                        <i class="fas fa-share-alt text-purple-400"></i>
+                        <i class="fas fa-inbox text-purple-400"></i>
                     </span>
-                    چک‌لیست‌های به اشتراک گذاشته شده
+                    چک‌لیست‌های دریافت‌شده
                     <span class="bg-purple-600 text-white text-xs rounded-full px-2 py-0.5">${inbox.length}</span>
                 </h3>
-                <button onclick="WorkChecklistModule.renderSharedSection()"
-                        class="text-gray-400 hover:text-white text-sm p-1 rounded" title="بروزرسانی">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
-            </div>
-            ${catsHTML.join('')}
-            ${itemsOnlyHTML}
+                ${catsHTML.join('')}
+                ${itemsOnlyHTML}
+            </div>` : ''}
         </div>`;
     },
 

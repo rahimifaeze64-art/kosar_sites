@@ -686,12 +686,15 @@
                                      var tryInit = function(n){
                                          var c = document.getElementById('accounting-app');
                                          if(c && typeof AccountingUI !== 'undefined'){
-                                             AccountingUI.init();
+                                             // فقط اگه هنوز loading spinner داره init کن
+                                             if(c.querySelector('.fa-spinner')){
+                                                 AccountingUI.init();
+                                             }
                                          } else if(n > 0){
-                                             setTimeout(function(){ tryInit(n-1); }, 100);
+                                             setTimeout(function(){ tryInit(n-1); }, 150);
                                          }
                                      };
-                                     tryInit(10);
+                                     tryInit(15);
                                  });
                              }">
                             <button @click="accPage = 'main'" class="mb-4 flex items-center gap-2 text-gray-300 hover:text-white text-sm">
