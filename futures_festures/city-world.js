@@ -5068,7 +5068,7 @@ const CityWorld = (function () {
                 padding:2px 8px;border-radius:999px;color:#c7d2fe;margin-right:auto;">
             ${ud.role === 'agent' ? '🔧 عامل' : '👤 کارمند'}
           </span>
-          <button onclick="CityWorld._forceCloseDialog()" style="
+          <button id="city-dlg-close-btn" style="
             background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
             color:#94a3b8;width:26px;height:26px;border-radius:8px;cursor:pointer;font-size:.8rem;">✕</button>
         </div>
@@ -5119,14 +5119,15 @@ const CityWorld = (function () {
         </div>
       </div>`;
 
-    // expose برای دکمه ✕
-    window.CityWorld._forceCloseDialog = _closeDialog;
-
     const npcTextEl  = document.getElementById('city-dlg-npc-text');
     const userBubble = document.getElementById('city-dlg-user-bubble');
     const userTextEl = document.getElementById('city-dlg-user-text');
     const waveEl     = document.getElementById('city-dlg-waves');
     const statusEl   = document.getElementById('city-dlg-status');
+
+    // دکمه بستن
+    const closeBtn = document.getElementById('city-dlg-close-btn');
+    if (closeBtn) closeBtn.addEventListener('click', (e) => { e.stopPropagation(); _closeDialog(); });
 
     function _setNpcText(t)  { if (npcTextEl) npcTextEl.textContent = t; }
     function _setStatus(t)   { if (statusEl) statusEl.textContent = t; }
