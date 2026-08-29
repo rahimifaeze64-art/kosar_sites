@@ -2123,7 +2123,7 @@ const CityWorld = (function () {
       if (nearNPC && !dialogOpen && !nearBuilding && !nearCar && !nearTank && !nearHeli && !nearJet) {
         const enterEl = document.getElementById('city-enter-prompt');
         if (enterEl) {
-          enterEl.innerHTML = `<span>💬 گفتگو با <strong>${nearNPC.userData.name}</strong> — E</span>`;
+          enterEl.innerHTML = `<span>� ثبت وظیفه برای <strong>${nearNPC.userData.name}</strong> — E</span>`;
           enterEl.style.opacity = '1';
         }
       } else if (!nearNPC) {
@@ -4945,79 +4945,371 @@ const CityWorld = (function () {
   // ─────────────────────────────────────────────
   // دیالوگ با NPC — مکالمه ساده فارسی
   // ─────────────────────────────────────────────
+  // گفتگو با NPC = ثبت وظیفه صوتی ۳ مرحله‌ای
+  //  مرحله ۱: NPC سوال می‌کنه → کاربر عنوان می‌گه
+  //  مرحله ۲: NPC «اوه بعدش چی؟» می‌گه → کاربر توضیحات می‌گه
+  //  مرحله ۳: NPC «باشه بهت خبر میدم» می‌گه → ذخیره + بستن
+  // ─────────────────────────────────────────────
+
+  // ─── Speech synthesis helper ───
+  function _npcSpeak(text, onEnd) {
+    if (!window.speechSynthesis) { if (onEnd) onEnd(); return; }
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.lang = 'fa-IR';
+    utt.rate = 1.05;
+    utt.pitch = 1.0;
+    // انتخاب صدای فارسی اگر موجود باشد
+    const voices = window.speechSynthesis.getVoices();
+    const faVoice = voices.find(v => v.lang.startsWith('fa')) || voices[0];
+    if (faVoice) utt.voice = faVoice;
+    if (onEnd) utt.onend = onEnd;
+    window.speechSynthesis.speak(utt);
+  }
+
+  // ─── Web Speech Recognition helper ───
+  function _listenOnce(onResult, onError) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { if (onError) onError('not-supported'); return null; }
+    const rec = new SR();
+    rec.lang = 'fa-IR';
+    rec.continuous = false;
+    rec.interimResults = true;
+    let finalText = '';
+    rec.onresult = (e) => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
+        else interim = e.results[i][0].transcript;
+      }
+      // نمایش متن موقت در bubble
+      const tb = document.getElementById('city-dlg-user-text');
+      if (tb) tb.textContent = (finalText + interim).trim();
+    };
+    rec.onerror = (e) => { if (onError) onError(e.error); };
+    rec.onend = () => { if (onResult) onResult(finalText.trim()); };
+    try { rec.start(); } catch(e) { if (onError) onError(e.message); }
+    return rec;
+  }
+
   function _buildDialogUI() {
     if (document.getElementById('city-npc-dialog')) return;
     const box = document.createElement('div');
     box.id = 'city-npc-dialog';
     box.style.cssText = `
-      position:fixed; bottom:110px; left:50%; transform:translateX(-50%) translateY(20px);
-      width:min(440px, 90vw); background:rgba(15,23,42,0.95); border:1px solid rgba(99,102,241,0.5);
-      border-radius:16px; padding:18px 22px; z-index:700; direction:rtl;
-      font-family:Vazirmatn,Tahoma,sans-serif; color:#e2e8f0; opacity:0; pointer-events:none;
-      transition:opacity .25s ease, transform .25s ease;
-      box-shadow:0 8px 40px rgba(0,0,0,.6); backdrop-filter:blur(12px);`;
-    box.innerHTML = `
-      <div id="npc-dlg-head" style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <span id="npc-dlg-dot" style="width:14px;height:14px;border-radius:50%;flex:none;"></span>
-        <strong id="npc-dlg-name" style="font-size:1rem;"></strong>
-        <span id="npc-dlg-role" style="font-size:.68rem;background:rgba(99,102,241,.3);border:1px solid rgba(99,102,241,.45);
-              padding:2px 9px;border-radius:999px;color:#c7d2fe;"></span>
-        <button id="npc-dlg-close" style="margin-right:auto;background:rgba(255,255,255,.1);border:none;color:#94a3b8;
-                width:26px;height:26px;border-radius:8px;cursor:pointer;font-size:.85rem;">✕</button>
-      </div>
-      <p id="npc-dlg-text" style="margin:0 0 12px;line-height:2;font-size:.92rem;"></p>
-      <div style="font-size:.7rem;color:#64748b;">E یا Esc — بستن · نزدیک بمون تا ادامه بده</div>`;
+      position:fixed; bottom:0; left:0; right:0; top:0;
+      display:flex; align-items:flex-end; justify-content:center;
+      z-index:700; pointer-events:none; opacity:0;
+      transition:opacity .3s ease; font-family:Vazirmatn,Tahoma,sans-serif;`;
     document.body.appendChild(box);
 
-    document.getElementById('npc-dlg-close').addEventListener('click', (e) => {
-      e.stopPropagation();
-      _closeDialog();
-    });
-    box.addEventListener('click', (e) => e.stopPropagation());
+    // انیمیشن موج
+    if (!document.getElementById('city-wave-style')) {
+      const st = document.createElement('style');
+      st.id = 'city-wave-style';
+      st.textContent = `
+        @keyframes cityWave{from{transform:scaleY(1);opacity:.6}to{transform:scaleY(2.4);opacity:1}}
+        @keyframes cityPulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
+        .city-mic-pulse{animation:cityPulse .7s ease-in-out infinite}`;
+      document.head.appendChild(st);
+    }
   }
+
+  // ─── متغیر مشترک برای recognition جاری ───
+  let _activeRec = null;
 
   function _openDialog(npc) {
     if (!npc) return;
     _buildDialogUI();
     dialogOpen = true;
 
-    // خروج از pointer lock تا موس آزاد شه
     if (document.exitPointerLock && document.pointerLockElement) {
-      try { document.exitPointerLock(); } catch (err) {}
+      try { document.exitPointerLock(); } catch (e) {}
     }
 
     const ud = npc.userData;
-    const lines = NPC_DIALOGUES[ud.name] || NPC_FALLBACK_LINES;
-    // بدون تکرار خط قبلی
-    let idx = Math.floor(Math.random() * lines.length);
-    if (lines.length > 1 && idx === ud.lastLineIdx) idx = (idx + 1) % lines.length;
-    ud.lastLineIdx = idx;
-
-    const dot = document.getElementById('npc-dlg-dot');
-    const cfgIdx = npcs.indexOf(npc);
-    const hex = '#' + (NPC_CONFIGS[cfgIdx] ? NPC_CONFIGS[cfgIdx].color.toString(16).padStart(6, '0') : '888888');
-    dot.style.background = hex;
-    dot.style.boxShadow = '0 0 10px ' + hex;
-
-    document.getElementById('npc-dlg-name').textContent = ud.name + ':';
-    document.getElementById('npc-dlg-role').textContent =
-      ud.role === 'agent' ? '🔧 عامل' : '👤 کارمند';
-    document.getElementById('npc-dlg-text').textContent = '«' + lines[idx] + '»';
-
-    const el = document.getElementById('city-npc-dialog');
-    el.style.opacity = '1';
-    el.style.pointerEvents = 'auto';
-    el.style.transform = 'translateX(-50%) translateY(0)';
-
-    // ─── فریز NPC: می‌ایسته، رو می‌چرخه و ژست حرف‌زدن می‌گیره ───
     dialogNPC = npc;
     if (ud.state !== 'talking') ud.prevState = ud.state;
     ud.state = 'talking';
     ud.path = [];
     _startTalkLoop(npc);
+
+    const cfgIdx = npcs.indexOf(npc);
+    const hexColor = '#' + (NPC_CONFIGS[cfgIdx] ? NPC_CONFIGS[cfgIdx].color.toString(16).padStart(6,'0') : '6366f1');
+    const npcUserId = _getNpcUserId(ud.name);
+    const employeeId = npcUserId || _guessEmployeeId(ud.name);
+
+    // ─── state machine ───
+    // phase: 'greeting' → 'listen-title' → 'ack' → 'listen-desc' → 'save' → 'bye'
+    let _phase = 'greeting';
+    let _taskTitle = '';
+    let _taskDesc  = '';
+
+    const box = document.getElementById('city-npc-dialog');
+    box.style.opacity = '1';
+    box.style.pointerEvents = 'auto';
+
+    // ─── UI panel ───
+    box.innerHTML = `
+      <div id="city-conv-panel" dir="rtl" onclick="event.stopPropagation()" style="
+        width:min(440px,95vw); margin-bottom:20px;
+        background:rgba(8,12,26,0.97); border:1px solid ${hexColor}55;
+        border-radius:22px; overflow:hidden;
+        box-shadow:0 12px 56px rgba(0,0,0,.8); backdrop-filter:blur(16px);">
+
+        <!-- هدر -->
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;
+                    background:linear-gradient(135deg,rgba(99,102,241,.18),rgba(139,92,246,.12));
+                    border-bottom:1px solid rgba(255,255,255,.07);">
+          <span style="width:12px;height:12px;border-radius:50%;flex:none;
+                background:${hexColor};box-shadow:0 0 10px ${hexColor};"></span>
+          <strong style="font-size:.95rem;color:#e2e8f0;">${ud.name}</strong>
+          <span style="font-size:.65rem;background:rgba(99,102,241,.3);border:1px solid rgba(99,102,241,.4);
+                padding:2px 8px;border-radius:999px;color:#c7d2fe;margin-right:auto;">
+            ${ud.role === 'agent' ? '🔧 عامل' : '👤 کارمند'}
+          </span>
+          <button onclick="CityWorld._forceCloseDialog()" style="
+            background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
+            color:#94a3b8;width:26px;height:26px;border-radius:8px;cursor:pointer;font-size:.8rem;">✕</button>
+        </div>
+
+        <!-- حباب گفتگو -->
+        <div style="padding:14px 16px 10px; min-height:90px;">
+          <!-- حباب NPC -->
+          <div id="city-dlg-npc-bubble" style="
+            display:flex;gap:8px;align-items:flex-start;margin-bottom:10px;">
+            <div style="width:32px;height:32px;border-radius:50%;flex:none;
+                  background:${hexColor};display:flex;align-items:center;justify-content:center;
+                  font-size:.85rem;font-weight:700;color:#fff;">
+              ${ud.name.charAt(0)}
+            </div>
+            <div id="city-dlg-npc-text" style="
+              background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.25);
+              border-radius:0 12px 12px 12px;padding:8px 12px;
+              font-size:.87rem;color:#e2e8f0;line-height:1.7;max-width:320px;">
+              ...
+            </div>
+          </div>
+          <!-- حباب کاربر -->
+          <div id="city-dlg-user-bubble" style="
+            display:none;justify-content:flex-start;flex-direction:row-reverse;
+            gap:8px;align-items:flex-start;">
+            <div style="width:28px;height:28px;border-radius:50%;flex:none;
+                  background:#4f46e5;display:flex;align-items:center;justify-content:center;
+                  font-size:.75rem;color:#fff;">🧑</div>
+            <div id="city-dlg-user-text" style="
+              background:rgba(79,70,229,.2);border:1px solid rgba(79,70,229,.35);
+              border-radius:12px 0 12px 12px;padding:8px 12px;
+              font-size:.85rem;color:#c7d2fe;line-height:1.6;max-width:300px;
+              font-style:italic;min-height:18px;"></div>
+          </div>
+        </div>
+
+        <!-- نوار وضعیت میکروفن -->
+        <div id="city-dlg-mic-bar" style="
+          padding:10px 16px 14px;display:flex;align-items:center;
+          justify-content:center;gap:8px;">
+          <div id="city-dlg-waves" style="display:none;gap:2px;align-items:flex-end;height:18px;">
+            ${[4,7,5,9,6,8,4,7,5].map((h,i)=>
+              `<div style="width:3px;background:#6366f1;border-radius:2px;height:${h}px;
+                animation:cityWave .55s ${i*.06}s ease-in-out infinite alternate;"></div>`
+            ).join('')}
+          </div>
+          <span id="city-dlg-status" style="font-size:.75rem;color:#64748b;">در حال آماده‌سازی...</span>
+        </div>
+      </div>`;
+
+    // expose برای دکمه ✕
+    window.CityWorld._forceCloseDialog = _closeDialog;
+
+    const npcTextEl  = document.getElementById('city-dlg-npc-text');
+    const userBubble = document.getElementById('city-dlg-user-bubble');
+    const userTextEl = document.getElementById('city-dlg-user-text');
+    const waveEl     = document.getElementById('city-dlg-waves');
+    const statusEl   = document.getElementById('city-dlg-status');
+
+    function _setNpcText(t)  { if (npcTextEl) npcTextEl.textContent = t; }
+    function _setStatus(t)   { if (statusEl) statusEl.textContent = t; }
+    function _showMic(on)    {
+      if (waveEl) waveEl.style.display = on ? 'flex' : 'none';
+      _setStatus(on ? '🎤 در حال گوش دادن...' : '');
+    }
+    function _showUserBubble(on) {
+      if (userBubble) userBubble.style.display = on ? 'flex' : 'none';
+      if (!on && userTextEl) userTextEl.textContent = '';
+    }
+
+    // ─── ماشین حالت گفتگو ───
+    function _runPhase() {
+      if (_phase === 'greeting') {
+        _setNpcText('چه کمکی از دستم برمیاد؟');
+        _setStatus('');
+        _npcSpeak('چه کمکی از دستم برمیاد؟', () => {
+          _phase = 'listen-title';
+          _runPhase();
+        });
+
+      } else if (_phase === 'listen-title') {
+        _setStatus('🎤 عنوان وظیفه را بگویید...');
+        _showMic(true);
+        _showUserBubble(true);
+        userTextEl.textContent = '';
+
+        _activeRec = _listenOnce(
+          (text) => {
+            _activeRec = null;
+            _showMic(false);
+            if (!text) {
+              // اگه چیزی نگفت دوباره گوش بده
+              _setStatus('⚠️ چیزی شنیده نشد، دوباره بگویید...');
+              setTimeout(() => { if (dialogOpen) _runPhase(); }, 900);
+              return;
+            }
+            _taskTitle = text;
+            userTextEl.textContent = text;
+            _phase = 'ack';
+            setTimeout(() => { if (dialogOpen) _runPhase(); }, 400);
+          },
+          (err) => {
+            _activeRec = null;
+            _showMic(false);
+            if (err === 'not-supported') {
+              _setNpcText('متأسفم، مرورگر شما تشخیص صوت ندارد.');
+              _setStatus('لطفاً از Chrome استفاده کنید');
+            } else {
+              _setStatus('⚠️ مشکل در دسترسی به میکروفن: ' + err);
+              setTimeout(() => { if (dialogOpen) _runPhase(); }, 1200);
+            }
+          }
+        );
+
+      } else if (_phase === 'ack') {
+        _showUserBubble(false);
+        _setNpcText('اها! بعدش چی؟');
+        _npcSpeak('اها! بعدش چی؟', () => {
+          _phase = 'listen-desc';
+          _runPhase();
+        });
+
+      } else if (_phase === 'listen-desc') {
+        _setStatus('🎤 توضیحات وظیفه را بگویید...');
+        _showMic(true);
+        _showUserBubble(true);
+        userTextEl.textContent = '';
+
+        _activeRec = _listenOnce(
+          (text) => {
+            _activeRec = null;
+            _showMic(false);
+            _taskDesc = text || '';
+            if (text) userTextEl.textContent = text;
+            _phase = 'save';
+            setTimeout(() => { if (dialogOpen) _runPhase(); }, 300);
+          },
+          (err) => {
+            _activeRec = null;
+            _showMic(false);
+            // توضیحات اختیاری — اگه خطا داد ادامه بده
+            _taskDesc = '';
+            _phase = 'save';
+            setTimeout(() => { if (dialogOpen) _runPhase(); }, 400);
+          }
+        );
+
+      } else if (_phase === 'save') {
+        _showUserBubble(false);
+        _setStatus('');
+
+        if (!_taskTitle) {
+          // عنوان نداریم — برگرد به اول
+          _phase = 'greeting';
+          _runPhase();
+          return;
+        }
+
+        // ذخیره وظیفه
+        if (!employeeId) {
+          _setNpcText('متأسفم، نتونستم اطلاعاتت رو پیدا کنم!');
+          _setStatus('⚠️ کاربر NPC در سیستم یافت نشد');
+          setTimeout(() => _closeDialog(), 2000);
+          return;
+        }
+
+        const now = new Date();
+        const due = new Date(now);
+        due.setDate(due.getDate() + 3);
+
+        const task = {
+          id:         'task_3d_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+          title:      _taskTitle,
+          description: _taskDesc,
+          status:     'pending',
+          priority:   'medium',
+          dueDate:    due.toISOString().split('T')[0],
+          createdAt:  now.toISOString(),
+          createdBy:  '3d-world',
+          assignedBy: currentUserRole,
+          source:     'city-world',
+        };
+
+        try {
+          const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+          if (!tasksData[employeeId]) tasksData[employeeId] = [];
+          tasksData[employeeId].unshift(task);
+          localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
+
+          if (typeof TasksModule !== 'undefined' && typeof TasksModule.saveemployeeTasks === 'function') {
+            TasksModule.saveemployeeTasks(employeeId, tasksData[employeeId]);
+          }
+        } catch(e) {
+          console.warn('[3D] task save error:', e);
+        }
+
+        _phase = 'bye';
+        _runPhase();
+
+      } else if (_phase === 'bye') {
+        _setNpcText('باشه، بهت خبر میدم! 👍');
+        _setStatus('');
+        _showToast('📋 وظیفه «' + _taskTitle + '» برای ' + ud.name + ' ثبت شد');
+        _npcSpeak('باشه، بهت خبر میدم!', () => {
+          setTimeout(() => _closeDialog(), 700);
+        });
+      }
+    }
+
+    // شروع مکالمه
+    setTimeout(() => { if (dialogOpen) _runPhase(); }, 200);
   }
 
-  // حلقه ژست گفتگو — تا وقتی دیالوگ بازه
+  // پیدا کردن user ID بر اساس نام NPC
+  function _getNpcUserId(npcName) {
+    if (typeof HARDCODED_USERS === 'undefined') return null;
+    const nameMap = {
+      'سارا':   u => u.name?.includes('سارا')    || u.username === 'sareh',
+      'زینب':   u => u.name?.includes('زینب')    || u.username === 'zainab',
+      'فرزاد':  u => u.name?.includes('فرزاد')   || u.username === 'farzad',
+      'فاضلی':  u => u.name?.includes('فاضلی')   || u.username === 'fazeli',
+      'دکتر':   u => u.name?.includes('خدایاری') || u.username === 'mahdi',
+      'معصومی': u => u.name?.includes('معصومی')  || u.role === 'agent',
+      '-صادقی': u => u.name?.includes('صادقی')   || u.role === 'agent',
+    };
+    const matcher = nameMap[npcName];
+    if (!matcher) return null;
+    const found = HARDCODED_USERS.find(u => u.active !== false && matcher(u));
+    return found?.id || null;
+  }
+
+  function _guessEmployeeId(npcName) {
+    const fallback = {
+      'سارا': 'emp001', 'زینب': 'emp002', 'فرزاد': 'emp003',
+      'فاضلی': 'emp004', 'دکتر': 'emp005',
+      'معصومی': 'agent001', '-صادقی': 'agent002',
+    };
+    return fallback[npcName] || null;
+  }
+
+  // حلقه ژست گفتگو
   function _startTalkLoop(npc) {
     const def = NPC_REACTIONS.talk;
     npc.userData.reac = { name: 'talk', t: 0, dur: def.dur, loop: true, fn: def.fn };
@@ -5026,13 +5318,22 @@ const CityWorld = (function () {
   function _closeDialog() {
     dialogOpen = false;
 
-    // ─── آزادسازی NPC: سلام خداحافظی و ادامه مسیر ───
+    // توقف recognition در حال اجرا
+    if (_activeRec) {
+      try { _activeRec.stop(); } catch(e) {}
+      _activeRec = null;
+    }
+
+    // توقف TTS
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+
+    // آزادسازی NPC
     if (dialogNPC) {
       const ud = dialogNPC.userData;
-      ud.reac = null;                       // پایان حلقه talk (currentlyAnimating آزاد شد)
-      _playReaction(dialogNPC, 'wave');     // خداحافظی — additive روی راه رفتن
+      ud.reac = null;
+      _playReaction(dialogNPC, 'wave');
       ud.state = 'walk';
-      ud.path = [];                          // مسیر تازه انتخاب می‌کنه
+      ud.path = [];
       dialogNPC = null;
     }
 
@@ -5040,7 +5341,7 @@ const CityWorld = (function () {
     if (el) {
       el.style.opacity = '0';
       el.style.pointerEvents = 'none';
-      el.style.transform = 'translateX(-50%) translateY(20px)';
+      setTimeout(() => { if (el) el.innerHTML = ''; }, 300);
     }
   }
 
