@@ -48,6 +48,7 @@
         const sb = _sb();
         if (!sb) return;
 
+        // ── ۱. sync پیشرفت مراحل (student_progress) ──────────
         const pathMap = [
             { key: 'defenseSteps',       pathType: 'defense'      },
             { key: 'educationalSteps',   pathType: 'educational'  },
@@ -63,6 +64,59 @@
             } catch (e) {
                 console.warn(`⚠️ students-sync [${studentId}/${pathType}]:`, e.message);
             }
+        }
+
+        // ── ۲. sync وضعیت تحصیلی به profiles ─────────────────
+        // graduated, current_path, active, finished_date
+        try {
+            const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+            if (!client) return;
+
+            const profileUpdate = {};
+
+            // graduated
+            if (student.graduated !== undefined)
+                profileUpdate.graduated = !!student.graduated;
+
+            // graduated_date
+            if (student.graduatedDate)
+                profileUpdate.graduated_date = student.graduatedDate;
+
+            // current_path
+            if (student.currentPath && ['defense','educational','requirements'].includes(student.currentPath))
+                profileUpdate.current_path = student.currentPath;
+
+            // active
+            if (student.active !== undefined)
+                profileUpdate.active = !!student.active;
+
+            // finished_date
+            if (student.finishedDate)
+                profileUpdate.finished_date = student.finishedDate;
+
+            // students_meta — ذخیره کامل برای fallback
+            profileUpdate.students_meta = {
+                defenseStepsCount:     (student.defenseSteps     || []).length,
+                educationalStepsCount: (student.educationalSteps || []).length,
+                requirementsCount:     (student.requirementsSteps|| []).length,
+                defenseCompleted:      (student.defenseSteps     || []).filter(s=>s.completed).length,
+                educationalCompleted:  (student.educationalSteps || []).filter(s=>s.completed).length,
+                requirementsCompleted: (student.requirementsSteps|| []).filter(s=>s.completed).length,
+                lastUpdated:           new Date().toISOString(),
+            };
+
+            if (Object.keys(profileUpdate).length > 0) {
+                const { error } = await client
+                    .from('profiles')
+                    .update(profileUpdate)
+                    .eq('id', studentId);
+
+                if (error && error.code !== 'PGRST116') { // PGRST116 = no row matched (student با این id نیست)
+                    console.warn(`⚠️ students-sync profile update [${studentId}]:`, error.message);
+                }
+            }
+        } catch (e) {
+            console.warn(`⚠️ students-sync profile sync [${studentId}]:`, e.message);
         }
     }
 
@@ -107,6 +161,9 @@
     // ── بارگذاری اولیه از Supabase ──────────────────────────
     // هنگام load صفحه: اگر Supabase آنلاین است، پیشرفت دانشجویان را
     // از Supabase بخوان و با students_data محلی merge کن
+    // ── بارگذاری اولیه از Supabase ──────────────────────────
+    // هنگام load صفحه: اگر Supabase آنلاین است، پیشرفت دانشجویان را
+    // از Supabase بخوان و با students_data محلی merge کن
     async function _initialLoad() {
         const sb = _sb();
         if (!sb) return;
@@ -125,6 +182,39 @@
             };
 
             let mergeCount = 0;
+
+            // ── بارگذاری وضعیت profiles (graduated, current_path, etc.) ──
+            try {
+                const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+                if (client) {
+                    const { data: profileRows, error } = await client
+                        .from('profiles')
+                        .select('id, graduated, graduated_date, current_path, active, finished_date')
+                        .in('id', studentIds)
+                        .eq('role', 'student');
+
+                    if (!error && profileRows && profileRows.length > 0) {
+                        profileRows.forEach(p => {
+                            if (!studentsData[p.id]) return;
+                            const s = studentsData[p.id];
+                            // فقط اگر Supabase مقدار صریح دارد override کن
+                            if (p.graduated !== null && p.graduated !== undefined)
+                                s.graduated = p.graduated;
+                            if (p.graduated_date)
+                                s.graduatedDate = p.graduated_date;
+                            if (p.current_path)
+                                s.currentPath = p.current_path;
+                            if (p.active !== null && p.active !== undefined)
+                                s.active = p.active;
+                            if (p.finished_date)
+                                s.finishedDate = p.finished_date;
+                        });
+                        console.log(`✅ students-sync: loaded status for ${profileRows.length} students from profiles`);
+                    }
+                }
+            } catch (e) {
+                console.warn('⚠️ students-sync profile load خطا:', e.message);
+            }
 
             for (const studentId of studentIds) {
                 const student = studentsData[studentId];
@@ -145,7 +235,6 @@
                             return {
                                 ...step,
                                 completed: prog.status === 2,
-                                // اگر status=1 یعنی در حال انجام (completed=false)
                             };
                         });
 

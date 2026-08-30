@@ -484,6 +484,27 @@
             localStorage.setItem(`prog_${id}_${path}`, JSON.stringify(data));
             // اطلاع به فلوچارت (اگر در تب دیگری باز باشد)
             window.dispatchEvent(new StorageEvent('storage', { key: `prog_${id}_${path}` }));
+
+            // ── sync به Supabase ─────────────────────────────────────────
+            _syncProgressToSupabase(id, path, data);
+        }
+
+        // sync پیشرفت یک دانشجو/مسیر به Supabase
+        function _syncProgressToSupabase(studentId, pathType, progressArray) {
+            try {
+                // از SupabaseDataModule والد استفاده می‌کنیم (اگر در window وجود دارد)
+                const sb = (typeof window.parent !== 'undefined' && window.parent.SupabaseDataModule)
+                    ? window.parent.SupabaseDataModule
+                    : (typeof SupabaseDataModule !== 'undefined' ? SupabaseDataModule : null);
+
+                if (!sb || typeof sb.saveStudentProgress !== 'function') return;
+
+                sb.saveStudentProgress(studentId, pathType, progressArray)
+                    .then(ok => { if (ok) console.log(`✅ sheet sync OK: ${studentId}/${pathType}`); })
+                    .catch(e => console.warn('⚠️ sheet Supabase sync خطا:', e.message));
+            } catch(e) {
+                console.warn('⚠️ _syncProgressToSupabase خطا:', e);
+            }
         }
         
         function selectPath(path) {
@@ -686,9 +707,9 @@
             const btn = document.querySelector('button[onclick="saveAllProgress()"]');
             if (btn) {
                 const orig = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check ml-1"></i> ذخیره شد';
+                btn.innerHTML = '<i class="fas fa-check ml-1"></i> در حال ذخیره...';
                 btn.classList.replace('bg-green-600','bg-emerald-500');
-                setTimeout(() => { btn.innerHTML = orig; btn.classList.replace('bg-emerald-500','bg-green-600'); }, 2000);
+                setTimeout(() => { btn.innerHTML = orig; btn.classList.replace('bg-emerald-500','bg-green-600'); }, 2500);
             }
         }
         

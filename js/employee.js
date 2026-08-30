@@ -752,18 +752,36 @@ const EmployeeModule = {
                     </h3>
                     
                     <!-- Tabs for Active/Inactive -->
-                    <div class="flex space-x-2 space-x-reverse mb-4 border-b border-slate-600">
+                    <div class="flex space-x-2 space-x-reverse mb-4 border-b border-slate-600 overflow-x-auto">
                         <button onclick="employeeModule.switchStudentListTab('active')" 
                                 id="student-list-tab-active"
-                                class="px-6 py-3 font-medium border-b-2 border-green-500 text-green-400 transition-all">
+                                class="px-5 py-3 font-medium border-b-2 border-green-500 text-green-400 transition-all whitespace-nowrap">
                             <i class="fas fa-user-check ml-1"></i>
                             دانشجویان فعال (${students.filter(s => s.active).length})
                         </button>
+                        <button onclick="employeeModule.switchStudentListTab('defense')" 
+                                id="student-list-tab-defense"
+                                class="px-5 py-3 font-medium border-b-2 border-transparent text-gray-400 hover:text-blue-300 transition-all whitespace-nowrap">
+                            <i class="fas fa-shield-alt ml-1"></i>
+                            مرحله دفاع (${students.filter(s => s.active && (s.currentPath === 'defense' || (!s.currentPath && !(s.defenseSteps||[]).every(x=>x.completed)))).length})
+                        </button>
+                        <button onclick="employeeModule.switchStudentListTab('educational')" 
+                                id="student-list-tab-educational"
+                                class="px-5 py-3 font-medium border-b-2 border-transparent text-gray-400 hover:text-emerald-300 transition-all whitespace-nowrap">
+                            <i class="fas fa-graduation-cap ml-1"></i>
+                            مرحله فارغ‌التحصیلی (${students.filter(s => s.active && s.currentPath === 'educational').length})
+                        </button>
+                        <button onclick="employeeModule.switchStudentListTab('graduated')" 
+                                id="student-list-tab-graduated"
+                                class="px-5 py-3 font-medium border-b-2 border-transparent text-gray-400 hover:text-yellow-300 transition-all whitespace-nowrap">
+                            <i class="fas fa-award ml-1"></i>
+                            فارغ‌التحصیل شده (${students.filter(s => s.graduated || (!s.active && s.finishedDate)).length})
+                        </button>
                         <button onclick="employeeModule.switchStudentListTab('inactive')" 
                                 id="student-list-tab-inactive"
-                                class="px-6 py-3 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300 transition-all">
-                            <i class="fas fa-user-graduate ml-1"></i>
-                            دانشجویان خاتمه یافته (${students.filter(s => !s.active).length})
+                                class="px-5 py-3 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300 transition-all whitespace-nowrap">
+                            <i class="fas fa-user-times ml-1"></i>
+                            خاتمه یافته (${students.filter(s => !s.active && !s.graduated).length})
                         </button>
                     </div>
                     
@@ -771,10 +789,21 @@ const EmployeeModule = {
                     <div id="students-list-container-active">
                         ${this._renderStudentTable(students.filter(s => s.active), 'هنوز دانشجوی فعالی ثبت نشده است')}
                     </div>
-                    
+                    <!-- Defense Students -->
+                    <div id="students-list-container-defense" style="display:none;">
+                        ${this._renderStudentTable(students.filter(s => s.active && (s.currentPath === 'defense' || (!s.currentPath && !(s.defenseSteps||[]).every(x=>x.completed)))), 'دانشجویی در مرحله دفاع نیست')}
+                    </div>
+                    <!-- Educational Students -->
+                    <div id="students-list-container-educational" style="display:none;">
+                        ${this._renderStudentTable(students.filter(s => s.active && s.currentPath === 'educational'), 'دانشجویی در مرحله فارغ‌التحصیلی نیست')}
+                    </div>
+                    <!-- Graduated Students -->
+                    <div id="students-list-container-graduated" style="display:none;">
+                        ${this._renderStudentTable(students.filter(s => s.graduated || (!s.active && s.finishedDate)), 'دانشجوی فارغ‌التحصیل‌شده‌ای وجود ندارد')}
+                    </div>
                     <!-- Inactive Students -->
                     <div id="students-list-container-inactive" style="display: none;">
-                        ${this._renderStudentTable(students.filter(s => !s.active), 'دانشجوی خاتمه یافته‌ای وجود ندارد')}
+                        ${this._renderStudentTable(students.filter(s => !s.active && !s.graduated), 'دانشجوی خاتمه یافته‌ای وجود ندارد')}
                     </div>
                 </div>
             </div>
@@ -5462,6 +5491,14 @@ EmployeeModule.applyStudentFilter = function() {
         const inactive = filteredStudents.filter(s => !s.active);
         inactiveContainer.innerHTML = renderTable(inactive, 'دانشجوی خاتمه‌یافته‌ای با این فیلتر یافت نشد');
     }
+
+    // تب‌های جدید
+    const defenseContainer     = document.getElementById('students-list-container-defense');
+    const educationalContainer = document.getElementById('students-list-container-educational');
+    const graduatedContainer   = document.getElementById('students-list-container-graduated');
+    if (defenseContainer)     defenseContainer.innerHTML     = renderTable(filteredStudents.filter(s => s.active && (s.currentPath === 'defense' || (!s.currentPath && !(s.defenseSteps||[]).every(x=>x.completed)))), 'دانشجویی در مرحله دفاع با این فیلتر یافت نشد');
+    if (educationalContainer) educationalContainer.innerHTML = renderTable(filteredStudents.filter(s => s.active && s.currentPath === 'educational'), 'دانشجویی در مرحله فارغ‌التحصیلی با این فیلتر یافت نشد');
+    if (graduatedContainer)   graduatedContainer.innerHTML   = renderTable(filteredStudents.filter(s => s.graduated || (!s.active && s.finishedDate)), 'دانشجوی فارغ‌التحصیل‌شده‌ای با این فیلتر یافت نشد');
 };
 
 // Update clearStudentFilter to reset all filters
@@ -5480,31 +5517,33 @@ EmployeeModule.clearStudentFilter = function() {
 };
 
 
-// Switch between active and inactive student list tabs
+// Switch between student list tabs
 EmployeeModule.switchStudentListTab = function(tab) {
-    // Update tab styles
-    const activeTab = document.getElementById('student-list-tab-active');
-    const inactiveTab = document.getElementById('student-list-tab-inactive');
-    const activeContainer = document.getElementById('students-list-container-active');
-    const inactiveContainer = document.getElementById('students-list-container-inactive');
-    
-    if (tab === 'active') {
-        activeTab.classList.remove('border-transparent', 'text-gray-400');
-        activeTab.classList.add('border-green-500', 'text-green-400');
-        inactiveTab.classList.remove('border-gray-500', 'text-gray-300');
-        inactiveTab.classList.add('border-transparent', 'text-gray-400');
-        
-        activeContainer.style.display = 'block';
-        inactiveContainer.style.display = 'none';
-    } else {
-        inactiveTab.classList.remove('border-transparent', 'text-gray-400');
-        inactiveTab.classList.add('border-gray-500', 'text-gray-300');
-        activeTab.classList.remove('border-green-500', 'text-green-400');
-        activeTab.classList.add('border-transparent', 'text-gray-400');
-        
-        inactiveContainer.style.display = 'block';
-        activeContainer.style.display = 'none';
-    }
+    const allTabs = ['active','defense','educational','graduated','inactive'];
+    const tabColors = {
+        active:      'border-green-500 text-green-400',
+        defense:     'border-blue-500 text-blue-400',
+        educational: 'border-emerald-500 text-emerald-400',
+        graduated:   'border-yellow-500 text-yellow-400',
+        inactive:    'border-gray-500 text-gray-300',
+    };
+
+    allTabs.forEach(t => {
+        const btn = document.getElementById('student-list-tab-' + t);
+        const cont = document.getElementById('students-list-container-' + t);
+        if (btn) {
+            btn.classList.remove('border-green-500','text-green-400','border-blue-500','text-blue-400',
+                'border-emerald-500','text-emerald-400','border-yellow-500','text-yellow-400',
+                'border-gray-500','text-gray-300');
+            if (t === tab) {
+                const cls = (tabColors[t] || 'border-lime-500 text-lime-400').split(' ');
+                btn.classList.add(...cls);
+            } else {
+                btn.classList.add('border-transparent','text-gray-400');
+            }
+        }
+        if (cont) cont.style.display = (t === tab) ? 'block' : 'none';
+    });
 };
 
 // Switch path tab (educational, defense, requirements)
@@ -5544,6 +5583,70 @@ EmployeeModule.switchPathTab = function(tab, studentId) {
         requirementsTab.classList.add('border-lime-500', 'text-lime-600');
         requirementsContent.style.display = 'block';
     }
+};
+
+// ── تکمیل یک مسیر کامل برای دانشجو ────────────────────────────────────────
+EmployeeModule.completeStudentPath = function(studentId, pathType) {
+    const pathNames = { defense: 'گردش دفاع', requirements: 'ملزومات', educational: 'فارغ‌التحصیلی' };
+    const pName = pathNames[pathType] || pathType;
+
+    if (!confirm(`آیا مطمئنید که می‌خواهید تمام مراحل «${pName}» را برای این دانشجو تکمیل کنید؟`)) return;
+
+    const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
+    const student = studentsData[studentId];
+    if (!student) { UTILS.showNotification('دانشجو یافت نشد', 'error'); return; }
+
+    const today = new Date().toLocaleDateString('fa-IR');
+
+    // تکمیل همه مراحل مسیر مورد نظر
+    if (pathType === 'defense') {
+        if (!student.defenseSteps) student.defenseSteps = this.getDefaultDefenseSteps2();
+        student.defenseSteps = student.defenseSteps.map(s => ({ ...s, completed: true, date: today }));
+        // انتقال به مسیر فارغ‌التحصیلی
+        student.currentPath = 'educational';
+        if (!student.educationalSteps || student.educationalSteps.length === 0)
+            student.educationalSteps = this.getDefaultEducationalSteps();
+        if (typeof StepAssignmentModule !== 'undefined')
+            setTimeout(() => StepAssignmentModule.triggerFirstStepTask(studentId, 'educational'), 300);
+
+    } else if (pathType === 'requirements') {
+        if (!student.requirementsSteps) student.requirementsSteps = this.getDefaultRequirementsSteps();
+        student.requirementsSteps = student.requirementsSteps.map(s => ({ ...s, completed: true, date: today }));
+        // مسیر ملزومات مستقل است، currentPath تغییر نمی‌کند مگر اینکه بخواهیم
+
+    } else if (pathType === 'educational') {
+        if (!student.educationalSteps) student.educationalSteps = this.getDefaultEducationalSteps();
+        student.educationalSteps = student.educationalSteps.map(s => ({ ...s, completed: true, date: today }));
+        // فارغ‌التحصیل شد
+        student.graduated       = true;
+        student.graduatedDate   = new Date().toISOString();
+        student.active          = false;
+        student.currentPath     = 'educational';
+    }
+
+    studentsData[studentId] = student;
+    localStorage.setItem('students_data', JSON.stringify(studentsData));
+
+    // sync به Supabase
+    if (typeof DataModule !== 'undefined' && DataModule.updateUser) {
+        DataModule.updateUser(studentId, { graduated: student.graduated, active: student.active, currentPath: student.currentPath });
+    }
+
+    UTILS.showNotification(`✅ تمام مراحل «${pName}» تکمیل شد`, 'success');
+
+    // بستن مودال و refresh
+    this.closeModal('edit-student-modal');
+    setTimeout(() => {
+        const page = document.querySelector('[x-show*="students"]');
+        if (page && typeof appController !== 'undefined') {
+            try {
+                const ctrl = appController();
+                if (ctrl && ctrl.currentUser) {
+                    page.innerHTML = this.getStudentsContent(ctrl.currentUser.id);
+                }
+            } catch(e) {}
+        }
+    }, 200);
 };
 
 // Finish student work (deactivate student)

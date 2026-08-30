@@ -40,6 +40,9 @@ const StepAssignmentModule = {
      * @param {string} employeeId - "emp001" | "" (برای حذف تخصیص)
      */
     saveAssignment(type, stepIndex, employeeId) {
+        // کارمند قبلی را قبل از تغییر ذخیره کن
+        const prevEmployeeId = this.getAssignedEmployee(type, stepIndex);
+
         // ذخیره محلی همیشه
         const assignments = this.getAssignments();
         if (!assignments[type]) assignments[type] = {};
@@ -55,11 +58,56 @@ const StepAssignmentModule = {
             DataModule.saveStepAssignment(type, stepIndex, employeeId || null)
                 .catch(e => console.warn('⚠️ saveStepAssignment async خطا:', e.message));
         }
+        // sync مستقیم به SupabaseDataModule
+        if (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseDataModule.saveStepAssignment === 'function') {
+            SupabaseDataModule.saveStepAssignment(type, stepIndex, employeeId || null)
+                .catch(e => console.warn('⚠️ saveStepAssignment Supabase خطا:', e.message));
+        }
+
+        // ── اگر تخصیص حذف شد → task‌های pending کارمند قبلی پاک شوند ──
+        if (!employeeId && prevEmployeeId) {
+            this._removeStepTasksForEmployee(prevEmployeeId, type, stepIndex);
+        }
 
         // ── اگر کارمندی تخصیص داده شد، بررسی کن آیا این مرحله "فعال" است ──
-        // یعنی مرحله قبلی تکمیل شده (یا این اولین مرحله است) و خودش هنوز تکمیل نشده
         if (employeeId) {
             this._createTaskIfStepActive(type, stepIndex, employeeId);
+        }
+    },
+
+    /**
+     * حذف task‌های pending یک مرحله از کارتابل کارمند
+     * وقتی مرحله به حالت «بدون تخصیص» برگردانده می‌شود
+     */
+    _removeStepTasksForEmployee(employeeId, type, stepIndex) {
+        try {
+            const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+            const empTasks = (tasksData[employeeId] || []);
+            const toDelete = empTasks.filter(t =>
+                t.isStepTask &&
+                t.stepType  === type &&
+                t.stepIndex === stepIndex &&
+                t.status    !== 'completed'
+            );
+
+            if (toDelete.length === 0) return;
+
+            tasksData[employeeId] = empTasks.filter(t => !toDelete.includes(t));
+            localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
+            console.log(`🗑️ ${toDelete.length} task(s) حذف شد از ${employeeId} برای ${type}[${stepIndex}]`);
+
+            // حذف از Supabase
+            if (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseDataModule._db === 'function') {
+                const client = SupabaseDataModule._db();
+                if (client) {
+                    toDelete.forEach(t => {
+                        client.from('employee_tasks').delete().eq('id', t.id)
+                            .then(({ error }) => { if (error) console.warn('⚠️ task delete Supabase خطا:', error.message); });
+                    });
+                }
+            }
+        } catch (e) {
+            console.warn('⚠️ _removeStepTasksForEmployee خطا:', e);
         }
     },
 
@@ -331,8 +379,7 @@ const StepAssignmentModule = {
             }
         }
 
-        // ══════════════════════════════════════════════════════
-        // 2. آپدیت prog_${studentId}_${stepType} (برای نمای شیت)
+        // ── ۲. آپدیت prog_${studentId}_${stepType} (برای نمای شیت)
         //    نمای شیت از STATUS_COMPLETED = 2 استفاده می‌کند
         // ══════════════════════════════════════════════════════
         const STATUS_COMPLETED = 2;
@@ -373,6 +420,13 @@ const StepAssignmentModule = {
 
             localStorage.setItem(progKey, JSON.stringify(prog));
             console.log(`✅ Sheet view updated: prog_${studentId}_${stepType}[${stepIndex}] = completed`);
+
+            // ── sync به Supabase ──────────────────────────────
+            const sb = (typeof SupabaseDataModule !== 'undefined') ? SupabaseDataModule : null;
+            if (sb && typeof sb.saveStudentProgress === 'function') {
+                sb.saveStudentProgress(studentId, stepType, prog)
+                    .catch(e => console.warn('⚠️ step-assignment prog sync خطا:', e.message));
+            }
         } catch (e) {
             console.warn('⚠️ Could not update sheet view progress:', e);
         }

@@ -304,17 +304,29 @@ const SupabaseDataModule = {
         if (!client) return true;
 
         try {
+            // student_id در DB از نوع TEXT است (بعد از FINAL_FIX.sql) — بدون تبدیل UUID
             const rows = progressArray.map((item, idx) => ({
-                student_id: this._toUUID(studentId),
+                student_id: String(studentId),   // مستقیم — بدون _toUUID
                 path_type:  pathType,
                 step_index: idx,
-                status:     item ? item.status : 0,
+                status:     item ? (item.status ?? 0) : 0,
                 updated_at: new Date().toISOString()
             }));
             const { error } = await client
                 .from('student_progress')
                 .upsert(rows, { onConflict: 'student_id,path_type,step_index' });
-            if (error) throw error;
+            if (error) {
+                // اگر خطای نوع UUID بود، با cast تلاش کن
+                if (error.message && error.message.includes('uuid')) {
+                    const rows2 = rows.map(r => ({ ...r, student_id: this._toUUID(studentId) }));
+                    const { error: e2 } = await client
+                        .from('student_progress')
+                        .upsert(rows2, { onConflict: 'student_id,path_type,step_index' });
+                    if (e2) throw e2;
+                    return true;
+                }
+                throw error;
+            }
             return true;
         } catch (e) {
             console.warn('⚠️ saveStudentProgress خطا:', e.message);

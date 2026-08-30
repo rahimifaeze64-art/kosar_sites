@@ -22,16 +22,36 @@ EmployeeModule.editStudentProfile = function(studentId) {
         <div id="edit-student-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div class="bg-gradient-to-br from-blue-50 to-lime-100 rounded-lg max-w-6xl w-full max-h-[95vh] overflow-y-auto">
                 <div class="p-6 border-b border-blue-200 sticky top-0 bg-gradient-to-r from-blue-100 to-lime-100 z-10">
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between flex-wrap gap-3">
                         <h3 class="text-xl font-bold text-black-900">
                             <i class="fas fa-user-edit text-lime-600 ml-2"></i>
                             ویرایش پروفایل دانشجو - ${student.name}
                         </h3>
-                        <button onclick="employeeModule.finishStudentWork('${studentId}')" 
-                                class="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg font-medium transition-all text-sm">
-                            <i class="fas fa-flag-checkered ml-2"></i>
-                            اتمام کار
-                        </button>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <button onclick="employeeModule.completeStudentPath('${studentId}','defense')"
+                                    title="تمام مراحل دفاع را تکمیل کن"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-medium transition-all text-xs flex items-center gap-1">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>اتمام دفاع</span>
+                            </button>
+                            <button onclick="employeeModule.completeStudentPath('${studentId}','requirements')"
+                                    title="تمام مراحل ملزومات را تکمیل کن"
+                                    class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg font-medium transition-all text-xs flex items-center gap-1">
+                                <i class="fas fa-clipboard-check"></i>
+                                <span>اتمام ملزومات</span>
+                            </button>
+                            <button onclick="employeeModule.completeStudentPath('${studentId}','educational')"
+                                    title="تمام مراحل فارغ‌التحصیلی را تکمیل کن"
+                                    class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded-lg font-medium transition-all text-xs flex items-center gap-1">
+                                <i class="fas fa-graduation-cap"></i>
+                                <span>اتمام فارغ‌التحصیلی</span>
+                            </button>
+                            <button onclick="employeeModule.finishStudentWork('${studentId}')" 
+                                    class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg font-medium transition-all text-xs flex items-center gap-1">
+                                <i class="fas fa-flag-checkered"></i>
+                                <span>اتمام کار</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
