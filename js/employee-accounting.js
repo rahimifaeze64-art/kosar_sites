@@ -694,12 +694,23 @@ const EmployeeAccountingUI = (function() {
                 var stBadge = '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;background:'+sc.bg+';color:'+sc.txt+';border:1px solid '+sc.bdr+';white-space:nowrap;">'
                             + '<span style="width:6px;height:6px;border-radius:50%;background:'+sc.dot+';display:inline-block;flex-shrink:0;"></span>'+sc.lbl+'</span>';
 
+                // دکمه ویرایش — فقط برای رکوردهای در انتظار یا رد شده قابل ویرایش است
+                var canEdit = e.status === 'pending' || e.status === 'rejected';
+                var editBtn = canEdit
+                    ? '<button type="button" onclick="EmployeeAccountingUI.showEditEntryModal(\''+e.id+'\')"'
+                      + ' style="width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:7px;background:rgba(59,130,246,0.2);color:#93c5fd;border:none;cursor:pointer;transition:background .15s;flex-shrink:0;"'
+                      + ' title="ویرایش"'
+                      + ' onmouseover="this.style.background=\'rgba(59,130,246,0.45)\'" onmouseout="this.style.background=\'rgba(59,130,246,0.2)\'">'
+                      + '<i class="fas fa-edit" style="font-size:10px;"></i></button>'
+                    : '';
+
                 return '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);" onmouseover="this.style.background=\'rgba(255,255,255,0.03)\'" onmouseout="this.style.background=\'transparent\'">'
                     + '<td style="padding:8px 12px;white-space:nowrap;">'+typeBadge+'</td>'
                     + '<td style="padding:8px 12px;color:#000000ff;font-size:13px;white-space:nowrap;">'+(e.date||'—')+'</td>'
                     + '<td style="padding:8px 12px;white-space:nowrap;">'+valPart+'</td>'
                     + '<td style="padding:8px 12px;color:#000000ff;font-size:13px;word-break:break-word;white-space:normal;line-height:1.5;min-width:120px;">'+(e.description||'—')+'</td>'
                     + '<td style="padding:8px 12px;text-align:center;white-space:nowrap;">'+stBadge+'</td>'
+                    + '<td style="padding:8px 12px;text-align:center;white-space:nowrap;">'+editBtn+'</td>'
                     + '</tr>';
             }).join('');
 
@@ -709,6 +720,7 @@ const EmployeeAccountingUI = (function() {
                 + '<th style="text-align:right;color:#000000ff;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">مقدار</th>'
                 + '<th style="text-align:right;color:#000000ff;font-weight:600;padding:7px 12px;font-size:11px;">شرح</th>'
                 + '<th style="text-align:center;color:#000000ff;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">وضعیت</th>'
+                + '<th style="text-align:center;color:#000000ff;font-weight:600;padding:7px 12px;font-size:11px;white-space:nowrap;">ویرایش</th>'
                 + '</tr></thead>';
 
             return '<div style="border:1px solid rgba(255,255,255,0.1);border-right:3px solid '+bdrClr+';border-radius:12px;overflow:hidden;margin-bottom:10px;">'
@@ -922,6 +934,25 @@ const EmployeeAccountingUI = (function() {
                             </div>
                         </div>
                     </div>
+
+                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-lime-400/20">
+                        <div class="flex items-center gap-4">
+                            <div class="w-14 h-14 bg-lime-500/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-calendar-check text-2xl text-lime-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-black-400 text-sm">شارژ ماهانه</p>
+                                <p class="text-xl font-bold text-lime-400">${EmployeeAccountingModule.formatCurrency(
+                                    (() => { try {
+                                        const u = JSON.parse(localStorage.getItem('currentUser')||'{}');
+                                        const charges = JSON.parse(localStorage.getItem('employee_monthly_charges')||'{}');
+                                        return charges[u.id] || 0;
+                                    } catch { return 0; } })()
+                                )}</p>
+                                <p class="text-black-300 text-xs">مبلغ ثابت ماهانه</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="bg-gradient-to-r from-green-500/20 to-green-500/20 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
@@ -1009,7 +1040,7 @@ const EmployeeAccountingUI = (function() {
                                 ${EmployeeAccountingModule.formatCurrency(emp.hourlyRate)}/ساعت
                                 <i class="fas fa-edit mr-1"></i>
                             </button>
-                        </td>
+                            ${(()=>{ const mc=(()=>{try{return JSON.parse(localStorage.getItem('employee_monthly_charges')||'{}');}catch{return{};}})(); const v=mc[emp.employeeId]||0; return v>0?`<div class="mt-1"><span class="text-xs bg-lime-500/20 text-lime-300 px-2 py-0.5 rounded-full"><i class="fas fa-calendar-check ml-1" style="font-size:9px;"></i>${EmployeeAccountingModule.formatCurrency(v)}/ماه</span></div>`:''; })()}</td>
                         <td class="text-center py-4 px-4">
                             <span class="text-xl font-bold text-black-400">${EmployeeAccountingModule.formatHoursDisplay(emp.totalHoursApprovedRaw ?? emp.totalHoursApproved)}</span>
                             <p class="text-black-400/60 text-xs">${emp.hoursCount} گزارش</p>
@@ -1226,7 +1257,13 @@ const EmployeeAccountingUI = (function() {
                 <div class="space-y-3 mb-5">
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
-                        <input type="date" id="settle-date" class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400">
+                        <div class="relative">
+                            <input type="text" id="settle-date-disp" readonly
+                                placeholder="انتخاب تاریخ شمسی"
+                                onclick="EAccJalali.open('settle-date','settle-date-disp', event)"
+                                class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 cursor-pointer text-right">
+                            <input type="hidden" id="settle-date">
+                        </div>
                     </div>
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">مبلغ تسویه (تومان) <span class="text-red-400">*</span></label>
@@ -1275,11 +1312,29 @@ const EmployeeAccountingUI = (function() {
             </div>`;
         document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-        document.getElementById('settle-date').value = new Date().toISOString().split('T')[0];
+        // تاریخ امروز شمسی
+        const _todayGreg = new Date().toISOString().split('T')[0];
+        const _settleHid = document.getElementById('settle-date');
+        const _settleDisp = document.getElementById('settle-date-disp');
+        if (_settleHid) _settleHid.value = _todayGreg;
+        if (_settleDisp) {
+            const ju = window.JalaliUtils;
+            if (ju && ju.toDisplay) _settleDisp.value = ju.toDisplay(_todayGreg);
+            else if (ju) {
+                try {
+                    const [y,m,d2] = _todayGreg.split('-').map(Number);
+                    const jd = ju.gregToJD(y,m,d2);
+                    const [jy,jm,jday] = ju.jdToJalali(jd);
+                    _settleDisp.value = jday + ' ' + ju.MONTHS[jm-1] + ' ' + jy;
+                } catch(e2) { _settleDisp.value = ''; }
+            }
+        }
     }
 
     function saveSettlement(employeeId, employeeName) {
-        const date   = document.getElementById('settle-date')?.value;
+        const dateHidden = document.getElementById('settle-date')?.value;
+        const dateDisp   = document.getElementById('settle-date-disp')?.value;
+        const date   = dateHidden || dateDisp || '';
         const amount = parseFloat(document.getElementById('settle-amount')?.value) || 0;
         const note   = document.getElementById('settle-note')?.value?.trim() || '';
         if (!date || !amount) { alert('تاریخ و مبلغ الزامی است'); return; }
@@ -1311,7 +1366,13 @@ const EmployeeAccountingUI = (function() {
                 <div class="space-y-3">
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
-                        <input type="date" id="gift-date" class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-green-400">
+                        <div class="relative">
+                            <input type="text" id="gift-date-disp" readonly
+                                placeholder="انتخاب تاریخ شمسی"
+                                onclick="EAccJalali.open('gift-date','gift-date-disp', event)"
+                                class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-green-400 cursor-pointer text-right">
+                            <input type="hidden" id="gift-date">
+                        </div>
                     </div>
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">مبلغ هدیه (تومان) <span class="text-red-400">*</span></label>
@@ -1336,11 +1397,17 @@ const EmployeeAccountingUI = (function() {
         document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
         const today = new Date().toISOString().split('T')[0];
-        document.getElementById('gift-date').value = today;
+        const _giftHid = document.getElementById('gift-date');
+        const _giftDisp = document.getElementById('gift-date-disp');
+        if (_giftHid) _giftHid.value = today;
+        if (_giftDisp) {
+            const ju = window.JalaliUtils;
+            if (ju) { try { const [y,m,d2]=today.split('-').map(Number); const jd=ju.gregToJD(y,m,d2); const [jy,jm,jday]=ju.jdToJalali(jd); _giftDisp.value=jday+' '+ju.MONTHS[jm-1]+' '+jy; } catch(e){} }
+        }
     }
 
     function saveGift(employeeId, employeeName) {
-        const date   = document.getElementById('gift-date')?.value;
+        const date   = document.getElementById('gift-date')?.value || document.getElementById('gift-date-disp')?.value || '';
         const amount = parseFloat(document.getElementById('gift-amount')?.value) || 0;
         const reason = document.getElementById('gift-reason')?.value?.trim() || 'هدیه';
         if (!date || !amount) { alert('تاریخ و مبلغ الزامی است'); return; }
@@ -1370,7 +1437,13 @@ const EmployeeAccountingUI = (function() {
                 <div class="space-y-3">
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
-                        <input type="date" id="ded2-date" class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-red-400">
+                        <div class="relative">
+                            <input type="text" id="ded2-date-disp" readonly
+                                placeholder="انتخاب تاریخ شمسی"
+                                onclick="EAccJalali.open('ded2-date','ded2-date-disp', event)"
+                                class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-red-400 cursor-pointer text-right">
+                            <input type="hidden" id="ded2-date">
+                        </div>
                     </div>
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">مبلغ کسر (تومان) <span class="text-red-400">*</span></label>
@@ -1394,12 +1467,18 @@ const EmployeeAccountingUI = (function() {
             </div>`;
         document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('ded2-date').value = today;
+        const _today2 = new Date().toISOString().split('T')[0];
+        const _d2Hid = document.getElementById('ded2-date');
+        const _d2Disp = document.getElementById('ded2-date-disp');
+        if (_d2Hid) _d2Hid.value = _today2;
+        if (_d2Disp) {
+            const ju = window.JalaliUtils;
+            if (ju) { try { const [y,m,d2]=_today2.split('-').map(Number); const jd=ju.gregToJD(y,m,d2); const [jy,jm,jday]=ju.jdToJalali(jd); _d2Disp.value=jday+' '+ju.MONTHS[jm-1]+' '+jy; } catch(e){} }
+        }
     }
 
     function saveDeductionInline(employeeId, employeeName) {
-        const date   = document.getElementById('ded2-date')?.value;
+        const date   = document.getElementById('ded2-date')?.value || document.getElementById('ded2-date-disp')?.value || '';
         const amount = parseFloat(document.getElementById('ded2-amount')?.value) || 0;
         const reason = document.getElementById('ded2-reason')?.value?.trim();
         if (!date || !amount || !reason) { alert('همه فیلدها الزامی است'); return; }
@@ -1447,8 +1526,13 @@ const EmployeeAccountingUI = (function() {
                     </div>
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
-                        <input type="date" id="ded-date"
-                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400">
+                        <div class="relative">
+                            <input type="text" id="ded-date-disp" readonly
+                                placeholder="انتخاب تاریخ شمسی"
+                                onclick="EAccJalali.open('ded-date','ded-date-disp', event)"
+                                class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 cursor-pointer text-right">
+                            <input type="hidden" id="ded-date">
+                        </div>
                     </div>
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">مبلغ (تومان) <span class="text-red-400">*</span></label>
@@ -1478,7 +1562,7 @@ const EmployeeAccountingUI = (function() {
 
     function saveDeduction() {
         const empSel = document.getElementById('ded-emp');
-        const date   = document.getElementById('ded-date')?.value;
+        const date   = document.getElementById('ded-date')?.value || document.getElementById('ded-date-disp')?.value || '';
         const amount = parseFloat(document.getElementById('ded-amount')?.value) || 0;
         const reason = document.getElementById('ded-reason')?.value?.trim();
 
@@ -1573,13 +1657,17 @@ const EmployeeAccountingUI = (function() {
     function showEditRateModal(employeeId, employeeName, currentRate) {
         document.getElementById('edit-rate-modal')?.remove();
 
+        // خواندن شارژ ماهانه موجود
+        const monthlyCharges = (() => { try { return JSON.parse(localStorage.getItem('employee_monthly_charges')||'{}'); } catch { return {}; } })();
+        const currentMonthly = monthlyCharges[employeeId] || 0;
+
         const modal = `
             <div id="edit-rate-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onclick="if(event.target === this) this.remove()">
                 <div class="bg-slate-800 rounded-2xl p-6 max-w-md w-full mx-4" onclick="event.stopPropagation()">
                     <div class="flex items-center justify-between mb-6">
                         <h3 class="text-xl font-bold text-white">
                             <i class="fas fa-edit text-black-400 ml-2"></i>
-                            تنظیم نرخ ساعتی
+                            تنظیم نرخ کارمند
                         </h3>
                         <button onclick="document.getElementById('edit-rate-modal').remove()" class="text-gray-400 hover:text-white">
                             <i class="fas fa-times"></i>
@@ -1589,11 +1677,23 @@ const EmployeeAccountingUI = (function() {
                         <p class="text-black-400 text-sm mb-1">کارمند:</p>
                         <p class="text-white font-bold text-lg">${employeeName}</p>
                     </div>
-                    <div>
-                        <label class="block text-black-400 text-sm mb-2">نرخ ساعتی (تومان)</label>
-                        <input type="number" id="employee-hourly-rate" value="${currentRate}"
-                               class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400"
-                               placeholder="مثال: 100000">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-black-400 text-sm mb-2">نرخ ساعتی (تومان)</label>
+                            <input type="number" id="employee-hourly-rate" value="${currentRate}"
+                                   class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400"
+                                   placeholder="مثال: 100000">
+                        </div>
+                        <div>
+                            <label class="block text-gray-300 text-sm mb-2 flex items-center gap-2">
+                                <i class="fas fa-calendar-check text-lime-400"></i>
+                                شارژ ماهانه (تومان)
+                                <span class="text-gray-500 text-xs font-normal">— مبلغ ثابت ماهانه علاوه بر حقوق ساعتی</span>
+                            </label>
+                            <input type="number" id="employee-monthly-charge" value="${currentMonthly}"
+                                   class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-lime-400"
+                                   placeholder="مثال: 2000000 (صفر = بدون شارژ ماهانه)">
+                        </div>
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
                         <button onclick="document.getElementById('edit-rate-modal').remove()" class="px-4 py-2 text-gray-400 hover:text-white">انصراف</button>
@@ -1609,10 +1709,29 @@ const EmployeeAccountingUI = (function() {
     }
 
     function saveEmployeeRate(employeeId) {
-        const rate = parseFloat(document.getElementById('employee-hourly-rate').value) || 0;
+        const rate    = parseFloat(document.getElementById('employee-hourly-rate').value) || 0;
+        const monthly = parseFloat(document.getElementById('employee-monthly-charge')?.value) || 0;
+
         EmployeeAccountingModule.setHourlyRate(employeeId, rate);
+
+        // ذخیره شارژ ماهانه
+        const charges = (() => { try { return JSON.parse(localStorage.getItem('employee_monthly_charges')||'{}'); } catch { return {}; } })();
+        charges[employeeId] = monthly;
+        localStorage.setItem('employee_monthly_charges', JSON.stringify(charges));
+
+        // sync شارژ ماهانه به Supabase
+        const sb = (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseConnection !== 'undefined' && SupabaseConnection.isOnline === true) ? SupabaseDataModule : null;
+        if (sb && typeof sb._db === 'function') {
+            const client = sb._db();
+            if (client) {
+                client.from('employee_hourly_rates')
+                    .upsert({ employee_id: employeeId, hourly_rate: rate, monthly_charge: monthly, currency: 'تومان', updated_at: new Date().toISOString() }, { onConflict: 'employee_id' })
+                    .then(({ error }) => { if (error) console.warn('⚠️ saveEmployeeRate Supabase:', error.message); });
+            }
+        }
+
         document.getElementById('edit-rate-modal')?.remove();
-        showNotification('نرخ ساعتی با موفقیت ذخیره شد', 'success');
+        showNotification('نرخ ساعتی و شارژ ماهانه با موفقیت ذخیره شد ✓', 'success');
         refreshContent();
     }
 
@@ -2600,6 +2719,154 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
         refreshContent();
     }
 
+    // ── ویرایش ساعت کاری / هزینه توسط کارمند ────────────────
+    function showEditEntryModal(entryId) {
+        document.getElementById('edit-entry-modal')?.remove();
+
+        const allEntries = WorkHoursModule.getWorkHours ? WorkHoursModule.getWorkHours() : [];
+        const entry = allEntries.find(e => e.id === entryId);
+        if (!entry) { showNotification('رکورد یافت نشد', 'error'); return; }
+
+        // فقط pending یا rejected قابل ویرایش
+        if (entry.status === 'approved') {
+            showNotification('رکورد تأیید‌شده قابل ویرایش نیست', 'warning');
+            return;
+        }
+
+        const isExp = entry.type === 'expense';
+        const ju = window.JalaliUtils;
+
+        // تبدیل تاریخ میلادی به شمسی برای نمایش
+        function _gregToDispSafe(gregStr) {
+            if (!gregStr || !ju) return gregStr || '';
+            try {
+                const parts = String(gregStr).split('-').map(Number);
+                if (parts.length < 3 || parts[0] < 1300) return gregStr;
+                if (parts[0] >= 1300 && parts[0] <= 1500) {
+                    // خودش شمسی است
+                    return parts[2] + ' ' + ju.MONTHS[parts[1]-1] + ' ' + parts[0];
+                }
+                // میلادی
+                const jd = ju.gregToJD(parts[0], parts[1], parts[2]);
+                const [jy,jm,jday] = ju.jdToJalali(jd);
+                return jday + ' ' + ju.MONTHS[jm-1] + ' ' + jy;
+            } catch(e) { return gregStr; }
+        }
+
+        const dispDate = _gregToDispSafe(entry.date);
+
+        const modal = document.createElement('div');
+        modal.id = 'edit-entry-modal';
+        modal.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4';
+        modal.innerHTML = `
+            <div class="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-blue-400/30 shadow-2xl overflow-visible" onclick="event.stopPropagation()">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="text-white text-lg font-bold flex items-center gap-2">
+                        <i class="fas fa-edit text-blue-400"></i>
+                        ویرایش ${isExp ? 'هزینه' : 'ساعت کاری'}
+                    </h3>
+                    <button onclick="document.getElementById('edit-entry-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="space-y-4">
+                    <!-- تاریخ -->
+                    <div>
+                        <label class="text-gray-400 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
+                        <div class="relative">
+                            <input type="text" id="ee-date-disp" readonly value="${dispDate}"
+                                placeholder="انتخاب تاریخ شمسی"
+                                onclick="EAccJalali.open('ee-date','ee-date-disp', event)"
+                                class="w-full bg-slate-700 text-white border border-white/20 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-400 cursor-pointer text-right">
+                            <input type="hidden" id="ee-date" value="${entry.date || ''}">
+                        </div>
+                    </div>
+                    ${isExp ? `
+                    <!-- مبلغ هزینه -->
+                    <div>
+                        <label class="text-gray-400 text-sm mb-1 block">مبلغ هزینه (تومان) <span class="text-red-400">*</span></label>
+                        <input type="number" id="ee-amount" min="0" step="1000"
+                            value="${entry.amount || 0}"
+                            class="w-full bg-slate-700 text-white border border-white/20 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-400">
+                    </div>
+                    ` : `
+                    <!-- ساعت شروع / پایان -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-gray-400 text-sm mb-1 block">ساعت شروع <span class="text-red-400">*</span></label>
+                            <input type="text" id="ee-start" value="${entry.startTime || ''}"
+                                placeholder="مثال: 08:00" maxlength="5"
+                                oninput="this.value=this.value.replace(/[^0-9:]/g,'');if(this.value.length===2&&!this.value.includes(':'))this.value+=':';"
+                                class="w-full bg-slate-700 text-white border border-white/20 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-400 font-mono" dir="ltr">
+                        </div>
+                        <div>
+                            <label class="text-gray-400 text-sm mb-1 block">ساعت پایان <span class="text-red-400">*</span></label>
+                            <input type="text" id="ee-end" value="${entry.endTime || ''}"
+                                placeholder="مثال: 17:00" maxlength="5"
+                                oninput="this.value=this.value.replace(/[^0-9:]/g,'');if(this.value.length===2&&!this.value.includes(':'))this.value+=':';"
+                                class="w-full bg-slate-700 text-white border border-white/20 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-400 font-mono" dir="ltr">
+                        </div>
+                    </div>
+                    `}
+                    <!-- شرح -->
+                    <div>
+                        <label class="text-gray-400 text-sm mb-1 block">شرح / توضیحات</label>
+                        <input type="text" id="ee-desc" value="${(entry.description||'').replace(/"/g,'&quot;')}"
+                            placeholder="توضیح اختیاری..."
+                            class="w-full bg-slate-700 text-white border border-white/20 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-400">
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-5">
+                    <button onclick="EmployeeAccountingUI.saveEditEntry('${entryId}', ${isExp})"
+                        class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl transition-all">
+                        <i class="fas fa-save ml-1"></i>ذخیره تغییرات
+                    </button>
+                    <button onclick="document.getElementById('edit-entry-modal').remove()"
+                        class="px-5 bg-gray-600 hover:bg-gray-500 text-white py-2.5 rounded-xl transition-all">انصراف</button>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) { EAccJalali.close(); modal.remove(); } });
+    }
+
+    function saveEditEntry(entryId, isExpense) {
+        const dateHid  = document.getElementById('ee-date')?.value;
+        const dateDisp = document.getElementById('ee-date-disp')?.value;
+        const date     = dateHid || dateDisp || '';
+        const desc     = document.getElementById('ee-desc')?.value?.trim() || '';
+
+        if (!date) { alert('تاریخ الزامی است'); return; }
+
+        let updates = { date, description: desc, status: 'pending', updatedAt: new Date().toISOString() };
+
+        if (isExpense) {
+            const amount = parseFloat(document.getElementById('ee-amount')?.value) || 0;
+            if (!amount) { alert('مبلغ هزینه الزامی است'); return; }
+            updates.amount = amount;
+        } else {
+            const startTime = document.getElementById('ee-start')?.value?.trim();
+            const endTime   = document.getElementById('ee-end')?.value?.trim();
+            if (!startTime || !endTime) { alert('ساعت شروع و پایان الزامی است'); return; }
+            updates.startTime = startTime;
+            updates.endTime   = endTime;
+            updates.totalHours = WorkHoursModule.calculateTotalHours
+                ? WorkHoursModule.calculateTotalHours(startTime, endTime)
+                : (() => {
+                    const [sh,sm] = startTime.split(':').map(Number);
+                    const [eh,em] = endTime.split(':').map(Number);
+                    const diff = (eh*60+em) - (sh*60+sm);
+                    return diff > 0 ? parseFloat((diff/60).toFixed(4)) : 0;
+                })();
+        }
+
+        const result = WorkHoursModule.updateWorkHour(entryId, updates);
+        document.getElementById('edit-entry-modal')?.remove();
+        if (result) {
+            showNotification('رکورد با موفقیت ویرایش شد ✓', 'success');
+        } else {
+            showNotification('خطا در ویرایش رکورد', 'error');
+        }
+        refreshContent();
+    }
+
     // ══════════════════════════════════════════════════════════
     // ── دسترسی sidebar کارمند به حسابداری کارمندان ────────────
     // ══════════════════════════════════════════════════════════
@@ -2816,6 +3083,8 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
         saveLateRequest,
         approveLateRequest,
         rejectLateRequest,
+        showEditEntryModal,
+        saveEditEntry,
         showExportEmployeesModal,
         doExportEmployeesCSV,
         // refresh modal after approve/reject

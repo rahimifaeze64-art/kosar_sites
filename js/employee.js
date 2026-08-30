@@ -1946,6 +1946,10 @@ const EmployeeModule = {
             }
             studentsData[studentId] = student;
             localStorage.setItem('students_data', JSON.stringify(studentsData));
+            // trigger اولین مرحله فارغ‌التحصیلی برای کارمند تخصیص‌یافته
+            if (typeof StepAssignmentModule !== 'undefined') {
+                setTimeout(() => StepAssignmentModule.triggerFirstStepTask(studentId, 'educational'), 300);
+            }
             setTimeout(() => {
                 UTILS.showNotification('🎓 همه مراحل دفاع تکمیل شد! دانشجو به مسیر فارغ‌التحصیلی منتقل شد.', 'success');
             }, 400);
@@ -4887,15 +4891,23 @@ EmployeeModule.showStepsManagementModal = function() {
         <div id="steps-management-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div class="bg-slate-800 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
                 <div class="p-6 border-b border-slate-700 sticky top-0 bg-slate-800 z-10">
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between gap-3 flex-wrap">
                         <h3 class="text-lg font-bold text-white">
                             <i class="fas fa-tasks text-lime-400 ml-2"></i>
                             مدیریت مراحل
                         </h3>
-                        <button onclick="employeeModule.closeModal('steps-management-modal')" 
-                                class="text-gray-400 hover:text-white">
-                            <i class="fas fa-times text-xl"></i>
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button onclick="StepAssignmentModule.syncAllActiveSteps()"
+                                    title="ارسال مراحل فعال به کارمندان تخصیص‌یافته"
+                                    class="flex items-center gap-1 bg-lime-600 hover:bg-lime-500 text-gray-900 text-sm font-semibold px-3 py-1.5 rounded-lg transition-all">
+                                <i class="fas fa-sync-alt text-xs"></i>
+                                <span class="hidden sm:inline">همگام‌سازی وظایف</span>
+                            </button>
+                            <button onclick="employeeModule.closeModal('steps-management-modal')" 
+                                    class="text-gray-400 hover:text-white">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 

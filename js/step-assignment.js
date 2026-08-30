@@ -55,6 +55,69 @@ const StepAssignmentModule = {
             DataModule.saveStepAssignment(type, stepIndex, employeeId || null)
                 .catch(e => console.warn('⚠️ saveStepAssignment async خطا:', e.message));
         }
+
+        // ── اگر کارمندی تخصیص داده شد، بررسی کن آیا این مرحله "فعال" است ──
+        // یعنی مرحله قبلی تکمیل شده (یا این اولین مرحله است) و خودش هنوز تکمیل نشده
+        if (employeeId) {
+            this._createTaskIfStepActive(type, stepIndex, employeeId);
+        }
+    },
+
+    /**
+     * اگر مرحله‌ای به کارمند تخصیص داده شد و شرایط فعال بودن را داشت،
+     * برای همه دانشجویانی که این مرحله در انتظارشان است task بساز.
+     */
+    _createTaskIfStepActive(type, stepIndex, employeeId) {
+        try {
+            const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
+            const typeNames = { defense: 'گردش دفاع', educational: 'فارغ‌التحصیلی', requirements: 'ملزومات' };
+            const typeName = typeNames[type] || type;
+
+            Object.keys(studentsData).forEach(studentId => {
+                const student = studentsData[studentId];
+                if (!student) return;
+
+                let steps = [];
+                if (type === 'defense')      steps = student.defenseSteps      || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultDefenseSteps2()       : []);
+                else if (type === 'educational') steps = student.educationalSteps  || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultEducationalSteps()    : []);
+                else if (type === 'requirements') steps = student.requirementsSteps || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultRequirementsSteps()  : []);
+
+                if (!steps || !steps[stepIndex]) return;
+                const thisStep = steps[stepIndex];
+
+                // اگر این مرحله قبلاً تکمیل شده، نیازی نیست
+                if (thisStep.completed) return;
+
+                // بررسی: مرحله قبلی تکمیل شده باشد یا این اولین مرحله باشد
+                const prevCompleted = stepIndex === 0 || (steps[stepIndex - 1] && steps[stepIndex - 1].completed);
+                if (!prevCompleted) return;
+
+                // بررسی تکراری نبودن task
+                const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+                const empTasks = tasksData[employeeId] || [];
+                const exists = empTasks.find(t =>
+                    t.isStepTask &&
+                    t.studentId === studentId &&
+                    t.stepType  === type &&
+                    t.stepIndex === stepIndex &&
+                    t.status    !== 'completed'
+                );
+                if (exists) return;
+
+                const stepName = thisStep.name || ('مرحله ' + (stepIndex + 1));
+                this.createTaskForEmployee({
+                    employeeId,
+                    studentId,
+                    studentName: student.name || studentId,
+                    type,
+                    stepIndex,
+                    stepName,
+                    typeName,
+                });
+            });
+        } catch (e) {
+            console.warn('⚠️ _createTaskIfStepActive خطا:', e);
+        }
     },
 
     /** دریافت کارمند تخصیص‌یافته به یک مرحله
@@ -259,6 +322,8 @@ const StepAssignmentModule = {
                     }
                     studentsData[studentId] = student;
                     localStorage.setItem('students_data', JSON.stringify(studentsData));
+                    // trigger اولین مرحله فارغ‌التحصیلی
+                    setTimeout(() => this.triggerFirstStepTask(studentId, 'educational'), 300);
                     setTimeout(() => {
                         UTILS.showNotification('🎓 همه مراحل دفاع تکمیل شد! دانشجو به مسیر فارغ‌التحصیلی منتقل شد.', 'success');
                     }, 400);
@@ -327,6 +392,123 @@ const StepAssignmentModule = {
         this.triggerNextStepTask(studentId, stepType, stepIndex);
 
         console.log(`✅ Step ${stepIndex} of ${stepType} auto-completed for student ${studentId} by employee ${employeeId}`);
+    },
+
+    // ─── ارسال وظایف مراحل فعال به کارمندان ────────────────────────────────────
+
+    /**
+     * برای همه دانشجویان، مرحله «فعال فعلی» هر مسیر را بررسی کن
+     * اگر آن مرحله به کارمندی تخصیص داده شده و هنوز task ندارد → task بساز
+     *
+     * مدیر می‌تواند از دکمه «همگام‌سازی وظایف» این را اجرا کند
+     */
+    syncAllActiveSteps() {
+        const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
+        const types = ['defense', 'educational', 'requirements'];
+        const typeNames = { defense: 'گردش دفاع', educational: 'فارغ‌التحصیلی', requirements: 'ملزومات' };
+        let created = 0;
+
+        Object.keys(studentsData).forEach(studentId => {
+            const student = studentsData[studentId];
+            if (!student) return;
+
+            types.forEach(type => {
+                let steps = [];
+                if (type === 'defense')
+                    steps = student.defenseSteps || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultDefenseSteps2() : []);
+                else if (type === 'educational')
+                    steps = student.educationalSteps || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultEducationalSteps() : []);
+                else if (type === 'requirements')
+                    steps = student.requirementsSteps || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultRequirementsSteps() : []);
+
+                if (!steps || steps.length === 0) return;
+
+                // پیدا کردن اولین مرحله‌ای که تکمیل نشده
+                const activeIdx = steps.findIndex(s => !s.completed);
+                if (activeIdx === -1) return; // همه تموم شده
+
+                const employeeId = this.getAssignedEmployee(type, activeIdx);
+                if (!employeeId) return; // به کسی تخصیص نداده
+
+                // بررسی تکراری نبودن
+                const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+                const empTasks = tasksData[employeeId] || [];
+                const exists = empTasks.find(t =>
+                    t.isStepTask &&
+                    t.studentId === studentId &&
+                    t.stepType  === type &&
+                    t.stepIndex === activeIdx &&
+                    t.status    !== 'completed'
+                );
+                if (exists) return;
+
+                const stepName = steps[activeIdx].name || ('مرحله ' + (activeIdx + 1));
+                this.createTaskForEmployee({
+                    employeeId,
+                    studentId,
+                    studentName: student.name || studentId,
+                    type,
+                    stepIndex: activeIdx,
+                    stepName,
+                    typeName: typeNames[type],
+                });
+                created++;
+            });
+        });
+
+        const msg = created > 0
+            ? `✅ ${created} وظیفه جدید برای کارمندان ارسال شد`
+            : 'همه وظایف قبلاً ارسال شده‌اند';
+        if (typeof UTILS !== 'undefined' && UTILS.showNotification) {
+            UTILS.showNotification(msg, created > 0 ? 'success' : 'info');
+        }
+        console.log(`syncAllActiveSteps: ${created} tasks created`);
+        return created;
+    },
+
+    /**
+     * trigger مرحله اول (index=0) یک مسیر برای یک دانشجوی مشخص
+     * وقتی دانشجو وارد مسیر جدید می‌شود صدا زده می‌شود
+     */
+    triggerFirstStepTask(studentId, type) {
+        const employeeId = this.getAssignedEmployee(type, 0);
+        if (!employeeId) return;
+
+        const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
+        const student = studentsData[studentId];
+        if (!student) return;
+
+        let steps = [];
+        if (type === 'defense')
+            steps = student.defenseSteps || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultDefenseSteps2() : []);
+        else if (type === 'educational')
+            steps = student.educationalSteps || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultEducationalSteps() : []);
+        else if (type === 'requirements')
+            steps = student.requirementsSteps || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultRequirementsSteps() : []);
+
+        if (!steps || !steps[0] || steps[0].completed) return;
+
+        const typeNames = { defense: 'گردش دفاع', educational: 'فارغ‌التحصیلی', requirements: 'ملزومات' };
+        const stepName = steps[0].name || 'مرحله ۱';
+
+        // بررسی تکراری
+        const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+        const empTasks = tasksData[employeeId] || [];
+        const exists = empTasks.find(t =>
+            t.isStepTask && t.studentId === studentId &&
+            t.stepType === type && t.stepIndex === 0 && t.status !== 'completed'
+        );
+        if (exists) return;
+
+        this.createTaskForEmployee({
+            employeeId,
+            studentId,
+            studentName: student.name || studentId,
+            type,
+            stepIndex: 0,
+            stepName,
+            typeName: typeNames[type] || type,
+        });
     },
 
 };

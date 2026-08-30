@@ -700,7 +700,7 @@ const CityWorld = (function () {
     };
     _listen(window, 'resize', _onResize);
 
-    console.log('✅ CityWorld initialized');
+    console.log('✅ CityWorld initialized v2');
   }
 
   // ─────────────────────────────────────────────
