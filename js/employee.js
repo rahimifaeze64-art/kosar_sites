@@ -23,7 +23,6 @@ const EmployeeModule = {
                     // merge: داده local اولویت دارد (وضعیتی که کارمند تغییر داده حفظ شود)
                     const merged = remoteTasks.map(rt => {
                         const lt = local.find(l => l.id === rt.id);
-                        // اگر نسخه local جدیدتر است یا وضعیت تغییر کرده، local را نگه دار
                         if (lt) {
                             const localNewer = lt.completedAt && (!rt.completedAt || lt.completedAt >= rt.completedAt);
                             if (localNewer || lt.status !== rt.status) return lt;
@@ -41,7 +40,6 @@ const EmployeeModule = {
                     if (newStr !== prevStr) {
                         all[userId] = merged;
                         localStorage.setItem('employee_tasks', JSON.stringify(all));
-                        // فقط اگر وظیفه جدیدی اضافه شده refresh کن
                         if (merged.length !== local.length) {
                             this.refreshMyTasks(userId);
                         }
@@ -51,6 +49,20 @@ const EmployeeModule = {
                     this._fetchingTasks[userId] = false;
                     console.warn('⚠️ getMyTasksContent fetch خطا:', e.message);
                 });
+
+            // ── همچنین تخصیص‌های مراحل را از Supabase sync کن ──────────────
+            // تا وقتی مدیر از تب دیگری تخصیص داد، کارمند بلافاصله ببیند
+            if (typeof StepAssignmentModule !== 'undefined' &&
+                typeof StepAssignmentModule.syncAssignmentsFromSupabase === 'function') {
+                StepAssignmentModule.syncAssignmentsFromSupabase()
+                    .then(() => {
+                        // بعد از sync، بررسی کن آیا task جدیدی باید ساخته شود
+                        if (typeof StepAssignmentModule.syncAllActiveSteps === 'function') {
+                            StepAssignmentModule.syncAllActiveSteps();
+                        }
+                    })
+                    .catch(() => {});
+            }
         }
 
         const tasks = this.getMyTasks(userId);
@@ -622,33 +634,40 @@ const EmployeeModule = {
                 <div class="bg-slate-800 rounded-lg shadow-md p-4">
                     <!-- هدر با toggle -->
                     <div class="flex items-center justify-between mb-3 cursor-pointer"
-                         onclick="document.getElementById('filter-body').classList.toggle('hidden')">
+                         onclick="document.getElementById('filter-body').classList.toggle('hidden'); document.getElementById('filter-chevron').classList.toggle('rotate-180')">
                         <h3 class="text-base font-bold text-white flex items-center gap-2">
                             <i class="fas fa-filter text-lime-400"></i>
-                            فیلترها و جستجو
+                            فیلترها و جستجو پیشرفته
                             <span id="filter-active-badge" class="hidden bg-lime-500 text-gray-900 text-xs font-bold px-2 py-0.5 rounded-full">فعال</span>
                         </h3>
-                        <i class="fas fa-chevron-down text-gray-400 text-sm transition-transform" id="filter-chevron"></i>
+                        <i class="fas fa-chevron-down text-gray-400 text-sm transition-transform duration-200" id="filter-chevron"></i>
                     </div>
 
                     <div id="filter-body" class="space-y-4">
-                        <!-- ردیف ۱: جستجو -->
+                        <!-- ردیف ۱: جستجوی سریع -->
                         <div class="relative">
                             <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
                             <input type="text" id="filter-student-name"
-                                   placeholder="جستجوی نام، شناسه، شماره پاسپورت..."
+                                   placeholder="جستجوی نام، شناسه، شماره پاسپورت، تلفن، ایمیل..."
                                    oninput="employeeModule.applyStudentFilter()"
                                    class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-4 py-2.5 pr-10
                                           focus:outline-none focus:ring-2 focus:ring-lime-500 placeholder-gray-500">
                         </div>
 
-                        <!-- ردیف ۲: فیلترهای اصلی -->
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <!-- تب‌های گروه فیلتر -->
+                        <div class="flex gap-1 border-b border-slate-600 pb-0">
+                            <button onclick="employeeModule._switchFilterTab('path')"    id="ftab-path"    class="filter-tab-btn px-3 py-2 text-xs font-semibold rounded-t-lg bg-lime-600 text-gray-900">مسیر و پیشرفت</button>
+                            <button onclick="employeeModule._switchFilterTab('personal')" id="ftab-personal" class="filter-tab-btn px-3 py-2 text-xs font-semibold rounded-t-lg bg-slate-700 text-gray-400 hover:bg-slate-600">اطلاعات شخصی</button>
+                            <button onclick="employeeModule._switchFilterTab('edu')"     id="ftab-edu"     class="filter-tab-btn px-3 py-2 text-xs font-semibold rounded-t-lg bg-slate-700 text-gray-400 hover:bg-slate-600">اطلاعات تحصیلی</button>
+                            <button onclick="employeeModule._switchFilterTab('special')" id="ftab-special" class="filter-tab-btn px-3 py-2 text-xs font-semibold rounded-t-lg bg-slate-700 text-gray-400 hover:bg-slate-600">اطلاعات تخصصی</button>
+                        </div>
+
+                        <!-- گروه ۱: مسیر و پیشرفت -->
+                        <div id="fgroup-path" class="grid grid-cols-2 md:grid-cols-4 gap-3">
                             <div>
-                                <label class="block text-xs font-medium text-gray-400 mb-1">مسیر</label>
+                                <label class="block text-xs font-medium text-gray-400 mb-1"><i class="fas fa-route ml-1 text-lime-400"></i>مسیر</label>
                                 <select id="filter-type" onchange="employeeModule.updateFilterStepOptions(); employeeModule.applyStudentFilter()"
-                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm
-                                               focus:outline-none focus:ring-2 focus:ring-lime-500">
+                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lime-500">
                                     <option value="all">همه مسیرها</option>
                                     <option value="educational">فارغ‌التحصیلی</option>
                                     <option value="defense">گردش دفاع</option>
@@ -656,91 +675,161 @@ const EmployeeModule = {
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-400 mb-1">مرحله فعلی</label>
+                                <label class="block text-xs font-medium text-gray-400 mb-1"><i class="fas fa-list-ol ml-1 text-lime-400"></i>مرحله فعلی</label>
                                 <select id="filter-step" onchange="employeeModule.applyStudentFilter()"
-                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm
-                                               focus:outline-none focus:ring-2 focus:ring-lime-500">
+                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lime-500">
                                     <option value="all">همه مراحل</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-400 mb-1">وضعیت</label>
+                                <label class="block text-xs font-medium text-gray-400 mb-1"><i class="fas fa-tasks ml-1 text-lime-400"></i>پیشرفت مسیر</label>
+                                <select id="filter-progress" onchange="employeeModule.applyStudentFilter()"
+                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lime-500">
+                                    <option value="all">همه</option>
+                                    <option value="not_started">شروع نشده (0%)</option>
+                                    <option value="in_progress">در حال انجام (1-99%)</option>
+                                    <option value="half">بیش از ۵۰٪</option>
+                                    <option value="completed">تکمیل شده (100%)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-400 mb-1"><i class="fas fa-toggle-on ml-1 text-lime-400"></i>وضعیت فعالیت</label>
                                 <select id="filter-status" onchange="employeeModule.applyStudentFilter()"
-                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm
-                                               focus:outline-none focus:ring-2 focus:ring-lime-500">
+                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lime-500">
                                     <option value="all">همه</option>
                                     <option value="active">فعال</option>
                                     <option value="inactive">خاتمه یافته</option>
                                 </select>
                             </div>
+                        </div>
+
+                        <!-- گروه ۲: اطلاعات شخصی -->
+                        <div id="fgroup-personal" class="grid grid-cols-2 md:grid-cols-4 gap-3" style="display:none;">
                             <div>
-                                <label class="block text-xs font-medium text-gray-400 mb-1">فیلد خالی</label>
-                                <select id="filter-empty-field" onchange="employeeModule.applyStudentFilter()"
-                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm
-                                               focus:outline-none focus:ring-2 focus:ring-lime-500">
-                                    <option value="all">بدون فیلتر</option>
-                                    <option value="passportNumber">شماره پاسپورت</option>
-                                    <option value="birthDate">تاریخ تولد</option>
-                                    <option value="email">ایمیل</option>
-                                    <option value="phone">تماس</option>
-                                    <option value="university">دانشگاه</option>
-                                    <option value="field">رشته</option>
+                                <label class="block text-xs font-medium text-gray-400 mb-1"><i class="fas fa-venus-mars ml-1 text-pink-400"></i>جنسیت</label>
+                                <select id="filter-gender" onchange="employeeModule.applyStudentFilter()"
+                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lime-500">
+                                    <option value="all">همه</option>
+                                    <option value="مرد">مرد</option>
+                                    <option value="زن">زن</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-400 mb-1"><i class="fas fa-phone ml-1 text-blue-400"></i>تلفن</label>
+                                <select id="filter-has-phone" onchange="employeeModule.applyStudentFilter()"
+                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lime-500">
+                                    <option value="all">همه</option>
+                                    <option value="has">دارای تلفن</option>
+                                    <option value="missing">بدون تلفن</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-400 mb-1"><i class="fas fa-passport ml-1 text-yellow-400"></i>پاسپورت</label>
+                                <select id="filter-has-passport" onchange="employeeModule.applyStudentFilter()"
+                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lime-500">
+                                    <option value="all">همه</option>
+                                    <option value="has">دارای پاسپورت</option>
+                                    <option value="missing">بدون پاسپورت</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-400 mb-1"><i class="fas fa-envelope ml-1 text-purple-400"></i>ایمیل</label>
+                                <select id="filter-has-email" onchange="employeeModule.applyStudentFilter()"
+                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lime-500">
+                                    <option value="all">همه</option>
+                                    <option value="has">دارای ایمیل</option>
+                                    <option value="missing">بدون ایمیل</option>
                                 </select>
                             </div>
                         </div>
 
-                        <!-- ردیف ۳: فیلترهای پیشرفته -->
-                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <!-- گروه ۳: اطلاعات تحصیلی -->
+                        <div id="fgroup-edu" class="grid grid-cols-2 md:grid-cols-3 gap-3" style="display:none;">
                             <div>
-                                <label class="block text-xs font-medium text-gray-400 mb-1">پیشرفت مسیر</label>
-                                <select id="filter-progress" onchange="employeeModule.applyStudentFilter()"
-                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm
-                                               focus:outline-none focus:ring-2 focus:ring-lime-500">
-                                    <option value="all">همه</option>
-                                    <option value="not_started">شروع نشده (0%)</option>
-                                    <option value="in_progress">در حال انجام (1-99%)</option>
-                                    <option value="completed">تکمیل شده (100%)</option>
-                                    <option value="half">بیش از ۵۰٪</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-medium text-gray-400 mb-1">دانشگاه</label>
+                                <label class="block text-xs font-medium text-gray-400 mb-1"><i class="fas fa-university ml-1 text-blue-400"></i>دانشگاه</label>
                                 <select id="filter-university" onchange="employeeModule.applyStudentFilter()"
-                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm
-                                               focus:outline-none focus:ring-2 focus:ring-lime-500">
+                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lime-500">
                                     <option value="all">همه دانشگاه‌ها</option>
-                                    ${[...new Set(students.map(s => s.university).filter(Boolean))].map(u =>
+                                    ${[...new Set(students.map(s => s.university).filter(Boolean))].sort().map(u =>
                                         `<option value="${u}">${u}</option>`).join('')}
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-400 mb-1">مقطع</label>
+                                <label class="block text-xs font-medium text-gray-400 mb-1"><i class="fas fa-graduation-cap ml-1 text-green-400"></i>مقطع</label>
                                 <select id="filter-degree" onchange="employeeModule.applyStudentFilter()"
-                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm
-                                               focus:outline-none focus:ring-2 focus:ring-lime-500">
+                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lime-500">
                                     <option value="all">همه مقاطع</option>
-                                    ${[...new Set(students.map(s => s.degree).filter(Boolean))].map(d =>
-                                        `<option value="${d}">${d}</option>`).join('')}
+                                    <option value="کارشناسی">کارشناسی</option>
+                                    <option value="کارشناسی ارشد">کارشناسی ارشد</option>
+                                    <option value="دکتری">دکتری</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-400 mb-1"><i class="fas fa-book ml-1 text-orange-400"></i>رشته</label>
+                                <select id="filter-field" onchange="employeeModule.applyStudentFilter()"
+                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lime-500">
+                                    <option value="all">همه رشته‌ها</option>
+                                    ${[...new Set(students.map(s => s.field).filter(Boolean))].sort().map(f =>
+                                        `<option value="${f}">${f}</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- گروه ۴: اطلاعات تخصصی -->
+                        <div id="fgroup-special" class="grid grid-cols-2 md:grid-cols-3 gap-3" style="display:none;">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-400 mb-1"><i class="fas fa-exclamation-circle ml-1 text-red-400"></i>فیلد خالی</label>
+                                <select id="filter-empty-field" onchange="employeeModule.applyStudentFilter()"
+                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lime-500">
+                                    <option value="all">بدون فیلتر</option>
+                                    <option value="passportNumber">شماره پاسپورت خالی</option>
+                                    <option value="birthDate">تاریخ تولد خالی</option>
+                                    <option value="email">ایمیل خالی</option>
+                                    <option value="phone">تلفن خالی</option>
+                                    <option value="university">دانشگاه خالی</option>
+                                    <option value="field">رشته خالی</option>
+                                    <option value="studentId">شناسه دانشجویی خالی</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-400 mb-1"><i class="fas fa-award ml-1 text-yellow-400"></i>وضعیت فارغ‌التحصیلی</label>
+                                <select id="filter-graduated" onchange="employeeModule.applyStudentFilter()"
+                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lime-500">
+                                    <option value="all">همه</option>
+                                    <option value="graduated">فارغ‌التحصیل شده</option>
+                                    <option value="not_graduated">در حال تحصیل</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-400 mb-1"><i class="fas fa-sort ml-1 text-cyan-400"></i>مرتب‌سازی</label>
+                                <select id="filter-sort" onchange="employeeModule.applyStudentFilter()"
+                                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lime-500">
+                                    <option value="name_asc">نام (الف تا ی)</option>
+                                    <option value="name_desc">نام (ی تا الف)</option>
+                                    <option value="progress_desc">پیشرفت بیشتر</option>
+                                    <option value="progress_asc">پیشرفت کمتر</option>
+                                    <option value="newest">جدیدترین</option>
                                 </select>
                             </div>
                         </div>
 
                         <!-- نتیجه + دکمه‌ها -->
-                        <div class="flex items-center justify-between pt-1 border-t border-slate-700">
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-700">
                             <p class="text-sm text-gray-400">
                                 <i class="fas fa-users text-lime-400 ml-1"></i>
-                                <span id="filter-count">${students.length}</span> دانشجو
+                                <span id="filter-count">${students.length}</span> دانشجو پیدا شد
                             </p>
                             <div class="flex gap-2">
                                 <button onclick="employeeModule.applyStudentFilter()"
                                         class="bg-lime-600 hover:bg-lime-700 text-gray-900 text-sm px-4 py-2 rounded-lg transition-all font-medium">
-                                    <i class="fas fa-filter ml-1"></i>اعمال
+                                    <i class="fas fa-filter ml-1"></i>اعمال فیلتر
                                 </button>
                                 <button onclick="employeeModule.clearStudentFilter()"
                                         class="bg-slate-700 hover:bg-slate-600 text-gray-300 text-sm px-4 py-2 rounded-lg transition-all">
                                     <i class="fas fa-times ml-1"></i>پاک کردن
                                 </button>
                             </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -769,13 +858,13 @@ const EmployeeModule = {
                                 id="student-list-tab-educational"
                                 class="px-5 py-3 font-medium border-b-2 border-transparent text-gray-400 hover:text-emerald-300 transition-all whitespace-nowrap">
                             <i class="fas fa-graduation-cap ml-1"></i>
-                            مرحله فارغ‌التحصیلی (${students.filter(s => s.active && s.currentPath === 'educational').length})
+                            مرحله فارغ‌التحصیلی (${students.filter(s => s.active && (s.currentPath === 'educational' || (!(s.currentPath) && s.defenseSteps && s.defenseSteps.length > 0 && s.defenseSteps.every(x=>x.completed)))).length})
                         </button>
                         <button onclick="employeeModule.switchStudentListTab('graduated')" 
                                 id="student-list-tab-graduated"
                                 class="px-5 py-3 font-medium border-b-2 border-transparent text-gray-400 hover:text-yellow-300 transition-all whitespace-nowrap">
                             <i class="fas fa-award ml-1"></i>
-                            فارغ‌التحصیل شده (${students.filter(s => s.graduated || (!s.active && s.finishedDate)).length})
+                            فارغ‌التحصیل شده (${students.filter(s => s.graduated || (s.educationalSteps && s.educationalSteps.length > 0 && s.educationalSteps.every(x=>x.completed)) || (!s.active && s.finishedDate)).length})
                         </button>
                         <button onclick="employeeModule.switchStudentListTab('inactive')" 
                                 id="student-list-tab-inactive"
@@ -795,11 +884,11 @@ const EmployeeModule = {
                     </div>
                     <!-- Educational Students -->
                     <div id="students-list-container-educational" style="display:none;">
-                        ${this._renderStudentTable(students.filter(s => s.active && s.currentPath === 'educational'), 'دانشجویی در مرحله فارغ‌التحصیلی نیست')}
+                        ${this._renderStudentTable(students.filter(s => s.active && (s.currentPath === 'educational' || (!(s.currentPath) && s.defenseSteps && s.defenseSteps.length > 0 && s.defenseSteps.every(x=>x.completed)))), 'دانشجویی در مرحله فارغ‌التحصیلی نیست')}
                     </div>
                     <!-- Graduated Students -->
                     <div id="students-list-container-graduated" style="display:none;">
-                        ${this._renderStudentTable(students.filter(s => s.graduated || (!s.active && s.finishedDate)), 'دانشجوی فارغ‌التحصیل‌شده‌ای وجود ندارد')}
+                        ${this._renderStudentTable(students.filter(s => s.graduated || (s.educationalSteps && s.educationalSteps.length > 0 && s.educationalSteps.every(x=>x.completed)) || (!s.active && s.finishedDate)), 'دانشجوی فارغ‌التحصیل‌شده‌ای وجود ندارد')}
                     </div>
                     <!-- Inactive Students -->
                     <div id="students-list-container-inactive" style="display: none;">
@@ -1959,6 +2048,9 @@ const EmployeeModule = {
         studentsData[studentId] = student;
         localStorage.setItem('students_data', JSON.stringify(studentsData));
 
+        // ── sync پیشرفت به Supabase (student_progress table) ──────────────────
+        this._syncStepsToSupabase(studentId, 'defense', student.defenseSteps);
+
         // ---- Auto-assign: if step was just completed, trigger next step task ----
         if (step.completed && typeof StepAssignmentModule !== 'undefined') {
             StepAssignmentModule.triggerNextStepTask(studentId, 'defense', stepIndex);
@@ -1975,6 +2067,10 @@ const EmployeeModule = {
             }
             studentsData[studentId] = student;
             localStorage.setItem('students_data', JSON.stringify(studentsData));
+
+            // sync currentPath به Supabase profiles
+            this._syncStudentProfileToSupabase(studentId, { current_path: 'educational' });
+
             // trigger اولین مرحله فارغ‌التحصیلی برای کارمند تخصیص‌یافته
             if (typeof StepAssignmentModule !== 'undefined') {
                 setTimeout(() => StepAssignmentModule.triggerFirstStepTask(studentId, 'educational'), 300);
@@ -2170,6 +2266,20 @@ const EmployeeModule = {
         // Save to localStorage
         studentsData[studentId] = student;
         localStorage.setItem('students_data', JSON.stringify(studentsData));
+
+        // ── sync پیشرفت به Supabase ──────────────────────────────────────────
+        this._syncStepsToSupabase(studentId, 'educational', student.educationalSteps);
+
+        // بررسی: اگر همه مراحل educational تکمیل شد → فارغ‌التحصیل
+        const allEdDone = student.educationalSteps.every(s => s.completed);
+        if (allEdDone && step.completed) {
+            student.graduated = true;
+            student.graduatedDate = new Date().toISOString();
+            studentsData[studentId] = student;
+            localStorage.setItem('students_data', JSON.stringify(studentsData));
+            this._syncStudentProfileToSupabase(studentId, { graduated: true });
+            setTimeout(() => UTILS.showNotification('🎓 همه مراحل فارغ‌التحصیلی تکمیل شد!', 'success'), 300);
+        }
         
         // Refresh the educational tab content (works in both modal and main view)
         const educationalContentDiv = document.getElementById('path-content-educational');
@@ -3436,11 +3546,18 @@ const EmployeeModule = {
         const taskIndex = tasks.findIndex(t => t.id === taskId);
         
         if (taskIndex === -1) return;
-        
-        const statusOrder = ['pending', 'in_progress', 'completed'];
-        
-        const currentIndex = statusOrder.indexOf(tasks[taskIndex].status);
-        const newStatus = statusOrder[(currentIndex + 1) % statusOrder.length];
+
+        // برای step-task‌ها دکمه «انجام شد» مستقیم completed می‌کند
+        // برای وظایف معمولی cycle: pending → in_progress → completed
+        const isStepTask = !!tasks[taskIndex].isStepTask;
+        let newStatus;
+        if (isStepTask) {
+            newStatus = 'completed';
+        } else {
+            const statusOrder = ['pending', 'in_progress', 'completed'];
+            const currentIndex = statusOrder.indexOf(tasks[taskIndex].status);
+            newStatus = statusOrder[(currentIndex + 1) % statusOrder.length];
+        }
         tasks[taskIndex].status = newStatus;
         
         // اگر تکمیل شد، تاریخ تکمیل را ثبت کن
@@ -3472,9 +3589,9 @@ const EmployeeModule = {
         
         // نمایش پیام مناسب
         const statusTextsMsg = {
-            'pending': 'وظیفه به حالت در انتظار برگشت',
+            'pending':     'وظیفه به حالت در انتظار برگشت',
             'in_progress': 'وظیفه در حال انجام است',
-            'completed': 'وظیفه با موفقیت تکمیل شد ✓'
+            'completed':   isStepTask ? '✅ مرحله دانشجو با موفقیت تکمیل شد' : 'وظیفه با موفقیت تکمیل شد ✓'
         };
         UTILS.showNotification(statusTextsMsg[newStatus], 'success');
     },
@@ -4861,6 +4978,27 @@ EmployeeModule.saveNewStudent = async function() {
 
 // Show steps management modal
 EmployeeModule.showStepsManagementModal = function() {
+    // قبل از رندر، تخصیص‌ها را از Supabase sync کن
+    if (typeof StepAssignmentModule !== 'undefined' &&
+        typeof StepAssignmentModule.syncAssignmentsFromSupabase === 'function') {
+        StepAssignmentModule.syncAssignmentsFromSupabase().then(() => {
+            // بعد از sync اگر modal هنوز باز است refresh کن
+            const modal = document.getElementById('steps-management-modal');
+            if (modal) {
+                const container = modal.querySelector('#steps-content-defense .grid');
+                if (container) {
+                    const defenseSteps = EmployeeModule.getDefaultDefenseSteps2();
+                    const renderStepRowFn = modal.__renderStepRow;
+                    if (renderStepRowFn) {
+                        container.innerHTML = defenseSteps
+                            .map((step, i) => renderStepRowFn(step, i, defenseSteps.length, 'defense', 'blue'))
+                            .join('');
+                    }
+                }
+            }
+        }).catch(() => {});
+    }
+
     const educationalSteps = this.getDefaultEducationalSteps();
     const defenseSteps = this.getDefaultDefenseSteps2();
     const requirementsSteps = this.getDefaultRequirementsSteps();
@@ -5347,92 +5485,92 @@ EmployeeModule.applyStepsToAllStudents = function(type, newSteps) {
 
 // Update applyStudentFilter to include all advanced filters
 EmployeeModule.applyStudentFilter = function() {
-    const filterTypeElement       = document.getElementById('filter-type');
-    const filterStepElement       = document.getElementById('filter-step');
-    const filterEmptyFieldElement = document.getElementById('filter-empty-field');
-    const filterNameElement       = document.getElementById('filter-student-name');
-    const filterStatusElement     = document.getElementById('filter-status');
-    const filterProgressElement   = document.getElementById('filter-progress');
-    const filterUniversityElement = document.getElementById('filter-university');
-    const filterDegreeElement     = document.getElementById('filter-degree');
+    const _v = id => { const el = document.getElementById(id); return el ? el.value : 'all'; };
 
-    if (!filterTypeElement || !filterStepElement) {
-        console.warn('Filter elements not found');
-        return;
-    }
+    const filterType       = _v('filter-type');
+    const filterStep       = _v('filter-step');
+    const filterEmptyField = _v('filter-empty-field');
+    const filterStatus     = _v('filter-status');
+    const filterProgress   = _v('filter-progress');
+    const filterUniversity = _v('filter-university');
+    const filterDegree     = _v('filter-degree');
+    const filterField      = _v('filter-field');
+    const filterGender     = _v('filter-gender');
+    const filterHasPhone   = _v('filter-has-phone');
+    const filterHasPassport= _v('filter-has-passport');
+    const filterHasEmail   = _v('filter-has-email');
+    const filterGraduated  = _v('filter-graduated');
+    const filterSort       = _v('filter-sort') || 'name_asc';
+    const filterNameEl     = document.getElementById('filter-student-name');
+    const filterName       = filterNameEl ? filterNameEl.value.trim().toLowerCase() : '';
 
-    const filterType       = filterTypeElement.value;
-    const filterStep       = filterStepElement.value;
-    const filterEmptyField = filterEmptyFieldElement ? filterEmptyFieldElement.value : 'all';
-    const filterName       = filterNameElement ? filterNameElement.value.trim().toLowerCase() : '';
-    const filterStatus     = filterStatusElement ? filterStatusElement.value : 'all';
-    const filterProgress   = filterProgressElement ? filterProgressElement.value : 'all';
-    const filterUniversity = filterUniversityElement ? filterUniversityElement.value : 'all';
-    const filterDegree     = filterDegreeElement ? filterDegreeElement.value : 'all';
+    const typeEl = document.getElementById('filter-type');
+    const stepEl = document.getElementById('filter-step');
+    if (!typeEl || !stepEl) { console.warn('Filter elements not found'); return; }
 
     const students = this.getAllStudents();
-    let filteredStudents = students;
+    let f = [...students];
 
-    // ── فیلتر نام / شناسه / پاسپورت ──────────────────────────
+    // ── جستجوی متنی (نام / شناسه / پاسپورت / تلفن / ایمیل) ──
     if (filterName) {
-        filteredStudents = filteredStudents.filter(s => {
-            const name  = (s.name || '').toLowerCase();
-            const sid   = (s.studentId || '').toLowerCase();
-            const pass  = (s.passportNumber || '').toLowerCase();
-            return name.includes(filterName) || sid.includes(filterName) || pass.includes(filterName);
-        });
-    }
-
-    // ── فیلتر وضعیت فعال/غیرفعال ─────────────────────────────
-    if (filterStatus === 'active')   filteredStudents = filteredStudents.filter(s => s.active);
-    if (filterStatus === 'inactive') filteredStudents = filteredStudents.filter(s => !s.active);
-
-    // ── فیلتر دانشگاه ─────────────────────────────────────────
-    if (filterUniversity !== 'all') {
-        filteredStudents = filteredStudents.filter(s => s.university === filterUniversity);
-    }
-
-    // ── فیلتر مقطع ────────────────────────────────────────────
-    if (filterDegree !== 'all') {
-        filteredStudents = filteredStudents.filter(s => s.degree === filterDegree);
-    }
-
-    // ── فیلتر نوع مسیر / مرحله ────────────────────────────────
-    if (filterType !== 'all') {
-        // فقط دانشجویانی که مسیر فعلی‌شان با filterType مطابق است
-        filteredStudents = filteredStudents.filter(s =>
-            this._getStudentActivePath(s) === filterType
+        f = f.filter(s =>
+            (s.name         || '').toLowerCase().includes(filterName) ||
+            (s.studentId    || '').toLowerCase().includes(filterName) ||
+            (s.passportNumber||'').toLowerCase().includes(filterName) ||
+            (s.phone        || '').toLowerCase().includes(filterName) ||
+            (s.email        || '').toLowerCase().includes(filterName)
         );
+    }
 
-        const getSteps = (s) => {
-            if (filterType === 'educational') return s.educationalSteps || this.getDefaultEducationalSteps();
-            if (filterType === 'defense')     return s.defenseSteps     || this.getDefaultDefenseSteps2();
-            if (filterType === 'requirements') return s.requirementsSteps || (this.getDefaultRequirementsSteps ? this.getDefaultRequirementsSteps() : []);
-            return [];
-        };
+    // ── اطلاعات شخصی ──────────────────────────────────────────
+    if (filterGender     !== 'all') f = f.filter(s => (s.gender || '') === filterGender);
+    if (filterHasPhone   === 'has')     f = f.filter(s => s.phone && s.phone.trim());
+    if (filterHasPhone   === 'missing') f = f.filter(s => !s.phone || !s.phone.trim());
+    if (filterHasPassport=== 'has')     f = f.filter(s => s.passportNumber && s.passportNumber.trim());
+    if (filterHasPassport=== 'missing') f = f.filter(s => !s.passportNumber || !s.passportNumber.trim());
+    if (filterHasEmail   === 'has')     f = f.filter(s => s.email && s.email.trim());
+    if (filterHasEmail   === 'missing') f = f.filter(s => !s.email || !s.email.trim());
 
+    // ── اطلاعات تحصیلی ────────────────────────────────────────
+    if (filterUniversity !== 'all') f = f.filter(s => s.university === filterUniversity);
+    if (filterDegree     !== 'all') f = f.filter(s => (s.degree || '') === filterDegree);
+    if (filterField      !== 'all') f = f.filter(s => (s.field  || '') === filterField);
+
+    // ── اطلاعات تخصصی ─────────────────────────────────────────
+    if (filterStatus === 'active')   f = f.filter(s => s.active);
+    if (filterStatus === 'inactive') f = f.filter(s => !s.active);
+    if (filterGraduated === 'graduated')     f = f.filter(s => s.graduated);
+    if (filterGraduated === 'not_graduated') f = f.filter(s => !s.graduated);
+
+    // ── فیلد خالی ─────────────────────────────────────────────
+    if (filterEmptyField !== 'all') {
+        f = f.filter(s => { const v = s[filterEmptyField]; return !v || v === ''; });
+    }
+
+    // ── مسیر / مرحله ──────────────────────────────────────────
+    const getStepsForPath = (s, path) => {
+        if (path === 'educational') return s.educationalSteps  || this.getDefaultEducationalSteps();
+        if (path === 'defense')     return s.defenseSteps      || this.getDefaultDefenseSteps2();
+        if (path === 'requirements')return s.requirementsSteps || (this.getDefaultRequirementsSteps ? this.getDefaultRequirementsSteps() : []);
+        return [];
+    };
+
+    if (filterType !== 'all') {
+        f = f.filter(s => this._getStudentActivePath(s) === filterType);
+        const steps = s => getStepsForPath(s, filterType);
         if (filterStep !== 'all') {
             if (filterStep === 'completed') {
-                filteredStudents = filteredStudents.filter(s => {
-                    const steps = getSteps(s);
-                    return steps.length > 0 && steps.every(st => st.completed);
-                });
+                f = f.filter(s => { const st = steps(s); return st.length > 0 && st.every(x => x.completed); });
             } else {
-                const selectedIdx = parseInt(filterStep);
-                filteredStudents = filteredStudents.filter(s => {
-                    const steps = getSteps(s);
-                    const curIdx = steps.findIndex(st => !st.completed);
-                    return curIdx === selectedIdx;
-                });
+                const idx = parseInt(filterStep);
+                f = f.filter(s => { const st = steps(s); const cur = st.findIndex(x => !x.completed); return cur === idx; });
             }
         }
-
-        // ── فیلتر پیشرفت ──────────────────────────────────────
         if (filterProgress !== 'all') {
-            filteredStudents = filteredStudents.filter(s => {
-                const steps = getSteps(s);
-                if (!steps.length) return filterProgress === 'not_started';
-                const pct = (steps.filter(st => st.completed).length / steps.length) * 100;
+            f = f.filter(s => {
+                const st = steps(s);
+                if (!st.length) return filterProgress === 'not_started';
+                const pct = st.filter(x => x.completed).length / st.length * 100;
                 if (filterProgress === 'not_started') return pct === 0;
                 if (filterProgress === 'completed')   return pct === 100;
                 if (filterProgress === 'in_progress') return pct > 0 && pct < 100;
@@ -5441,15 +5579,11 @@ EmployeeModule.applyStudentFilter = function() {
             });
         }
     } else if (filterProgress !== 'all') {
-        // اگر مسیر انتخاب نشده، پیشرفت روی مسیر فعلی هر دانشجو اعمال بشه
-        filteredStudents = filteredStudents.filter(s => {
+        f = f.filter(s => {
             const path = this._getStudentActivePath(s);
-            let steps = [];
-            if (path === 'requirements') steps = s.requirementsSteps || (this.getDefaultRequirementsSteps ? this.getDefaultRequirementsSteps() : []);
-            else if (path === 'defense') steps = s.defenseSteps     || this.getDefaultDefenseSteps2();
-            else                         steps = s.educationalSteps  || this.getDefaultEducationalSteps();
-            if (!steps.length) return filterProgress === 'not_started';
-            const pct = (steps.filter(st => st.completed).length / steps.length) * 100;
+            const st = getStepsForPath(s, path);
+            if (!st.length) return filterProgress === 'not_started';
+            const pct = st.filter(x => x.completed).length / st.length * 100;
             if (filterProgress === 'not_started') return pct === 0;
             if (filterProgress === 'completed')   return pct === 100;
             if (filterProgress === 'in_progress') return pct > 0 && pct < 100;
@@ -5458,62 +5592,95 @@ EmployeeModule.applyStudentFilter = function() {
         });
     }
 
-    // ── فیلتر فیلدهای خالی ────────────────────────────────────
-    if (filterEmptyField !== 'all') {
-        filteredStudents = filteredStudents.filter(s => {
-            const v = s[filterEmptyField];
-            return !v || v === '' || v === null || v === undefined;
-        });
-    }
+    // ── مرتب‌سازی ─────────────────────────────────────────────
+    const getProgress = s => {
+        const path = this._getStudentActivePath(s);
+        const st = getStepsForPath(s, path);
+        return st.length ? st.filter(x => x.completed).length / st.length * 100 : 0;
+    };
+    if (filterSort === 'name_asc')       f.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+    else if (filterSort === 'name_desc') f.sort((a,b) => (b.name||'').localeCompare(a.name||''));
+    else if (filterSort === 'progress_desc') f.sort((a,b) => getProgress(b) - getProgress(a));
+    else if (filterSort === 'progress_asc')  f.sort((a,b) => getProgress(a) - getProgress(b));
+    else if (filterSort === 'newest')    f.sort((a,b) => new Date(b.createdAt||0) - new Date(a.createdAt||0));
 
     // ── نشانگر فعال بودن فیلتر ────────────────────────────────
     const isFiltered = filterName || filterStatus !== 'all' || filterType !== 'all' ||
                        filterStep !== 'all' || filterEmptyField !== 'all' ||
-                       filterProgress !== 'all' || filterUniversity !== 'all' || filterDegree !== 'all';
+                       filterProgress !== 'all' || filterUniversity !== 'all' ||
+                       filterDegree !== 'all' || filterField !== 'all' ||
+                       filterGender !== 'all' || filterHasPhone !== 'all' ||
+                       filterHasPassport !== 'all' || filterHasEmail !== 'all' ||
+                       filterGraduated !== 'all';
     const badge = document.getElementById('filter-active-badge');
     if (badge) badge.classList.toggle('hidden', !isFiltered);
 
     // ── آپدیت counter ──────────────────────────────────────────
     const countSpan = document.getElementById('filter-count');
-    if (countSpan) countSpan.textContent = filteredStudents.length;
+    if (countSpan) countSpan.textContent = f.length;
 
-    // ── رندر نتایج ────────────────────────────────────────────
-    const activeContainer   = document.getElementById('students-list-container-active');
-    const inactiveContainer = document.getElementById('students-list-container-inactive');
-
+    // ── رندر نتایج در تمام container‌ها ────────────────────────
     const renderTable = (list, emptyMsg) => this._renderStudentTable(list, emptyMsg);
 
-    if (activeContainer) {
-        const active = filteredStudents.filter(s => s.active);
-        activeContainer.innerHTML = renderTable(active, 'دانشجوی فعالی با این فیلتر یافت نشد');
-    }
-    if (inactiveContainer) {
-        const inactive = filteredStudents.filter(s => !s.active);
-        inactiveContainer.innerHTML = renderTable(inactive, 'دانشجوی خاتمه‌یافته‌ای با این فیلتر یافت نشد');
-    }
-
-    // تب‌های جدید
-    const defenseContainer     = document.getElementById('students-list-container-defense');
-    const educationalContainer = document.getElementById('students-list-container-educational');
-    const graduatedContainer   = document.getElementById('students-list-container-graduated');
-    if (defenseContainer)     defenseContainer.innerHTML     = renderTable(filteredStudents.filter(s => s.active && (s.currentPath === 'defense' || (!s.currentPath && !(s.defenseSteps||[]).every(x=>x.completed)))), 'دانشجویی در مرحله دفاع با این فیلتر یافت نشد');
-    if (educationalContainer) educationalContainer.innerHTML = renderTable(filteredStudents.filter(s => s.active && s.currentPath === 'educational'), 'دانشجویی در مرحله فارغ‌التحصیلی با این فیلتر یافت نشد');
-    if (graduatedContainer)   graduatedContainer.innerHTML   = renderTable(filteredStudents.filter(s => s.graduated || (!s.active && s.finishedDate)), 'دانشجوی فارغ‌التحصیل‌شده‌ای با این فیلتر یافت نشد');
+    const containers = {
+        'students-list-container-active':      s => s.active,
+        'students-list-container-inactive':    s => !s.active && !s.graduated,
+        'students-list-container-defense':     s => s.active && (s.currentPath === 'defense' || (!s.currentPath && !(s.defenseSteps||[]).every(x=>x.completed))),
+        'students-list-container-educational': s => s.active && (s.currentPath === 'educational' || (!(s.currentPath) && s.defenseSteps && s.defenseSteps.length > 0 && s.defenseSteps.every(x=>x.completed))),
+        'students-list-container-graduated':   s => s.graduated || (s.educationalSteps && s.educationalSteps.length > 0 && s.educationalSteps.every(x=>x.completed)) || (!s.active && s.finishedDate),
+    };
+    const emptyMsgs = {
+        'students-list-container-active':      'دانشجوی فعالی با این فیلتر یافت نشد',
+        'students-list-container-inactive':    'دانشجوی خاتمه‌یافته‌ای با این فیلتر یافت نشد',
+        'students-list-container-defense':     'دانشجویی در مرحله دفاع با این فیلتر یافت نشد',
+        'students-list-container-educational': 'دانشجویی در مرحله فارغ‌التحصیلی با این فیلتر یافت نشد',
+        'students-list-container-graduated':   'دانشجوی فارغ‌التحصیل‌شده‌ای با این فیلتر یافت نشد',
+    };
+    Object.keys(containers).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = renderTable(f.filter(containers[id]), emptyMsgs[id]);
+    });
 };
 
 // Update clearStudentFilter to reset all filters
 EmployeeModule.clearStudentFilter = function() {
     const ids = ['filter-student-name', 'filter-type', 'filter-step',
                  'filter-empty-field', 'filter-status', 'filter-progress',
-                 'filter-university', 'filter-degree'];
+                 'filter-university', 'filter-degree', 'filter-field',
+                 'filter-gender', 'filter-has-phone', 'filter-has-passport',
+                 'filter-has-email', 'filter-graduated', 'filter-sort'];
     ids.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = id === 'filter-student-name' ? '' : 'all';
     });
+    // sort به default
+    const sortEl = document.getElementById('filter-sort');
+    if (sortEl) sortEl.value = 'name_asc';
+
     const badge = document.getElementById('filter-active-badge');
     if (badge) badge.classList.add('hidden');
     this.updateFilterStepOptions();
     this.applyStudentFilter();
+};
+
+// تابع جابجایی تب‌های فیلتر
+EmployeeModule._switchFilterTab = function(tab) {
+    const tabs   = ['path','personal','edu','special'];
+    const groups = ['fgroup-path','fgroup-personal','fgroup-edu','fgroup-special'];
+    tabs.forEach((t, i) => {
+        const btn = document.getElementById('ftab-' + t);
+        const grp = document.getElementById(groups[i]);
+        if (!btn || !grp) return;
+        if (t === tab) {
+            btn.classList.replace('bg-slate-700','bg-lime-600');
+            btn.classList.replace('text-gray-400','text-gray-900');
+            grp.style.display = '';
+        } else {
+            btn.classList.replace('bg-lime-600','bg-slate-700');
+            btn.classList.replace('text-gray-900','text-gray-400');
+            grp.style.display = 'none';
+        }
+    });
 };
 
 
@@ -5630,6 +5797,17 @@ EmployeeModule.completeStudentPath = function(studentId, pathType) {
     // sync به Supabase
     if (typeof DataModule !== 'undefined' && DataModule.updateUser) {
         DataModule.updateUser(studentId, { graduated: student.graduated, active: student.active, currentPath: student.currentPath });
+    }
+
+    // sync مراحل + پروفایل به Supabase
+    if (pathType === 'defense') {
+        EmployeeModule._syncStepsToSupabase(studentId, 'defense', student.defenseSteps);
+        EmployeeModule._syncStudentProfileToSupabase(studentId, { current_path: 'educational' });
+    } else if (pathType === 'requirements') {
+        EmployeeModule._syncStepsToSupabase(studentId, 'requirements', student.requirementsSteps);
+    } else if (pathType === 'educational') {
+        EmployeeModule._syncStepsToSupabase(studentId, 'educational', student.educationalSteps);
+        EmployeeModule._syncStudentProfileToSupabase(studentId, { graduated: true, active: false, current_path: 'educational' });
     }
 
     UTILS.showNotification(`✅ تمام مراحل «${pName}» تکمیل شد`, 'success');
@@ -5789,6 +5967,9 @@ EmployeeModule.toggleRequirementStep = function(studentId, stepIndex) {
     // Save
     studentsData[studentId] = student;
     localStorage.setItem('students_data', JSON.stringify(studentsData));
+
+    // ── sync پیشرفت به Supabase ──────────────────────────────────────────
+    EmployeeModule._syncStepsToSupabase(studentId, 'requirements', student.requirementsSteps);
     
     // Also update in DataModule if exists
     if (typeof DataModule !== 'undefined' && DataModule.updateUser) {
@@ -6193,6 +6374,76 @@ EmployeeModule.deleteDefenseStep = function(studentId, stepIndex) {
 // Make EmployeeModule available globally for inline onclick handlers
 window.EmployeeModule = EmployeeModule;
 window.employeeModule = EmployeeModule; // alias with lowercase for compatibility
+
+// ─── Helper: sync مراحل دانشجو به Supabase ──────────────────────────────────
+/**
+ * وقتی مدیر/کارمند مرحله‌ای رو toggle می‌کنه، این تابع
+ * پیشرفت رو هم در student_progress و هم در profiles به Supabase می‌فرسته.
+ *
+ * @param {string} studentId
+ * @param {'defense'|'educational'|'requirements'} pathType
+ * @param {Array}  steps  - آرایه مراحل با فیلد completed
+ */
+EmployeeModule._syncStepsToSupabase = function(studentId, pathType, steps) {
+    try {
+        // ۱. ساخت آرایه prog برای student_progress
+        const progArray = steps.map(s => ({ status: s.completed ? 2 : 0 }));
+        // ذخیره در localStorage (کلید مشترک با sheet view)
+        localStorage.setItem(`prog_${studentId}_${pathType}`, JSON.stringify(progArray));
+
+        // ۲. ارسال به Supabase در پس‌زمینه
+        const sb = (typeof SupabaseDataModule !== 'undefined') ? SupabaseDataModule : null;
+        if (sb && typeof sb.saveStudentProgress === 'function') {
+            sb.saveStudentProgress(studentId, pathType, progArray)
+              .then(ok => { if (ok) console.log(`✅ _syncStepsToSupabase OK: ${studentId}/${pathType}`); })
+              .catch(e => console.warn(`⚠️ _syncStepsToSupabase خطا (${pathType}):`, e.message));
+        }
+
+        // ۳. آپدیت students_data هم در Supabase profiles
+        const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+        if (client) {
+            // ستون‌های JSONB در profiles برای مراحل
+            const colMap = {
+                defense:      'defense_steps',
+                educational:  'educational_steps',
+                requirements: 'requirements_steps'
+            };
+            const col = colMap[pathType];
+            if (col) {
+                client.from('profiles')
+                    .update({ [col]: steps, updated_at: new Date().toISOString() })
+                    .eq('id', studentId)
+                    .then(({ error }) => {
+                        if (error) console.warn(`⚠️ profiles.${col} update خطا:`, error.message);
+                        else console.log(`✅ profiles.${col} updated for ${studentId}`);
+                    });
+            }
+        }
+    } catch (e) {
+        console.warn('⚠️ _syncStepsToSupabase exception:', e.message);
+    }
+};
+
+/**
+ * sync فیلدهای خاصی از پروفایل دانشجو به Supabase profiles
+ * @param {string} studentId
+ * @param {object} fields - مثلاً { current_path: 'educational', graduated: true }
+ */
+EmployeeModule._syncStudentProfileToSupabase = function(studentId, fields) {
+    try {
+        const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+        if (!client) return;
+        client.from('profiles')
+            .update({ ...fields, updated_at: new Date().toISOString() })
+            .eq('id', studentId)
+            .then(({ error }) => {
+                if (error) console.warn('⚠️ _syncStudentProfileToSupabase خطا:', error.message);
+                else console.log('✅ profile synced:', studentId, fields);
+            });
+    } catch (e) {
+        console.warn('⚠️ _syncStudentProfileToSupabase exception:', e.message);
+    }
+};
 
 // ─── تابع تست: افزودن یک وظیفه نمونه برای کارتابل ─────────────────────────
 EmployeeModule._addTestStepTask = function(userId) {

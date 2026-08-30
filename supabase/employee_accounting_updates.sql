@@ -105,32 +105,51 @@ COMMENT ON COLUMN public.work_late_requests.jalali_date IS
 
 -- ────────────────────────────────────────────────────────────
 -- ۶. work_hours — policy ویرایش توسط کارمند (فقط pending/rejected)
---    employee_id نوع UUID دارد → auth.uid() هم UUID است — مشکل cast ندارد
+--    تشخیص خودکار نوع ستون employee_id (TEXT یا UUID)
 -- ────────────────────────────────────────────────────────────
 DROP POLICY IF EXISTS "wh_update_own_employee" ON public.work_hours;
 
 DO $$
+DECLARE v_empid_type text;
 BEGIN
-    -- فقط اگر تابع get_user_role وجود دارد policy بساز
+    SELECT data_type INTO v_empid_type
+    FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'work_hours' AND column_name = 'employee_id';
+
     IF EXISTS (
         SELECT 1 FROM pg_proc
         WHERE proname = 'get_user_role'
           AND pronamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
     ) THEN
-        EXECUTE $policy$
-            CREATE POLICY "wh_update_own_employee"
-                ON public.work_hours
-                FOR UPDATE TO authenticated
-                USING (
-                    public.get_user_role() = 'employee'
-                    AND employee_id = auth.uid()
-                    AND status IN ('pending','rejected')
-                )
-                WITH CHECK (
-                    public.get_user_role() = 'employee'
-                    AND employee_id = auth.uid()
-                )
-        $policy$;
+        IF v_empid_type = 'text' THEN
+            EXECUTE $policy$
+                CREATE POLICY "wh_update_own_employee"
+                    ON public.work_hours FOR UPDATE TO authenticated
+                    USING (
+                        public.get_user_role() = 'employee'
+                        AND employee_id = auth.uid()::text
+                        AND status IN ('pending','rejected')
+                    )
+                    WITH CHECK (
+                        public.get_user_role() = 'employee'
+                        AND employee_id = auth.uid()::text
+                    )
+            $policy$;
+        ELSE
+            EXECUTE $policy$
+                CREATE POLICY "wh_update_own_employee"
+                    ON public.work_hours FOR UPDATE TO authenticated
+                    USING (
+                        public.get_user_role() = 'employee'
+                        AND employee_id = auth.uid()
+                        AND status IN ('pending','rejected')
+                    )
+                    WITH CHECK (
+                        public.get_user_role() = 'employee'
+                        AND employee_id = auth.uid()
+                    )
+            $policy$;
+        END IF;
     END IF;
 END $$;
 

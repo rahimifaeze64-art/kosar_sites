@@ -34,6 +34,47 @@ const StepAssignmentModule = {
         }
     },
 
+    /**
+     * بارگذاری تخصیص‌ها از Supabase در پس‌زمینه و sync با localStorage
+     * وقتی صفحه مدیریت مراحل باز می‌شود صدا زده می‌شود
+     */
+    async syncAssignmentsFromSupabase() {
+        try {
+            const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+            if (!client) return;
+
+            const { data, error } = await client
+                .from('step_assignments')
+                .select('path_type, step_index, employee_id');
+            if (error) throw error;
+            if (!data || data.length === 0) return;
+
+            const assignments = {};
+            data.forEach(row => {
+                if (!assignments[row.path_type]) assignments[row.path_type] = {};
+                if (row.employee_id) {
+                    assignments[row.path_type][row.step_index] = row.employee_id;
+                }
+            });
+
+            // merge با localStorage (داده محلی اولویت داره اگر جدیدتر باشه)
+            const local = JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '{}');
+            const merged = { ...assignments };
+            // اگر محلی چیزی داره که در remote نیست حفظ کن
+            ['defense', 'educational', 'requirements'].forEach(t => {
+                if (local[t]) {
+                    merged[t] = merged[t] || {};
+                    Object.assign(merged[t], local[t]);
+                }
+            });
+
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(merged));
+            console.log('✅ step_assignments از Supabase sync شد');
+        } catch (e) {
+            console.warn('⚠️ syncAssignmentsFromSupabase خطا:', e.message);
+        }
+    },
+
     /** ذخیره تخصیص یک مرحله
      * @param {string} type  - "defense" | "educational" | "requirements"
      * @param {number} stepIndex
@@ -53,7 +94,10 @@ const StepAssignmentModule = {
         }
         localStorage.setItem(this.STORAGE_KEY, JSON.stringify(assignments));
 
-        // ذخیره در Supabase در پس‌زمینه (step_assignments table)
+        // ── ذخیره مستقیم در Supabase step_assignments ──────────────────────
+        this._saveAssignmentToSupabase(type, stepIndex, employeeId || null);
+
+        // ذخیره در Supabase در پس‌زمینه (step_assignments table) — روش قدیمی
         if (typeof DataModule !== 'undefined' && typeof DataModule.saveStepAssignment === 'function') {
             DataModule.saveStepAssignment(type, stepIndex, employeeId || null)
                 .catch(e => console.warn('⚠️ saveStepAssignment async خطا:', e.message));
@@ -72,6 +116,43 @@ const StepAssignmentModule = {
         // ── اگر کارمندی تخصیص داده شد، بررسی کن آیا این مرحله "فعال" است ──
         if (employeeId) {
             this._createTaskIfStepActive(type, stepIndex, employeeId);
+        }
+    },
+
+    /**
+     * ذخیره مستقیم تخصیص در جدول step_assignments سوپابیس
+     */
+    _saveAssignmentToSupabase(type, stepIndex, employeeId) {
+        try {
+            const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+            if (!client) return;
+
+            if (employeeId) {
+                // upsert
+                client.from('step_assignments')
+                    .upsert({
+                        path_type:   type,
+                        step_index:  Number(stepIndex),
+                        employee_id: employeeId,
+                        updated_at:  new Date().toISOString()
+                    }, { onConflict: 'path_type,step_index' })
+                    .then(({ error }) => {
+                        if (error) console.warn('⚠️ step_assignments upsert خطا:', error.message);
+                        else console.log(`✅ step_assignments: ${type}[${stepIndex}] → ${employeeId}`);
+                    });
+            } else {
+                // حذف
+                client.from('step_assignments')
+                    .delete()
+                    .eq('path_type', type)
+                    .eq('step_index', Number(stepIndex))
+                    .then(({ error }) => {
+                        if (error) console.warn('⚠️ step_assignments delete خطا:', error.message);
+                        else console.log(`🗑️ step_assignments: ${type}[${stepIndex}] حذف شد`);
+                    });
+            }
+        } catch (e) {
+            console.warn('⚠️ _saveAssignmentToSupabase exception:', e.message);
         }
     },
 

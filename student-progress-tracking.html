@@ -311,30 +311,46 @@
     <script>
         // ── تعیین مسیر فعال دانشجو (همان منطق employee.js) ────
         function _getActivePath(s) {
+            // اگر currentPath صریحاً تنظیم شده → همون رو برگردون
             if (s.currentPath) return s.currentPath;
-            const req = s.requirementsSteps || [];
-            if (req.length > 0 && req.some(x => !x.completed)) return 'requirements';
+            // ملزومات موازی هستن — اگر مراحل دفاع تموم نشده → defense
             const def = s.defenseSteps || [];
             if (def.length > 0 && def.some(x => !x.completed)) return 'defense';
+            // همه دفاع تموم شده → educational (فارغ‌التحصیلی)
+            if (def.length > 0 && def.every(x => x.completed)) return 'educational';
             return 'educational';
         }
 
-        // ── مراحل پیش‌فرض (اگر مدیر هیچ تغییری نداده باشد) ─────────────────
+        // ── تشخیص اینکه دانشجو باید در تب educational نشان داده شود ────
+        // شامل: کسانی که currentPath='educational' یا همه مراحل دفاع تمام کردند
+        function _shouldShowInEducational(s) {
+            if (s.currentPath === 'educational') return true;
+            if (s.graduated) return true;
+            const def = s.defenseSteps || [];
+            if (def.length > 0 && def.every(x => x.completed)) return true;
+            return false;
+        }
+
+        // ── مراحل پیش‌فرض — دقیقاً همان مراحل employee.js ─────────────────
+        // این مقادیر باید با getDefaultDefenseSteps2(), getDefaultEducationalSteps(),
+        // getDefaultRequirementsSteps() در employee.js یکسان باشند.
         const DEFAULT_STEPS = {
             defense: [
-                'لوح','پوستر','نسخ','ثبت عنوان','بارگزاری',
-                'استاد','مشابهت','مدیر گروه','معاون','تحدید مناقشه'
+                'ثبت عنوان','تنضید','ترجمه','استلال','ملخص',
+                'مدرک لغت(فیش)','بارگزاری','تایید استاد','مشابهت',
+                'مدیر گروه','معاون','سفارش','ق و م',
+                'تسویه حساب','وکالت','ثبت نام ایرانداک','زمان پور'
             ],
             requirements: [
                 'امر اداری','پروپوزال','مدرک لغت','ترجمه پایان نامه فارسی',
                 'ملخص','مشابهت','ترجمه','قطعه','لافته','چهارنسخه','تنضید رساله'
             ],
             educational: [
-                'محضر و اصالت','تنزیل نمره','تعدیل','ایرانداک خطه',
-                'ایرانداک رساله','مدرک لغت','ایجاد کردش','حاتمی',
-                'بارگزاری لغت','آزفا','ترجمه به اسماعیلی','دادگر',
-                'ارسال کد به تهران','وثیقه','تصدیق','تنضید',
-                'استلال','تجلید','ختم تجلید','قطعی','مدارک سابقه','ارسال'
+                'وکالت','تسویه حساب','تعدیلات','مدرک کارشناسی',
+                'استلال عراقی','ملخص','محضر و اصالت','تنضید ایرانداک',
+                'تنضید تجلید','تجلید','بارگزاری ایرانداک','ایجاد گردش',
+                'آزفا','اسماعیلی','کتابخانه','کد',
+                'خروج قطعی','دریافت مدرک','تصدیق','تسویه حساب نهایی','ارسال'
             ]
         };
 
@@ -546,8 +562,14 @@
             headerHTML += '<th>%</th></tr>';
             thead.innerHTML = headerHTML;
             
-            // Filter — فقط دانشجویانی که این مسیر برایشان فعال است
-            let filtered = students.filter(s => s._activePath === currentPath);
+            // Filter — دانشجویانی که این مسیر برایشان فعال/مرتبط است
+            let filtered;
+            if (currentPath === 'educational') {
+                // educational: کسانی که currentPath='educational' یا همه مراحل دفاع تموم کردند
+                filtered = students.filter(s => _shouldShowInEducational(s));
+            } else {
+                filtered = students.filter(s => s._activePath === currentPath);
+            }
             if (searchTerm) {
                 filtered = filtered.filter(s => s.name.includes(searchTerm) || s.major.includes(searchTerm));
             }
