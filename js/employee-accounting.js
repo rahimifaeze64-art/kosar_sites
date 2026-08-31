@@ -1836,12 +1836,18 @@ const EmployeeAccountingUI = (function() {
                     :'<span style="color:#a3e635;font-weight:700;">'+_fmtH(parseFloat(e.totalHours||0))+'</span><span style="color:#000000ff;font-size:11px;margin-right:2px;"> ساعت</span>'
                       +(e.startTime&&e.endTime?'<br><span style="color:#000000ff;font-size:11px;">'+e.startTime+'—'+e.endTime+'</span>':'');
 
-                // دکمه عملیات: pending → تأیید/رد | approved/rejected → badge
+                // دکمه عملیات: pending → تأیید/رد | approved → badge | rejected → badge + ویرایش
                 var actionCell;
                 if (e.status==='approved') {
                     actionCell='<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;background:rgba(34,197,94,0.12);color:#86efac;border:1px solid rgba(74,222,128,0.3);white-space:nowrap;"><span style="width:6px;height:6px;border-radius:50%;background:#4ade80;display:inline-block;"></span>تأیید شده</span>';
                 } else if (e.status==='rejected') {
-                    actionCell='<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;background:rgba(239,68,68,0.12);color:#fca5a5;border:1px solid rgba(248,113,113,0.3);white-space:nowrap;"><span style="width:6px;height:6px;border-radius:50%;background:#f87171;display:inline-block;"></span>رد شده</span>';
+                    actionCell='<div style="display:flex;gap:4px;justify-content:center;align-items:center;">'
+                        +'<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;background:rgba(239,68,68,0.12);color:#fca5a5;border:1px solid rgba(248,113,113,0.3);white-space:nowrap;"><span style="width:6px;height:6px;border-radius:50%;background:#f87171;display:inline-block;"></span>رد شده</span>'
+                        +'<button onclick="EmployeeAccountingUI.showEditEntryModal(\''+e.id+'\')" title="ویرایش و ارسال مجدد"'
+                        +' style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(59,130,246,0.2);color:#93c5fd;border:none;cursor:pointer;"'
+                        +' onmouseover="this.style.background=\'rgba(59,130,246,0.4)\'" onmouseout="this.style.background=\'rgba(59,130,246,0.2)\'">'
+                        +'<i class="fas fa-edit" style="font-size:11px;"></i></button>'
+                        +'</div>';
                 } else {
                     actionCell='<div style="display:flex;gap:4px;justify-content:center;">'
                         +'<button onclick="WorkHoursUI.approveEntry(\''+e.id+'\'); EmployeeAccountingUI.refreshDetailModal(\''+employeeId+'\')" title="تأیید"'
@@ -1852,6 +1858,10 @@ const EmployeeAccountingUI = (function() {
                         +' style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(239,68,68,0.2);color:#f87171;border:none;cursor:pointer;"'
                         +' onmouseover="this.style.background=\'rgba(239,68,68,0.4)\'" onmouseout="this.style.background=\'rgba(239,68,68,0.2)\'">'
                         +'<i class="fas fa-times" style="font-size:11px;"></i></button>'
+                        +'<button onclick="EmployeeAccountingUI.showEditEntryModal(\''+e.id+'\')" title="ویرایش"'
+                        +' style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(59,130,246,0.2);color:#93c5fd;border:none;cursor:pointer;"'
+                        +' onmouseover="this.style.background=\'rgba(59,130,246,0.4)\'" onmouseout="this.style.background=\'rgba(59,130,246,0.2)\'">'
+                        +'<i class="fas fa-edit" style="font-size:11px;"></i></button>'
                         +'</div>';
                 }
 
@@ -1925,6 +1935,7 @@ const EmployeeAccountingUI = (function() {
 
         const modal = document.createElement('div');
         modal.id = 'employee-details-modal';
+        modal.dataset.employeeId = employeeId;
         modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4';
         modal.innerHTML = `
             <div class="bg-slate-800 rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-auto" onclick="event.stopPropagation()">
@@ -2865,6 +2876,15 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
             showNotification('خطا در ویرایش رکورد', 'error');
         }
         refreshContent();
+        // اگر modal جزئیات کارمند (از سمت مدیر) باز بود، رفرش بشه
+        const detailModal = document.getElementById('employee-details-modal');
+        if (detailModal) {
+            const empId = detailModal.dataset.employeeId;
+            if (empId) {
+                detailModal.remove();
+                setTimeout(function(){ showEmployeeDetails(empId); }, 80);
+            }
+        }
     }
 
     // ══════════════════════════════════════════════════════════

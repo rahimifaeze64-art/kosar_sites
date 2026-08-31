@@ -1248,10 +1248,27 @@ const WorkHoursUI = (function() {
                     </td>
                     <td class="py-3 px-4">
                         ${entry.status === 'pending' ? `
-                            <button onclick="WorkHoursUI.deleteEntry('${entry.id}')"
-                                    class="text-red-400 hover:text-red-300 transition-all" title="حذف">
-                                <i class="fas fa-trash"></i>
-                            </button>
+                            <div class="flex items-center gap-2">
+                                <button onclick="EmployeeAccountingUI.showEditEntryModal('${entry.id}')"
+                                        class="text-blue-400 hover:text-blue-300 transition-all" title="ویرایش">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="WorkHoursUI.deleteEntry('${entry.id}')"
+                                        class="text-red-400 hover:text-red-300 transition-all" title="حذف">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        ` : entry.status === 'rejected' ? `
+                            <div class="flex items-center gap-2">
+                                <button onclick="EmployeeAccountingUI.showEditEntryModal('${entry.id}')"
+                                        class="text-blue-400 hover:text-blue-300 transition-all" title="ویرایش و ارسال مجدد">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="WorkHoursUI.deleteEntry('${entry.id}')"
+                                        class="text-red-400 hover:text-red-300 transition-all" title="حذف">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
                         ` : ''}
                     </td>
                 </tr>
