@@ -67,21 +67,9 @@ const WorkChecklistModule = {
                     .order('created_at', { ascending: true })
                     .then(({ data }) => {
                         if (data && data.length > 0) {
-                            const current = this._localGet(localKey) || [];
-                            // حفظ آیتم‌های shared (shared_from موجود و متفاوت با کاربر فعلی)
-                            const sharedItems = current.filter(c => c.shared_from && c.shared_from !== this.currentUser.id);
-                            // merge: داده‌های Supabase + shared items
-                            const merged = [...data];
-                            sharedItems.forEach(s => {
-                                const idx = merged.findIndex(m => m.id === s.id);
-                                if (idx >= 0) {
-                                    // نگاشت original_id فقط در localStorage است — هنگام جایگزینی با ردیف دیتابیس حفظ شود
-                                    if (s.original_id && !merged[idx].original_id) merged[idx] = { ...merged[idx], original_id: s.original_id };
-                                } else {
-                                    merged.push(s);
-                                }
-                            });
-                            this._localSet(localKey, merged);
+                            // منطق یکپارچه: فقط ردیف‌های خود کاربر نگه داشته می‌شود
+                            // (کپی‌های قدیمیِ باگ share — با shared_from متفاوت — حذف می‌شوند)
+                            this._mergeOwnRows(localKey, data);
                         }
                     })
                     .catch(() => {});
@@ -107,21 +95,7 @@ const WorkChecklistModule = {
                 const { data, error } = await Promise.race([supabasePromise, timeoutPromise]);
                 console.log('🔍 [WC] getCategories Supabase: data:', data?.length, '| error:', error?.message);
                 if (!error && data) {
-                    // حفظ shared items هنگام ست کردن از Supabase
-                    const current = this._localGet(localKey) || [];
-                    const sharedItems = current.filter(c => c.shared_from && c.shared_from !== this.currentUser.id);
-                    const merged = [...data];
-                    sharedItems.forEach(s => {
-                        const idx = merged.findIndex(m => m.id === s.id);
-                        if (idx >= 0) {
-                            // نگاشت original_id فقط در localStorage است — حفظ شود
-                            if (s.original_id && !merged[idx].original_id) merged[idx] = { ...merged[idx], original_id: s.original_id };
-                        } else {
-                            merged.push(s);
-                        }
-                    });
-                    this._localSet(localKey, merged);
-                    return merged;
+                    return this._mergeOwnRows(localKey, data);
                 }
             } catch(e) {
                 console.error('❌ [WC] getCategories exception:', e.message);
@@ -171,6 +145,21 @@ const WorkChecklistModule = {
         this._localSet('wc_items_' + this.currentUser.id, items);
         const tasks = (this._localGet('wc_tasks_' + this.currentUser.id) || []).filter(t => t.category_id !== id);
         this._localSet('wc_tasks_' + this.currentUser.id, tasks);
+
+        // منطق یکپارچه: حذف رکوردهای share این دسته (اشتراک فقط سطح دسته است)
+        if (this.supabase) {
+            this.supabase.from('checklist_shares')
+                .delete()
+                .eq('owner_id',   this.currentUser.id)
+                .eq('share_type', 'category')
+                .eq('ref_id',     id)
+                .then(({ error }) => { if (error) console.warn('⚠️ [WC] share cleanup on delete:', error.message); });
+        }
+        const shareMap = this._localGet('wc_shares_' + this.currentUser.id) || {};
+        if (shareMap['category:' + id]) {
+            delete shareMap['category:' + id];
+            this._localSet('wc_shares_' + this.currentUser.id, shareMap);
+        }
     },
 
     async getItems(categoryId) {
@@ -188,12 +177,8 @@ const WorkChecklistModule = {
                     .order('created_at', { ascending: true })
                     .then(({ data }) => {
                         if (data && data.length > 0) {
-                            const allItems = this._localGet(localKey) || [];
-                            data.forEach(d => {
-                                const idx = allItems.findIndex(i => i.id === d.id);
-                                if (idx >= 0) allItems[idx] = this._keepLocalMapping(d, allItems[idx]); else allItems.push(d);
-                            });
-                            this._localSet(localKey, allItems);
+                            // منطق یکپارچه: فقط ردیف‌های خود کاربر (حذف کپی‌های قدیمی share)
+                            this._mergeOwnRows(localKey, data);
                         }
                     })
                     .catch(() => {});
@@ -217,13 +202,9 @@ const WorkChecklistModule = {
                 const { data, error } = await Promise.race([supabasePromise, timeoutPromise]);
                 console.log('🔍 [WC] getItems Supabase:', Date.now()-t0, 'ms | data:', data?.length, '| error:', error?.message);
                 if (!error && data) {
-                    const allItems = this._localGet(localKey) || [];
-                    data.forEach(d => {
-                        const idx = allItems.findIndex(i => i.id === d.id);
-                        if (idx >= 0) allItems[idx] = this._keepLocalMapping(d, allItems[idx]); else allItems.push(d);
-                    });
-                    this._localSet(localKey, allItems);
-                    return data;
+                    const own = data.filter(i => !i.shared_from || i.shared_from === this.currentUser.id);
+                    this._mergeOwnRows(localKey, own);
+                    return own;
                 }
             } catch(e) {
                 console.error('❌ [WC] getItems exception:', e.message);
@@ -276,12 +257,48 @@ const WorkChecklistModule = {
         const localKey = 'wc_tasks_' + this.currentUser.id;
         const localData = (this._localGet(localKey) || [])
             .filter(t => t.item_id === itemId)
+            .filter(t => !t.shared_from || t.shared_from === this.currentUser.id)
             .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
-        // اگه localStorage داده داره، فوری برگردون
-        // ⚠️ background sync رو اینجا نمی‌زنیم تا ترتیب drag/drop override نشه
-        // sync فقط وقتی localStorage خالیه انجام می‌شه
+        // اگه localStorage داده داره، فوری برگردون + background sync
+        // ⚠️ ترتیب محلی (drag/drop) حفظ می‌شود؛ فقط محتوای ردیف‌ها (مثل is_done
+        // که در اشتراک بین دو نفر مشترک است) از Supabase تازه می‌شود
         if (localData.length > 0) {
+            if (this.supabase) {
+                this.supabase
+                    .from('checklist_tasks')
+                    .select('*')
+                    .eq('item_id', itemId)
+                    .then(({ data }) => {
+                        if (!data || data.length === 0) return;
+                        const all = this._localGet(localKey) || [];
+                        let changed = false;
+                        data.forEach(d => {
+                            if (d.shared_from && d.shared_from !== this.currentUser.id) return;
+                            const idx = all.findIndex(t => t.id === d.id);
+                            if (idx >= 0) {
+                                // ترتیب محلی حفظ شود؛ بقیه فیلدها (is_done و ...) تازه شوند
+                                const merged = { ...d, sort_order: all[idx].sort_order };
+                                if (JSON.stringify(merged) !== JSON.stringify(all[idx])) {
+                                    all[idx] = merged;
+                                    changed = true;
+                                }
+                            } else {
+                                all.push(d);
+                                changed = true;
+                            }
+                        });
+                        if (changed) {
+                            this._localSet(localKey, all);
+                            // اگر پنل وظایف این آیتم باز است، همان‌جا تازه‌سازی کن
+                            const list = document.getElementById('wc-tasks-list-' + itemId);
+                            if (list && typeof list.closest === 'function' && !list.closest('.hidden')) {
+                                this.renderTasks(itemId).catch(() => {});
+                            }
+                        }
+                    })
+                    .catch(() => {});
+            }
             return localData;
         }
 
@@ -299,13 +316,9 @@ const WorkChecklistModule = {
                 );
                 const { data, error } = await Promise.race([supabasePromise, timeoutPromise]);
                 if (!error && data) {
-                    const allTasks = this._localGet(localKey) || [];
-                    data.forEach(d => {
-                        const idx = allTasks.findIndex(t => t.id === d.id);
-                        if (idx >= 0) allTasks[idx] = this._keepLocalMapping(d, allTasks[idx]); else allTasks.push(d);
-                    });
-                    this._localSet(localKey, allTasks);
-                    return data.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+                    const own = data.filter(t => !t.shared_from || t.shared_from === this.currentUser.id);
+                    this._mergeOwnRows(localKey, own);
+                    return own.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
                 }
             } catch(e) {
                 console.error('❌ [WC] getTasks exception:', e.message);
@@ -428,6 +441,27 @@ const WorkChecklistModule = {
     _localSet(k, v) { localStorage.setItem(k, JSON.stringify(v)); },
     _uuid() { return 'wc-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9); },
 
+    // ادغام ردیف‌های دیتابیس با کش محلی — فقط ردیف‌های خود کاربر.
+    // در منطق یکپارچهٔ share دیگر کپیِ مخاطب وجود ندارد؛ هر ردیف با
+    // shared_from متفاوت از کاربر فعلی، کپی قدیمیِ باگ share است و حذف می‌شود.
+    _mergeOwnRows(localKey, dbRows) {
+        const me = this.currentUser ? this.currentUser.id : null;
+        const byId = {};
+        (dbRows || []).forEach(r => {
+            if (!r || !r.id) return;
+            if (r.shared_from && r.shared_from !== me) return; // کپی قدیمی → دور ریخته می‌شود
+            byId[r.id] = r;
+        });
+        (this._localGet(localKey) || []).forEach(r => {
+            if (!r || !r.id) return;
+            if (r.shared_from && r.shared_from !== me) return; // هرس کپی قدیمی از کش
+            if (!byId[r.id]) byId[r.id] = r;                    // ردیف‌های محلیِ هنوز در دیتابیس ثبت‌نشده حفظ شوند
+        });
+        const merged = Object.values(byId);
+        this._localSet(localKey, merged);
+        return merged;
+    },
+
     // ─── Main Render ──────────────────────────────────────────────
     async render() {
         const container = document.getElementById('work-checklist-root');
@@ -465,32 +499,31 @@ const WorkChecklistModule = {
         const el = document.getElementById('wc-shared-section');
         if (!el || !this.currentUser) return;
 
-        // ── ۱. دریافتی‌ها (inbox) ──────────────────────────────────
-        const inbox       = this._localGet('wc_inbox_' + this.currentUser.id) || [];
-        const sharedCats  = inbox.filter(r => r.type === 'category');
-        const sharedItems = inbox.filter(r => r.type === 'item');
+        // ── ۱. دریافتی‌ها (inbox) — فقط دسته‌بندی ─────────────────
+        const inbox = (this._localGet('wc_inbox_' + this.currentUser.id) || [])
+            .filter(r => r.type === 'category');
 
         // ── ۲. ارسالی‌ها (چیزهایی که خودم به اشتراک گذاشتم) ─────
-        const myShareMap   = this._localGet('wc_shares_' + this.currentUser.id) || {};
-        const myShareKeys  = Object.keys(myShareMap).filter(k => myShareMap[k] && myShareMap[k].length > 0);
-        const myCats       = await this.getCategories();
-        const myItems      = this._localGet('wc_items_' + this.currentUser.id) || [];
-        const allUsers     = typeof HARDCODED_USERS !== 'undefined' ? HARDCODED_USERS : [];
+        const myShareMap  = this._localGet('wc_shares_' + this.currentUser.id) || {};
+        const myShareKeys = Object.keys(myShareMap)
+            .filter(k => k.startsWith('category:') && myShareMap[k] && myShareMap[k].length > 0);
+        const myCats   = await this.getCategories();
+        const myItems  = this._localGet('wc_items_' + this.currentUser.id) || [];
+        const allUsers = typeof HARDCODED_USERS !== 'undefined' ? HARDCODED_USERS : [];
 
         // ── ۳. بخش ارسالی‌ها ──────────────────────────────────────
         const sentHTML = myShareKeys.map(key => {
-            const [type, refId] = key.split(':');
+            const refId = key.split(':')[1];
             const sharedWith = myShareMap[key] || [];
             const userNames  = sharedWith.map(uid => {
                 const u = allUsers.find(x => x.id === uid);
                 return u ? u.name : uid;
             });
 
-            if (type === 'category') {
-                const cat = myCats.find(c => c.id === refId);
-                if (!cat) return '';
-                const catItems = myItems.filter(i => i.category_id === refId);
-                return `
+            const cat = myCats.find(c => c.id === refId);
+            if (!cat) return '';
+            const catItems = myItems.filter(i => i.category_id === refId);
+            return `
                 <div class="rounded-xl border border-lime-500/25 bg-lime-900/10 p-4">
                     <div class="flex items-center justify-between gap-2 flex-wrap">
                         <div class="flex items-center gap-2">
@@ -513,56 +546,50 @@ const WorkChecklistModule = {
                         </div>
                     </div>
                 </div>`;
-            }
-
-            if (type === 'item') {
-                const item = myItems.find(i => i.id === refId);
-                if (!item) return '';
-                return `
-                <div class="rounded-xl border border-blue-500/25 bg-blue-900/10 p-4">
-                    <div class="flex items-center justify-between gap-2 flex-wrap">
-                        <div class="flex items-center gap-2">
-                            <i class="${item.icon || 'fas fa-list-check'} text-blue-400"></i>
-                            <span class="text-white font-medium text-sm">${this._esc(item.name)}</span>
-                            <span class="text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-full">
-                                آیتم
-                            </span>
-                        </div>
-                        <div class="flex items-center gap-1 flex-wrap">
-                            ${userNames.map(n => `
-                            <span class="text-xs bg-slate-600 text-gray-300 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                <i class="fas fa-user text-xs text-blue-400"></i>${this._esc(n)}
-                            </span>`).join('')}
-                            <button onclick="WorkChecklistModule.showShareItemModal('${refId}')"
-                                    class="text-xs text-blue-400 hover:text-white px-2 py-0.5 rounded border border-blue-500/30 hover:bg-blue-500/20 transition-all">
-                                <i class="fas fa-edit text-xs"></i> ویرایش
-                            </button>
-                        </div>
-                    </div>
-                </div>`;
-            }
-            return '';
         }).filter(Boolean).join('');
 
-        // ── ۴. بخش دریافتی‌ها ─────────────────────────────────────
-        const allMyItems = this._localGet('wc_items_' + this.currentUser.id) || [];
-        const catsHTML = await Promise.all(sharedCats.map(async rec => {
-            // دستهٔ کپی‌شده در لیست من: کپی جدید (original_id) یا کپی قدیمی (همان id اصلی)
-            // یا (بعد از reload که نگاشت محلی پاک می‌شود) تطبیق با نام از طریق رکورد share
-            const catCopy = myCats.find(c => c.shared_from === rec.ownerId && (c.original_id === rec.id || c.id === rec.id))
-                         || myCats.find(c => c.shared_from === rec.ownerId && c.id !== rec.id && c.name === rec.name);
-            const copyCatId = catCopy ? catCopy.id : rec.id;
-            // آیتم‌های کپی‌شدهٔ این دسته (با حذف تکراری احتمالی بین کپی قدیمی/جدید)
-            const seenIds = new Set();
-            const catItems = allMyItems
-                .filter(i => i.shared_from && (i.category_id === copyCatId || i.category_id === rec.id))
-                .filter(i => {
-                    const key = i.original_id || i.id;
-                    if (seenIds.has(key)) return false;
-                    seenIds.add(key);
-                    return true;
-                });
-            const itemsHtml = catItems.map(item => this._buildSharedItemCard(item, rec.ownerName)).join('');
+        // ── ۴. بخش دریافتی‌ها — نمایش زنده از ردیف‌های اصلیِ سازنده ──
+        // منطق یکپارچه: هیچ کپی‌ای ساخته نمی‌شود؛ هر دو کاربر همان آیتم‌ها و
+        // وظایف اصلی را می‌بینند و تکمیل وظایف بین هر دو مشترک است.
+        const snapshot = this._localGet('wc_shared_snapshot_' + this.currentUser.id) || {};
+        const catsHTML = (await Promise.all(inbox.map(async rec => {
+            let cat = null, items = [], tasks = [];
+            if (this.supabase) {
+                const [{ data: c }, { data: its }] = await Promise.all([
+                    this.supabase.from('checklist_categories').select('*').eq('id', rec.id).maybeSingle(),
+                    this.supabase.from('checklist_items').select('*').eq('category_id', rec.id).order('created_at', { ascending: true }),
+                ]);
+                cat   = c;
+                items = its || [];
+                if (items.length > 0) {
+                    const { data: ts } = await this.supabase
+                        .from('checklist_tasks').select('*').in('item_id', items.map(i => i.id));
+                    tasks = ts || [];
+                }
+                // کش برای نمایش آفلاین
+                snapshot[rec.id] = { name: rec.name, icon: rec.icon, ownerName: rec.ownerName, items, tasks };
+            } else {
+                // آفلاین — از آخرین اسنپ‌شات کش‌شده بخوان
+                const snap = snapshot[rec.id];
+                if (snap) {
+                    cat   = { id: rec.id, name: snap.name, icon: snap.icon, color: 'lime' };
+                    items = snap.items || [];
+                    tasks = snap.tasks || [];
+                }
+            }
+
+            if (!cat) {
+                // دسته توسط سازنده حذف شده — با sync بعدی رکورد share هم پاک می‌شود
+                return `
+                <div class="rounded-2xl border border-gray-600/40 bg-slate-900/20 p-4 text-center">
+                    <p class="text-gray-500 text-sm">
+                        <i class="fas fa-trash-alt ml-1"></i>
+                        دسته‌بندی «${this._esc(rec.name)}» توسط ${this._esc(rec.ownerName)} حذف شده است
+                    </p>
+                </div>`;
+            }
+
+            const itemsHtml = items.map(item => this._buildSharedItemCard(item, rec.ownerName)).join('');
             return `
             <div class="rounded-2xl border border-purple-500/30 bg-purple-900/10 p-5 space-y-3">
                 <div class="flex items-center justify-between">
@@ -577,24 +604,12 @@ const WorkChecklistModule = {
                     </div>
                     <span class="text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full">دسته‌بندی مشترک</span>
                 </div>
-                ${catItems.length > 0
+                ${items.length > 0
                     ? `<div class="space-y-2">${itemsHtml}</div>`
                     : `<p class="text-gray-500 text-sm text-center py-3 italic">آیتمی موجود نیست</p>`}
             </div>`;
-        }));
-
-        const standaloneItems = sharedItems.filter(rec => !sharedCats.find(c => c.id === rec.catId));
-        const itemsOnlyHTML = standaloneItems.map(rec => {
-            // کپی آیتم در لیست من: کپی جدید (original_id) یا کپی قدیمی (همان id اصلی) یا تطبیق نام
-            const item = allMyItems.find(i => i.shared_from === rec.ownerId && i.original_id === rec.id)
-                      || allMyItems.find(i => i.id === rec.id && i.shared_from)
-                      || allMyItems.find(i => i.shared_from === rec.ownerId && i.name === rec.name);
-            if (!item) return '';
-            return `
-            <div class="rounded-2xl border border-blue-500/30 bg-blue-900/10 p-4">
-                ${this._buildSharedItemCard(item, rec.ownerName)}
-            </div>`;
-        }).filter(Boolean).join('');
+        }))).join('');
+        this._localSet('wc_shared_snapshot_' + this.currentUser.id, snapshot);
 
         // ── ۵. ترکیب نهایی ────────────────────────────────────────
         const hasSent     = sentHTML.length > 0;
@@ -631,8 +646,7 @@ const WorkChecklistModule = {
                     چک‌لیست‌های دریافت‌شده
                     <span class="bg-purple-600 text-white text-xs rounded-full px-2 py-0.5">${inbox.length}</span>
                 </h3>
-                ${catsHTML.join('')}
-                ${itemsOnlyHTML}
+                ${catsHTML}
             </div>` : ''}
         </div>`;
     },
@@ -659,7 +673,7 @@ const WorkChecklistModule = {
                     <i class="fas fa-spinner fa-spin text-xs text-purple-400"></i>
                 </div>
                 <div class="flex gap-2 mt-3">
-                    <input type="text" id="wc-shared-new-task-${item.id}"
+                    <input type="text" id="wc-new-task-input-${item.id}"
                            placeholder="وظیفه جدید..."
                            onkeydown="if(event.key==='Enter') WorkChecklistModule.addTask('${item.id}')"
                            class="flex-1 bg-white/10 text-white placeholder-gray-500 text-sm px-3 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-purple-500"/>
@@ -680,23 +694,41 @@ const WorkChecklistModule = {
         panel.classList.toggle('hidden');
         if (chevron) chevron.style.transform = isHidden ? 'rotate(-90deg)' : '';
         if (isHidden) {
-            const container  = document.getElementById('wc-shared-tasks-list-' + itemId);
-            const countBadge = document.getElementById('wc-shared-count-' + itemId);
-            const tasks = await this.getTasks(itemId);
-            const sorted = [...tasks].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-            if (countBadge) {
-                const done = sorted.filter(t => t.is_done).length;
-                countBadge.textContent = done + '/' + sorted.length;
-            }
-            if (container) {
-                if (!sorted.length) {
-                    container.innerHTML = `<p class="text-gray-500 text-sm italic py-1">هنوز وظیفه‌ای تعریف نشده</p>`;
-                } else {
-                    container.innerHTML = sorted.map(t => this._buildTaskRow(t)).join('');
-                    this._initDragDrop(container, itemId);
-                }
+            await this.renderSharedTasks(itemId);
+        }
+    },
+
+    // بارگذاری و رندر وظایف یک آیتمِ مشترک — مستقیم از ردیف‌های اصلی در Supabase.
+    // منطق یکپارچه: هر دو کاربر همان وظایف را می‌بینند و تیک هر کس برای دیگری هم ذخیره می‌شود.
+    async renderSharedTasks(itemId) {
+        const container  = document.getElementById('wc-shared-tasks-list-' + itemId);
+        const countBadge = document.getElementById('wc-shared-count-' + itemId);
+        if (!container) return;
+        let tasks = [];
+        if (this.supabase) {
+            const { data, error } = await this.supabase
+                .from('checklist_tasks').select('*').eq('item_id', itemId);
+            if (!error && data) tasks = data;
+        }
+        if (tasks.length === 0 && !this.supabase) {
+            // آفلاین — از آخرین اسنپ‌شات کش‌شده بخوان
+            const snapshot = this._localGet('wc_shared_snapshot_' + this.currentUser.id) || {};
+            for (const rec of Object.values(snapshot)) {
+                const hit = (rec.tasks || []).filter(t => t.item_id === itemId);
+                if (hit.length > 0) { tasks = hit; break; }
             }
         }
+        const sorted = [...tasks].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+        if (countBadge) {
+            const done = sorted.filter(t => t.is_done).length;
+            countBadge.textContent = done + '/' + sorted.length;
+        }
+        if (!sorted.length) {
+            container.innerHTML = `<p class="text-gray-500 text-sm italic py-1">هنوز وظیفه‌ای تعریف نشده</p>`;
+            return;
+        }
+        container.innerHTML = sorted.map(t => this._buildTaskRow(t)).join('');
+        this._initDragDrop(container, itemId);
     },
 
     async renderCategories() {
@@ -848,20 +880,8 @@ const WorkChecklistModule = {
                     <i class="${item.icon || 'fas fa-list-check'} text-black-300 text-sm"></i>
                     <span class="text-white font-medium">${this._esc(item.name)}</span>
                     <span class="bg-lime-500/20 text-lime-300 text-xs px-2 py-0.5 rounded-full" id="wc-item-count-${item.id}">...</span>
-                    ${(() => {
-                        const shareMap = this._localGet('wc_shares_' + this.currentUser.id) || {};
-                        const sharedWith = shareMap['item:' + item.id] || [];
-                        const isSharedFrom = item.shared_from && item.shared_from !== this.currentUser.id;
-                        if (sharedWith.length > 0) return `<span class="text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 px-1.5 py-0.5 rounded-full"><i class="fas fa-share-alt text-xs ml-0.5"></i>${sharedWith.length}</span>`;
-                        if (isSharedFrom) return `<span class="text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded-full"><i class="fas fa-user-friends text-xs"></i></span>`;
-                        return '';
-                    })()}
                 </div>
                 <div class="flex items-center gap-1" onclick="event.stopPropagation()">
-                    <button onclick="WorkChecklistModule.showShareItemModal('${item.id}')"
-                            class="text-blue-400 hover:text-white p-1 rounded hover:bg-blue-500/20 transition-all" title="اشتراک‌گذاری">
-                        <i class="fas fa-share-alt text-xs"></i>
-                    </button>
                     <button onclick="WorkChecklistModule.showEditItemModal('${item.id}')"
                             class="text-black-300 hover:text-white p-1 rounded hover:bg-white/10 transition-all" title="ویرایش">
                         <i class="fas fa-edit text-xs"></i>
@@ -992,6 +1012,22 @@ const WorkChecklistModule = {
         if (span) {
             span.className = 'flex-1 text-sm ' + (isDone ? 'line-through text-black-300/50' : 'text-white');
         }
+        // اگر وظیفه داخل بخش «مشترک» است، شمارنده از ردیف‌های اصلی در Supabase تازه می‌شود
+        // (منطق یکپارچه: هر دو کاربر همان وظایف را تکمیل می‌کنند)
+        const isSharedView = !!document.getElementById('wc-shared-tasks-list-' + task.item_id);
+        if (isSharedView && this.supabase) {
+            const { data } = await this.supabase
+                .from('checklist_tasks').select('*').eq('item_id', task.item_id);
+            const allTasks = data || [];
+            const doneCount = allTasks.filter(t => t.is_done).length;
+            const sharedBadge = document.getElementById('wc-shared-count-' + task.item_id);
+            if (sharedBadge) sharedBadge.textContent = doneCount + '/' + allTasks.length;
+            // اگر همه وظایف کامل شدند، پس از یک لحظه ریست کن
+            if (isDone && allTasks.length > 0 && doneCount === allTasks.length) {
+                await this._resetItemTasks(task.item_id, allTasks, true);
+            }
+            return;
+        }
         const badge = document.getElementById('wc-item-count-' + task.item_id);
         const allTasks = await this.getTasks(task.item_id);
         const doneCount = allTasks.filter(t => t.is_done).length;
@@ -1004,9 +1040,9 @@ const WorkChecklistModule = {
         }
     },
 
-    async _resetItemTasks(itemId, tasks) {
+    async _resetItemTasks(itemId, tasks, isSharedView = false) {
         // نمایش انیمیشن تکمیل
-        const panel = document.getElementById('wc-tasks-list-' + itemId);
+        const panel = document.getElementById((isSharedView ? 'wc-shared-tasks-list-' : 'wc-tasks-list-') + itemId);
         if (panel) {
             panel.insertAdjacentHTML('beforeend', `
                 <div id="wc-complete-anim-${itemId}" class="flex items-center justify-center gap-2 py-3 mt-2 bg-lime-500/20 rounded-xl border border-lime-500/30 text-lime-300 font-medium text-sm animate-pulse">
@@ -1023,7 +1059,8 @@ const WorkChecklistModule = {
             await this.saveTask(t);
         }
         // re-render لیست وظایف
-        await this.renderTasks(itemId);
+        if (isSharedView) await this.renderSharedTasks(itemId);
+        else await this.renderTasks(itemId);
     },
 
     async deleteTask(taskId, itemId) {
@@ -1431,38 +1468,17 @@ const WorkChecklistModule = {
         const cat     = cats.find(c => c.id === catId);
         if (!cat) return;
 
-        const allItems = this._localGet('wc_items_' + this.currentUser.id) || [];
-        const catItems = allItems.filter(i => i.category_id === catId);
-        const allTasks = this._localGet('wc_tasks_' + this.currentUser.id) || [];
-
+        // منطق یکپارچه: فقط دسته‌بندی به اشتراک گذاشته می‌شود و هیچ کپی‌ای ساخته نمی‌شود.
+        // هر دو کاربر همان آیتم‌ها و وظایف اصلیِ دسته را می‌بینند و تکمیل وظایف
+        // بین هر دو مشترک است. ردیف‌های اصلی فقط با shared_from = من علامت‌گذاری می‌شوند
+        // تا سیاست‌های RLS سخت‌گیرانه هم اجازهٔ خواندن به مخاطب بدهند.
         checked.forEach(targetUserId => {
-            // ثبت رکورد share برای دسته
             this._addShareRecord('category', catId, targetUserId, {
                 ownerName: this.currentUser.name || this.currentUser.username,
                 ownerId:   this.currentUser.id,
                 catName:   cat.name,
                 catIcon:   cat.icon,
                 catColor:  cat.color,
-            });
-
-            // ۱) اول دسته کپی می‌شود تا id کپی برای آیتم‌ها استفاده شود
-            //    (کپی باید id جدید داشته باشد تا ردیف Supabase سازنده بازنویسی نشود)
-            const copiedCat = this._copyCategoryToUser(cat, targetUserId);
-
-            // ۲) ثبت رکورد share برای همه آیتم‌های دسته
-            catItems.forEach(item => {
-                this._addShareRecord('item', item.id, targetUserId, {
-                    ownerName:  this.currentUser.name || this.currentUser.username,
-                    ownerId:    this.currentUser.id,
-                    catId,
-                    itemName:   item.name,
-                    itemIcon:   item.icon,
-                });
-                // کپی آیتم با category_idِ جدید (id کپی دسته)
-                const copiedItem = this._copyItemToUser(item, targetUserId, copiedCat.id);
-                // کپی تسک‌های این آیتم با item_idِ جدید (id کپی آیتم)
-                const itemTasks = allTasks.filter(t => t.item_id === item.id);
-                itemTasks.forEach(t => this._copyTaskToUser(t, targetUserId, copiedItem.id, copiedItem.category_id));
             });
         });
 
@@ -1473,116 +1489,55 @@ const WorkChecklistModule = {
             this._removeShareRecord('category', catId, targetUserId);
         });
 
+        // علامت‌گذاری/پاک‌کردن نشان shared_from روی ردیف‌های اصلی (دسته + آیتم‌ها + وظایف)
+        const remaining = this._getShareRecord('category', catId);
+        await this._markCategoryShared(catId, remaining.length > 0);
+
         this.closeModal();
         this._showShareToast(checked.length > 0
             ? `دسته‌بندی با ${checked.length} نفر به اشتراک گذاشته شد`
             : 'اشتراک‌گذاری لغو شد');
         await this.renderCategories();
+        await this.renderSharedSection();
     },
 
-    // ─── share یک آیتم ──────────────────────────────────────────
-    async showShareItemModal(itemId) {
-        const allItems = this._localGet('wc_items_' + this.currentUser.id) || [];
-        const item     = allItems.find(i => i.id === itemId);
-        if (!item) return;
+    // نشان‌گذاری ردیف‌های اصلی یک دسته به‌عنوان مشترک (بدون ساخت کپی)
+    async _markCategoryShared(catId, isShared) {
+        const me = this.currentUser.id;
+        const sharedFrom = isShared ? me : null;
 
-        const users    = this._getShareableUsers();
-        const existing = this._getShareRecord('item', itemId);
+        // ── Supabase ──
+        if (this.supabase) {
+            const updates = [
+                this.supabase.from('checklist_categories').update({ shared_from: sharedFrom }).eq('id', catId),
+                this.supabase.from('checklist_items').update({ shared_from: sharedFrom }).eq('category_id', catId),
+                this.supabase.from('checklist_tasks').update({ shared_from: sharedFrom }).eq('category_id', catId),
+            ];
+            for (const up of updates) {
+                const { error } = await up;
+                if (error) console.warn('⚠️ [WC] mark shared_from:', error.message);
+            }
+        }
 
-        const html = `
-        <div class="fixed inset-0 bg-black/70 z-[999] flex items-center justify-center p-4"
-             id="wc-modal-overlay"
-             onclick="if(event.target.id==='wc-modal-overlay') WorkChecklistModule.closeModal()">
-          <div class="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-white/10 shadow-2xl">
-            <div class="flex justify-between items-center mb-4">
-              <h3 class="text-white font-bold text-lg flex items-center gap-2">
-                <i class="fas fa-share-alt text-blue-400"></i>
-                اشتراک‌گذاری آیتم
-              </h3>
-              <button onclick="WorkChecklistModule.closeModal()" class="text-gray-400 hover:text-white">
-                <i class="fas fa-times text-xl"></i>
-              </button>
-            </div>
-            <p class="text-gray-400 text-sm mb-4">
-              آیتم <span class="text-white font-medium">«${this._esc(item.name)}»</span>
-              را با چه کسی به اشتراک بگذاریم؟
-            </p>
-            <div class="space-y-2 max-h-56 overflow-y-auto mb-5">
-              ${users.length === 0
-                ? '<p class="text-gray-500 text-sm text-center py-4">کاربر دیگری یافت نشد</p>'
-                : users.map(u => {
-                    const isShared = existing.includes(u.id);
-                    return `
-                  <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-700 cursor-pointer transition-all">
-                    <input type="checkbox" value="${u.id}" ${isShared ? 'checked' : ''}
-                           class="w-4 h-4 accent-blue-500 wc-share-user-cb">
-                    <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                      ${u.name.charAt(0)}
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <p class="text-white text-sm font-medium">${this._esc(u.name)}</p>
-                      <p class="text-gray-500 text-xs">${u.role === 'manager' ? 'مدیر' : 'کارمند'}</p>
-                    </div>
-                    ${isShared ? '<span class="text-xs text-blue-400"><i class="fas fa-check-circle"></i></span>' : ''}
-                  </label>`;
-                }).join('')}
-            </div>
-            <div class="flex gap-3">
-              <button onclick="WorkChecklistModule._saveShareItem('${itemId}')"
-                      class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-medium transition-all">
-                <i class="fas fa-share-alt ml-2"></i>ذخیره اشتراک‌گذاری
-              </button>
-              <button onclick="WorkChecklistModule.closeModal()"
-                      class="bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-xl transition-all">
-                انصراف
-              </button>
-            </div>
-          </div>
-        </div>`;
-        document.getElementById('modals-container').insertAdjacentHTML('beforeend', html);
-    },
+        // ── localStorage (کش ردیف‌های خودم) ──
+        const cats = this._localGet('wc_categories_' + me) || [];
+        const cat  = cats.find(c => c.id === catId);
+        if (cat) { cat.shared_from = sharedFrom; this._localSet('wc_categories_' + me, cats); }
 
-    async _saveShareItem(itemId) {
-        const checked = [...document.querySelectorAll('.wc-share-user-cb:checked')].map(cb => cb.value);
-        const allItems = this._localGet('wc_items_' + this.currentUser.id) || [];
-        const item     = allItems.find(i => i.id === itemId);
-        if (!item) return;
-        const allTasks = this._localGet('wc_tasks_' + this.currentUser.id) || [];
+        const items = this._localGet('wc_items_' + me) || [];
+        let itemsChanged = false;
+        items.forEach(i => { if (i.category_id === catId) { i.shared_from = sharedFrom; itemsChanged = true; } });
+        if (itemsChanged) this._localSet('wc_items_' + me, items);
 
-        // پیدا کردن دسته مادر برای کپی
-        const cats = await this.getCategories();
-        const cat  = cats.find(c => c.id === item.category_id);
-
-        checked.forEach(targetUserId => {
-            this._addShareRecord('item', itemId, targetUserId, {
-                ownerName: this.currentUser.name || this.currentUser.username,
-                ownerId:   this.currentUser.id,
-                itemName:  item.name,
-                itemIcon:  item.icon,
-                catId:     item.category_id,
-            });
-            // ۱) کپی دسته مادر (اگر وجود داشت) — id کپی برای آیتم لازم است
-            const copiedCat = cat ? this._copyCategoryToUser(cat, targetUserId) : null;
-            // ۲) کپی خود آیتم با category_idِ جدید
-            const copiedItem = this._copyItemToUser(item, targetUserId, copiedCat ? copiedCat.id : null);
-            // ۳) کپی تسک‌های این آیتم با item_idِ جدید
-            const itemTasks = allTasks.filter(t => t.item_id === itemId);
-            itemTasks.forEach(t => this._copyTaskToUser(t, targetUserId, copiedItem.id, copiedItem.category_id));
-        });
-
-        // حذف اشتراک از کسانی که unchecked شدند
-        const allUsers  = this._getShareableUsers();
-        const unchecked = allUsers.map(u => u.id).filter(uid => !checked.includes(uid));
-        unchecked.forEach(uid => this._removeShareRecord('item', itemId, uid));
-
-        this.closeModal();
-        this._showShareToast(checked.length > 0
-            ? `آیتم با ${checked.length} نفر به اشتراک گذاشته شد`
-            : 'اشتراک‌گذاری لغو شد');
+        const tasks = this._localGet('wc_tasks_' + me) || [];
+        let tasksChanged = false;
+        tasks.forEach(t => { if (t.category_id === catId) { t.shared_from = sharedFrom; tasksChanged = true; } });
+        if (tasksChanged) this._localSet('wc_tasks_' + me, tasks);
     },
 
     // ─── Share record helpers (localStorage + Supabase) ──────────
-    // کلید: wc_shares_{ownerId}   → { 'category:catId': [userId,...], 'item:itemId': [...] }
+    // کلید: wc_shares_{ownerId}   → { 'category:catId': [userId,...] }
+    // منطق یکپارچه: فقط دسته‌بندی قابل اشتراک‌گذاری است (اشتراک آیتم حذف شد)
     _getShareRecord(type, id) {
         const map = this._localGet('wc_shares_' + this.currentUser.id) || {};
         return map[type + ':' + id] || [];
@@ -1667,23 +1622,26 @@ const WorkChecklistModule = {
     async _syncInboxFromSupabase() {
         if (!this.supabase || !this.currentUser) return;
         try {
-            // ── ۱. inbox: share‌هایی که به من ارسال شده ──────────────
+            // ── ۱. inbox: دسته‌هایی که به من اشتراک گذاشته شده ───────
             const { data: inboxData, error: inboxErr } = await this.supabase
                 .from('checklist_shares')
                 .select('*')
                 .eq('target_id', this.currentUser.id);
 
             if (!inboxErr && inboxData) {
-                const inbox = inboxData.map(row => ({
-                    type:      row.share_type,
-                    id:        row.ref_id,
-                    ownerId:   row.owner_id,
-                    ownerName: row.owner_name || 'همکار',
-                    name:      row.ref_name   || row.ref_id,
-                    icon:      row.ref_icon   || 'fas fa-share-alt',
-                    color:     row.ref_color  || 'blue',
-                    sharedAt:  row.created_at,
-                }));
+                // منطق یکپارچه: فقط دسته‌بندی (رکوردهای item قدیمی نادیده گرفته می‌شوند)
+                const inbox = inboxData
+                    .filter(row => row.share_type === 'category')
+                    .map(row => ({
+                        type:      row.share_type,
+                        id:        row.ref_id,
+                        ownerId:   row.owner_id,
+                        ownerName: row.owner_name || 'همکار',
+                        name:      row.ref_name   || row.ref_id,
+                        icon:      row.ref_icon   || 'fas fa-share-alt',
+                        color:     row.ref_color  || 'blue',
+                        sharedAt:  row.created_at,
+                    }));
                 this._localSet('wc_inbox_' + this.currentUser.id, inbox);
                 console.log('✅ [WC] inbox synced from Supabase:', inbox.length);
             }
@@ -1713,267 +1671,102 @@ const WorkChecklistModule = {
                 console.log('✅ [WC] sent shares synced from Supabase:', sentData.length);
             }
 
-            // ── ۳. ترمیم رکوردهای خراب‌شده توسط باگ قدیمی اشتراک‌گذاری ──
-            await this._reclaimHijackedShares(shareMap);
+            // ── ۳. ترمیم مالکیت ردیف‌های خراب‌شده توسط باگ قدیمی ─────
+            await this._healHijackedOriginals(shareMap);
+
+            // ── ۴. پاک‌سازی رکوردهای share قدیمی نوع item ────────────
+            // (منطق یکپارچه: فقط دسته‌بندی قابل اشتراک‌گذاری است)
+            const { error: delItemSharesErr } = await this.supabase
+                .from('checklist_shares')
+                .delete()
+                .eq('owner_id', this.currentUser.id)
+                .eq('share_type', 'item');
+            if (delItemSharesErr) console.warn('⚠️ [WC] legacy item shares delete:', delItemSharesErr.message);
+            const localShares = this._localGet('wc_shares_' + this.currentUser.id) || {};
+            let sharesChanged = false;
+            Object.keys(localShares).forEach(k => {
+                if (k.startsWith('item:')) { delete localShares[k]; sharesChanged = true; }
+            });
+            if (sharesChanged) this._localSet('wc_shares_' + this.currentUser.id, localShares);
+
+            // ── ۵. هرس کپی‌های قدیمی از کش محلی ─────────────────────
+            this._pruneLegacyLocalCopies();
 
         } catch(e) {
             console.warn('⚠️ [WC] _syncInboxFromSupabase:', e.message);
         }
     },
 
-    // ─── ترمیم باگ قدیمی اشتراک‌گذاری ────────────────────────────
+    // ─── ترمیم باگ قدیمی اشتراک‌گذاری (منطق یکپارچه) ────────────────
     // قبلاً کپیِ share با همان id اصلی در Supabase ذخیره می‌شد؛ چون id کلید اصلی است،
     // ردیف اصلیِ سازنده بازنویسی می‌شد (user_id به مخاطب تغییر می‌کرد) و چک‌لیست از
-    // صفحه سازنده پاک می‌شد. اینجا فقط رکوردهایی ترمیم می‌شوند که idشان در رکوردهای
-    // share ما وجود دارد (یعنی خودِ ردیف اصلی) و مالکیتشان جابه‌جا شده است:
-    // ردیف اصلی به سازنده برمی‌گردد و مخاطب کپی درست با id جدید می‌گیرد.
-    // (کپی‌های سالم جدید هم shared_from=ما دارند ولی idشان در رکورد share نیست → دست‌نخورده)
-    // (دسته‌ای که سازنده حذف کرده باشد ردیفی در Supabase ندارد → resurrect نمی‌شود)
-    async _reclaimHijackedShares(shareMap) {
+    // صفحه سازنده پاک می‌شد. در منطق یکپارچهٔ جدید دیگر هیچ کپی‌ای ساخته نمی‌شود؛
+    // اینجا فقط مالکیت ردیف‌هایی که idشان ثابت شده «خودِ ردیف اصلیِ ما» است، به
+    // سازنده برمی‌گردد. هیچ ردیفی حذف یا کپی نمی‌شود (کاملاً غیرمخرب).
+    async _healHijackedOriginals(shareMap) {
         if (!this.supabase || !this.currentUser) return;
         try {
             const me = this.currentUser.id;
             shareMap = shareMap || {};
 
-            // id دسته‌های به‌اشتراک‌گذاشته (از رکوردهای share نوع category)
-            const refIds = Object.keys(shareMap)
-                .filter(k => k.startsWith('category:'))
-                .map(k => k.split(':')[1]);
-
-            // دستهٔ مادرِ آیتم‌های به‌اشتراک‌گذاشته — اگر خود آیتم hijack شده باشد
-            const itemShareIds = Object.keys(shareMap)
-                .filter(k => k.startsWith('item:'))
-                .map(k => k.split(':')[1]);
-            if (itemShareIds.length > 0) {
-                const { data: hijItems } = await this.supabase
-                    .from('checklist_items')
-                    .select('id, category_id, user_id')
-                    .in('id', itemShareIds)
-                    .eq('shared_from', me);
-                (hijItems || []).forEach(i => {
-                    if (i.user_id !== me && i.category_id) refIds.push(i.category_id);
-                });
+            // idهایی که مطمئنیم ردیف اصلیِ خودِ ما هستند:
+            // ۱) ref_id رکوردهای share (category و item قدیمی)
+            // ۲) idهای کش محلی
+            // ۳) idهای ردیف‌های خودمان در Supabase
+            const myIdSet = new Set();
+            Object.keys(shareMap).forEach(k => {
+                const id = k.split(':')[1];
+                if (id) myIdSet.add(id);
+            });
+            ['wc_categories_', 'wc_items_', 'wc_tasks_'].forEach(prefix => {
+                (this._localGet(prefix + me) || []).forEach(r => { if (r && r.id) myIdSet.add(r.id); });
+            });
+            const tables = ['checklist_categories', 'checklist_items', 'checklist_tasks'];
+            for (const table of tables) {
+                const { data: mine, error } = await this.supabase.from(table).select('id').eq('user_id', me);
+                if (!error && mine) mine.forEach(r => myIdSet.add(r.id));
             }
 
-            for (const refId of [...new Set(refIds)]) {
-                const { data: row } = await this.supabase
-                    .from('checklist_categories')
-                    .select('*')
-                    .eq('id', refId)
-                    .maybeSingle();
-                // ردیف نیست → حذف شده توسط سازنده (resurrect نمی‌شود)
-                // ردیف مال خودِ سازنده است → سالم است
-                // shared_from ما نیست → ربطی به ما ندارد
-                if (!row || row.user_id === me || row.shared_from !== me) continue;
-                // آیتم‌ها و تسک‌های hijack شدهٔ این دسته
-                const { data: hItems } = await this.supabase
-                    .from('checklist_items').select('*')
-                    .eq('category_id', refId).eq('shared_from', me);
-                const items = hItems || [];
-                const itemIds = items.map(i => i.id);
-                let tasks = [];
-                if (itemIds.length > 0) {
-                    const { data: hTasks } = await this.supabase
-                        .from('checklist_tasks').select('*')
-                        .in('item_id', itemIds).eq('shared_from', me);
-                    tasks = hTasks || [];
-                }
-
-                // ۱) برای هر مخاطب، کپی درست با id جدید بساز (توابع کپی idempotent هستند)
-                const origCat = { ...row, user_id: me, shared_from: null };
-                const targets = (shareMap['category:' + refId] && shareMap['category:' + refId].length > 0)
-                    ? shareMap['category:' + refId]
-                    : [row.user_id];
-                for (const targetUserId of targets) {
-                    const copiedCat = this._copyCategoryToUser(origCat, targetUserId);
-                    for (const item of items) {
-                        const copiedItem = this._copyItemToUser(item, targetUserId, copiedCat.id);
-                        tasks.filter(t => t.item_id === item.id)
-                             .forEach(t => this._copyTaskToUser(t, targetUserId, copiedItem.id, copiedCat.id));
-                    }
-                }
-
-                // ۲) ردیف‌های اصلی را به سازنده برگردان
-                await this.supabase.from('checklist_categories')
-                    .upsert({ ...row, user_id: me, shared_from: null });
-                if (items.length > 0) {
-                    await this.supabase.from('checklist_items')
-                        .upsert(items.map(i => ({ ...i, user_id: me, shared_from: null })));
-                }
-                if (tasks.length > 0) {
-                    await this.supabase.from('checklist_tasks')
-                        .upsert(tasks.map(t => ({ ...t, user_id: me, shared_from: null })));
-                }
-                console.log('✅ [WC] reclaimed hijacked checklist category:', refId);
+            // ردیف‌هایی که باگ قدیمی مالکیتشان را جابه‌جا کرده (shared_from = ما، user_id ≠ ما)
+            let healed = 0;
+            for (const table of tables) {
+                const { data: suspects, error } = await this.supabase
+                    .from(table)
+                    .select('id, user_id, shared_from')
+                    .eq('shared_from', me)
+                    .neq('user_id', me);
+                if (error || !suspects || suspects.length === 0) continue;
+                const mineIds = suspects.filter(r => myIdSet.has(r.id)).map(r => r.id);
+                if (mineIds.length === 0) continue;
+                const { error: upErr } = await this.supabase
+                    .from(table)
+                    .update({ user_id: me })
+                    .in('id', mineIds);
+                if (upErr) console.warn('⚠️ [WC] heal ' + table + ':', upErr.message);
+                else healed += mineIds.length;
             }
+            if (healed > 0) console.log('✅ [WC] healed hijacked rows back to owner:', healed);
         } catch(e) {
-            console.warn('⚠️ [WC] _reclaimHijackedShares:', e.message);
+            console.warn('⚠️ [WC] _healHijackedOriginals:', e.message);
         }
     },
 
-    // ─── کپی داده به localStorage و Supabase کاربر مقصد ─────────
-    // ⚠️ نکته مهم: کپی باید «id جدید» داشته باشد؛ اگر کپی با همان id اصلی در
-    // Supabase ذخیره شود، چون id کلید اصلی (PRIMARY KEY) است، ردیف اصلیِ سازنده
-    // بازنویسی می‌شود (user_id به مخاطب تغییر می‌کند) و چک‌لیست از صفحه سازنده پاک می‌شود.
-    // به همین دلیل کپی‌ها id جدید + فیلد original_id (فقط localStorage) می‌گیرند.
-    _stripLocalOnly(obj) {
-        if (!obj) return obj;
-        const { original_id, ...rest } = obj;
-        return rest;
-    },
-
-    // هنگام جایگزینی ردیف دیتابیس در کش محلی، نگاشت original_id (فقط محلی) حفظ شود
-    _keepLocalMapping(dbRow, localRow) {
-        if (localRow && localRow.original_id && !dbRow.original_id) {
-            return { ...dbRow, original_id: localRow.original_id };
-        }
-        return dbRow;
-    },
-
-    _copyCategoryToUser(cat, targetUserId) {
-        const key  = 'wc_categories_' + targetUserId;
-        const list = this._localGet(key) || [];
-        // کپی قبلیِ همین دسته از همین سازنده (کپی جدید با original_id یا کپی قدیمی با همان id)
-        const idx  = list.findIndex(c =>
-            c.shared_from === this.currentUser.id && (c.original_id === cat.id || c.id === cat.id));
-
-        let copy;
-        if (idx >= 0) {
-            // به‌روزرسانی کپی موجود — هویت کپی (id) ثابت می‌ماند
-            copy = { ...cat, ...list[idx], user_id: targetUserId, shared_from: this.currentUser.id };
-            copy.name  = cat.name;
-            copy.icon  = cat.icon;
-            copy.color = cat.color;
-            if (cat.description !== undefined) copy.description = cat.description;
-            // کپی قدیمی (با id اصلی) → مهاجرت به id جدید + اصلاح ارجاع آیتم‌ها
-            if (!copy.original_id && copy.id === cat.id) {
-                copy.original_id = cat.id;
-                copy.id = this._uuid();
-                this._migrateLegacyCatRefs(cat.id, copy.id, targetUserId);
-            }
-            list[idx] = copy;
-        } else {
-            // کپی جدید با id جدید — ردیف جداگانه در Supabase برای مخاطب
-            copy = { ...cat, id: this._uuid(), original_id: cat.id, user_id: targetUserId, shared_from: this.currentUser.id };
-            list.push(copy);
-        }
-        this._localSet(key, list);
-
-        if (this.supabase) {
-            this.supabase.from('checklist_categories')
-                .upsert(this._stripLocalOnly({ ...copy }))
-                .then(({ error }) => { if (error) console.warn('⚠️ [WC] copy cat to supabase:', error.message); });
-        }
-        return copy;
-    },
-
-    _copyItemToUser(item, targetUserId, newCategoryId) {
-        const key  = 'wc_items_' + targetUserId;
-        const list = this._localGet(key) || [];
-        const idx  = list.findIndex(i =>
-            i.shared_from === this.currentUser.id && (i.original_id === item.id || i.id === item.id));
-
-        let copy;
-        if (idx >= 0) {
-            copy = { ...item, ...list[idx], user_id: targetUserId, shared_from: this.currentUser.id };
-            copy.name = item.name;
-            copy.icon = item.icon;
-            if (newCategoryId) copy.category_id = newCategoryId;
-            if (!copy.original_id && copy.id === item.id) {
-                copy.original_id = item.id;
-                copy.id = this._uuid();
-                this._migrateLegacyItemRefs(item.id, copy.id, targetUserId);
-            }
-            list[idx] = copy;
-        } else {
-            copy = { ...item, id: this._uuid(), original_id: item.id, user_id: targetUserId, shared_from: this.currentUser.id };
-            if (newCategoryId) copy.category_id = newCategoryId;
-            list.push(copy);
-        }
-        this._localSet(key, list);
-
-        if (this.supabase) {
-            this.supabase.from('checklist_items')
-                .upsert(this._stripLocalOnly({ ...copy }))
-                .then(({ error }) => { if (error) console.warn('⚠️ [WC] copy item to supabase:', error.message); });
-        }
-        return copy;
-    },
-
-    _copyTaskToUser(task, targetUserId, newItemId, newCategoryId) {
-        const key  = 'wc_tasks_' + targetUserId;
-        const list = this._localGet(key) || [];
-        const idx  = list.findIndex(t =>
-            t.shared_from === this.currentUser.id && (t.original_id === task.id || t.id === task.id));
-
-        let copy;
-        if (idx >= 0) {
-            copy = { ...task, ...list[idx], user_id: targetUserId, shared_from: this.currentUser.id };
-            // محتوا را تازه کن ولی پیشرفت مخاطب (is_done/done_at) حفظ شود
-            copy.title      = task.title;
-            copy.note       = task.note ?? '';
-            copy.sort_order = task.sort_order ?? copy.sort_order ?? 0;
-            if (newItemId)     copy.item_id     = newItemId;
-            if (newCategoryId) copy.category_id = newCategoryId;
-            if (!copy.original_id && copy.id === task.id) {
-                copy.original_id = task.id;
-                copy.id = this._uuid();
-            }
-            list[idx] = copy;
-        } else {
-            copy = { ...task, id: this._uuid(), original_id: task.id, user_id: targetUserId, shared_from: this.currentUser.id };
-            if (newItemId)     copy.item_id     = newItemId;
-            if (newCategoryId) copy.category_id = newCategoryId;
-            list.push(copy);
-        }
-        this._localSet(key, list);
-
-        if (this.supabase) {
-            this.supabase.from('checklist_tasks')
-                .upsert(this._stripLocalOnly({ ...copy }))
-                .then(({ error }) => { if (error) console.warn('⚠️ [WC] copy task to supabase:', error.message); });
-        }
-        return copy;
-    },
-
-    // اصلاح ارجاع تسک‌های کپی‌شدهٔ قدیمی پس از مهاجرت id آیتم
-    _migrateLegacyItemRefs(oldItemId, newItemId, targetUserId) {
-        const tKey  = 'wc_tasks_' + targetUserId;
-        const tasks = this._localGet(tKey) || [];
-        let changed = false;
-        tasks.forEach(t => {
-            if (t.item_id !== oldItemId) return;
-            // کپی قدیمی تسک → id جدید تا با تسک اصلی سازنده تداخل نکند
-            if (t.shared_from === this.currentUser.id && !t.original_id) {
-                t.original_id = t.id;
-                t.id = this._uuid();
-            }
-            t.item_id = newItemId;
-            changed = true;
+    // هرس کپی‌های قدیمیِ باگ share از کش محلی
+    // (در منطق یکپارچه هیچ کپی معتبری وجود ندارد؛ هر ردیف با shared_from متفاوت
+    //  از کاربر فعلی، کپیِ قدیمی است و از نمایش حذف می‌شود)
+    _pruneLegacyLocalCopies() {
+        const me = this.currentUser ? this.currentUser.id : null;
+        if (!me) return;
+        ['wc_categories_', 'wc_items_', 'wc_tasks_'].forEach(prefix => {
+            const key  = prefix + me;
+            const list = this._localGet(key) || [];
+            const pruned = list.filter(r => !r || !r.shared_from || r.shared_from === me);
+            if (pruned.length !== list.length) this._localSet(key, pruned);
         });
-        if (changed) this._localSet(tKey, tasks);
     },
 
-    // اصلاح ارجاع آیتم‌ها/تسک‌های کپی‌شدهٔ قدیمی پس از مهاجرت id دسته
-    _migrateLegacyCatRefs(oldCatId, newCatId, targetUserId) {
-        const iKey  = 'wc_items_' + targetUserId;
-        const items = this._localGet(iKey) || [];
-        let changed = false;
-        items.forEach(it => {
-            if (it.category_id !== oldCatId) return;
-            // کپی قدیمی آیتم → id جدید + اصلاح تسک‌های وابسته
-            if (it.shared_from === this.currentUser.id && !it.original_id) {
-                const oldItemId = it.id;
-                it.original_id = oldItemId;
-                it.id = this._uuid();
-                this._migrateLegacyItemRefs(oldItemId, it.id, targetUserId);
-            }
-            it.category_id = newCatId;
-            changed = true;
-        });
-        if (changed) this._localSet(iKey, items);
-    },
-
+    // ─── Toast notification ───────────────────────────────────────
+    // ─── Toast notification ───────────────────────────────────────
     // ─── Toast notification ───────────────────────────────────────
     _showShareToast(msg) {
         const toast = document.createElement('div');
