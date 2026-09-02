@@ -73,7 +73,13 @@ const WorkChecklistModule = {
                             // merge: داده‌های Supabase + shared items
                             const merged = [...data];
                             sharedItems.forEach(s => {
-                                if (!merged.find(m => m.id === s.id)) merged.push(s);
+                                const idx = merged.findIndex(m => m.id === s.id);
+                                if (idx >= 0) {
+                                    // نگاشت original_id فقط در localStorage است — هنگام جایگزینی با ردیف دیتابیس حفظ شود
+                                    if (s.original_id && !merged[idx].original_id) merged[idx] = { ...merged[idx], original_id: s.original_id };
+                                } else {
+                                    merged.push(s);
+                                }
                             });
                             this._localSet(localKey, merged);
                         }
@@ -105,7 +111,15 @@ const WorkChecklistModule = {
                     const current = this._localGet(localKey) || [];
                     const sharedItems = current.filter(c => c.shared_from && c.shared_from !== this.currentUser.id);
                     const merged = [...data];
-                    sharedItems.forEach(s => { if (!merged.find(m => m.id === s.id)) merged.push(s); });
+                    sharedItems.forEach(s => {
+                        const idx = merged.findIndex(m => m.id === s.id);
+                        if (idx >= 0) {
+                            // نگاشت original_id فقط در localStorage است — حفظ شود
+                            if (s.original_id && !merged[idx].original_id) merged[idx] = { ...merged[idx], original_id: s.original_id };
+                        } else {
+                            merged.push(s);
+                        }
+                    });
                     this._localSet(localKey, merged);
                     return merged;
                 }
@@ -177,7 +191,7 @@ const WorkChecklistModule = {
                             const allItems = this._localGet(localKey) || [];
                             data.forEach(d => {
                                 const idx = allItems.findIndex(i => i.id === d.id);
-                                if (idx >= 0) allItems[idx] = d; else allItems.push(d);
+                                if (idx >= 0) allItems[idx] = this._keepLocalMapping(d, allItems[idx]); else allItems.push(d);
                             });
                             this._localSet(localKey, allItems);
                         }
@@ -206,7 +220,7 @@ const WorkChecklistModule = {
                     const allItems = this._localGet(localKey) || [];
                     data.forEach(d => {
                         const idx = allItems.findIndex(i => i.id === d.id);
-                        if (idx >= 0) allItems[idx] = d; else allItems.push(d);
+                        if (idx >= 0) allItems[idx] = this._keepLocalMapping(d, allItems[idx]); else allItems.push(d);
                     });
                     this._localSet(localKey, allItems);
                     return data;
@@ -288,7 +302,7 @@ const WorkChecklistModule = {
                     const allTasks = this._localGet(localKey) || [];
                     data.forEach(d => {
                         const idx = allTasks.findIndex(t => t.id === d.id);
-                        if (idx >= 0) allTasks[idx] = d; else allTasks.push(d);
+                        if (idx >= 0) allTasks[idx] = this._keepLocalMapping(d, allTasks[idx]); else allTasks.push(d);
                     });
                     this._localSet(localKey, allTasks);
                     return data.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
@@ -531,9 +545,23 @@ const WorkChecklistModule = {
         }).filter(Boolean).join('');
 
         // ── ۴. بخش دریافتی‌ها ─────────────────────────────────────
+        const allMyItems = this._localGet('wc_items_' + this.currentUser.id) || [];
         const catsHTML = await Promise.all(sharedCats.map(async rec => {
-            const catItems = (this._localGet('wc_items_' + this.currentUser.id) || [])
-                .filter(i => i.category_id === rec.id && i.shared_from);
+            // دستهٔ کپی‌شده در لیست من: کپی جدید (original_id) یا کپی قدیمی (همان id اصلی)
+            // یا (بعد از reload که نگاشت محلی پاک می‌شود) تطبیق با نام از طریق رکورد share
+            const catCopy = myCats.find(c => c.shared_from === rec.ownerId && (c.original_id === rec.id || c.id === rec.id))
+                         || myCats.find(c => c.shared_from === rec.ownerId && c.id !== rec.id && c.name === rec.name);
+            const copyCatId = catCopy ? catCopy.id : rec.id;
+            // آیتم‌های کپی‌شدهٔ این دسته (با حذف تکراری احتمالی بین کپی قدیمی/جدید)
+            const seenIds = new Set();
+            const catItems = allMyItems
+                .filter(i => i.shared_from && (i.category_id === copyCatId || i.category_id === rec.id))
+                .filter(i => {
+                    const key = i.original_id || i.id;
+                    if (seenIds.has(key)) return false;
+                    seenIds.add(key);
+                    return true;
+                });
             const itemsHtml = catItems.map(item => this._buildSharedItemCard(item, rec.ownerName)).join('');
             return `
             <div class="rounded-2xl border border-purple-500/30 bg-purple-900/10 p-5 space-y-3">
@@ -557,7 +585,10 @@ const WorkChecklistModule = {
 
         const standaloneItems = sharedItems.filter(rec => !sharedCats.find(c => c.id === rec.catId));
         const itemsOnlyHTML = standaloneItems.map(rec => {
-            const item = (this._localGet('wc_items_' + this.currentUser.id) || []).find(i => i.id === rec.id);
+            // کپی آیتم در لیست من: کپی جدید (original_id) یا کپی قدیمی (همان id اصلی) یا تطبیق نام
+            const item = allMyItems.find(i => i.shared_from === rec.ownerId && i.original_id === rec.id)
+                      || allMyItems.find(i => i.id === rec.id && i.shared_from)
+                      || allMyItems.find(i => i.shared_from === rec.ownerId && i.name === rec.name);
             if (!item) return '';
             return `
             <div class="rounded-2xl border border-blue-500/30 bg-blue-900/10 p-4">
@@ -1414,7 +1445,11 @@ const WorkChecklistModule = {
                 catColor:  cat.color,
             });
 
-            // ثبت رکورد share برای همه آیتم‌های دسته
+            // ۱) اول دسته کپی می‌شود تا id کپی برای آیتم‌ها استفاده شود
+            //    (کپی باید id جدید داشته باشد تا ردیف Supabase سازنده بازنویسی نشود)
+            const copiedCat = this._copyCategoryToUser(cat, targetUserId);
+
+            // ۲) ثبت رکورد share برای همه آیتم‌های دسته
             catItems.forEach(item => {
                 this._addShareRecord('item', item.id, targetUserId, {
                     ownerName:  this.currentUser.name || this.currentUser.username,
@@ -1423,15 +1458,12 @@ const WorkChecklistModule = {
                     itemName:   item.name,
                     itemIcon:   item.icon,
                 });
-                // کپی آیتم در localStorage مخاطب
-                this._copyItemToUser(item, targetUserId);
-                // کپی تسک‌های این آیتم
+                // کپی آیتم با category_idِ جدید (id کپی دسته)
+                const copiedItem = this._copyItemToUser(item, targetUserId, copiedCat.id);
+                // کپی تسک‌های این آیتم با item_idِ جدید (id کپی آیتم)
                 const itemTasks = allTasks.filter(t => t.item_id === item.id);
-                itemTasks.forEach(t => this._copyTaskToUser(t, targetUserId));
+                itemTasks.forEach(t => this._copyTaskToUser(t, targetUserId, copiedItem.id, copiedItem.category_id));
             });
-
-            // کپی دسته در localStorage مخاطب
-            this._copyCategoryToUser(cat, targetUserId);
         });
 
         // حذف share از کسانی که unchecked شدند
@@ -1529,13 +1561,13 @@ const WorkChecklistModule = {
                 itemIcon:  item.icon,
                 catId:     item.category_id,
             });
-            // کپی دسته مادر (اگر وجود داشت) در localStorage مخاطب
-            if (cat) this._copyCategoryToUser(cat, targetUserId);
-            // کپی خود آیتم
-            this._copyItemToUser(item, targetUserId);
-            // کپی تسک‌های این آیتم
+            // ۱) کپی دسته مادر (اگر وجود داشت) — id کپی برای آیتم لازم است
+            const copiedCat = cat ? this._copyCategoryToUser(cat, targetUserId) : null;
+            // ۲) کپی خود آیتم با category_idِ جدید
+            const copiedItem = this._copyItemToUser(item, targetUserId, copiedCat ? copiedCat.id : null);
+            // ۳) کپی تسک‌های این آیتم با item_idِ جدید
             const itemTasks = allTasks.filter(t => t.item_id === itemId);
-            itemTasks.forEach(t => this._copyTaskToUser(t, targetUserId));
+            itemTasks.forEach(t => this._copyTaskToUser(t, targetUserId, copiedItem.id, copiedItem.category_id));
         });
 
         // حذف اشتراک از کسانی که unchecked شدند
@@ -1662,9 +1694,9 @@ const WorkChecklistModule = {
                 .select('*')
                 .eq('owner_id', this.currentUser.id);
 
+            const shareMap = {};
             if (!sentErr && sentData && sentData.length > 0) {
                 // ساخت shareMap از داده Supabase
-                const shareMap = {};
                 sentData.forEach(row => {
                     const key = row.share_type + ':' + row.ref_id;
                     if (!shareMap[key]) shareMap[key] = [];
@@ -1681,56 +1713,265 @@ const WorkChecklistModule = {
                 console.log('✅ [WC] sent shares synced from Supabase:', sentData.length);
             }
 
+            // ── ۳. ترمیم رکوردهای خراب‌شده توسط باگ قدیمی اشتراک‌گذاری ──
+            await this._reclaimHijackedShares(shareMap);
+
         } catch(e) {
             console.warn('⚠️ [WC] _syncInboxFromSupabase:', e.message);
         }
     },
 
-    // ─── کپی داده به localStorage و Supabase کاربر مقصد ─────────
-    _copyCategoryToUser(cat, targetUserId) {
-        const key  = 'wc_categories_' + targetUserId;
-        const list = this._localGet(key) || [];
-        const idx  = list.findIndex(c => c.id === cat.id);
-        const copy = { ...cat, user_id: targetUserId, shared_from: this.currentUser.id };
-        if (idx >= 0) list[idx] = copy; else list.push(copy);
-        this._localSet(key, list);
+    // ─── ترمیم باگ قدیمی اشتراک‌گذاری ────────────────────────────
+    // قبلاً کپیِ share با همان id اصلی در Supabase ذخیره می‌شد؛ چون id کلید اصلی است،
+    // ردیف اصلیِ سازنده بازنویسی می‌شد (user_id به مخاطب تغییر می‌کرد) و چک‌لیست از
+    // صفحه سازنده پاک می‌شد. اینجا فقط رکوردهایی ترمیم می‌شوند که idشان در رکوردهای
+    // share ما وجود دارد (یعنی خودِ ردیف اصلی) و مالکیتشان جابه‌جا شده است:
+    // ردیف اصلی به سازنده برمی‌گردد و مخاطب کپی درست با id جدید می‌گیرد.
+    // (کپی‌های سالم جدید هم shared_from=ما دارند ولی idشان در رکورد share نیست → دست‌نخورده)
+    // (دسته‌ای که سازنده حذف کرده باشد ردیفی در Supabase ندارد → resurrect نمی‌شود)
+    async _reclaimHijackedShares(shareMap) {
+        if (!this.supabase || !this.currentUser) return;
+        try {
+            const me = this.currentUser.id;
+            shareMap = shareMap || {};
 
-        // Supabase: upsert با user_id مقصد
-        if (this.supabase) {
-            this.supabase.from('checklist_categories')
-                .upsert({ ...copy })
-                .then(({ error }) => { if (error) console.warn('⚠️ [WC] copy cat to supabase:', error.message); });
+            // id دسته‌های به‌اشتراک‌گذاشته (از رکوردهای share نوع category)
+            const refIds = Object.keys(shareMap)
+                .filter(k => k.startsWith('category:'))
+                .map(k => k.split(':')[1]);
+
+            // دستهٔ مادرِ آیتم‌های به‌اشتراک‌گذاشته — اگر خود آیتم hijack شده باشد
+            const itemShareIds = Object.keys(shareMap)
+                .filter(k => k.startsWith('item:'))
+                .map(k => k.split(':')[1]);
+            if (itemShareIds.length > 0) {
+                const { data: hijItems } = await this.supabase
+                    .from('checklist_items')
+                    .select('id, category_id, user_id')
+                    .in('id', itemShareIds)
+                    .eq('shared_from', me);
+                (hijItems || []).forEach(i => {
+                    if (i.user_id !== me && i.category_id) refIds.push(i.category_id);
+                });
+            }
+
+            for (const refId of [...new Set(refIds)]) {
+                const { data: row } = await this.supabase
+                    .from('checklist_categories')
+                    .select('*')
+                    .eq('id', refId)
+                    .maybeSingle();
+                // ردیف نیست → حذف شده توسط سازنده (resurrect نمی‌شود)
+                // ردیف مال خودِ سازنده است → سالم است
+                // shared_from ما نیست → ربطی به ما ندارد
+                if (!row || row.user_id === me || row.shared_from !== me) continue;
+                // آیتم‌ها و تسک‌های hijack شدهٔ این دسته
+                const { data: hItems } = await this.supabase
+                    .from('checklist_items').select('*')
+                    .eq('category_id', refId).eq('shared_from', me);
+                const items = hItems || [];
+                const itemIds = items.map(i => i.id);
+                let tasks = [];
+                if (itemIds.length > 0) {
+                    const { data: hTasks } = await this.supabase
+                        .from('checklist_tasks').select('*')
+                        .in('item_id', itemIds).eq('shared_from', me);
+                    tasks = hTasks || [];
+                }
+
+                // ۱) برای هر مخاطب، کپی درست با id جدید بساز (توابع کپی idempotent هستند)
+                const origCat = { ...row, user_id: me, shared_from: null };
+                const targets = (shareMap['category:' + refId] && shareMap['category:' + refId].length > 0)
+                    ? shareMap['category:' + refId]
+                    : [row.user_id];
+                for (const targetUserId of targets) {
+                    const copiedCat = this._copyCategoryToUser(origCat, targetUserId);
+                    for (const item of items) {
+                        const copiedItem = this._copyItemToUser(item, targetUserId, copiedCat.id);
+                        tasks.filter(t => t.item_id === item.id)
+                             .forEach(t => this._copyTaskToUser(t, targetUserId, copiedItem.id, copiedCat.id));
+                    }
+                }
+
+                // ۲) ردیف‌های اصلی را به سازنده برگردان
+                await this.supabase.from('checklist_categories')
+                    .upsert({ ...row, user_id: me, shared_from: null });
+                if (items.length > 0) {
+                    await this.supabase.from('checklist_items')
+                        .upsert(items.map(i => ({ ...i, user_id: me, shared_from: null })));
+                }
+                if (tasks.length > 0) {
+                    await this.supabase.from('checklist_tasks')
+                        .upsert(tasks.map(t => ({ ...t, user_id: me, shared_from: null })));
+                }
+                console.log('✅ [WC] reclaimed hijacked checklist category:', refId);
+            }
+        } catch(e) {
+            console.warn('⚠️ [WC] _reclaimHijackedShares:', e.message);
         }
     },
 
-    _copyItemToUser(item, targetUserId) {
+    // ─── کپی داده به localStorage و Supabase کاربر مقصد ─────────
+    // ⚠️ نکته مهم: کپی باید «id جدید» داشته باشد؛ اگر کپی با همان id اصلی در
+    // Supabase ذخیره شود، چون id کلید اصلی (PRIMARY KEY) است، ردیف اصلیِ سازنده
+    // بازنویسی می‌شود (user_id به مخاطب تغییر می‌کند) و چک‌لیست از صفحه سازنده پاک می‌شود.
+    // به همین دلیل کپی‌ها id جدید + فیلد original_id (فقط localStorage) می‌گیرند.
+    _stripLocalOnly(obj) {
+        if (!obj) return obj;
+        const { original_id, ...rest } = obj;
+        return rest;
+    },
+
+    // هنگام جایگزینی ردیف دیتابیس در کش محلی، نگاشت original_id (فقط محلی) حفظ شود
+    _keepLocalMapping(dbRow, localRow) {
+        if (localRow && localRow.original_id && !dbRow.original_id) {
+            return { ...dbRow, original_id: localRow.original_id };
+        }
+        return dbRow;
+    },
+
+    _copyCategoryToUser(cat, targetUserId) {
+        const key  = 'wc_categories_' + targetUserId;
+        const list = this._localGet(key) || [];
+        // کپی قبلیِ همین دسته از همین سازنده (کپی جدید با original_id یا کپی قدیمی با همان id)
+        const idx  = list.findIndex(c =>
+            c.shared_from === this.currentUser.id && (c.original_id === cat.id || c.id === cat.id));
+
+        let copy;
+        if (idx >= 0) {
+            // به‌روزرسانی کپی موجود — هویت کپی (id) ثابت می‌ماند
+            copy = { ...cat, ...list[idx], user_id: targetUserId, shared_from: this.currentUser.id };
+            copy.name  = cat.name;
+            copy.icon  = cat.icon;
+            copy.color = cat.color;
+            if (cat.description !== undefined) copy.description = cat.description;
+            // کپی قدیمی (با id اصلی) → مهاجرت به id جدید + اصلاح ارجاع آیتم‌ها
+            if (!copy.original_id && copy.id === cat.id) {
+                copy.original_id = cat.id;
+                copy.id = this._uuid();
+                this._migrateLegacyCatRefs(cat.id, copy.id, targetUserId);
+            }
+            list[idx] = copy;
+        } else {
+            // کپی جدید با id جدید — ردیف جداگانه در Supabase برای مخاطب
+            copy = { ...cat, id: this._uuid(), original_id: cat.id, user_id: targetUserId, shared_from: this.currentUser.id };
+            list.push(copy);
+        }
+        this._localSet(key, list);
+
+        if (this.supabase) {
+            this.supabase.from('checklist_categories')
+                .upsert(this._stripLocalOnly({ ...copy }))
+                .then(({ error }) => { if (error) console.warn('⚠️ [WC] copy cat to supabase:', error.message); });
+        }
+        return copy;
+    },
+
+    _copyItemToUser(item, targetUserId, newCategoryId) {
         const key  = 'wc_items_' + targetUserId;
         const list = this._localGet(key) || [];
-        const idx  = list.findIndex(i => i.id === item.id);
-        const copy = { ...item, user_id: targetUserId, shared_from: this.currentUser.id };
-        if (idx >= 0) list[idx] = copy; else list.push(copy);
+        const idx  = list.findIndex(i =>
+            i.shared_from === this.currentUser.id && (i.original_id === item.id || i.id === item.id));
+
+        let copy;
+        if (idx >= 0) {
+            copy = { ...item, ...list[idx], user_id: targetUserId, shared_from: this.currentUser.id };
+            copy.name = item.name;
+            copy.icon = item.icon;
+            if (newCategoryId) copy.category_id = newCategoryId;
+            if (!copy.original_id && copy.id === item.id) {
+                copy.original_id = item.id;
+                copy.id = this._uuid();
+                this._migrateLegacyItemRefs(item.id, copy.id, targetUserId);
+            }
+            list[idx] = copy;
+        } else {
+            copy = { ...item, id: this._uuid(), original_id: item.id, user_id: targetUserId, shared_from: this.currentUser.id };
+            if (newCategoryId) copy.category_id = newCategoryId;
+            list.push(copy);
+        }
         this._localSet(key, list);
 
         if (this.supabase) {
             this.supabase.from('checklist_items')
-                .upsert({ ...copy })
+                .upsert(this._stripLocalOnly({ ...copy }))
                 .then(({ error }) => { if (error) console.warn('⚠️ [WC] copy item to supabase:', error.message); });
         }
+        return copy;
     },
 
-    _copyTaskToUser(task, targetUserId) {
+    _copyTaskToUser(task, targetUserId, newItemId, newCategoryId) {
         const key  = 'wc_tasks_' + targetUserId;
         const list = this._localGet(key) || [];
-        const idx  = list.findIndex(t => t.id === task.id);
-        const copy = { ...task, user_id: targetUserId, shared_from: this.currentUser.id };
-        if (idx >= 0) list[idx] = copy; else list.push(copy);
+        const idx  = list.findIndex(t =>
+            t.shared_from === this.currentUser.id && (t.original_id === task.id || t.id === task.id));
+
+        let copy;
+        if (idx >= 0) {
+            copy = { ...task, ...list[idx], user_id: targetUserId, shared_from: this.currentUser.id };
+            // محتوا را تازه کن ولی پیشرفت مخاطب (is_done/done_at) حفظ شود
+            copy.title      = task.title;
+            copy.note       = task.note ?? '';
+            copy.sort_order = task.sort_order ?? copy.sort_order ?? 0;
+            if (newItemId)     copy.item_id     = newItemId;
+            if (newCategoryId) copy.category_id = newCategoryId;
+            if (!copy.original_id && copy.id === task.id) {
+                copy.original_id = task.id;
+                copy.id = this._uuid();
+            }
+            list[idx] = copy;
+        } else {
+            copy = { ...task, id: this._uuid(), original_id: task.id, user_id: targetUserId, shared_from: this.currentUser.id };
+            if (newItemId)     copy.item_id     = newItemId;
+            if (newCategoryId) copy.category_id = newCategoryId;
+            list.push(copy);
+        }
         this._localSet(key, list);
 
         if (this.supabase) {
             this.supabase.from('checklist_tasks')
-                .upsert({ ...copy })
+                .upsert(this._stripLocalOnly({ ...copy }))
                 .then(({ error }) => { if (error) console.warn('⚠️ [WC] copy task to supabase:', error.message); });
         }
+        return copy;
+    },
+
+    // اصلاح ارجاع تسک‌های کپی‌شدهٔ قدیمی پس از مهاجرت id آیتم
+    _migrateLegacyItemRefs(oldItemId, newItemId, targetUserId) {
+        const tKey  = 'wc_tasks_' + targetUserId;
+        const tasks = this._localGet(tKey) || [];
+        let changed = false;
+        tasks.forEach(t => {
+            if (t.item_id !== oldItemId) return;
+            // کپی قدیمی تسک → id جدید تا با تسک اصلی سازنده تداخل نکند
+            if (t.shared_from === this.currentUser.id && !t.original_id) {
+                t.original_id = t.id;
+                t.id = this._uuid();
+            }
+            t.item_id = newItemId;
+            changed = true;
+        });
+        if (changed) this._localSet(tKey, tasks);
+    },
+
+    // اصلاح ارجاع آیتم‌ها/تسک‌های کپی‌شدهٔ قدیمی پس از مهاجرت id دسته
+    _migrateLegacyCatRefs(oldCatId, newCatId, targetUserId) {
+        const iKey  = 'wc_items_' + targetUserId;
+        const items = this._localGet(iKey) || [];
+        let changed = false;
+        items.forEach(it => {
+            if (it.category_id !== oldCatId) return;
+            // کپی قدیمی آیتم → id جدید + اصلاح تسک‌های وابسته
+            if (it.shared_from === this.currentUser.id && !it.original_id) {
+                const oldItemId = it.id;
+                it.original_id = oldItemId;
+                it.id = this._uuid();
+                this._migrateLegacyItemRefs(oldItemId, it.id, targetUserId);
+            }
+            it.category_id = newCatId;
+            changed = true;
+        });
+        if (changed) this._localSet(iKey, items);
     },
 
     // ─── Toast notification ───────────────────────────────────────

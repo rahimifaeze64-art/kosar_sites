@@ -404,6 +404,34 @@ const EmployeeAccountingUI = (function() {
             </div>`;
     }
 
+    // ── تبدیل تاریخ ذخیره‌شده به نمایش شمسی ──────────────────
+    // تاریخ تسویه‌ها میلادی ذخیره می‌شود؛ کسورات/هدایا شمسی‌اند.
+    // این تابع هر دو حالت را تشخیص می‌دهد و خروجی شمسی برمی‌گرداند.
+    function _jalaliDateDisplay(raw) {
+        if (!raw) return '—';
+        const str = String(raw).trim();
+        const m = str.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+        if (!m) return str;
+        const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+        // سال کمتر از ۱۹۰۰ یعنی تاریخ از قبل شمسی است — همان را نمایش بده
+        if (y < 1900) return `${y}/${String(mo).padStart(2, '0')}/${String(d).padStart(2, '0')}`;
+        try {
+            // formatToParts مثل jalali-picker.js — تا ترتیب سال/ماه/روز دست خودمان باشد
+            const parts = new Intl.DateTimeFormat('en-US-u-ca-persian', {
+                calendar: 'persian',
+                numberingSystem: 'latn',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                timeZone: 'UTC'
+            }).formatToParts(new Date(Date.UTC(y, mo - 1, d, 12, 0, 0)));
+            const p = {};
+            parts.forEach(pt => { if (p[pt.type] === undefined) p[pt.type] = pt.value; });
+            if (p.year && p.month && p.day) return `${p.year}/${p.month}/${p.day}`;
+            return str;
+        } catch (e) { return str; }
+    }
+
     // ── مدیریت popup تقویم شمسی ─────────────────────────────
     window.EAccJalali = (function() {
         let _hid = '', _dis = '', _cy = 0, _cm = 0;
@@ -1214,7 +1242,7 @@ const EmployeeAccountingUI = (function() {
         const history = (() => { try { return JSON.parse(localStorage.getItem('work_settlements')||'[]').filter(s=>s.employeeId===employeeId); } catch { return []; } })();
         const historyRows = history.length ? history.map(s=>`
             <tr class="border-b border-white/5 text-xs">
-                <td class="py-1.5 px-3 text-white">${s.date||'—'}</td>
+                <td class="py-1.5 px-3 text-white">${_jalaliDateDisplay(s.date)}</td>
                 <td class="py-1.5 px-3 text-lime-300 font-bold">${Number(s.amount||0).toLocaleString('fa-IR')} ت</td>
                 <td class="py-1.5 px-3 text-black-400">${s.note||'—'}</td>
             </tr>`).join('') : `<tr><td colspan="3" class="text-center py-3 text-black-300 text-xs">تسویه‌ای ثبت نشده</td></tr>`;
@@ -1257,13 +1285,19 @@ const EmployeeAccountingUI = (function() {
                 <div class="space-y-3 mb-5">
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
-                        <div class="relative">
-                            <input type="text" id="settle-date-disp" readonly
-                                placeholder="انتخاب تاریخ شمسی"
-                                onclick="EAccJalali.open('settle-date','settle-date-disp', event)"
-                                class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 cursor-pointer text-right">
-                            <input type="hidden" id="settle-date">
-                        </div>
+                        <!-- مقدار میلادی (ذخیره‌سازی) -->
+                        <input type="hidden" id="settle-date">
+                        <!-- فیلد شمسی — کتابخانه jalalidatepicker آن را کنترل می‌کند (مثل بقیه صفحه‌ها) -->
+                        <input type="text"
+                               id="settle-date-disp"
+                               data-jdp
+                               data-jdp-target-value-input="#settle-date"
+                               data-jdp-target-value-type="gregorian"
+                               placeholder="انتخاب تاریخ شمسی"
+                               autocomplete="off"
+                               readonly
+                               onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                               class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 cursor-pointer text-sm">
                     </div>
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">مبلغ تسویه (تومان) <span class="text-red-400">*</span></label>
@@ -1312,22 +1346,15 @@ const EmployeeAccountingUI = (function() {
             </div>`;
         document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-        // تاریخ امروز شمسی
+        // تاریخ پیش‌فرض: امروز — hidden میلادی + نمایش شمسی (فرمت قابل خواندن توسط jalalidatepicker)
         const _todayGreg = new Date().toISOString().split('T')[0];
         const _settleHid = document.getElementById('settle-date');
         const _settleDisp = document.getElementById('settle-date-disp');
         if (_settleHid) _settleHid.value = _todayGreg;
-        if (_settleDisp) {
-            const ju = window.JalaliUtils;
-            if (ju && ju.toDisplay) _settleDisp.value = ju.toDisplay(_todayGreg);
-            else if (ju) {
-                try {
-                    const [y,m,d2] = _todayGreg.split('-').map(Number);
-                    const jd = ju.gregToJD(y,m,d2);
-                    const [jy,jm,jday] = ju.jdToJalali(jd);
-                    _settleDisp.value = jday + ' ' + ju.MONTHS[jm-1] + ' ' + jy;
-                } catch(e2) { _settleDisp.value = ''; }
-            }
+        if (_settleDisp) _settleDisp.value = _jalaliDateDisplay(_todayGreg);
+        // راه‌اندازی مجدد jalalidatepicker برای input جدید در مودال
+        if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
+            setTimeout(function() { jalaliDatepicker.startWatch(); }, 50);
         }
     }
 
@@ -2347,11 +2374,11 @@ const EmployeeAccountingUI = (function() {
         adjEmpIds.forEach(empId => {
             const empName = empNameMap[empId] || empId;
             deductions.filter(d=>d.employeeId===empId).forEach(d =>
-                adjRows.push([empName, 'کسورات', d.date||'—', Math.round(d.amount||0), d.reason||'']));
+                adjRows.push([empName, 'کسورات', _jalaliDateDisplay(d.date), Math.round(d.amount||0), d.reason||'']));
             gifts.filter(g=>g.employeeId===empId).forEach(g =>
-                adjRows.push([empName, 'هدیه / پاداش', g.date||'—', Math.round(g.amount||0), g.reason||'']));
+                adjRows.push([empName, 'هدیه / پاداش', _jalaliDateDisplay(g.date), Math.round(g.amount||0), g.reason||'']));
             settlements.filter(s=>s.employeeId===empId).forEach(s =>
-                adjRows.push([empName, 'تسویه حساب', s.date||'—', Math.round(s.amount||0), s.note||'']));
+                adjRows.push([empName, 'تسویه حساب', _jalaliDateDisplay(s.date), Math.round(s.amount||0), s.note||'']));
         });
 
         // ══════════════════════════════════════════════════
@@ -2846,7 +2873,13 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
 
         if (!date) { alert('تاریخ الزامی است'); return; }
 
+        // آیا این رکورد قبلاً توسط مدیر رد شده؟ (سناریوی «اصلاح و ارسال مجدد»)
+        const before = (WorkHoursModule.getWorkHours ? WorkHoursModule.getWorkHours() : [])
+            .find(e => e.id === entryId);
+        const wasRejected = before?.status === 'rejected';
+
         let updates = { date, description: desc, status: 'pending', updatedAt: new Date().toISOString() };
+        if (wasRejected) updates.rejectReason = ''; // پاک کردن دلیل رد قبلی
 
         if (isExpense) {
             const amount = parseFloat(document.getElementById('ee-amount')?.value) || 0;
@@ -2871,7 +2904,23 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
         const result = WorkHoursModule.updateWorkHour(entryId, updates);
         document.getElementById('edit-entry-modal')?.remove();
         if (result) {
-            showNotification('رکورد با موفقیت ویرایش شد ✓', 'success');
+            if (wasRejected) {
+                // بستن پیام(های) رد مرتبط با همین رکورد — رکورد اصلاح و مجدداً ارسال شد
+                try {
+                    const msgs = JSON.parse(localStorage.getItem('work_reject_messages') || '[]');
+                    let closed = false;
+                    (Array.isArray(msgs) ? msgs : []).forEach(m => {
+                        if (m && m.entryId === entryId && m.canResubmit && !m.resubmitted) {
+                            m.resubmitted = true;
+                            closed = true;
+                        }
+                    });
+                    if (closed) localStorage.setItem('work_reject_messages', JSON.stringify(msgs));
+                } catch (e) { /* noop */ }
+                showNotification('اصلاحات ذخیره و رکورد برای تأیید مجدد ارسال شد ✓', 'success');
+            } else {
+                showNotification('رکورد با موفقیت ویرایش شد ✓', 'success');
+            }
         } else {
             showNotification('خطا در ویرایش رکورد', 'error');
         }

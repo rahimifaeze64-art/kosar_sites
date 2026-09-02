@@ -220,16 +220,27 @@ async function _pullDataFromSupabase() {
                 client.from('checklist_items').select('*').eq('user_id', currentUser.id),
                 client.from('checklist_tasks').select('*').eq('user_id', currentUser.id),
             ]);
+            // هنگام بازنویسی کش محلی، دسته‌ها/آیتم‌ها/تسک‌های shared و نگاشت original_id حفظ شوند
+            const keepLocalExtras = (key, freshRows) => {
+                let prev = [];
+                try { prev = JSON.parse(localStorage.getItem(key)) || []; } catch { prev = []; }
+                const merged = freshRows.map(row => {
+                    const p = prev.find(x => x.id === row.id);
+                    return (p && p.original_id && !row.original_id) ? { ...row, original_id: p.original_id } : row;
+                });
+                prev.filter(p => p.shared_from && !merged.find(m => m.id === p.id)).forEach(p => merged.push(p));
+                localStorage.setItem(key, JSON.stringify(merged));
+            };
             if (cats && cats.length > 0) {
-                localStorage.setItem('wc_categories_' + currentUser.id, JSON.stringify(cats));
+                keepLocalExtras('wc_categories_' + currentUser.id, cats);
                 console.log(`✅ ${cats.length} دسته‌بندی چک‌لیست از Supabase بارگذاری شد`);
             }
             if (items && items.length > 0) {
-                localStorage.setItem('wc_items_' + currentUser.id, JSON.stringify(items));
+                keepLocalExtras('wc_items_' + currentUser.id, items);
                 console.log(`✅ ${items.length} آیتم چک‌لیست از Supabase بارگذاری شد`);
             }
             if (tasks && tasks.length > 0) {
-                localStorage.setItem('wc_tasks_' + currentUser.id, JSON.stringify(tasks));
+                keepLocalExtras('wc_tasks_' + currentUser.id, tasks);
                 console.log(`✅ ${tasks.length} تسک چک‌لیست از Supabase بارگذاری شد`);
             }
         }
