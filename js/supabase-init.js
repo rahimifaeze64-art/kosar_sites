@@ -145,6 +145,14 @@ async function _pullDataFromSupabase() {
     }
 
     try {
+        // ── پیشرفت دانشجویان (برای نما شیت و فلوچارت) ───────
+        // کلیدهای prog_ را مستقیماً در localStorage می‌نویسد
+        await SupabaseDataModule.getAllStudentProgress();
+    } catch (e) {
+        console.warn('⚠️ pull student_progress خطا:', e.message);
+    }
+
+    try {
         // ── ساعات کاری ──────────────────────────────────────
         const workHours = await SupabaseDataModule.getWorkHours();
         if (workHours && workHours.length > 0) {

@@ -334,6 +334,45 @@ const SupabaseDataModule = {
         }
     },
 
+    // دریافت کامل پیشرفت همهٔ دانشجویان از Supabase و نوشتن در کلیدهای prog_
+    // (نما شیت و فلوچارت از localStorage می‌خوانند — این متد آن‌ها را با ابر همگام می‌کند)
+    async getAllStudentProgress() {
+        const client = this._db();
+        if (!client) return null;
+        try {
+            const { data, error } = await client
+                .from('student_progress')
+                .select('student_id, path_type, step_index, status');
+            if (error) throw error;
+            if (!data || data.length === 0) return {};
+
+            const grouped = {};
+            data.forEach(r => {
+                const key = `${r.student_id}_${r.path_type}`;
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push(r);
+            });
+
+            Object.entries(grouped).forEach(([key, rows]) => {
+                const lastSep  = key.lastIndexOf('_');
+                const studentId = key.slice(0, lastSep);
+                const pathType  = key.slice(lastSep + 1);
+                const maxIdx = Math.max(...rows.map(r => r.step_index));
+                const arr = Array(maxIdx + 1).fill(null).map((_, i) => {
+                    const row = rows.find(r => r.step_index === i);
+                    return { status: row ? row.status : 0 };
+                });
+                localStorage.setItem(`prog_${studentId}_${pathType}`, JSON.stringify(arr));
+            });
+
+            console.log(`✅ پیشرفت ${Object.keys(grouped).length} دانشجو/مسیر از Supabase بارگذاری شد`);
+            return grouped;
+        } catch (e) {
+            console.warn('⚠️ getAllStudentProgress خطا:', e.message);
+            return null;
+        }
+    },
+
     // ════════════════════════════════════════════════════════
     // EMPLOYEE TASKS
     // ════════════════════════════════════════════════════════

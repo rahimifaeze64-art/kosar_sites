@@ -321,9 +321,27 @@
             return 'educational';
         }
 
+        // ── فیلتر مسیرها — دقیقاً همان شرایط تب‌های صفحه دانشجویان در employee.js ────
+        // (غیرفعال‌ها نمایش داده نمی‌شوند — مثل شرط s.active در اپ اصلی)
+        function _shouldShowInDefense(s) {
+            if (s.active === false) return false;
+            if (s.currentPath === 'defense') return true;
+            if (s.currentPath) return false;
+            const def = s.defenseSteps || [];
+            return !(def.length > 0 && def.every(x => x.completed));
+        }
+
+        // ملزومات موازیِ دفاع است — دانشجویانی که گردش ملزومات برایشان تعریف شده
+        function _shouldShowInRequirements(s) {
+            if (s.active === false) return false;
+            const req = s.requirementsSteps || [];
+            return req.length > 0;
+        }
+
         // ── تشخیص اینکه دانشجو باید در تب educational نشان داده شود ────
         // شامل: کسانی که currentPath='educational' یا همه مراحل دفاع تمام کردند
         function _shouldShowInEducational(s) {
+            if (s.active === false) return false;
             if (s.currentPath === 'educational') return true;
             if (s.graduated) return true;
             const def = s.defenseSteps || [];
@@ -387,14 +405,19 @@
             updateTabCounts();
         });
 
-        // اگر از همان origin localStorage تغییر کند (تب دیگر)
+        // اگر از همان origin localStorage تغییر کند (تب دیگر / صفحه والد / iframe)
         window.addEventListener('storage', (e) => {
-            if (['custom_defense_steps','custom_requirements_steps','custom_educational_steps'].includes(e.key)) {
-                STEPS = loadStepsFromStorage();
+            const stepKeys   = ['custom_defense_steps','custom_requirements_steps','custom_educational_steps'];
+            const dataKeys   = ['students_data', 'edu_system_users'];
+            const isProgKey  = e.key && e.key.startsWith('prog_');
+            if (stepKeys.includes(e.key) || dataKeys.includes(e.key) || isProgKey) {
+                if (stepKeys.includes(e.key)) {
+                    STEPS = loadStepsFromStorage();
+                    updateTabCounts();
+                }
                 loadStudents();
                 renderTable();
                 updateStats();
-                updateTabCounts();
             }
         });
 
@@ -407,77 +430,113 @@
         let currentFilter = 'all';
         let searchTerm = '';
         
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             loadStudents();
             updateTabCounts();
             renderTable();
             updateStats();
+
+            // ── sync پیشرفت از Supabase (منبع ابری) → کلیدهای prog_ → رفرش ──
+            // SupabaseDataModule در صفحه والد (index.html) لود شده است
+            try {
+                const sb = (typeof window.parent !== 'undefined' && window.parent.SupabaseDataModule)
+                    ? window.parent.SupabaseDataModule
+                    : (typeof SupabaseDataModule !== 'undefined' ? SupabaseDataModule : null);
+                if (sb && typeof sb.getAllStudentProgress === 'function') {
+                    const map = await sb.getAllStudentProgress();
+                    if (map) {
+                        console.log('✅ sheet: پیشرفت دانشجویان از Supabase همگام شد');
+                        loadStudents();
+                        renderTable();
+                        updateStats();
+                    }
+                }
+            } catch (e) { console.warn('⚠️ sheet Supabase pull خطا:', e); }
         });
         
         function loadStudents() {
             let rawList = [];
 
-            // ۱. ابتدا از edu_system_users (منبع اصلی) بخوان
+            // ۱. منبع اصلی: edu_system_users (دقیقاً مثل getAllStudents در employee.js)
             try {
                 const usersRaw = localStorage.getItem('edu_system_users');
                 if (usersRaw) {
                     JSON.parse(usersRaw).forEach(u => {
                         if (u.role === 'student') {
-                            rawList.push({ id: u.id, name: u.name, major: u.field || '-', avatar: u.name?.charAt(0) || 'د' });
+                            rawList.push({
+                                id: u.id, name: u.name, major: u.field || '-',
+                                avatar: u.name?.charAt(0) || 'د',
+                                currentPath: u.currentPath || null,
+                                graduated:   u.graduated || false,
+                                active:      u.active !== false
+                            });
                         }
                     });
                 }
             } catch (e) {}
 
-            // ۲. اگر students_data مکمل‌تری داره (مثلاً فیلد‌های ویرایش‌شده) ادغام کن
+            // ۲. ادغام students_data — بدون شرط role
+            //    (بسیاری از نویسنده‌های students_data فیلد role نمی‌نویسند؛
+            //     فقط نقش‌های غیر دانشجویی حذف می‌شوند)
             try {
                 const stored = localStorage.getItem('students_data');
                 if (stored) {
                     Object.values(JSON.parse(stored)).forEach(s => {
-                        if (s.role === 'student') {
-                            const existing = rawList.find(r => r.id === s.id);
-                            if (existing) {
-                                existing.name        = s.name  || existing.name;
-                                existing.major       = s.field || existing.major;
-                                existing.avatar      = (s.name || existing.name)?.charAt(0) || 'د';
-                                existing.currentPath = s.currentPath || null;
-                                // کپی مراحل برای تشخیص مسیر
-                                existing.defenseSteps      = s.defenseSteps      || [];
-                                existing.educationalSteps  = s.educationalSteps  || [];
-                                existing.requirementsSteps = s.requirementsSteps || [];
-                            } else {
-                                rawList.push({
-                                    id: s.id, name: s.name, major: s.field || '-',
-                                    avatar: s.name?.charAt(0) || 'د',
-                                    currentPath:       s.currentPath || null,
-                                    defenseSteps:      s.defenseSteps      || [],
-                                    educationalSteps:  s.educationalSteps  || [],
-                                    requirementsSteps: s.requirementsSteps || [],
-                                });
-                            }
+                        if (s.role && s.role !== 'student') return;
+                        const existing = rawList.find(r => r.id === s.id);
+                        if (existing) {
+                            existing.name        = s.name  || existing.name;
+                            existing.major       = s.field || existing.major;
+                            existing.avatar      = (s.name || existing.name)?.charAt(0) || 'د';
+                            existing.currentPath = s.currentPath || existing.currentPath || null;
+                            existing.graduated   = s.graduated || existing.graduated || false;
+                            existing.active      = s.active !== undefined ? s.active : (existing.active !== false);
+                        } else {
+                            rawList.push({
+                                ...s,
+                                name:  s.name  || '-',
+                                major: s.field || '-',
+                                avatar: s.name?.charAt(0) || 'د',
+                                currentPath: s.currentPath || null,
+                                graduated:   s.graduated || false,
+                                active:      s.active !== undefined ? s.active : true
+                            });
                         }
                     });
                 }
             } catch (e) {}
 
-            // ۳. تعیین مسیر فعال هر دانشجو
+            // ۳. مراحل هر دانشجو — مثل getAllStudents: اگر نداشت، پیش‌فرض بساز
+            //    (بدون این، مسیر فعال همه دانشجوها اشتباهی «فارغ‌التحصیلی» می‌شود)
+            const defDefaults = () => (typeof EmployeeModule !== 'undefined' && EmployeeModule.getDefaultDefenseSteps2)
+                ? EmployeeModule.getDefaultDefenseSteps2()
+                : DEFAULT_STEPS.defense.map(n => ({ name: n, completed: false }));
+            const eduDefaults = () => (typeof EmployeeModule !== 'undefined' && EmployeeModule.getDefaultEducationalSteps)
+                ? EmployeeModule.getDefaultEducationalSteps()
+                : DEFAULT_STEPS.educational.map(n => ({ name: n, completed: false }));
+
             rawList.forEach(s => {
-                if (!s._activePath) {
-                    s._activePath = _getActivePath(s);
-                }
+                if (!Array.isArray(s.defenseSteps)     || s.defenseSteps.length === 0)     s.defenseSteps     = defDefaults();
+                if (!Array.isArray(s.educationalSteps) || s.educationalSteps.length === 0) s.educationalSteps = eduDefaults();
+                if (!Array.isArray(s.requirementsSteps)) s.requirementsSteps = [];
+            });
+
+            // ۴. تعیین مسیر فعال هر دانشجو
+            rawList.forEach(s => {
+                s._activePath = _getActivePath(s);
             });
 
             students = rawList.map(s => ({
                 ...s,
                 progress: {
-                    educational: loadProgress(s.id, 'educational'),
-                    defense:     loadProgress(s.id, 'defense'),
-                    requirements:loadProgress(s.id, 'requirements')
+                    educational: loadProgress(s.id, 'educational',  s.educationalSteps),
+                    defense:     loadProgress(s.id, 'defense',      s.defenseSteps),
+                    requirements:loadProgress(s.id, 'requirements', s.requirementsSteps)
                 }
             }));
         }
         
-        function loadProgress(id, path) {
+        function loadProgress(id, path, studentSteps) {
             const saved = localStorage.getItem(`prog_${id}_${path}`);
             const stepCount = STEPS[path].length;
 
@@ -492,6 +551,21 @@
                 // اگر کمتر شده، برش بده
                 return arr.slice(0, stepCount);
             }
+
+            // بدون prog_ ذخیره‌شده → از مراحل students_data استخراج کن
+            // (همان منطق _stepsToProgress در students-sync.js — هماهنگ با پروفایل دانشجو)
+            if (studentSteps && Array.isArray(studentSteps) && studentSteps.length > 0) {
+                const prog = studentSteps.slice(0, stepCount).map(s => ({
+                    status: (s && s.completed) ? STATUS_COMPLETED : STATUS_INCOMPLETE
+                }));
+                // اولین مرحلهٔ ناتمام = «در حال انجام»
+                const firstOpen = prog.findIndex(p => p.status === STATUS_INCOMPLETE);
+                if (firstOpen !== -1) prog[firstOpen].status = STATUS_CURRENT;
+                // اگر مراحل شیت بیشتر از students_data بود، بقیه خالی
+                while (prog.length < stepCount) prog.push({ status: STATUS_INCOMPLETE });
+                return prog;
+            }
+
             // پیش‌فرض: اولین مرحله «در حال انجام»
             return STEPS[path].map((_, i) => ({ status: i === 0 ? STATUS_CURRENT : STATUS_INCOMPLETE }));
         }
@@ -562,13 +636,16 @@
             headerHTML += '<th>%</th></tr>';
             thead.innerHTML = headerHTML;
             
-            // Filter — دانشجویانی که این مسیر برایشان فعال/مرتبط است
+            // Filter — همان شرایط تب‌های صفحه دانشجویان در employee.js
             let filtered;
             if (currentPath === 'educational') {
                 // educational: کسانی که currentPath='educational' یا همه مراحل دفاع تموم کردند
                 filtered = students.filter(s => _shouldShowInEducational(s));
+            } else if (currentPath === 'requirements') {
+                // ملزومات موازی دفاع است — دانشجویانی که گردش ملزومات دارند
+                filtered = students.filter(s => _shouldShowInRequirements(s));
             } else {
-                filtered = students.filter(s => s._activePath === currentPath);
+                filtered = students.filter(s => _shouldShowInDefense(s));
             }
             if (searchTerm) {
                 filtered = filtered.filter(s => s.name.includes(searchTerm) || s.major.includes(searchTerm));
@@ -650,7 +727,18 @@
                 }
                 const stepKeyMap = { defense: 'defenseSteps', educational: 'educationalSteps', requirements: 'requirementsSteps' };
                 const stepKey = stepKeyMap[currentPath];
-                if (stepKey && studentsData[studentId][stepKey] && studentsData[studentId][stepKey][stageIndex] !== undefined) {
+                let needSave = false;
+                // اگر آرایه مراحل در students_data نبود، از وضعیت فعلی شیت بساز
+                // تا تغییرات toggle در پروفایل دانشجو هم ذخیره شود
+                if (stepKey && !Array.isArray(studentsData[studentId][stepKey])) {
+                    studentsData[studentId][stepKey] = prog.map((p, idx) => ({
+                        name: (STEPS[currentPath][idx] || `مرحله ${idx + 1}`),
+                        completed: p.status === STATUS_COMPLETED,
+                        date: p.status === STATUS_COMPLETED ? new Date().toLocaleDateString('fa-IR') : null
+                    }));
+                    needSave = true;
+                }
+                if (stepKey && Array.isArray(studentsData[studentId][stepKey]) && studentsData[studentId][stepKey][stageIndex] !== undefined) {
                     const newStatus = prog[stageIndex].status;
                     studentsData[studentId][stepKey][stageIndex].completed = (newStatus === STATUS_COMPLETED);
                     if (newStatus === STATUS_COMPLETED) {
@@ -658,6 +746,9 @@
                     } else {
                         studentsData[studentId][stepKey][stageIndex].date = null;
                     }
+                    needSave = true;
+                }
+                if (needSave) {
                     localStorage.setItem('students_data', JSON.stringify(studentsData));
                 }
             } catch(e) { console.warn('students_data sync error:', e); }
@@ -683,8 +774,11 @@
         }
         
         function updateStats() {
-            // فقط دانشجویانی که مسیر فعلی‌شان با currentPath مطابق است
-            const relevant = students.filter(s => s._activePath === currentPath);
+            // همان دانشجویانی که در جدولِ همین تب نمایش داده می‌شوند
+            let relevant;
+            if (currentPath === 'educational')       relevant = students.filter(s => _shouldShowInEducational(s));
+            else if (currentPath === 'requirements') relevant = students.filter(s => _shouldShowInRequirements(s));
+            else                                     relevant = students.filter(s => _shouldShowInDefense(s));
             const total = relevant.length;
             if (total === 0) {
                 document.getElementById('total-students').textContent = 0;
