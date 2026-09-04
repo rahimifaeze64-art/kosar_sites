@@ -30,7 +30,10 @@ const EmployeeModule = {
                         return rt;
                     });
                     // وظایف local که در remote نیستند را هم اضافه کن
+                    // ⚠️ وظایف مرحله‌ای (isStepTask) فقط از سرور می‌آیند — اگر در remote
+                    // نیستند یعنی حذف شده‌اند و نباید از نسخه محلی دوباره زنده شوند
                     local.forEach(lt => {
+                        if (lt.isStepTask) return;
                         if (!merged.find(m => m.id === lt.id)) merged.push(lt);
                     });
 
@@ -56,7 +59,12 @@ const EmployeeModule = {
                 typeof StepAssignmentModule.syncAssignmentsFromSupabase === 'function') {
                 StepAssignmentModule.syncAssignmentsFromSupabase()
                     .then(() => {
-                        // بعد از sync، بررسی کن آیا task جدیدی باید ساخته شود
+                        // ۱) اول وظایف زائد پاک شوند (مرحله دیگر تخصیص ندارد / تکراری)
+                        //    تا بلافاصله توسط syncAllActiveSteps دوباره ساخته نشوند
+                        if (typeof StepAssignmentModule.reconcileStepTasks === 'function') {
+                            StepAssignmentModule.reconcileStepTasks(userId);
+                        }
+                        // ۲) بعد وظایف مراحل فعالِ معتبر ساخته شوند
                         if (typeof StepAssignmentModule.syncAllActiveSteps === 'function') {
                             StepAssignmentModule.syncAllActiveSteps();
                         }
@@ -153,10 +161,18 @@ const EmployeeModule = {
                                 : `<span class="bg-slate-600 text-gray-300 text-xs rounded-full px-2 py-0.5">0</span>`
                             }
                         </h3>
-                        <button onclick="employeeModule.refreshMyTasks('${userId}')"
-                                class="text-gray-400 hover:text-white text-sm p-1 rounded" title="بروزرسانی">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
+                        <div class="flex items-center gap-1">
+                            ${pendingStepTasks.length > 0 ? `
+                                <button onclick="StepAssignmentModule.cleanupAllMyStepTasks('${userId}')"
+                                        class="text-red-400 hover:text-red-300 text-sm p-1 rounded" title="پاک‌سازی همه وظایف مراحلِ در انتظار">
+                                    <i class="fas fa-broom"></i>
+                                </button>
+                            ` : ''}
+                            <button onclick="employeeModule.refreshMyTasks('${userId}')"
+                                    class="text-gray-400 hover:text-white text-sm p-1 rounded" title="بروزرسانی">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
                     </div>
                     <p class="text-xs text-gray-400 mb-4">
                         مراحلی که مدیر به شما تخصیص داده. با زدن «انجام شد»، مرحله دانشجو خودکار سبز می‌شود.
@@ -167,10 +183,6 @@ const EmployeeModule = {
                             <i class="fas fa-inbox text-3xl text-slate-500 mb-2 block"></i>
                             <p class="text-gray-500 text-sm">در حال حاضر مرحله‌ای به شما تخصیص داده نشده</p>
                             <p class="text-gray-600 text-xs mt-1">مدیر پس از تیک زدن مرحله قبلی، مرحله بعدی را ارسال می‌کند</p>
-                            <button onclick="employeeModule._addTestStepTask('${userId}'); employeeModule.refreshMyTasks('${userId}');"
-                                    class="mt-3 text-xs bg-slate-600 hover:bg-slate-500 text-gray-300 px-3 py-1 rounded-lg">
-                                <i class="fas fa-vial ml-1"></i>تست: افزودن وظیفه نمونه
-                            </button>
                         </div>
                     ` : `
                         <div class="space-y-3">
@@ -3482,9 +3494,19 @@ const EmployeeModule = {
             { id: 'emp001', name: 'سارا سادات حسینی', email: 'zahra@edu-system.com' },
             { id: 'emp002', name: 'زینب بتول محمدی', email: 'fatemeh@edu-system.com' },
             { id: 'emp003', name: 'علیرضا غلامی فرزاد', email: 'farzad@edu-system.com' },
-            { id: 'emp004', name: 'سید محمد فاضلی', email: 'fazeli@edu-system.com' }
+            { id: 'emp004', name: 'سید محمد فاضلی', email: 'fazeli@edu-system.com' },
+            { id: 'emp005', name: 'مهدی خدایاری', email: 'mahdi@alkawsar.com' }
         ];
-        return employees.find(c => c.id === userId) || employees[0];
+        const found = employees.find(c => c.id === userId);
+        if (found) return found;
+        // جستجو در کاربران سیستم (کاربران داینامیک — همگام با hardcoded-users.js)
+        try {
+            const users = JSON.parse(localStorage.getItem('edu_system_users') || '[]');
+            const u = users.find(x => x && x.id === userId &&
+                (x.role === 'employee' || x.role === 'کارمند' || String(x.id || '').startsWith('emp')));
+            if (u) return { id: u.id, name: u.name || u.username || u.id, email: u.email || '' };
+        } catch (e) { /* ignore */ }
+        return employees[0];
     },
     
     getMyTasks(userId) {
@@ -4982,20 +5004,21 @@ EmployeeModule.showStepsManagementModal = function() {
     if (typeof StepAssignmentModule !== 'undefined' &&
         typeof StepAssignmentModule.syncAssignmentsFromSupabase === 'function') {
         StepAssignmentModule.syncAssignmentsFromSupabase().then(() => {
-            // بعد از sync اگر modal هنوز باز است refresh کن
+            // بعد از sync اگر modal هنوز باز است، هر سه تب با مقادیر تازه رندر شوند
             const modal = document.getElementById('steps-management-modal');
-            if (modal) {
-                const container = modal.querySelector('#steps-content-defense .grid');
+            if (!modal || !modal.__renderStepRow) return;
+            const renderStepRowFn = modal.__renderStepRow;
+            const refreshTab = (contentId, steps, type, color) => {
+                const container = modal.querySelector('#' + contentId + ' .grid');
                 if (container) {
-                    const defenseSteps = EmployeeModule.getDefaultDefenseSteps2();
-                    const renderStepRowFn = modal.__renderStepRow;
-                    if (renderStepRowFn) {
-                        container.innerHTML = defenseSteps
-                            .map((step, i) => renderStepRowFn(step, i, defenseSteps.length, 'defense', 'blue'))
-                            .join('');
-                    }
+                    container.innerHTML = steps
+                        .map((step, i) => renderStepRowFn(step, i, steps.length, type, color))
+                        .join('');
                 }
-            }
+            };
+            refreshTab('steps-content-defense', EmployeeModule.getDefaultDefenseSteps2(), 'defense', 'blue');
+            refreshTab('steps-content-requirements', EmployeeModule.getDefaultRequirementsSteps(), 'requirements', 'emerald');
+            refreshTab('steps-content-educational', EmployeeModule.getDefaultEducationalSteps(), 'educational', 'green');
         }).catch(() => {});
     }
 
@@ -5180,9 +5203,14 @@ EmployeeModule.showStepsManagementModal = function() {
     `;
     
     document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // ثبت تابع رندر ردیف‌ها روی عنصر مودال تا بعد از اتمام sync از Supabase
+    // بتوان هر سه تب را با مقادیر تازه دوباره رندر کرد (بدون این، refresh بی‌اثر بود)
+    const insertedModal = document.getElementById('steps-management-modal');
+    if (insertedModal) insertedModal.__renderStepRow = renderStepRow;
 };
 
-// Switch steps tabs
+// Switch steps tab
 EmployeeModule.switchStepsTab = function(tabName) {
     const tabColors = {
         'educational': { border: 'border-green-500', text: 'text-green-400' },

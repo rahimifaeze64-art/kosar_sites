@@ -10,16 +10,40 @@
 
 const StepAssignmentModule = {
 
-    // لیست کارمندان ثابت (همگام با app.js)
+    // لیست کارمندان ثابت (همگام با app.js و hardcoded-users.js)
     EMPLOYEES: [
         { id: 'emp001', name: 'سارا سادات حسینی' },
         { id: 'emp002', name: 'زینب بتول محمدی' },
         { id: 'emp003', name: 'علیرضا غلامی فرزاد' },
         { id: 'emp004', name: 'سید محمد فاضلی' },
+        { id: 'emp005', name: 'مهدی خدایاری' },
     ],
 
     // کلید ذخیره‌سازی در localStorage
     STORAGE_KEY: 'step_assignments',
+
+    // صف تغییرات هنوزارسال‌نشده به Supabase (پشتیبانی آفلاین + sync صحیح)
+    PENDING_KEY: 'step_assignments_pending',
+
+    /**
+     * لیست کارمندان: ترکیب لیست ثابت با کاربران سیستم (edu_system_users)
+     * تا کاربران داینامیک هم در dropdown مدیریت مراحل نمایش داده شوند
+     */
+    getEmployees() {
+        const list = [...this.EMPLOYEES];
+        try {
+            const users = JSON.parse(localStorage.getItem('edu_system_users') || '[]');
+            users.forEach(u => {
+                const isEmployee = u && (u.role === 'employee' || u.role === 'کارمند' ||
+                    (u.id && String(u.id).startsWith('emp')));
+                if (!isEmployee) return;
+                if (!list.find(e => e.id === u.id)) {
+                    list.push({ id: u.id, name: u.name || u.username || u.email || u.id });
+                }
+            });
+        } catch (e) { /* ignore */ }
+        return list;
+    },
 
     // ─── ذخیره و بارگذاری تخصیص‌ها ──────────────────────────────────────────
 
@@ -37,6 +61,9 @@ const StepAssignmentModule = {
     /**
      * بارگذاری تخصیص‌ها از Supabase در پس‌زمینه و sync با localStorage
      * وقتی صفحه مدیریت مراحل باز می‌شود صدا زده می‌شود
+     *
+     * ⚠️ منبع اصلی = Supabase. فقط تغییرات محلیِ هنوزارسال‌نشده (صف pending)
+     * روی نتیجه اعمال می‌شوند — دیگر مقادیر قدیمی محلی روی داده تازه ابر نوشته نمی‌شوند.
      */
     async syncAssignmentsFromSupabase() {
         try {
@@ -47,28 +74,43 @@ const StepAssignmentModule = {
                 .from('step_assignments')
                 .select('path_type, step_index, employee_id');
             if (error) throw error;
-            if (!data || data.length === 0) return;
 
-            const assignments = {};
-            data.forEach(row => {
-                if (!assignments[row.path_type]) assignments[row.path_type] = {};
+            const merged = {};
+            (data || []).forEach(row => {
+                if (!merged[row.path_type]) merged[row.path_type] = {};
                 if (row.employee_id) {
-                    assignments[row.path_type][row.step_index] = row.employee_id;
+                    merged[row.path_type][row.step_index] = row.employee_id;
                 }
             });
 
-            // merge با localStorage (داده محلی اولویت داره اگر جدیدتر باشه)
-            const local = JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '{}');
-            const merged = { ...assignments };
-            // اگر محلی چیزی داره که در remote نیست حفظ کن
-            ['defense', 'educational', 'requirements'].forEach(t => {
-                if (local[t]) {
-                    merged[t] = merged[t] || {};
-                    Object.assign(merged[t], local[t]);
-                }
+            // اعمال تغییرات محلیِ در صف انتظار (تازه‌تر از ابر — آخرین نیت کاربر)
+            const pending = this._getPendingQueue();
+            pending.forEach(p => {
+                if (!merged[p.pathType]) merged[p.pathType] = {};
+                if (p.employeeId) merged[p.pathType][p.stepIndex] = p.employeeId;
+                else delete merged[p.pathType][p.stepIndex];
             });
 
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(merged));
+
+            // تلاش مجدد برای ارسال تغییرات صف‌شده
+            if (pending.length > 0) {
+                const remaining = [];
+                for (const p of pending) {
+                    if (typeof SupabaseDataModule !== 'undefined' &&
+                        typeof SupabaseDataModule.saveStepAssignment === 'function') {
+                        const ok = await SupabaseDataModule.saveStepAssignment(p.pathType, p.stepIndex, p.employeeId);
+                        if (!ok) remaining.push(p);
+                    } else {
+                        remaining.push(p);
+                    }
+                }
+                this._setPendingQueue(remaining);
+                if (remaining.length === 0) {
+                    console.log('✅ همه تغییرات صف‌شده تخصیص‌ها به Supabase ارسال شد');
+                }
+            }
+
             console.log('✅ step_assignments از Supabase sync شد');
         } catch (e) {
             console.warn('⚠️ syncAssignmentsFromSupabase خطا:', e.message);
@@ -94,22 +136,14 @@ const StepAssignmentModule = {
         }
         localStorage.setItem(this.STORAGE_KEY, JSON.stringify(assignments));
 
-        // ── ذخیره مستقیم در Supabase step_assignments ──────────────────────
-        this._saveAssignmentToSupabase(type, stepIndex, employeeId || null);
+        // ثبت در صف همگام‌سازی — تا وقتی که با موفقیت به Supabase برسد آنجا می‌ماند
+        this._enqueuePending(type, stepIndex, employeeId || null);
 
-        // ذخیره در Supabase در پس‌زمینه (step_assignments table) — روش قدیمی
-        if (typeof DataModule !== 'undefined' && typeof DataModule.saveStepAssignment === 'function') {
-            DataModule.saveStepAssignment(type, stepIndex, employeeId || null)
-                .catch(e => console.warn('⚠️ saveStepAssignment async خطا:', e.message));
-        }
-        // sync مستقیم به SupabaseDataModule
-        if (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseDataModule.saveStepAssignment === 'function') {
-            SupabaseDataModule.saveStepAssignment(type, stepIndex, employeeId || null)
-                .catch(e => console.warn('⚠️ saveStepAssignment Supabase خطا:', e.message));
-        }
+        // ── ذخیره در Supabase — تک‌مسیر واحد ────────────────────────────────
+        this._pushAssignmentToSupabase(type, stepIndex, employeeId || null);
 
-        // ── اگر تخصیص حذف شد → task‌های pending کارمند قبلی پاک شوند ──
-        if (!employeeId && prevEmployeeId) {
+        // ── اگر تخصیص حذف یا به کارمند دیگری تغییر کرد → task‌های pending کارمند قبلی پاک شوند ──
+        if (prevEmployeeId && prevEmployeeId !== employeeId) {
             this._removeStepTasksForEmployee(prevEmployeeId, type, stepIndex);
         }
 
@@ -119,40 +153,58 @@ const StepAssignmentModule = {
         }
     },
 
-    /**
-     * ذخیره مستقیم تخصیص در جدول step_assignments سوپابیس
-     */
-    _saveAssignmentToSupabase(type, stepIndex, employeeId) {
-        try {
-            const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
-            if (!client) return;
+    // ─── صف همگام‌سازی تخصیص‌ها (پشتیبانی آفلاین + جلوگیری از تداخل sync) ───
 
-            if (employeeId) {
-                // upsert
-                client.from('step_assignments')
-                    .upsert({
-                        path_type:   type,
-                        step_index:  Number(stepIndex),
-                        employee_id: employeeId,
-                        updated_at:  new Date().toISOString()
-                    }, { onConflict: 'path_type,step_index' })
-                    .then(({ error }) => {
-                        if (error) console.warn('⚠️ step_assignments upsert خطا:', error.message);
-                        else console.log(`✅ step_assignments: ${type}[${stepIndex}] → ${employeeId}`);
-                    });
-            } else {
-                // حذف
-                client.from('step_assignments')
-                    .delete()
-                    .eq('path_type', type)
-                    .eq('step_index', Number(stepIndex))
-                    .then(({ error }) => {
-                        if (error) console.warn('⚠️ step_assignments delete خطا:', error.message);
-                        else console.log(`🗑️ step_assignments: ${type}[${stepIndex}] حذف شد`);
-                    });
-            }
+    _getPendingQueue() {
+        try {
+            return JSON.parse(localStorage.getItem(this.PENDING_KEY) || '[]');
+        } catch (e) { return []; }
+    },
+
+    _setPendingQueue(queue) {
+        try {
+            localStorage.setItem(this.PENDING_KEY, JSON.stringify(queue || []));
+        } catch (e) { console.warn('⚠️ _setPendingQueue خطا:', e.message); }
+    },
+
+    /** ثبت تغییر تخصیص در صف — تا زمانی که با موفقیت به Supabase برسد */
+    _enqueuePending(type, stepIndex, employeeId) {
+        try {
+            const queue = this._getPendingQueue();
+            const entry = {
+                pathType: type,
+                stepIndex: Number(stepIndex),
+                employeeId: employeeId || null,
+                updatedAt: new Date().toISOString()
+            };
+            const idx = queue.findIndex(p => p.pathType === type && Number(p.stepIndex) === Number(stepIndex));
+            if (idx >= 0) queue[idx] = entry; else queue.push(entry);
+            this._setPendingQueue(queue);
         } catch (e) {
-            console.warn('⚠️ _saveAssignmentToSupabase exception:', e.message);
+            console.warn('⚠️ _enqueuePending خطا:', e.message);
+        }
+    },
+
+    /**
+     * ارسال تخصیص به Supabase — تک‌مسیر واحد (SupabaseDataModule.saveStepAssignment)
+     * در صورت خطا، تغییر در صف می‌ماند تا در sync بعدی دوباره ارسال شود
+     */
+    async _pushAssignmentToSupabase(type, stepIndex, employeeId) {
+        if (typeof SupabaseDataModule === 'undefined' ||
+            typeof SupabaseDataModule.saveStepAssignment !== 'function') return;
+
+        const ok = await SupabaseDataModule.saveStepAssignment(type, stepIndex, employeeId);
+        if (ok) {
+            // با موفقیت ارسال شد → از صف حذف کن
+            const queue = this._getPendingQueue().filter(p =>
+                !(p.pathType === type && Number(p.stepIndex) === Number(stepIndex)));
+            this._setPendingQueue(queue);
+            console.log(`✅ step_assignments: ${type}[${stepIndex}] → ${employeeId || 'حذف تخصیص'}`);
+        } else {
+            console.warn('⚠️ ذخیره تخصیص در Supabase ناموفق بود — در صف همگام‌سازی ماند');
+            if (typeof UTILS !== 'undefined' && typeof UTILS.showNotification === 'function') {
+                UTILS.showNotification('ذخیره تخصیص در سرور ناموفق بود — بعداً به‌صورت خودکار تلاش می‌شود', 'error');
+            }
         }
     },
 
@@ -189,6 +241,130 @@ const StepAssignmentModule = {
             }
         } catch (e) {
             console.warn('⚠️ _removeStepTasksForEmployee خطا:', e);
+        }
+    },
+
+    /**
+     * پاک‌سازی وظایف مرحله‌ایِ زائد یک کارمند:
+     *  ۱) تسک‌های pending تکراری (همان دانشجو/مسیر/مرحله — قدیمی‌ترین نگه داشته می‌شود)
+     *  ۲) تسک‌هایی که مرحله‌شان دیگر به این کارمند تخصیص ندارد
+     *  ۳) تسک‌هایی که مرحله دانشجو از قبل تکمیل شده (اگر students_data موجود باشد)
+     * بعد از syncAssignmentsFromSupabase صدا زده می‌شود تا تسک‌های حذف‌شده توسط مدیر
+     * در دستگاه کارمند هم پاک شوند و دوباره ساخته نشوند.
+     */
+    reconcileStepTasks(employeeId) {
+        try {
+            const assignments = this.getAssignments(); // تازه sync شده
+            const assignmentsKnown = Object.keys(assignments).length > 0;
+
+            const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+            const tasks = tasksData[employeeId] || [];
+            if (tasks.length === 0) return 0;
+
+            const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
+            const seen = {};
+            const toDelete = [];
+            const keep = [];
+
+            tasks.forEach(t => {
+                if (!t.isStepTask || t.status === 'completed') { keep.push(t); return; }
+
+                // ۱) مرحله دیگر به این کارمند تخصیص ندارد؟
+                //    (اگر تخصیص‌ها اصلاً بارگذاری نشده‌اند، این قانون را رد کن)
+                if (assignmentsKnown) {
+                    const assigned = assignments[t.stepType] && assignments[t.stepType][t.stepIndex];
+                    if (assigned !== employeeId) { toDelete.push(t); return; }
+                }
+
+                // ۲) مرحله دانشجو تکمیل شده؟ (فقط اگر داده دانشجو روی این دستگاه موجود باشد)
+                const student = studentsData[t.studentId];
+                if (student) {
+                    let steps = null;
+                    if (t.stepType === 'defense')          steps = student.defenseSteps;
+                    else if (t.stepType === 'educational') steps = student.educationalSteps;
+                    else if (t.stepType === 'requirements') steps = student.requirementsSteps;
+                    const st = steps && steps[t.stepIndex];
+                    if (st && st.completed) { toDelete.push(t); return; }
+                }
+
+                // ۳) تکراری؟
+                const key = `${t.studentId}|${t.stepType}|${t.stepIndex}`;
+                if (seen[key]) { toDelete.push(t); return; }
+                seen[key] = true;
+
+                keep.push(t);
+            });
+
+            if (toDelete.length === 0) return 0;
+
+            tasksData[employeeId] = keep;
+            localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
+            console.log(`🧹 reconcileStepTasks: ${toDelete.length} وظیفه زائد از کارتابل ${employeeId} پاک شد`);
+
+            // حذف از Supabase
+            if (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseDataModule._db === 'function') {
+                const client = SupabaseDataModule._db();
+                if (client) {
+                    toDelete.forEach(t => {
+                        client.from('employee_tasks').delete().eq('id', t.id)
+                            .then(({ error }) => { if (error) console.warn('⚠️ reconcile delete خطا:', error.message); });
+                    });
+                }
+            }
+
+            // رفرش کارتابل اگر در حال نمایش است
+            if (typeof EmployeeModule !== 'undefined' && typeof EmployeeModule.refreshMyTasks === 'function') {
+                EmployeeModule.refreshMyTasks(employeeId);
+            }
+            return toDelete.length;
+        } catch (e) {
+            console.warn('⚠️ reconcileStepTasks خطا:', e);
+            return 0;
+        }
+    },
+
+    /**
+     * پاک‌سازی دستی همه وظایف مرحله‌ایِ در انتظار کارمند (دکمه جاروی کارتابل)
+     * برای مواقعی که تخصیص اشتباه باعث ساخت انبوه وظیفه شده است.
+     * وظایف تکمیل‌شده به‌عنوان سابقه حفظ می‌شوند.
+     */
+    async cleanupAllMyStepTasks(employeeId) {
+        if (!confirm('همه وظایف «مراحل دانشجویان»ِ در انتظار پاک شوند؟\n(وظایف تکمیل‌شده حفظ می‌شوند)')) return;
+        try {
+            const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+            const tasks = tasksData[employeeId] || [];
+            const toDelete = tasks.filter(t => t.isStepTask && t.status !== 'completed');
+
+            if (toDelete.length === 0) {
+                if (typeof UTILS !== 'undefined' && UTILS.showNotification) {
+                    UTILS.showNotification('وظیفه مرحله‌ای در انتظاری وجود ندارد', 'info');
+                }
+                return;
+            }
+
+            tasksData[employeeId] = tasks.filter(t => !(t.isStepTask && t.status !== 'completed'));
+            localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
+            console.log(`🧹 cleanupAllMyStepTasks: ${toDelete.length} وظیفه از ${employeeId} پاک شد`);
+
+            // حذف از Supabase
+            if (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseDataModule._db === 'function') {
+                const client = SupabaseDataModule._db();
+                if (client) {
+                    toDelete.forEach(t => {
+                        client.from('employee_tasks').delete().eq('id', t.id)
+                            .then(({ error }) => { if (error) console.warn('⚠️ cleanup delete خطا:', error.message); });
+                    });
+                }
+            }
+
+            if (typeof UTILS !== 'undefined' && UTILS.showNotification) {
+                UTILS.showNotification(`🧹 ${toDelete.length} وظیفه مرحله‌ای پاک شد`, 'success');
+            }
+            if (typeof EmployeeModule !== 'undefined' && typeof EmployeeModule.refreshMyTasks === 'function') {
+                EmployeeModule.refreshMyTasks(employeeId);
+            }
+        } catch (e) {
+            console.warn('⚠️ cleanupAllMyStepTasks خطا:', e);
         }
     },
 
@@ -260,7 +436,7 @@ const StepAssignmentModule = {
     /** دریافت نام کارمند */
     getEmployeeName(employeeId) {
         if (!employeeId) return '';
-        const emp = this.EMPLOYEES.find(e => e.id === employeeId);
+        const emp = this.getEmployees().find(e => e.id === employeeId);
         return emp ? emp.name : employeeId;
     },
 
@@ -271,7 +447,7 @@ const StepAssignmentModule = {
      */
     renderAssignDropdown(type, stepIndex) {
         const currentEmployee = this.getAssignedEmployee(type, stepIndex);
-        const options = this.EMPLOYEES.map(emp =>
+        const options = this.getEmployees().map(emp =>
             `<option value="${emp.id}" ${currentEmployee === emp.id ? 'selected' : ''}>${emp.name}</option>`
         ).join('');
 

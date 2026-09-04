@@ -370,9 +370,20 @@ const SupabaseDataModule = {
         if (!this._online()) return true;
         try {
             const row = this._taskToDb(task, employeeId);
-            const { error } = await this._db()
+            let { error } = await this._db()
                 .from('employee_tasks')
                 .upsert(row, { onConflict: 'id' });
+
+            // fallback: اگر ستون student_name هنوز در جدول اضافه نشده باشد
+            // (قبل از اجرای supabase/fix_step_assignments_and_student_name.sql)
+            if (error && /student_name|PGRST204/i.test((error.message || '') + ' ' + (error.code || ''))) {
+                console.warn('⚠️ ستون student_name در employee_tasks نیست — بدون آن ذخیره می‌شود. مایگریشن SQL را اجرا کنید');
+                const row2 = { ...row };
+                delete row2.student_name;
+                ({ error } = await this._db()
+                    .from('employee_tasks')
+                    .upsert(row2, { onConflict: 'id' }));
+            }
             if (error) throw error;
             return true;
         } catch (e) {
@@ -655,12 +666,39 @@ const SupabaseDataModule = {
             return false;
         }
         try {
+            const idx = Number(stepIndex);
+            if (!employeeId) {
+                // حذف تخصیص — به‌جای upsert ردیف با employee_id تهی
+                const { error: delErr } = await this._db().from('step_assignments')
+                    .delete()
+                    .eq('path_type', pathType)
+                    .eq('step_index', idx);
+                if (delErr) throw delErr;
+                return true;
+            }
             const { error } = await this._db().from('step_assignments').upsert({
-                path_type: pathType, step_index: stepIndex,
-                employee_id: employeeId || null, updated_at: new Date().toISOString()
+                path_type: pathType, step_index: idx,
+                employee_id: employeeId, updated_at: new Date().toISOString()
             }, { onConflict: 'path_type,step_index' });
-            if (error) throw error;
-            return true;
+            if (!error) return true;
+
+            // fallback: اگر جدول UNIQUE (path_type, step_index) نداشته باشد، upsert خطای
+            // «no unique constraint on conflict» می‌دهد → با delete + insert جبران می‌شود
+            const msg = ((error.message || '') + ' ' + (error.code || ''));
+            if (/42P10|conflict|constraint|duplicate/i.test(msg)) {
+                await this._db().from('step_assignments')
+                    .delete()
+                    .eq('path_type', pathType)
+                    .eq('step_index', idx);
+                const { error: insErr } = await this._db().from('step_assignments').insert({
+                    path_type: pathType, step_index: idx,
+                    employee_id: employeeId, updated_at: new Date().toISOString()
+                });
+                if (insErr) throw insErr;
+                console.warn('⚠️ upsert با delete+insert جایگزین شد — UNIQUE constraint را با اجرای supabase/fix_step_assignments_and_student_name.sql اضافه کنید');
+                return true;
+            }
+            throw error;
         } catch (e) { console.warn('⚠️ saveStepAssignment خطا:', e.message); return false; }
     },
 
@@ -1341,6 +1379,7 @@ const SupabaseDataModule = {
             due_date:       t.dueDate        || null,
             is_step_task:   t.isStepTask     || false,
             student_id:     t.studentId      || null,
+            student_name:   t.studentName    || null,
             step_type:      t.stepType       || null,
             step_index:     t.stepIndex      != null ? t.stepIndex : null,
             step_name:      t.stepName       || null,
@@ -1367,6 +1406,7 @@ const SupabaseDataModule = {
             dueDate:        r.due_date       || '',
             isStepTask:     r.is_step_task   || false,
             studentId:      r.student_id     || null,
+            studentName:    r.student_name   || null,
             stepType:       r.step_type      || null,
             stepIndex:      r.step_index,
             stepName:       r.step_name      || null,
