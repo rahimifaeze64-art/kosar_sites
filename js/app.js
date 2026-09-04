@@ -198,6 +198,7 @@ function appController() {
                       </div>
                       <iframe src="student-progress-tracking.html"
                         style="width:100%;height:85vh;border:none;border-radius:12px;background:#fff;"
+                        allowfullscreen
                         title="نمای شیت"></iframe>
                     </div>`;
               });

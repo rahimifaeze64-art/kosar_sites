@@ -74,9 +74,9 @@
             vertical-align: bottom;
             min-width: 90px;
         }
-        .sheet-table thead th:first-child {
+        .sheet-table thead th.student-header {
             position: sticky;
-            right: 0;
+            right: 48px;
             background: linear-gradient(135deg, #3b82f6, #2563eb);
             z-index: 11;
             border-left: none;
@@ -84,6 +84,30 @@
             text-align: right;
             padding-right: 14px;
         }
+        /* ستون شماره ردیف — چسبان به لبه راست، کنار ستون دانشجو */
+        .sheet-table thead th.row-num-header {
+            position: sticky;
+            right: 0;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            z-index: 12;
+            border-left: none;
+            width: 48px;
+            min-width: 48px;
+            max-width: 48px;
+        }
+        .sheet-table tbody td.row-num-cell {
+            position: sticky;
+            right: 0;
+            background: white;
+            z-index: 5;
+            width: 48px;
+            min-width: 48px;
+            max-width: 48px;
+            font-weight: bold;
+            font-size: 12px;
+            color: #64748b;
+        }
+        .sheet-table tbody tr:hover td.row-num-cell { background: #f1f5f9; }
         .sheet-table thead th:last-child { min-width: 70px; }
 
         /* سطرهای بدنه */
@@ -97,7 +121,7 @@
         }
         .sheet-table tbody td.student-cell {
             position: sticky;
-            right: 0;
+            right: 48px;
             background: white;
             text-align: right;
             padding: 12px 14px;
@@ -175,6 +199,66 @@
             color: white;
             border-color: #2563eb;
         }
+
+        /* ── حالت تمام صفحه ─────────────────────── */
+        .fs-toolbar { display: none; }
+
+        #fs-root:fullscreen {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: white;
+            padding: 8px 12px;
+            overflow: hidden;
+        }
+        #fs-root:fullscreen .fs-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 8px;
+            flex-shrink: 0;
+        }
+        #fs-root:fullscreen .table-wrapper {
+            flex: 1;
+            min-height: 0;
+            max-height: none;
+            border-radius: 8px;
+            box-shadow: none;
+        }
+        #fs-root:fullscreen .progress-circle { width: 34px; height: 34px; font-size: 14px; }
+
+        /* حالت جایگزین (CSS) — وقتی iframe اجازه Fullscreen API نداد */
+        body.fs-fallback { overflow: hidden !important; }
+        body.fs-fallback #fs-root {
+            position: fixed;
+            top: 0; right: 0; bottom: 0; left: 0;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            padding: 8px 12px;
+        }
+        body.fs-fallback .fs-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 8px;
+            flex-shrink: 0;
+        }
+        body.fs-fallback .table-wrapper {
+            flex: 1;
+            min-height: 0;
+            max-height: none;
+            border-radius: 8px;
+            box-shadow: none;
+        }
+        body.fs-fallback .progress-circle { width: 34px; height: 34px; font-size: 14px; }
     </style>
 </head>
 <body class="min-h-screen p-4">
@@ -196,6 +280,10 @@
                 </div>
                 
                 <div class="flex items-center gap-2">
+                    <button onclick="toggleFullscreen()" id="fullscreen-btn" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium">
+                        <i class="fas fa-expand ml-1"></i>
+                        تمام صفحه
+                    </button>
                     <button onclick="saveAllProgress()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium">
                         <i class="fas fa-save ml-1"></i>
                         ذخیره
@@ -278,15 +366,38 @@
         </div>
         
         <!-- Main Table -->
-        <div class="table-wrapper">
-            <table class="sheet-table" id="sheet-table">
-                <thead id="table-head">
-                    <!-- Will be rendered by JS -->
-                </thead>
-                <tbody id="table-body">
-                    <!-- Will be rendered by JS -->
-                </tbody>
-            </table>
+        <div id="fs-root">
+            <!-- نوار ابزار فقط در حالت تمام صفحه دیده می‌شود -->
+            <div class="fs-toolbar">
+                <div class="flex gap-2">
+                    <div class="path-tab fs-tab bg-blue-100 text-black-800 flex-shrink-0" data-path="defense" onclick="selectPath('defense')">
+                        <i class="fas fa-shield-alt ml-1"></i>
+                        گردش دفاع
+                    </div>
+                    <div class="path-tab fs-tab bg-emerald-100 text-emerald-800 flex-shrink-0" data-path="requirements" onclick="selectPath('requirements')">
+                        <i class="fas fa-clipboard-list ml-1"></i>
+                        ملزومات
+                    </div>
+                    <div class="path-tab fs-tab bg-lime-100 text-lime-800 flex-shrink-0" data-path="educational" onclick="selectPath('educational')">
+                        <i class="fas fa-graduation-cap ml-1"></i>
+                        فارغ‌التحصیلی
+                    </div>
+                </div>
+                <button onclick="toggleFullscreen()" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium flex-shrink-0">
+                    <i class="fas fa-compress ml-1"></i>
+                    خروج از تمام صفحه
+                </button>
+            </div>
+            <div class="table-wrapper" id="table-wrapper">
+                <table class="sheet-table" id="sheet-table">
+                    <thead id="table-head">
+                        <!-- Will be rendered by JS -->
+                    </thead>
+                    <tbody id="table-body">
+                        <!-- Will be rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
     
@@ -309,44 +420,37 @@
     </script>
     
     <script>
-        // ── تعیین مسیر فعال دانشجو (همان منطق employee.js) ────
-        function _getActivePath(s) {
-            // اگر currentPath صریحاً تنظیم شده → همون رو برگردون
-            if (s.currentPath) return s.currentPath;
-            // ملزومات موازی هستن — اگر مراحل دفاع تموم نشده → defense
+        // ── منطق فازها: گردش دفاع و ملزومات موازی‌اند ────
+        // مراحل دفاع و ملزومات با هم پیش می‌روند؛ وقتی «هر دو» مسیر تمام شد،
+        // مسیر فارغ‌التحصیلی شروع می‌شود
+        function _defenseDone(s) {
             const def = s.defenseSteps || [];
-            if (def.length > 0 && def.some(x => !x.completed)) return 'defense';
-            // همه دفاع تموم شده → educational (فارغ‌التحصیلی)
-            if (def.length > 0 && def.every(x => x.completed)) return 'educational';
-            return 'educational';
+            return def.length > 0 && def.every(x => x.completed);
         }
-
-        // ── فیلتر مسیرها — دقیقاً همان شرایط تب‌های صفحه دانشجویان در employee.js ────
-        // (غیرفعال‌ها نمایش داده نمی‌شوند — مثل شرط s.active در اپ اصلی)
-        function _shouldShowInDefense(s) {
-            if (s.active === false) return false;
-            if (s.currentPath === 'defense') return true;
-            if (s.currentPath) return false;
-            const def = s.defenseSteps || [];
-            return !(def.length > 0 && def.every(x => x.completed));
-        }
-
-        // ملزومات موازیِ دفاع است — دانشجویانی که گردش ملزومات برایشان تعریف شده
-        function _shouldShowInRequirements(s) {
-            if (s.active === false) return false;
+        function _requirementsDone(s) {
             const req = s.requirementsSteps || [];
-            return req.length > 0;
+            return req.length > 0 && req.every(x => x.completed);
+        }
+        // اگر ملزومات برای دانشجو ثبت نشده باشد، فقط اتمام دفاع کافی است
+        function _isGraduatedPhase(s) {
+            if (s.graduated) return true;
+            const req = s.requirementsSteps || [];
+            const reqOk = (req.length === 0) || _requirementsDone(s);
+            return _defenseDone(s) && reqOk;
+        }
+        function _getActivePath(s) {
+            return _isGraduatedPhase(s) ? 'educational' : 'defense';
         }
 
-        // ── تشخیص اینکه دانشجو باید در تب educational نشان داده شود ────
-        // شامل: کسانی که currentPath='educational' یا همه مراحل دفاع تمام کردند
+        // دفاع و ملزومات موازی‌اند → همان گروه دانشجو (فاز فعال) در هر دو تب نمایش داده می‌شود
+        function _shouldShowInDefense(s) {
+            return s.active !== false && !_isGraduatedPhase(s);
+        }
+        function _shouldShowInRequirements(s) {
+            return s.active !== false && !_isGraduatedPhase(s);
+        }
         function _shouldShowInEducational(s) {
-            if (s.active === false) return false;
-            if (s.currentPath === 'educational') return true;
-            if (s.graduated) return true;
-            const def = s.defenseSteps || [];
-            if (def.length > 0 && def.every(x => x.completed)) return true;
-            return false;
+            return s.active !== false && _isGraduatedPhase(s);
         }
 
         // ── مراحل پیش‌فرض — دقیقاً همان مراحل employee.js ─────────────────
@@ -600,7 +704,10 @@
         function selectPath(path) {
             currentPath = path;
             document.querySelectorAll('.path-tab').forEach(t => t.classList.remove('active'));
-            document.getElementById(`tab-${path}`).classList.add('active');
+            const tab = document.getElementById(`tab-${path}`);
+            if (tab) tab.classList.add('active');
+            // تب‌های داخل حالت تمام صفحه
+            document.querySelectorAll('.fs-tab').forEach(t => t.classList.toggle('active', t.dataset.path === path));
             renderTable();
             updateStats();
         }
@@ -624,7 +731,7 @@
             const steps = STEPS[currentPath];
             
             // Header
-            let headerHTML = '<tr><th class="student-header">دانشجو</th>';
+            let headerHTML = '<tr><th class="row-num-header">#</th><th class="student-header">دانشجو</th>';
             steps.forEach((step, i) => {
                 headerHTML += `<th>
                     <div class="stage-header">
@@ -660,19 +767,22 @@
             
             // Body
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="${steps.length + 2}" class="text-center py-8 text-gray-500">
+                tbody.innerHTML = `<tr><td colspan="${steps.length + 3}" class="text-center py-8 text-gray-500">
                     <i class="fas fa-user-graduate text-3xl mb-2 block"></i>دانشجویی یافت نشد
                 </td></tr>`;
                 return;
             }
             
             let bodyHTML = '';
+            let rowNum = 0;
             filtered.forEach(student => {
+                rowNum++;
                 const prog = student.progress[currentPath];
                 const done = prog.filter(p => p.status === STATUS_COMPLETED).length;
                 const pct = Math.round((done / prog.length) * 100);
                 
                 bodyHTML += '<tr>';
+                bodyHTML += `<td class="row-num-cell">${rowNum}</td>`;
                 bodyHTML += `<td class="student-cell">
                     <div class="flex items-center gap-2">
                         <div class="avatar">${student.avatar}</div>
@@ -829,6 +939,75 @@
             }
         }
         
+        // ── حالت تمام صفحه ──────────────────────────────────
+        // اگر iframe اجازه Fullscreen API نداد، به‌صورت CSS تمام‌صفحه می‌شود
+        function _isFullscreenActive() {
+            return !!(document.fullscreenElement || document.webkitFullscreenElement) ||
+                   document.body.classList.contains('fs-fallback');
+        }
+
+        function toggleFullscreen() {
+            if (_isFullscreenActive()) {
+                exitFullscreenMode();
+                return;
+            }
+            const root = document.getElementById('fs-root');
+            const req = root && (root.requestFullscreen || root.webkitRequestFullscreen);
+            if (req) {
+                try {
+                    const p = root.requestFullscreen
+                        ? root.requestFullscreen()
+                        : root.webkitRequestFullscreen();
+                    if (p && typeof p.catch === 'function') {
+                        p.catch(() => _enableFallbackFullscreen());
+                    }
+                } catch (e) {
+                    _enableFallbackFullscreen();
+                }
+            } else {
+                _enableFallbackFullscreen();
+            }
+        }
+
+        function exitFullscreenMode() {
+            const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+            if (fsEl) {
+                const ex = document.exitFullscreen || document.webkitExitFullscreen;
+                if (ex) ex.call(document);
+            }
+            document.body.classList.remove('fs-fallback');
+            _updateFullscreenBtn();
+        }
+
+        function _enableFallbackFullscreen() {
+            document.body.classList.add('fs-fallback');
+            _updateFullscreenBtn();
+        }
+
+        function _updateFullscreenBtn() {
+            const active = _isFullscreenActive();
+            const btn = document.getElementById('fullscreen-btn');
+            if (btn) {
+                btn.innerHTML = active
+                    ? '<i class="fas fa-compress ml-1"></i> خروج از تمام صفحه'
+                    : '<i class="fas fa-expand ml-1"></i> تمام صفحه';
+            }
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) document.body.classList.remove('fs-fallback');
+            _updateFullscreenBtn();
+        });
+        document.addEventListener('webkitfullscreenchange', () => {
+            if (!document.webkitFullscreenElement) document.body.classList.remove('fs-fallback');
+            _updateFullscreenBtn();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && document.body.classList.contains('fs-fallback')) {
+                exitFullscreenMode();
+            }
+        });
+
         function exportToExcel() {
             const steps = STEPS[currentPath];
             let csv = 'نام,رشته,' + steps.join(',') + ',درصد\n';
