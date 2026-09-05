@@ -1929,7 +1929,18 @@ const EmployeeAccountingUI = (function() {
         }).join('');
     }
 
-    function showEmployeeDetails(employeeId) {
+    async function showEmployeeDetails(employeeId) {
+        // همگام‌سازی درخواست‌های مهلت مجدد از Supabase قبل از رندر (اگر آنلاین)
+        // حداکثر ۱.۵ ثانیه صبر می‌کند تا باز شدن modal کند نشود
+        try {
+            if (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseDataModule.getLateRequests === 'function') {
+                await Promise.race([
+                    SupabaseDataModule.getLateRequests(),
+                    new Promise(res => setTimeout(res, 1500))
+                ]);
+            }
+        } catch (e) { /* آفلاین — ادامه با localStorage */ }
+
         const summary    = EmployeeAccountingModule.getEmployeeFinancialSummary(employeeId);
         const entries    = WorkHoursModule.getAllEntriesByEmployee(employeeId);
         const deductions = (() => { try { return JSON.parse(localStorage.getItem('work_deductions')||'[]').filter(d=>d.employeeId===employeeId); } catch { return []; } })();
@@ -2090,6 +2101,7 @@ const EmployeeAccountingUI = (function() {
                                     : `${r.startTime||'?'} — ${r.endTime||'?'}`}
                             </td>
                             <td class="py-2 px-3 text-gray-400 text-xs max-w-xs">${r.reason||'—'}</td>
+                            <td class="py-2 px-3 text-gray-400 text-xs max-w-xs">${r.description||'—'}</td>
                             <td class="py-2 px-3 text-center">
                                 <span class="${statusCls[r.status]||statusCls.pending} px-2 py-0.5 rounded-full text-xs">${statusTxt[r.status]||r.status}</span>
                             </td>
@@ -2121,6 +2133,7 @@ const EmployeeAccountingUI = (function() {
                                 <th class="text-right text-gray-400 py-1 px-3">نوع</th>
                                 <th class="text-right text-gray-400 py-1 px-3">مقدار</th>
                                 <th class="text-right text-gray-400 py-1 px-3">دلیل</th>
+                                <th class="text-right text-gray-400 py-1 px-3">شرح کار</th>
                                 <th class="text-center text-gray-400 py-1 px-3">وضعیت</th>
                                 <th class="text-center text-gray-400 py-1 px-3">عملیات</th>
                             </tr></thead>
@@ -2578,13 +2591,19 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
                 <div class="space-y-3">
                     <div>
                         <label class="text-gray-400 text-sm mb-1 block">تاریخ فراموش‌شده <span class="text-red-400">*</span></label>
-                        <div class="relative">
-                            <input type="text" id="lr-date-jdp" readonly
-                                placeholder="انتخاب تاریخ شمسی"
-                                onclick="EAccJalali.open('lr-date','lr-date-jdp', event)"
-                                class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 cursor-pointer text-sm text-right">
-                            <input type="hidden" id="lr-date">
-                        </div>
+                        <!-- مقدار میلادی -->
+                        <input type="hidden" id="lr-date">
+                        <!-- فیلد شمسی — کتابخانه jalalidatepicker آن را کنترل می‌کند (مثل ساعات کاری و سفارشات) -->
+                        <input type="text"
+                               id="lr-date-jdp"
+                               data-jdp
+                               data-jdp-target-value-input="#lr-date"
+                               data-jdp-target-value-type="gregorian"
+                               placeholder="انتخاب تاریخ شمسی"
+                               autocomplete="off"
+                               readonly
+                               onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                               class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 cursor-pointer text-sm text-right">
                     </div>
                     <div>
                         <label class="text-gray-400 text-sm mb-1 block">نوع ثبت <span class="text-red-400">*</span></label>
@@ -2618,6 +2637,11 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
                         <textarea id="lr-reason" rows="2" placeholder="مثال: مشغله کاری زیاد بود، اینترنت قطع بود..."
                             class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 resize-none"></textarea>
                     </div>
+                    <div>
+                        <label class="text-gray-400 text-sm mb-1 block">شرح کار</label>
+                        <textarea id="lr-description" rows="2" placeholder="توضیحاتی درباره کار انجام‌شده بنویسید..."
+                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 resize-none"></textarea>
+                    </div>
                 </div>
                 <div class="flex gap-3 mt-5">
                     <button onclick="EmployeeAccountingUI.saveLateRequest()"
@@ -2629,7 +2653,11 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
                 </div>
             </div>`;
         document.body.appendChild(modal);
-        modal.addEventListener('click', e => { if (e.target === modal) { EAccJalali.close(); modal.remove(); } });
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        // re-init jalalidatepicker برای input جدید در modal (تقویم شمسی مثل ساعات کاری)
+        if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
+            setTimeout(function() { jalaliDatepicker.startWatch(); }, 50);
+        }
     }
 
     function _toggleLateRequestFields() {
@@ -2651,6 +2679,7 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
         const dateJdp  = (document.getElementById('lr-date-jdp')?.value || '').trim();
         const type     = document.getElementById('lr-type')?.value;
         const reason   = document.getElementById('lr-reason')?.value?.trim();
+        const description = (document.getElementById('lr-description')?.value || '').trim();
 
         // هر کدام که مقدار داشت کافیه
         const hasDate = !!(dateGreg || dateJdp);
@@ -2694,6 +2723,7 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
             endTime:       type==='work'    ? (document.getElementById('lr-end')?.value||'')   : '',
             amount:        type==='expense' ? (parseFloat(document.getElementById('lr-amount')?.value)||0) : 0,
             reason,
+            description,
             status:    'pending',
             createdAt: new Date().toISOString()
         };
@@ -2710,6 +2740,13 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
         const list = (() => { try { return JSON.parse(localStorage.getItem('work_late_requests')||'[]'); } catch { return []; } })();
         list.push(record);
         localStorage.setItem('work_late_requests', JSON.stringify(list));
+
+        // sync به Supabase (fire-and-forget — آفلاین فقط localStorage می‌ماند)
+        if (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseDataModule.saveLateRequest === 'function') {
+            SupabaseDataModule.saveLateRequest(record)
+                .catch(e => console.warn('⚠️ late-request Supabase sync:', e.message));
+        }
+
         document.getElementById('late-request-modal')?.remove();
         showNotification('درخواست مهلت مجدد با موفقیت ارسال شد ✓', 'success');
     }
@@ -2718,8 +2755,16 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
         const list = (() => { try { return JSON.parse(localStorage.getItem('work_late_requests')||'[]'); } catch { return []; } })();
         const req  = list.find(r => r.id === id);
         if (!req) return;
-        req.status = 'approved';
+        req.status     = 'approved';
+        req.reviewedBy = (() => { try { return (JSON.parse(localStorage.getItem('currentUser')||'null')||{}).name || ''; } catch { return ''; } })();
+        req.reviewedAt = new Date().toISOString();
         localStorage.setItem('work_late_requests', JSON.stringify(list));
+
+        // sync وضعیت به Supabase
+        if (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseDataModule.updateLateRequestStatus === 'function') {
+            SupabaseDataModule.updateLateRequestStatus(id, 'approved', req.reviewedBy)
+                .catch(e => console.warn('⚠️ late-request Supabase sync:', e.message));
+        }
 
         // ثبت خودکار بر اساس نوع درخواست
         if (req.entryType === 'work' && req.startTime && req.endTime) {
@@ -2729,7 +2774,7 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
                 date:         req.requestedDate,
                 startTime:    req.startTime,
                 endTime:      req.endTime,
-                description:  'ثبت از درخواست مهلت مجدد'
+                description:  req.description || 'ثبت از درخواست مهلت مجدد'
             });
             if (newEntry) WorkHoursModule.approveWorkHour(newEntry.id);
         } else if (req.entryType === 'expense' && req.amount) {
@@ -2738,7 +2783,7 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
                 employeeName: req.employeeName,
                 date:         req.requestedDate,
                 amount:       req.amount,
-                description:  'ثبت از درخواست مهلت مجدد'
+                description:  req.description || 'ثبت از درخواست مهلت مجدد'
             });
             if (newEntry) WorkHoursModule.approveExpense(newEntry.id);
         }
@@ -2751,8 +2796,17 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
         const list = (() => { try { return JSON.parse(localStorage.getItem('work_late_requests')||'[]'); } catch { return []; } })();
         const req  = list.find(r => r.id === id);
         if (!req) return;
-        req.status = 'rejected';
+        req.status     = 'rejected';
+        req.reviewedBy = (() => { try { return (JSON.parse(localStorage.getItem('currentUser')||'null')||{}).name || ''; } catch { return ''; } })();
+        req.reviewedAt = new Date().toISOString();
         localStorage.setItem('work_late_requests', JSON.stringify(list));
+
+        // sync وضعیت به Supabase
+        if (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseDataModule.updateLateRequestStatus === 'function') {
+            SupabaseDataModule.updateLateRequestStatus(id, 'rejected', req.reviewedBy)
+                .catch(e => console.warn('⚠️ late-request Supabase sync:', e.message));
+        }
+
         showNotification('درخواست رد شد', 'warning');
         refreshContent();
     }

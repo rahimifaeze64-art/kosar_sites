@@ -1,5 +1,5 @@
 -- ============================================================
--- work_late_requests_migration.sql  (v2 — fixed UUID cast)
+-- work_late_requests_migration.sql  (v3 — + شرح کار/description)
 -- جدول درخواست‌های مهلت مجدد کارمندان
 -- Supabase Dashboard → SQL Editor → Run
 -- ============================================================
@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS public.work_late_requests (
     end_time        text,
     amount          numeric     DEFAULT 0,
     reason          text        NOT NULL DEFAULT '',
+    description     text,                   -- شرح کار (اختیاری)
     status          text        NOT NULL DEFAULT 'pending',
     reviewed_by     text,
     reviewed_at     timestamptz,
@@ -23,6 +24,16 @@ CREATE TABLE IF NOT EXISTS public.work_late_requests (
 
 COMMENT ON TABLE public.work_late_requests IS
     'درخواست کارمندان برای ثبت سوابق کاری فراموش‌شده';
+
+-- ── ۱.۵. ستون‌های جدید برای دیتابیس‌های قدیمی ────────────────
+ALTER TABLE public.work_late_requests
+    ADD COLUMN IF NOT EXISTS description text;
+
+COMMENT ON COLUMN public.work_late_requests.description IS
+    'شرح کار — توضیح اختیاری کارمند';
+
+ALTER TABLE public.work_late_requests
+    ADD COLUMN IF NOT EXISTS jalali_date text;
 
 -- ── ۲. ایندکس‌ها ──────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_lr_employee      ON public.work_late_requests (employee_id);
@@ -51,4 +62,9 @@ CREATE POLICY "lr_auth_all"
 -- ── ۴. تأیید ──────────────────────────────────────────────────
 SELECT
     (SELECT count(*) FROM public.work_late_requests) AS count,
+    (SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name   = 'work_late_requests'
+        AND column_name  = 'description'
+      LIMIT 1) AS description_col,
     'work_late_requests OK' AS status;

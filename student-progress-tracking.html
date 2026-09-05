@@ -860,6 +860,15 @@
                 }
                 if (needSave) {
                     localStorage.setItem('students_data', JSON.stringify(studentsData));
+                    // ── sync به Supabase از طریق والد ─────────────────────────
+                    // (iframe صفحه شیت students-sync.js را لود نمی‌کند؛ override
+                    //  localStorage مربوط به والد هم روی Storage همین فریم نیست)
+                    try {
+                        if (window.parent && window.parent.StudentsSync &&
+                            typeof window.parent.StudentsSync.syncStudent === 'function') {
+                            window.parent.StudentsSync.syncStudent(studentId, studentsData[studentId]);
+                        }
+                    } catch(e2) { /* ignore */ }
                 }
             } catch(e) { console.warn('students_data sync error:', e); }
 

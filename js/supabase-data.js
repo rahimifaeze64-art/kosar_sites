@@ -32,6 +32,14 @@ const SupabaseDataModule = {
     // اما client از قبل ساخته شده و قابل استفاده است
     _online() { return !!(this._db()); },
 
+    // تشخیص خطای «invalid input syntax for type uuid» — وقتی ستون DB نوع UUID دارد
+    // ولی ID محلی ما غیر UUID است (مثل mgr001). ریشه‌کنی کامل با اجرای
+    // supabase/sync_fix_all.sql (تبدیل ستون‌ها به TEXT) انجام می‌شود.
+    _isUUIDError(error) {
+        const msg = ((error && error.message) || '') + ' ' + ((error && error.code) || '');
+        return /uuid/i.test(msg) || msg.includes('22P02');
+    },
+
     // ════════════════════════════════════════════════════════
     // USERS / PROFILES
     // ════════════════════════════════════════════════════════
@@ -269,12 +277,23 @@ const SupabaseDataModule = {
         }
 
         try {
-            const { data, error } = await this._db()
+            let { data, error } = await this._db()
                 .from('student_progress')
                 .select('step_index, status')
                 .eq('student_id', studentId)
                 .eq('path_type', pathType)
                 .order('step_index');
+
+            // fallback: اگر ستون student_id در DB از نوع UUID باشد (جدول قدیمی —
+            // قبل از اجرای supabase/sync_fix_all.sql) با UUID هش‌شده دوباره بخوان
+            if (error && this._isUUIDError(error)) {
+                ({ data, error } = await this._db()
+                    .from('student_progress')
+                    .select('step_index, status')
+                    .eq('student_id', this._toUUID(studentId))
+                    .eq('path_type', pathType)
+                    .order('step_index'));
+            }
 
             if (error) throw error;
             // تبدیل به فرمت آرایه‌ای که کد قدیمی انتظار دارد
@@ -317,7 +336,7 @@ const SupabaseDataModule = {
                 .upsert(rows, { onConflict: 'student_id,path_type,step_index' });
             if (error) {
                 // اگر خطای نوع UUID بود، با cast تلاش کن
-                if (error.message && error.message.includes('uuid')) {
+                if (this._isUUIDError(error)) {
                     const rows2 = rows.map(r => ({ ...r, student_id: this._toUUID(studentId) }));
                     const { error: e2 } = await client
                         .from('student_progress')
@@ -346,9 +365,23 @@ const SupabaseDataModule = {
             if (error) throw error;
             if (!data || data.length === 0) return {};
 
+            // اگر جدول هنوز UUID باشد (قبل از اجرای supabase/sync_fix_all.sql)،
+            // ردیف‌ها زیر UUID هش‌شده ذخیره شده‌اند — به id محلی برگردان تا
+            // کلیدهای prog_ با آنچه نما شیت/فلوچارت می‌خوانند یکی شود
+            const uuidToLocal = {};
+            try {
+                const localIds = new Set();
+                const usersRaw = JSON.parse(localStorage.getItem('edu_system_users') || '[]');
+                if (Array.isArray(usersRaw)) usersRaw.forEach(u => { if (u && u.id) localIds.add(String(u.id)); });
+                const sd = JSON.parse(localStorage.getItem('students_data') || '{}');
+                Object.keys(sd || {}).forEach(k => localIds.add(String(k)));
+                localIds.forEach(id => { uuidToLocal[this._toUUID(id)] = id; });
+            } catch (e) { /* بدون نگاشت ادامه بده */ }
+
             const grouped = {};
             data.forEach(r => {
-                const key = `${r.student_id}_${r.path_type}`;
+                const localId = uuidToLocal[r.student_id] || r.student_id;
+                const key = `${localId}_${r.path_type}`;
                 if (!grouped[key]) grouped[key] = [];
                 grouped[key].push(r);
             });
@@ -380,11 +413,22 @@ const SupabaseDataModule = {
     async getEmployeeTasks(employeeId) {
         if (!this._online()) return this._localGetEmployeeTasks(employeeId);
         try {
-            const { data, error } = await this._db()
+            let { data, error } = await this._db()
                 .from('employee_tasks')
                 .select('*')
                 .eq('assigned_to', employeeId)
                 .order('created_at', { ascending: false });
+
+            // fallback: اگر ستون assigned_to در DB از نوع UUID باشد (جدول قدیمی —
+            // قبل از اجرای supabase/sync_fix_all.sql) با UUID هش‌شده دوباره بخوان
+            if (error && this._isUUIDError(error)) {
+                ({ data, error } = await this._db()
+                    .from('employee_tasks')
+                    .select('*')
+                    .eq('assigned_to', this._toUUID(employeeId))
+                    .order('created_at', { ascending: false }));
+            }
+
             if (error) throw error;
             const tasks = data.map(r => this._dbToTask(r));
             // همگام‌سازی محلی
@@ -423,6 +467,20 @@ const SupabaseDataModule = {
                     .from('employee_tasks')
                     .upsert(row2, { onConflict: 'id' }));
             }
+
+            // fallback ۲: اگر ستون‌های id/assigned_to/student_id در DB از نوع UUID باشند
+            // (جدول قدیمی — قبل از اجرای supabase/sync_fix_all.sql) با UUID هش‌شده ذخیره کن
+            if (error && this._isUUIDError(error)) {
+                const rowU = { ...row };
+                if (rowU.id)          rowU.id          = this._toUUID(rowU.id);
+                if (rowU.assigned_to) rowU.assigned_to = this._toUUID(employeeId);
+                if (rowU.student_id)  rowU.student_id  = this._toUUID(rowU.student_id);
+                if (rowU.created_by)  rowU.created_by  = this._toUUID(rowU.created_by);
+                ({ error } = await this._db()
+                    .from('employee_tasks')
+                    .upsert(rowU, { onConflict: 'id' }));
+            }
+
             if (error) throw error;
             return true;
         } catch (e) {
@@ -441,10 +499,20 @@ const SupabaseDataModule = {
 
         if (!this._online()) return true;
         try {
-            const { error } = await this._db()
+            let { error } = await this._db()
                 .from('employee_tasks')
                 .update({ status: newStatus, updated_at: new Date().toISOString() })
                 .eq('id', taskId);
+
+            // fallback: اگر ستون id در DB از نوع UUID باشد (جدول قدیمی —
+            // قبل از اجرای supabase/sync_fix_all.sql) با UUID هش‌شده آپدیت کن
+            if (error && this._isUUIDError(error)) {
+                ({ error } = await this._db()
+                    .from('employee_tasks')
+                    .update({ status: newStatus, updated_at: new Date().toISOString() })
+                    .eq('id', this._toUUID(taskId)));
+            }
+
             if (error) throw error;
             return true;
         } catch (e) {
@@ -513,6 +581,101 @@ const SupabaseDataModule = {
             return true;
         } catch (e) {
             console.warn('⚠️ deleteWorkHour خطا:', e.message);
+            return false;
+        }
+    },
+
+    // ════════════════════════════════════════════════════════
+    // WORK LATE REQUESTS — درخواست‌های مهلت مجدد
+    // ════════════════════════════════════════════════════════
+
+    async getLateRequests() {
+        const localKey = 'work_late_requests';
+        if (!this._online()) {
+            const raw = localStorage.getItem(localKey);
+            return raw ? JSON.parse(raw) : [];
+        }
+        try {
+            const { data, error } = await this._db()
+                .from('work_late_requests')
+                .select('*')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            const cloud = data.map(r => this._dbToLateRequest(r));
+
+            // ادغام: ردیف‌های محلی که هنوز در کلود نیستند حفظ می‌شوند؛ نسخه کلود اولویت دارد
+            const local = (() => { try { return JSON.parse(localStorage.getItem(localKey) || '[]'); } catch { return []; } })();
+            const byId = {};
+            local.forEach(r => { byId[r.id] = r; });
+            cloud.forEach(r => { byId[r.id] = r; });
+            const merged = Object.values(byId)
+                .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+            localStorage.setItem(localKey, JSON.stringify(merged));
+
+            // ردیف‌های محلیِ همگام‌نشده → push به Supabase
+            const cloudIds = new Set(cloud.map(r => r.id));
+            const unsynced = local.filter(r => !cloudIds.has(r.id));
+            if (unsynced.length) {
+                const rows = unsynced.map(r => this._lateRequestToDb(r));
+                this._db().from('work_late_requests')
+                    .upsert(rows, { onConflict: 'id' })
+                    .then(({ error }) => { if (error) console.warn('⚠️ late-requests push خطا:', error.message); })
+                    .catch(e => console.warn('⚠️ late-requests push خطا:', e.message));
+            }
+            return merged;
+        } catch (e) {
+            console.warn('⚠️ getLateRequests خطا:', e.message);
+            const raw = localStorage.getItem(localKey);
+            return raw ? JSON.parse(raw) : [];
+        }
+    },
+
+    async saveLateRequest(record) {
+        // ذخیره محلی همیشه
+        const all = (() => { try { return JSON.parse(localStorage.getItem('work_late_requests') || '[]'); } catch { return []; } })();
+        const idx = all.findIndex(r => r.id === record.id);
+        if (idx >= 0) all[idx] = record; else all.push(record);
+        localStorage.setItem('work_late_requests', JSON.stringify(all));
+
+        if (!this._online()) return true;
+        try {
+            const row = this._lateRequestToDb(record);
+            const { error } = await this._db()
+                .from('work_late_requests')
+                .upsert(row, { onConflict: 'id' });
+            if (error) throw error;
+            return true;
+        } catch (e) {
+            console.warn('⚠️ saveLateRequest خطا:', e.message);
+            return false;
+        }
+    },
+
+    async updateLateRequestStatus(id, status, reviewedBy) {
+        // محلی
+        const all = (() => { try { return JSON.parse(localStorage.getItem('work_late_requests') || '[]'); } catch { return []; } })();
+        const r = all.find(x => x.id === id);
+        if (r) {
+            r.status     = status;
+            r.reviewedBy = reviewedBy || r.reviewedBy || null;
+            r.reviewedAt = new Date().toISOString();
+        }
+        localStorage.setItem('work_late_requests', JSON.stringify(all));
+
+        if (!this._online()) return true;
+        try {
+            const { error } = await this._db()
+                .from('work_late_requests')
+                .update({
+                    status,
+                    reviewed_by: reviewedBy || null,
+                    reviewed_at: new Date().toISOString()
+                })
+                .eq('id', id);
+            if (error) throw error;
+            return true;
+        } catch (e) {
+            console.warn('⚠️ updateLateRequestStatus خطا:', e.message);
             return false;
         }
     },
@@ -1613,6 +1776,44 @@ const SupabaseDataModule = {
             status:       r.status        || 'pending',
             createdAt:    r.created_at,
             updatedAt:    r.updated_at
+        };
+    },
+
+    _lateRequestToDb(r) {
+        return {
+            id:             r.id,
+            employee_id:    r.employeeId    || '',
+            employee_name:  r.employeeName  || null,
+            requested_date: r.requestedDate || '',
+            entry_type:     r.entryType     || 'work',
+            start_time:     r.startTime     || null,
+            end_time:       r.endTime       || null,
+            amount:         parseFloat(r.amount) || 0,
+            reason:         r.reason        || '',
+            description:    r.description   || null,
+            status:         r.status        || 'pending',
+            reviewed_by:    r.reviewedBy    || null,
+            reviewed_at:    r.reviewedAt    || null,
+            created_at:     r.createdAt     || new Date().toISOString()
+        };
+    },
+
+    _dbToLateRequest(row) {
+        return {
+            id:            row.id,
+            employeeId:    row.employee_id    || '',
+            employeeName:  row.employee_name  || '',
+            requestedDate: row.requested_date || '',
+            entryType:     row.entry_type     || 'work',
+            startTime:     row.start_time     || '',
+            endTime:       row.end_time       || '',
+            amount:        row.amount         || 0,
+            reason:        row.reason         || '',
+            description:   row.description    || '',
+            status:        row.status         || 'pending',
+            reviewedBy:    row.reviewed_by    || null,
+            reviewedAt:    row.reviewed_at    || null,
+            createdAt:     row.created_at     || ''
         };
     },
 

@@ -303,21 +303,39 @@ CREATE TABLE IF NOT EXISTS public.daroltarjome_chat (
 );
 
 -- ════════════════════════════════════════════════════════════
--- ۱۹. work_late_requests — درخواست‌های اضافه‌کاری/تاخیر
+-- ۱۹. work_late_requests — درخواست‌های مهلت مجدد کارمندان
+--     (سازگار با js/employee-accounting.js و work_late_requests_migration.sql)
 -- ════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS public.work_late_requests (
-    id           TEXT        PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    employee_id  TEXT        NOT NULL,
-    employee_name TEXT,
-    request_type TEXT        DEFAULT 'late' CHECK (request_type IN ('late','overtime','absence','remote')),
-    date         TEXT        NOT NULL,
-    reason       TEXT,
-    duration     TEXT,
-    status       TEXT        DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
-    reviewed_by  TEXT,
-    reviewed_at  TIMESTAMPTZ,
-    created_at   TIMESTAMPTZ DEFAULT NOW()
+    id             TEXT        PRIMARY KEY DEFAULT ('lr_' || extract(epoch from now())::bigint::text),
+    employee_id    TEXT        NOT NULL,
+    employee_name  TEXT,
+    requested_date TEXT        NOT NULL,                 -- YYYY-MM-DD (میلادی)
+    entry_type     TEXT        NOT NULL DEFAULT 'work',  -- 'work' | 'expense'
+    start_time     TEXT,
+    end_time       TEXT,
+    amount         NUMERIC     DEFAULT 0,
+    reason         TEXT        NOT NULL DEFAULT '',
+    description    TEXT,                                 -- شرح کار (اختیاری)
+    status         TEXT        NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+    reviewed_by    TEXT,
+    reviewed_at    TIMESTAMPTZ,
+    created_at     TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- اگر جدول قبلاً با اسکیمای قدیمی ساخته شده، ستون‌های جدید اضافه می‌شوند
+ALTER TABLE public.work_late_requests ADD COLUMN IF NOT EXISTS employee_name  TEXT;
+ALTER TABLE public.work_late_requests ADD COLUMN IF NOT EXISTS requested_date TEXT;
+ALTER TABLE public.work_late_requests ADD COLUMN IF NOT EXISTS entry_type     TEXT;
+ALTER TABLE public.work_late_requests ADD COLUMN IF NOT EXISTS start_time     TEXT;
+ALTER TABLE public.work_late_requests ADD COLUMN IF NOT EXISTS end_time       TEXT;
+ALTER TABLE public.work_late_requests ADD COLUMN IF NOT EXISTS amount         NUMERIC DEFAULT 0;
+ALTER TABLE public.work_late_requests ADD COLUMN IF NOT EXISTS description    TEXT;
+ALTER TABLE public.work_late_requests ADD COLUMN IF NOT EXISTS jalali_date    TEXT;
+
+CREATE INDEX IF NOT EXISTS idx_lr_employee   ON public.work_late_requests (employee_id);
+CREATE INDEX IF NOT EXISTS idx_lr_status     ON public.work_late_requests (status);
+CREATE INDEX IF NOT EXISTS idx_lr_created_at ON public.work_late_requests (created_at DESC);
 
 -- ════════════════════════════════════════════════════════════
 -- ۲۰. RLS Policies — دسترسی آزاد برای همه جداول
