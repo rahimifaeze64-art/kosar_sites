@@ -422,20 +422,43 @@
     <script>
         // ── منطق فازها: گردش دفاع و ملزومات موازی‌اند ────
         // مراحل دفاع و ملزومات با هم پیش می‌روند؛ وقتی «هر دو» مسیر تمام شد،
-        // مسیر فارغ‌التحصیلی شروع می‌شود
+        // مسیر فارغ‌التحصیلی شروع می‌شود.
+        // ⚠️ درصدِ نمایش‌داده‌شده در شیت از کلیدهای prog_${id}_${path} می‌آید؛
+        //    پس تشخیص «تکمیل» هم باید همین منبع را ببیند (نه فقط students_data)
+        //    تا دانشجوی ۱۰۰٪ 🏆 بلافاصله از تب دفاع/ملزومات حذف و به فارغ‌التحصیلی منتقل شود.
+        function _progAllCompleted(id, path) {
+            // true/false = وضعیت تکمیل بر اساس prog_  |  null = کلید prog_ وجود ندارد
+            try {
+                const raw = localStorage.getItem(`prog_${id}_${path}`);
+                if (!raw) return null;
+                const arr = JSON.parse(raw);
+                const stepCount = (STEPS[path] || []).length;
+                if (!Array.isArray(arr) || stepCount === 0) return false;
+                const sliced = arr.slice(0, stepCount);
+                while (sliced.length < stepCount) sliced.push({ status: STATUS_INCOMPLETE });
+                return sliced.every(p => ((p && p.status) ?? STATUS_INCOMPLETE) === STATUS_COMPLETED);
+            } catch (e) { return null; }
+        }
+        function _hasProgKey(id, path) {
+            try { return !!localStorage.getItem(`prog_${id}_${path}`); } catch (e) { return false; }
+        }
         function _defenseDone(s) {
             const def = s.defenseSteps || [];
-            return def.length > 0 && def.every(x => x.completed);
+            if (def.length > 0 && def.every(x => x.completed)) return true;
+            return _progAllCompleted(s.id, 'defense') === true;
         }
         function _requirementsDone(s) {
             const req = s.requirementsSteps || [];
-            return req.length > 0 && req.every(x => x.completed);
+            if (req.length > 0 && req.every(x => x.completed)) return true;
+            return _progAllCompleted(s.id, 'requirements') === true;
         }
-        // اگر ملزومات برای دانشجو ثبت نشده باشد، فقط اتمام دفاع کافی است
+        // اگر ملزومات برای دانشجو ثبت نشده باشد (نه در students_data و نه prog_)،
+        // فقط اتمام دفاع کافی است
         function _isGraduatedPhase(s) {
             if (s.graduated) return true;
             const req = s.requirementsSteps || [];
-            const reqOk = (req.length === 0) || _requirementsDone(s);
+            const reqTracked = req.length > 0 || _hasProgKey(s.id, 'requirements');
+            const reqOk = !reqTracked || _requirementsDone(s);
             return _defenseDone(s) && reqOk;
         }
         function _getActivePath(s) {
