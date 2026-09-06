@@ -2780,6 +2780,34 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
         showNotification('درخواست مهلت مجدد با موفقیت ارسال شد ✓', 'success');
     }
 
+    // ── تبدیل تاریخ شمسی → میلادی برای ستون date دیتابیس ──────
+    // requested_date در Supabase از نوع date میلادی است ولی سیستم با شمسی کار می‌کند
+    function _lrToGregDate(v) {
+        const today = new Date().toISOString().slice(0, 10);
+        if (!v) return today;
+        const s = String(v).trim();
+        const m = s.match(/^(\d{3,4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+        if (!m) return today;
+        const y = parseInt(m[1], 10), jm = parseInt(m[2], 10), jd = parseInt(m[3], 10);
+        if (y > 1500) return s.slice(0, 10); // از قبل میلادی است
+        try {
+            // اولویت ۱: تبدیل‌کننده خودکفای ماژول supabase (تست‌شده)
+            if (typeof SupabaseDataModule !== 'undefined' && SupabaseDataModule && typeof SupabaseDataModule._jalaliToGregorianISO === 'function') {
+                const g = SupabaseDataModule._jalaliToGregorianISO(s);
+                if (g && parseInt(g.slice(0, 4), 10) > 1800) return g;
+            }
+        } catch (e) { /* ماژول در دسترس نیست — ادامه */ }
+        try {
+            // اولویت ۲: JalaliUtils (با گارد صحت — خروجی باید میلادی معتبر باشد)
+            const ju = window.JalaliUtils;
+            if (ju && typeof ju.toGreg === 'function') {
+                const g = ju.toGreg(y, jm, jd);
+                if (typeof g === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(g) && parseInt(g.slice(0, 4), 10) > 1800) return g;
+            }
+        } catch (e) { /* ادامه → مقدار اصلی برمی‌گردد */ }
+        return s;
+    }
+
     // ── sync مستقیم REST برای درخواست مهلت مجدد ─────────────
     // وقتی SupabaseDataModule/SDK در دسترس نیست، مستقیم به REST API ارسال می‌کند
     function _syncLateRequestDirect(record) {
@@ -2793,7 +2821,7 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
                 id:             record.id,
                 employee_id:    record.employeeId    || '',
                 employee_name:  record.employeeName  || null,
-                requested_date: record.requestedDate || '',
+                requested_date: _lrToGregDate(record.requestedDate),
                 entry_type:     record.entryType     || 'work',
                 start_time:     record.startTime     || null,
                 end_time:       record.endTime       || null,

@@ -1793,12 +1793,96 @@ const SupabaseDataModule = {
         };
     },
 
+    // ── تبدیل تاریخ شمسی ↔ میلادی (خودکفا) ───────────────────
+    // ستون requested_date در Supabase از نوع date میلادی است، ولی سیستم داخلی
+    // با تاریخ شمسی کار می‌کند؛ این دو تابع پل ارتباطی هستند.
+    // الگوریتم استاندارد jdf.scr.ir / jalaali
+    _jalaliToGregorianISO(s) {
+        try {
+            if (!s) return null;
+            const m = String(s).trim().match(/^(\d{3,4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+            if (!m) return null;
+            let jy = parseInt(m[1], 10), jm = parseInt(m[2], 10), jd = parseInt(m[3], 10);
+            if (jy > 1500) return null; // از قبل میلادی است
+            if (jm < 1 || jm > 12 || jd < 1 || jd > 31) return null;
+            jy += 1595;
+            let days = -355668 + (365 * jy) + (~~(jy / 33) * 8) + ~~(((jy % 33) + 3) / 4) + jd
+                     + ((jm < 7) ? (jm - 1) * 31 : ((jm - 7) * 30) + 186);
+            let gy = 400 * ~~(days / 146097);
+            days %= 146097;
+            if (days > 36524) {
+                gy += 100 * ~~(--days / 36524);
+                days %= 36524;
+                if (days >= 365) days++;
+            }
+            gy += 4 * ~~(days / 1461);
+            days %= 1461;
+            if (days > 365) {
+                gy += ~~((days - 1) / 365);
+                days = (days - 1) % 365;
+            }
+            let gd = days + 1;
+            const isLeap = (gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0);
+            const mdays = [31, isLeap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+            let gm = 0;
+            while (gm < 12 && gd > mdays[gm]) { gd -= mdays[gm]; gm++; }
+            gm++;
+            const pad = n => (n < 10 ? '0' + n : String(n));
+            return gy + '-' + pad(gm) + '-' + pad(gd);
+        } catch (e) { return null; }
+    },
+
+    _gregorianISOToJalali(s) {
+        try {
+            if (!s) return '';
+            const str = String(s).slice(0, 10);
+            const m = str.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+            if (!m) return String(s);
+            let gy = parseInt(m[1], 10), gm = parseInt(m[2], 10), gd = parseInt(m[3], 10);
+            if (gy < 1500) return str; // از قبل شمسی است
+            if (gm < 1 || gm > 12 || gd < 1 || gd > 31) return str;
+            const gdm = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+            const gy2 = (gm > 2) ? (gy + 1) : gy;
+            let days = 355666 + (365 * gy) + ~~((gy2 + 3) / 4) - ~~((gy2 + 99) / 100)
+                     + ~~((gy2 + 399) / 400) + gd + gdm[gm - 1];
+            let jy = -1595 + (33 * ~~(days / 12053));
+            days %= 12053;
+            jy += 4 * ~~(days / 1461);
+            days %= 1461;
+            if (days > 365) {
+                jy += ~~((days - 1) / 365);
+                days = (days - 1) % 365;
+            }
+            let jm, jday;
+            if (days < 186) {
+                jm = 1 + ~~(days / 31);
+                jday = 1 + (days % 31);
+            } else {
+                jm = 7 + ~~((days - 186) / 30);
+                jday = 1 + ((days - 186) % 30);
+            }
+            const pad = n => (n < 10 ? '0' + n : String(n));
+            return jy + '-' + pad(jm) + '-' + pad(jday);
+        } catch (e) { return String(s || ''); }
+    },
+
     _lateRequestToDb(r) {
+        // requested_date ستونی از نوع date میلادی است — تاریخ شمسی را تبدیل کن
+        let reqDate = null;
+        if (r.requestedDate) {
+            const s = String(r.requestedDate).trim();
+            const conv = this._jalaliToGregorianISO(s); // شمسی → میلادی
+            if (conv) reqDate = conv;
+            else if (/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}/.test(s) && parseInt(s.slice(0, 4), 10) > 1500) {
+                reqDate = s.slice(0, 10); // از قبل میلادی است
+            }
+        }
+        if (!reqDate) reqDate = new Date().toISOString().slice(0, 10); // مقدار امن برای ستون date
         return {
             id:             r.id,
             employee_id:    r.employeeId    || '',
             employee_name:  r.employeeName  || null,
-            requested_date: r.requestedDate || '',
+            requested_date: reqDate,
             entry_type:     r.entryType     || 'work',
             start_time:     r.startTime     || null,
             end_time:       r.endTime       || null,
@@ -1817,7 +1901,7 @@ const SupabaseDataModule = {
             id:            row.id,
             employeeId:    row.employee_id    || '',
             employeeName:  row.employee_name  || '',
-            requestedDate: row.requested_date || '',
+            requestedDate: this._gregorianISOToJalali(row.requested_date), // میلادی → شمسی برای نمایش
             entryType:     row.entry_type     || 'work',
             startTime:     row.start_time     || '',
             endTime:       row.end_time       || '',
