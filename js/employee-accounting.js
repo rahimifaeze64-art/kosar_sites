@@ -2817,8 +2817,11 @@ ${body}
     // ── تقویم کاری (فیلتر بازه تاریخ) ──────────────────────
     function showWorkCalendarModal() {
         document.getElementById('work-calendar-modal')?.remove();
-        const today = new Date().toISOString().split('T')[0];
-        const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+        // ── مبنا: تاریخ شمسی (مثل ستون date جدول work_hours در Supabase: «1405-05-24») ──
+        let dNow = new Date();
+        try { dNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tehran' })); } catch (e) {}
+        const todayJ        = _toJalaliISO(dNow);
+        const firstOfMonthJ = _toJalaliISO(new Date(dNow.getFullYear(), dNow.getMonth(), 1, 12));
 
         const modal = document.createElement('div');
         modal.id = 'work-calendar-modal';
@@ -2835,13 +2838,13 @@ ${body}
                 <div class="grid grid-cols-2 gap-4 mb-5">
                     <div>
                         <label class="text-gray-400 text-sm mb-1 block">از تاریخ</label>
-                        <!-- مقدار میلادی (ذخیره‌سازی) -->
-                        <input type="hidden" id="cal-from" value="${firstOfMonth}">
+                        <!-- مقدار شمسی (مبنای ذخیره‌سازی در Supabase — مثل work_hours.date) -->
+                        <input type="hidden" id="cal-from" value="${firstOfMonthJ}">
                         <!-- فیلد شمسی — کتابخانه jalalidatepicker آن را کنترل می‌کند (مثل مودال تسویه) -->
                         <input type="text" id="cal-from-disp" data-jdp
                             data-jdp-target-value-input="#cal-from"
-                            data-jdp-target-value-type="gregorian"
-                            value="${_jalaliDateDisplay(firstOfMonth)}"
+                            data-jdp-target-value-type="jalali"
+                            value="${_fmtJalali(firstOfMonthJ)}"
                             placeholder="انتخاب تاریخ شمسی"
                             autocomplete="off"
                             readonly
@@ -2850,11 +2853,11 @@ ${body}
                     </div>
                     <div>
                         <label class="text-gray-400 text-sm mb-1 block">تا تاریخ</label>
-                        <input type="hidden" id="cal-to" value="${today}">
+                        <input type="hidden" id="cal-to" value="${todayJ}">
                         <input type="text" id="cal-to-disp" data-jdp
                             data-jdp-target-value-input="#cal-to"
-                            data-jdp-target-value-type="gregorian"
-                            value="${_jalaliDateDisplay(today)}"
+                            data-jdp-target-value-type="jalali"
+                            value="${_fmtJalali(todayJ)}"
                             placeholder="انتخاب تاریخ شمسی"
                             autocomplete="off"
                             readonly
@@ -2885,12 +2888,24 @@ ${body}
         const to   = document.getElementById('cal-to')?.value;
         if (!from || !to) { alert('لطفاً هر دو تاریخ را انتخاب کنید'); return; }
 
-        const ju = window.JalaliUtils;
-        const fromDisp = ju ? ju.toDisplay(from) : from;
-        const toDisp   = ju ? ju.toDisplay(to)   : to;
+        // ── نرمال‌سازی به شمسیِ ISO — مبنا مثل ستون date جدول work_hours در Supabase («1405-05-24») ──
+        // ورودی hidden شمسی است؛ اگر میلادی یا با اسلش هم بود، به شمسیِ نرمال تبدیل می‌شود
+        const toJalaliISOSafe = v => {
+            const s = String(v || '').trim();
+            const m = s.match(/^(\d{3,4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+            if (!m) return s;
+            const y = +m[1], mo = +m[2], dy = +m[3];
+            if (y < 1700) return `${y}-${String(mo).padStart(2, '0')}-${String(dy).padStart(2, '0')}`; // خودش شمسی است
+            try { return _toJalaliISO(new Date(y, mo - 1, dy, 12, 0, 0)); } catch (e) { return s; }      // میلادی → شمسی
+        };
+        const fromJ = toJalaliISOSafe(from);
+        const toJ   = toJalaliISOSafe(to);
+        const fromDisp = _fmtJalali(fromJ);
+        const toDisp   = _fmtJalali(toJ);
 
-        const employeesSummary = EmployeeAccountingModule.getAllEmployeesSummary(from, to);
-        const deductions = (() => { try { return JSON.parse(localStorage.getItem('work_deductions')||'[]').filter(d=>d.date>=from&&d.date<=to); } catch { return []; } })();
+        // فیلتر با بازه‌ی شمسی — تاریخ‌های work_hours و کسورات شمسی ذخیره شده‌اند
+        const employeesSummary = EmployeeAccountingModule.getAllEmployeesSummary(fromJ, toJ);
+        const deductions = (() => { try { return JSON.parse(localStorage.getItem('work_deductions')||'[]').filter(d=>{ const dj=toJalaliISOSafe(d.date); return dj>=fromJ&&dj<=toJ; }); } catch { return []; } })();
         const totalDed = deductions.reduce((s,d)=>s+Number(d.amount||0),0);
 
         const rows = employeesSummary.filter(e => parseFloat(e.totalHours)>0 || e.totalExpenses>0).map(emp => `
@@ -2914,7 +2929,7 @@ ${body}
         const dedRows = deductions.length ? deductions.map(d=>`
             <div class="flex items-center justify-between bg-white/5 rounded-lg p-3 text-sm gap-2 flex-wrap">
                 <span class="text-white">${d.employeeName||'—'}</span>
-                <span class="text-gray-400 text-xs">${ju ? ju.toDisplay(d.date) : d.date}</span>
+                <span class="text-gray-400 text-xs">${_fmtJalali(toJalaliISOSafe(d.date))}</span>
                 <span class="text-red-400 font-bold">${Number(d.amount||0).toLocaleString('fa-IR')} ت</span>
                 <span class="text-gray-400 text-xs">${d.reason||'—'}</span>
             </div>`).join('') : '<p class="text-gray-400 text-xs text-center py-2">کسوراتی در این بازه ثبت نشده</p>';
