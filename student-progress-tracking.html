@@ -426,6 +426,10 @@
         // ⚠️ درصدِ نمایش‌داده‌شده در شیت از کلیدهای prog_${id}_${path} می‌آید؛
         //    پس تشخیص «تکمیل» هم باید همین منبع را ببیند (نه فقط students_data)
         //    تا دانشجوی ۱۰۰٪ 🏆 بلافاصله از تب دفاع/ملزومات حذف و به فارغ‌التحصیلی منتقل شود.
+        //    این کلیدها فقط «کش محلی» جدول student_progress در Supabase هستند —
+        //    منبع حقیقت همان دیتابیس است (پول دوره‌ای در _pullProgressFromSupabase).
+        //    اولویت دقیقاً مثل loadProgress است: prog_ (دیتابیس) مقدم است و
+        //    students_data فقط وقتی کلید prog_ وجود ندارد به‌عنوان جایگزین خوانده می‌شود.
         function _progAllCompleted(id, path) {
             // true/false = وضعیت تکمیل بر اساس prog_  |  null = کلید prog_ وجود ندارد
             try {
@@ -443,14 +447,20 @@
             try { return !!localStorage.getItem(`prog_${id}_${path}`); } catch (e) { return false; }
         }
         function _defenseDone(s) {
+            // اولویت با prog_ (کشِ جدول student_progress در دیتابیس — همان منبعِ درصدِ شیت)
+            const fromProg = _progAllCompleted(s.id, 'defense');
+            if (fromProg !== null) return fromProg;
+            // بدون کلید prog_ → از students_data
             const def = s.defenseSteps || [];
-            if (def.length > 0 && def.every(x => x.completed)) return true;
-            return _progAllCompleted(s.id, 'defense') === true;
+            return def.length > 0 && def.every(x => x.completed);
         }
         function _requirementsDone(s) {
+            // اولویت با prog_ (کشِ جدول student_progress در دیتابیس — همان منبعِ درصدِ شیت)
+            const fromProg = _progAllCompleted(s.id, 'requirements');
+            if (fromProg !== null) return fromProg;
+            // بدون کلید prog_ → از students_data
             const req = s.requirementsSteps || [];
-            if (req.length > 0 && req.every(x => x.completed)) return true;
-            return _progAllCompleted(s.id, 'requirements') === true;
+            return req.length > 0 && req.every(x => x.completed);
         }
         // اگر ملزومات برای دانشجو ثبت نشده باشد (نه در students_data و نه prog_)،
         // فقط اتمام دفاع کافی است
@@ -557,28 +567,47 @@
         let currentFilter = 'all';
         let searchTerm = '';
         
-        document.addEventListener('DOMContentLoaded', async () => {
+        // آخرین باری که saveProgress محلی نوشت — تا پولِ دوره‌ای دیتابیس،
+        // تغییرات تازه‌ی همین صفحه را بازنویسی (clobber) نکند
+        let _lastLocalWriteAt = 0;
+
+        // ── pull پیشرفت از Supabase (جدول student_progress) → کلیدهای prog_ → رفرش ──
+        // کلیدهای prog_ فقط کش محلی‌اند؛ منبع اصلی جدول student_progress در دیتابیس است.
+        // این تابع روی لود، هر ۳۰ ثانیه و هنگام تمرکز/نمایش مجدد فراخوانی می‌شود تا
+        // تغییراتی که کاربران دیگر (دستگاه‌های دیگر) در دیتابیس ثبت کرده‌اند هم
+        // بلافاصله در شیت دیده شود و جابه‌جایی تب‌ها (فارغ‌التحصیلی و ...) خودکار باشد.
+        async function _pullProgressFromSupabase() {
+            try {
+                const sb = (typeof window.parent !== 'undefined' && window.parent.SupabaseDataModule)
+                    ? window.parent.SupabaseDataModule
+                    : (typeof SupabaseDataModule !== 'undefined' ? SupabaseDataModule : null);
+                if (!sb || typeof sb.getAllStudentProgress !== 'function') return false;
+                // اگر همین الان تغییرات محلی ذخیره شده، این پول آن‌ها را نپوشاند
+                if (Date.now() - _lastLocalWriteAt < 5000) return false;
+                const map = await sb.getAllStudentProgress();
+                if (!map) return false;
+                console.log('✅ sheet: پیشرفت دانشجویان از Supabase همگام شد');
+                loadStudents();
+                renderTable();
+                updateStats();
+                return true;
+            } catch (e) { console.warn('⚠️ sheet Supabase pull خطا:', e); return false; }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
             loadStudents();
             updateTabCounts();
             renderTable();
             updateStats();
 
-            // ── sync پیشرفت از Supabase (منبع ابری) → کلیدهای prog_ → رفرش ──
-            // SupabaseDataModule در صفحه والد (index.html) لود شده است
-            try {
-                const sb = (typeof window.parent !== 'undefined' && window.parent.SupabaseDataModule)
-                    ? window.parent.SupabaseDataModule
-                    : (typeof SupabaseDataModule !== 'undefined' ? SupabaseDataModule : null);
-                if (sb && typeof sb.getAllStudentProgress === 'function') {
-                    const map = await sb.getAllStudentProgress();
-                    if (map) {
-                        console.log('✅ sheet: پیشرفت دانشجویان از Supabase همگام شد');
-                        loadStudents();
-                        renderTable();
-                        updateStats();
-                    }
-                }
-            } catch (e) { console.warn('⚠️ sheet Supabase pull خطا:', e); }
+            _pullProgressFromSupabase();
+
+            // منبع حقیقت = دیتابیس؛ همگام‌سازی دوره‌ای + هنگام تمرکز مجدد صفحه
+            setInterval(_pullProgressFromSupabase, 30000);
+            window.addEventListener('focus', _pullProgressFromSupabase);
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') _pullProgressFromSupabase();
+            });
         });
         
         function loadStudents() {
@@ -699,10 +728,11 @@
         
         function saveProgress(id, path, data) {
             localStorage.setItem(`prog_${id}_${path}`, JSON.stringify(data));
+            _lastLocalWriteAt = Date.now();   // پول دوره‌ایِ دیتابیس تا ۵ ثانیه این را بازنویسی نکند
             // اطلاع به فلوچارت (اگر در تب دیگری باز باشد)
             window.dispatchEvent(new StorageEvent('storage', { key: `prog_${id}_${path}` }));
 
-            // ── sync به Supabase ─────────────────────────────────────────
+            // ── sync به Supabase (ذخیره در جدول student_progress) ────────
             _syncProgressToSupabase(id, path, data);
         }
 
