@@ -521,6 +521,45 @@ const SupabaseDataModule = {
         }
     },
 
+    /**
+     * حذف امن یک وظیفه از Supabase — با پشتیبانی از IDهای غیر UUID
+     *
+     * وظایف مرحله‌ای با id مثل «step_<studentId>_<type>_<idx>_<ts>» ساخته می‌شوند؛
+     * اگر ستون id جدول از نوع UUID باشد (جدول قدیمی — قبل از اجرای
+     * supabase/sync_fix_all.sql)، ردیف با UUID هش‌شده (_toUUID همان id) ذخیره
+     * شده است — پس بعد از خطای UUID، با همان هش دوباره حذف را تلاش می‌کنیم.
+     *
+     * @param {string} taskId - id محلی وظیفه (UUID یا step_...)
+     * @returns {Promise<boolean>} true اگر حذف موفق (یا آفلاین) بوده باشد
+     */
+    async deleteEmployeeTaskById(taskId) {
+        if (!taskId) return true;
+        if (!this._online()) return true;
+        try {
+            let { error } = await this._db()
+                .from('employee_tasks')
+                .delete()
+                .eq('id', taskId);
+
+            // fallback: اگر ستون id در DB از نوع UUID باشد (جدول قدیمی) با UUID هش‌شده حذف کن
+            if (error && this._isUUIDError(error)) {
+                ({ error } = await this._db()
+                    .from('employee_tasks')
+                    .delete()
+                    .eq('id', this._toUUID(taskId)));
+            }
+
+            if (error) {
+                console.warn('⚠️ deleteEmployeeTaskById خطا:', error.message);
+                return false;
+            }
+            return true;
+        } catch (e) {
+            console.warn('⚠️ deleteEmployeeTaskById خطا:', e.message);
+            return false;
+        }
+    },
+
     // ════════════════════════════════════════════════════════
     // WORK HOURS
     // ════════════════════════════════════════════════════════

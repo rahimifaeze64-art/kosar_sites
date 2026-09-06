@@ -25,6 +25,10 @@ const StepAssignmentModule = {
     // صف تغییرات هنوزارسال‌نشده به Supabase (پشتیبانی آفلاین + sync صحیح)
     PENDING_KEY: 'step_assignments_pending',
 
+    // نشانگر sync موفق تخصیص‌ها در این سشن (حافظه) — برای reconcileStepTasks
+    // تا وقتی همه مراحل بدون تخصیص‌اند هم، پاک‌سازی وظایف زائد انجام شود
+    _syncedFromSupabase: false,
+
     /**
      * لیست کارمندان: ترکیب لیست ثابت با کاربران سیستم (edu_system_users)
      * تا کاربران داینامیک هم در dropdown مدیریت مراحل نمایش داده شوند
@@ -92,6 +96,8 @@ const StepAssignmentModule = {
             });
 
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(merged));
+            // نشانگر sync موفق در این سشن — حتی اگر نتیجه خالی باشد (همه مراحل بدون تخصیص)
+            this._syncedFromSupabase = true;
 
             // تلاش مجدد برای ارسال تغییرات صف‌شده
             if (pending.length > 0) {
@@ -229,15 +235,12 @@ const StepAssignmentModule = {
             localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
             console.log(`🗑️ ${toDelete.length} task(s) حذف شد از ${employeeId} برای ${type}[${stepIndex}]`);
 
-            // حذف از Supabase
-            if (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseDataModule._db === 'function') {
-                const client = SupabaseDataModule._db();
-                if (client) {
-                    toDelete.forEach(t => {
-                        client.from('employee_tasks').delete().eq('id', t.id)
-                            .then(({ error }) => { if (error) console.warn('⚠️ task delete Supabase خطا:', error.message); });
-                    });
-                }
+            // حذف از Supabase — با helper امن (پشتیبانی از ID غیر UUID مثل step_...)
+            if (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseDataModule.deleteEmployeeTaskById === 'function') {
+                toDelete.forEach(t => {
+                    SupabaseDataModule.deleteEmployeeTaskById(t.id)
+                        .catch(e => console.warn('⚠️ task delete Supabase خطا:', e.message));
+                });
             }
         } catch (e) {
             console.warn('⚠️ _removeStepTasksForEmployee خطا:', e);
@@ -255,7 +258,11 @@ const StepAssignmentModule = {
     reconcileStepTasks(employeeId) {
         try {
             const assignments = this.getAssignments(); // تازه sync شده
-            const assignmentsKnown = Object.keys(assignments).length > 0;
+            // «شناخته‌شده» یعنی یا تخصیصی داریم یا حداقل یک‌بار در این سشن از
+            // Supabase خوانده‌ایم — وگرنه وقتی همه مراحل بدون تخصیص‌اند،
+            // شیء assignments خالی می‌شود و پاک‌سازی وظایف زائد skip می‌شد
+            const assignmentsKnown = Object.keys(assignments).length > 0
+                || this._syncedFromSupabase === true;
 
             const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
             const tasks = tasksData[employeeId] || [];
@@ -301,15 +308,12 @@ const StepAssignmentModule = {
             localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
             console.log(`🧹 reconcileStepTasks: ${toDelete.length} وظیفه زائد از کارتابل ${employeeId} پاک شد`);
 
-            // حذف از Supabase
-            if (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseDataModule._db === 'function') {
-                const client = SupabaseDataModule._db();
-                if (client) {
-                    toDelete.forEach(t => {
-                        client.from('employee_tasks').delete().eq('id', t.id)
-                            .then(({ error }) => { if (error) console.warn('⚠️ reconcile delete خطا:', error.message); });
-                    });
-                }
+            // حذف از Supabase — با helper امن (پشتیبانی از ID غیر UUID مثل step_...)
+            if (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseDataModule.deleteEmployeeTaskById === 'function') {
+                toDelete.forEach(t => {
+                    SupabaseDataModule.deleteEmployeeTaskById(t.id)
+                        .catch(e => console.warn('⚠️ reconcile delete خطا:', e.message));
+                });
             }
 
             // رفرش کارتابل اگر در حال نمایش است
@@ -346,15 +350,12 @@ const StepAssignmentModule = {
             localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
             console.log(`🧹 cleanupAllMyStepTasks: ${toDelete.length} وظیفه از ${employeeId} پاک شد`);
 
-            // حذف از Supabase
-            if (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseDataModule._db === 'function') {
-                const client = SupabaseDataModule._db();
-                if (client) {
-                    toDelete.forEach(t => {
-                        client.from('employee_tasks').delete().eq('id', t.id)
-                            .then(({ error }) => { if (error) console.warn('⚠️ cleanup delete خطا:', error.message); });
-                    });
-                }
+            // حذف از Supabase — با helper امن (پشتیبانی از ID غیر UUID مثل step_...)
+            if (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseDataModule.deleteEmployeeTaskById === 'function') {
+                toDelete.forEach(t => {
+                    SupabaseDataModule.deleteEmployeeTaskById(t.id)
+                        .catch(e => console.warn('⚠️ cleanup delete خطا:', e.message));
+                });
             }
 
             if (typeof UTILS !== 'undefined' && UTILS.showNotification) {

@@ -2074,16 +2074,10 @@ const TasksModule = {
         tasksData[this.selectedemployee] = tasks;
         localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
 
-        // ۲. حذف از Supabase
-        const sb = this._sb();
-        if (sb && typeof sb._db === 'function') {
-            const client = sb._db();
-            if (client) {
-                client.from('employee_tasks').delete().eq('id', taskId)
-                    .then(({ error }) => {
-                        if (error) console.warn('⚠️ deleteTask Supabase خطا:', error.message);
-                    });
-            }
+        // ۲. حذف از Supabase — با helper امن (پشتیبانی از ID غیر UUID مثل step_...)
+        if (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseDataModule.deleteEmployeeTaskById === 'function') {
+            SupabaseDataModule.deleteEmployeeTaskById(taskId)
+                .catch(e => console.warn('⚠️ deleteTask Supabase خطا:', e.message));
         }
 
         this.refreshContent();
