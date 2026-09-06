@@ -1048,7 +1048,7 @@ const EmployeeAccountingUI = (function() {
                                 <i class="fas fa-file-excel"></i>خروجی Excel
                             </button>
                             <button onclick="EmployeeAccountingUI.showPayslipModal()"
-                                class="px-4 py-2 bg-violet-500/20 hover:bg-violet-500/40 text-violet-300 border border-violet-400/30 rounded-xl text-sm transition-all flex items-center gap-2">
+                                class="px-4 py-2 bg-lime-500/20 hover:bg-lime-500/40 text-lime-300 border border-lime-400/30 rounded-xl text-sm transition-all flex items-center gap-2">
                                 <i class="fas fa-file-invoice-dollar"></i>فیش حقوقی
                             </button>
                         </div>
@@ -2422,10 +2422,10 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
         modal.id = 'payslip-modal';
         modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4';
         modal.innerHTML = `
-            <div class="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-violet-500/30 shadow-2xl" onclick="event.stopPropagation()">
+            <div class="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-lime-500/30 shadow-2xl" onclick="event.stopPropagation()">
                 <div class="flex items-center justify-between mb-5">
                     <h3 class="text-white text-lg font-bold flex items-center gap-2">
-                        <i class="fas fa-file-invoice-dollar text-violet-400"></i>فیش حقوق قابل چاپ
+                        <i class="fas fa-file-invoice-dollar text-lime-400"></i>فیش حقوق قابل چاپ
                     </h3>
                     <button onclick="document.getElementById('payslip-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
                 </div>
@@ -2448,7 +2448,7 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
                                    value="${_fmtJalali(firstJ)}"
                                    placeholder="انتخاب تاریخ" autocomplete="off" readonly
                                    onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
-                                   class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none hover:border-violet-400 cursor-pointer transition-colors">
+                                   class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none hover:border-lime-400 cursor-pointer transition-colors">
                         </div>
                         <div>
                             <label class="text-gray-400 text-xs mb-1 block">تا تاریخ</label>
@@ -2459,7 +2459,7 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
                                    value="${_fmtJalali(todayJ)}"
                                    placeholder="انتخاب تاریخ" autocomplete="off" readonly
                                    onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
-                                   class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none hover:border-violet-400 cursor-pointer transition-colors">
+                                   class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none hover:border-lime-400 cursor-pointer transition-colors">
                         </div>
                     </div>
                     <div>
@@ -2470,15 +2470,15 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
                             <option value="all">همه وضعیت‌ها (تأیید / در انتظار / رد)</option>
                         </select>
                     </div>
-                    <div class="bg-violet-500/10 border border-violet-500/20 rounded-lg p-3">
-                        <p class="text-violet-300 text-xs flex items-start gap-2">
+                    <div class="bg-lime-500/10 border border-lime-500/20 rounded-lg p-3">
+                        <p class="text-lime-300 text-xs flex items-start gap-2">
                             <i class="fas fa-info-circle mt-0.5"></i>
                             <span>هر فیش شامل اطلاعات کارمند، دستمزد ساعات، جبران هزینه‌ها، هدایا، کسورات، پرداخت‌های نقدی و <strong class="text-white">خالص قابل پرداخت به‌همراه عدد به حروف</strong> است. هر کارمند در یک صفحه A4 چاپ می‌شود.</span>
                         </p>
                     </div>
                     <div class="flex gap-3 pt-1">
                         <button onclick="EmployeeAccountingUI.doPrintPayslips()"
-                            class="flex-1 bg-violet-600 hover:bg-violet-500 text-white font-bold py-2.5 rounded-xl transition-all">
+                            class="flex-1 bg-lime-600 hover:bg-lime-700 text-white font-bold py-2.5 rounded-xl transition-all">
                             <i class="fas fa-print ml-1"></i>چاپ فیش‌ها
                         </button>
                         <button onclick="document.getElementById('payslip-modal').remove()"
@@ -2676,7 +2676,7 @@ ${body}
         // ── جدول دوستونه حقوق و مزایا / کسورات ──
         const earn = [
             ['دستمزد ساعات کارکرد <span style="font-weight:normal;font-size:9px">(' + fmtH(d.totalHours) + ' ساعت × ' + fmtNum(d.emp.hourlyRate) + ' تومان)</span>', d.hoursAmount],
-            ['جبران هزینه‌ها (مأموریت، ایاب‌وذهاب و ...)', d.expsAmount],
+            ['جبران هزینه‌ها (مأموریت،...)', d.expsAmount],
             ['هدیه و پاداش', d.giftTotal]
         ];
         const deds = [
@@ -2794,7 +2794,7 @@ ${body}
         const foot = `
           <div class="foot">
             ${footNote}<br>
-            این فیش به‌صورت سیستمی از سامانه صادر شده و پس از بررسی و امضا معتبر می‌باشد • تاریخ چاپ: ${_fmtJalali(ctx.todayJ)}
+             • تاریخ چاپ: ${_fmtJalali(ctx.todayJ)}
           </div>`;
 
         return `<div class="slip">
