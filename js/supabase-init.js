@@ -122,7 +122,15 @@
 async function _pullDataFromSupabase() {
     if (typeof SupabaseDataModule === 'undefined') return;
 
-    try {
+    // ── سریع‌سازی: همهٔ pullهای مستقل «موازی» اجرا می‌شوند ──
+    // await ترتیبی یعنی کل زمان بارگذاری اولیه = جمعِ تأخیر ~۱۰ درخواست؛
+    // موازی یعنی کل زمان ≈ کندترین درخواست. تنها استثنا: student_progress
+    // بعد از users اجرا می‌شود چون getAllStudentProgress برای نگاشت
+    // UUID→id محلی به edu_system_users تکیه دارد که getUsers می‌نویسد.
+    const _pullTasks = [];
+    const _runTask = (p) => { _pullTasks.push(p); return p; };
+
+    _runTask((async () => { try {
         // ── سفارشات ─────────────────────────────────────────
         const orders = await SupabaseDataModule.getOrders();
         if (orders && orders.length > 0) {
@@ -132,8 +140,9 @@ async function _pullDataFromSupabase() {
     } catch (e) {
         console.warn('⚠️ pull orders خطا:', e.message);
     }
+    })());
 
-    try {
+    _runTask((async () => { try {
         // ── کاربران/پروفایل‌ها ──────────────────────────────
         const users = await SupabaseDataModule.getUsers();
         if (users && users.length > 0) {
@@ -143,16 +152,20 @@ async function _pullDataFromSupabase() {
     } catch (e) {
         console.warn('⚠️ pull users خطا:', e.message);
     }
+    })());
+    const _usersPull = _pullTasks[_pullTasks.length - 1];
 
-    try {
+    // student_progress باید بعد از users تمام شود (وابستگی نگاشت UUID→id)
+    _runTask(_usersPull.then(async () => { try {
         // ── پیشرفت دانشجویان (برای نما شیت و فلوچارت) ───────
         // کلیدهای prog_ را مستقیماً در localStorage می‌نویسد
         await SupabaseDataModule.getAllStudentProgress();
     } catch (e) {
         console.warn('⚠️ pull student_progress خطا:', e.message);
     }
+    }));
 
-    try {
+    _runTask((async () => { try {
         // ── ساعات کاری ──────────────────────────────────────
         const workHours = await SupabaseDataModule.getWorkHours();
         if (workHours && workHours.length > 0) {
@@ -162,8 +175,9 @@ async function _pullDataFromSupabase() {
     } catch (e) {
         console.warn('⚠️ pull work_hours خطا:', e.message);
     }
+    })());
 
-    try {
+    _runTask((async () => { try {
         // ── تسک‌های کارمندان ────────────────────────────────
         const currentUser = (() => {
             try { return JSON.parse(localStorage.getItem('currentUser') || 'null'); } catch { return null; }
@@ -182,8 +196,9 @@ async function _pullDataFromSupabase() {
     } catch (e) {
         console.warn('⚠️ pull employee_tasks خطا:', e.message);
     }
+    })());
 
-    try {
+    _runTask((async () => { try {
         // ── پیام‌ها ──────────────────────────────────────────
         const currentUser = (() => {
             try { return JSON.parse(localStorage.getItem('currentUser') || 'null'); } catch { return null; }
@@ -204,8 +219,9 @@ async function _pullDataFromSupabase() {
     } catch (e) {
         console.warn('⚠️ pull messages خطا:', e.message);
     }
+    })());
 
-    try {
+    _runTask((async () => { try {
         // ── آرشیو فایل‌ها ────────────────────────────────────
         const archiveFiles = await SupabaseDataModule.getArchiveFiles();
         if (archiveFiles && archiveFiles.length > 0) {
@@ -215,8 +231,9 @@ async function _pullDataFromSupabase() {
     } catch (e) {
         console.warn('⚠️ pull archiveFiles خطا:', e.message);
     }
+    })());
 
-    try {
+    _runTask((async () => { try {
         // ── داده‌های چک‌لیست ─────────────────────────────────
         const client = getSupabaseClient();
         const currentUser = (() => {
@@ -255,8 +272,9 @@ async function _pullDataFromSupabase() {
     } catch (e) {
         console.warn('⚠️ pull checklist خطا:', e.message);
     }
+    })());
 
-    try {
+    _runTask((async () => { try {
         // ── نرخ‌های ساعتی کارمندان ───────────────────────────
         const client = getSupabaseClient();
         if (client) {
@@ -273,8 +291,9 @@ async function _pullDataFromSupabase() {
     } catch (e) {
         console.warn('⚠️ pull employee_hourly_rates خطا:', e.message);
     }
+    })());
 
-    try {
+    _runTask((async () => { try {
         // ── یادداشت‌های شخصی ─────────────────────────────────
         const client = getSupabaseClient();
         const currentUser = (() => {
@@ -305,6 +324,10 @@ async function _pullDataFromSupabase() {
     } catch (e) {
         console.warn('⚠️ pull personal_notes خطا:', e.message);
     }
+    })());
+
+    // منتظر تمام pullهای موازی بمان
+    await Promise.all(_pullTasks);
 
     console.log('✅ بارگذاری اولیه از Supabase کامل شد');
 }
@@ -382,15 +405,26 @@ function _setupRealtime(client, user) {
         });
 
         // ── اتصال realtime برای student_progress ───────────────
+        // هر تغییر در دیتابیس (از هر دستگاهی) ظرف ~۱ ثانیه کلیدهای prog_ را
+        // تازه می‌کند و بعد رویداد STUDENTS_CHANGED را برای UIها می‌فرستد —
+        // دیگر نیازی به انتظار برای پول دوره‌ای ۳۰ ثانیه‌ای نیست.
+        let _progressRefreshTimer = null;
         const progressChannel = client
             .channel('progress-changes')
             .on('postgres_changes',
                 { event: '*', schema: 'public', table: 'student_progress' },
                 (payload) => {
                     console.log('📊 Realtime: student_progress تغییر کرد', payload.eventType);
-                    if (typeof RealtimeEvents !== 'undefined') {
-                        RealtimeEvents.emit(RealtimeEvents.EVENTS.STUDENTS_CHANGED, payload);
-                    }
+                    // یک ذخیرهٔ چندمرحله‌ای چند رویداد پشت‌سرهم می‌سازد — debounce
+                    if (_progressRefreshTimer) clearTimeout(_progressRefreshTimer);
+                    _progressRefreshTimer = setTimeout(async () => {
+                        try {
+                            await SupabaseDataModule.getAllStudentProgress();
+                        } catch (e) { /* پول بعدی جبران می‌کند */ }
+                        if (typeof RealtimeEvents !== 'undefined') {
+                            RealtimeEvents.emit(RealtimeEvents.EVENTS.STUDENTS_CHANGED, payload);
+                        }
+                    }, 800);
                 })
             .subscribe();
         SupabaseDataModule._channels['student_progress'] = progressChannel;

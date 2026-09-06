@@ -55,16 +55,15 @@
             { key: 'requirementsSteps',  pathType: 'requirements' },
         ];
 
-        for (const { key, pathType } of pathMap) {
-            if (!student[key] || !Array.isArray(student[key])) continue;
+        // سه مسیر به‌صورت «موازی» ارسال می‌شوند — await ترتیبی یعنی ۳ round-trip
+        // پشت‌سرهم به‌ازای هر دانشجو (یکی از علت‌های اصلی کندی sync)
+        await Promise.all(pathMap.map(({ key, pathType }) => {
+            if (!student[key] || !Array.isArray(student[key])) return null;
             const progress = _stepsToProgress(student[key]);
-            if (progress.length === 0) continue;
-            try {
-                await sb.saveStudentProgress(studentId, pathType, progress);
-            } catch (e) {
-                console.warn(`⚠️ students-sync [${studentId}/${pathType}]:`, e.message);
-            }
-        }
+            if (progress.length === 0) return null;
+            return sb.saveStudentProgress(studentId, pathType, progress)
+                .catch(e => console.warn(`⚠️ students-sync [${studentId}/${pathType}]:`, e.message));
+        }));
 
         // ── ۲. sync وضعیت تحصیلی به profiles ─────────────────
         // graduated, current_path, active, finished_date
@@ -129,10 +128,17 @@
         _debounceTimer = setTimeout(async () => {
             const entries = Object.entries(studentsData);
             console.log(`🔄 students-sync: syncing ${entries.length} students to Supabase...`);
+            // همگام‌سازی موازی دسته‌ای (۸ دانشجو در هر دسته) — به‌جای await
+            // ترتیبی که با N دانشجو، N×۴ درخواست پشت‌سرهم می‌فرستاد
+            const CHUNK_SIZE = 8;
             let synced = 0;
-            for (const [id, student] of entries) {
-                await _syncStudent(id, student);
-                synced++;
+            for (let i = 0; i < entries.length; i += CHUNK_SIZE) {
+                const chunk = entries.slice(i, i + CHUNK_SIZE);
+                await Promise.all(chunk.map(([id, student]) =>
+                    _syncStudent(id, student)
+                        .then(() => { synced++; })
+                        .catch(e => console.warn(`⚠️ students-sync [${id}]:`, e.message))
+                ));
             }
             console.log(`✅ students-sync: ${synced} students synced`);
         }, DEBOUNCE_MS);
@@ -216,36 +222,43 @@
                 console.warn('⚠️ students-sync profile load خطا:', e.message);
             }
 
-            for (const studentId of studentIds) {
-                const student = studentsData[studentId];
+            // ── سریع‌سازی: کل پیشرفت همهٔ دانشجویان در «یک» درخواست ──
+            //    قدیمی: برای هر دانشجو × هر ۳ مسیر یک درخواست جدا و ترتیبی
+            //    (با ۵۰ دانشجو = ۱۵۰ round-trip پشت‌سرهم!) — اکنون فقط ۱ درخواست.
+            const progressMap = await sb.getAllStudentProgress();
 
-                for (const pathType of pathTypes) {
-                    try {
-                        const progress = await sb.getStudentProgress(studentId, pathType);
-                        if (!progress || progress.length === 0) continue;
+            if (progressMap) {
+                for (const studentId of studentIds) {
+                    const student = studentsData[studentId];
 
-                        const stepsKey = pathToKey[pathType];
-                        const localSteps = student[stepsKey];
-                        if (!Array.isArray(localSteps) || localSteps.length === 0) continue;
+                    for (const pathType of pathTypes) {
+                        try {
+                            const progress = progressMap[`${studentId}_${pathType}`];
+                            if (!progress || progress.length === 0) continue;
 
-                        // merge: وضعیت Supabase را اعمال کن روی ساختار محلی
-                        const merged = localSteps.map((step, i) => {
-                            const prog = progress[i];
-                            if (!prog) return step;
-                            return {
-                                ...step,
-                                completed: prog.status === 2,
-                            };
-                        });
+                            const stepsKey = pathToKey[pathType];
+                            const localSteps = student[stepsKey];
+                            if (!Array.isArray(localSteps) || localSteps.length === 0) continue;
 
-                        student[stepsKey] = merged;
-                        mergeCount++;
-                    } catch (e) {
-                        // ادامه می‌دهیم
+                            // merge: وضعیت Supabase را اعمال کن روی ساختار محلی
+                            const merged = localSteps.map((step, i) => {
+                                const prog = progress[i];
+                                if (!prog) return step;
+                                return {
+                                    ...step,
+                                    completed: prog.status === 2,
+                                };
+                            });
+
+                            student[stepsKey] = merged;
+                            mergeCount++;
+                        } catch (e) {
+                            // ادامه می‌دهیم
+                        }
                     }
-                }
 
-                studentsData[studentId] = student;
+                    studentsData[studentId] = student;
+                }
             }
 
             if (mergeCount > 0) {
@@ -258,14 +271,22 @@
         }
     }
 
-    // ── اجرای initial load بعد از اتصال Supabase ────────────
-    // منتظر می‌مانیم تا supabase-init.js اتصال را برقرار کند
+    // ── اجرای initial load به‌محض آنلاین شدن Supabase ────────
+    // به‌جای صبرِ کورکورانهٔ ۲ ثانیه‌ای: هر ۵۰۰ms چک می‌کنیم و به‌محض
+    // آماده شدن اتصال اجرا می‌شود (سقف ۱۵ ثانیه)
+    function _startInitialLoadWhenOnline() {
+        let waited = 0;
+        const tryRun = () => {
+            if (_sb() || waited >= 15000) { _initialLoad(); return; }
+            waited += 500;
+            setTimeout(tryRun, 500);
+        };
+        tryRun();
+    }
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(_initialLoad, 2000); // 2 ثانیه صبر برای اتصال
-        });
+        document.addEventListener('DOMContentLoaded', _startInitialLoadWhenOnline);
     } else {
-        setTimeout(_initialLoad, 2000);
+        _startInitialLoadWhenOnline();
     }
 
     // expose برای دسترسی دستی

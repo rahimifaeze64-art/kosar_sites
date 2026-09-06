@@ -608,6 +608,22 @@
             document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState === 'visible') _pullProgressFromSupabase();
             });
+
+            // ── Realtime: هر تغییر در جدول student_progress (از هر دستگاهی) ──
+            //    صفحهٔ والد روی این جدول subscribe است و رویداد STUDENTS_CHANGED
+            //    می‌فرستد → پول فوری به‌جای انتظار برای پول ۳۰ ثانیه‌ای.
+            //    debounce: یک ذخیرهٔ چندمرحله‌ای چند رویداد پشت‌سرهم می‌سازد.
+            let _rtPullTimer = null;
+            try {
+                const parentRE = (window.parent !== window && window.parent.RealtimeEvents)
+                    ? window.parent.RealtimeEvents : null;
+                if (parentRE && parentRE.EVENTS && typeof parentRE.on === 'function') {
+                    parentRE.on(parentRE.EVENTS.STUDENTS_CHANGED, () => {
+                        if (_rtPullTimer) clearTimeout(_rtPullTimer);
+                        _rtPullTimer = setTimeout(_pullProgressFromSupabase, 1500);
+                    }, 'progress-sheet');
+                }
+            } catch (e) { /* دسترسی به والد نیست — پول دوره‌ای پوشش می‌دهد */ }
         });
         
         function loadStudents() {
