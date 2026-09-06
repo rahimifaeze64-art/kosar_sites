@@ -17,11 +17,15 @@ ALTER TABLE public.profiles
     ALTER COLUMN id SET DEFAULT gen_random_uuid();
 
 -- ۳. همچنین student_id باید UNIQUE ولی nullable باشد
+--    از partial unique index استفاده می‌کنیم (سازگار با PostgreSQL 14 و قدیمی‌تر)
+--    NULLS NOT DISTINCT فقط در PostgreSQL 15+ کار می‌کند
 ALTER TABLE public.profiles
     DROP CONSTRAINT IF EXISTS profiles_student_id_key;
 
-ALTER TABLE public.profiles
-    ADD CONSTRAINT profiles_student_id_key UNIQUE NULLS NOT DISTINCT (student_id);
+-- partial index: فقط مقادیر non-null باید یکتا باشند — چند NULL مجاز است
+CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_student_id_unique
+    ON public.profiles (student_id)
+    WHERE student_id IS NOT NULL;
 
 -- ۴. orders.student_id و orders.assigned_agent_id هم باید بتونن
 --    به profiles ارجاع بدن حتی اگر auth نداشته باشن — این ok است

@@ -9,7 +9,7 @@ const SupabaseDataModule = {
 
     // ── کش ──────────────────────────────────────────────────
     _cache: {},
-    _cacheTTL: 60_000, // 60 ثانیه
+    _cacheTTL: 8_000, // 8 ثانیه — کوتاه تا تغییرات دستگاه‌های دیگر سریع دیده شوند
 
     _cacheGet(key) {
         const entry = this._cache[key];
@@ -22,6 +22,18 @@ const SupabaseDataModule = {
     },
     _cacheInvalidate(key) {
         delete this._cache[key];
+    },
+
+    // ── اسنپ‌شات آخرین وضعیت سینک‌شده (برای ارسال فقط ردیف‌های تغییرکرده) ──
+    // null یعنی هنوز seed نشده → اولین save کل داده را می‌فرستد (مثل رفتار قدیمی)
+    _syncSigs: { orders: null, users: null },
+
+    _sigMap(items) {
+        const m = {};
+        (items || []).forEach(it => {
+            if (it && it.id !== undefined) m[String(it.id)] = JSON.stringify(it);
+        });
+        return m;
     },
 
     // ── db helper ────────────────────────────────────────────
@@ -58,6 +70,8 @@ const SupabaseDataModule = {
             if (error) throw error;
             const users = data.map(p => SupabaseAuth._normalizeProfile(p));
             this._cacheSet('users', users);
+            // seed اسنپ‌شات diff — تا saveUsers بعدی فقط ردیف‌های تغییرکرده را بفرستد
+            this._syncSigs.users = this._sigMap(users);
             // فقط وقتی Supabase داده دارد localStorage را overwrite کن
             if (users.length > 0) {
                 localStorage.setItem('edu_system_users', JSON.stringify(users));
@@ -73,27 +87,44 @@ const SupabaseDataModule = {
         // ذخیره محلی همیشه
         localStorage.setItem('edu_system_users', JSON.stringify(users));
 
+        // امضاهای جدید برای diff — قبل از هر چیز محاسبه شود
+        const prevSigs = this._syncSigs.users || {};
+        const nextSigs = this._sigMap(users);
+
         const client = this._db();
-        if (!client) return true;
+        if (!client) return true; // آفلاین — اسنپ‌شات دست‌نخورده می‌ماند تا save بعدی retry کند
 
         try {
-            const rows = users.map(u => {
+            // فقط ردیف‌های تغییرکرده/جدید ارسال شود — نه کل جدول
+            const changedRows = [];
+            users.forEach(u => {
+                const key = String(u.id);
+                if (prevSigs[key] === nextSigs[key]) return; // بدون تغییر از آخرین sync
                 const profile = this._userToProfile(u);
                 // null در student_id باعث duplicate key می‌شه — فقط مقدار واقعی بفرست
                 if (!profile.student_id) delete profile.student_id;
-                return profile;
+                changedRows.push(profile);
             });
+
+            // هیچ تغییر واقعی نبود — فقط اسنپ‌شات همگام شود
+            if (changedRows.length === 0) {
+                this._syncSigs.users = nextSigs;
+                return true;
+            }
+
             const { error } = await client
                 .from('profiles')
-                .upsert(rows, { onConflict: 'id', ignoreDuplicates: false });
+                .upsert(changedRows, { onConflict: 'id', ignoreDuplicates: false });
             if (error) {
-                console.warn('⚠️ saveUsers خطا:', error.message, error.code);
+                console.warn(`⚠️ saveUsers خطا (${changedRows.length} ردیف از ${users.length}):`, error.message, error.code);
                 if (error.code === '42501' || error.message.includes('policy')) {
                     console.error('🔒 RLS مشکل دارد! supabase/fix_rls_anon.sql را اجرا کن');
                 }
-                return false;
+                return false; // اسنپ‌شات آپدیت نمی‌شود → save بعدی دوباره تلاش می‌کند
             }
+            this._syncSigs.users = nextSigs;
             this._cacheInvalidate('users');
+            console.log(`✅ saveUsers: ${changedRows.length} کاربر (از ${users.length}) در Supabase ذخیره شد`);
             return true;
         } catch (e) {
             console.warn('⚠️ saveUsers خطا:', e.message);
@@ -198,6 +229,8 @@ const SupabaseDataModule = {
             if (error) throw error;
             const orders = data.map(r => this._dbToOrder(r));
             this._cacheSet('orders', orders);
+            // seed اسنپ‌شات diff — تا saveOrders بعدی فقط سفارش‌های تغییرکرده را بفرستد
+            this._syncSigs.orders = this._sigMap(orders);
             // فقط وقتی Supabase داده دارد localStorage را overwrite کن
             // در غیر این صورت داده‌های محلی از بین می‌روند
             if (orders.length > 0) {
@@ -213,27 +246,45 @@ const SupabaseDataModule = {
     async saveOrders(orders) {
         localStorage.setItem('edu_system_orders', JSON.stringify(orders));
 
+        // امضاهای جدید برای diff — قبل از هر چیز محاسبه شود
+        const prevSigs = this._syncSigs.orders || {};
+        const nextSigs = this._sigMap(orders);
+
         // به‌جای isOnline، مستقیم client رو چک می‌کنیم
         const client = this._db();
         if (!client) {
             console.warn('⚠️ saveOrders: Supabase client آماده نیست');
-            return true; // localStorage OK بود
+            return true; // localStorage OK بود — اسنپ‌شات دست‌نخورده تا save بعدی retry کند
         }
 
         try {
-            const rows = orders.map(o => this._orderToDb(o));
+            // فقط سفارش‌های تغییرکرده/جدید ارسال شود — نه کل آرایه
+            const changedRows = [];
+            orders.forEach(o => {
+                const key = String(o.id);
+                if (prevSigs[key] === nextSigs[key]) return; // بدون تغییر از آخرین sync
+                changedRows.push(this._orderToDb(o));
+            });
+
+            // هیچ تغییر واقعی نبود — فقط اسنپ‌شات همگام شود
+            if (changedRows.length === 0) {
+                this._syncSigs.orders = nextSigs;
+                return true;
+            }
+
             const { error } = await client
                 .from('orders')
-                .upsert(rows, { onConflict: 'id' });
+                .upsert(changedRows, { onConflict: 'id' });
             if (error) {
-                console.warn('⚠️ saveOrders upsert خطا:', error.message, error.code);
+                console.warn(`⚠️ saveOrders upsert خطا (${changedRows.length} ردیف از ${orders.length}):`, error.message, error.code);
                 if (error.code === '42501' || error.message.includes('policy')) {
                     console.error('🔒 RLS مشکل دارد! supabase/fix_rls_anon.sql را اجرا کن');
                 }
-                return false;
+                return false; // اسنپ‌شات آپدیت نمی‌شود → save بعدی دوباره تلاش می‌کند
             }
+            this._syncSigs.orders = nextSigs;
             this._cacheInvalidate('orders');
-            console.log(`✅ saveOrders: ${rows.length} سفارش در Supabase ذخیره شد`);
+            console.log(`✅ saveOrders: ${changedRows.length} سفارش (از ${orders.length}) در Supabase ذخیره شد`);
             return true;
         } catch (e) {
             console.warn('⚠️ saveOrders خطا:', e.message);
@@ -253,6 +304,8 @@ const SupabaseDataModule = {
         const orders = this._localGetOrders().filter(o => o.id !== orderId);
         localStorage.setItem('edu_system_orders', JSON.stringify(orders));
         this._cacheInvalidate('orders');
+        // حذف از اسنپ‌شات diff تا در saveهای بعدی به‌عنوان ردیف سینک‌شده شناخته نشود
+        if (this._syncSigs.orders) delete this._syncSigs.orders[String(orderId)];
 
         if (!this._online()) return true;
         try {

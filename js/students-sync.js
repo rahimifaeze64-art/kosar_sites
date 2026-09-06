@@ -17,6 +17,15 @@
     const DEBOUNCE_MS  = 1500;   // تاخیر برای جلوگیری از sync بیش از حد
     let _debounceTimer = null;
 
+    // ── diff: آخرین وضعیت سینک‌شده هر دانشجو (id → امضای JSON) ──
+    // null یعنی هنوز seed نشده → اولین sync کل داده ارسال می‌شود (مثل رفتار قدیمی)
+    let _syncedSigs = null;
+    const SYNC_STUDENT_DEBOUNCE_MS = 400;  // debounce مسیر sync تکی (iframe)
+
+    function _sig(student) {
+        try { return JSON.stringify(student); } catch (e) { return null; }
+    }
+
     // ── Helper ──────────────────────────────────────────────
     function _sb() {
         return typeof SupabaseDataModule !== 'undefined' &&
@@ -46,7 +55,8 @@
     // ── sync یک دانشجو به Supabase ─────────────────────────
     async function _syncStudent(studentId, student) {
         const sb = _sb();
-        if (!sb) return;
+        if (!sb) return false;
+        let ok = true; // نتیجه نهایی — false یعنی بخشی سینک نشد (بعداً دوباره تلاش شود)
 
         // ── ۱. sync پیشرفت مراحل (student_progress) ──────────
         const pathMap = [
@@ -62,14 +72,14 @@
             const progress = _stepsToProgress(student[key]);
             if (progress.length === 0) return null;
             return sb.saveStudentProgress(studentId, pathType, progress)
-                .catch(e => console.warn(`⚠️ students-sync [${studentId}/${pathType}]:`, e.message));
+                .catch(e => { ok = false; console.warn(`⚠️ students-sync [${studentId}/${pathType}]:`, e.message); });
         }));
 
         // ── ۲. sync وضعیت تحصیلی به profiles ─────────────────
         // graduated, current_path, active, finished_date
         try {
             const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
-            if (!client) return;
+            if (!client) return ok;
 
             const profileUpdate = {};
 
@@ -111,12 +121,15 @@
                     .eq('id', studentId);
 
                 if (error && error.code !== 'PGRST116') { // PGRST116 = no row matched (student با این id نیست)
+                    ok = false;
                     console.warn(`⚠️ students-sync profile update [${studentId}]:`, error.message);
                 }
             }
         } catch (e) {
+            ok = false;
             console.warn(`⚠️ students-sync profile sync [${studentId}]:`, e.message);
         }
+        return ok;
     }
 
     // ── sync همه دانشجویان (debounced) ───────────────────────
@@ -127,21 +140,78 @@
         clearTimeout(_debounceTimer);
         _debounceTimer = setTimeout(async () => {
             const entries = Object.entries(studentsData);
-            console.log(`🔄 students-sync: syncing ${entries.length} students to Supabase...`);
+
+            // ── diff: فقط دانشجویانی که از آخرین sync موفق تغییر کرده‌اند ──
+            const isFirstSync = (_syncedSigs === null);
+            if (isFirstSync) _syncedSigs = {};
+            const changed = [];
+            entries.forEach(([id, student]) => {
+                const sig = _sig(student);
+                if (isFirstSync || _syncedSigs[id] !== sig) changed.push([id, student, sig]);
+            });
+
+            if (changed.length === 0) return;
+
+            console.log(`🔄 students-sync: syncing ${changed.length}/${entries.length} changed students to Supabase...`);
             // همگام‌سازی موازی دسته‌ای (۸ دانشجو در هر دسته) — به‌جای await
             // ترتیبی که با N دانشجو، N×۴ درخواست پشت‌سرهم می‌فرستاد
             const CHUNK_SIZE = 8;
             let synced = 0;
-            for (let i = 0; i < entries.length; i += CHUNK_SIZE) {
-                const chunk = entries.slice(i, i + CHUNK_SIZE);
-                await Promise.all(chunk.map(([id, student]) =>
+            for (let i = 0; i < changed.length; i += CHUNK_SIZE) {
+                const chunk = changed.slice(i, i + CHUNK_SIZE);
+                await Promise.all(chunk.map(([id, student, sig]) =>
                     _syncStudent(id, student)
-                        .then(() => { synced++; })
+                        .then((ok) => {
+                            // فقط sync موفق «سینک‌شده» علامت بخورد تا خطاها retry شوند
+                            if (ok !== false) _syncedSigs[id] = sig;
+                            synced++;
+                        })
                         .catch(e => console.warn(`⚠️ students-sync [${id}]:`, e.message))
                 ));
             }
             console.log(`✅ students-sync: ${synced} students synced`);
         }, DEBOUNCE_MS);
+    }
+
+    // ── sync تکی دانشجو با debounce ──────────────────────────
+    // مسیر sheet (iframe) بعد از هر toggle این را صدا می‌زند؛ debounce کوتاه باعث
+    // می‌شود چند تغییر پشت‌سرهم فقط یک‌بار ارسال شوند و diff هم اعمال شود
+    const _pendingStudents = new Map();
+    let _studentFlushTimer = null;
+
+    function syncStudentDebounced(studentId, student) {
+        if (!studentId || !student) return;
+        _pendingStudents.set(String(studentId), student);
+        if (_studentFlushTimer) clearTimeout(_studentFlushTimer);
+        _studentFlushTimer = setTimeout(_flushPendingStudents, SYNC_STUDENT_DEBOUNCE_MS);
+    }
+
+    async function _flushPendingStudents() {
+        _studentFlushTimer = null;
+        if (_pendingStudents.size === 0) return;
+        const pending = Array.from(_pendingStudents.entries());
+        _pendingStudents.clear();
+
+        if (!_sb()) return; // آفلاین — تغییر بعدی دوباره sync می‌کند
+
+        const isFirstSync = (_syncedSigs === null);
+        if (isFirstSync) _syncedSigs = {};
+
+        const toSync = [];
+        pending.forEach(([id, student]) => {
+            const sig = _sig(student);
+            if (_syncedSigs[id] !== sig) toSync.push([id, student, sig]);
+        });
+        if (toSync.length === 0) return;
+
+        const CHUNK_SIZE = 8;
+        for (let i = 0; i < toSync.length; i += CHUNK_SIZE) {
+            await Promise.all(toSync.slice(i, i + CHUNK_SIZE).map(([id, student, sig]) =>
+                _syncStudent(id, student)
+                    .then((ok) => { if (ok !== false) _syncedSigs[id] = sig; })
+                    .catch(e => console.warn(`⚠️ students-sync [${id}]:`, e.message))
+            ));
+        }
     }
 
     // ── Override localStorage.setItem ────────────────────────
@@ -266,6 +336,18 @@
                 _origSetItem(STUDENTS_KEY, JSON.stringify(studentsData));
                 console.log(`✅ students-sync: initial load merged ${mergeCount} paths from Supabase`);
             }
+
+            // ── seed اسنپ‌شات diff ──
+            // دانشجویانی که داده‌شان از Supabase آمد «سینک‌شده» فرض می‌شوند تا اولین
+            // ویرایش کاربر فقط همان دانشجو را sync کند. دانشجویان بدون داده در
+            // Supabase علامت نمی‌خورند تا در اولین sync (مثل رفتار قدیمی) ارسال شوند.
+            if (_syncedSigs === null && progressMap) {
+                _syncedSigs = {};
+                Object.entries(studentsData).forEach(([id, student]) => {
+                    const hasDbData = pathTypes.some(pt => Array.isArray(progressMap[`${id}_${pt}`]));
+                    if (hasDbData) _syncedSigs[id] = _sig(student);
+                });
+            }
         } catch (e) {
             console.warn('⚠️ students-sync initial load خطا:', e.message);
         }
@@ -291,9 +373,11 @@
 
     // expose برای دسترسی دستی
     window.StudentsSync = {
-        syncStudent:  _syncStudent,
-        syncAll:      (data) => _syncAll(data || JSON.parse(localStorage.getItem(STUDENTS_KEY) || '{}')),
-        initialLoad:  _initialLoad,
+        syncStudent:    syncStudentDebounced,   // با debounce — مسیر sheet/iframe
+        syncStudentNow: _syncStudent,           // فوری (بدون debounce)
+        syncAll:        (data) => _syncAll(data || JSON.parse(localStorage.getItem(STUDENTS_KEY) || '{}')),
+        flushPending:   _flushPendingStudents,  // ارسال فوری تغییرات در انتظار
+        initialLoad:    _initialLoad,
     };
 
     console.log('📦 students-sync.js بارگذاری شد — students_data override فعال');
