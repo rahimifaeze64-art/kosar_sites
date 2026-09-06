@@ -386,24 +386,6 @@ const EmployeeAccountingUI = (function() {
 
     let currentUser = null;
 
-    // ── mini jalali date picker (از JalaliUtils global استفاده می‌کنه) ──
-    // ساخت یک inline popup شمسی روی یک container
-    // hiddenId = id فیلد hidden (میلادی)  |  displayId = id فیلد نمایشی
-    function _buildJalaliInput(hiddenId, displayId, initGreg) {
-        const ju = window.JalaliUtils;
-        const todayGreg = new Date().toISOString().split('T')[0];
-        const initVal   = initGreg || todayGreg;
-        const initDisp  = ju ? ju.toDisplay(initVal) : initVal;
-        return `
-            <div class="relative">
-                <input type="text" id="${displayId}" readonly value="${initDisp}"
-                    placeholder="انتخاب تاریخ..."
-                    onclick="EAccJalali.open('${hiddenId}','${displayId}', event)"
-                    class="w-full bg-slate-700 text-white border border-white/20 rounded-xl px-3 py-2 focus:outline-none focus:border-lime-400 cursor-pointer text-right">
-                <input type="hidden" id="${hiddenId}" value="${initVal}">
-            </div>`;
-    }
-
     // ── تبدیل تاریخ ذخیره‌شده به نمایش شمسی ──────────────────
     // تاریخ تسویه‌ها میلادی ذخیره می‌شود؛ کسورات/هدایا شمسی‌اند.
     // این تابع هر دو حالت را تشخیص می‌دهد و خروجی شمسی برمی‌گرداند.
@@ -432,145 +414,7 @@ const EmployeeAccountingUI = (function() {
         } catch (e) { return str; }
     }
 
-    // ── مدیریت popup تقویم شمسی ─────────────────────────────
-    window.EAccJalali = (function() {
-        let _hid = '', _dis = '', _cy = 0, _cm = 0;
-
-        function open(hiddenId, displayId, evt) {
-            if (evt) { evt.stopPropagation(); evt.preventDefault(); }
-            _hid = hiddenId; _dis = displayId;
-            const ju = window.JalaliUtils;
-            if (!ju) { console.warn('JalaliUtils not loaded'); return; }
-
-            const val = document.getElementById(hiddenId)?.value;
-            if (val) {
-                try {
-                    const [y,m,d] = val.split('-').map(Number);
-                    const jd = ju.gregToJD(y,m,d);
-                    const [jy,jm] = ju.jdToJalali(jd);
-                    _cy = jy; _cm = jm;
-                } catch(e) { const n=ju.currentJalali(); _cy=n[0]; _cm=n[1]; }
-            } else { const n=ju.currentJalali(); _cy=n[0]; _cm=n[1]; }
-
-            close(); // بستن هر popup باز قبلی
-            // requestAnimationFrame تضمین می‌کند که DOM آماده است
-            requestAnimationFrame(_render);
-        }
-
-        function close() {
-            document.getElementById('_eacc_jalali_popup')?.remove();
-            document.getElementById('_eacc_jalali_overlay')?.remove();
-        }
-
-        function _render() {
-            const ju = window.JalaliUtils;
-            const trigger = document.getElementById(_dis);
-            if (!trigger) return;
-
-            // overlay شفاف روی کل صفحه
-            const ov = document.createElement('div');
-            ov.id = '_eacc_jalali_overlay';
-            ov.style.cssText = 'position:fixed;inset:0;z-index:9998;background:transparent;';
-            ov.onclick = close;
-            document.body.appendChild(ov);
-
-            // popup با z-index بالاتر از مودال
-            const popup = document.createElement('div');
-            popup.id = '_eacc_jalali_popup';
-            popup.style.cssText = 'position:fixed;z-index:9999;background:#1e293b;border:1px solid rgba(163,230,53,0.3);border-radius:16px;padding:16px;width:272px;box-shadow:0 24px 64px rgba(0,0,0,.8);direction:rtl;';
-            popup.onclick = e => e.stopPropagation();
-
-            // موقعیت نسبت به viewport
-            const rect = trigger.getBoundingClientRect();
-            let top  = rect.bottom + 6;
-            let left = rect.left;
-            // جلوگیری از خروج از صفحه
-            if (left + 272 > window.innerWidth - 8)  left = window.innerWidth - 280;
-            if (left < 8) left = 8;
-            if (top + 300 > window.innerHeight) top = rect.top - 310;
-            popup.style.top  = top  + 'px';
-            popup.style.left = left + 'px';
-
-            popup.innerHTML = _calHtml(_cy, _cm);
-            document.body.appendChild(popup);
-        }
-
-        function _calHtml(cy, cm) {
-            const ju = window.JalaliUtils;
-            const totalDays = ju.monthDays(cy, cm);
-            const firstDay  = ju.firstWeekday(cy, cm);
-            const [nowJY,nowJM,nowJD] = ju.currentJalali();
-            const selGreg = document.getElementById(_hid)?.value;
-            let selJY=0,selJM=0,selJD=0;
-            if (selGreg) {
-                try {
-                    const [y,m,d]=selGreg.split('-').map(Number);
-                    [selJY,selJM,selJD]=ju.jdToJalali(ju.gregToJD(y,m,d));
-                } catch(e){}
-            }
-
-            let html = `
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-                <button type="button" onclick="EAccJalali._nav(${cy},${cm},-1)"
-                    style="background:rgba(255,255,255,0.08);border:none;color:#94a3b8;border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:14px;">›</button>
-                <span style="color:#fff;font-weight:700;font-size:14px;">${ju.MONTHS[cm-1]} ${cy}</span>
-                <button type="button" onclick="EAccJalali._nav(${cy},${cm},+1)"
-                    style="background:rgba(255,255,255,0.08);border:none;color:#94a3b8;border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:14px;">‹</button>
-            </div>
-            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;">`;
-
-            ju.DAYS.forEach(d => {
-                html += `<div style="color:#64748b;font-size:11px;padding:4px 0;">${d}</div>`;
-            });
-            for (let i=0; i<firstDay; i++) html += '<div></div>';
-            for (let d=1; d<=totalDays; d++) {
-                const isT = d===nowJD && cm===nowJM && cy===nowJY;
-                const isS = d===selJD && cm===selJM && cy===selJY;
-                const bg = isS ? '#65a30d' : isT ? 'rgba(101,163,13,0.2)' : 'transparent';
-                const clr = isS ? '#fff' : isT ? '#000000ff' : '#e2e8f0';
-                const bord = isT && !isS ? '1px solid #84cc16' : 'none';
-                html += `<button type="button" onclick="EAccJalali.pick(${cy},${cm},${d})"
-                    style="background:${bg};color:${clr};border:${bord};border-radius:8px;padding:5px 2px;cursor:pointer;font-size:12px;transition:background .15s;"
-                    onmouseover="if(!${isS})this.style.background='rgba(255,255,255,0.1)'"
-                    onmouseout="this.style.background='${bg}'">${d}</button>`;
-            }
-            html += '</div>';
-            return html;
-        }
-
-        function _nav(cy, cm, dir) {
-            cm += dir;
-            if (cm < 1) { cm = 12; cy--; }
-            if (cm > 12) { cm = 1;  cy++; }
-            _cy = cy; _cm = cm;
-            const popup = document.getElementById('_eacc_jalali_popup');
-            if (popup) popup.innerHTML = _calHtml(cy, cm);
-        }
-
-        function pick(jy, jm, jd) {
-            const ju = window.JalaliUtils;
-            let greg = '';
-            try {
-                greg = ju ? ju.toGreg(jy, jm, jd) : '';
-            } catch(e) {
-                // fallback: تبدیل دستی شمسی به میلادی
-                greg = '';
-            }
-            // اگر تبدیل میلادی ناموفق بود، فرمت شمسی رو در hidden بذار
-            const MONTHS_FA = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
-            const disp = `${jd} ${ju ? ju.MONTHS[jm-1] : MONTHS_FA[jm-1]} ${jy}`;
-            const jalaliISO = `${jy}-${String(jm).padStart(2,'0')}-${String(jd).padStart(2,'0')}`;
-            const hidEl = document.getElementById(_hid);
-            const disEl = document.getElementById(_dis);
-            // hidden field: اگر greg داریم میلادی، وگرنه شمسی ISO
-            if (hidEl) hidEl.value = greg || jalaliISO;
-            if (disEl) disEl.value = disp;
-            close();
-        }
-
-        return { open, close, pick, _nav };
-    })();
-
+    // تقویم شمسی سفارشی EAccJalali حذف شد — همه مودال‌ها از jalalidatepicker استفاده می‌کنند
     function init() {
         const savedUser = localStorage.getItem('currentUser');
         if (savedUser) {
@@ -1397,13 +1241,17 @@ const EmployeeAccountingUI = (function() {
                 <div class="space-y-3">
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
-                        <div class="relative">
-                            <input type="text" id="gift-date-disp" readonly
-                                placeholder="انتخاب تاریخ شمسی"
-                                onclick="EAccJalali.open('gift-date','gift-date-disp', event)"
-                                class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-green-400 cursor-pointer text-right">
-                            <input type="hidden" id="gift-date">
-                        </div>
+                        <!-- مقدار میلادی (ذخیره‌سازی) -->
+                        <input type="hidden" id="gift-date">
+                        <!-- فیلد شمسی — کتابخانه jalalidatepicker آن را کنترل می‌کند (مثل مودال تسویه) -->
+                        <input type="text" id="gift-date-disp" data-jdp
+                            data-jdp-target-value-input="#gift-date"
+                            data-jdp-target-value-type="gregorian"
+                            placeholder="انتخاب تاریخ شمسی"
+                            autocomplete="off"
+                            readonly
+                            onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-green-400 cursor-pointer text-sm">
                     </div>
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">مبلغ هدیه (تومان) <span class="text-red-400">*</span></label>
@@ -1427,13 +1275,15 @@ const EmployeeAccountingUI = (function() {
             </div>`;
         document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        // تاریخ پیش‌فرض: امروز — hidden میلادی + نمایش شمسی (مثل مودال تسویه)
         const today = new Date().toISOString().split('T')[0];
         const _giftHid = document.getElementById('gift-date');
         const _giftDisp = document.getElementById('gift-date-disp');
         if (_giftHid) _giftHid.value = today;
-        if (_giftDisp) {
-            const ju = window.JalaliUtils;
-            if (ju) { try { const [y,m,d2]=today.split('-').map(Number); const jd=ju.gregToJD(y,m,d2); const [jy,jm,jday]=ju.jdToJalali(jd); _giftDisp.value=jday+' '+ju.MONTHS[jm-1]+' '+jy; } catch(e){} }
+        if (_giftDisp) _giftDisp.value = _jalaliDateDisplay(today);
+        // راه‌اندازی مجدد jalalidatepicker برای input جدید در مودال
+        if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
+            setTimeout(function() { jalaliDatepicker.startWatch(); }, 50);
         }
     }
 
@@ -1468,13 +1318,17 @@ const EmployeeAccountingUI = (function() {
                 <div class="space-y-3">
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
-                        <div class="relative">
-                            <input type="text" id="ded2-date-disp" readonly
-                                placeholder="انتخاب تاریخ شمسی"
-                                onclick="EAccJalali.open('ded2-date','ded2-date-disp', event)"
-                                class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-red-400 cursor-pointer text-right">
-                            <input type="hidden" id="ded2-date">
-                        </div>
+                        <!-- مقدار میلادی (ذخیره‌سازی) -->
+                        <input type="hidden" id="ded2-date">
+                        <!-- فیلد شمسی — کتابخانه jalalidatepicker آن را کنترل می‌کند (مثل مودال تسویه) -->
+                        <input type="text" id="ded2-date-disp" data-jdp
+                            data-jdp-target-value-input="#ded2-date"
+                            data-jdp-target-value-type="gregorian"
+                            placeholder="انتخاب تاریخ شمسی"
+                            autocomplete="off"
+                            readonly
+                            onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-red-400 cursor-pointer text-sm">
                     </div>
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">مبلغ کسر (تومان) <span class="text-red-400">*</span></label>
@@ -1498,13 +1352,15 @@ const EmployeeAccountingUI = (function() {
             </div>`;
         document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        // تاریخ پیش‌فرض: امروز — hidden میلادی + نمایش شمسی (مثل مودال تسویه)
         const _today2 = new Date().toISOString().split('T')[0];
         const _d2Hid = document.getElementById('ded2-date');
         const _d2Disp = document.getElementById('ded2-date-disp');
         if (_d2Hid) _d2Hid.value = _today2;
-        if (_d2Disp) {
-            const ju = window.JalaliUtils;
-            if (ju) { try { const [y,m,d2]=_today2.split('-').map(Number); const jd=ju.gregToJD(y,m,d2); const [jy,jm,jday]=ju.jdToJalali(jd); _d2Disp.value=jday+' '+ju.MONTHS[jm-1]+' '+jy; } catch(e){} }
+        if (_d2Disp) _d2Disp.value = _jalaliDateDisplay(_today2);
+        // راه‌اندازی مجدد jalalidatepicker برای input جدید در مودال
+        if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
+            setTimeout(function() { jalaliDatepicker.startWatch(); }, 50);
         }
     }
 
@@ -1557,13 +1413,17 @@ const EmployeeAccountingUI = (function() {
                     </div>
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
-                        <div class="relative">
-                            <input type="text" id="ded-date-disp" readonly
-                                placeholder="انتخاب تاریخ شمسی"
-                                onclick="EAccJalali.open('ded-date','ded-date-disp', event)"
-                                class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 cursor-pointer text-right">
-                            <input type="hidden" id="ded-date">
-                        </div>
+                        <!-- مقدار میلادی (ذخیره‌سازی) -->
+                        <input type="hidden" id="ded-date">
+                        <!-- فیلد شمسی — کتابخانه jalalidatepicker آن را کنترل می‌کند (مثل مودال تسویه) -->
+                        <input type="text" id="ded-date-disp" data-jdp
+                            data-jdp-target-value-input="#ded-date"
+                            data-jdp-target-value-type="gregorian"
+                            placeholder="انتخاب تاریخ شمسی"
+                            autocomplete="off"
+                            readonly
+                            onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 cursor-pointer text-sm">
                     </div>
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">مبلغ (تومان) <span class="text-red-400">*</span></label>
@@ -1589,6 +1449,14 @@ const EmployeeAccountingUI = (function() {
             </div>`;
         document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        // تاریخ پیش‌فرض: امروز — hidden میلادی + نمایش شمسی (مثل مودال تسویه)
+        const _today3 = new Date().toISOString().split('T')[0];
+        document.getElementById('ded-date').value = _today3;
+        document.getElementById('ded-date-disp').value = _jalaliDateDisplay(_today3);
+        // راه‌اندازی مجدد jalalidatepicker برای input جدید در مودال
+        if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
+            setTimeout(function() { jalaliDatepicker.startWatch(); }, 50);
+        }
     }
 
     function saveDeduction() {
@@ -2965,11 +2833,31 @@ ${body}
                 <div class="grid grid-cols-2 gap-4 mb-5">
                     <div>
                         <label class="text-gray-400 text-sm mb-1 block">از تاریخ</label>
-                        ${_buildJalaliInput('cal-from','cal-from-display', firstOfMonth)}
+                        <!-- مقدار میلادی (ذخیره‌سازی) -->
+                        <input type="hidden" id="cal-from" value="${firstOfMonth}">
+                        <!-- فیلد شمسی — کتابخانه jalalidatepicker آن را کنترل می‌کند (مثل مودال تسویه) -->
+                        <input type="text" id="cal-from-disp" data-jdp
+                            data-jdp-target-value-input="#cal-from"
+                            data-jdp-target-value-type="gregorian"
+                            value="${_jalaliDateDisplay(firstOfMonth)}"
+                            placeholder="انتخاب تاریخ شمسی"
+                            autocomplete="off"
+                            readonly
+                            onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                            class="w-full bg-slate-700 text-white border border-white/20 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-lime-400 cursor-pointer">
                     </div>
                     <div>
                         <label class="text-gray-400 text-sm mb-1 block">تا تاریخ</label>
-                        ${_buildJalaliInput('cal-to','cal-to-display', today)}
+                        <input type="hidden" id="cal-to" value="${today}">
+                        <input type="text" id="cal-to-disp" data-jdp
+                            data-jdp-target-value-input="#cal-to"
+                            data-jdp-target-value-type="gregorian"
+                            value="${_jalaliDateDisplay(today)}"
+                            placeholder="انتخاب تاریخ شمسی"
+                            autocomplete="off"
+                            readonly
+                            onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                            class="w-full bg-slate-700 text-white border border-white/20 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-lime-400 cursor-pointer">
                     </div>
                 </div>
                 <div class="flex gap-3 mb-5">
@@ -2983,7 +2871,11 @@ ${body}
                 <div id="cal-result" class="space-y-3"></div>
             </div>`;
         document.body.appendChild(modal);
-        modal.addEventListener('click', e => { if (e.target === modal) { EAccJalali.close(); modal.remove(); } });
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        // راه‌اندازی jalalidatepicker برای input های تاریخ
+        if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
+            setTimeout(function() { jalaliDatepicker.startWatch(); }, 50);
+        }
     }
 
     function applyCalendarFilter() {
@@ -3442,13 +3334,18 @@ ${body}
                     <!-- تاریخ -->
                     <div>
                         <label class="text-gray-400 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
-                        <div class="relative">
-                            <input type="text" id="ee-date-disp" readonly value="${dispDate}"
-                                placeholder="انتخاب تاریخ شمسی"
-                                onclick="EAccJalali.open('ee-date','ee-date-disp', event)"
-                                class="w-full bg-slate-700 text-white border border-white/20 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-400 cursor-pointer text-right">
-                            <input type="hidden" id="ee-date" value="${entry.date || ''}">
-                        </div>
+                        <!-- مقدار میلادی (ذخیره‌سازی) -->
+                        <input type="hidden" id="ee-date" value="${entry.date || ''}">
+                        <!-- فیلد شمسی — کتابخانه jalalidatepicker آن را کنترل می‌کند (مثل مودال تسویه) -->
+                        <input type="text" id="ee-date-disp" data-jdp
+                            data-jdp-target-value-input="#ee-date"
+                            data-jdp-target-value-type="gregorian"
+                            value="${dispDate}"
+                            placeholder="انتخاب تاریخ شمسی"
+                            autocomplete="off"
+                            readonly
+                            onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                            class="w-full bg-slate-700 text-white border border-white/20 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-400 cursor-pointer text-sm">
                     </div>
                     ${isExp ? `
                     <!-- مبلغ هزینه -->
@@ -3495,7 +3392,11 @@ ${body}
                 </div>
             </div>`;
         document.body.appendChild(modal);
-        modal.addEventListener('click', e => { if (e.target === modal) { EAccJalali.close(); modal.remove(); } });
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        // راه‌اندازی jalalidatepicker برای input جدید در مودال
+        if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
+            setTimeout(function() { jalaliDatepicker.startWatch(); }, 50);
+        }
     }
 
     function saveEditEntry(entryId, isExpense) {
