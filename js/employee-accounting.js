@@ -2080,7 +2080,21 @@ const EmployeeAccountingUI = (function() {
 
                 <!-- درخواست‌های مهلت مجدد این کارمند -->
                 ${(() => {
-                    const empReqs = (() => { try { return JSON.parse(localStorage.getItem('work_late_requests')||'[]').filter(r=>r.employeeId===employeeId).map(r=>({ ...r, status: r.status||'pending' })); } catch { return []; } })();
+                    const empReqs = (() => {
+                        try {
+                            const all = JSON.parse(localStorage.getItem('work_late_requests')||'[]');
+                            let mine = all.filter(r => r.employeeId === employeeId);
+                            // اگر با شناسه چیزی پیدا نشد، با نام کارمند تطبیق بده
+                            // (وقتی شناسه کارمند روی دستگاه‌های مختلف یکسان ذخیره نشده باشد)
+                            const empName = String(summary.employeeName || '').trim();
+                            if (!mine.length && empName && empName !== 'نامشخص') {
+                                mine = all.filter(r => String(r.employeeName || '').trim() === empName);
+                            }
+                            return mine.map(r => ({ ...r, status: r.status || 'pending' }));
+                        } catch { return []; }
+                    })();
+                    // اگر اتصال به Supabase در دسترس نیست، به مدیر اطلاع بده
+                    const _lrOffline = (typeof SupabaseConnection !== 'undefined' && SupabaseConnection.isOnline === false);
                     const pending = empReqs.filter(r=>r.status==='pending');
                     const others  = empReqs.filter(r=>r.status!=='pending');
                     const allReqs = [...pending, ...others];
@@ -2125,6 +2139,7 @@ const EmployeeAccountingUI = (function() {
                         <i class="fas fa-clock text-lime-400"></i>درخواست‌های مهلت مجدد
                         ${pending.length ? `<span class="bg-lime-500/30 text-lime-300 text-xs px-2 py-0.5 rounded-full">${pending.length} در انتظار</span>` : ''}
                     </h4>
+                    ${_lrOffline ? `<p class="text-amber-400 text-xs mb-2"><i class="fas fa-plug-circle-xmark ml-1"></i>اتصال به سرور برقرار نیست — فقط درخواست‌های ذخیره‌شده روی همین دستگاه نمایش داده می‌شود</p>` : ''}
                     <div class="overflow-x-auto">
                         ${allReqs.length ? `
                         <table class="w-full text-sm">
@@ -2741,14 +2756,72 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
         list.push(record);
         localStorage.setItem('work_late_requests', JSON.stringify(list));
 
-        // sync به Supabase (fire-and-forget — آفلاین فقط localStorage می‌ماند)
+        // sync به Supabase (fire-and-forget) — شکست sync دیگر بی‌صدا نیست:
+        // اگر سرور رکورد را دریافت نکند، به کارمند هشدار داده می‌شود
         if (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseDataModule.saveLateRequest === 'function') {
             SupabaseDataModule.saveLateRequest(record)
-                .catch(e => console.warn('⚠️ late-request Supabase sync:', e.message));
+                .then(res => {
+                    if (res && res.offline) return; // آفلاین — داده محلی می‌ماند و بعداً با باز شدن مودال مدیر push می‌شود
+                    if (res && res.synced === false) {
+                        console.warn('⚠️ late-request sync نشد — فقط محلی ذخیره شد');
+                        showNotification('درخواست ذخیره شد؛ اما همگام‌سازی با سرور انجام نشد — مدیر فقط از همین دستگاه آن را می‌بیند', 'warning');
+                    }
+                })
+                .catch(e => {
+                    console.warn('⚠️ late-request Supabase sync:', e.message);
+                    showNotification('درخواست ذخیره شد؛ اما همگام‌سازی با سرور انجام نشد', 'warning');
+                });
+        } else {
+            // ماژول Supabase در دسترس نیست (مثلاً SDK بارگذاری نشده) → ارسال مستقیم REST
+            _syncLateRequestDirect(record);
         }
 
         document.getElementById('late-request-modal')?.remove();
         showNotification('درخواست مهلت مجدد با موفقیت ارسال شد ✓', 'success');
+    }
+
+    // ── sync مستقیم REST برای درخواست مهلت مجدد ─────────────
+    // وقتی SupabaseDataModule/SDK در دسترس نیست، مستقیم به REST API ارسال می‌کند
+    function _syncLateRequestDirect(record) {
+        try {
+            if (typeof SUPABASE_URL === 'undefined' || typeof SUPABASE_ANON_KEY === 'undefined' ||
+                !SUPABASE_URL || SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+                console.warn('⚠️ late-request sync: Supabase پیکربندی نشده — فقط محلی ذخیره شد');
+                return;
+            }
+            const row = {
+                id:             record.id,
+                employee_id:    record.employeeId    || '',
+                employee_name:  record.employeeName  || null,
+                requested_date: record.requestedDate || '',
+                entry_type:     record.entryType     || 'work',
+                start_time:     record.startTime     || null,
+                end_time:       record.endTime       || null,
+                amount:         parseFloat(record.amount) || 0,
+                reason:         record.reason        || '',
+                description:    record.description   || null,
+                status:         record.status        || 'pending',
+                created_at:     record.createdAt     || new Date().toISOString()
+            };
+            fetch(SUPABASE_URL + '/rest/v1/work_late_requests?on_conflict=id', {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'resolution=merge-duplicates,return=minimal'
+                },
+                body: JSON.stringify(row)
+            }).then(r => {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                console.log('✅ درخواست مهلت مجدد مستقیم در Supabase ذخیره شد:', record.id);
+            }).catch(e => {
+                console.warn('⚠️ late-request direct sync:', e.message);
+                showNotification('درخواست ذخیره شد؛ اما همگام‌سازی با سرور انجام نشد', 'warning');
+            });
+        } catch (e) {
+            console.warn('⚠️ late-request direct sync:', e.message);
+        }
     }
 
     function approveLateRequest(id) {
@@ -2760,10 +2833,14 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
         req.reviewedAt = new Date().toISOString();
         localStorage.setItem('work_late_requests', JSON.stringify(list));
 
-        // sync وضعیت به Supabase
+        // sync وضعیت به Supabase — شکست دیگر بی‌صدا نیست
         if (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseDataModule.updateLateRequestStatus === 'function') {
             SupabaseDataModule.updateLateRequestStatus(id, 'approved', req.reviewedBy)
-                .catch(e => console.warn('⚠️ late-request Supabase sync:', e.message));
+                .then(ok => { if (ok === false) showNotification('تأیید انجام شد اما همگام‌سازی با سرور انجام نشد', 'warning'); })
+                .catch(e => {
+                    console.warn('⚠️ late-request Supabase sync:', e.message);
+                    showNotification('تأیید انجام شد اما همگام‌سازی با سرور انجام نشد', 'warning');
+                });
         }
 
         // ثبت خودکار بر اساس نوع درخواست
@@ -2803,10 +2880,14 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
         req.reviewedAt = new Date().toISOString();
         localStorage.setItem('work_late_requests', JSON.stringify(list));
 
-        // sync وضعیت به Supabase
+        // sync وضعیت به Supabase — شکست دیگر بی‌صدا نیست
         if (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseDataModule.updateLateRequestStatus === 'function') {
             SupabaseDataModule.updateLateRequestStatus(id, 'rejected', req.reviewedBy)
-                .catch(e => console.warn('⚠️ late-request Supabase sync:', e.message));
+                .then(ok => { if (ok === false) showNotification('رد انجام شد اما همگام‌سازی با سرور انجام نشد', 'warning'); })
+                .catch(e => {
+                    console.warn('⚠️ late-request Supabase sync:', e.message);
+                    showNotification('رد انجام شد اما همگام‌سازی با سرور انجام نشد', 'warning');
+                });
         }
 
         showNotification('درخواست رد شد', 'warning');

@@ -650,17 +650,18 @@ const SupabaseDataModule = {
         if (idx >= 0) all[idx] = record; else all.push(record);
         localStorage.setItem('work_late_requests', JSON.stringify(all));
 
-        if (!this._online()) return true;
+        // خروجی شفاف: { ok, synced, offline } تا فراخوان بتواند شکست sync را به کارمند نشان دهد
+        if (!this._online()) return { ok: true, synced: false, offline: true };
         try {
             const row = this._lateRequestToDb(record);
             const { error } = await this._db()
                 .from('work_late_requests')
                 .upsert(row, { onConflict: 'id' });
             if (error) throw error;
-            return true;
+            return { ok: true, synced: true };
         } catch (e) {
             console.warn('⚠️ saveLateRequest خطا:', e.message);
-            return false;
+            return { ok: true, synced: false };
         }
     },
 
