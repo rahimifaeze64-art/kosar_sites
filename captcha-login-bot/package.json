@@ -1,0 +1,15 @@
+{
+  "name": "captcha-login-bot",
+  "version": "1.0.0",
+  "description": "ورود خودکار به سامانه با حل کپچا — Auto-login bot with captcha solver",
+  "main": "login-bot.js",
+  "scripts": {
+    "start": "node login-bot.js",
+    "solve": "node captcha-solver.js"
+  },
+  "dependencies": {
+    "playwright": "^1.49.0",
+    "tesseract.js": "^5.1.1",
+    "pngjs": "^7.0.0"
+  }
+}

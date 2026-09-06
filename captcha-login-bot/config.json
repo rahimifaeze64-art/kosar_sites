@@ -1,0 +1,36 @@
+{
+  "_help": {
+    "loginUrl": "آدرس صفحه ورود سامانه — با --url قابل بازنویسی است",
+    "selectors": "اگر تشخیص خودکار درست عمل نکرد، سلکتور دقیق را اینجا بگذار (null یعنی تشخیص خودکار). مثلا برای صفحه ورود وردپرس: username=#user_login , password=#user_pass , submit=#wp-submit",
+    "credentials": "نام فیلد دانشجو در students.json برای نام کاربری و رمز سامانه",
+    "fields": "studentId=شماره دانشجویی | username=نام کاربری | systemPassword=رمز سامانه | password=رمز داخلی"
+  },
+  "loginUrl": "",
+  "selectors": {
+    "username": null,
+    "password": null,
+    "captchaInput": null,
+    "captchaImage": null,
+    "submit": null,
+    "refresh": null
+  },
+  "credentials": {
+    "usernameField": "studentId",
+    "passwordField": "systemPassword",
+    "fallbackUsernameField": "username",
+    "fallbackPasswordField": "password"
+  },
+  "attempts": 5,
+  "timeoutMs": 30000,
+  "browser": { "channel": null },
+  "errorTexts": ["اشتباه", "نادرست", "خطا", "نامعتبر", "منقضی", "ناموفق", "کد امنیتی", "incorrect", "invalid", "wrong", "failed", "mismatch"],
+  "successUrlIncludes": [],
+  "captcha": {
+    "minLength": 5,
+    "maxLength": 5,
+    "upscale": 4,
+    "thresholds": [0.42, 0.5, 0.58],
+    "lineRemoval": true,
+    "debug": true
+  }
+}

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>خروجی دانشجویان برای ربات ورود</title>
+<style>
+  body { font-family: Tahoma, Vazirmatn, sans-serif; background:#f6f8f7; margin:0; padding:24px; }
+  .card { max-width: 900px; margin: 0 auto; background:#fff; border-radius:14px; padding:24px; box-shadow:0 2px 12px rgba(0,0,0,.08); }
+  h1 { font-size:20px; color:#2f3b2f; margin:0 0 8px; }
+  p.hint { color:#68766a; font-size:13px; line-height:1.9; margin:6px 0 18px; }
+  button { background:#84cc16; color:#fff; border:0; border-radius:10px; padding:12px 22px; font-size:15px; font-weight:bold; cursor:pointer; }
+  button:hover { background:#65a30d; }
+  button.gray { background:#64748b; }
+  table { width:100%; border-collapse:collapse; margin-top:16px; font-size:13px; }
+  th, td { border:1px solid #e2e8e2; padding:8px 10px; text-align:right; }
+  th { background:#eef5e7; color:#3f5330; }
+  .ok { color:#16a34a; font-weight:bold; }
+  .none { color:#dc2626; }
+  pre { background:#0f172a; color:#a7f3d0; padding:14px; border-radius:10px; overflow:auto; direction:ltr; font-size:12px; max-height:220px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>📤 خروجی دانشجویان برای ربات ورود خودکار</h1>
+  <p class="hint">
+    این صفحه را از <b>همین دامنه‌ای که پنل مدیریت دانشجویان را باز می‌کنی</b> باز کن
+    (کنار index.html کپی شده). دیتای <code>users</code> و <code>students_data</code> را از مرورگر می‌خواند
+    و فایل <code>students.json</code> می‌سازد؛ آن را در پوشه <code>captcha-login-bot</code> ذخیره کن.
+  </p>
+  <button onclick="build()">۱. خواندن دانشجویان</button>
+  <button class="gray" onclick="download()">۲. دانلود students.json</button>
+  <button class="gray" onclick="copyJson()">۳. کپی JSON</button>
+  <div id="status"></div>
+  <div id="table"></div>
+  <pre id="preview" style="display:none"></pre>
+</div>
+
+<script>
+let RESULT = [];
+
+function readSources() {
+  const out = new Map();
+  // ۱) users — آرایه اصلی DataModule
+  try {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    (Array.isArray(users) ? users : []).forEach(u => {
+      if (u && (u.role === 'student' || u.studentId || u.systemPassword)) {
+        out.set(u.id, { ...u });
+      }
+    });
+  } catch (e) { console.warn('users', e); }
+  // ۲) students_data — نگاشت غنی‌تر (systemPassword و...)
+  try {
+    const sd = JSON.parse(localStorage.getItem('students_data') || '{}');
+    Object.entries(sd || {}).forEach(([id, s]) => {
+      out.set(id, { ...(out.get(id) || {}), ...s, id });
+    });
+  } catch (e) { console.warn('students_data', e); }
+  return [...out.values()];
+}
+
+function build() {
+  const st = document.getElementById('status');
+  const students = readSources();
+  RESULT = students.map(s => ({
+    id: s.id || '',
+    name: s.name || '',
+    studentId: s.studentId || '',
+    username: s.username || '',
+    password: s.password || '',
+    systemPassword: s.systemPassword || '',
+    university: s.university || '',
+    field: s.field || '',
+    degree: s.degree || '',
+    active: s.active !== false
+  }));
+  st.innerHTML = RESULT.length
+    ? `<p class="ok">✅ ${RESULT.length} دانشجو خوانده شد.</p>`
+    : `<p class="none">❌ دانشجویی پیدا نشد — مطمئن شو همین دامنه پنل است و قبلاً لاگین کرده‌ای.</p>`;
+  document.getElementById('preview').style.display = RESULT.length ? 'block' : 'none';
+  document.getElementById('preview').textContent =
+    JSON.stringify(RESULT.slice(0, 3), null, 2);
+  document.getElementById('table').innerHTML = !RESULT.length ? '' : `
+    <table><thead><tr><th>#</th><th>نام</th><th>شماره دانشجویی</th><th>رمز سامانه</th><th>دانشگاه</th></tr></thead>
+    <tbody>${RESULT.map((s, i) => `
+      <tr><td>${i + 1}</td><td>${s.name}</td><td>${s.studentId}</td>
+      <td>${s.systemPassword ? 'دارد' : '<span class="none">ندارد</span>'}</td><td>${s.university}</td></tr>`).join('')}
+    </tbody></table>`;
+}
+
+function download() {
+  if (!RESULT.length) build();
+  const blob = new Blob([JSON.stringify(RESULT, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'students.json';
+  a.click();
+}
+
+async function copyJson() {
+  if (!RESULT.length) build();
+  await navigator.clipboard.writeText(JSON.stringify(RESULT, null, 2));
+  alert('JSON کپی شد — در فایل captcha-login-bot/students.json ذخیره کن');
+}
+</script>
+</body>
+</html>

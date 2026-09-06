@@ -1,0 +1,214 @@
+{
+  "winner": {
+    "text": "vaughn",
+    "score": 103,
+    "count": 10,
+    "confidence": 23,
+    "variant": "gray-t0.58/RAW_LINE"
+  },
+  "ranked": [
+    {
+      "text": "vaughn",
+      "score": 103,
+      "count": 10,
+      "confidence": 23,
+      "variant": "gray-t0.58/RAW_LINE"
+    },
+    {
+      "text": "vaught",
+      "score": 84,
+      "count": 6,
+      "confidence": 32,
+      "variant": "gray-t0.58/SINGLE_BLOCK"
+    },
+    {
+      "text": "vag",
+      "score": 59,
+      "count": 14,
+      "confidence": 38,
+      "variant": "bin-clean/SINGLE_BLOCK"
+    }
+  ],
+  "raw": [
+    {
+      "text": "vaughn",
+      "score": -0.5,
+      "variant": "gray-clean/SINGLE_WORD",
+      "confidence": 23
+    },
+    {
+      "text": "vaughn",
+      "score": -0.5,
+      "variant": "gray-clean/RAW_LINE",
+      "confidence": 23
+    },
+    {
+      "text": "vaughn",
+      "score": -0.5,
+      "variant": "gray-raw/SINGLE_WORD",
+      "confidence": 23
+    },
+    {
+      "text": "vaughn",
+      "score": -0.5,
+      "variant": "gray-raw/RAW_LINE",
+      "confidence": 23
+    },
+    {
+      "text": "vag",
+      "score": -5,
+      "variant": "bin/SINGLE_WORD",
+      "confidence": 38
+    },
+    {
+      "text": "vag",
+      "score": -5,
+      "variant": "bin/RAW_LINE",
+      "confidence": 38
+    },
+    {
+      "text": "vag",
+      "score": -5,
+      "variant": "bin-clean/SINGLE_WORD",
+      "confidence": 38
+    },
+    {
+      "text": "vag",
+      "score": -5,
+      "variant": "bin-clean/RAW_LINE",
+      "confidence": 38
+    },
+    {
+      "text": "vag",
+      "score": -9.5,
+      "variant": "bin-clean/SINGLE_LINE",
+      "confidence": 29
+    },
+    {
+      "text": "vag",
+      "score": -9.5,
+      "variant": "bin-clean/SINGLE_BLOCK",
+      "confidence": 29
+    },
+    {
+      "text": "vaughn",
+      "score": -0.5,
+      "variant": "gray-t0.42/SINGLE_WORD",
+      "confidence": 23
+    },
+    {
+      "text": "vaughn",
+      "score": -0.5,
+      "variant": "gray-t0.42/RAW_LINE",
+      "confidence": 23
+    },
+    {
+      "text": "vaught",
+      "score": 4,
+      "variant": "gray-t0.42/SINGLE_LINE",
+      "confidence": 32
+    },
+    {
+      "text": "vaught",
+      "score": 4,
+      "variant": "gray-t0.42/SINGLE_BLOCK",
+      "confidence": 32
+    },
+    {
+      "text": "vag",
+      "score": -5,
+      "variant": "bin-clean/SINGLE_WORD",
+      "confidence": 38
+    },
+    {
+      "text": "vag",
+      "score": -5,
+      "variant": "bin-clean/RAW_LINE",
+      "confidence": 38
+    },
+    {
+      "text": "vag",
+      "score": -9.5,
+      "variant": "bin-clean/SINGLE_LINE",
+      "confidence": 29
+    },
+    {
+      "text": "vag",
+      "score": -9.5,
+      "variant": "bin-clean/SINGLE_BLOCK",
+      "confidence": 29
+    },
+    {
+      "text": "vaughn",
+      "score": -0.5,
+      "variant": "gray-t0.5/SINGLE_WORD",
+      "confidence": 23
+    },
+    {
+      "text": "vaughn",
+      "score": -0.5,
+      "variant": "gray-t0.5/RAW_LINE",
+      "confidence": 23
+    },
+    {
+      "text": "vaught",
+      "score": 4,
+      "variant": "gray-t0.5/SINGLE_LINE",
+      "confidence": 32
+    },
+    {
+      "text": "vaught",
+      "score": 4,
+      "variant": "gray-t0.5/SINGLE_BLOCK",
+      "confidence": 32
+    },
+    {
+      "text": "vag",
+      "score": -5,
+      "variant": "bin-clean/SINGLE_WORD",
+      "confidence": 38
+    },
+    {
+      "text": "vag",
+      "score": -5,
+      "variant": "bin-clean/RAW_LINE",
+      "confidence": 38
+    },
+    {
+      "text": "vag",
+      "score": -9.5,
+      "variant": "bin-clean/SINGLE_LINE",
+      "confidence": 29
+    },
+    {
+      "text": "vag",
+      "score": -9.5,
+      "variant": "bin-clean/SINGLE_BLOCK",
+      "confidence": 29
+    },
+    {
+      "text": "vaughn",
+      "score": -0.5,
+      "variant": "gray-t0.58/SINGLE_WORD",
+      "confidence": 23
+    },
+    {
+      "text": "vaughn",
+      "score": -0.5,
+      "variant": "gray-t0.58/RAW_LINE",
+      "confidence": 23
+    },
+    {
+      "text": "vaught",
+      "score": 4,
+      "variant": "gray-t0.58/SINGLE_LINE",
+      "confidence": 32
+    },
+    {
+      "text": "vaught",
+      "score": 4,
+      "variant": "gray-t0.58/SINGLE_BLOCK",
+      "confidence": 32
+    }
+  ]
+}

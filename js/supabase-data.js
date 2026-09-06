@@ -603,11 +603,24 @@ const SupabaseDataModule = {
             if (error) throw error;
             const cloud = data.map(r => this._dbToLateRequest(r));
 
-            // ادغام: ردیف‌های محلی که هنوز در کلود نیستند حفظ می‌شوند؛ نسخه کلود اولویت دارد
+            // ادغام: ردیف‌های محلی که هنوز در کلود نیستند حفظ می‌شوند.
+            // برای ردیف‌های موجود در هر دو منبع، نسخه‌ای که وضعیت نهایی (reviewedAt) جدیدتری دارد
+            // اولویت دارد — تا تأیید/ردِ تازه با fetch همزمانِ نسخه قدیمیِ pending کلود بازنویسی نشود
             const local = (() => { try { return JSON.parse(localStorage.getItem(localKey) || '[]'); } catch { return []; } })();
             const byId = {};
-            local.forEach(r => { byId[r.id] = r; });
-            cloud.forEach(r => { byId[r.id] = r; });
+            const _putLR = (r) => {
+                if (!r || !r.id) return;
+                const cur = byId[r.id];
+                if (!cur) { byId[r.id] = r; return; }
+                const curT = String(cur.reviewedAt || '');
+                const newT = String(r.reviewedAt || '');
+                if (curT && newT)       { byId[r.id] = (newT >= curT) ? r : cur; } // هر دو reviewed → جدیدتر برنده
+                else if (newT && !curT) { byId[r.id] = r; }                        // reviewed بر pending اولویت دارد
+                else if (!newT && curT) { /* نسخه reviewed فعلی می‌ماند */ }
+                else                    { byId[r.id] = r; }                        // هر دو pending → نسخه کلود اولویت دارد
+            };
+            local.forEach(_putLR);
+            cloud.forEach(_putLR);
             const merged = Object.values(byId)
                 .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
             localStorage.setItem(localKey, JSON.stringify(merged));

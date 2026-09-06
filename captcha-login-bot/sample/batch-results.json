@@ -1,0 +1,255 @@
+{
+  "words": "1/18",
+  "chars": "34/90",
+  "posHits": [
+    [
+      14,
+      18
+    ],
+    [
+      4,
+      18
+    ],
+    [
+      7,
+      18
+    ],
+    [
+      4,
+      18
+    ],
+    [
+      5,
+      18
+    ]
+  ],
+  "rows": [
+    {
+      "file": "Screenshot 2026-09-06 100549.png",
+      "guess": "nmugh",
+      "truth": "vwexh",
+      "hit": false,
+      "conf": 70,
+      "ms": 8899,
+      "candidates": [
+        "nmugh(283/fused)",
+        "magh(90/bin-clean/SINGLE_BLOCK)",
+        "vain(-12/bin/RAW_LINE)"
+      ]
+    },
+    {
+      "file": "Screenshot 2026-09-06 102310.png",
+      "guess": "vaughn",
+      "truth": "vwexh",
+      "hit": false,
+      "conf": 23,
+      "ms": 4052,
+      "candidates": [
+        "vaughn(103/gray-t0.58/RAW_LINE)",
+        "vaught(92/gray-t0.58/SINGLE_BLOCK)",
+        "vag(45/bin-clean/SINGLE_BLOCK)"
+      ]
+    },
+    {
+      "file": "Screenshot 2026-09-06 102315.png",
+      "guess": "g40t8",
+      "truth": "83cfr",
+      "hit": false,
+      "conf": 70,
+      "ms": 1309,
+      "candidates": [
+        "g40t8(122/fused)",
+        "s408(-12/gray-clean/RAW_LINE)",
+        "schr(-12/gray-raw/RAW_LINE)"
+      ]
+    },
+    {
+      "file": "Screenshot 2026-09-06 102319.png",
+      "guess": "mre",
+      "truth": "pytr6",
+      "hit": false,
+      "conf": 44,
+      "ms": 4845,
+      "candidates": [
+        "mre(8/gray-t0.5/SINGLE_LINE)",
+        "ype(-10/bin-clean/RAW_LINE)",
+        "oya2sannn(-35/gray-t0.58/SINGLE_BLOCK)"
+      ]
+    },
+    {
+      "file": "Screenshot 2026-09-06 111839.png",
+      "guess": "poe",
+      "truth": "pehfp",
+      "hit": false,
+      "conf": 51,
+      "ms": 5084,
+      "candidates": [
+        "poe(71/gray-t0.58/RAW_LINE)",
+        "pent(65/gray-t0.58/SINGLE_BLOCK)",
+        "135778(25/bin-clean/SINGLE_BLOCK)"
+      ]
+    },
+    {
+      "file": "Screenshot 2026-09-06 112847.png",
+      "guess": "stig",
+      "truth": "srmgx",
+      "hit": false,
+      "conf": 33,
+      "ms": 3815,
+      "candidates": [
+        "stig(144/gray-t0.58/RAW_LINE)",
+        "sime(6/bin-clean/SINGLE_BLOCK)",
+        "sem(-84/gray-t0.58/SINGLE_BLOCK)"
+      ]
+    },
+    {
+      "file": "Screenshot 2026-09-06 112907.png",
+      "guess": "freer",
+      "truth": "uaqpt",
+      "hit": false,
+      "conf": 70,
+      "ms": 912,
+      "candidates": [
+        "freer(238/fused)",
+        "pier(-10/bin/RAW_LINE)"
+      ]
+    },
+    {
+      "file": "Screenshot 2026-09-06 112926.png",
+      "guess": "nnpte",
+      "truth": "nnpyt",
+      "hit": false,
+      "conf": 70,
+      "ms": 3708,
+      "candidates": [
+        "nnpte(122/fused)",
+        "nv25(3/bin-clean/SINGLE_LINE)",
+        "npty(-12/gray-t0.5/SINGLE_BLOCK)"
+      ]
+    },
+    {
+      "file": "Screenshot 2026-09-06 112942.png",
+      "guess": "wirry",
+      "truth": "wtrmu",
+      "hit": false,
+      "conf": 70,
+      "ms": 3967,
+      "candidates": [
+        "wirry(196/fused)",
+        "wreru(62/bin-clean/SINGLE_BLOCK)",
+        "nas(4/bin-clean/SINGLE_BLOCK)"
+      ]
+    },
+    {
+      "file": "Screenshot 2026-09-06 113000.png",
+      "guess": "uxysh",
+      "truth": "uxysh",
+      "hit": true,
+      "conf": 70,
+      "ms": 810,
+      "candidates": [
+        "uxysh(270/fused)"
+      ]
+    },
+    {
+      "file": "Screenshot 2026-09-06 113013.png",
+      "guess": "foeke",
+      "truth": "feckf",
+      "hit": false,
+      "conf": 13,
+      "ms": 3794,
+      "candidates": [
+        "foeke(149/gray-t0.5/SINGLE_BLOCK)",
+        "feeke(136/fused)",
+        "foehe(74/bin-clean/SINGLE_BLOCK)"
+      ]
+    },
+    {
+      "file": "Screenshot 2026-09-06 123645.png",
+      "guess": "serb",
+      "truth": "ssre3",
+      "hit": false,
+      "conf": 27,
+      "ms": 801,
+      "candidates": [
+        "serb(68/bin/RAW_LINE)"
+      ]
+    },
+    {
+      "file": "Screenshot 2026-09-06 123709.png",
+      "guess": "wispg",
+      "truth": "wn3hk",
+      "hit": false,
+      "conf": 70,
+      "ms": 748,
+      "candidates": [
+        "wispg(197/fused)",
+        "wispy(75/bin/RAW_LINE)"
+      ]
+    },
+    {
+      "file": "Screenshot 2026-09-06 123729.png",
+      "guess": "qigag",
+      "truth": "quggs",
+      "hit": false,
+      "conf": 70,
+      "ms": 766,
+      "candidates": [
+        "qigag(318/fused)",
+        "qudag(109/bin/RAW_LINE)"
+      ]
+    },
+    {
+      "file": "Screenshot 2026-09-06 123803.png",
+      "guess": "qrx5q",
+      "truth": "qqryq",
+      "hit": false,
+      "conf": 70,
+      "ms": 4535,
+      "candidates": [
+        "qrx5q(193/fused)",
+        "cary(160/gray-t0.58/RAW_LINE)",
+        "xqras(99/gray-t0.58/SINGLE_LINE)"
+      ]
+    },
+    {
+      "file": "Screenshot 2026-09-06 123823.png",
+      "guess": "gto",
+      "truth": "gfq>n",
+      "hit": false,
+      "conf": 17,
+      "ms": 3775,
+      "candidates": [
+        "gto(-50/bin-clean/RAW_LINE)",
+        "goz(-84/bin-clean/SINGLE_BLOCK)",
+        "gt(-184/gray-t0.58/RAW_LINE)"
+      ]
+    },
+    {
+      "file": "Screenshot 2026-09-06 123840.png",
+      "guess": "sybwd",
+      "truth": "sybhd",
+      "hit": false,
+      "conf": 70,
+      "ms": 3952,
+      "candidates": [
+        "sybwd(270/fused)",
+        "syted(99/bin-clean/SINGLE_LINE)",
+        "syed(51/gray-t0.58/SINGLE_LINE)"
+      ]
+    },
+    {
+      "file": "Screenshot 2026-09-06 135135.png",
+      "guess": "sktdi",
+      "truth": "sktdt",
+      "hit": false,
+      "conf": 70,
+      "ms": 4585,
+      "candidates": [
+        "sktdi(270/fused)",
+        "skid(-5/gray-t0.5/RAW_LINE)",
+        "sktdid(-12/bin-clean/SINGLE_BLOCK)"
+      ]
+    }
+  ]
+}

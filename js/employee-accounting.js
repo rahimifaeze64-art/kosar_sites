@@ -2080,7 +2080,7 @@ const EmployeeAccountingUI = (function() {
 
                 <!-- درخواست‌های مهلت مجدد این کارمند -->
                 ${(() => {
-                    const empReqs = (() => { try { return JSON.parse(localStorage.getItem('work_late_requests')||'[]').filter(r=>r.employeeId===employeeId); } catch { return []; } })();
+                    const empReqs = (() => { try { return JSON.parse(localStorage.getItem('work_late_requests')||'[]').filter(r=>r.employeeId===employeeId).map(r=>({ ...r, status: r.status||'pending' })); } catch { return []; } })();
                     const pending = empReqs.filter(r=>r.status==='pending');
                     const others  = empReqs.filter(r=>r.status!=='pending');
                     const allReqs = [...pending, ...others];
@@ -2789,6 +2789,8 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
         }
 
         showNotification('درخواست تأیید شد و سابقه ثبت گردید ✓', 'success');
+        // بازسازی مودال جزئیات مالی (اگر باز باشد) تا وضعیت جدید فوراً نمایش داده شود — مثل ساعات کاری
+        if (req.employeeId) refreshDetailModalById(req.employeeId);
         refreshContent();
     }
 
@@ -2808,7 +2810,17 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
         }
 
         showNotification('درخواست رد شد', 'warning');
+        // بازسازی مودال جزئیات مالی (اگر باز باشد) تا وضعیت جدید فوراً نمایش داده شود — مثل ساعات کاری
+        if (req.employeeId) refreshDetailModalById(req.employeeId);
         refreshContent();
+    }
+
+    // ── بازسازی مودال جزئیات مالی کارمند (اگر باز باشد) ──────
+    // بعد از تأیید/رد درخواست مهلت مجدد یا ساعات کاری صدا زده می‌شود
+    function refreshDetailModalById(employeeId) {
+        if (!document.getElementById('employee-details-modal')) return;
+        document.getElementById('employee-details-modal')?.remove();
+        setTimeout(function(){ showEmployeeDetails(employeeId); }, 80);
     }
 
     // ── ویرایش ساعت کاری / هزینه توسط کارمند ────────────────
@@ -3211,10 +3223,7 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
         showExportEmployeesModal,
         doExportEmployeesCSV,
         // refresh modal after approve/reject
-        refreshDetailModal: function(employeeId) {
-            document.getElementById('employee-details-modal')?.remove();
-            setTimeout(function(){ showEmployeeDetails(employeeId); }, 80);
-        },
+        refreshDetailModal: refreshDetailModalById,
         // sidebar access
         hasSidebarAccess,
         toggleSidebarAccess,
