@@ -1203,6 +1203,10 @@ const EmployeeAccountingUI = (function() {
                                 class="px-4 py-2 bg-green-500/20 hover:bg-green-500/40 text-green-300 border border-green-400/30 rounded-xl text-sm transition-all flex items-center gap-2">
                                 <i class="fas fa-file-excel"></i>خروجی Excel
                             </button>
+                            <button onclick="EmployeeAccountingUI.showPayslipModal()"
+                                class="px-4 py-2 bg-violet-500/20 hover:bg-violet-500/40 text-violet-300 border border-violet-400/30 rounded-xl text-sm transition-all flex items-center gap-2">
+                                <i class="fas fa-file-invoice-dollar"></i>فیش حقوقی
+                            </button>
                         </div>
                     </div>
                     <div class="overflow-x-auto">
@@ -2486,6 +2490,460 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
         showNotification(`فایل Excel دانلود شد — ${detailRows.length} ردیف جزئیات ✓`, 'success');
     }
 
+    // ══════════════════════════════════════════════════════════
+    // ── فیش حقوق قابل چاپ (Salary Slip) ─────────────────────
+    // دکمه «فیش حقوقی» در کنار «خروجی Excel کارمندان»
+    // ══════════════════════════════════════════════════════════
+
+    // مبلغ به حروف فارسی (برای ردیف «خالص پرداختی به حروف» در فیش)
+    function _numToWordsFa(n) {
+        n = Math.round(Math.abs(Number(n) || 0));
+        if (n === 0) return 'صفر';
+        const yekan  = ['', 'یک', 'دو', 'سه', 'چهار', 'پنج', 'شش', 'هفت', 'هشت', 'نه'];
+        const dahgan = ['', '', 'بیست', 'سی', 'چهل', 'پنجاه', 'شصت', 'هفتاد', 'هشتاد', 'نود'];
+        const dahYek = ['ده', 'یازده', 'دوازده', 'سیزده', 'چهارده', 'پانزده', 'شانزده', 'هفده', 'هجده', 'نوزده'];
+        const sadgan = ['', 'صد', 'دویست', 'سیصد', 'چهارصد', 'پانصد', 'ششصد', 'هفتصد', 'هشتصد', 'نهصد'];
+        const scale  = ['', ' هزار', ' میلیون', ' میلیارد', ' هزار میلیارد'];
+        function _3(x) {
+            const p = [];
+            const s = Math.floor(x / 100), r = x % 100;
+            if (s) p.push(sadgan[s]);
+            if (r >= 10 && r < 20) { p.push(dahYek[r - 10]); }
+            else {
+                const d = Math.floor(r / 10), y = r % 10;
+                if (d) p.push(dahgan[d]);
+                if (y) p.push(yekan[y]);
+            }
+            return p.join(' و ');
+        }
+        const groups = [];
+        while (n > 0) { groups.push(n % 1000); n = Math.floor(n / 1000); }
+        const out = [];
+        for (let i = groups.length - 1; i >= 0; i--) {
+            if (!groups[i]) continue;
+            out.push(_3(groups[i]) + scale[i]);
+        }
+        return out.join(' و ');
+    }
+
+    // شماره سریال پایدار فیش بر اساس کارمند + بازه
+    function _slipSerial(empId, from, to) {
+        let h = 0;
+        const s = 'PS|' + String(empId) + '|' + String(from || 'ALL') + '|' + String(to || 'ALL');
+        for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+        return 'PS-' + String(Math.abs(h)).slice(0, 8).padStart(8, '0');
+    }
+
+    // ── مودال تنظیمات فیش حقوقی ─────────────────────────────
+    function showPayslipModal() {
+        document.getElementById('payslip-modal')?.remove();
+
+        const allSummary = EmployeeAccountingModule.getAllEmployeesSummary();
+        const empOpts = allSummary
+            .map(e => `<option value="${e.employeeId}">${e.employeeName}</option>`)
+            .join('');
+
+        // اول ماه و امروز به شمسی (پیش‌فرض: ماه جاری)
+        let d = new Date();
+        try { d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tehran' })); } catch (e) {}
+        const todayJ = _toJalaliISO(d);
+        const firstD = new Date(d.getFullYear(), d.getMonth(), 1);
+        const firstJ = _toJalaliISO(firstD);
+
+        const modal = document.createElement('div');
+        modal.id = 'payslip-modal';
+        modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4';
+        modal.innerHTML = `
+            <div class="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-violet-500/30 shadow-2xl" onclick="event.stopPropagation()">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="text-white text-lg font-bold flex items-center gap-2">
+                        <i class="fas fa-file-invoice-dollar text-violet-400"></i>فیش حقوق قابل چاپ
+                    </h3>
+                    <button onclick="document.getElementById('payslip-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="space-y-3 text-sm">
+                    <div>
+                        <label class="text-gray-400 text-xs mb-1 block">کارمندان (چند انتخابی)</label>
+                        <select id="pslp-employees" multiple size="6"
+                            class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                            ${empOpts}
+                        </select>
+                        <p class="text-gray-500 text-xs mt-1">Ctrl+کلیک برای چند انتخاب — خالی = همه کارمندان</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-gray-400 text-xs mb-1 block">از تاریخ</label>
+                            <input type="hidden" id="pslp-from" value="${firstJ}">
+                            <input type="text" id="pslp-from-jdp" data-jdp
+                                   data-jdp-target-value-input="#pslp-from"
+                                   data-jdp-target-value-type="jalali"
+                                   value="${_fmtJalali(firstJ)}"
+                                   placeholder="انتخاب تاریخ" autocomplete="off" readonly
+                                   onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                                   class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none hover:border-violet-400 cursor-pointer transition-colors">
+                        </div>
+                        <div>
+                            <label class="text-gray-400 text-xs mb-1 block">تا تاریخ</label>
+                            <input type="hidden" id="pslp-to" value="${todayJ}">
+                            <input type="text" id="pslp-to-jdp" data-jdp
+                                   data-jdp-target-value-input="#pslp-to"
+                                   data-jdp-target-value-type="jalali"
+                                   value="${_fmtJalali(todayJ)}"
+                                   placeholder="انتخاب تاریخ" autocomplete="off" readonly
+                                   onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                                   class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none hover:border-violet-400 cursor-pointer transition-colors">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-xs mb-1 block">وضعیت رکوردهای محاسبه</label>
+                        <select id="pslp-status"
+                            class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                            <option value="approved" selected>فقط تأیید شده (پیشنهادی)</option>
+                            <option value="all">همه وضعیت‌ها (تأیید / در انتظار / رد)</option>
+                        </select>
+                    </div>
+                    <div class="bg-violet-500/10 border border-violet-500/20 rounded-lg p-3">
+                        <p class="text-violet-300 text-xs flex items-start gap-2">
+                            <i class="fas fa-info-circle mt-0.5"></i>
+                            <span>هر فیش شامل اطلاعات کارمند، دستمزد ساعات، جبران هزینه‌ها، هدایا، کسورات، پرداخت‌های نقدی و <strong class="text-white">خالص قابل پرداخت به‌همراه عدد به حروف</strong> است. هر کارمند در یک صفحه A4 چاپ می‌شود.</span>
+                        </p>
+                    </div>
+                    <div class="flex gap-3 pt-1">
+                        <button onclick="EmployeeAccountingUI.doPrintPayslips()"
+                            class="flex-1 bg-violet-600 hover:bg-violet-500 text-white font-bold py-2.5 rounded-xl transition-all">
+                            <i class="fas fa-print ml-1"></i>چاپ فیش‌ها
+                        </button>
+                        <button onclick="document.getElementById('payslip-modal').remove()"
+                            class="px-5 bg-gray-600 hover:bg-gray-500 text-white py-2.5 rounded-xl">انصراف</button>
+                    </div>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        // راه‌اندازی jalalidatepicker برای input های تاریخ
+        setTimeout(function() {
+            if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
+                jalaliDatepicker.startWatch({ showTodayBtn: true, showEmptyBtn: true, showCloseBtn: true });
+            }
+        }, 50);
+    }
+
+    // ── تولید و چاپ فیش‌ها ──────────────────────────────────
+    function doPrintPayslips() {
+        const from      = document.getElementById('pslp-from')?.value   || '';
+        const to        = document.getElementById('pslp-to')?.value     || '';
+        const statusFlt = document.getElementById('pslp-status')?.value || 'approved';
+        const selIds    = Array.from(document.getElementById('pslp-employees')?.selectedOptions || []).map(o => o.value);
+
+        const readLS = k => { try { return JSON.parse(localStorage.getItem(k) || '[]'); } catch { return []; } };
+        const settlements = readLS('work_settlements');
+        const deductions  = readLS('work_deductions');
+        const gifts       = readLS('work_gifts');
+
+        const summary = EmployeeAccountingModule.getAllEmployeesSummary();
+        const targets = selIds.length ? summary.filter(e => selIds.includes(e.employeeId)) : summary;
+        if (!targets.length) { showNotification('کارمندی یافت نشد — ابتدا کارمند اضافه کنید', 'error'); return; }
+
+        // نرمال‌سازی تاریخ برای مقایسه رشته‌ای (تبدیل ارقام فارسی و اسلش)
+        const normDate = s => String(s || '').trim().replace(/\//g, '-')
+            .replace(/[۰-۹]/g, c => String.fromCharCode(c.charCodeAt(0) - 1728));
+        // هر تاریخ (میلادی یا شمسی) به شمسیِ نرمال برای فیلتر بازه
+        const jNorm = raw => normDate(_jalaliDateDisplay(raw));
+        const inRange = v => {
+            const x = String(v || '').trim();
+            if (from && x && x < normDate(from)) return false;
+            if (to   && x && x > normDate(to))    return false;
+            return true;
+        };
+
+        const slips = targets.map(emp => {
+            let entries = [];
+            try { entries = WorkHoursModule.getAllEntriesByEmployee(emp.employeeId) || []; } catch (_) {}
+
+            entries = entries.filter(e => inRange(normDate(e.date)));
+            if (statusFlt === 'approved') entries = entries.filter(e => e.status === 'approved');
+
+            const hours = entries.filter(e => e.type !== 'expense');
+            const exps  = entries.filter(e => e.type === 'expense');
+
+            const totalHours  = hours.reduce((s, e) => s + parseFloat(e.totalHours || 0), 0);
+            const hoursAmount = totalHours * (emp.hourlyRate || 0);
+            const expsAmount  = exps.reduce((s, e) => s + Number(e.amount || 0), 0);
+
+            const giftRows = gifts.filter(g => g.employeeId === emp.employeeId && inRange(jNorm(g.date)));
+            const dedRows  = deductions.filter(dd => dd.employeeId === emp.employeeId && inRange(jNorm(dd.date)));
+            const payRows  = settlements.filter(ss => ss.employeeId === emp.employeeId && inRange(jNorm(ss.date)));
+
+            const giftTotal = giftRows.reduce((s, g) => s + Number(g.amount || 0), 0);
+            const dedTotal  = dedRows.reduce((s, dd) => s + Number(dd.amount || 0), 0);
+            const paidTotal = payRows.reduce((s, pp) => s + Number(pp.amount || 0), 0);
+
+            const gross = hoursAmount + expsAmount + giftTotal;
+            const net   = gross - dedTotal - paidTotal;
+            const workDays = new Set(hours.map(h => String(h.date || '').trim())).size;
+
+            return { emp, hours, exps, giftRows, dedRows, payRows,
+                     totalHours, hoursAmount, expsAmount, giftTotal, dedTotal, paidTotal,
+                     gross, net, workDays };
+        });
+
+        // امروز شمسی برای تاریخ صدور
+        let dNow = new Date();
+        try { dNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tehran' })); } catch (e) {}
+
+        const ctx = {
+            orgName   : (document.title || 'سازمان').trim(),
+            from, to,
+            todayJ    : _toJalaliISO(dNow),
+            showStatus: statusFlt !== 'approved',
+            statusMap : { pending: 'در انتظار', approved: 'تأیید شده', rejected: 'رد شده' }
+        };
+
+        const body = slips.map(s => _buildPayslipHTML(s, ctx))
+            .join('\n<div class="page-break"></div>\n');
+
+        const win = window.open('', '_blank');
+        if (!win) {
+            showNotification('پنجره چاپ باز نشد — Pop-up این سایت را فعال کنید', 'error');
+            return;
+        }
+        win.document.write(`<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+<meta charset="UTF-8">
+<title>فیش حقوقی</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Tahoma, 'Segoe UI', sans-serif; direction: rtl; margin: 0; background: #eef1f5; color: #000; }
+  .toolbar { position: sticky; top: 0; z-index: 9; background: #1e293b; color: #fff; padding: 10px 16px; display: flex; gap: 12px; align-items: center; justify-content: center; }
+  .toolbar button { background: #7c3aed; color: #fff; border: 0; padding: 8px 24px; border-radius: 8px; font-family: inherit; font-size: 13px; font-weight: bold; cursor: pointer; }
+  .toolbar .hint { font-size: 11px; opacity: .75; }
+  .slip { background: #fff; max-width: 820px; margin: 16px auto; padding: 18px 22px; box-shadow: 0 2px 10px rgba(0,0,0,.15); border: 1px solid #d1d5db; }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px double #000; padding-bottom: 8px; margin-bottom: 10px; }
+  .org  { font-size: 12px; color: #333; }
+  .ttl  { font-size: 16px; font-weight: bold; margin: 2px 0; }
+  .period { font-size: 11px; color: #333; }
+  .hmeta { text-align: left; font-size: 10.5px; line-height: 1.9; color: #222; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+  th { background: #e5e7eb; padding: 5px 8px; border: 1px solid #555; font-size: 10.5px; text-align: center; }
+  .sec { font-size: 11.5px; font-weight: bold; background: #f1f5f9; border: 1px solid #555; padding: 4px 8px; margin-top: 10px; }
+  .sec + table { margin-top: 0; border-top: 0; }
+  .net-main { padding: 9px; border: 2px solid #000; text-align: center; font-weight: bold; font-size: 12.5px; background: #f1f5f9; }
+  .net-words { padding: 5px 8px; border: 1px solid #555; border-top: 0; font-size: 10.5px; }
+  .foot { margin-top: 14px; font-size: 9.5px; color: #555; text-align: center; border-top: 1px dashed #999; padding-top: 6px; line-height: 1.8; }
+  .page-break { page-break-after: always; break-after: page; }
+  @page { size: A4; margin: 12mm; }
+  @media print {
+    body { background: #fff; }
+    .toolbar { display: none !important; }
+    .slip { box-shadow: none; border: 0; margin: 0 auto; max-width: none; padding: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <button onclick="window.print()">🖨️ چاپ</button>
+  <span class="hint">پنجره چاپ به‌صورت خودکار باز می‌شود — در صورت باز نشدن روی دکمه کلیک کنید</span>
+</div>
+${body}
+<script>window.onload = function () { setTimeout(function () { window.print(); }, 500); };<\/script>
+</body>
+</html>`);
+        win.document.close();
+
+        document.getElementById('payslip-modal')?.remove();
+        showNotification(`${slips.length} فیش حقوقی برای چاپ آماده شد ✓`, 'success');
+    }
+
+    // ── ساخت HTML یک فیش ───────────────────────────────────
+    function _buildPayslipHTML(d, ctx) {
+        const esc    = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const toFa   = s => String(s).replace(/\d/g, x => '۰۱۲۳۴۵۶۷۸۹'[x]);
+        const fmtNum = n => new Intl.NumberFormat('fa-IR').format(Math.round(n || 0));
+        const fmtT   = n => fmtNum(n) + ' تومان';
+        const fmtH   = h => {
+            const t = Math.round((parseFloat(h) || 0) * 60);
+            return toFa(Math.floor(t / 60)) + ':' + toFa(String(t % 60).padStart(2, '0'));
+        };
+
+        const cellL = 'padding:5px 8px;border:1px solid #555;font-size:10.5px;';
+        const cellV = cellL + 'font-weight:bold;white-space:nowrap;';
+        const sec   = t => `<div class="sec">${t}</div>`;
+
+        const periodTxt = 'از ' + (ctx.from ? _fmtJalali(ctx.from) : 'ابتدای فعالیت') +
+                          ' تا ' + (ctx.to ? _fmtJalali(ctx.to) : _fmtJalali(ctx.todayJ));
+        const serial = _slipSerial(d.emp.employeeId, ctx.from, ctx.to);
+
+        // ── سربرگ ──
+        const head = `
+          <div class="head">
+            <div>
+              <div class="org">${esc(ctx.orgName)}</div>
+              <div class="ttl">فیش حقوق و دستمزد</div>
+              <div class="period">دوره: ${periodTxt}</div>
+            </div>
+            <div class="hmeta">
+              شماره فیش: <b>${serial}</b><br>
+              تاریخ صدور: <b>${_fmtJalali(ctx.todayJ)}</b><br>
+              مبنای محاسبه: <b>${ctx.showStatus ? 'همه رکوردها' : 'فقط تأیید شده'}</b>
+            </div>
+          </div>`;
+
+        // ── اطلاعات کارمند ──
+        const info = `
+          <table>
+            <tr>
+              <td style="${cellL}">نام و نام خانوادگی</td><td style="${cellV}" colspan="3">${esc(d.emp.employeeName)}</td>
+            </tr>
+            <tr>
+              <td style="${cellL}">شماره پرسنلی</td><td style="${cellV}">${esc(d.emp.employeeId)}</td>
+              <td style="${cellL}">نرخ ساعتی</td><td style="${cellV}">${fmtT(d.emp.hourlyRate)}</td>
+            </tr>
+            <tr>
+              <td style="${cellL}">ساعات کارکرد دوره</td><td style="${cellV}">${fmtH(d.totalHours)} ساعت</td>
+              <td style="${cellL}">روزهای کارکرد</td><td style="${cellV}">${toFa(d.workDays)} روز</td>
+            </tr>
+          </table>`;
+
+        // ── جدول دوستونه حقوق و مزایا / کسورات ──
+        const earn = [
+            ['دستمزد ساعات کارکرد <span style="font-weight:normal;font-size:9px">(' + fmtH(d.totalHours) + ' ساعت × ' + fmtNum(d.emp.hourlyRate) + ' تومان)</span>', d.hoursAmount],
+            ['جبران هزینه‌ها (مأموریت، ایاب‌وذهاب و ...)', d.expsAmount],
+            ['هدیه و پاداش', d.giftTotal]
+        ];
+        const deds = [
+            ['کسورات', d.dedTotal],
+            ['تسویه‌های نقدی پرداخت‌شده', d.paidTotal]
+        ];
+        const maxR = Math.max(earn.length, deds.length);
+        let edRows = '';
+        for (let i = 0; i < maxR; i++) {
+            const e = earn[i], dd = deds[i];
+            edRows += `<tr>
+                <td style="${cellL}">${e ? e[0] : ''}</td><td style="${cellV}">${e ? fmtNum(e[1]) : ''}</td>
+                <td style="${cellL}">${dd ? dd[0] : ''}</td><td style="${cellV}">${dd ? fmtNum(dd[1]) : ''}</td>
+            </tr>`;
+        }
+        edRows += `<tr style="background:#e5e7eb">
+            <td style="${cellL};font-weight:bold">جمع ناخالص حقوق و مزایا</td><td style="${cellV}">${fmtNum(d.gross)}</td>
+            <td style="${cellL};font-weight:bold">جمع کسورات و پرداخت‌ها</td><td style="${cellV}">${fmtNum(d.dedTotal + d.paidTotal)}</td>
+        </tr>`;
+
+        const edTable = `
+          <table>
+            <thead><tr><th>حقوق و مزایا</th><th>مبلغ (تومان)</th><th>کسورات و پرداخت‌ها</th><th>مبلغ (تومان)</th></tr></thead>
+            <tbody>${edRows}</tbody>
+          </table>`;
+
+        // ── خالص پرداختی + به حروف ──
+        const netWords = (d.net < 0 ? 'منفی ' : '') + _numToWordsFa(d.net) + ' تومان';
+        const netBlock = `
+          <table style="margin-top:8px">
+            <tr><td class="net-main">خالص قابل پرداخت (مانده): ${fmtT(d.net)}</td></tr>
+            <tr><td class="net-words">به حروف: ${netWords}</td></tr>
+          </table>`;
+
+        // ── ریز ساعات کارکرد ──
+        const hCols = ctx.showStatus ? 7 : 6;
+        const hoursRows = d.hours.map((e, i) => `<tr>
+            <td style="${cellL};text-align:center">${toFa(i + 1)}</td>
+            <td style="${cellL};text-align:center">${_jalaliDateDisplay(e.date)}</td>
+            <td style="${cellL};text-align:center">${toFa(e.startTime || '—')}</td>
+            <td style="${cellL};text-align:center">${toFa(e.endTime || '—')}</td>
+            <td style="${cellL};text-align:center">${fmtH(e.totalHours)}</td>
+            ${ctx.showStatus ? `<td style="${cellL};text-align:center">${ctx.statusMap[e.status] || e.status || ''}</td>` : ''}
+            <td style="${cellL}">${esc(e.description || '—')}</td>
+        </tr>`).join('');
+
+        const hoursTbl = sec('ریز ساعات کارکرد') + `
+          <table>
+            <thead><tr><th>ردیف</th><th>تاریخ</th><th>از ساعت</th><th>تا ساعت</th><th>مدت</th>${ctx.showStatus ? '<th>وضعیت</th>' : ''}<th>شرح</th></tr></thead>
+            <tbody>${hoursRows || `<tr><td colspan="${hCols}" style="${cellL};text-align:center;color:#777">ثبت نشده</td></tr>`}</tbody>
+          </table>`;
+
+        // ── ریز جبران هزینه‌ها ──
+        const eCols = ctx.showStatus ? 5 : 4;
+        const expRows = d.exps.map((e, i) => `<tr>
+            <td style="${cellL};text-align:center">${toFa(i + 1)}</td>
+            <td style="${cellL};text-align:center">${_jalaliDateDisplay(e.date)}</td>
+            <td style="${cellL};text-align:center">${fmtNum(e.amount)}</td>
+            ${ctx.showStatus ? `<td style="${cellL};text-align:center">${ctx.statusMap[e.status] || e.status || ''}</td>` : ''}
+            <td style="${cellL}">${esc(e.description || '—')}</td>
+        </tr>`).join('');
+
+        const expTbl = sec('ریز جبران هزینه‌ها') + `
+          <table>
+            <thead><tr><th>ردیف</th><th>تاریخ</th><th>مبلغ (تومان)</th>${ctx.showStatus ? '<th>وضعیت</th>' : ''}<th>شرح</th></tr></thead>
+            <tbody>${expRows || `<tr><td colspan="${eCols}" style="${cellL};text-align:center;color:#777">ثبت نشده</td></tr>`}</tbody>
+          </table>`;
+
+        // ── هدایا / کسورات / پرداخت‌های نقدی ──
+        const giftRows = d.giftRows.map(g => `<tr>
+            <td style="${cellL};text-align:center">${_jalaliDateDisplay(g.date)}</td>
+            <td style="${cellL};text-align:center">${fmtNum(g.amount)}</td>
+            <td style="${cellL}">${esc(g.reason || '—')}</td>
+        </tr>`).join('');
+        const giftTbl = sec('هدایا و پاداش') + `
+          <table>
+            <thead><tr><th>تاریخ</th><th>مبلغ (تومان)</th><th>علت / توضیح</th></tr></thead>
+            <tbody>${giftRows || `<tr><td colspan="3" style="${cellL};text-align:center;color:#777">ثبت نشده</td></tr>`}</tbody>
+          </table>`;
+
+        const dedRows = d.dedRows.map(dd => `<tr>
+            <td style="${cellL};text-align:center">${_jalaliDateDisplay(dd.date)}</td>
+            <td style="${cellL};text-align:center">${fmtNum(dd.amount)}</td>
+            <td style="${cellL}">${esc(dd.reason || '—')}</td>
+        </tr>`).join('');
+        const dedTbl = sec('کسورات') + `
+          <table>
+            <thead><tr><th>تاریخ</th><th>مبلغ (تومان)</th><th>علت / توضیح</th></tr></thead>
+            <tbody>${dedRows || `<tr><td colspan="3" style="${cellL};text-align:center;color:#777">ثبت نشده</td></tr>`}</tbody>
+          </table>`;
+
+        const payRows = d.payRows.map(pp => `<tr>
+            <td style="${cellL};text-align:center">${_jalaliDateDisplay(pp.date)}</td>
+            <td style="${cellL};text-align:center">${fmtNum(pp.amount)}</td>
+            <td style="${cellL}">${esc(pp.note || '—')}</td>
+        </tr>`).join('');
+        const payTbl = sec('پرداخت‌های نقدی (تسویه‌حساب)') + `
+          <table>
+            <thead><tr><th>تاریخ</th><th>مبلغ (تومان)</th><th>توضیح</th></tr></thead>
+            <tbody>${payRows || `<tr><td colspan="3" style="${cellL};text-align:center;color:#777">ثبت نشده</td></tr>`}</tbody>
+          </table>`;
+
+        // ── امضاها ──
+        const signs = `
+          <table style="margin-top:16px">
+            <tr>
+              <td style="border:0;text-align:center;font-size:10.5px;padding-top:28px;width:50%">امضای کارمند</td>
+              <td style="border:0;text-align:center;font-size:10.5px;padding-top:28px;width:50%">امضا و مهر کارفرما</td>
+            </tr>
+          </table>`;
+
+        const footNote = ctx.showStatus
+            ? '⚠ توجه: در این فیش رکوردهای تأییدنشده (در انتظار / رد شده) نیز لحاظ شده است.'
+            : 'مبنای محاسبه: فقط رکوردهای تأییدشده در بازه انتخابی.';
+        const foot = `
+          <div class="foot">
+            ${footNote}<br>
+            این فیش به‌صورت سیستمی از سامانه صادر شده و پس از بررسی و امضا معتبر می‌باشد • تاریخ چاپ: ${_fmtJalali(ctx.todayJ)}
+          </div>`;
+
+        return `<div class="slip">
+            ${head}
+            ${info}
+            ${edTable}
+            ${netBlock}
+            ${hoursTbl}
+            ${expTbl}
+            ${giftTbl}
+            ${dedTbl}
+            ${payTbl}
+            ${signs}
+            ${foot}
+        </div>`;
+    }
+
     // ── تقویم کاری (فیلتر بازه تاریخ) ──────────────────────
     function showWorkCalendarModal() {
         document.getElementById('work-calendar-modal')?.remove();
@@ -3331,6 +3789,8 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
         saveEditEntry,
         showExportEmployeesModal,
         doExportEmployeesCSV,
+        showPayslipModal,
+        doPrintPayslips,
         // refresh modal after approve/reject
         refreshDetailModal: refreshDetailModalById,
         // sidebar access
