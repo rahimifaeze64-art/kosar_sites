@@ -2517,10 +2517,12 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
             .replace(/[۰-۹]/g, c => String.fromCharCode(c.charCodeAt(0) - 1728));
         // هر تاریخ (میلادی یا شمسی) به شمسیِ نرمال برای فیلتر بازه
         const jNorm = raw => normDate(_jalaliDateDisplay(raw));
+        const fromJ = from ? jNorm(from) : '';
+        const toJ   = to   ? jNorm(to)   : '';
         const inRange = v => {
             const x = String(v || '').trim();
-            if (from && x && x < normDate(from)) return false;
-            if (to   && x && x > normDate(to))    return false;
+            if (fromJ && x && x < fromJ) return false;
+            if (toJ   && x && x > toJ)   return false;
             return true;
         };
 
@@ -2528,7 +2530,7 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
             let entries = [];
             try { entries = WorkHoursModule.getAllEntriesByEmployee(emp.employeeId) || []; } catch (_) {}
 
-            entries = entries.filter(e => inRange(normDate(e.date)));
+            entries = entries.filter(e => inRange(jNorm(e.date)));
             if (statusFlt === 'approved') entries = entries.filter(e => e.status === 'approved');
 
             const hours = entries.filter(e => e.type !== 'expense');
@@ -2584,7 +2586,7 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
   * { box-sizing: border-box; }
   body { font-family: Tahoma, 'Segoe UI', sans-serif; direction: rtl; margin: 0; background: #eef1f5; color: #000; }
   .toolbar { position: sticky; top: 0; z-index: 9; background: #1e293b; color: #fff; padding: 10px 16px; display: flex; gap: 12px; align-items: center; justify-content: center; }
-  .toolbar button { background: #7c3aed; color: #fff; border: 0; padding: 8px 24px; border-radius: 8px; font-family: inherit; font-size: 13px; font-weight: bold; cursor: pointer; }
+  .toolbar button { background: #65a30d; color: #fff; border: 0; padding: 8px 24px; border-radius: 8px; font-family: inherit; font-size: 13px; font-weight: bold; cursor: pointer; }
   .toolbar .hint { font-size: 11px; opacity: .75; }
   .slip { background: #fff; max-width: 820px; margin: 16px auto; padding: 18px 22px; box-shadow: 0 2px 10px rgba(0,0,0,.15); border: 1px solid #d1d5db; }
   .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px double #000; padding-bottom: 8px; margin-bottom: 10px; }
@@ -2646,7 +2648,7 @@ ${body}
         const head = `
           <div class="head">
             <div>
-              <div class="org">${esc(ctx.orgName)}</div>
+              <div class="org">شرکةالکوثر</div>
               <div class="ttl">فیش حقوق و دستمزد</div>
               <div class="period">دوره: ${periodTxt}</div>
             </div>
