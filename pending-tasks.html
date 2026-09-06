@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>کارهای معلق</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+    <style>
+        * { font-family: 'Vazirmatn', sans-serif; box-sizing: border-box; }
+        body { margin: 0; background: #f1f5f9; color: #1e293b; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+        #app-header {
+            background: #ffffff; border-bottom: 2px solid #e2e8f0;
+            padding: 10px 18px; display: flex; align-items: center; gap: 12px;
+            z-index: 100; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,.08);
+        }
+        #app-header h1 { font-size: 16px; font-weight: 800; color: #1e293b; margin: 0; }
+        #app-header p  { font-size: 11px; color: #64748b; margin: 0; }
+        .stat-badge {
+            display: flex; align-items: center; gap: 6px;
+            background: #f5f3ff; border: 1px solid #ddd6fe; color: #6d28d9;
+            border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 700;
+        }
+        #toolbar {
+            position: fixed; top: 50%; right: 16px; transform: translateY(-50%);
+            background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px;
+            padding: 10px 8px; display: flex; flex-direction: column; gap: 6px;
+            z-index: 200; box-shadow: 0 4px 16px rgba(0,0,0,.1);
+        }
+        .tb-btn {
+            width: 42px; height: 42px; border-radius: 10px;
+            border: 1.5px solid #e2e8f0; background: #f8fafc; color: #64748b;
+            font-size: 15px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+        }
+        .tb-btn:hover { background: #f5f3ff; color: #7c3aed; border-color: #ddd6fe; }
+        .tb-btn.active { background: #7c3aed; color: white; border-color: #7c3aed; }
+        .tb-sep { height: 1px; background: #e2e8f0; margin: 2px 0; }
+        #canvas-wrap { flex: 1; position: relative; overflow: hidden; cursor: default; }
+        #canvas-wrap.pan-mode { cursor: grab; }
+        #canvas-wrap.pan-mode.panning { cursor: grabbing; }
+        canvas#pt { position: absolute; top: 0; left: 0; }
+        #zoom-badge {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px;
+            padding: 5px 14px; font-size: 12px; color: #64748b; z-index: 200;
+            pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,.08);
+        }
+        #filter-bar {
+            position: fixed; bottom: 20px; right: 80px;
+            background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px;
+            padding: 6px 12px; display: flex; align-items: center; gap: 8px;
+            z-index: 200; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.08);
+        }
+        #filter-bar select {
+            background: #f8fafc; color: #1e293b; border: 1px solid #cbd5e1;
+            border-radius: 6px; padding: 4px 8px; font-size: 12px;
+            font-family: 'Vazirmatn', sans-serif; outline: none;
+        }
+        #btn-refresh:hover { background: #f5f3ff; color: #7c3aed; }
+        #node-info {
+            position: fixed; display: none; background: #ffffff;
+            border: 1px solid #ddd6fe; border-radius: 12px; padding: 12px 14px;
+            z-index: 500; min-width: 240px; max-width: 320px;
+            box-shadow: 0 8px 30px rgba(0,0,0,.18); font-size: 12px;
+        }
+        #node-info h4 { margin: 0 0 6px; font-size: 13px; color: #1e293b; display: flex; align-items: center; gap: 6px; }
+        #node-info .row { color: #475569; margin: 3px 0; display: flex; gap: 6px; align-items: flex-start; }
+        #node-info .row i { color: #8b5cf6; margin-top: 2px; width: 12px; }
+    </style>
+</head>
+<body>
+<!-- Header -->
+<div id="app-header">
+    <a href="index.html" id="back-link" style="color:#64748b;font-size:18px;text-decoration:none">
+        <i class="fas fa-arrow-right"></i>
+    </a>
+    <div style="flex:1">
+        <h1><i class="fas fa-hourglass-half" style="color:#8b5cf6;margin-left:6px"></i>کارهای معلق</h1>
+        <p>وظایف در جریان هر کارمند | Drag برای جابه‌جایی | Scroll برای zoom | کلیک روی مربع وظیفه برای جزئیات</p>
+    </div>
+    <div class="stat-badge"><i class="fas fa-users"></i><span id="stat-emps">0 کارمند</span></div>
+    <div class="stat-badge"><i class="fas fa-clipboard-list"></i><span id="stat-tasks">0 وظیفه معلق</span></div>
+</div>
+
+<!-- Canvas -->
+<div id="canvas-wrap">
+    <canvas id="pt"></canvas>
+</div>
+
+<!-- Toolbar -->
+<div id="toolbar">
+    <div class="tb-btn active" id="tb-select" onclick="setTool('select')" title="انتخاب و جابه‌جایی">
+        <i class="fas fa-mouse-pointer"></i>
+    </div>
+    <div class="tb-btn" id="tb-pan" onclick="setTool('pan')" title="پان (یا دکمه وسط موس)">
+        <i class="fas fa-hand-paper"></i>
+    </div>
+    <div class="tb-sep"></div>
+    <div class="tb-btn" onclick="zoomIn()" title="بزرگنمایی">
+        <i class="fas fa-plus"></i>
+    </div>
+    <div class="tb-btn" onclick="zoomOut()" title="کوچک‌نمایی">
+        <i class="fas fa-minus"></i>
+    </div>
+    <div class="tb-btn" onclick="resetView()" title="بازنشانی نما">
+        <i class="fas fa-compress-arrows-alt"></i>
+    </div>
+    <div class="tb-sep"></div>
+    <div class="tb-btn" onclick="autoArrange()" title="مرتب‌سازی خودکار نودها">
+        <i class="fas fa-magic" style="color:#8b5cf6"></i>
+    </div>
+    <div class="tb-btn" id="btn-refresh" onclick="manualRefresh()" title="بروزرسانی از سیستم">
+        <i class="fas fa-sync-alt" style="color:#22c55e"></i>
+    </div>
+</div>
+
+<!-- Zoom badge -->
+<div id="zoom-badge">100%</div>
+
+<!-- Filter bar -->
+<div id="filter-bar">
+    <i class="fas fa-filter" style="color:#8b5cf6"></i>
+    <label style="color:#94a3b8">نمایش:</label>
+    <select id="filter-sel" onchange="onFilterChange()">
+        <option value="withTasks" selected>فقط کارمندان دارای وظیفه معلق</option>
+        <option value="all">همه کارمندان</option>
+    </select>
+</div>
+
+<!-- Node info -->
+<div id="node-info"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+//  CONSTANTS & STATE
+// ══════════════════════════════════════════════════════════════════
+// وظایف تکمیل‌شده از گراف حذف می‌شوند
+const DONE_STATUSES = ['completed', 'approved'];
+
+const TASK_STYLE = {
+    pending:     { fill: '#713f12', stroke: '#fbbf24', label: 'در انتظار' },
+    in_progress: { fill: '#1e3a8a', stroke: '#60a5fa', label: 'در حال انجام' },
+    delayed:     { fill: '#7c2d12', stroke: '#fb923c', label: 'به تأخیر' },
+    rejected:    { fill: '#7f1d1d', stroke: '#f87171', label: 'رد شده' }
+};
+const TASK_STYLE_FALLBACK = { fill: '#334155', stroke: '#94a3b8', label: '' };
+const EMP_STYLE = { fill: '#365314', stroke: '#a3e635' };
+
+let zoom = 1, panX = 0, panY = 0;
+let currentTool = 'select';
+let filterMode  = 'withTasks';
+let nodes = [];          // { id, kind:'emp'|'task', empId, taskRef, label, x, y, w, h, status }
+let selectedNodeId = null;
+let dragging = null, dragOffX = 0, dragOffY = 0;
+let isPanning = false, panStartX = 0, panStartY = 0, panStartCamX = 0, panStartCamY = 0;
+let mouseX = 0, mouseY = 0;
+let graphBounds = { minX: 0, minY: 0, maxX: 0, maxY: 0 };
+let graphEmpty = false;
+
+// چیدمان ذخیره‌شده‌ی نودها (جابه‌جایی دستی کاربر حفظ می‌شود)
+let layout = (() => {
+    try { return JSON.parse(localStorage.getItem('pt_layout_v1') || '{}'); } catch (e) { return {}; }
+})();
+function saveLayout() {
+    try { localStorage.setItem('pt_layout_v1', JSON.stringify(layout)); } catch (e) {}
+}
+
+const canvas = document.getElementById('pt');
+const ctx    = canvas.getContext('2d');
+
+// ══════════════════════════════════════════════════════════════════
+//  DATA LOADING — همان منبع صفحه «وظایف من»: employee_tasks
+// ══════════════════════════════════════════════════════════════════
+function loadJSON(key, fb) {
+    try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fb;
+    } catch (e) { return fb; }
+}
+
+// وضعیت معلق = هر چیزی جز completed / approved
+function isPendingTask(t) {
+    return t && typeof t === 'object' && !DONE_STATUSES.includes(t.status);
+}
+
+function taskKey(empId, t, idx) {
+    return (t && (t.id || t._id)) ? String(t.id || t._id) : (empId + '::' + idx + '::' + (t && t.createdAt ? t.createdAt : ''));
+}
+
+function buildGraph() {
+    const users     = loadJSON('edu_system_users', []);
+    const tasksData = loadJSON('employee_tasks', {}) || {};
+
+    const nameMap = {};
+    (Array.isArray(users) ? users : []).forEach(u => {
+        if (u && u.id) nameMap[u.id] = u.name || u.username || u.id;
+    });
+    const nameOf = id => nameMap[id] || id;
+
+    // ۱) کارمندانی که وظیفه معلق دارند
+    const entries = [];
+    Object.keys(tasksData).forEach(empId => {
+        const tasks = (Array.isArray(tasksData[empId]) ? tasksData[empId] : []).filter(isPendingTask);
+        if (tasks.length) entries.push({ empId, name: nameOf(empId), tasks });
+    });
+
+    // ۲) در حالت «همه کارمندان»، کارمندان بدون وظیفه هم نمایش داده می‌شوند
+    if (filterMode === 'all') {
+        const seen = new Set(entries.map(e => e.empId));
+        (Array.isArray(users) ? users : [])
+            .filter(u => u && u.role === 'employee' && !seen.has(u.id))
+            .forEach(u => entries.push({ empId: u.id, name: nameOf(u.id), tasks: [] }));
+    }
+
+    entries.sort((a, b) => String(a.name).localeCompare(String(b.name), 'fa'));
+
+    // ══ چیدمان: هر کارمند یک ستون؛ وظایف به‌صورت شعاعی دور مستطیل مرکزی ══
+    nodes = [];
+    graphEmpty = entries.length === 0;
+
+    const EMP_W = 230, EMP_H = 78;
+    const TASK_W = 190, TASK_H = 92;
+    const colGap = 90;
+
+    const maxR = entries.reduce((m, e) => Math.max(m, e.tasks.length ? Math.max(215, 60 + e.tasks.length * 36) : 0), 0);
+    const H = maxR ? (maxR + 150) * 2 + 120 : 700;
+
+    let curX = 80;
+    const colXs = [];
+    entries.forEach(e => {
+        const R = e.tasks.length ? Math.max(215, 60 + e.tasks.length * 36) : 0;
+        const colW = Math.max(EMP_W + 160, R ? (R + 70) * 2 : 0);
+        colXs.push({ e, R, colW, cx: curX + colW / 2, cy: H / 2 });
+        curX += colW + colGap;
+    });
+    const W = Math.max(curX, 900);
+
+    colXs.forEach(({ e, R, cx, cy }) => {
+        const empKey = 'emp::' + e.empId;
+        // جای مستطیل کارمند: اولویت با جابه‌جایی دستی کاربر
+        const empPos = layout[empKey] || { x: cx, y: cy };
+        nodes.push({
+            id: empKey, kind: 'emp', empId: e.empId,
+            label: e.name, sub: e.tasks.length ? (e.tasks.length + ' وظیفه معلق') : 'بدون وظیفه معلق',
+            x: empPos.x, y: empPos.y, w: EMP_W, h: EMP_H
+        });
+
+        e.tasks.forEach((t, i) => {
+            const tk = taskKey(e.empId, t, i);
+            const nodeKey = 'task::' + tk;
+            // چیدمان شعاعی پیش‌فرض (از بالای مستطیل شروع می‌شود)
+            const ang  = -Math.PI / 2 + i * (2 * Math.PI / e.tasks.length);
+            const defX = cx + Math.cos(ang) * R;
+            const defY = cy + Math.sin(ang) * R * 0.78;
+            const pos  = layout[nodeKey] || { x: defX, y: defY };
+            nodes.push({
+                id: nodeKey, kind: 'task', empId: e.empId, taskRef: t, taskK: tk,
+                label: t.title || t.name || 'وظیفه',
+                x: pos.x, y: pos.y, w: TASK_W, h: TASK_H, status: t.status || 'pending'
+            });
+        });
+    });
+
+    // مرزهای گراف برای resetView
+    graphBounds = { minX: 0, minY: 0, maxX: W, maxY: H };
+
+    // آمار هدر
+    const totalTasks = entries.reduce((s, e) => s + e.tasks.length, 0);
+    document.getElementById('stat-emps').textContent  = entries.length + ' کارمند';
+    document.getElementById('stat-tasks').textContent = totalTasks + ' وظیفه معلق';
+}
+
+function refreshData(keepView) {
+    const vb = keepView ? { z: zoom, x: panX, y: panY, sel: selectedNodeId } : null;
+    buildGraph();
+    if (vb) {
+        zoom = vb.z; panX = vb.x; panY = vb.y;
+        selectedNodeId = nodes.some(n => n.id === vb.sel) ? vb.sel : null;
+        draw();
+    } else {
+        resetView();
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  CANVAS / COORDINATES
+// ══════════════════════════════════════════════════════════════════
+function resizeCanvas() {
+    const wrap = document.getElementById('canvas-wrap');
+    canvas.width  = wrap.clientWidth;
+    canvas.height = wrap.clientHeight;
+    draw();
+}
+
+function toWorld(cx, cy) {
+    return { x: (cx - panX) / zoom, y: (cy - panY) / zoom };
+}
+
+function nodeHit(node, wx, wy) {
+    return wx >= node.x - node.w / 2 && wx <= node.x + node.w / 2 &&
+           wy >= node.y - node.h / 2 && wy <= node.y + node.h / 2;
+}
+
+// نقطه‌ی تقاطع خط با لبه‌ی مستطیل به سمت هدف
+function rectEdgePoint(node, tx, ty) {
+    const dx = tx - node.x, dy = ty - node.y;
+    if (!dx && !dy) return { x: node.x, y: node.y };
+    const hw = node.w / 2, hh = node.h / 2;
+    const sx = dx ? hw / Math.abs(dx) : Infinity;
+    const sy = dy ? hh / Math.abs(dy) : Infinity;
+    const s = Math.min(sx, sy);
+    return { x: node.x + dx * s, y: node.y + dy * s };
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  DRAW ENGINE
+// ══════════════════════════════════════════════════════════════════
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGrid();
+
+    ctx.save();
+    ctx.translate(panX, panY);
+    ctx.scale(zoom, zoom);
+
+    // خط اتصال هر وظیفه به کارمندش
+    nodes.filter(n => n.kind === 'task').forEach(tn => {
+        const emp = nodes.find(n => n.id === 'emp::' + tn.empId);
+        if (!emp) return;
+        drawEdge(emp, tn);
+    });
+
+    // نودها روی خطوط
+    nodes.forEach(n => drawNode(n));
+
+    const empty = graphEmpty;
+    ctx.restore();
+
+    if (empty) {
+        ctx.save();
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 18px Vazirmatn, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('هیچ وظیفه معلق‌ای وجود ندارد', canvas.width / 2, canvas.height / 2 - 20);
+        ctx.font = '13px Vazirmatn, sans-serif';
+        ctx.fillText('با تکمیل وظایف در صفحه «وظایف من»، مربع‌ها به‌صورت خودکار حذف می‌شوند', canvas.width / 2, canvas.height / 2 + 12);
+        ctx.restore();
+    }
+    document.getElementById('zoom-badge').textContent = Math.round(zoom * 100) + '%';
+}
+
+function drawGrid() {
+    const step = 30 * zoom;
+    const offX = ((panX % step) + step) % step;
+    const offY = ((panY % step) + step) % step;
+    ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+    ctx.lineWidth = 1;
+    for (let x = offX; x < canvas.width; x += step) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+    }
+    for (let y = offY; y < canvas.height; y += step) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+    }
+}
+
+function roundRectPath(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x - w / 2 + r, y - h / 2);
+    ctx.arcTo(x + w / 2, y - h / 2, x + w / 2, y + h / 2, r);
+    ctx.arcTo(x + w / 2, y + h / 2, x - w / 2, y + h / 2, r);
+    ctx.arcTo(x - w / 2, y + h / 2, x - w / 2, y - h / 2, r);
+    ctx.arcTo(x - w / 2, y - h / 2, x + w / 2, y - h / 2, r);
+    ctx.closePath();
+}
+
+function drawNode(node) {
+    const sel = node.id === selectedNodeId;
+    const st  = node.kind === 'task' ? (TASK_STYLE[node.status] || TASK_STYLE_FALLBACK) : EMP_STYLE;
+
+    ctx.save();
+    ctx.shadowColor = sel ? '#ffffff' : st.stroke;
+    ctx.shadowBlur  = sel ? 18 / zoom : 8 / zoom;
+    roundRectPath(node.x, node.y, node.w, node.h, node.kind === 'emp' ? 14 : 10);
+    ctx.fillStyle = st.fill;
+    ctx.fill();
+    ctx.lineWidth = (sel ? 3 : 2) / zoom;
+    ctx.strokeStyle = sel ? '#ffffff' : st.stroke;
+    ctx.stroke();
+    ctx.restore();
+
+    if (node.kind === 'emp') {
+        // مستطیل مرکزی کارمند: اسم + تعداد وظیفه
+        ctx.save();
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = 'bold 15px Vazirmatn, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(ellipsize(node.label, node.w - 26), node.x, node.y - 12);
+        ctx.fillStyle = '#d9f99d';
+        ctx.font = '11px Vazirmatn, sans-serif';
+        ctx.fillText(node.sub, node.x, node.y + 14);
+        ctx.restore();
+    } else {
+        // مربع وظیفه: عنوان + وضعیت
+        ctx.save();
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = 'bold 12px Vazirmatn, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const lines = wrapTwoLines(node.label, node.w - 22);
+        const startY = node.y - (lines.length === 2 ? 16 : 21);
+        lines.forEach((ln, i) => ctx.fillText(ln, node.x, startY + i * 17));
+        const due = node.taskRef && node.taskRef.dueDate ? ' | ' + node.taskRef.dueDate : '';
+        if (node.taskRef && node.taskRef.priority === 'high') {
+            ctx.fillStyle = '#f87171';
+            ctx.font = 'bold 10.5px Vazirmatn, sans-serif';
+            ctx.fillText('فوری', node.x, node.y + node.h / 2 - 30);
+        }
+        ctx.fillStyle = st.stroke;
+        ctx.font = '10.5px Vazirmatn, sans-serif';
+        ctx.fillText((st.label || node.status) + due, node.x, node.y + node.h / 2 - 14);
+        ctx.restore();
+    }
+}
+
+function drawEdge(emp, taskNode) {
+    const from = rectEdgePoint(emp,  taskNode.x, taskNode.y);
+    const to   = rectEdgePoint(taskNode, emp.x, emp.y);
+
+    ctx.save();
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 1.8 / zoom;
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+
+    // دایره‌ی کوچک انتها روی مربع وظیفه
+    ctx.fillStyle = '#64748b';
+    ctx.beginPath();
+    ctx.arc(to.x, to.y, 3.2 / zoom, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function ellipsize(text, maxW) {
+    if (!text) return '';
+    ctx.font = 'bold 15px Vazirmatn, sans-serif';
+    if (ctx.measureText(text).width <= maxW) return text;
+    let t = text;
+    while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+    return t + '…';
+}
+
+function wrapTwoLines(text, maxW) {
+    if (!text) return [''];
+    ctx.font = 'bold 12px Vazirmatn, sans-serif';
+    if (ctx.measureText(text).width <= maxW) return [text];
+    // شکستن به دو خط از نزدیک‌ترین فاصله به وسط
+    const mid = Math.floor(text.length / 2);
+    let best = -1, bestDiff = Infinity;
+    for (let i = 0; i < text.length; i++) {
+        if (text[i] === ' ') {
+            const d = Math.abs(i - mid);
+            if (d < bestDiff) { bestDiff = d; best = i; }
+        }
+    }
+    if (best === -1) return [ellipsizeSmall(text, maxW)];
+    let l1 = text.slice(0, best).trim();
+    let l2 = text.slice(best + 1).trim();
+    if (ctx.measureText(l2).width > maxW) l2 = ellipsizeSmall(l2, maxW);
+    if (ctx.measureText(l1).width > maxW) l1 = ellipsizeSmall(l1, maxW);
+    return [l1, l2];
+}
+
+function ellipsizeSmall(text, maxW) {
+    if (ctx.measureText(text).width <= maxW) return text;
+    let t = text;
+    while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+    return t + '…';
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  ZOOM / PAN / VIEW / TOOLBAR
+// ══════════════════════════════════════════════════════════════════
+function zoomIn()  { setZoom(zoom * 1.15); }
+function zoomOut() { setZoom(zoom / 1.15); }
+function setZoom(z) {
+    zoom = Math.max(0.1, Math.min(3, z));
+    draw();
+}
+
+function resetView() {
+    if (!nodes.length) { zoom = 1; panX = 60; panY = 60; draw(); return; }
+    const bw = graphBounds.maxX - graphBounds.minX;
+    const bh = graphBounds.maxY - graphBounds.minY;
+    const cw = canvas.width, ch = canvas.height;
+    zoom = Math.max(0.1, Math.min(1.1, Math.min(cw / (bw + 120), ch / (bh + 120))));
+    panX = (cw - bw * zoom) / 2 - graphBounds.minX * zoom;
+    panY = (ch - bh * zoom) / 2 - graphBounds.minY * zoom;
+    draw();
+}
+
+function autoArrange() {
+    layout = {};
+    saveLayout();
+    hideNodeInfo();
+    refreshData(false);
+}
+
+function setTool(t) {
+    currentTool = t;
+    document.querySelectorAll('.tb-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(t === 'pan' ? 'tb-pan' : 'tb-select').classList.add('active');
+    document.getElementById('canvas-wrap').classList.toggle('pan-mode', t === 'pan');
+}
+
+function onFilterChange() {
+    filterMode = document.getElementById('filter-sel').value;
+    hideNodeInfo();
+    refreshData(false);
+}
+
+function manualRefresh() {
+    hideNodeInfo();
+    refreshData(true);
+    const icon = document.querySelector('#btn-refresh i');
+    if (icon) {
+        icon.classList.add('fa-spin');
+        setTimeout(() => icon.classList.remove('fa-spin'), 900);
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  NODE INFO TOOLTIP
+// ══════════════════════════════════════════════════════════════════
+function hideNodeInfo() {
+    const el = document.getElementById('node-info');
+    el.style.display = 'none';
+}
+
+function showNodeInfo(node) {
+    const el = document.getElementById('node-info');
+    if (node.kind !== 'task') { hideNodeInfo(); return; }
+    const t = node.taskRef || {};
+    const st = TASK_STYLE[t.status] || TASK_STYLE_FALLBACK;
+    const created = t.createdAt ? (() => {
+        try {
+            const d = new Date(t.createdAt);
+            return d.toLocaleDateString('fa-IR') + ' ' + d.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
+        } catch (e) { return t.createdAt; }
+    })() : '';
+    const desc = (t.description || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const title = (t.title || t.name || node.label || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    el.innerHTML = `
+        <h4><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${st.stroke}"></span>${title}</h4>
+        <div class="row"><i class="fas fa-user"></i><span>${(nameOfEmp(node.empId) || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span></div>
+        <div class="row"><i class="fas fa-info-circle"></i><span>وضعیت: ${st.label || t.status || '—'}</span></div>
+        ${t.priority ? `<div class="row"><i class="fas fa-flag"></i><span>اولویت: ${t.priority === 'high' ? 'فوری' : (t.priority === 'low' ? 'کم' : 'معمولی')}</span></div>` : ''}
+        ${t.dueDate ? `<div class="row"><i class="fas fa-calendar"></i><span>مهلت: ${t.dueDate}</span></div>` : ''}
+        ${desc ? `<div class="row"><i class="fas fa-align-right"></i><span>${desc}</span></div>` : ''}
+        ${created ? `<div class="row"><i class="fas fa-clock"></i><span>ایجاد: ${created}</span></div>` : ''}
+    `;
+    // موقعیت نزدیک نود روی صفحه
+    const sx = node.x * zoom + panX;
+    const sy = (node.y + node.h / 2) * zoom + panY + 10;
+    el.style.display = 'block';
+    const r = el.getBoundingClientRect();
+    el.style.left = Math.max(10, Math.min(window.innerWidth - r.width - 10, sx - r.width / 2)) + 'px';
+    el.style.top  = Math.max(10, Math.min(window.innerHeight - r.height - 10, sy)) + 'px';
+}
+
+function nameOfEmp(empId) {
+    const users = loadJSON('edu_system_users', []);
+    const u = (Array.isArray(users) ? users : []).find(x => x && x.id === empId);
+    return u ? (u.name || u.username || u.id) : empId;
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  MOUSE EVENTS
+// ══════════════════════════════════════════════════════════════════
+canvas.addEventListener('mousedown', onMouseDown);
+canvas.addEventListener('mousemove', onMouseMove);
+canvas.addEventListener('mouseup',   onMouseUp);
+canvas.addEventListener('wheel',     onWheel, { passive: false });
+canvas.addEventListener('mouseleave',() => { isPanning = false; dragging = null; });
+window.addEventListener('mouseup',   () => {
+    isPanning = false;
+    document.getElementById('canvas-wrap').classList.remove('panning');
+});
+
+function onMouseDown(e) {
+    hideNodeInfo();
+
+    // پان: دکمه وسط، دکمه راست یا ابزار pan
+    if (e.button === 1 || e.button === 2 || currentTool === 'pan') {
+        isPanning = true;
+        panStartX = e.clientX; panStartY = e.clientY;
+        panStartCamX = panX;   panStartCamY = panY;
+        if (currentTool === 'pan') document.getElementById('canvas-wrap').classList.add('panning');
+        e.preventDefault();
+        return;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    const wx = (e.clientX - rect.left - panX) / zoom;
+    const wy = (e.clientY - rect.top  - panY) / zoom;
+    const hit = nodes.slice().reverse().find(n => nodeHit(n, wx, wy));
+
+    if (hit) {
+        selectedNodeId = hit.id;
+        dragging = hit;
+        dragOffX = wx - hit.x;
+        dragOffY = wy - hit.y;
+    } else {
+        selectedNodeId = null;
+    }
+    draw();
+}
+
+function onMouseMove(e) {
+    mouseX = e.clientX; mouseY = e.clientY;
+
+    if (isPanning) {
+        panX = panStartCamX + (e.clientX - panStartX);
+        panY = panStartCamY + (e.clientY - panStartY);
+        draw();
+        return;
+    }
+
+    if (dragging) {
+        const rect = canvas.getBoundingClientRect();
+        const wx = (e.clientX - rect.left - panX) / zoom;
+        const wy = (e.clientY - rect.top  - panY) / zoom;
+        dragging.x = wx - dragOffX;
+        dragging.y = wy - dragOffY;
+        // ذخیره‌ی جای نود — جابه‌جایی دستی بین refreshها حفظ می‌شود
+        const key = dragging.kind === 'emp' ? dragging.id : 'task::' + dragging.taskK;
+        layout[key] = { x: dragging.x, y: dragging.y };
+        draw();
+    }
+}
+
+function onMouseUp(e) {
+    if (dragging) {
+        saveLayout();
+        // کلیک (بدون جابه‌جایی) روی وظیفه = نمایش جزئیات
+        const rect = canvas.getBoundingClientRect();
+        const wx = (e.clientX - rect.left - panX) / zoom;
+        const wy = (e.clientY - rect.top  - panY) / zoom;
+        if (nodeHit(dragging, wx, wy)) showNodeInfo(dragging);
+        dragging = null;
+    }
+    isPanning = false;
+    document.getElementById('canvas-wrap').classList.remove('panning');
+}
+
+function onWheel(e) {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+    const newZoom = Math.max(0.1, Math.min(3, zoom * factor));
+    // زوم به سمت نشانگر موس
+    panX = mx - (mx - panX) * (newZoom / zoom);
+    panY = my - (my - panY) * (newZoom / zoom);
+    zoom = newZoom;
+    draw();
+}
+
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+// ══════════════════════════════════════════════════════════════════
+//  LIVE REFRESH — حذف خودکار مربع وظایف تکمیل‌شده
+// ══════════════════════════════════════════════════════════════════
+// storage event: وقتی اپلیکیشن اصلی (تب یا همین صفحه از طریق iframe) وضعیت
+// وظیفه را به completed تغییر داد، مربع مربوطه از گراف حذف می‌شود
+window.addEventListener('storage', e => {
+    if (!e.key || e.key === 'employee_tasks' || e.key === 'edu_system_users') {
+        refreshData(true);
+    }
+});
+// فوکوس مجدد + polling به‌عنوان پشتیبان
+window.addEventListener('focus', () => refreshData(true));
+setInterval(() => refreshData(true), 10000);
+window.addEventListener('resize', () => resizeCanvas());
+
+// ══════════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+    // وقتی داخل iframe اپلیکیشن است، دکمه بازگشت نمایش داده نمی‌شود
+    try { if (window.self !== window.top) document.getElementById('back-link').style.display = 'none'; } catch (e) {}
+    resizeCanvas();
+    buildGraph();
+    resetView();
+    draw();
+    // رندر مجدد بعد از لود فونت فارسی
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => draw());
+});
+</script>
+</body>
+</html>

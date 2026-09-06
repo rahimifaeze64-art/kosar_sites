@@ -566,7 +566,16 @@
                     </div>
                 </div>
             </div>
-            
+
+            <!-- Pending Tasks Graph View - کارهای معلق -->
+            <div x-show="currentPage === 'pendingTasksView' && (currentUser.role === 'manager' || currentUser.role === 'employee')">
+                <div id="pending-tasks-view-container">
+                    <div class="flex items-center justify-center py-16">
+                        <i class="fas fa-spinner fa-spin text-3xl text-purple-400"></i>
+                    </div>
+                </div>
+            </div>
+
             <!-- Agent Tasks Management Page (employee Only) -->
             <div x-show="currentPage === 'agentTasksManagement' && currentUser.role === 'employee'" x-html="getAgentTasksManagementContent()"></div>
             

@@ -612,6 +612,11 @@ const EmployeeModule = {
                             <i class="fas fa-tasks"></i>
                             <span class="hidden sm:inline">مدیریت مراحل</span>
                         </button>
+                        <button onclick="window._alpineSetPage && window._alpineSetPage('pendingTasksView')"
+                                class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1">
+                            <i class="fas fa-hourglass-half"></i>
+                            <span class="hidden sm:inline">کارهای معلق</span>
+                        </button>
                         <button onclick="window._alpineSetPage && window._alpineSetPage('sheetView')"
                                 class="bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1">
                             <i class="fas fa-th-list"></i>

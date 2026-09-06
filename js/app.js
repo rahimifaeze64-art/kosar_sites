@@ -222,6 +222,25 @@ function appController() {
                     </div>`;
               });
           }
+          // کارهای معلق - نمای گرافی وظایف معلق کارمندان
+          if (newPage === 'pendingTasksView') {
+              this.$nextTick(() => {
+                  const container = document.getElementById('pending-tasks-view-container');
+                  if (!container) return;
+                  container.innerHTML = `
+                    <div class="space-y-4">
+                      <div class="flex items-center gap-3 mb-2">
+                        <button onclick="window._alpineSetPage('students')"
+                          class="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm font-medium transition-all">
+                          <i class="fas fa-arrow-right"></i> بازگشت به مدیریت دانشجویان
+                        </button>
+                      </div>
+                      <iframe src="pending-tasks.html"
+                        style="width:100%;height:85vh;border:none;border-radius:12px;background:#fff;"
+                        title="کارهای معلق"></iframe>
+                    </div>`;
+              });
+          }
         });
 
         // تابع global برای تغییر صفحه از خارج Alpine
