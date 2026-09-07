@@ -28,6 +28,12 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             ویرایش پروفایل دانشجو - ${student.name}
                         </h3>
                         <div class="flex items-center gap-2 flex-wrap">
+                            <button onclick="employeeModule.startStudentDefense('${studentId}')"
+                                    title="دانشجو را به مسیر گردش دفاع و ملزومات منتقل کن"
+                                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-medium transition-all text-xs flex items-center gap-1">
+                                <i class="fas fa-play"></i>
+                                <span>شروع دفاع</span>
+                            </button>
                             <button onclick="employeeModule.completeStudentPath('${studentId}','defense')"
                                     title="تمام مراحل دفاع را تکمیل کن"
                                     class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-medium transition-all text-xs flex items-center gap-1">

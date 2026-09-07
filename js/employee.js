@@ -633,7 +633,7 @@ const EmployeeModule = {
                     <div class="bg-slate-800 rounded-lg p-3">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-gray-400 text-xs">دانشجویان فعال</p>
+                                <p class="text-gray-400 text-xs">در حال تحصیل</p>
                                 <p class="text-xl font-bold text-green-400">${students.filter(s => s.active).length}</p>
                             </div>
                             <i class="fas fa-user-check text-2xl text-green-400 opacity-70"></i>
@@ -866,7 +866,7 @@ const EmployeeModule = {
                                 id="student-list-tab-active"
                                 class="px-5 py-3 font-medium border-b-2 border-green-500 text-green-400 transition-all whitespace-nowrap">
                             <i class="fas fa-user-check ml-1"></i>
-                            دانشجویان فعال (${students.filter(s => s.active).length})
+                            در حال تحصیل (${students.filter(s => s.active).length})
                         </button>
                         <button onclick="employeeModule.switchStudentListTab('defense')" 
                                 id="student-list-tab-defense"
@@ -5861,6 +5861,55 @@ EmployeeModule.completeStudentPath = function(studentId, pathType) {
             } catch(e) {}
         }
     }, 200);
+};
+
+// ── شروع گردش دفاع برای دانشجو ────────────────────────────────────────────
+// دانشجو را به مسیر «گردش دفاع و ملزومات» منتقل می‌کند:
+//  ۱. مراحل دفاع (و ملزومات) مقداردهی اولیه می‌شوند (بدون تکمیل)
+//  ۲. currentPath = 'defense' → در تب «مرحله دفاع» لیست دانشجویان ظاهر می‌شود
+//  ۳. کلیدهای prog_ نمای شیت + جدول student_progress در Supabase آپدیت می‌شوند
+EmployeeModule.startStudentDefense = function(studentId) {
+    if (!confirm('آیا مطمئنید که می‌خواهید گردش دفاع این دانشجو شروع شود؟\nدانشجو به مسیر «گردش دفاع و ملزومات» منتقل می‌شود.')) return;
+
+    const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
+    const student = studentsData[studentId];
+    if (!student) { UTILS.showNotification('دانشجو یافت نشد', 'error'); return; }
+
+    if (student.graduated) {
+        UTILS.showNotification('این دانشجو فارغ‌التحصیل شده است', 'warning');
+        return;
+    }
+
+    // مقداردهی اولیه مراحل — دفاع و ملزومات موازی پیش می‌روند (بدون تکمیل)
+    if (!student.defenseSteps || student.defenseSteps.length === 0)
+        student.defenseSteps = this.getDefaultDefenseSteps2();
+    if (!student.requirementsSteps || student.requirementsSteps.length === 0)
+        student.requirementsSteps = (typeof this.getDefaultRequirementsSteps === 'function') ? this.getDefaultRequirementsSteps() : [];
+
+    // انتقال به مسیر دفاع
+    student.currentPath      = 'defense';
+    student.defenseStarted   = true;
+    student.defenseStartDate = new Date().toISOString();
+    student.active           = true;
+
+    studentsData[studentId] = student;
+    localStorage.setItem('students_data', JSON.stringify(studentsData));
+
+    // sync مراحل (کلید prog_ برای نمای شیت + student_progress و profiles در Supabase)
+    EmployeeModule._syncStepsToSupabase(studentId, 'defense', student.defenseSteps);
+    EmployeeModule._syncStepsToSupabase(studentId, 'requirements', student.requirementsSteps);
+    EmployeeModule._syncStudentProfileToSupabase(studentId, { current_path: 'defense' });
+
+    // ثبت در DataModule (users)
+    if (typeof DataModule !== 'undefined' && DataModule.updateUser) {
+        DataModule.updateUser(studentId, { currentPath: 'defense' });
+    }
+
+    UTILS.showNotification('✅ گردش دفاع شروع شد — دانشجو به مسیر «گردش دفاع و ملزومات» منتقل شد', 'success');
+
+    // بستن مودال و refresh لیست دانشجویان
+    this.closeModal('edit-student-modal');
+    if (typeof this.refreshStudents === 'function') this.refreshStudents();
 };
 
 // Finish student work (deactivate student)
