@@ -56,52 +56,68 @@ EmployeeModule.editStudentProfile = function(studentId) {
                 </div>
                 
                 <div class="p-6 space-y-6">
-                    
+
+                    <!-- 🔍 سرچ فیلدهای صفحه — دقیقا بالای اطلاعات شخصی -->
+                    <div class="sticky top-[76px] z-20 bg-gradient-to-br from-blue-50 to-lime-100 pb-1">
+                        <div class="relative">
+                            <i class="fas fa-search absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" id="edit-profile-search"
+                                   oninput="employeeModule.filterProfileFields(this.value)"
+                                   placeholder="جستجو در فیلدهای صفحه... (مثلا: پاسپورت، تنضید، مقاله)"
+                                   class="w-full bg-white border-2 border-lime-300 focus:border-lime-500 rounded-xl px-12 py-3 text-base shadow-sm outline-none transition-all">
+                            <button type="button" onclick="employeeModule.filterProfileFields(''); document.getElementById('edit-profile-search').value='';"
+                                    title="پاک کردن جستجو"
+                                    class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500">
+                                <i class="fas fa-times-circle"></i>
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- اطلاعات شخصی -->
-                    <div class="bg-white rounded-lg p-5 shadow-sm border border-blue-200">
+                    <div class="bg-white rounded-lg p-5 shadow-sm border border-blue-200 profile-section">
                         <h4 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
                             <i class="fas fa-user text-lime-600 ml-2"></i>
                             اطلاعات شخصی
                         </h4>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
+                            <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">نام کامل</label>
                                 <input type="text" id="edit-student-name" value="${student.name || ''}"
                                        class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg">
                             </div>
-                            <div>
+                            <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">شماره پاسپورت</label>
                                 <input type="text" id="edit-passport" value="${student.passportNumber || ''}"
                                        class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg">
                             </div>
-                            <div>
+                            <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">تاریخ تولد</label>
                                 <input type="date" id="edit-birthdate" value="${student.birthDate || ''}"
                                        class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg">
                             </div>
-                            <div>
+                            <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">جنسیت</label>
                                 <select id="edit-gender" class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg">
                                     <option value="مرد" ${student.gender === 'مرد' ? 'selected' : ''}>مرد</option>
                                     <option value="زن" ${student.gender === 'زن' ? 'selected' : ''}>زن</option>
                                 </select>
                             </div>
-                            <div>
+                            <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">شماره تماس</label>
                                 <input type="tel" id="edit-phone" value="${student.phone || ''}"
                                        class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg">
                             </div>
-                            <div>
+                            <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">ایمیل</label>
                                 <input type="email" id="edit-email" value="${student.email || ''}"
                                        class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg">
                             </div>
-                            <div>
+                            <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">نام کامل (انگلیسی)</label>
                                 <input type="text" id="edit-name-en" value="${student.nameEn || ''}"
                                        class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" dir="ltr" placeholder="Full Name in English">
                             </div>
-                            <div>
+                            <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">پسورد</label>
                                 <input type="text" id="edit-password" value="${student.password || ''}"
                                        class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="رمز عبور دانشجو">
@@ -116,7 +132,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             اطلاعات تحصیلی
                         </h4>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
+                            <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">دانشگاه</label>
                                 <select id="edit-university" class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg">
                                     <option value="دانشگاه قم" ${student.university === 'دانشگاه قم' ? 'selected' : ''}>دانشگاه قم</option>
@@ -124,17 +140,17 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                     <option value="سایر">سایر</option>
                                 </select>
                             </div>
-                            <div>
+                            <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">شماره دانشجویی</label>
                                 <input type="text" id="edit-student-id" value="${student.studentId || ''}"
                                        class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg">
                             </div>
-                            <div>
+                            <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">رمز سامانه</label>
                                 <input type="text" id="edit-system-password" value="${student.systemPassword || ''}"
                                        class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="رمز دسترسی به سامانه">
                             </div>
-                            <div>
+                            <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">رشته تحصیلی</label>
                                 <select id="edit-field" class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg">
                                     <option value="حقوق جزا" ${student.field === 'حقوق محض' ? 'selected' : ''}>حقوق محض</option>
@@ -144,7 +160,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                     <option value="سایر">سایر</option>
                                 </select>
                             </div>
-                            <div>
+                            <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">مقطع</label>
                                 <select id="edit-degree" class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg">
                                     <option value="کارشناسی" ${student.degree === 'کارشناسی' ? 'selected' : ''}>کارشناسی</option>
@@ -152,7 +168,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                     <option value="دکتری" ${student.degree === 'دکتری' ? 'selected' : ''}>دکتری</option>
                                 </select>
                             </div>
-                            <div>
+                            <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">علاقه‌مندی تحقیقاتی</label>
                                 <input type="text" id="edit-research-interest" value="${student.researchInterest || ''}"
                                        class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="موضوع علاقه‌مندی">
@@ -167,17 +183,17 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             اطلاعات تخصصی
                         </h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
+                            <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">استاد راهنما</label>
                                 <input type="text" id="edit-supervisor" value="${student.supervisor || ''}"
                                        class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="نام استاد راهنما">
                             </div>
-                            <div>
+                            <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">نویسنده (عامل مسئول)</label>
                                 <input type="text" id="edit-writer" value="${student.writer || ''}"
                                        class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="نام نویسنده">
                             </div>
-                            <div>
+                            <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">تاریخ تحویل</label>
                                 <input type="date" id="edit-delivery-date" value="${student.deliveryDate || ''}"
                                        class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg">
@@ -185,15 +201,26 @@ EmployeeModule.editStudentProfile = function(studentId) {
                         </div>
                     </div>
                     
+                    <!-- 🗂 فایل ها — بالای مدارک و تصاویر -->
+                    <div class="bg-white rounded-lg p-5 shadow-sm border border-blue-200 profile-section">
+                        <h4 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
+                            <i class="fas fa-folder-open text-lime-600 ml-2"></i>
+                            فایل ها
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${EmployeeModule._getFilesSectionFieldsHTML(studentId, student)}
+                        </div>
+                    </div>
+
                     <!-- مدارک و تصاویر -->
-                    <div class="bg-white rounded-lg p-5 shadow-sm border border-blue-200">
+                    <div class="bg-white rounded-lg p-5 shadow-sm border border-blue-200 profile-section">
                         <h4 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
                             <i class="fas fa-file-image text-lime-600 ml-2"></i>
                             مدارک و تصاویر
                         </h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <!-- تصویر امر اداری -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">تصویر امر اداری</label>
                                     <button type="button" onclick="employeeModule.uploadImage('admin-order-image', '${studentId}')"
@@ -207,7 +234,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
                             
                             <!-- کد رهگیری سائورگ -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">کد رهگیری سائورگ</label>
                                     <button type="button" onclick="employeeModule.uploadImage('savorg-code', '${studentId}')"
@@ -221,7 +248,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
                             
                             <!-- نتیجه سامانه سجاد -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">نتیجه سامانه سجاد</label>
                                     <button type="button" onclick="employeeModule.uploadImage('sajad-result', '${studentId}')"
@@ -235,7 +262,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
                             
                             <!-- گواهی همانند جویی -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">گواهی همانند جویی</label>
                                     <button type="button" onclick="employeeModule.uploadImage('similarity-cert', '${studentId}')"
@@ -249,7 +276,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
                             
                             <!-- تصویر پاسپورت -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">تصویر پاسپورت</label>
                                     <button type="button" onclick="employeeModule.uploadImage('passport-image', '${studentId}')"
@@ -263,7 +290,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
                             
                             <!-- تنضید -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">تنضید</label>
                                     <button type="button" onclick="employeeModule.uploadImage('typesetting-doc', '${studentId}')"
@@ -277,7 +304,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
                             
                             <!-- تجلید -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">تجلید</label>
                                     <button type="button" onclick="employeeModule.uploadImage('binding-doc', '${studentId}')"
@@ -291,7 +318,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
                             
                             <!-- استلال -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">استلال</label>
                                     <button type="button" onclick="employeeModule.uploadImage('estelal-doc', '${studentId}')"
@@ -305,7 +332,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
                             
                             <!-- مدرک لغت -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">مدرک لغت</label>
                                     <button type="button" onclick="employeeModule.uploadImage('language-cert', '${studentId}')"
@@ -319,7 +346,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
                             
                             <!-- بارگزاری لغت -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">بارگزاری لغت</label>
                                     <button type="button" onclick="employeeModule.uploadImage('language-upload', '${studentId}')"
@@ -333,7 +360,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
                             
                             <!-- آزفا -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">آزفا</label>
                                     <button type="button" onclick="employeeModule.uploadImage('azfa-doc', '${studentId}')"
@@ -347,7 +374,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
                             
                             <!-- تصدیق -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">تصدیق</label>
                                     <button type="button" onclick="employeeModule.uploadImage('tasdiq-doc', '${studentId}')"
@@ -361,7 +388,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
                             
                             <!-- وثیقه -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">وثیقه</label>
                                     <button type="button" onclick="employeeModule.uploadImage('vasiqe-doc', '${studentId}')"
@@ -375,7 +402,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
                             
                             <!-- ایران داک خطه -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">ایران داک خطه</label>
                                     <button type="button" onclick="employeeModule.uploadImage('irandoc-khate', '${studentId}')"
@@ -389,7 +416,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- ایران داک رساله -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">ایران داک رساله</label>
                                     <button type="button" onclick="employeeModule.uploadImage('irandoc-resale', '${studentId}')"
@@ -403,7 +430,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- عنوان -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">عنوان</label>
                                     <button type="button" onclick="employeeModule.uploadImage('onvan-doc', '${studentId}')"
@@ -417,7 +444,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- نتیجه عنوان -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">نتیجه عنوان</label>
                                     <button type="button" onclick="employeeModule.uploadImage('onvan-result', '${studentId}')"
@@ -431,7 +458,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- برگه ثبت‌نام سائورگ -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">برگه ثبت‌نام سائورگ</label>
                                     <button type="button" onclick="employeeModule.uploadImage('savorg-form', '${studentId}')"
@@ -445,7 +472,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- محضر -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">محضر</label>
                                     <button type="button" onclick="employeeModule.uploadImage('mahzar-doc', '${studentId}')"
@@ -459,7 +486,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- اصالت -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">اصالت</label>
                                     <button type="button" onclick="employeeModule.uploadImage('asalat-doc', '${studentId}')"
@@ -473,7 +500,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- تعدیل -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">تعدیل</label>
                                     <button type="button" onclick="employeeModule.uploadImage('tadil-doc', '${studentId}')"
@@ -487,7 +514,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- تنزیل نمره گردش -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">تنزیل نمره گردش</label>
                                     <button type="button" onclick="employeeModule.uploadImage('tanzil-doc', '${studentId}')"
@@ -501,7 +528,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- حاتمی -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">حاتمی</label>
                                     <button type="button" onclick="employeeModule.uploadImage('hatami-doc', '${studentId}')"
@@ -515,7 +542,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- ختم تجلید -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">ختم تجلید</label>
                                     <button type="button" onclick="employeeModule.uploadImage('khatm-tajlid', '${studentId}')"
@@ -529,7 +556,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- ترجمه به اسماعیلی -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">ترجمه به اسماعیلی</label>
                                     <button type="button" onclick="employeeModule.uploadImage('tarjome-ismaili', '${studentId}')"
@@ -543,7 +570,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- ارسال -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">ارسال</label>
                                     <button type="button" onclick="employeeModule.uploadImage('ersal-doc', '${studentId}')"
@@ -557,7 +584,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- گردش -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">گردش</label>
                                     <button type="button" onclick="employeeModule.uploadImage('gardesh-doc', '${studentId}')"
@@ -571,7 +598,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- دادگر -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">دادگر</label>
                                     <button type="button" onclick="employeeModule.uploadImage('dadgar-doc', '${studentId}')"
@@ -585,7 +612,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- سفارش تجلید -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">سفارش تجلید</label>
                                     <button type="button" onclick="employeeModule.uploadImage('sefaresh-tajlid', '${studentId}')"
@@ -599,7 +626,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- مهر دانشگاه -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">مهر دانشگاه</label>
                                     <button type="button" onclick="employeeModule.uploadImage('mohr-daneshgah', '${studentId}')"
@@ -613,7 +640,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- مهر سفارت -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">مهر سفارت</label>
                                     <button type="button" onclick="employeeModule.uploadImage('mohr-sefarat', '${studentId}')"
@@ -627,7 +654,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- قطعی -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">قطعی</label>
                                     <button type="button" onclick="employeeModule.uploadImage('qatei-doc', '${studentId}')"
@@ -641,7 +668,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- امر اداری -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">امر اداری</label>
                                     <button type="button" onclick="employeeModule.uploadImage('amr-edari', '${studentId}')"
@@ -655,7 +682,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- ملخص -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">ملخص</label>
                                     <button type="button" onclick="employeeModule.uploadImage('molakhas-doc', '${studentId}')"
@@ -669,7 +696,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- علاقه -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">علاقه (لجنه)</label>
                                     <button type="button" onclick="employeeModule.uploadImage('alaqe-doc', '${studentId}')"
@@ -683,7 +710,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- لجنه -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">لجنه</label>
                                     <button type="button" onclick="employeeModule.uploadImage('lajna-doc', '${studentId}')"
@@ -697,7 +724,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- استاد (لجنه) -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">استاد (لجنه)</label>
                                     <button type="button" onclick="employeeModule.uploadImage('ostad-lajna', '${studentId}')"
@@ -711,7 +738,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- تعدیلات -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">تعدیلات</label>
                                     <button type="button" onclick="employeeModule.uploadImage('tadilat-doc', '${studentId}')"
@@ -725,7 +752,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
 
                             <!-- تحویل -->
-                            <div>
+                            <div class="profile-field">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-base font-bold text-gray-800">تحویل</label>
                                     <button type="button" onclick="employeeModule.uploadImage('tahvil-doc', '${studentId}')"
@@ -773,8 +800,14 @@ EmployeeModule.editStudentProfile = function(studentId) {
     
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 
+    // نگهداری id دانشجو در حال ویرایش (برای حذف فایل‌ها)
+    this.currentEditStudentId = studentId;
+
     // لود مدارک از Supabase و نمایش preview
     EmployeeModule._loadStudentDocumentPreviews(studentId);
+
+    // لود فایل‌های بخش «فایل ها» از Supabase
+    EmployeeModule._loadStudentProfileFiles(studentId);
 };
 
 // جایگزین کردن تابع saveStudentProfile
@@ -1172,4 +1205,325 @@ EmployeeModule._loadStudentDocumentPreviews = async function(studentId) {
     } catch(e) {
         console.warn('_loadStudentDocumentPreviews:', e.message);
     }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// 🗂 بخش «فایل ها» — دسته‌بندی فایل‌های دانشجو (در جدول student_files)
+// ═══════════════════════════════════════════════════════════════
+EmployeeModule.PROFILE_FILE_CATEGORIES = [
+    'اولیه',
+    'تعدیل شده',
+    'تنضید قبل دفاع',
+    'تنضید بعد دفاع',
+    'تنضید اولیه',
+    'تعدیل بعد دفاع',
+    'استلال عراقی بعد دفاع',
+    'تنضید ایرانداک',
+    'تنضید تجلید',
+    'سایر',
+    'مقاله',
+    'استماره 1',
+    'استماره 2',
+    'پاسپورت',
+    'مباشره و قبول',
+];
+
+EmployeeModule.FILES_BUCKET = 'student-documents';
+
+// ── HTML فیلدهای بخش فایل ها ────────────────────────────────────
+EmployeeModule._getFilesSectionFieldsHTML = function(studentId, student) {
+    const categories = EmployeeModule.PROFILE_FILE_CATEGORIES;
+    const saved = student?.profileFiles || {};
+    return categories.map(cat => {
+        const val = saved[cat] || '';
+        return `
+        <div class="profile-field" data-field-name="${cat}">
+            <div class="flex items-center justify-between mb-2">
+                <label class="text-base font-bold text-gray-800">${cat}</label>
+                <button type="button" onclick="employeeModule.uploadProfileFile('${studentId}', '${cat}')"
+                        class="w-10 h-10 bg-lime-100 hover:bg-lime-200 rounded-lg flex items-center justify-center text-lime-600"
+                        title="بارگذاری فایل ${cat}">
+                    <i class="fas fa-upload text-lg"></i>
+                </button>
+            </div>
+            <input type="text" id="file-name-${cat}" value="${val ? cat : ''}"
+                   class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="فایلی انتخاب نشده" readonly>
+            <div id="profile-file-preview-${cat}" class="mt-2"></div>
+        </div>`;
+    }).join('');
+};
+
+// ── آپلود فایل برای یک دسته ─────────────────────────────────────
+EmployeeModule.uploadProfileFile = async function(studentId, category) {
+    const fileInput = document.createElement('input');
+    fileInput.type   = 'file';
+    fileInput.accept = 'image/*,.pdf,.doc,.docx';
+
+    fileInput.onchange = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const previewDiv = document.getElementById(`profile-file-preview-${category}`);
+        const nameInput  = document.getElementById(`file-name-${category}`);
+        if (previewDiv) {
+            previewDiv.innerHTML = `<div class="flex items-center gap-2 text-gray-500 text-sm">
+                <i class="fas fa-spinner fa-spin text-lime-500"></i> در حال آپلود...</div>`;
+        }
+
+        const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+        let storagePath = null;
+        let displayUrl  = null;
+
+        if (client) {
+            try {
+                const ext  = (file.name.split('.').pop() || 'bin').toLowerCase();
+                const safeCat = category.replace(/\s+/g, '_');
+                storagePath = `${studentId}/files/${safeCat}_${Date.now()}.${ext}`;
+
+                const { data, error } = await client.storage
+                    .from(EmployeeModule.FILES_BUCKET)
+                    .upload(storagePath, file, { cacheControl: '3600', upsert: false });
+                if (error) {
+                    console.error('uploadProfileFile storage error:', error.message);
+                    UTILS.showNotification('خطا در آپلود به سرور: ' + error.message, 'error');
+                    if (previewDiv) previewDiv.innerHTML = '';
+                    return;
+                }
+
+                // URL برای نمایش — اول signed و در صورت خطا public
+                try {
+                    const { data: sData } = await client.storage
+                        .from(EmployeeModule.FILES_BUCKET)
+                        .createSignedUrl(storagePath, 3600);
+                    displayUrl = sData?.signedUrl || null;
+                } catch (e) { displayUrl = null; }
+                if (!displayUrl) {
+                    try {
+                        const { data: pData } = client.storage
+                            .from(EmployeeModule.FILES_BUCKET)
+                            .getPublicUrl(storagePath);
+                        displayUrl = pData?.publicUrl || null;
+                    } catch (e) { displayUrl = null; }
+                }
+            } catch (e) {
+                console.error('uploadProfileFile exception:', e);
+                UTILS.showNotification('خطا در آپلود فایل', 'error');
+                if (previewDiv) previewDiv.innerHTML = '';
+                return;
+            }
+        } else {
+            // آفلاین: base64 به عنوان fallback
+            const b64 = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (ev) => resolve(ev.target.result);
+                reader.readAsDataURL(file);
+            });
+            storagePath = b64;
+            displayUrl  = b64;
+        }
+
+        // آپدیت UI
+        if (nameInput) nameInput.value = category;
+        if (previewDiv) {
+            const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name) || (typeof displayUrl === 'string' && displayUrl.startsWith('data:image'));
+            const safeUrl = displayUrl || '';
+            if (isImage) {
+                previewDiv.innerHTML = `
+                    <div class="relative inline-block">
+                        <img src="${safeUrl}" alt="${category}"
+                             class="h-16 w-16 object-cover rounded-lg border-2 border-lime-300 cursor-pointer"
+                             onclick="window.open('${safeUrl}','_blank')">
+                        <button type="button" onclick="event.stopPropagation(); employeeModule.removeProfileFile('${category}')"
+                                class="absolute -top-2 -left-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600">
+                            <i class="fas fa-times text-xs"></i>
+                        </button>
+                    </div>`;
+            } else {
+                previewDiv.innerHTML = `
+                    <div class="relative inline-flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-lg text-sm text-gray-700">
+                        <i class="fas fa-file text-lime-500"></i>
+                        <span class="max-w-32 truncate cursor-pointer" onclick="window.open('${safeUrl}','_blank')">${file.name}</span>
+                        <button type="button" onclick="event.stopPropagation(); employeeModule.removeProfileFile('${category}')"
+                                class="w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 text-xs">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>`;
+            }
+        }
+
+        // ذخیره فوری در جدول student_files (Supabase)
+        try {
+            if (client) {
+                const cu = (() => { try { return JSON.parse(localStorage.getItem('currentUser') || '{}'); } catch { return {}; } })();
+                const payload = {
+                    student_id:   studentId,
+                    category:     category,
+                    file_name:    file.name,
+                    file_path:    storagePath,
+                    display_url:  displayUrl,
+                    file_type:    (file.name.split('.').pop() || '').toLowerCase(),
+                    uploaded_by:  cu.id   || null,
+                    uploaded_by_name: cu.name || null,
+                };
+                const { error: upErr } = await client
+                    .from('student_files')
+                    .upsert(payload, { onConflict: 'student_id,category' });
+                if (upErr) {
+                    console.error('student_files upsert:', upErr.message);
+                    UTILS.showNotification('فایل آپلود شد اما ذخیره اطلاعات آن ناموفق بود', 'error');
+                } else {
+                    UTILS.showNotification(`فایل «${category}» با موفقیت ذخیره شد ✓`, 'success');
+                }
+            } else {
+                UTILS.showNotification('فایل به صورت محلی (آفلاین) نگهداری شد', 'info');
+            }
+        } catch (e) {
+            console.error('student_files save exception:', e);
+        }
+    };
+
+    fileInput.click();
+};
+
+// ── حذف فایل یک دسته ────────────────────────────────────────────
+EmployeeModule.removeProfileFile = async function(category) {
+    const studentId = window.employeeModule?.currentEditStudentId
+                   || (typeof employeeModule !== 'undefined' ? employeeModule.currentEditStudentId : null);
+
+
+    const previewDiv = document.getElementById(`profile-file-preview-${category}`);
+    const nameInput  = document.getElementById(`file-name-${category}`);
+    if (previewDiv) previewDiv.innerHTML = '';
+    if (nameInput) nameInput.value = '';
+
+    try {
+        if (!studentId) return;
+        const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+        if (!client) return;
+
+        // path فایل قبلی را بخوان تا از Storage هم حذف شود
+        const { data: existing } = await client
+            .from('student_files')
+            .select('id, file_path')
+            .eq('student_id', studentId)
+            .eq('category', category)
+            .maybeSingle();
+
+        if (existing?.file_path && !existing.file_path.startsWith('data:')) {
+            await client.storage.from(EmployeeModule.FILES_BUCKET).remove([existing.file_path]);
+        }
+        if (existing?.id) {
+            await client.from('student_files').delete().eq('id', existing.id);
+        }
+        UTILS.showNotification(`فایل «${category}» حذف شد`, 'info');
+    } catch (e) {
+        console.warn('removeProfileFile:', e);
+    }
+};
+
+// ── لود فایل‌های ذخیره‌شده دانشجو از Supabase ───────────────────
+EmployeeModule._loadStudentProfileFiles = async function(studentId) {
+    try {
+        const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+        if (!client) return;
+
+        const { data, error } = await client
+            .from('student_files')
+            .select('*')
+            .eq('student_id', studentId);
+        if (error) { console.warn('student_files select:', error.message); return; }
+        if (!data || !data.length) return;
+
+        for (const row of data) {
+            const cat = row.category;
+            if (!EmployeeModule.PROFILE_FILE_CATEGORIES.includes(cat)) continue;
+
+            const nameInput = document.getElementById(`file-name-${cat}`);
+            const previewDiv = document.getElementById(`profile-file-preview-${cat}`);
+            if (!nameInput || !previewDiv) continue;
+
+            nameInput.value = cat;
+
+            // URL نمایش — اول signed و بعد public
+            let url = row.display_url || null;
+            if (!url && row.file_path && !row.file_path.startsWith('data:')) {
+                try {
+                    const { data: sData } = await client.storage
+                        .from(EmployeeModule.FILES_BUCKET)
+                        .createSignedUrl(row.file_path, 3600);
+                    url = sData?.signedUrl || null;
+                } catch (e) { url = null; }
+                if (!url) {
+                    try {
+                        const { data: pData } = client.storage
+                            .from(EmployeeModule.FILES_BUCKET)
+                            .getPublicUrl(row.file_path);
+                        url = pData?.publicUrl || null;
+                    } catch (e) { url = null; }
+                }
+            }
+            url = url || row.file_path || '';
+
+            const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(row.file_name || '') || String(url).startsWith('data:image');
+            if (isImage) {
+                previewDiv.innerHTML = `
+                    <div class="relative inline-block">
+                        <img src="${url}" alt="${cat}"
+                             class="h-16 w-16 object-cover rounded-lg border-2 border-lime-300 cursor-pointer"
+                             onclick="window.open('${url}','_blank')">
+                        <button type="button" onclick="event.stopPropagation(); employeeModule.removeProfileFile('${cat}')"
+                                class="absolute -top-2 -left-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600">
+                            <i class="fas fa-times text-xs"></i>
+                        </button>
+                    </div>`;
+            } else {
+                previewDiv.innerHTML = `
+                    <div class="relative inline-flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-lg text-sm text-gray-700">
+                        <i class="fas fa-file text-lime-500"></i>
+                        <span class="max-w-32 truncate cursor-pointer" onclick="window.open('${url}','_blank')">${row.file_name || cat}</span>
+                        <button type="button" onclick="event.stopPropagation(); employeeModule.removeProfileFile('${cat}')"
+                                class="w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 text-xs">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>`;
+            }
+        }
+    } catch (e) {
+        console.warn('_loadStudentProfileFiles:', e);
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// 🔍 جستجوی زنده فیلدهای مودال ویرایش پروفایل دانشجو
+// ═══════════════════════════════════════════════════════════════
+EmployeeModule.filterProfileFields = function(query) {
+    const q = (query || '').trim().toLowerCase();
+    const modal = document.getElementById('edit-student-modal');
+    if (!modal) return;
+
+    modal.querySelectorAll('.profile-section').forEach(section => {
+        let visibleFields = 0;
+
+        section.querySelectorAll('.profile-field').forEach(field => {
+            const label = field.querySelector('label');
+            const text  = (label ? label.textContent : '') + ' ' + (field.dataset.fieldName || '');
+            const match = !q || text.toLowerCase().includes(q);
+            field.style.display = match ? '' : 'none';
+            if (match) visibleFields++;
+        });
+
+        // اگر سکشن فیلد .profile-field نداشت (مثل وضعیت حساب) خود سکشن بر اساس عنوانش فیلتر می‌شود
+        if (!section.querySelector('.profile-field')) {
+            const head = section.querySelector('h4');
+            const match = !q || (head ? head.textContent : '').toLowerCase().includes(q);
+            section.style.display = match ? '' : 'none';
+            return;
+        }
+
+        section.style.display = (visibleFields > 0) ? '' : 'none';
+    });
+
+    // نوار جستجو همیشه قابل مشاهده بماند
+    const bar = modal.querySelector('#edit-profile-search')?.closest('.sticky');
+    if (bar) bar.style.display = '';
 };
