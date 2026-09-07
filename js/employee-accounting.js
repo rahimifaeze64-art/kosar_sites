@@ -101,6 +101,24 @@ const EmployeeAccountingModule = (function() {
         return known ? known.employeeName : 'نامشخص';
     }
 
+    // ── اعتبار تسویه: تسویه‌های ثبت‌شده ابتدا هزینه‌های تأیید شده را می‌پوشانند ──
+    // مانده هزینه‌ها = هزینه تأیید شده − سهم تسویه؛ مازاد تسویه از مبلغ ساعات تأیید شده کسر می‌شود
+    function _getSettlementCredit(employeeId, totalExpensesApproved, totalHoursAmount) {
+        const readLS = (k) => { try { return JSON.parse(localStorage.getItem(k) || '[]'); } catch { return []; } };
+        const paid = readLS('work_settlements')
+            .filter(s => s.employeeId === employeeId)
+            .reduce((s, r) => s + Number(r.amount || 0), 0);
+        const expenseCredit = Math.min(paid, Math.max(0, totalExpensesApproved || 0));
+        const hoursCredit   = Math.min(Math.max(0, paid - expenseCredit), Math.max(0, totalHoursAmount || 0));
+        return { paid, expenseCredit, hoursCredit };
+    }
+
+    // سهم تسویه‌شده از هزینه‌های تأیید شده یک کارمند (برای نمایش در مودال‌ها)
+    function getExpensesSettled(employeeId) {
+        const sum = getEmployeeFinancialSummary(employeeId);
+        return sum.expensesSettled || 0;
+    }
+
     function getEmployeeFinancialSummary(employeeId, startDate = null, endDate = null, overrideName = null) {
         const allEntries = WorkHoursModule.getAllEntriesByEmployee(employeeId);
 
@@ -126,6 +144,16 @@ const EmployeeAccountingModule = (function() {
         const hourlyRate = getEmployeeHourlyRate(employeeId);
         const totalAmount = totalHoursApproved * hourlyRate;
         const grandTotal = totalAmount + totalExpensesApproved;
+
+        // ── اعتبار تسویه: فقط برای خلاصه کل (بدون فیلتر تاریخ) اعمال می‌شود ──
+        // تسویه‌های ثبت‌شده ابتدا هزینه‌های تأیید شده را می‌پوشانند (کاهش باکس هزینه‌ها)
+        const _isFullSummary = !startDate && !endDate;
+        const _credit = _isFullSummary
+            ? _getSettlementCredit(employeeId, totalExpensesApproved, totalAmount)
+            : { paid: 0, expenseCredit: 0, hoursCredit: 0 };
+        const totalExpensesApprovedRemaining = Math.max(0, totalExpensesApproved - _credit.expenseCredit);
+        const totalAmountRemaining           = Math.max(0, totalAmount - _credit.hoursCredit);
+        const grandTotalRemaining            = totalAmountRemaining + totalExpensesApprovedRemaining;
 
         const workDays = new Set(submittedHours.map(h => h.date)).size;
 
@@ -160,9 +188,15 @@ const EmployeeAccountingModule = (function() {
             totalHoursApprovedRaw: totalHoursApproved,   // برای محاسبات ریاضی
             totalExpenses: totalExpensesSubmitted,
             totalExpensesApproved,
+            totalExpensesApprovedRemaining,
+            expensesSettled: _credit.expenseCredit,
+            hoursSettledAmount: _credit.hoursCredit,
+            settlementsPaid: _credit.paid,
             hourlyRate,
             totalAmount,
+            totalAmountRemaining,
             grandTotal,
+            grandTotalRemaining,
             workDays,
             hoursCount: submittedHours.length,
             expensesCount: submittedExpenses.length,
@@ -248,6 +282,7 @@ const EmployeeAccountingModule = (function() {
         getEmployeeHourlyRate,
         getEmployeeFinancialSummary,
         getAllEmployeesSummary,
+        getExpensesSettled,
         formatCurrency,
         formatHoursDisplay: _fmtHours,
         formatDate
@@ -783,7 +818,8 @@ const EmployeeAccountingUI = (function() {
                             </div>
                             <div>
                                 <p class="text-black-400 text-sm">مبلغ کل (تأیید شده)</p>
-                                <p class="text-xl font-bold text-emerald-400">${EmployeeAccountingModule.formatCurrency(summary.grandTotal)}</p>
+                                <p class="text-xl font-bold text-emerald-400">${EmployeeAccountingModule.formatCurrency(summary.grandTotalRemaining ?? summary.grandTotal)}</p>
+                                ${(summary.settlementsPaid ?? 0) > 0 ? `<p class="text-black-300 text-xs"><i class="fas fa-check-circle text-green-400 ml-0.5"></i>${EmployeeAccountingModule.formatCurrency(summary.settlementsPaid)} تسویه شده</p>` : ''}
                             </div>
                         </div>
                     </div>
@@ -883,9 +919,7 @@ const EmployeeAccountingUI = (function() {
     function getManagerEmployeesContent() {
         const employeesSummary = EmployeeAccountingModule.getAllEmployeesSummary();
 
-        const totalAmount = employeesSummary.reduce((sum, emp) => sum + emp.grandTotal, 0);
         const totalHours  = employeesSummary.reduce((sum, emp) => sum + (emp.totalHoursApprovedRaw || parseFloat(emp.totalHoursApproved) || 0), 0);
-        const totalExpenses = employeesSummary.reduce((sum, emp) => sum + emp.totalExpensesApproved, 0);
 
         const employeeRows = employeesSummary.length > 0
             ? employeesSummary.map(emp => {
@@ -918,11 +952,19 @@ const EmployeeAccountingUI = (function() {
                             <p class="text-black-400/60 text-xs">${emp.hoursCount} گزارش</p>
                         </td>                       
                         <td class="text-center py-4 px-4">
-                            <span class="text-orange-400 font-bold">${EmployeeAccountingModule.formatCurrency(emp.totalExpensesApproved)}</span>
-                        </td>                   
+                            ${(() => {
+                                const expRem    = emp.totalExpensesApprovedRemaining ?? emp.totalExpensesApproved;
+                                const expSet    = emp.expensesSettled ?? 0;
+                                const isSettled = expSet > 0 && expRem <= 0;
+                                return `
+                                <span class="${isSettled ? 'text-black-300/50 line-through' : 'text-orange-400'} font-bold">${EmployeeAccountingModule.formatCurrency(expRem)}</span>
+                                ${expSet > 0 ? `<p class="text-black-300/60 text-xs mt-0.5"><i class="fas fa-check-circle ${isSettled ? 'text-green-400' : 'text-lime-400/70'} ml-0.5"></i>${EmployeeAccountingModule.formatCurrency(expSet)} تسویه شده</p>` : ''}`;
+                            })()}
+                        </td>                  
                         <td class="text-center py-4 px-4">
-                            <span class="text-emerald-400 font-bold text-lg">${EmployeeAccountingModule.formatCurrency(emp.grandTotal)}</span>
+                            <span class="text-emerald-400 font-bold text-lg">${EmployeeAccountingModule.formatCurrency(emp.grandTotalRemaining ?? emp.grandTotal)}</span>
                             <p class="text-black-300/60 text-xs mt-0.5">(ساعات × نرخ) + هزینه‌ها</p>
+                            ${(emp.settlementsPaid ?? 0) > 0 ? `<p class="text-black-300/60 text-xs mt-0.5"><i class="fas fa-hand-holding-usd text-lime-400/70 ml-0.5"></i>${EmployeeAccountingModule.formatCurrency(emp.settlementsPaid)} تسویه شده</p>` : ''}
                         </td>
                     <td class="text-center py-4 px-4">${statusBadge}</td>
                     <td class="text-center py-4 px-4">
@@ -991,7 +1033,17 @@ const EmployeeAccountingUI = (function() {
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-cyan-400/20">
                         <i class="fas fa-check-double text-cyan-400 mb-2 block"></i>
                         <p class="text-black-400 text-xs mb-1">هزینه‌های تأیید شده</p>
-                        <p class="text-sm font-bold text-cyan-400">${EmployeeAccountingModule.formatCurrency(totalExpenses)}</p>
+                        <p class="text-sm font-bold text-cyan-400">${EmployeeAccountingModule.formatCurrency(
+                            employeesSummary.reduce((s,e)=>s+(e.totalExpensesApprovedRemaining ?? e.totalExpensesApproved ?? 0),0)
+                        )}</p>
+                        <p class="text-black-300/60 text-[10px] mt-0.5">مانده پس از تسویه</p>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-teal-400/20">
+                        <i class="fas fa-hand-holding-usd text-teal-400 mb-2 block"></i>
+                        <p class="text-black-400 text-xs mb-1">هزینه‌های تسویه‌شده</p>
+                        <p class="text-sm font-bold text-teal-400">${EmployeeAccountingModule.formatCurrency(
+                            employeesSummary.reduce((s,e)=>s+(e.expensesSettled ?? 0),0)
+                        )}</p>
                     </div>
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-red-400/20">
                         <i class="fas fa-minus-circle text-red-400 mb-2 block"></i>
@@ -1122,6 +1174,17 @@ const EmployeeAccountingUI = (function() {
                         <span class="text-black-400 text-sm">تسویه‌های قبلی</span>
                         <span class="text-lime-400 font-bold">- ${EmployeeAccountingModule.formatCurrency(paid)}</span>
                     </div>
+                    ${(() => {
+                        // سهم تسویه‌های قبلی از هزینه‌های تأیید شده (این بخش از باکس هزینه‌ها کسر می‌شود)
+                        const expSet = EmployeeAccountingModule.getExpensesSettled
+                            ? EmployeeAccountingModule.getExpensesSettled(employeeId)
+                            : 0;
+                        return expSet > 0 ? `
+                        <div class="flex justify-between items-center mt-1">
+                            <span class="text-black-400 text-xs">سهم هزینه‌های تسویه‌شده</span>
+                            <span class="text-teal-400 font-bold text-xs">${EmployeeAccountingModule.formatCurrency(expSet)} از هزینه‌ها کسر شد</span>
+                        </div>` : '';
+                    })()}
                     <hr class="border-white/10 my-2">
                     <div class="flex justify-between items-center">
                         <span class="text-white font-semibold">مانده طلب</span>
@@ -1883,8 +1946,11 @@ const EmployeeAccountingUI = (function() {
                     <div class="bg-orange-500/10 border border-orange-400/20 rounded-xl p-3 text-center">
                         <i class="fas fa-receipt text-orange-400 mb-1 block text-sm"></i>
                         <p class="text-gray-400 text-xs mb-0.5">هزینه‌های تأیید شده</p>
-                        <p class="text-sm font-bold text-orange-400">${EmployeeAccountingModule.formatCurrency(summary.totalExpensesApproved)}</p>
+                        <p class="text-sm font-bold ${summary.expensesSettled > 0 ? 'text-black-300/50 line-through' : 'text-orange-400'}">${EmployeeAccountingModule.formatCurrency(summary.totalExpensesApproved)}</p>
                         <p class="text-gray-500 text-xs">${summary.expensesCount} مورد</p>
+                        ${summary.expensesSettled > 0 ? `
+                        <p class="text-teal-400 text-xs mt-0.5"><i class="fas fa-check-circle ml-0.5"></i>${EmployeeAccountingModule.formatCurrency(summary.expensesSettled)} تسویه شد</p>
+                        <p class="text-orange-300 text-xs">مانده: ${EmployeeAccountingModule.formatCurrency(summary.totalExpensesApprovedRemaining)}</p>` : ''}
                     </div>
                     <div class="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
                         <i class="fas fa-hand-holding-usd text-lime-400 mb-1 block text-sm"></i>
