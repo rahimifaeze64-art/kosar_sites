@@ -1013,8 +1013,9 @@ EmployeeModule._uploadToStorage = async function(file, studentId, fieldId) {
     try {
         const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
         if (!client) return null;
-        const ext  = file.name.split('.').pop();
-        const path = `${studentId}/${fieldId}_${Date.now()}.${ext}`;
+        const rawExt = (file.name.split('.').pop() || '').toLowerCase();
+        const ext    = /^[a-z0-9]{1,10}$/.test(rawExt) ? rawExt : 'bin';
+        const path   = `${studentId}/${UTILS.safeStorageKey(fieldId)}_${Date.now()}.${ext}`;
         const { data, error } = await client.storage
             .from('student-documents')
             .upload(path, file, { cacheControl: '3600', upsert: true });
@@ -1276,8 +1277,9 @@ EmployeeModule.uploadProfileFile = async function(studentId, category) {
 
         if (client) {
             try {
-                const ext  = (file.name.split('.').pop() || 'bin').toLowerCase();
-                const safeCat = category.replace(/\s+/g, '_');
+                const rawExt  = (file.name.split('.').pop() || '').toLowerCase();
+                const ext     = /^[a-z0-9]{1,10}$/.test(rawExt) ? rawExt : 'bin';
+                const safeCat = UTILS.safeStorageKey(category);
                 storagePath = `${studentId}/files/${safeCat}_${Date.now()}.${ext}`;
 
                 const { data, error } = await client.storage

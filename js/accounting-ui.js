@@ -1150,7 +1150,7 @@ const AccountingUI = (function () {
         const fileInput = document.getElementById('tx-receipt');
         if (fileInput?.files?.length) {
             const file = fileInput.files[0];
-            const path = `receipts/${Date.now()}_${file.name.replace(/\s/g,'_')}`;
+            const path = `receipts/${Date.now()}_${_safeStorageKey(file.name)}`;
             const { error: upErr } = await client.storage.from(BUCKET).upload(path, file, { upsert: true });
             if (!upErr) {
                 const { data: urlData } = client.storage.from(BUCKET).getPublicUrl(path);
@@ -1703,6 +1703,19 @@ const AccountingUI = (function () {
     };
 
 })();
+
+// ── کلید امن Storage — فقط ASCII؛ حروف فارسی به لاتین تبدیل می‌شود ──
+function _safeStorageKey(str) {
+    const MAP = { 'آ':'a','أ':'a','إ':'a','ا':'a','ب':'b','پ':'p','ت':'t','ث':'s','ج':'j','چ':'ch','ح':'h','خ':'kh','د':'d','ذ':'z','ر':'r','ز':'z','ژ':'zh','س':'s','ش':'sh','ص':'s','ض':'z','ط':'t','ظ':'z','ع':'a','غ':'gh','ف':'f','ق':'q','ك':'k','ک':'k','گ':'g','ل':'l','م':'m','ن':'n','و':'v','ؤ':'v','ه':'h','ة':'h','ي':'y','ی':'y','ئ':'y','ء':'' };
+    const out = String(str == null ? '' : str)
+        .split('').map(ch => {
+            if (/[A-Za-z0-9._-]/.test(ch)) return ch;
+            if (ch === ' ' || ch === '\t') return '_';
+            return Object.prototype.hasOwnProperty.call(MAP, ch) ? MAP[ch] : '';
+        }).join('')
+        .replace(/_{2,}/g, '_').replace(/^_+|_+$/g, '');
+    return out || 'file';
+}
 
 // ── JalaliUtils — global برای استفاده در سایر ماژول‌ها ──────
 // (توابع اصلی داخل AccountingUI هستند، اینجا export می‌شن)

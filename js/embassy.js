@@ -89,11 +89,27 @@ const EmbassyModule = (function () {
         }
     }
 
+    // ── کلید امن Storage — فقط ASCII؛ حروف فارسی به لاتین تبدیل می‌شود ──
+    function _safeStorageKey(str) {
+        const MAP = { 'آ':'a','أ':'a','إ':'a','ا':'a','ب':'b','پ':'p','ت':'t','ث':'s','ج':'j','چ':'ch','ح':'h','خ':'kh','د':'d','ذ':'z','ر':'r','ز':'z','ژ':'zh','س':'s','ش':'sh','ص':'s','ض':'z','ط':'t','ظ':'z','ع':'a','غ':'gh','ف':'f','ق':'q','ك':'k','ک':'k','گ':'g','ل':'l','م':'m','ن':'n','و':'v','ؤ':'v','ه':'h','ة':'h','ي':'y','ی':'y','ئ':'y','ء':'' };
+        const out = String(str == null ? '' : str)
+            .split('').map(ch => {
+                if (/[A-Za-z0-9._-]/.test(ch)) return ch;
+                if (ch === ' ' || ch === '\t') return '_';
+                return Object.prototype.hasOwnProperty.call(MAP, ch) ? MAP[ch] : '';
+            }).join('')
+            .replace(/_{2,}/g, '_').replace(/^_+|_+$/g, '');
+        return out || 'file';
+    }
+
     // ── آپلود فایل به Storage ────────────────────────────────
     async function uploadFile(file, recordId) {
         const client = sb(); if (!client) return null;
-        const ext  = file.name.split('.').pop();
-        const path = `${recordId}/${Date.now()}_${file.name}`;
+        const dot    = file.name.lastIndexOf('.');
+        const base   = dot > 0 ? file.name.slice(0, dot) : file.name;
+        const rawExt = dot > 0 ? file.name.slice(dot + 1) : '';
+        const ext    = /^[A-Za-z0-9]{1,10}$/.test(rawExt) ? rawExt.toLowerCase() : 'bin';
+        const path = `${recordId}/${Date.now()}_${_safeStorageKey(base)}.${ext}`;
         const { data, error } = await client.storage
             .from('embassy-files')
             .upload(path, file, { cacheControl: '3600', upsert: false });

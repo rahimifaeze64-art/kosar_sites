@@ -1107,7 +1107,8 @@ const SupabaseDataModule = {
     async uploadArchiveFileToStorage(file, fileId) {
         if (!this._online()) return null;
         try {
-            const ext = file.name.split('.').pop();
+            const rawExt = (file.name.split('.').pop() || '').toLowerCase();
+            const ext = /^[a-z0-9]{1,10}$/.test(rawExt) ? rawExt : 'bin';
             const path = `${fileId}.${ext}`;
             const { data, error } = await this._db()
                 .storage
@@ -1285,7 +1286,8 @@ const SupabaseDataModule = {
     async uploadManagementChatFile(file, msgId) {
         if (!this._online()) return null;
         try {
-            const ext  = file.name.split('.').pop().toLowerCase();
+            const rawExt = (file.name.split('.').pop() || '').toLowerCase();
+            const ext    = /^[a-z0-9]{1,10}$/.test(rawExt) ? rawExt : 'bin';
             const path = `${msgId}.${ext}`;
             const { data, error } = await this._db()
                 .storage
