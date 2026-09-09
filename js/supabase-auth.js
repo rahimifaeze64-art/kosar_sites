@@ -230,6 +230,10 @@ const SupabaseAuth = {
             passportNumber:  p.passport_number || '',
             bachelorField:   p.bachelor_field  || '',
             specialization:  p.specialization  || '',
+            graduated:       p.graduated     !== null && p.graduated !== undefined ? p.graduated : undefined,
+            graduatedDate:   p.graduated_date || '',
+            currentPath:     p.current_path  || '',   // studying/defense/educational/requirements
+            finishedDate:    p.finished_date || '',
             createdAt:       p.created_at
         };
     },
