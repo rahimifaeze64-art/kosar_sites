@@ -52,6 +52,13 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                 <i class="fas fa-graduation-cap"></i>
                                 <span>اتمام فارغ‌التحصیلی</span>
                             </button>
+                            <button onclick="employeeModule.completeStudentPath('${studentId}','studying')"
+                                    title="اتمام فاز در حال تحصیل و انتقال به فارغ‌التحصیلی"
+                                    class="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-2 rounded-lg font-medium transition-all text-xs flex items-center gap-1">
+                                <i class="fas fa-book-reader"></i>
+                                <span>اتمام در حال تحصیل</span>
+                            </button>
+
                             <button onclick="employeeModule.finishStudentWork('${studentId}')" 
                                     class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg font-medium transition-all text-xs flex items-center gap-1">
                                 <i class="fas fa-flag-checkered"></i>
@@ -203,6 +210,17 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                 <label class="block text-base font-bold text-gray-800 mb-2">تاریخ تحویل</label>
                                 <input type="date" id="edit-delivery-date" value="${student.deliveryDate || ''}"
                                        class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg">
+                            </div>
+                            <div class="profile-field">
+                                <label class="block text-base font-bold text-gray-800 mb-2">مسیر فعلی دانشجو</label>
+                                <select id="edit-current-path" class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg">
+                                    <option value="" ${!student.currentPath ? 'selected' : ''}>خودکار (بر اساس مراحل)</option>
+                                    <option value="studying" ${student.currentPath==='studying' ? 'selected' : ''}>در حال تحصیل</option>
+                                    <option value="requirements" ${student.currentPath==='requirements' ? 'selected' : ''}>ملزومات</option>
+                                    <option value="defense" ${student.currentPath==='defense' ? 'selected' : ''}>گردش دفاع</option>
+                                    <option value="educational" ${student.currentPath==='educational' ? 'selected' : ''}>فارغ‌التحصیلی</option>
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1">تعیین دستی مسیر — «خودکار» بر اساس وضعیت مراحل تعیین می‌شود</p>
                             </div>
                         </div>
                     </div>
@@ -855,6 +873,7 @@ EmployeeModule.saveStudentProfile = async function(studentId) {
         article1Status:     document.getElementById('edit-article1-status')?.value   || '',
         article2Status:     document.getElementById('edit-article2-status')?.value   || '',
         active:             document.getElementById('edit-active')?.checked          ?? true,
+        currentPath:        document.getElementById('edit-current-path')?.value      || '',
         educationalSteps:   currentStudent.educationalSteps  || this.getDefaultEducationalSteps?.() || [],
         defenseSteps:       currentStudent.defenseSteps      || this.getDefaultDefenseSteps2?.()    || [],
         requirementsSteps:  currentStudent.requirementsSteps || this.getDefaultRequirementsSteps?.()|| [],
@@ -968,6 +987,9 @@ EmployeeModule.saveStudentProfile = async function(studentId) {
                 degree:          updatedData.degree      || null,
                 passport_number: updatedData.passportNumber || null,
                 active:          updatedData.active,
+                // current_path — 'studying' (در حال تحصیل) هم یک مسیر مستقل است
+                // مقدار خالی («خودکار») ارسال نمی‌شود تا مقدار فعلی دیتابیس overwrite نشود
+                ...(updatedData.currentPath ? { current_path: updatedData.currentPath } : {}),
             };
             const { error: profileErr } = await client
                 .from('profiles')

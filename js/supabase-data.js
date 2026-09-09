@@ -968,7 +968,7 @@ const SupabaseDataModule = {
 
     async saveStepAssignment(pathType, stepIndex, employeeId) {
         if (!this._online()) return false;
-        const validPaths = ['defense', 'requirements', 'educational'];
+        const validPaths = ['defense', 'requirements', 'educational', 'studying'];
         if (!validPaths.includes(pathType)) {
             console.error('saveStepAssignment: path_type نامعتبر:', pathType);
             return false;

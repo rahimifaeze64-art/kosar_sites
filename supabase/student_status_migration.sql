@@ -3,7 +3,7 @@
 -- اضافه کردن ستون‌های وضعیت تحصیلی دانشجو به جدول profiles
 --   • graduated        — فارغ‌التحصیل شده
 --   • graduated_date   — تاریخ فارغ‌التحصیلی
---   • current_path     — مسیر فعلی (defense/educational/requirements)
+--   • current_path     — مسیر فعلی (studying/defense/educational/requirements)
 --   • finished_date    — تاریخ اتمام کار (خاتمه یافته)
 --   • students_data    — JSONB ذخیره کامل داده محلی (fallback)
 -- Supabase Dashboard → SQL Editor → Run
@@ -19,7 +19,30 @@ ALTER TABLE public.profiles
 
 ALTER TABLE public.profiles
     ADD COLUMN IF NOT EXISTS current_path    TEXT
-        CHECK (current_path IN ('defense','educational','requirements') OR current_path IS NULL);
+        CHECK (current_path IN ('defense','educational','requirements','studying') OR current_path IS NULL);
+
+-- اگر ستون از قبل با CHECK قدیم ساخته شده باشد، «ADD COLUMN IF NOT EXISTS»
+-- آن را به‌روز نمی‌کند؛ پس constraint های قدیمیِ فاقد 'studying' را حذف
+-- و constraint نام‌دار جدید را می‌سازیم (Idempotent)
+DO $$
+DECLARE c record;
+BEGIN
+    FOR c IN
+        SELECT conname FROM pg_constraint
+        WHERE conrelid = 'public.profiles'::regclass
+          AND contype  = 'c'
+          AND pg_get_constraintdef(oid) LIKE '%current_path%'
+          AND pg_get_constraintdef(oid) NOT LIKE '%studying%'
+    LOOP
+        EXECUTE format('ALTER TABLE public.profiles DROP CONSTRAINT %I', c.conname);
+    END LOOP;
+END $$;
+
+ALTER TABLE public.profiles
+    DROP CONSTRAINT IF EXISTS profiles_current_path_check;
+ALTER TABLE public.profiles
+    ADD CONSTRAINT profiles_current_path_check
+    CHECK (current_path IN ('defense','educational','requirements','studying') OR current_path IS NULL);
 
 ALTER TABLE public.profiles
     ADD COLUMN IF NOT EXISTS finished_date   timestamptz;
@@ -30,7 +53,7 @@ ALTER TABLE public.profiles
 
 COMMENT ON COLUMN public.profiles.graduated      IS 'آیا دانشجو فارغ‌التحصیل شده / Whether student has graduated';
 COMMENT ON COLUMN public.profiles.graduated_date IS 'تاریخ فارغ‌التحصیلی / Graduation date';
-COMMENT ON COLUMN public.profiles.current_path   IS 'مسیر فعلی تحصیلی: defense | educational | requirements';
+COMMENT ON COLUMN public.profiles.current_path   IS 'مسیر فعلی تحصیلی: studying | defense | educational | requirements';
 COMMENT ON COLUMN public.profiles.finished_date  IS 'تاریخ اتمام کار (خاتمه یافته) / Date student work ended';
 COMMENT ON COLUMN public.profiles.students_meta  IS 'داده‌های تکمیلی دانشجو به صورت JSON (مراحل، یادداشت‌ها، ...)';
 
@@ -68,6 +91,7 @@ SELECT
         WHEN p.active AND p.current_path = 'educational'  THEN 'educational'
         WHEN p.active AND p.current_path = 'defense'      THEN 'defense'
         WHEN p.active AND p.current_path = 'requirements' THEN 'requirements'
+        WHEN p.active AND p.current_path = 'studying'     THEN 'studying'
         WHEN p.active                             THEN 'active'
         ELSE 'inactive'
     END AS computed_status

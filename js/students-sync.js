@@ -91,8 +91,8 @@
             if (student.graduatedDate)
                 profileUpdate.graduated_date = student.graduatedDate;
 
-            // current_path
-            if (student.currentPath && ['defense','educational','requirements'].includes(student.currentPath))
+            // current_path — 'studying' (در حال تحصیل) هم یک مسیر مستقل است
+            if (student.currentPath && ['defense','educational','requirements','studying'].includes(student.currentPath))
                 profileUpdate.current_path = student.currentPath;
 
             // active

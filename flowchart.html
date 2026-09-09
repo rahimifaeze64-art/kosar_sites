@@ -264,7 +264,7 @@ const STATUS_INCOMPLETE = 0, STATUS_CURRENT = 1, STATUS_COMPLETED = 2;
 const DEFAULT_STEPS = {
     defense:      ['ثبت عنوان','تنضید','ترجمه','استلال','ملخص','مدرک لغت(فیش)','بارگزاری','تایید استاد','مشابهت','مدیر گروه','معاون','سفارش','ق و م','تسویه حساب','وکالت','ثبت نام ایرانداک','زمان پور'],
     requirements: ['امر اداری','پروپوزال','مدرک لغت','ترجمه پایان نامه فارسی','ملخص','مشابهت','ترجمه','قطعه','لافته','چهارنسخه','تنضید رساله'],
-    educational:  ['وکالت','تسویه حساب','تعدیلات','مدرک کارشناسی','استلال عراقی','ملخص','محضر و اصالت','تنضید ایرانداک','تنضید تجلید','تجلید','بارگزاری ایرانداک','ایجاد گردش','آزفا','اسماعیلی','کتابخانه','کد','خروج قطعی','دریافت مدرک','تصدیق','تسویه حساب نهایی','ارسال']
+    educational:  ['در حال تحصیل','وکالت','تسویه حساب','تعدیلات','مدرک کارشناسی','استلال عراقی','ملخص','محضر و اصالت','تنضید ایرانداک','تنضید تجلید','تجلید','بارگزاری ایرانداک','ایجاد گردش','آزفا','اسماعیلی','کتابخانه','کد','خروج قطعی','دریافت مدرک','تصدیق','تسویه حساب نهایی','ارسال','پاس کردن واحد ها','پرداخت اقساط','قفل کردن دروس','تنزیل نمرات']
 };
 
 const PATH_COLOR = {
@@ -309,10 +309,21 @@ function loadManagedSteps() {
         try { const r = localStorage.getItem(key); if (r) return JSON.parse(r).map(s => typeof s === 'string' ? s : s.name); } catch(e){}
         return fb;
     };
+    let educational = parse('custom_educational_steps', DEFAULT_STEPS.educational);
+    // ── هم‌ترازی کشِ قدیمی ──
+    // اگر custom_educational_steps ذخیره‌شده فاز «در حال تحصیل» را نداشت
+    // (کشِ قبل از این آپدیت)، با لیست پیش‌فرض جدید جایگزین می‌شود.
+    if (!educational.includes('در حال تحصیل')) {
+        educational = DEFAULT_STEPS.educational.slice();
+        try {
+            localStorage.setItem('custom_educational_steps',
+                JSON.stringify(educational.map(n => ({ name: n, completed: false, date: null, notes: '' }))));
+        } catch(e) {}
+    }
     return {
         defense:      parse('custom_defense_steps',      DEFAULT_STEPS.defense),
         requirements: parse('custom_requirements_steps',  DEFAULT_STEPS.requirements),
-        educational:  parse('custom_educational_steps',   DEFAULT_STEPS.educational)
+        educational:  educational
     };
 }
 

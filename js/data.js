@@ -307,7 +307,7 @@ const DataModule = {
 
         const defenseCount      = getStepCount('custom_defense_steps', 17);
         const requirementsCount = getStepCount('custom_requirements_steps', 11);
-        const educationalCount  = getStepCount('custom_educational_steps', 21);
+        const educationalCount  = getStepCount('custom_educational_steps', 26);
 
         const STATUS_COMPLETED = 2;
         const STATUS_CURRENT   = 1;

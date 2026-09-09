@@ -178,6 +178,7 @@ const AuthModule = {
             ...userData,
             role: CONFIG.ROLES.STUDENT,
             active: true,
+            currentPath: 'studying', // دانشجوی جدید پیش از دفاع → فاز «در حال تحصیل»
             createdAt: new Date().toISOString()
         };
         

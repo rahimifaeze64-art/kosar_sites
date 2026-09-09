@@ -26,7 +26,7 @@ ALTER TABLE public.profiles
     DROP CONSTRAINT IF EXISTS profiles_current_path_check;
 ALTER TABLE public.profiles
     ADD CONSTRAINT profiles_current_path_check
-    CHECK (current_path IN ('defense','educational','requirements') OR current_path IS NULL);
+    CHECK (current_path IN ('defense','educational','requirements','studying') OR current_path IS NULL);
 
 -- ════════════════════════════════════════════════════════════
 -- ۲. step_assignments — جدول تخصیص مراحل به کارمندان

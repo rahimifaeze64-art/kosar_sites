@@ -314,6 +314,11 @@
                     <i class="fas fa-graduation-cap ml-1"></i>
                     فارغ‌التحصیلی
                 </div>
+                <div onclick="selectPath('studying')" id="tab-studying" 
+                     class="path-tab bg-cyan-100 text-cyan-800 flex-shrink-0">
+                    <i class="fas fa-book-reader ml-1"></i>
+                    در حال تحصیل
+                </div>
             </div>
         </div>
         
@@ -381,6 +386,10 @@
                     <div class="path-tab fs-tab bg-lime-100 text-lime-800 flex-shrink-0" data-path="educational" onclick="selectPath('educational')">
                         <i class="fas fa-graduation-cap ml-1"></i>
                         فارغ‌التحصیلی
+                    </div>
+                    <div class="path-tab fs-tab bg-cyan-100 text-cyan-800 flex-shrink-0" data-path="studying" onclick="selectPath('studying')">
+                        <i class="fas fa-book-reader ml-1"></i>
+                        در حال تحصیل
                     </div>
                 </div>
                 <button onclick="toggleFullscreen()" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium flex-shrink-0">
@@ -472,18 +481,39 @@
             return _defenseDone(s) && reqOk;
         }
         function _getActivePath(s) {
+            // اگر currentPath صریحاً تنظیم شده → همون رو برگردون
+            // (منبع: profiles.current_path — مطابق _getStudentActivePath در employee.js)
+            if (s.currentPath) return s.currentPath;
             return _isGraduatedPhase(s) ? 'educational' : 'defense';
         }
 
+        // در فاز «در حال تحصیل» (current_path='studying')، مراحل مشترکِ
+        // دفاع/ملزومات هنوز ثبت نشده‌اند → فاز پیش از دفاع، موازی با هر دو مسیر
+        function _isStudyingPhase(s) {
+            return s.currentPath === 'studying';
+        }
+
         // دفاع و ملزومات موازی‌اند → همان گروه دانشجو (فاز فعال) در هر دو تب نمایش داده می‌شود
+        // مسیر صریح (profiles.current_path) اولویت دارد — مطابق فیلترهای تب‌های employee.js
         function _shouldShowInDefense(s) {
-            return s.active !== false && !_isGraduatedPhase(s);
+            if (s.active === false) return false;
+            if (s.currentPath) return s.currentPath === 'defense';
+            return !_isGraduatedPhase(s);
         }
         function _shouldShowInRequirements(s) {
-            return s.active !== false && !_isGraduatedPhase(s);
+            if (s.active === false) return false;
+            // ملزومات موازی دفاع است — دانشجویانی که مسیرشان defense/requirements است
+            if (s.currentPath) return s.currentPath === 'defense' || s.currentPath === 'requirements';
+            return !_isGraduatedPhase(s);
         }
         function _shouldShowInEducational(s) {
-            return s.active !== false && _isGraduatedPhase(s);
+            if (s.active === false) return false;
+            if (s.currentPath) return s.currentPath === 'educational';
+            return _isGraduatedPhase(s);
+        }
+        // تب مستقل «در حال تحصیل» — فقط current_path='studying'
+        function _shouldShowInStudying(s) {
+            return _isStudyingPhase(s);
         }
 
         // ── مراحل پیش‌فرض — دقیقاً همان مراحل employee.js ─────────────────
@@ -501,11 +531,17 @@
                 'ملخص','مشابهت','ترجمه','قطعه','لافته','چهارنسخه','تنضید رساله'
             ],
             educational: [
+                'در حال تحصیل',
                 'وکالت','تسویه حساب','تعدیلات','مدرک کارشناسی',
                 'استلال عراقی','ملخص','محضر و اصالت','تنضید ایرانداک',
                 'تنضید تجلید','تجلید','بارگزاری ایرانداک','ایجاد گردش',
                 'آزفا','اسماعیلی','کتابخانه','کد',
-                'خروج قطعی','دریافت مدرک','تصدیق','تسویه حساب نهایی','ارسال'
+                'خروج قطعی','دریافت مدرک','تصدیق','تسویه حساب نهایی','ارسال',
+                'پاس کردن واحد ها','پرداخت اقساط','قفل کردن دروس','تنزیل نمرات'
+            ],
+            // مسیر مستقل «در حال تحصیل» — دانشجویان پیش از دفاع
+            studying: [
+                'در حال تحصیل'
             ]
         };
 
@@ -523,10 +559,25 @@
                 return fallback;
             };
 
+            let educational = parse('custom_educational_steps', DEFAULT_STEPS.educational);
+            // ── هم‌ترازی کشِ قدیمی ──
+            // اگر custom_educational_steps ذخیره‌شده فاز «در حال تحصیل» را نداشت
+            // (کشِ قبل از این آپدیت)، با لیست پیش‌فرض جدید جایگزین می‌شود تا
+            // شیت و فلوچارت همان مراحل employee.js را ببینند.
+            if (!educational.includes('در حال تحصیل')) {
+                educational = DEFAULT_STEPS.educational.slice();
+                try {
+                    localStorage.setItem('custom_educational_steps',
+                        JSON.stringify(educational.map(n => ({ name: n, completed: false, date: null, notes: '' }))));
+                } catch(e) {}
+            }
+
             return {
                 defense:      parse('custom_defense_steps',      DEFAULT_STEPS.defense),
                 requirements: parse('custom_requirements_steps',  DEFAULT_STEPS.requirements),
-                educational:  parse('custom_educational_steps',   DEFAULT_STEPS.educational)
+                educational:  educational,
+                // مسیر مستقل «در حال تحصیل» — کلید اختصاصی، بدون fallback به مسیر دیگر
+                studying:     parse('custom_studying_steps',     DEFAULT_STEPS.studying)
             };
         }
 
@@ -710,6 +761,8 @@
         
         function loadProgress(id, path, studentSteps) {
             const saved = localStorage.getItem(`prog_${id}_${path}`);
+            // مسیر studying در student_progress دیتابیس وجود ندارد → همیشه از پروفایل ساخته می‌شود
+            if (!STEPS[path]) return [];
             const stepCount = STEPS[path].length;
 
             if (saved) {
@@ -786,7 +839,8 @@
             const tabLabels = {
                 defense:      `<i class="fas fa-shield-alt ml-1"></i> گردش دفاع (${STEPS.defense.length})`,
                 requirements: `<i class="fas fa-clipboard-list ml-1"></i> ملزومات (${STEPS.requirements.length})`,
-                educational:  `<i class="fas fa-graduation-cap ml-1"></i> فارغ‌التحصیلی (${STEPS.educational.length})`
+                educational:  `<i class="fas fa-graduation-cap ml-1"></i> فارغ‌التحصیلی (${STEPS.educational.length})`,
+                studying:     `<i class="fas fa-book-reader ml-1"></i> در حال تحصیل (${STEPS.studying.length})`
             };
             Object.entries(tabLabels).forEach(([key, html]) => {
                 const el = document.getElementById(`tab-${key}`);
@@ -820,6 +874,9 @@
             } else if (currentPath === 'requirements') {
                 // ملزومات موازی دفاع است — دانشجویانی که گردش ملزومات دارند
                 filtered = students.filter(s => _shouldShowInRequirements(s));
+            } else if (currentPath === 'studying') {
+                // تب مستقل «در حال تحصیل» — دانشجویان پیش از دفاع
+                filtered = students.filter(s => _shouldShowInStudying(s));
             } else {
                 filtered = students.filter(s => _shouldShowInDefense(s));
             }
@@ -966,6 +1023,7 @@
             let relevant;
             if (currentPath === 'educational')       relevant = students.filter(s => _shouldShowInEducational(s));
             else if (currentPath === 'requirements') relevant = students.filter(s => _shouldShowInRequirements(s));
+            else if (currentPath === 'studying')     relevant = students.filter(s => _shouldShowInStudying(s));
             else                                     relevant = students.filter(s => _shouldShowInDefense(s));
             const total = relevant.length;
             if (total === 0) {
@@ -1087,6 +1145,7 @@
         });
 
         function exportToExcel() {
+            if (!STEPS[currentPath]) return; // مسیر studying در student_progress ذخیره نمی‌شود
             const steps = STEPS[currentPath];
             let csv = 'نام,رشته,' + steps.join(',') + ',درصد\n';
             students.forEach(s => {

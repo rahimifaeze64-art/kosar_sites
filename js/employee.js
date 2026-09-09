@@ -689,6 +689,7 @@ const EmployeeModule = {
                                 <select id="filter-type" onchange="employeeModule.updateFilterStepOptions(); employeeModule.applyStudentFilter()"
                                         class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lime-500">
                                     <option value="all">همه مسیرها</option>
+                                    <option value="studying">در حال تحصیل</option>
                                     <option value="educational">فارغ‌التحصیلی</option>
                                     <option value="defense">گردش دفاع</option>
                                     <option value="requirements">ملزومات</option>
@@ -868,6 +869,12 @@ const EmployeeModule = {
                             <i class="fas fa-user-check ml-1"></i>
                             در حال تحصیل (${students.filter(s => s.active).length})
                         </button>
+                        <button onclick="employeeModule.switchStudentListTab('studying')" 
+                                id="student-list-tab-studying"
+                                class="px-5 py-3 font-medium border-b-2 border-transparent text-gray-400 hover:text-cyan-300 transition-all whitespace-nowrap">
+                            <i class="fas fa-book-reader ml-1"></i>
+                            در حال تحصیل (${students.filter(s => s.active && s.currentPath === 'studying').length})
+                        </button>
                         <button onclick="employeeModule.switchStudentListTab('defense')" 
                                 id="student-list-tab-defense"
                                 class="px-5 py-3 font-medium border-b-2 border-transparent text-gray-400 hover:text-blue-300 transition-all whitespace-nowrap">
@@ -897,6 +904,10 @@ const EmployeeModule = {
                     <!-- Active Students -->
                     <div id="students-list-container-active">
                         ${this._renderStudentTable(students.filter(s => s.active), 'هنوز دانشجوی فعالی ثبت نشده است')}
+                    </div>
+                    <!-- Studying Students (در حال تحصیل — یک فاز قبل از دفاع) -->
+                    <div id="students-list-container-studying" style="display:none;">
+                        ${this._renderStudentTable(students.filter(s => s.active && s.currentPath === 'studying'), 'دانشجویی در مرحله در حال تحصیل نیست')}
                     </div>
                     <!-- Defense Students -->
                     <div id="students-list-container-defense" style="display:none;">
@@ -932,8 +943,20 @@ const EmployeeModule = {
         const def = s.defenseSteps || this.getDefaultDefenseSteps2();
         if (def.length > 0 && def.some(x => !x.completed)) return 'defense';
 
+        // اگر مراحل در-حال-تحصیل داره و هنوز تکمیل نشده → studying
+        // (فاز «در حال تحصیل» یک فاز قبل از فارغ‌التحصیلی است)
+        const edu = s.educationalSteps || [];
+        const studyingStep = edu.find(x => x && x.name === 'در حال تحصیل');
+        if (edu.length > 0 && studyingStep && !studyingStep.completed) return 'studying';
+
         // پیش‌فرض: educational (فارغ‌التحصیلی)
         return 'educational';
+    },
+
+    // ── مسیرهای معتبر سیستم ──────────────────────────────────
+    // (شامل مسیر «studying» = در حال تحصیل — یک فاز قبل از دفاع/فارغ‌التحصیلی)
+    _getAllPathTypes() {
+        return ['studying', 'defense', 'requirements', 'educational'];
     },
 
     // ── نمای ستونی (جدول) لیست دانشجویان ─────────────────────
@@ -947,6 +970,7 @@ const EmployeeModule = {
         const pathLabels = {
             requirements: { label: 'ملزومات',        color: 'bg-orange-500/20 text-orange-400 border-orange-500/30' },
             defense:      { label: 'گردش دفاع',      color: 'bg-blue-500/20   text-blue-400   border-blue-500/30'   },
+            studying:     { label: 'در حال تحصیل',   color: 'bg-cyan-500/20   text-cyan-400    border-cyan-500/30'   },
             educational:  { label: 'فارغ‌التحصیلی', color: 'bg-green-500/20  text-green-400  border-green-500/30'  },
         };
 
@@ -962,7 +986,8 @@ const EmployeeModule = {
             const pct     = steps.length ? Math.round(done / steps.length * 100) : 0;
             const curStep = steps.find(x => !x.completed);
             const barColor = activePath === 'requirements' ? 'bg-orange-500'
-                           : activePath === 'defense'      ? 'bg-blue-500' : 'bg-green-500';
+                           : activePath === 'defense'      ? 'bg-blue-500'
+                           : activePath === 'studying'     ? 'bg-cyan-500' : 'bg-green-500';
             return { s, activePath, pathInfo, pct, curStep, barColor };
         };
 
@@ -1345,6 +1370,16 @@ const EmployeeModule = {
                 ).join('') +
                 '<option value="completed">✅ تکمیل شده</option>';
             console.log(`  ✅ Loaded ${requirementsSteps.length} requirements steps`);
+        } else if (typeValue === 'studying') {
+            // مسیر «در حال تحصیل» همان مراحل آموزشی را استفاده می‌کند
+            filterStep.disabled = false;
+            const studyingSteps = this.getDefaultEducationalSteps();
+            filterStep.innerHTML = '<option value="all">همه مراحل</option>' +
+                studyingSteps.map((step, index) => 
+                    `<option value="${index}">${index + 1}. ${step.name}</option>`
+                ).join('') +
+                '<option value="completed">✅ تکمیل شده</option>';
+            console.log(`  ✅ Loaded ${studyingSteps.length} studying steps`);
         }
     },
     
@@ -1369,7 +1404,7 @@ const EmployeeModule = {
         
         let filteredStudents = students;
         
-        if (filterType === 'educational' && filterStep !== 'all') {
+        if ((filterType === 'educational' || filterType === 'studying') && filterStep !== 'all') {
             const selectedStepIndex = parseInt(filterStep);
             
             filteredStudents = students.filter(s => {
@@ -1811,6 +1846,7 @@ const EmployeeModule = {
                         <select id="edit-current-path"
                                 class="w-full bg-slate-600 border border-slate-500 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-lime-400">
                             <option value=""         ${!student.currentPath                        ? 'selected' : ''}>خودکار (بر اساس مراحل)</option>
+                            <option value="studying"     ${student.currentPath==='studying'        ? 'selected' : ''}>در حال تحصیل</option>
                             <option value="requirements" ${student.currentPath==='requirements'    ? 'selected' : ''}>ملزومات</option>
                             <option value="defense"      ${student.currentPath==='defense'         ? 'selected' : ''}>گردش دفاع</option>
                             <option value="educational"  ${student.currentPath==='educational'     ? 'selected' : ''}>فارغ‌التحصیلی</option>
@@ -2481,14 +2517,37 @@ const EmployeeModule = {
         const customSteps = localStorage.getItem('custom_educational_steps');
         if (customSteps) {
             try {
-                return JSON.parse(customSteps);
+                const parsed = JSON.parse(customSteps);
+                // ── هم‌ترازی کشِ قدیمی با پیش‌فرض جدید ──
+                // اگر کشِ custom_educational_steps فاقد فاز «در حال تحصیل» است،
+                // آن را با پیش‌فرضِ به‌روز (شامل فاز + ۴ زیرمرحله) جایگزین می‌کنیم
+                // تا همهٔ نماها (شیت/فلوچارت) همان مراحل را ببینند.
+                if (Array.isArray(parsed)) {
+                    const hasStudying = parsed.some(x =>
+                        (typeof x === 'string' ? x : x?.name) === 'در حال تحصیل');
+                    if (!hasStudying) {
+                        const fresh = this._getDefaultEducationalStepsBase();
+                        localStorage.setItem('custom_educational_steps', JSON.stringify(fresh));
+                        return fresh;
+                    }
+                }
+                return parsed;
             } catch (e) {
                 console.error('Error parsing custom educational steps:', e);
             }
         }
         
         // Return default steps
+        return this._getDefaultEducationalStepsBase();
+    },
+
+    // Default educational steps (base list)
+    // ترتیب دقیقاً مطابق default_educational_steps_with_studying() در
+    // supabase/add_currently_studying_step.sql — برای هم‌ترازی ایندکس‌ها
+    // (فاز «در حال تحصیل» + ۴ زیرمرحله در ابتدا، ۲۱ مرحله اصلی بعد)
+    _getDefaultEducationalStepsBase() {
         return [
+            { name: 'در حال تحصیل', completed: false, date: null, notes: '' },
             { name: 'وکالت', completed: false, date: null, notes: '' },
             { name: 'تسویه حساب', completed: false, date: null, notes: '' },
             { name: 'تعدیلات', completed: false, date: null, notes: '' },
@@ -2509,7 +2568,14 @@ const EmployeeModule = {
             { name: 'دریافت مدرک', completed: false, date: null, notes: '' },
             { name: 'تصدیق', completed: false, date: null, notes: '' },
             { name: 'تسویه حساب نهایی', completed: false, date: null, notes: '' },
-            { name: 'ارسال', completed: false, date: null, notes: '' }
+            { name: 'ارسال', completed: false, date: null, notes: '' },
+            // ── زیرمرحله‌های فاز «در حال تحصیل» ──
+            // در انتهای لیست آمده‌اند تا ایندکسِ prog_ مراحل قبلی (تیک‌های
+            // ثبت‌شدهٔ دانشجویان) شیفت نخورد — ترتیب مطابق فایل SQL
+            { name: 'پاس کردن واحد ها', completed: false, date: null, notes: '' },
+            { name: 'پرداخت اقساط', completed: false, date: null, notes: '' },
+            { name: 'قفل کردن دروس', completed: false, date: null, notes: '' },
+            { name: 'تنزیل نمرات', completed: false, date: null, notes: '' }
         ];
     },
     
@@ -3222,7 +3288,7 @@ const EmployeeModule = {
 
     // ── تکمیل یکجای همه مراحل یک مسیر ──────────────────────
     completeEntirePath(studentId, pathType) {
-        const typeNames = { defense: 'گردش دفاع', educational: 'فارغ‌التحصیلی', requirements: 'ملزومات' };
+        const typeNames = { defense: 'گردش دفاع', educational: 'فارغ‌التحصیلی', requirements: 'ملزومات', studying: 'در حال تحصیل' };
         const typeName  = typeNames[pathType] || pathType;
 
         if (!confirm(`آیا مطمئنید که می‌خواهید همه مراحل «${typeName}» را برای این دانشجو تکمیل کنید؟`)) return;
@@ -3238,7 +3304,7 @@ const EmployeeModule = {
         if (pathType === 'defense') {
             if (!student.defenseSteps) student.defenseSteps = this.getDefaultDefenseSteps2();
             steps = student.defenseSteps;
-        } else if (pathType === 'educational') {
+        } else if (pathType === 'educational' || pathType === 'studying') {
             if (!student.educationalSteps) student.educationalSteps = this.getDefaultEducationalSteps();
             steps = student.educationalSteps;
         } else if (pathType === 'requirements') {
@@ -4941,6 +5007,7 @@ EmployeeModule.saveNewStudent = async function() {
             degreeDb:         normDegree(degree),
             email:            email || '',
             active:           true,
+            currentPath:      'studying',   // دانشجوی جدید پیش از دفاع → فاز «در حال تحصیل»
             createdAt:        new Date().toISOString(),
             educationalSteps: this.getDefaultEducationalSteps?.()  || [],
             defenseSteps:     this.getDefaultDefenseSteps2?.()     || [],
@@ -4963,6 +5030,7 @@ EmployeeModule.saveNewStudent = async function() {
                 field:           newStudent.field          || null,
                 degree:          newStudent.degreeDb,       // ← انگلیسی: bachelor/masters/phd
                 passport_number: newStudent.passportNumber || null,
+                current_path:    'studying',                // دانشجوی جدید پیش از دفاع → «در حال تحصیل»
             };
 
             console.log('📤 ارسال به Supabase:', profileRow);
@@ -5586,6 +5654,7 @@ EmployeeModule.applyStudentFilter = function() {
     // ── مسیر / مرحله ──────────────────────────────────────────
     const getStepsForPath = (s, path) => {
         if (path === 'educational') return s.educationalSteps  || this.getDefaultEducationalSteps();
+        if (path === 'studying')    return s.educationalSteps  || this.getDefaultEducationalSteps();
         if (path === 'defense')     return s.defenseSteps      || this.getDefaultDefenseSteps2();
         if (path === 'requirements')return s.requirementsSteps || (this.getDefaultRequirementsSteps ? this.getDefaultRequirementsSteps() : []);
         return [];
@@ -5661,6 +5730,7 @@ EmployeeModule.applyStudentFilter = function() {
     const containers = {
         'students-list-container-active':      s => s.active,
         'students-list-container-inactive':    s => !s.active && !s.graduated,
+        'students-list-container-studying':    s => s.active && s.currentPath === 'studying',
         'students-list-container-defense':     s => s.active && (s.currentPath === 'defense' || (!s.currentPath && !(s.defenseSteps||[]).every(x=>x.completed))),
         'students-list-container-educational': s => s.active && (s.currentPath === 'educational' || (!(s.currentPath) && s.defenseSteps && s.defenseSteps.length > 0 && s.defenseSteps.every(x=>x.completed))),
         'students-list-container-graduated':   s => s.graduated || (s.educationalSteps && s.educationalSteps.length > 0 && s.educationalSteps.every(x=>x.completed)) || (!s.active && s.finishedDate),
@@ -5668,6 +5738,7 @@ EmployeeModule.applyStudentFilter = function() {
     const emptyMsgs = {
         'students-list-container-active':      'دانشجوی فعالی با این فیلتر یافت نشد',
         'students-list-container-inactive':    'دانشجوی خاتمه‌یافته‌ای با این فیلتر یافت نشد',
+        'students-list-container-studying':    'دانشجویی در مرحله در حال تحصیل با این فیلتر یافت نشد',
         'students-list-container-defense':     'دانشجویی در مرحله دفاع با این فیلتر یافت نشد',
         'students-list-container-educational': 'دانشجویی در مرحله فارغ‌التحصیلی با این فیلتر یافت نشد',
         'students-list-container-graduated':   'دانشجوی فارغ‌التحصیل‌شده‌ای با این فیلتر یافت نشد',
@@ -5722,9 +5793,10 @@ EmployeeModule._switchFilterTab = function(tab) {
 
 // Switch between student list tabs
 EmployeeModule.switchStudentListTab = function(tab) {
-    const allTabs = ['active','defense','educational','graduated','inactive'];
+    const allTabs = ['active','studying','defense','educational','graduated','inactive'];
     const tabColors = {
         active:      'border-green-500 text-green-400',
+        studying:    'border-cyan-500 text-cyan-400',
         defense:     'border-blue-500 text-blue-400',
         educational: 'border-emerald-500 text-emerald-400',
         graduated:   'border-yellow-500 text-yellow-400',
@@ -5736,6 +5808,7 @@ EmployeeModule.switchStudentListTab = function(tab) {
         const cont = document.getElementById('students-list-container-' + t);
         if (btn) {
             btn.classList.remove('border-green-500','text-green-400','border-blue-500','text-blue-400',
+                'border-cyan-500','text-cyan-400',
                 'border-emerald-500','text-emerald-400','border-yellow-500','text-yellow-400',
                 'border-gray-500','text-gray-300');
             if (t === tab) {
@@ -5790,7 +5863,7 @@ EmployeeModule.switchPathTab = function(tab, studentId) {
 
 // ── تکمیل یک مسیر کامل برای دانشجو ────────────────────────────────────────
 EmployeeModule.completeStudentPath = function(studentId, pathType) {
-    const pathNames = { defense: 'گردش دفاع', requirements: 'ملزومات', educational: 'فارغ‌التحصیلی' };
+    const pathNames = { defense: 'گردش دفاع', requirements: 'ملزومات', educational: 'فارغ‌التحصیلی', studying: 'در حال تحصیل' };
     const pName = pathNames[pathType] || pathType;
 
     if (!confirm(`آیا مطمئنید که می‌خواهید تمام مراحل «${pName}» را برای این دانشجو تکمیل کنید؟`)) return;
@@ -5817,14 +5890,21 @@ EmployeeModule.completeStudentPath = function(studentId, pathType) {
         student.requirementsSteps = student.requirementsSteps.map(s => ({ ...s, completed: true, date: today }));
         // مسیر ملزومات مستقل است، currentPath تغییر نمی‌کند مگر اینکه بخواهیم
 
-    } else if (pathType === 'educational') {
+    } else if (pathType === 'educational' || pathType === 'studying') {
         if (!student.educationalSteps) student.educationalSteps = this.getDefaultEducationalSteps();
         student.educationalSteps = student.educationalSteps.map(s => ({ ...s, completed: true, date: today }));
-        // فارغ‌التحصیل شد
-        student.graduated       = true;
-        student.graduatedDate   = new Date().toISOString();
-        student.active          = false;
-        student.currentPath     = 'educational';
+        if (pathType === 'educational') {
+            // فارغ‌التحصیل شد
+            student.graduated       = true;
+            student.graduatedDate   = new Date().toISOString();
+            student.active          = false;
+            student.currentPath     = 'educational';
+        } else {
+            // اتمام فاز «در حال تحصیل» → انتقال به فارغ‌التحصیلی
+            student.graduated       = false;
+            student.active          = true;
+            student.currentPath     = 'educational';
+        }
     }
 
     studentsData[studentId] = student;
