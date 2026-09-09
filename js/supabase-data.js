@@ -9,13 +9,32 @@ const SupabaseDataModule = {
 
     // ── کش ──────────────────────────────────────────────────
     _cache: {},
-    _cacheTTL: 8_000, // 8 ثانیه — کوتاه تا تغییرات دستگاه‌های دیگر سریع دیده شوند
+    _cacheTTL: 30_000, // 30 ثانیه — بعد از انقضا دادهٔ کهنه فوراً سرو می‌شود و در پس‌زمینه تازه می‌شود (stale-while-revalidate)
+    _usersRefreshing: false,
+    _ordersRefreshing: false,
 
     _cacheGet(key) {
         const entry = this._cache[key];
         if (!entry) return null;
-        if (Date.now() - entry.ts > this._cacheTTL) { delete this._cache[key]; return null; }
+        if (Date.now() - entry.ts > this._cacheTTL) {
+            // منقضی ولی موجود → stale برگردان و در پس‌زمینه تازه کن (غیرمسدودکننده)
+            if (!entry.revalidating) {
+                entry.revalidating = true;
+                this['_' + key + 'Refreshing'] = this._refetch(key)
+                    .finally(() => { entry.revalidating = false; });
+            }
+            return entry.data;
+        }
         return entry.data;
+    },
+
+    // revalidate پس‌زمینه برای کش منقضی‌شده
+    async _refetch(key) {
+        try {
+            if (key === 'users')     await this.getUsers({ force: true });
+            if (key === 'orders')    await this.getOrders({ force: true });
+            if (key === 'order_types') await this.getOrderTypes({ force: true });
+        } catch (e) { /* تلاش بعدی */ }
     },
     _cacheSet(key, data) {
         this._cache[key] = { data, ts: Date.now() };
@@ -56,10 +75,10 @@ const SupabaseDataModule = {
     // USERS / PROFILES
     // ════════════════════════════════════════════════════════
 
-    async getUsers() {
+    async getUsers(opts = {}) {
         if (!this._online()) return this._localGetUsers();
         const cached = this._cacheGet('users');
-        if (cached) return cached;
+        if (cached && !opts.force) return cached;
 
         try {
             const { data, error } = await this._db()
@@ -215,10 +234,10 @@ const SupabaseDataModule = {
     // ORDERS
     // ════════════════════════════════════════════════════════
 
-    async getOrders() {
+    async getOrders(opts = {}) {
         if (!this._online()) return this._localGetOrders();
         const cached = this._cacheGet('orders');
-        if (cached) return cached;
+        if (cached && !opts.force) return cached;
 
         try {
             const { data, error } = await this._db()
@@ -456,6 +475,43 @@ const SupabaseDataModule = {
         } catch (e) {
             console.warn('⚠️ getAllStudentProgress خطا:', e.message);
             return null;
+        }
+    },
+
+    // تازه‌سازی سبک: فقط کلیدهای prog_ دانشجویان داده‌شده (دلتا) را از ابر می‌گیرد
+    // اگر آرایه خالی باشد، هیچ درخواستی نمی‌زند (رویداد خودی — قبل از آن ذخیره شده)
+    async refreshStudentProgressKeys(studentIds) {
+        const client = this._db();
+        if (!client || !Array.isArray(studentIds) || studentIds.length === 0) return;
+        const targets = studentIds.filter(Boolean).map(String);
+        if (targets.length === 0) return;
+        try {
+            const { data, error } = await client
+                .from('student_progress')
+                .select('student_id, path_type, step_index, status')
+                .in('student_id', targets);
+            if (error) throw error;
+
+            // گروه‌بندی و بازسازی آرایهٔ مراحل فقط برای همین دانشجوها
+            const grouped = {};
+            data.forEach(r => {
+                const key = `${r.student_id}_${r.path_type}`;
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push(r);
+            });
+            Object.entries(grouped).forEach(([key, rows]) => {
+                const lastSep   = key.lastIndexOf('_');
+                const studentId = key.slice(0, lastSep);
+                const pathType  = key.slice(lastSep + 1);
+                const maxIdx = Math.max(...rows.map(r => r.step_index));
+                const arr = Array(maxIdx + 1).fill(null).map((_, i) => {
+                    const row = rows.find(r => r.step_index === i);
+                    return { status: row ? row.status : 0 };
+                });
+                localStorage.setItem(`prog_${studentId}_${pathType}`, JSON.stringify(arr));
+            });
+        } catch (e) {
+            console.warn('⚠️ refreshStudentProgressKeys خطا:', e.message);
         }
     },
 
@@ -919,13 +975,13 @@ const SupabaseDataModule = {
     // ORDER TYPES — کاتالوگ انواع سفارش (جدید v2)
     // ════════════════════════════════════════════════════════
 
-    async getOrderTypes() {
+    async getOrderTypes(opts = {}) {
         if (!this._online()) {
             const cached = localStorage.getItem('order_types_cache');
             return cached ? JSON.parse(cached) : [];
         }
         const cached = this._cacheGet('order_types');
-        if (cached) return cached;
+        if (cached && !opts.force) return cached;
         try {
             const { data, error } = await this._db()
                 .from('order_types').select('*').eq('active', true)

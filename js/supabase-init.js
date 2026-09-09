@@ -31,8 +31,21 @@
         return;
     }
 
-    // ── ۴. تست اتصال ─────────────────────────────────────────
-    const isOnline = await SupabaseConnection.check();
+    // ── ۴ و ۵. تست اتصال + بازیابی نشست — موازی (هر دو فقط خواندنی‌اند) ──
+    const [isOnline] = await Promise.all([
+        SupabaseConnection.check(),
+        SupabaseAuth.getSession().catch(() => null).then(user => {
+            if (user) {
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                localStorage.setItem('edu_system_current_user', JSON.stringify(user));
+                console.log('✅ نشست کاربر بازیابی شد:', user.username);
+                _setupRealtime(getSupabaseClient(), user);
+            } else {
+                console.log('ℹ️ کاربری لاگین نیست');
+            }
+            return null;
+        })
+    ]);
     if (!isOnline) {
         console.warn('⚠️ Supabase در دسترس نیست — حالت آفلاین');
         _setOfflineMode('اتصال برقرار نشد');
@@ -41,24 +54,6 @@
     }
 
     console.log('✅ Supabase آنلاین است');
-
-    // ── ۵. بررسی/بازیابی نشست کاربر ─────────────────────────
-    try {
-        const user = await SupabaseAuth.getSession();
-        if (user) {
-            // به‌روزرسانی localStorage با داده‌های تازه از Supabase
-            localStorage.setItem('currentUser', JSON.stringify(user));
-            localStorage.setItem('edu_system_current_user', JSON.stringify(user));
-            console.log('✅ نشست کاربر بازیابی شد:', user.username);
-
-            // تنظیم Realtime subscriptions
-            _setupRealtime(client, user);
-        } else {
-            console.log('ℹ️ کاربری لاگین نیست');
-        }
-    } catch (e) {
-        console.warn('⚠️ بررسی نشست خطا:', e.message);
-    }
 
     // ── ۶. بارگذاری اولیه داده‌ها از Supabase به localStorage ──
     // این مرحله حیاتی است: وقتی مرورگر جدید باز می‌شود،
@@ -405,9 +400,8 @@ function _setupRealtime(client, user) {
         });
 
         // ── اتصال realtime برای student_progress ───────────────
-        // هر تغییر در دیتابیس (از هر دستگاهی) ظرف ~۱ ثانیه کلیدهای prog_ را
-        // تازه می‌کند و بعد رویداد STUDENTS_CHANGED را برای UIها می‌فرستد —
-        // دیگر نیازی به انتظار برای پول دوره‌ای ۳۰ ثانیه‌ای نیست.
+        // هر تغییر در دیتابیس (از هر دستگاهی) فقط «دلتای» همان ردیف را ظرف
+        // ~۱ ثانیه روی کلیدهای prog_ اعمال می‌کند — نه پول کل جدول.
         let _progressRefreshTimer = null;
         const progressChannel = client
             .channel('progress-changes')
@@ -416,10 +410,14 @@ function _setupRealtime(client, user) {
                 (payload) => {
                     console.log('📊 Realtime: student_progress تغییر کرد', payload.eventType);
                     // یک ذخیرهٔ چندمرحله‌ای چند رویداد پشت‌سرهم می‌سازد — debounce
+                    const row = payload.new || payload.old;
                     if (_progressRefreshTimer) clearTimeout(_progressRefreshTimer);
                     _progressRefreshTimer = setTimeout(async () => {
                         try {
-                            await SupabaseDataModule.getAllStudentProgress();
+                            // دلتا: فقط کلیدهای prog_ مربوط به همین دانشجو تازه شود
+                            await SupabaseDataModule.refreshStudentProgressKeys(row ? [row.student_id] : []);
+                            // اگر دلتا مشخص نبود، یک پول کامل (با فرکانس محدود) جبران می‌کند
+                            if (!row || !row.student_id) await SupabaseDataModule.getAllStudentProgress();
                         } catch (e) { /* پول بعدی جبران می‌کند */ }
                         if (typeof RealtimeEvents !== 'undefined') {
                             RealtimeEvents.emit(RealtimeEvents.EVENTS.STUDENTS_CHANGED, payload);
