@@ -688,10 +688,21 @@
                 });
             });
 
-            // ── خروج/بستن صفحه: صف retry را فوراً flush کن (keepalive) ──
-            // تا تغییرات در انتظار قبل از ترک صفحه به ابر برسند
-            window.addEventListener('pagehide', () => { _flushProgressQueue(); });
-            window.addEventListener('beforeunload', () => { _flushProgressQueue(); });
+            // ── خروج/بستن صفحه: نجات تغییرات در حال پرواز + flush صف retry ──
+            // iframe با خروج از نمای شیت از DOM حذف می‌شود و fetchهای در حال اجرا
+            // لغو می‌شوند → آخرین toggleها هرگز به DB نمی‌رسند. keepalive fetch
+            // (flushUnsavedProgressBeacon) حتی بعد از بسته‌شدن صفحه کامل می‌شود.
+            const _rescue = () => {
+                try {
+                    const sbInst = (typeof SupabaseDataModule !== 'undefined') ? SupabaseDataModule : null;
+                    if (sbInst && typeof sbInst.flushUnsavedProgressBeacon === 'function') {
+                        sbInst.flushUnsavedProgressBeacon();
+                    }
+                } catch (e) { /* ignore */ }
+                _flushProgressQueue();
+            };
+            window.addEventListener('pagehide', _rescue);
+            window.addEventListener('beforeunload', _rescue);
 
             // منبع حقیقت = دیتابیس؛ همگام‌سازی دوره‌ای + هنگام تمرکز مجدد صفحه
             setInterval(_pullProgressFromSupabase, 30000);

@@ -427,6 +427,13 @@ const SupabaseDataModule = {
                 status:     item ? (item.status ?? 0) : 0,
                 updated_at: new Date().toISOString()
             }));
+
+            // ⚠️ نگه‌داشتن آخرین نسخهٔ هر (دانشجو،مسیر) در localStorage —
+            // اگر کاربر بلافاصله بعد از toggle صفحه را ببندد و fetch در میانه
+            // لغو شود، این نسخه در صف pagehide با keepalive fetch دوباره ارسال می‌شود.
+            this._lastUnsavedProgress = this._lastUnsavedProgress || {};
+            this._lastUnsavedProgress[`${String(studentId)}|${pathType}`] = rows;
+
             const { error } = await client
                 .from('student_progress')
                 .upsert(rows, { onConflict: 'student_id,path_type,step_index' });
@@ -438,15 +445,51 @@ const SupabaseDataModule = {
                         .from('student_progress')
                         .upsert(rows2, { onConflict: 'student_id,path_type,step_index' });
                     if (e2) throw e2;
+                    delete this._lastUnsavedProgress[`${String(studentId)}|${pathType}`];
                     return true;
                 }
                 throw error;
             }
+            // موفق — از صف «ارسال‌نشده‌ها» حذف
+            delete this._lastUnsavedProgress[`${String(studentId)}|${pathType}`];
             return true;
         } catch (e) {
             console.warn('⚠️ saveStudentProgress خطا:', e.message);
             return false;
         }
+    },
+
+    // ⚠️ نجات تغییرات در حال پرواز: اگر کاربر بلافاصله بعد از toggle از صفحه
+    // خارج شود (iframe از DOM حذف می‌شود)، fetchهای در حال اجرا لغو می‌شوند و
+    // آخرین toggleها هرگز به DB نمی‌رسند. این متد با keepalive fetch (که بعد از
+    // بسته‌شدن صفحه هم کامل می‌شود) همهٔ وضعیت‌های ارسال‌نشده را می‌فرستد.
+    flushUnsavedProgressBeacon() {
+        const unsent = this._lastUnsavedProgress || {};
+        const keys = Object.keys(unsent);
+        if (keys.length === 0) return;
+        const client = this._db();
+        if (!client) return;
+        try {
+            // همهٔ ردیف‌های ارسال‌نشده در یک درخواست keepalive
+            const allRows = [];
+            keys.forEach(k => allRows.push(...unsent[k]));
+            // supabase-js fetch options را مستقیم پشتیبانی نمی‌کند — از REST مستقیم با keepalive استفاده می‌کنیم
+            const url = `${client.rest.url.replace(/\/$/, '')}/rest/v1/student_progress`;
+            // onConflict=columns → Prefer: resolution=merge-duplicates
+            fetch(`${url}?on_conflict=student_id,path_type,step_index`, {
+                method: 'POST',
+                keepalive: true,          // ← کلید ماجرا: بعد از بستن صفحه هم کامل می‌شود
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': client.supabaseKey,
+                    'Authorization': `Bearer ${client.supabaseKey}`,
+                    'Prefer': 'resolution=merge-duplicates,return=minimal'
+                },
+                body: JSON.stringify(allRows)
+            }).catch(() => {});
+            console.log(`📡 keepalive: ${allRows.length} ردیف progress برای ارسال پس از خروج`);
+            this._lastUnsavedProgress = {};
+        } catch (e) { /* ignore */ }
     },
 
     // دریافت کامل پیشرفت همهٔ دانشجویان از Supabase و نوشتن در کلیدهای prog_
