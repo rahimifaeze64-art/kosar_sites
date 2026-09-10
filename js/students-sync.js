@@ -300,11 +300,26 @@
             // ── سریع‌سازی: کل پیشرفت همهٔ دانشجویان در «یک» درخواست ──
             //    قدیمی: برای هر دانشجو × هر ۳ مسیر یک درخواست جدا و ترتیبی
             //    (با ۵۰ دانشجو = ۱۵۰ round-trip پشت‌سرهم!) — اکنون فقط ۱ درخواست.
+            // ⚠️ رقابت: بین خواندن studentsData در ابتدای این تابع و الان، ممکن است
+            // کاربر (شیت/مدیر) مرحله‌ای toggle کرده باشد. نوشتنِ برگشتیِ آبجکت کهنه
+            // toggles را از students_data پاک می‌کرد و sync معکوس، DB را هم خراب.
+            // راه‌حل: بعد از رسیدن پاسخ ابر، students_data را «دوباره» می‌خوانیم و
+            // merge فقط روی نسخهٔ تازه اعمال می‌شود.
             const progressMap = await sb.getAllStudentProgress();
+
+            // ── ریدِ تازه برای جلوگیری از پاک‌شدن toggles همزمان ──
+            let freshData;
+            try {
+                const raw = localStorage.getItem(STUDENTS_KEY);
+                freshData = raw ? JSON.parse(raw) : studentsData;
+            } catch (e) {
+                freshData = studentsData;
+            }
 
             if (progressMap) {
                 for (const studentId of studentIds) {
-                    const student = studentsData[studentId];
+                    const student = freshData[studentId] || studentsData[studentId];
+                    if (!student) continue;
 
                     for (const pathType of pathTypes) {
                         try {
@@ -332,13 +347,13 @@
                         }
                     }
 
-                    studentsData[studentId] = student;
+                    freshData[studentId] = student;
                 }
             }
 
             if (mergeCount > 0) {
-                // ذخیره بدون trigger کردن دوباره sync
-                _origSetItem(STUDENTS_KEY, JSON.stringify(studentsData));
+                // ذخیره بدون trigger کردن دوباره sync — روی نسخهٔ «تازه»
+                _origSetItem(STUDENTS_KEY, JSON.stringify(freshData));
                 console.log(`✅ students-sync: initial load merged ${mergeCount} paths from Supabase`);
             }
 

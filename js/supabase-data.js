@@ -349,9 +349,10 @@ const SupabaseDataModule = {
         }
 
         try {
+            // updated_at برای dedup ردیف‌های تکراری (هویت دوگانه UUID/TEXT در جدول)
             let { data, error } = await this._db()
                 .from('student_progress')
-                .select('step_index, status')
+                .select('step_index, status, updated_at')
                 .eq('student_id', studentId)
                 .eq('path_type', pathType)
                 .order('step_index');
@@ -361,21 +362,44 @@ const SupabaseDataModule = {
             if (error && this._isUUIDError(error)) {
                 ({ data, error } = await this._db()
                     .from('student_progress')
-                    .select('step_index, status')
+                    .select('step_index, status, updated_at')
                     .eq('student_id', this._toUUID(studentId))
                     .eq('path_type', pathType)
                     .order('step_index'));
             }
 
             if (error) throw error;
+
+            // fallback دوم: شاید ردیف‌ها زیر UUID هش‌شده باشند (بدون خطا — خواندنی)
+            if ((!data || data.length === 0)) {
+                const local = localStorage.getItem(localKey);
+                if (local) return JSON.parse(local);
+                ({ data } = await this._db()
+                    .from('student_progress')
+                    .select('step_index, status, updated_at')
+                    .eq('student_id', this._toUUID(studentId))
+                    .eq('path_type', pathType)
+                    .order('step_index'));
+            }
+
             // تبدیل به فرمت آرایه‌ای که کد قدیمی انتظار دارد
-            if (data.length === 0) {
+            if (!data || data.length === 0) {
                 const local = localStorage.getItem(localKey);
                 return local ? JSON.parse(local) : [];
             }
+
+            // ── dedup: جدیدترین updated_at برای هر step_index برنده است ──
+            const winners = {};
+            data.forEach(r => {
+                const prev = winners[r.step_index];
+                if (!prev || String(r.updated_at || '') > String(prev.updated_at || '')) {
+                    winners[r.step_index] = r;
+                }
+            });
+
             const maxIdx = Math.max(...data.map(r => r.step_index));
             const arr = Array(maxIdx + 1).fill(null).map((_, i) => {
-                const row = data.find(r => r.step_index === i);
+                const row = winners[i];
                 return { status: row ? row.status : 0 };
             });
             localStorage.setItem(localKey, JSON.stringify(arr));
@@ -431,9 +455,12 @@ const SupabaseDataModule = {
         const client = this._db();
         if (!client) return null;
         try {
+            // updated_at هم می‌گیریم — جدول ممکن است ردیف‌های تکراری با دو هویت داشته باشد:
+            // قدیمی با student_id=UUID هش‌شده (قبل از sync_fix_all.sql) و جدید با TEXT.
+            // هر دو به یک کلید محلی می‌رسند → فقط «جدیدترین» هر (دانشجو،مسیر،مرحله) معتبر است.
             const { data, error } = await client
                 .from('student_progress')
-                .select('student_id, path_type, step_index, status');
+                .select('student_id, path_type, step_index, status, updated_at');
             if (error) throw error;
             if (!data || data.length === 0) return {};
 
@@ -450,8 +477,20 @@ const SupabaseDataModule = {
                 localIds.forEach(id => { uuidToLocal[this._toUUID(id)] = id; });
             } catch (e) { /* بدون نگاشت ادامه بده */ }
 
-            const grouped = {};
+            // ── dedup: جدیدترین updated_at برنده است ──
+            // کلید: `${localId}|${path}|${idx}` → ردیف برنده
+            const winners = {};
             data.forEach(r => {
+                const localId = uuidToLocal[r.student_id] || r.student_id;
+                const k = `${localId}|${r.path_type}|${r.step_index}`;
+                const prev = winners[k];
+                if (!prev || String(r.updated_at || '') > String(prev.updated_at || '')) {
+                    winners[k] = r;
+                }
+            });
+
+            const grouped = {};
+            Object.values(winners).forEach(r => {
                 const localId = uuidToLocal[r.student_id] || r.student_id;
                 const key = `${localId}_${r.path_type}`;
                 if (!grouped[key]) grouped[key] = [];
