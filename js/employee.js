@@ -1128,30 +1128,26 @@ const EmployeeModule = {
     },
 
     // ── ورود به سامانه دانشگاه قم ────────────────────────────
-    // اعتبارهای دانشجو در localStorage + کلیپ‌بورد گذاشته می‌شود؛
-    // اسکریپت Tampermonkey (sam-autofill.user.js) در صفحه دانشگاه
-    // آن‌ها را در فرم می‌گذارد و کپچا را با AI حل می‌کند.
+    // اعتبارهای دانشجو با پارامتر ?sam= به صفحه سامانه منتقل می‌شود؛
+    // اسکریپت Tampermonkey (sam-autofill.user.js) آن را می‌خواند،
+    // فرم را پر و کپچا را با هوش مصنوعی حل می‌کند.
     async samLoginForStudent(studentId) {
-        const s = studentId ? this.getAllStudents().find(x => x.id === studentId) : null;
-        const payload = {
-            username: (s && s.studentId) || '',
-            password: (s && s.systemPassword) || '',
-            ts: Date.now(),
+        const notify = (msg, type) => {
+            if (typeof UTILS !== 'undefined' && UTILS.showNotification) UTILS.showNotification(msg, type || 'info');
         };
-        if (!payload.username || !payload.password) {
-            if (typeof UTILS !== 'undefined' && UTILS.showNotification) {
-                UTILS.showNotification('شماره دانشجویی یا رمز سامانه این دانشجو ثبت نشده است', 'error');
-            }
+        const s = studentId ? this.getAllStudents().find(x => x.id === studentId) : null;
+        if (!s || !s.studentId || !s.systemPassword) {
+            if (studentId) { notify('شماره دانشجویی یا رمز سامانه این دانشجو ثبت نشده است', 'error'); return; }
+            // دکمه هدر — بازکردن معمولی سامانه
+            window.open('https://edu.qom.ac.ir/browser/fa/#/auth/login', '_blank');
             return;
         }
-        try {
-            localStorage.setItem('sam_autofill', JSON.stringify(payload));
-            await navigator.clipboard.writeText(JSON.stringify(payload));
-            if (typeof UTILS !== 'undefined' && UTILS.showNotification) {
-                UTILS.showNotification('✅ اطلاعات کپی شد — فرم به‌صورت خودکار پر می‌شود', 'success');
-            }
-        } catch (e) { /* کلیپ‌بورد ممکن است مسدود باشد — localStorage کافی است */ }
-        window.open('https://edu.qom.ac.ir/browser/fa/#/auth/login', '_blank');
+        const payload = { username: s.studentId, password: s.systemPassword, ts: Date.now() };
+        // نسخه پشتیبان در کلیپ‌بورد (دکمه 🤖 صفحه سامانه می‌تواند بخواند)
+        try { await navigator.clipboard.writeText(JSON.stringify(payload)); } catch (e) {}
+        const enc = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+        notify('🤖 صفحه سامانه باز می‌شود — فرم خودکار پر و کپچا حل می‌گردد', 'info');
+        window.open(`https://edu.qom.ac.ir/browser/fa/?sam=${encodeURIComponent(enc)}#/auth/login`, '_blank');
     },
 
     // Get student card
