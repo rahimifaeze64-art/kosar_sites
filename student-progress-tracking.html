@@ -667,15 +667,26 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            loadStudents();
+            // ── اولین رندر فقط بعد از اولین pull از دیتابیس ──
+            // علت: کلیدهای prog_ محلی ممکن است کهنه باشند (تغییرات از دستگاه دیگر
+            // یا رفرش وسط ذخیره). رندر فوری با دادهٔ کهنه = «ریست شدن» کاذب.
+            // تا اولین pull (یا شکست آن) اسپینر نشان می‌دهیم.
+            const tbody = document.getElementById('table-body');
+            if (tbody) tbody.innerHTML = `
+                <tr><td colspan="99" style="text-align:center; padding:40px 0; color:#6b7280;">
+                    <i class="fas fa-spinner fa-spin" style="font-size:22px;"></i>
+                    <div style="margin-top:8px; font-size:13px;">در حال دریافت وضعیت از سرور...</div>
+                </td></tr>`;
+            loadStudents();      // دادهٔ اولیه (لیست دانشجویان)
             updateTabCounts();
-            renderTable();
-            updateStats();
 
-            // اگر قبلاً تغییرات در صف retry مانده بودند، اول این‌ها به ابر بروند
-            _flushProgressQueue();
-
-            _pullProgressFromSupabase();
+            _flushProgressQueue().catch(() => {}).finally(() => {
+                // بعد از تلاش flush صف، پول اول — سپس رندر
+                _pullProgressFromSupabase().finally(() => {
+                    renderTable();
+                    updateStats();
+                });
+            });
 
             // ── خروج/بستن صفحه: صف retry را فوراً flush کن (keepalive) ──
             // تا تغییرات در انتظار قبل از ترک صفحه به ابر برسند

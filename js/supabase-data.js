@@ -479,12 +479,16 @@ const SupabaseDataModule = {
 
             // ── dedup: جدیدترین updated_at برنده است ──
             // کلید: `${localId}|${path}|${idx}` → ردیف برنده
+            // ⚠️ NULL updated_at = کهنه‌ترین ("" < هر رشته) — مقایسهٔ String امن است
+            // چون "" کوچکتر از هر ISO timestamp است
             const winners = {};
             data.forEach(r => {
                 const localId = uuidToLocal[r.student_id] || r.student_id;
                 const k = `${localId}|${r.path_type}|${r.step_index}`;
                 const prev = winners[k];
-                if (!prev || String(r.updated_at || '') > String(prev.updated_at || '')) {
+                const rTs  = String(r.updated_at || '');
+                const pTs  = String((prev && prev.updated_at) || '');
+                if (!prev || rTs > pTs) {
                     winners[k] = r;
                 }
             });
