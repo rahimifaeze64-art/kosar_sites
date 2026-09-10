@@ -392,7 +392,10 @@ async function main() {
   }
 }
 
-main().catch((e) => { console.error('❌ خطا:', e.message); process.exit(1); });
+// اجرای مستقیم از خط فرمان
+if (require.main === module) {
+  main().catch((e) => { console.error('❌ خطا:', e.message); process.exit(1); });
+}
 
 
 

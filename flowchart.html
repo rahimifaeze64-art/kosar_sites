@@ -361,36 +361,50 @@ function buildGraphFromSteps(path) {
     const prog     = loadStudentProg(currentStudent, path, steps.length);
     const color    = PATH_COLOR[path];
 
-    const CX = 320;   // center X
-    const GAP = 130;  // vertical gap between nodes
-    let y = 60;
+    // ── چینش پیش‌فرض: موازی افقی (مارپیچ راست ↔ چپ) ──
+    const PER_ROW = 5;       // تعداد نود در هر ردیف
+    const NW = 160, NH = 56; // ابعاد باکس مراحل
+    const SX = 900;          // x نود شروع (سمت راست)
+    const SP = 240;          // فاصله مرکز تا مرکز افقی
+    const Y0 = 110;          // y ردیف اول
+    const RH = 170;          // فاصله عمودی ردیف‌ها
+
+    const total = steps.length + 2; // + شروع و پایان
+    const positions = [];
+    let idx = 0, row = 0;
+    while (idx < total) {
+        const count = Math.min(PER_ROW, total - idx);
+        for (let c = 0; c < count; c++) {
+            // ردیف‌های زوج: راست ← چپ | ردیف‌های فرد: چپ → راست
+            const off = (row % 2 === 0) ? c : (count - 1 - c);
+            positions.push({ x: SX - off * SP, y: Y0 + row * RH });
+            idx++;
+        }
+        row++;
+    }
 
     const nodes = [];
     const edges = [];
 
-    // START oval
+    // START oval — ابتدای ردیف اول (سمت راست)
     const startId = `n${idCounter++}`;
-    nodes.push({ id: startId, type: NT_START, label: 'شروع', x: CX, y, w: 140, h: 50, color, status: STATUS_COMPLETED });
-    y += GAP;
+    nodes.push({ id: startId, type: NT_START, label: 'شروع', ...positions[0], w: 120, h: 50, color, status: STATUS_COMPLETED });
 
     let prevId = startId;
-
     steps.forEach((name, i) => {
         let status = STATUS_INCOMPLETE;
         if (prog) {
             status = prog[i]?.status ?? STATUS_INCOMPLETE;
         }
-
         const nid = `n${idCounter++}`;
-        nodes.push({ id: nid, type: NT_RECT, label: name, x: CX, y, w: 180, h: 60, color, status, stepIndex: i });
+        nodes.push({ id: nid, type: NT_RECT, label: name, ...positions[i + 1], w: NW, h: NH, color, status, stepIndex: i });
         edges.push({ id: `e${idCounter++}`, from: prevId, to: nid, label: '' });
         prevId = nid;
-        y += GAP;
     });
 
     // END oval
     const endId = `n${idCounter++}`;
-    nodes.push({ id: endId, type: NT_END, label: 'پایان', x: CX, y, w: 140, h: 50, color, status: STATUS_INCOMPLETE });
+    nodes.push({ id: endId, type: NT_END, label: 'پایان', ...positions[total - 1], w: 120, h: 50, color, status: STATUS_INCOMPLETE });
     edges.push({ id: `e${idCounter++}`, from: prevId, to: endId, label: '' });
 
     return { nodes, edges };
@@ -398,8 +412,18 @@ function buildGraphFromSteps(path) {
 
 function getOrBuildGraph(path) {
     if (!graphs[path]) {
-        const saved = loadGraph(path);
-        graphs[path] = saved || buildGraphFromSteps(path);
+        // گراف‌های ذخیره‌شده با چینش قدیمی عمودی یک‌بار با چینش افقی جدید بازسازی می‌شوند
+        let saved = null;
+        try {
+            if (localStorage.getItem('fc_layout_ver') === 'h1') saved = loadGraph(path);
+        } catch (e) {}
+        if (saved) {
+            graphs[path] = saved;
+        } else {
+            graphs[path] = buildGraphFromSteps(path);
+            saveGraph(path);
+            try { localStorage.setItem('fc_layout_ver', 'h1'); } catch (e) {}
+        }
     }
     return graphs[path];
 }
@@ -447,6 +471,12 @@ function nodeBottom(node) {
 }
 function nodeTop(node) {
     return { x: node.x, y: node.y - node.h / 2 };
+}
+function nodeLeft(node) {
+    return { x: node.x - node.w / 2, y: node.y };
+}
+function nodeRight(node) {
+    return { x: node.x + node.w / 2, y: node.y };
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -610,8 +640,17 @@ function drawEdge(edge, g) {
     const dst = g.nodes.find(n => n.id === edge.to);
     if (!src || !dst) return;
 
-    const from = nodeBottom(src);
-    const to   = nodeTop(dst);
+    // جهت اتصال بر اساس موقعیت نسبی دو نود (افقی/عمودی)
+    const dx = dst.x - src.x;
+    const dy = dst.y - src.y;
+    let from, to, dir;
+    if (Math.abs(dx) >= Math.abs(dy)) {
+        if (dx < 0)      { from = nodeLeft(src);   to = nodeRight(dst);  dir = 'left';  }
+        else             { from = nodeRight(src);  to = nodeLeft(dst);   dir = 'right'; }
+    } else {
+        if (dy > 0)      { from = nodeBottom(src); to = nodeTop(dst);    dir = 'down';  }
+        else             { from = nodeTop(src);    to = nodeBottom(dst); dir = 'up';    }
+    }
 
     // color: green if source completed
     const edgeColor = (src.status === STATUS_COMPLETED || src.type === NT_START) ? '#4ade80' : '#475569';
@@ -622,22 +661,24 @@ function drawEdge(edge, g) {
     ctx.shadowColor = edgeColor;
     ctx.shadowBlur  = 4 / zoom;
 
-    // curved bezier
-    const cy1 = from.y + 30;
-    const cy2 = to.y   - 30;
+    // منحنی بزیه همسو با جهت اتصال
     ctx.beginPath();
     ctx.moveTo(from.x, from.y);
-    ctx.bezierCurveTo(from.x, cy1, to.x, cy2, to.x, to.y);
+    if (dir === 'left')       ctx.bezierCurveTo(from.x - 34, from.y, to.x + 34, to.y, to.x, to.y);
+    else if (dir === 'right') ctx.bezierCurveTo(from.x + 34, from.y, to.x - 34, to.y, to.x, to.y);
+    else if (dir === 'down')  ctx.bezierCurveTo(from.x, from.y + 30, to.x, to.y - 30, to.x, to.y);
+    else                      ctx.bezierCurveTo(from.x, from.y - 30, to.x, to.y + 30, to.x, to.y);
     ctx.stroke();
 
-    // arrowhead – always pointing straight down into top of target
-    const aw = 10 / zoom;
+    // arrowhead – در جهت ورود به نود مقصد
+    const aw = 10 / zoom, al = aw * 1.6;
     ctx.fillStyle = edgeColor;
     ctx.shadowBlur = 0;
     ctx.beginPath();
-    ctx.moveTo(to.x,        to.y);
-    ctx.lineTo(to.x - aw,   to.y - aw * 1.6);
-    ctx.lineTo(to.x + aw,   to.y - aw * 1.6);
+    if (dir === 'down')      { ctx.moveTo(to.x, to.y); ctx.lineTo(to.x - aw, to.y - al); ctx.lineTo(to.x + aw, to.y - al); }
+    else if (dir === 'up')   { ctx.moveTo(to.x, to.y); ctx.lineTo(to.x - aw, to.y + al); ctx.lineTo(to.x + aw, to.y + al); }
+    else if (dir === 'left') { ctx.moveTo(to.x, to.y); ctx.lineTo(to.x + al, to.y - aw); ctx.lineTo(to.x + al, to.y + aw); }
+    else                     { ctx.moveTo(to.x, to.y); ctx.lineTo(to.x - al, to.y - aw); ctx.lineTo(to.x - al, to.y + aw); }
     ctx.closePath();
     ctx.fill();
 
@@ -722,11 +763,17 @@ function resetView() {
     zoom = 1;
     const g = getOrBuildGraph(currentPath);
     if (!g.nodes.length) { panX = 80; panY = 40; draw(); return; }
-    // center first node
-    const first = g.nodes[0];
+    // مرکز کردن کادر کل گراف در صفحه
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    g.nodes.forEach(n => {
+        minX = Math.min(minX, n.x - n.w / 2);
+        maxX = Math.max(maxX, n.x + n.w / 2);
+        minY = Math.min(minY, n.y - n.h / 2);
+        maxY = Math.max(maxY, n.y + n.h / 2);
+    });
     const cw = canvas.width, ch = canvas.height;
-    panX = cw / 2 - first.x * zoom;
-    panY = 40;
+    panX = cw / 2 - ((minX + maxX) / 2) * zoom;
+    panY = ch / 2 - ((minY + maxY) / 2) * zoom;
     draw();
 }
 

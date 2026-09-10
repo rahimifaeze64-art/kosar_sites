@@ -1127,8 +1127,30 @@ const EmployeeModule = {
         window._alpineSetPage && window._alpineSetPage('flowchartView');
     },
 
-    // ── ورود مستقیم به سامانه دانشگاه قم ─────────────────────
-    samLoginForStudent() {
+    // ── ورود به سامانه دانشگاه قم ────────────────────────────
+    // اعتبارهای دانشجو در localStorage + کلیپ‌بورد گذاشته می‌شود؛
+    // اسکریپت Tampermonkey (sam-autofill.user.js) در صفحه دانشگاه
+    // آن‌ها را در فرم می‌گذارد و کپچا را با AI حل می‌کند.
+    async samLoginForStudent(studentId) {
+        const s = studentId ? this.getAllStudents().find(x => x.id === studentId) : null;
+        const payload = {
+            username: (s && s.studentId) || '',
+            password: (s && s.systemPassword) || '',
+            ts: Date.now(),
+        };
+        if (!payload.username || !payload.password) {
+            if (typeof UTILS !== 'undefined' && UTILS.showNotification) {
+                UTILS.showNotification('شماره دانشجویی یا رمز سامانه این دانشجو ثبت نشده است', 'error');
+            }
+            return;
+        }
+        try {
+            localStorage.setItem('sam_autofill', JSON.stringify(payload));
+            await navigator.clipboard.writeText(JSON.stringify(payload));
+            if (typeof UTILS !== 'undefined' && UTILS.showNotification) {
+                UTILS.showNotification('✅ اطلاعات کپی شد — فرم به‌صورت خودکار پر می‌شود', 'success');
+            }
+        } catch (e) { /* کلیپ‌بورد ممکن است مسدود باشد — localStorage کافی است */ }
         window.open('https://edu.qom.ac.ir/browser/fa/#/auth/login', '_blank');
     },
 
