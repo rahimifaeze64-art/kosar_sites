@@ -71,6 +71,8 @@
             if (!student[key] || !Array.isArray(student[key])) return null;
             const progress = _stepsToProgress(student[key]);
             if (progress.length === 0) return null;
+            // 🔍 دیاگستیک: وضعیتی که به DB فرستاده می‌شود — برای ردیابی نویسندهٔ 0ها
+            console.log(`📤 students-sync: ${studentId}/${pathType} → [${progress.map(p => p.status).join(',')}]`);
             return sb.saveStudentProgress(studentId, pathType, progress)
                 .catch(e => { ok = false; console.warn(`⚠️ students-sync [${studentId}/${pathType}]:`, e.message); });
         }));

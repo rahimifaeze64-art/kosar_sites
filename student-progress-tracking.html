@@ -981,7 +981,9 @@
             try {
                 const ok = await sb.saveStudentProgress(studentId, pathType, progressArray);
                 if (ok) {
-                    console.log(`✅ sheet sync OK: ${studentId}/${pathType}`);
+                    // 🔍 دیاگستیک: وضعیت واقعی آرایه‌ای که در DB نشست
+                    const done = progressArray.filter(p => p && p.status === STATUS_COMPLETED).length;
+                    console.log(`✅ sheet sync OK: ${studentId}/${pathType} → ${done} تکمیل از ${progressArray.length} [${progressArray.map(p => p.status).join(',')}]`);
                     _showAutosaveIndicator('ok', _queuedSaves.size);
                 } else {
                     _enqueueProgressRetry(studentId, pathType, progressArray, 'خطای ذخیره');
