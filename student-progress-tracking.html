@@ -412,6 +412,13 @@
     
     <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
     
+    <!-- Supabase SDK + ماژول‌ها — تا شیت حتی به‌صورت مستقیم (بدون iframe والد)
+         بتواند تغییرات را مستقیم در Supabase ذخیره کند -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/supabase-auth.js"></script>
+    <script src="js/supabase-data.js"></script>
+
     <!-- لود data.js برای دسترسی به داده‌های پیش‌فرض دانشجویان -->
     <script src="js/config.js"></script>
     <script src="js/realtime-events.js"></script>
@@ -536,12 +543,14 @@
                 'استلال عراقی','ملخص','محضر و اصالت','تنضید ایرانداک',
                 'تنضید تجلید','تجلید','بارگزاری ایرانداک','ایجاد گردش',
                 'آزفا','اسماعیلی','کتابخانه','کد',
-                'خروج قطعی','دریافت مدرک','تصدیق','تسویه حساب نهایی','ارسال',
-                'پاس کردن واحد ها','پرداخت اقساط','قفل کردن دروس','تنزیل نمرات'
+                'خروج قطعی','دریافت مدرک','تصدیق','تسویه حساب نهایی','ارسال'
             ],
             // مسیر مستقل «در حال تحصیل» — دانشجویان پیش از دفاع
+            // شامل فاز در-حال-تحصیل + ۴ زیرمرحلهٔ آن (قبلاً به‌اشتباه انتهای
+            // مسیر فارغ‌التحصیلی بودند — ایندکس prog_ مسیر studying مستقل است)
             studying: [
-                'در حال تحصیل'
+                'در حال تحصیل',
+                'پاس کردن واحد ها','پرداخت اقساط','قفل کردن دروس','تنزیل نمرات'
             ]
         };
 
@@ -651,6 +660,9 @@
             renderTable();
             updateStats();
 
+            // اگر قبلاً تغییرات در صف retry مانده بودند، اول این‌ها به ابر بروند
+            _flushProgressQueue();
+
             _pullProgressFromSupabase();
 
             // منبع حقیقت = دیتابیس؛ همگام‌سازی دوره‌ای + هنگام تمرکز مجدد صفحه
@@ -754,16 +766,32 @@
                 progress: {
                     educational: loadProgress(s.id, 'educational',  s.educationalSteps),
                     defense:     loadProgress(s.id, 'defense',      s.defenseSteps),
-                    requirements:loadProgress(s.id, 'requirements', s.requirementsSteps)
+                    requirements:loadProgress(s.id, 'requirements', s.requirementsSteps),
+                    // مسیر مستقل «در حال تحصیل» — همان ۴ زیرمرحله + فاز اصلی؛
+                    // از انتهای educationalSteps دانشجو خوانده می‌شود (۴ مرحله آخر)
+                    studying:    loadProgress(s.id, 'studying',     s.educationalSteps)
                 }
             }));
         }
         
         function loadProgress(id, path, studentSteps) {
             const saved = localStorage.getItem(`prog_${id}_${path}`);
-            // مسیر studying در student_progress دیتابیس وجود ندارد → همیشه از پروفایل ساخته می‌شود
             if (!STEPS[path]) return [];
             const stepCount = STEPS[path].length;
+
+            // مسیر studying — مراحل آن ۴ زیرمرحلهٔ انتهاییِ educationalSteps است؛
+            // کش prog_ مستقل (prog_${id}_studying) مقدم است
+            if (path === 'studying' && !saved && Array.isArray(studentSteps)) {
+                const names = STEPS.studying;
+                const tail = studentSteps.slice(-names.length);   // ۴+۱ مرحلهٔ انتهایی
+                const prog = names.map((n, i) => {
+                    const st = tail[i];
+                    return { status: (st && st.completed) ? STATUS_COMPLETED : STATUS_INCOMPLETE };
+                });
+                const firstOpen = prog.findIndex(p => p.status === STATUS_INCOMPLETE);
+                if (firstOpen !== -1) prog[firstOpen].status = STATUS_CURRENT;
+                return prog;
+            }
 
             if (saved) {
                 const arr = JSON.parse(saved);
@@ -796,30 +824,83 @@
         }
         
         function saveProgress(id, path, data) {
+            // ── اولویت ۱: ذخیره در Supabase (منبع حقیقت) ─────────────
+            // نتیجهٔ ذخیرهٔ ابر منفی بود → در صف retry می‌ماند تا وصل شد دوباره برود
+            _syncProgressToSupabase(id, path, data);
+
+            // ── اولویت ۲: کش محلی (برای رندر فوری و حالت آفلاین) ─────
             localStorage.setItem(`prog_${id}_${path}`, JSON.stringify(data));
             _lastLocalWriteAt = Date.now();   // پول دوره‌ایِ دیتابیس تا ۵ ثانیه این را بازنویسی نکند
             // اطلاع به فلوچارت (اگر در تب دیگری باز باشد)
             window.dispatchEvent(new StorageEvent('storage', { key: `prog_${id}_${path}` }));
-
-            // ── sync به Supabase (ذخیره در جدول student_progress) ────────
-            _syncProgressToSupabase(id, path, data);
         }
 
-        // sync پیشرفت یک دانشجو/مسیر به Supabase
-        function _syncProgressToSupabase(studentId, pathType, progressArray) {
+        // ── صف retry برای تغییراتی که ذخیرهٔ ابرشان شکست خورده ──
+        // کلید: `${studentId}|${path}` → مقدار: آخرین آرایهٔ progress
+        const _pendingProgressQueue = new Map();
+        let _retryTimer = null;
+
+        function _enqueueProgressRetry(studentId, pathType, progressArray, reason) {
+            _pendingProgressQueue.set(`${studentId}|${pathType}`, { studentId, pathType, progressArray });
+            console.warn(`⚠️ sheet: ذخیرهٔ Supabase ناموفق (${reason}) — در صف retry: ${studentId}/${pathType}`);
+            if (_retryTimer) clearTimeout(_retryTimer);
+            _retryTimer = setTimeout(_flushProgressQueue, 3000);
+        }
+
+        async function _flushProgressQueue() {
+            _retryTimer = null;
+            if (_pendingProgressQueue.size === 0) return;
+            const sb = _sheetSb();
+            if (!sb) { _retryTimer = setTimeout(_flushProgressQueue, 5000); return; } // آفلاین — بعداً
+
+            const batch = Array.from(_pendingProgressQueue.values());
+            const failed = [];
+            for (const item of batch) {
+                try {
+                    const ok = await sb.saveStudentProgress(item.studentId, item.pathType, item.progressArray);
+                    if (!ok) failed.push(item);
+                    else _pendingProgressQueue.delete(`${item.studentId}|${item.pathType}`);
+                } catch (e) {
+                    failed.push(item);
+                }
+            }
+            // چیزی ناموفق ماند → دوباره تلاش کن (backoff ساده)
+            if (failed.length > 0) {
+                console.warn(`⚠️ sheet: ${failed.length} progress در صف retry ماند`);
+                _retryTimer = setTimeout(_flushProgressQueue, 8000);
+            }
+        }
+
+        // ── گرفتن ماژول Supabase — مستقیم یا از والد (اگر داخل iframe باشد) ──
+        function _sheetSb() {
             try {
-                // از SupabaseDataModule والد استفاده می‌کنیم (اگر در window وجود دارد)
-                const sb = (typeof window.parent !== 'undefined' && window.parent.SupabaseDataModule)
-                    ? window.parent.SupabaseDataModule
-                    : (typeof SupabaseDataModule !== 'undefined' ? SupabaseDataModule : null);
+                if (typeof window.parent !== 'undefined' && window.parent !== window &&
+                    window.parent.SupabaseDataModule &&
+                    typeof window.parent.SupabaseDataModule.saveStudentProgress === 'function') {
+                    return window.parent.SupabaseDataModule;
+                }
+            } catch (e) { /* cross-origin — ادامه */ }
+            return (typeof SupabaseDataModule !== 'undefined' &&
+                    typeof SupabaseDataModule.saveStudentProgress === 'function')
+                ? SupabaseDataModule : null;
+        }
 
-                if (!sb || typeof sb.saveStudentProgress !== 'function') return;
-
-                sb.saveStudentProgress(studentId, pathType, progressArray)
-                    .then(ok => { if (ok) console.log(`✅ sheet sync OK: ${studentId}/${pathType}`); })
-                    .catch(e => console.warn('⚠️ sheet Supabase sync خطا:', e.message));
+        // sync پیشرفت یک دانشجو/مسیر به Supabase — با صف retry در صورت شکست
+        async function _syncProgressToSupabase(studentId, pathType, progressArray) {
+            const sb = _sheetSb();
+            if (!sb) {
+                _enqueueProgressRetry(studentId, pathType, progressArray, 'ماژول در دسترس نیست');
+                return;
+            }
+            try {
+                const ok = await sb.saveStudentProgress(studentId, pathType, progressArray);
+                if (ok) {
+                    console.log(`✅ sheet sync OK: ${studentId}/${pathType}`);
+                } else {
+                    _enqueueProgressRetry(studentId, pathType, progressArray, 'خطای ذخیره');
+                }
             } catch(e) {
-                console.warn('⚠️ _syncProgressToSupabase خطا:', e);
+                _enqueueProgressRetry(studentId, pathType, progressArray, e.message);
             }
         }
         
@@ -962,7 +1043,14 @@
                     studentsData[studentId] = { id: studentId, name: student.name, field: student.major, role: 'student' };
                 }
                 const stepKeyMap = { defense: 'defenseSteps', educational: 'educationalSteps', requirements: 'requirementsSteps' };
-                const stepKey = stepKeyMap[currentPath];
+                // مسیر studying: ۴ زیرمرحلهٔ انتهایی educationalSteps — آفست از انتهای آرایه
+                const isStudying = (currentPath === 'studying');
+                const stepKey = isStudying ? 'educationalSteps' : stepKeyMap[currentPath];
+                // برای studying، اندیس مرحله در educationalSteps = طول educationalSteps - طول STEPS.studying + stageIndex
+                const studyingOffset = isStudying && Array.isArray(studentsData[studentId][stepKey])
+                    ? studentsData[studentId][stepKey].length - STEPS.studying.length
+                    : 0;
+                const profileStepIndex = isStudying ? (studyingOffset + stageIndex) : stageIndex;
                 let needSave = false;
                 // اگر آرایه مراحل در students_data نبود، از وضعیت فعلی شیت بساز
                 // تا تغییرات toggle در پروفایل دانشجو هم ذخیره شود
@@ -974,27 +1062,91 @@
                     }));
                     needSave = true;
                 }
-                if (stepKey && Array.isArray(studentsData[studentId][stepKey]) && studentsData[studentId][stepKey][stageIndex] !== undefined) {
+                if (stepKey && Array.isArray(studentsData[studentId][stepKey]) && studentsData[studentId][stepKey][profileStepIndex] !== undefined) {
                     const newStatus = prog[stageIndex].status;
-                    studentsData[studentId][stepKey][stageIndex].completed = (newStatus === STATUS_COMPLETED);
+                    studentsData[studentId][stepKey][profileStepIndex].completed = (newStatus === STATUS_COMPLETED);
                     if (newStatus === STATUS_COMPLETED) {
-                        studentsData[studentId][stepKey][stageIndex].date = new Date().toLocaleDateString('fa-IR');
+                        studentsData[studentId][stepKey][profileStepIndex].date = new Date().toLocaleDateString('fa-IR');
                     } else {
-                        studentsData[studentId][stepKey][stageIndex].date = null;
+                        studentsData[studentId][stepKey][profileStepIndex].date = null;
                     }
                     needSave = true;
                 }
                 if (needSave) {
                     localStorage.setItem('students_data', JSON.stringify(studentsData));
-                    // ── sync به Supabase از طریق والد ─────────────────────────
-                    // (iframe صفحه شیت students-sync.js را لود نمی‌کند؛ override
-                    //  localStorage مربوط به والد هم روی Storage همین فریم نیست)
+                    // ── sync وضعیت پروفایل به Supabase ─────────────────────
+                    // مسیر ۱: StudentsSync والد (اگر داخل iframe صفحهٔ اصلی باشیم)
+                    let syncedByParent = false;
                     try {
-                        if (window.parent && window.parent.StudentsSync &&
+                        if (window.parent && window.parent !== window &&
+                            window.parent.StudentsSync &&
                             typeof window.parent.StudentsSync.syncStudent === 'function') {
                             window.parent.StudentsSync.syncStudent(studentId, studentsData[studentId]);
+                            syncedByParent = true;
                         }
-                    } catch(e2) { /* ignore */ }
+                    } catch(e2) { /* cross-origin — ادامه */ }
+
+                    // مسیر ۲: مستقیم از خود شیت (وقتی StudentsSync والد نیست —
+                    // شیت مستقل باز شده یا ماژول‌هایش اینجا لود شده‌اند)
+                    // students_data → student_progress (سه مسیر) + profiles.current_path/active
+                    if (!syncedByParent) {
+                        try {
+                            const sb = _sheetSb();
+                            if (sb) {
+                                const sData = studentsData[studentId];
+                                const stepsToProgress = (arr) => {
+                                    if (!Array.isArray(arr)) return null;
+                                    const st = arr.map(s => ({ status: s && s.completed ? 2 : 0 }));
+                                    let found = false;
+                                    for (let i = 0; i < st.length; i++) {
+                                        if (st[i].status === 0 && !found) { st[i].status = 1; found = true; }
+                                    }
+                                    return st;
+                                };
+                                // مسیر studying → progress مستقل با path_type='studying'
+                                // (خطای CHECK constraint در DB یعنی supabase/fix_studying_path.sql اجرا نشده)
+                                const studyingProgress = (arr) => {
+                                    if (!Array.isArray(arr)) return null;
+                                    const names = STEPS.studying;
+                                    const tail = arr.slice(-names.length);
+                                    const st = names.map((_, i) => ({
+                                        status: (tail[i] && tail[i].completed) ? 2 : 0
+                                    }));
+                                    let found = false;
+                                    for (let i = 0; i < st.length; i++) {
+                                        if (st[i].status === 0 && !found) { st[i].status = 1; found = true; }
+                                    }
+                                    return st;
+                                };
+                                const jobs = [
+                                    ['defense',      stepsToProgress(sData.defenseSteps)],
+                                    ['educational',  stepsToProgress(sData.educationalSteps)],
+                                    ['requirements', stepsToProgress(sData.requirementsSteps)],
+                                    ['studying',     studyingProgress(sData.educationalSteps)],
+                                ].filter(([, p]) => p && p.length > 0);
+                                jobs.forEach(([pt, p]) =>
+                                    sb.saveStudentProgress(studentId, pt, p)
+                                        .catch(e => console.warn(`⚠️ sheet profile-sync [${pt}]:`, e.message)));
+
+                                const client = (typeof getSupabaseClient === 'function')
+                                    ? (typeof window.parent !== 'undefined' && window.parent.getSupabaseClient
+                                        ? window.parent.getSupabaseClient() : getSupabaseClient())
+                                    : null;
+                                if (client) {
+                                    const upd = {};
+                                    if (sData.currentPath)  upd.current_path = sData.currentPath;
+                                    if (sData.graduated !== undefined) upd.graduated = !!sData.graduated;
+                                    if (sData.active !== undefined)    upd.active = !!sData.active;
+                                    if (Object.keys(upd).length > 0) {
+                                        client.from('profiles').update(upd).eq('id', studentId)
+                                            .then(({ error }) => {
+                                                if (error) console.warn('⚠️ sheet profiles sync:', error.message);
+                                            });
+                                    }
+                                }
+                            }
+                        } catch(e2) { console.warn('⚠️ sheet direct profile sync:', e2); }
+                    }
                 }
             } catch(e) { console.warn('students_data sync error:', e); }
 
@@ -1145,7 +1297,7 @@
         });
 
         function exportToExcel() {
-            if (!STEPS[currentPath]) return; // مسیر studying در student_progress ذخیره نمی‌شود
+            if (!STEPS[currentPath]) return;
             const steps = STEPS[currentPath];
             let csv = 'نام,رشته,' + steps.join(',') + ',درصد\n';
             students.forEach(s => {

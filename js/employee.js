@@ -867,7 +867,7 @@ const EmployeeModule = {
                                 id="student-list-tab-active"
                                 class="px-5 py-3 font-medium border-b-2 border-green-500 text-green-400 transition-all whitespace-nowrap">
                             <i class="fas fa-user-check ml-1"></i>
-                            در حال تحصیل (${students.filter(s => s.active).length})
+                           تمام دانشجویان(${students.filter(s => s.active).length})
                         </button>
                         <button onclick="employeeModule.switchStudentListTab('studying')" 
                                 id="student-list-tab-studying"
@@ -2518,17 +2518,25 @@ const EmployeeModule = {
         if (customSteps) {
             try {
                 const parsed = JSON.parse(customSteps);
-                // ── هم‌ترازی کشِ قدیمی با پیش‌فرض جدید ──
-                // اگر کشِ custom_educational_steps فاقد فاز «در حال تحصیل» است،
-                // آن را با پیش‌فرضِ به‌روز (شامل فاز + ۴ زیرمرحله) جایگزین می‌کنیم
-                // تا همهٔ نماها (شیت/فلوچارت) همان مراحل را ببینند.
                 if (Array.isArray(parsed)) {
+                    // ── هم‌ترازی کشِ قدیمی ──
+                    // ۱) کشِ فاقد فاز «در حال تحصیل» → بازسازی کامل
+                    // ۲) کشِ قدیمی که هنوز ۴ زیرمرحلهٔ studying را در انتها دارد
+                    //    → آن ۴ مرحله حذف می‌شوند (به مسیر مستقل studying منتقل شدند)
                     const hasStudying = parsed.some(x =>
                         (typeof x === 'string' ? x : x?.name) === 'در حال تحصیل');
                     if (!hasStudying) {
                         const fresh = this._getDefaultEducationalStepsBase();
                         localStorage.setItem('custom_educational_steps', JSON.stringify(fresh));
                         return fresh;
+                    }
+                    const SUB_STUDYING = ['پاس کردن واحد ها','پرداخت اقساط','قفل کردن دروس','تنزیل نمرات'];
+                    const tailNames = parsed.slice(-4).map(x => (typeof x === 'string' ? x : x?.name));
+                    const hasSubStepsTail = tailNames.every(n => SUB_STUDYING.includes(n));
+                    if (hasSubStepsTail && parsed.length > 4) {
+                        const trimmed = parsed.slice(0, -4);
+                        localStorage.setItem('custom_educational_steps', JSON.stringify(trimmed));
+                        return trimmed;
                     }
                 }
                 return parsed;
@@ -2542,9 +2550,9 @@ const EmployeeModule = {
     },
 
     // Default educational steps (base list)
-    // ترتیب دقیقاً مطابق default_educational_steps_with_studying() در
-    // supabase/add_currently_studying_step.sql — برای هم‌ترازی ایندکس‌ها
-    // (فاز «در حال تحصیل» + ۴ زیرمرحله در ابتدا، ۲۱ مرحله اصلی بعد)
+    // ⚠ ۴ زیرمرحلهٔ فاز «در حال تحصیل» (پاس کردن واحد ها، پرداخت اقساط،
+    // قفل کردن دروس، تنزیل نمرات) دیگر اینجا نیستند — به مسیر مستقل
+    // studying منتقل شدند (EmployeeModule.getDefaultStudyingSteps)
     _getDefaultEducationalStepsBase() {
         return [
             { name: 'در حال تحصیل', completed: false, date: null, notes: '' },
@@ -2568,10 +2576,19 @@ const EmployeeModule = {
             { name: 'دریافت مدرک', completed: false, date: null, notes: '' },
             { name: 'تصدیق', completed: false, date: null, notes: '' },
             { name: 'تسویه حساب نهایی', completed: false, date: null, notes: '' },
-            { name: 'ارسال', completed: false, date: null, notes: '' },
-            // ── زیرمرحله‌های فاز «در حال تحصیل» ──
-            // در انتهای لیست آمده‌اند تا ایندکسِ prog_ مراحل قبلی (تیک‌های
-            // ثبت‌شدهٔ دانشجویان) شیفت نخورد — ترتیب مطابق فایل SQL
+            { name: 'ارسال', completed: false, date: null, notes: '' }
+        ];
+    },
+
+    // مراحل مسیر مستقل «در حال تحصیل» — فاز اصلی + ۴ زیرمرحله
+    // (پیش از این به‌اشتباه در انتهای مسیر فارغ‌التحصیلی بودند)
+    getDefaultStudyingSteps() {
+        const customSteps = localStorage.getItem('custom_studying_steps');
+        if (customSteps) {
+            try { return JSON.parse(customSteps); } catch (e) { /* fallback */ }
+        }
+        return [
+            { name: 'در حال تحصیل', completed: false, date: null, notes: '' },
             { name: 'پاس کردن واحد ها', completed: false, date: null, notes: '' },
             { name: 'پرداخت اقساط', completed: false, date: null, notes: '' },
             { name: 'قفل کردن دروس', completed: false, date: null, notes: '' },
