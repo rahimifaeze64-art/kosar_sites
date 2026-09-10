@@ -3,9 +3,11 @@
     "loginUrl": "آدرس صفحه ورود سامانه — با --url قابل بازنویسی است",
     "selectors": "اگر تشخیص خودکار درست عمل نکرد، سلکتور دقیق را اینجا بگذار (null یعنی تشخیص خودکار). مثلا برای صفحه ورود وردپرس: username=#user_login , password=#user_pass , submit=#wp-submit",
     "credentials": "نام فیلد دانشجو در students.json برای نام کاربری و رمز سامانه",
-    "fields": "studentId=شماره دانشجویی | username=نام کاربری | systemPassword=رمز سامانه | password=رمز داخلی"
+    "fields": "studentId=شماره دانشجویی | username=نام کاربری | systemPassword=رمز سامانه | password=رمز داخلی",
+    "captcha.useAI": "حل کپچا با مدل هوش مصنوعی (پیش‌فرض true) — نیاز به متغیر محیطی AVALAI_API_KEY",
+    "AI env": "AVALAI_API_KEY=کلید | AVALAI_BASE_URL=پیش‌فرض https://api.avalai.ir/v1 | AVALAI_MODEL=پیش‌فرض qwen3.8-flash"
   },
-  "loginUrl": "",
+  "loginUrl": "https://edu.qom.ac.ir/browser/fa/#/auth/login",
   "selectors": {
     "username": null,
     "password": null,
@@ -31,6 +33,7 @@
     "upscale": 4,
     "thresholds": [0.42, 0.5, 0.58],
     "lineRemoval": true,
-    "debug": true
+    "debug": true,
+    "useAI": true
   }
 }

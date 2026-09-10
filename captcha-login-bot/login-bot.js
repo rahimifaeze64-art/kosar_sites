@@ -15,6 +15,7 @@ const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
 const { solveImage } = require('./captcha-solver');
+const aiSolver = require('./ai-captcha-solver');
 
 // ── ۱. پارس آرگومان‌ها ───────────────────────────────────────
 function parseArgs(argv) {
@@ -239,9 +240,22 @@ async function attemptLogin(page, creds, attemptNo) {
       fs.writeFileSync(path.join(__dirname, 'debug', `captcha-${attemptNo}.png`), shot);
     }
     const t0 = Date.now();
-    const r = await solveImage(shot, CFG.captcha || {});
-    solved = r.text;
-    console.log(`   🧩 کپچا: «${solved}» (اطمینان ${r.confidence}%، ${Date.now() - t0}ms)`);
+    // ۱) اولویت: حل با مدل هوش مصنوعی (qwen3.8-flash)
+    if (CFG.captcha && CFG.captcha.useAI !== false && aiSolver.isConfigured()) {
+      try {
+        const r = await aiSolver.solveWithAI(shot);
+        solved = r.text;
+        console.log(`   🤖 کپچا (AI/${r.model}): «${solved}» (${Date.now() - t0}ms)`);
+      } catch (e) {
+        console.log(`   ⚠️ حل با AI ناموفق: ${e.message} — fallback به OCR محلی`);
+      }
+    }
+    // ۲) fallback: OCR محلی (Tesseract + اجماع)
+    if (!solved) {
+      const r = await solveImage(shot, CFG.captcha || {});
+      solved = r.text;
+      console.log(`   🧩 کپچا (OCR): «${solved}» (اطمینان ${r.confidence}%، ${Date.now() - t0}ms)`);
+    }
     await page.fill(pick('captcha-input'), solved);
   } else {
     console.log('   ⚠️ کپچا در صفحه پیدا نشد — فقط نام کاربری/رمز پر شد');

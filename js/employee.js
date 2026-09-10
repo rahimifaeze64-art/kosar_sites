@@ -602,10 +602,15 @@ const EmployeeModule = {
                             <span class="hidden sm:inline">اضافه کردن دانشجو</span>
                             <span class="sm:hidden">جدید</span>
                         </button>
-                        <button onclick="window._alpineSetPage && window._alpineSetPage('flowchartView')"
+                        <button onclick="employeeModule.openStudentFlowchart('')"
                                 class="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1">
                             <i class="fas fa-project-diagram"></i>
                             <span class="hidden sm:inline">فلوچارت</span>
+                        </button>
+                        <button onclick="employeeModule.samLoginForStudent();"
+                                class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1">
+                            <i class="fas fa-robot"></i>
+                            <span class="hidden sm:inline">ورود به سامانه</span>
                         </button>
                         <button onclick="employeeModule.showStepsManagementModal();" 
                                 class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1">
@@ -967,17 +972,12 @@ const EmployeeModule = {
                 <p class="text-gray-400">${emptyMsg}</p>
             </div>`;
 
-        const pathLabels = {
-            requirements: { label: 'ملزومات',        color: 'bg-orange-500/20 text-orange-400 border-orange-500/30' },
-            defense:      { label: 'گردش دفاع',      color: 'bg-blue-500/20   text-blue-400   border-blue-500/30'   },
-            studying:     { label: 'در حال تحصیل',   color: 'bg-cyan-500/20   text-cyan-400    border-cyan-500/30'   },
-            educational:  { label: 'فارغ‌التحصیلی', color: 'bg-green-500/20  text-green-400  border-green-500/30'  },
-        };
-
         // ── helper مشترک برای هر دانشجو ──────────────────────
-        const _buildRow = (s) => {
+        const _buildRow = (s, idx) => {
+            const rowNumber = idx + 1;
+            const degreeLabels = { bachelor: 'کارشناسی', masters: 'کارشناسی ارشد', phd: 'دکتری', 'کارشناسی': 'کارشناسی', 'کارشناسی ارشد': 'کارشناسی ارشد', 'ارشد': 'کارشناسی ارشد', 'دکتری': 'دکتری', 'دكتراه': 'دکتری' };
+            const degreeLabel = degreeLabels[s.degree] || s.degree || '—';
             const activePath = this._getStudentActivePath(s);
-            const pathInfo   = pathLabels[activePath] || pathLabels.educational;
             let steps = [];
             if (activePath === 'requirements') steps = s.requirementsSteps || (this.getDefaultRequirementsSteps ? this.getDefaultRequirementsSteps() : []);
             else if (activePath === 'defense') steps = s.defenseSteps     || this.getDefaultDefenseSteps2();
@@ -988,30 +988,30 @@ const EmployeeModule = {
             const barColor = activePath === 'requirements' ? 'bg-orange-500'
                            : activePath === 'defense'      ? 'bg-blue-500'
                            : activePath === 'studying'     ? 'bg-cyan-500' : 'bg-green-500';
-            return { s, activePath, pathInfo, pct, curStep, barColor };
+            return { s, rowNumber, degreeLabel, pct, curStep, barColor };
         };
-
         // ── کارت موبایل (< md) ────────────────────────────────
-        const mobileCards = students.map(s => {
-            const { pathInfo, pct, curStep, barColor } = _buildRow(s);
+        const mobileCards = students.map((s, idx) => {
+            const { rowNumber, degreeLabel, pct, curStep, barColor } = _buildRow(s, idx);
             return `
             <div class="bg-slate-700 rounded-xl p-4 space-y-3">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-lime-600 flex items-center justify-center text-gray-900 font-bold text-sm flex-shrink-0">
-                            ${s.name ? s.name.charAt(0) : 'د'}
+                        <span class="text-xs font-bold text-gray-400 w-6 text-center">${rowNumber}</span>
+                        <div class="w-10 h-10 rounded-full bg-lime-600 flex items-center justify-center text-gray-900 font-bold text-xs flex-shrink-0">
+                            ${s.studentId || '—'}
                         </div>
                         <div>
                             <div class="font-semibold text-white text-sm">${s.name || '—'}</div>
-                            <div class="text-xs text-gray-400">${s.studentId || ''}</div>
+                            <div class="text-xs text-gray-400">شماره دانشجویی: ${s.studentId || '—'}</div>
+                            <div class="text-xs text-gray-400">رمز سامانه: ${s.systemPassword || '—'}</div>
                         </div>
                     </div>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${pathInfo.color}">${pathInfo.label}</span>
                 </div>
                 <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-gray-400">
                     <div class="truncate"><i class="fas fa-university ml-1 text-lime-400"></i>${s.university || '—'}</div>
+                    <div class="truncate"><i class="fas fa-graduation-cap ml-1 text-lime-400"></i>${degreeLabel}</div>
                     <div class="truncate"><i class="fas fa-book ml-1 text-lime-400"></i>${s.field || '—'}</div>
-                    <div class="truncate"><i class="fas fa-phone ml-1 text-lime-400"></i>${s.phone || '—'}</div>
                     <div>${s.active
                         ? `<span class="text-green-400"><i class="fas fa-circle text-xs ml-1"></i>فعال</span>`
                         : `<span class="text-gray-500"><i class="fas fa-circle text-xs ml-1"></i>خاتمه</span>`
@@ -1027,6 +1027,16 @@ const EmployeeModule = {
                     </div>
                     <div class="text-xs text-gray-500 truncate">${curStep ? curStep.name : '✓ تکمیل شده'}</div>
                 </div>
+                <div class="flex gap-2">
+                    <button onclick="employeeModule.openStudentFlowchart('${s.id}')"
+                        class="flex-1 bg-lime-600 hover:bg-lime-700 text-gray-900 py-2 rounded-lg text-xs font-semibold transition-all">
+                        <i class="fas fa-project-diagram ml-1"></i>فلوچارت
+                    </button>
+                    <button onclick="employeeModule.samLoginForStudent()"
+                        class="flex-1 bg-lime-600 hover:bg-lime-700 text-gray-900 py-2 rounded-lg text-xs font-semibold transition-all">
+                        <i class="fas fa-robot ml-1"></i>ورود به سامانه
+                    </button>
+                </div>
                 <button onclick="employeeModule.editStudentProfile('${s.id}')"
                     class="w-full bg-lime-600 hover:bg-lime-700 text-gray-900 py-2 rounded-lg text-xs font-semibold transition-all">
                     <i class="fas fa-edit ml-1"></i>ویرایش پروفایل
@@ -1035,29 +1045,23 @@ const EmployeeModule = {
         }).join('');
 
         // ── ردیف جدول دسکتاپ (>= md) ────────────────────────
-        const tableRows = students.map(s => {
-            const { pathInfo, pct, curStep, barColor } = _buildRow(s);
-            const statusBadge = s.active
-                ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-500/20 text-green-400 border border-green-500/30"><span class="w-1.5 h-1.5 rounded-full bg-green-400 inline-block"></span>فعال</span>`
-                : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-500/20 text-gray-400 border border-gray-500/30"><span class="w-1.5 h-1.5 rounded-full bg-gray-400 inline-block"></span>خاتمه</span>`;
-            const pathBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${pathInfo.color}">${pathInfo.label}</span>`;
+        const tableRows = students.map((s, idx) => {
+            const { rowNumber, degreeLabel, pct, curStep, barColor } = _buildRow(s, idx);
             return `
             <tr class="border-b border-slate-700 hover:bg-slate-700/50 transition-colors">
+                <td class="px-3 py-3 text-sm font-bold text-gray-300 text-center">${rowNumber}</td>
                 <td class="px-4 py-3">
                     <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-full bg-lime-600 flex items-center justify-center text-gray-900 font-bold text-sm flex-shrink-0">
-                            ${s.name ? s.name.charAt(0) : 'د'}
+                        <div class="w-9 h-9 rounded-full bg-lime-600 flex items-center justify-center text-gray-900 font-bold text-[10px] flex-shrink-0" title="${s.name || ''}">
+                            ${s.studentId || '—'}
                         </div>
-                        <div>
-                            <div class="font-semibold text-white text-sm">${s.name || '—'}</div>
-                            <div class="text-xs text-gray-400">${s.studentId || ''}</div>
-                        </div>
+                        <div class="font-semibold text-white text-sm">${s.name || '—'}</div>
                     </div>
                 </td>
-                <td class="px-4 py-3 text-sm text-gray-300">${s.university || '—'}</td>
+                <td class="px-4 py-3 text-sm text-gray-300" dir="ltr">${s.studentId || '—'}</td>
+                <td class="px-4 py-3 text-sm text-gray-300" dir="ltr">${s.systemPassword || '—'}</td>
+                <td class="px-4 py-3 text-sm text-gray-300">${degreeLabel}</td>
                 <td class="px-4 py-3 text-sm text-gray-300">${s.field || '—'}</td>
-                <td class="px-4 py-3 text-sm text-gray-300">${s.phone || '—'}</td>
-                <td class="px-4 py-3">${pathBadge}</td>
                 <td class="px-4 py-3">
                     <div class="min-w-[110px]">
                         <div class="flex items-center gap-2 mb-0.5">
@@ -1069,12 +1073,24 @@ const EmployeeModule = {
                         <div class="text-xs text-gray-500 truncate max-w-[130px]">${curStep ? curStep.name : '✓ تکمیل شده'}</div>
                     </div>
                 </td>
-                <td class="px-4 py-3 text-center">${statusBadge}</td>
                 <td class="px-4 py-3 text-center">
-                    <button onclick="employeeModule.editStudentProfile('${s.id}')"
-                        class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all">
-                        <i class="fas fa-edit ml-1"></i>ویرایش
+                    <button onclick="employeeModule.openStudentFlowchart('${s.id}')"
+                        class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap">
+                        <i class="fas fa-project-diagram ml-1"></i>فلوچارت
                     </button>
+                </td>
+                <td class="px-4 py-3 text-center">
+                    <div class="flex items-center justify-center gap-1.5">
+                        <button onclick="employeeModule.samLoginForStudent()"
+                            class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap"
+                            title="ورود مستقیم به سامانه دانشگاه">
+                            <i class="fas fa-robot ml-1"></i>ورود به سامانه
+                        </button>
+                        <button onclick="employeeModule.editStudentProfile('${s.id}')"
+                            class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all">
+                            <i class="fas fa-edit ml-1"></i>ویرایش
+                        </button>
+                    </div>
                 </td>
             </tr>`;
         }).join('');
@@ -1089,19 +1105,31 @@ const EmployeeModule = {
             <table class="w-full text-right">
                 <thead>
                     <tr class="bg-slate-900/60 text-gray-400 text-xs">
+                        <th class="px-3 py-3 text-center font-semibold w-12">ردیف</th>
                         <th class="px-4 py-3 text-right font-semibold">نام دانشجو</th>
-                        <th class="px-4 py-3 text-right font-semibold">دانشگاه</th>
+                        <th class="px-4 py-3 text-right font-semibold">شماره دانشجویی</th>
+                        <th class="px-4 py-3 text-right font-semibold">رمز سامانه</th>
+                        <th class="px-4 py-3 text-right font-semibold">مقطع</th>
                         <th class="px-4 py-3 text-right font-semibold">رشته</th>
-                        <th class="px-4 py-3 text-right font-semibold">تماس</th>
-                        <th class="px-4 py-3 text-right font-semibold">مسیر</th>
                         <th class="px-4 py-3 text-right font-semibold">پیشرفت</th>
-                        <th class="px-4 py-3 text-center font-semibold">وضعیت</th>
+                        <th class="px-4 py-3 text-center font-semibold">فلوچارت</th>
                         <th class="px-4 py-3 text-center font-semibold">عملیات</th>
                     </tr>
                 </thead>
                 <tbody>${tableRows}</tbody>
             </table>
         </div>`;
+    },
+
+    // ── باز کردن فلوچارت مسیر تحصیلی یک دانشجوی مشخص ─────────
+    openStudentFlowchart(studentId) {
+        try { localStorage.setItem('fc_selected_student', studentId || ''); } catch (e) {}
+        window._alpineSetPage && window._alpineSetPage('flowchartView');
+    },
+
+    // ── ورود مستقیم به سامانه دانشگاه قم ─────────────────────
+    samLoginForStudent() {
+        window.open('https://edu.qom.ac.ir/browser/fa/#/auth/login', '_blank');
     },
 
     // Get student card

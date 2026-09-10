@@ -984,17 +984,37 @@ function ctxAddCondition() {
 function populateStudentSel() {
     const sel = document.getElementById('student-sel');
     sel.innerHTML = '<option value="">— پیش‌فرض —</option>';
+    const seen = {};
+    const add = s => {
+        if (!s || !s.id || seen[s.id]) return;
+        seen[s.id] = true;
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.name || s.id;
+        sel.appendChild(opt);
+    };
     try {
         const stored = localStorage.getItem('students_data');
         if (stored) {
             Object.values(JSON.parse(stored))
                 .filter(s => s.role === 'student')
-                .forEach(s => {
-                    const opt = document.createElement('option');
-                    opt.value = s.id;
-                    opt.textContent = s.name;
-                    sel.appendChild(opt);
-                });
+                .forEach(add);
+        }
+    } catch(e) {}
+    // منبع اصلی اپلیکیشن (Supabase) — دانشجویانی که در students_data نیستند
+    try {
+        const users = JSON.parse(localStorage.getItem('edu_system_users') || '[]');
+        users.filter(u => u.role === 'student').forEach(add);
+    } catch(e) {}
+    // ── دانشجوی انتخاب‌شده از لیست دانشجویان (via query param یا localStorage) ──
+    try {
+        const qp = new URLSearchParams(window.location.search).get('student');
+        let target = qp || '';
+        if (!target) target = localStorage.getItem('fc_selected_student') || '';
+        if (target) {
+            currentStudent = target;
+            sel.value = target;
+            localStorage.removeItem('fc_selected_student');
         }
     } catch(e) {}
 }
@@ -1021,6 +1041,8 @@ window.addEventListener('storage', e => {
 document.addEventListener('DOMContentLoaded', () => {
     resizeCanvas();
     populateStudentSel();
+    // اگر دانشجویی انتخاب شده، پیشرفت مراحل همان دانشجو اعمال شود
+    if (currentStudent) onStudentChange();
     getOrBuildGraph(currentPath);
     resetView();
     draw();

@@ -208,6 +208,10 @@ function appController() {
               this.$nextTick(() => {
                   const container = document.getElementById('flowchart-view-container');
                   if (!container) return;
+                  // دانشجوی انتخاب‌شده (در صورت کلیک از لیست دانشجویان)
+                  let fcStudent = '';
+                  try { fcStudent = localStorage.getItem('fc_selected_student') || ''; } catch(e) {}
+                  const fcSrc = 'flowchart.html' + (fcStudent ? '?student=' + encodeURIComponent(fcStudent) : '');
                   container.innerHTML = `
                     <div class="space-y-4">
                       <div class="flex items-center gap-3 mb-2">
@@ -216,7 +220,7 @@ function appController() {
                           <i class="fas fa-arrow-right"></i> بازگشت به مدیریت دانشجویان
                         </button>
                       </div>
-                      <iframe src="flowchart.html"
+                      <iframe src="${fcSrc}"
                         style="width:100%;height:85vh;border:none;border-radius:12px;background:#fff;"
                         title="فلوچارت"></iframe>
                     </div>`;
