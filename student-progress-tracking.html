@@ -647,10 +647,19 @@
                 // اگر صف retry هنوز چیزی برای ارسال دارد، پول نکن (پول با دادهٔ کهنهٔ ابر
                 // تغییرات در انتظار را روی prog_ بازنویسی می‌کند)
                 if (_pendingProgressQueue.size > 0) return false;
+                // وضعیت قبل از پول — برای تشخیص clobber
+                const _before = students.slice(0, 5).map(s =>
+                    `${s.id}:${(s.progress[currentPath] || []).filter(p => p.status === STATUS_COMPLETED).length}`).join(' | ');
                 const map = await sb.getAllStudentProgress();
                 if (!map) return false;
-                console.log('✅ sheet: پیشرفت دانشجویان از Supabase همگام شد');
                 loadStudents();
+                // وضعیت بعد از پول — اگر تعداد تکمیل‌شده‌ها افت کرد = clobber از DB
+                const _after = students.slice(0, 5).map(s =>
+                    `${s.id}:${(s.progress[currentPath] || []).filter(p => p.status === STATUS_COMPLETED).length}`).join(' | ');
+                if (_before !== _after) {
+                    console.warn(`🔍 sheet pull دیاگستیک — قبل: [${_before}] بعد: [${_after}]`);
+                }
+                console.log(`✅ sheet: پیشرفت ${Object.keys(map).length} دانشجو/مسیر از Supabase همگام شد`);
                 renderTable();
                 updateStats();
                 return true;
