@@ -280,13 +280,13 @@
                 </div>
                 
                 <div class="flex items-center gap-2">
+                    <!-- نشانگر ذخیرهٔ خودکار — هر toggle فوراً به Supabase می‌رود -->
+                    <span id="autosave-indicator" class="text-xs text-gray-500 px-2 py-1 rounded-lg bg-gray-100 hidden">
+                        <i class="fas fa-spinner fa-spin ml-1"></i>
+                    </span>
                     <button onclick="toggleFullscreen()" id="fullscreen-btn" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium">
                         <i class="fas fa-expand ml-1"></i>
                         تمام صفحه
-                    </button>
-                    <button onclick="saveAllProgress()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium">
-                        <i class="fas fa-save ml-1"></i>
-                        ذخیره
                     </button>
                     <button onclick="exportToExcel()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium">
                         <i class="fas fa-file-excel ml-1"></i>
@@ -638,12 +638,15 @@
         // بلافاصله در شیت دیده شود و جابه‌جایی تب‌ها (فارغ‌التحصیلی و ...) خودکار باشد.
         async function _pullProgressFromSupabase() {
             try {
-                const sb = (typeof window.parent !== 'undefined' && window.parent.SupabaseDataModule)
+                const sb = (typeof window.parent !== 'undefined' && window.parent !== window && window.parent.SupabaseDataModule)
                     ? window.parent.SupabaseDataModule
                     : (typeof SupabaseDataModule !== 'undefined' ? SupabaseDataModule : null);
                 if (!sb || typeof sb.getAllStudentProgress !== 'function') return false;
                 // اگر همین الان تغییرات محلی ذخیره شده، این پول آن‌ها را نپوشاند
                 if (Date.now() - _lastLocalWriteAt < 5000) return false;
+                // اگر صف retry هنوز چیزی برای ارسال دارد، پول نکن (پول با دادهٔ کهنهٔ ابر
+                // تغییرات در انتظار را روی prog_ بازنویسی می‌کند)
+                if (_pendingProgressQueue.size > 0) return false;
                 const map = await sb.getAllStudentProgress();
                 if (!map) return false;
                 console.log('✅ sheet: پیشرفت دانشجویان از Supabase همگام شد');
@@ -664,6 +667,11 @@
             _flushProgressQueue();
 
             _pullProgressFromSupabase();
+
+            // ── خروج/بستن صفحه: صف retry را فوراً flush کن (keepalive) ──
+            // تا تغییرات در انتظار قبل از ترک صفحه به ابر برسند
+            window.addEventListener('pagehide', () => { _flushProgressQueue(); });
+            window.addEventListener('beforeunload', () => { _flushProgressQueue(); });
 
             // منبع حقیقت = دیتابیس؛ همگام‌سازی دوره‌ای + هنگام تمرکز مجدد صفحه
             setInterval(_pullProgressFromSupabase, 30000);
@@ -824,15 +832,35 @@
         }
         
         function saveProgress(id, path, data) {
-            // ── اولویت ۱: ذخیره در Supabase (منبع حقیقت) ─────────────
-            // نتیجهٔ ذخیرهٔ ابر منفی بود → در صف retry می‌ماند تا وصل شد دوباره برود
+            // ── ذخیرهٔ خودکار آنی: اول ابر (منبع حقیقت)، بعد کش محلی ──
+            _showAutosaveIndicator('saving');
             _syncProgressToSupabase(id, path, data);
 
-            // ── اولویت ۲: کش محلی (برای رندر فوری و حالت آفلاین) ─────
             localStorage.setItem(`prog_${id}_${path}`, JSON.stringify(data));
             _lastLocalWriteAt = Date.now();   // پول دوره‌ایِ دیتابیس تا ۵ ثانیه این را بازنویسی نکند
             // اطلاع به فلوچارت (اگر در تب دیگری باز باشد)
             window.dispatchEvent(new StorageEvent('storage', { key: `prog_${id}_${path}` }));
+        }
+
+        // ── نشانگر ذخیرهٔ خودکار (spinner → تیک سبز) ──
+        let _autosaveHideTimer = null;
+        function _showAutosaveIndicator(state, pendingCount) {
+            const el = document.getElementById('autosave-indicator');
+            if (!el) return;
+            el.classList.remove('hidden');
+            if (_autosaveHideTimer) clearTimeout(_autosaveHideTimer);
+            if (state === 'saving') {
+                el.innerHTML = '<i class="fas fa-spinner fa-spin ml-1"></i> ذخیره...';
+                el.className = 'text-xs text-gray-600 px-2 py-1 rounded-lg bg-gray-100';
+            } else if (state === 'ok') {
+                el.innerHTML = '<i class="fas fa-check ml-1"></i> ذخیره شد' + (pendingCount ? ` (${pendingCount} در صف)` : '');
+                el.className = 'text-xs text-green-700 px-2 py-1 rounded-lg bg-green-100';
+                _autosaveHideTimer = setTimeout(() => el.classList.add('hidden'), 2000);
+            } else { // error — در صف retry ماند
+                el.innerHTML = `<i class="fas fa-clock ml-1"></i> در صف ارسال${pendingCount ? ` (${pendingCount})` : ''}`;
+                el.className = 'text-xs text-amber-700 px-2 py-1 rounded-lg bg-amber-100';
+                _autosaveHideTimer = setTimeout(() => el.classList.add('hidden'), 4000);
+            }
         }
 
         // ── صف retry برای تغییراتی که ذخیرهٔ ابرشان شکست خورده ──
@@ -843,6 +871,7 @@
         function _enqueueProgressRetry(studentId, pathType, progressArray, reason) {
             _pendingProgressQueue.set(`${studentId}|${pathType}`, { studentId, pathType, progressArray });
             console.warn(`⚠️ sheet: ذخیرهٔ Supabase ناموفق (${reason}) — در صف retry: ${studentId}/${pathType}`);
+            _showAutosaveIndicator('error', _pendingProgressQueue.size);
             if (_retryTimer) clearTimeout(_retryTimer);
             _retryTimer = setTimeout(_flushProgressQueue, 3000);
         }
@@ -852,6 +881,8 @@
             if (_pendingProgressQueue.size === 0) return;
             const sb = _sheetSb();
             if (!sb) { _retryTimer = setTimeout(_flushProgressQueue, 5000); return; } // آفلاین — بعداً
+
+            if (_pendingProgressQueue.size > 0) _showAutosaveIndicator('saving');
 
             const batch = Array.from(_pendingProgressQueue.values());
             const failed = [];
@@ -867,7 +898,10 @@
             // چیزی ناموفق ماند → دوباره تلاش کن (backoff ساده)
             if (failed.length > 0) {
                 console.warn(`⚠️ sheet: ${failed.length} progress در صف retry ماند`);
+                _showAutosaveIndicator('error', _pendingProgressQueue.size);
                 _retryTimer = setTimeout(_flushProgressQueue, 8000);
+            } else {
+                _showAutosaveIndicator('ok', 0);
             }
         }
 
@@ -896,6 +930,7 @@
                 const ok = await sb.saveStudentProgress(studentId, pathType, progressArray);
                 if (ok) {
                     console.log(`✅ sheet sync OK: ${studentId}/${pathType}`);
+                    _showAutosaveIndicator('ok', _pendingProgressQueue.size);
                 } else {
                     _enqueueProgressRetry(studentId, pathType, progressArray, 'خطای ذخیره');
                 }
@@ -1209,22 +1244,6 @@
         function filterStudents() {
             searchTerm = document.getElementById('search-input').value;
             renderTable();
-        }
-        
-        function saveAllProgress() {
-            students.forEach(s => {
-                saveProgress(s.id, 'educational', s.progress.educational);
-                saveProgress(s.id, 'defense', s.progress.defense);
-                saveProgress(s.id, 'requirements', s.progress.requirements);
-            });
-            // نمایش تأییدیه ساده
-            const btn = document.querySelector('button[onclick="saveAllProgress()"]');
-            if (btn) {
-                const orig = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check ml-1"></i> در حال ذخیره...';
-                btn.classList.replace('bg-green-600','bg-emerald-500');
-                setTimeout(() => { btn.innerHTML = orig; btn.classList.replace('bg-emerald-500','bg-green-600'); }, 2500);
-            }
         }
         
         // ── حالت تمام صفحه ──────────────────────────────────
