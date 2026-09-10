@@ -939,8 +939,40 @@
                 ? SupabaseDataModule : null;
         }
 
-        // sync پیشرفت یک دانشجو/مسیر به Supabase — با صف retry در صورت شکست
-        async function _syncProgressToSupabase(studentId, pathType, progressArray) {
+        // sync پیشرفت یک دانشجو/مسیر به Supabase — «سریالی» برای هر کلید
+        // ⚠️ ریشهٔ باگ «ریست شدن بخشی از مراحل»: toggleهای سریع پشت‌سرهم، چند
+        // upsert همزمان می‌ساختند که به‌ترتیب کامل نمی‌شدند — ذخیرهٔ کهنه‌تر
+        // (مثلاً ۳ مرحلهٔ تکمیل) بعد از ذخیرهٔ جدیدتر (۸ مرحله) در DB می‌نشست
+        // و بقیهٔ مراحل «پاک» به نظر می‌رسید.
+        // راه‌حل: برای هر کلید `${studentId}|${pathType}` حداکثر یک درخواست در
+        // حال اجرا؛ toggleهای حین اجرا در صف می‌مانند و «آخرین وضعیت» پس از
+        // تمام‌شدن درخواست قبلی ارسال می‌شود — همیشه جدیدترین وضعیت، به‌ترتیب.
+        const _inflightSaves = new Map();   // key → Promise در حال اجرا
+        const _queuedSaves  = new Map();    // key → آخرین آرایه در انتظار ارسال
+
+        function _syncProgressToSupabase(studentId, pathType, progressArray) {
+            const key = `${studentId}|${pathType}`;
+            _queuedSaves.set(key, { studentId, pathType, progressArray });
+            _pumpProgressSaves();
+        }
+
+        function _pumpProgressSaves() {
+            // هر کلید که در حال ارسال نیست، آخرین وضعیت صفش را بفرست
+            for (const [key, item] of Array.from(_queuedSaves.entries())) {
+                if (_inflightSaves.has(key)) continue;
+                _queuedSaves.delete(key);
+                const p = _doSaveProgress(item.studentId, item.pathType, item.progressArray)
+                    .catch(() => {});
+                _inflightSaves.set(key, p);
+                p.finally(() => {
+                    _inflightSaves.delete(key);
+                    // حین این درخواست، toggle تازه‌ای آمده؟ بفرست (ترتیب حفظ می‌شود)
+                    if (_queuedSaves.has(key)) _pumpProgressSaves();
+                });
+            }
+        }
+
+        async function _doSaveProgress(studentId, pathType, progressArray) {
             const sb = _sheetSb();
             if (!sb) {
                 _enqueueProgressRetry(studentId, pathType, progressArray, 'ماژول در دسترس نیست');
@@ -950,7 +982,7 @@
                 const ok = await sb.saveStudentProgress(studentId, pathType, progressArray);
                 if (ok) {
                     console.log(`✅ sheet sync OK: ${studentId}/${pathType}`);
-                    _showAutosaveIndicator('ok', _pendingProgressQueue.size);
+                    _showAutosaveIndicator('ok', _queuedSaves.size);
                 } else {
                     _enqueueProgressRetry(studentId, pathType, progressArray, 'خطای ذخیره');
                 }
