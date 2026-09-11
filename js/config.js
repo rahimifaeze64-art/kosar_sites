@@ -239,10 +239,12 @@ const UTILS = {
   // Show notification
   showNotification(message, type = "info", duration = 3000) {
     try {
-      debugLogger(`Showing notification: ${message}`, "info", {
-        type,
-        duration,
-      });
+      if (typeof debugLogger === "function") {
+        debugLogger(`Showing notification: ${message}`, "info", {
+          type,
+          duration,
+        });
+      }
 
       const notification = document.createElement("div");
       notification.className = `notification ${type}`;
@@ -260,7 +262,9 @@ const UTILS = {
         }, 300);
       }, duration);
     } catch (error) {
-      debugLogger("Error showing notification", "error", error);
+      if (typeof debugLogger === "function") {
+        debugLogger("Error showing notification", "error", error);
+      }
       // Fallback to alert
       alert(message);
     }

@@ -22,6 +22,19 @@
     let _syncedSigs = null;
     const SYNC_STUDENT_DEBOUNCE_MS = 400;  // debounce مسیر sync تکی (iframe)
 
+    // ⚠️ گیت ضد-ریست: تا بارگذاری اولیه از Supabase (pull) تمام نشده، هیچ sync
+    // صعودی نباید انجام شود. علت: هنگام باز شدن مرورگر جدید، init-students-data.js
+    // students_data را با مراحل پیش‌فرضِ همه-ناتمام می‌سازد؛ اگر همین دادهٔ
+    // پیش‌فرض قبل از pull به DB برود، مراحل تکمیل‌شده در DB صفر می‌شوند
+    // (باگ «ریست شدن سبزها در مرورگر جدید»).
+    let _initialPullDone = false;
+
+    // از بیرون (supabase-init.js) صدا زده می‌شود بعد از getAllStudentProgress
+    function markInitialPullDone() {
+        _initialPullDone = true;
+        console.log('✅ students-sync: گیت ضد-ریست باز شد — sync صعودی فعال');
+    }
+
     function _sig(student) {
         try { return JSON.stringify(student); } catch (e) { return null; }
     }
@@ -128,6 +141,11 @@
 
     // ── sync همه دانشجویان (debounced) ───────────────────────
     function _syncAll(studentsData) {
+        // تا pull اولیه تمام نشده، چیزی به DB نرو — دادهٔ محلی پیش‌فرض است
+        if (!_initialPullDone) {
+            console.log('⏭️ students-sync: skip (initial pull نه کامل شده — جلوگیری از ریست)');
+            return;
+        }
         const sb = _sb();
         if (!sb) return;
 
@@ -184,6 +202,8 @@
     async function _flushPendingStudents() {
         _studentFlushTimer = null;
         if (_pendingStudents.size === 0) return;
+        // تا pull اولیه تمام نشده، ارسال نکن (همان گیت ضد-ریست)
+        if (!_initialPullDone) return;
         const pending = Array.from(_pendingStudents.entries());
         _pendingStudents.clear();
 
@@ -367,6 +387,10 @@
             }
         } catch (e) {
             console.warn('⚠️ students-sync initial load خطا:', e.message);
+        } finally {
+            // pull اولیه تمام شد (موفق یا شکست) — گیت sync باز شود
+            // (شکست هم باز می‌کنیم وگرنه تا ری‌استعاد بعدی هیچ‌چیز سینک نمی‌شود)
+            markInitialPullDone();
         }
     }
 
@@ -395,6 +419,7 @@
         syncAll:        (data) => _syncAll(data || JSON.parse(localStorage.getItem(STUDENTS_KEY) || '{}')),
         flushPending:   _flushPendingStudents,  // ارسال فوری تغییرات در انتظار
         initialLoad:    _initialLoad,
+        markInitialPullDone,                    // گیت ضد-ریست (supabase-init صدا می‌زند)
     };
 
     console.log('📦 students-sync.js بارگذاری شد — students_data override فعال');
