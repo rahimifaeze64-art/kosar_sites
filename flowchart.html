@@ -485,8 +485,8 @@ function nodeRight(node) {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // grid
-    drawGrid();
+    // پس‌زمینه خاکستری — بدون حالت شطرنجی
+    drawBackground();
 
     ctx.save();
     ctx.translate(panX, panY);
@@ -524,18 +524,9 @@ function draw() {
     document.getElementById('zoom-badge').textContent = Math.round(zoom * 100) + '%';
 }
 
-function drawGrid() {
-    const step = 30 * zoom;
-    const offX = ((panX % step) + step) % step;
-    const offY = ((panY % step) + step) % step;
-    ctx.strokeStyle = 'rgba(0,0,0,0.06)';
-    ctx.lineWidth = 1;
-    for (let x = offX; x < canvas.width; x += step) {
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-    }
-    for (let y = offY; y < canvas.height; y += step) {
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
-    }
+function drawBackground() {
+    ctx.fillStyle = '#d3d7dd';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
 function drawNode(node) {
@@ -543,18 +534,19 @@ function drawNode(node) {
     const sel = node.id === selectedNodeId;
 
     // fill color based on status
-    let fill, stroke;
+    let fill, stroke, textColor = '#1e293b';
     if (node.type === NT_START || node.type === NT_END) {
-        fill   = node.type === NT_START ? '#1d4ed8' : '#374151';
-        stroke = node.type === NT_START ? '#93c5fd' : '#9ca3af';
+        fill   = node.type === NT_START ? '#bfdbfe' : '#e5e7eb';
+        stroke = node.type === NT_START ? '#60a5fa' : '#9ca3af';
     } else if (node.type === NT_DIAMOND) {
-        fill   = '#92400e';
-        stroke = '#fcd34d';
+        fill   = '#fde68a';
+        stroke = '#f59e0b';
+        textColor = '#78350f';
     } else {
         // rect – colored by status
-        if (node.status === STATUS_COMPLETED) { fill = '#166534'; stroke = '#4ade80'; }
-        else if (node.status === STATUS_CURRENT) { fill = '#1e3a8a'; stroke = '#60a5fa'; }
-        else { fill = '#7f1d1d'; stroke = '#f87171'; }
+        if (node.status === STATUS_COMPLETED) { fill = '#bbf7d0'; stroke = '#34d399'; textColor = '#14532d'; }
+        else if (node.status === STATUS_CURRENT) { fill = '#bfdbfe'; stroke = '#60a5fa'; textColor = '#1e3a8a'; }
+        else { fill = '#fecaca'; stroke = '#f87171'; textColor = '#7f1d1d'; }
     }
 
     ctx.save();
@@ -604,13 +596,14 @@ function drawNode(node) {
         ctx.font = `${13 / zoom}px serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
+        ctx.fillStyle = textColor;
         if (node.status === STATUS_COMPLETED)   ctx.fillText('✓', iconX, iconY);
         else if (node.status === STATUS_CURRENT) ctx.fillText('●', iconX, iconY);
     }
 
     // label
     ctx.save();
-    ctx.fillStyle = node.type === NT_RECT ? '#f8fafc' : '#f1f5f9';
+    ctx.fillStyle = textColor;
     ctx.font = `bold ${Math.max(10, 13) / zoom}px Vazirmatn, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -653,7 +646,7 @@ function drawEdge(edge, g) {
     }
 
     // color: green if source completed
-    const edgeColor = (src.status === STATUS_COMPLETED || src.type === NT_START) ? '#4ade80' : '#475569';
+    const edgeColor = (src.status === STATUS_COMPLETED || src.type === NT_START) ? '#4ade80' : '#94a3b8';
 
     ctx.save();
     ctx.strokeStyle = edgeColor;
@@ -686,7 +679,7 @@ function drawEdge(edge, g) {
     if (edge.label) {
         const mx = (from.x + to.x) / 2 + 12;
         const my = (from.y + to.y) / 2;
-        ctx.fillStyle = '#fcd34d';
+        ctx.fillStyle = '#b45309';
         ctx.font = `${11 / zoom}px Vazirmatn, sans-serif`;
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';

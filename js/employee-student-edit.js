@@ -206,6 +206,17 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                 <input type="text" id="edit-writer" value="${student.writer || ''}"
                                        class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg" placeholder="نام نویسنده">
                             </div>
+                            <div class="profile-field md:col-span-2">
+                                <label class="block text-base font-bold text-gray-800 mb-2">داورها</label>
+                                <div id="defenses-list" class="space-y-2">
+                                    <!-- ردیف‌های داور با JS رندر می‌شوند -->
+                                </div>
+                                <button type="button" onclick="employeeModule.addDefenseRow()"
+                                        class="mt-2 bg-lime-100 hover:bg-lime-200 text-lime-700 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1 transition-all">
+                                    <i class="fas fa-plus"></i> افزودن داور
+                                </button>
+                                <p class="text-xs text-gray-500 mt-1">معمولاً ۲ داور و برای دکتری ۴ داور — می‌توانید چند اسم اضافه یا حذف کنید</p>
+                            </div>
                             <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">تاریخ تحویل</label>
                                 <input type="date" id="edit-delivery-date" value="${student.deliveryDate || ''}"
@@ -827,11 +838,62 @@ EmployeeModule.editStudentProfile = function(studentId) {
     // نگهداری id دانشجو در حال ویرایش (برای حذف فایل‌ها)
     this.currentEditStudentId = studentId;
 
+    // رندر ردیف‌های داورها
+    this._renderDefenseRows(student.defenseNames || []);
+
+    // لود داورها از Supabase (اگر در profiles ذخیره شده ولی در کش محلی نیست)
+    (async () => {
+        try {
+            const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+            if (!client || (student.defenseNames && student.defenseNames.length > 0)) return;
+            const { data } = await client.from('profiles').select('defense_names').eq('id', studentId).single();
+            if (data && Array.isArray(data.defense_names) && data.defense_names.length > 0) {
+                this._renderDefenseRows(data.defense_names);
+            }
+        } catch(e) { /* ستون defense_names ممکن است هنوز در دیتابیس نباشد */ }
+    })();
+
     // لود مدارک از Supabase و نمایش preview
     EmployeeModule._loadStudentDocumentPreviews(studentId);
 
     // لود فایل‌های بخش «فایل ها» از Supabase
     EmployeeModule._loadStudentProfileFiles(studentId);
+};
+
+// ── داورها: رندر ردیف‌ها ─────────────────────────────────────
+EmployeeModule._renderDefenseRows = function(names) {
+    const list = document.getElementById('defenses-list');
+    if (!list) return;
+    list.innerHTML = '';
+    (names || []).forEach(name => this._appendDefenseRow(name));
+    if (!names || names.length === 0) this._appendDefenseRow('');   // یک ردیف خالی پیش‌فرض
+};
+
+EmployeeModule._appendDefenseRow = function(value) {
+    const list = document.getElementById('defenses-list');
+    if (!list) return;
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2';
+    row.innerHTML = `
+        <input type="text" class="defense-name-input flex-1 bg-white border border-gray-300 rounded-lg px-4 py-2 text-lg"
+               value="${(value || '').replace(/"/g, '&quot;')}" placeholder="نام داور">
+        <button type="button" title="حذف داور"
+                onclick="this.closest('div').remove(); if(!document.querySelectorAll('.defense-name-input').length) employeeModule.addDefenseRow();"
+                class="w-10 h-10 bg-red-100 hover:bg-red-200 rounded-lg flex items-center justify-center text-red-600 flex-shrink-0 transition-all">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    list.appendChild(row);
+};
+
+EmployeeModule.addDefenseRow = function() {
+    this._appendDefenseRow('');
+};
+
+EmployeeModule.getDefenseNames = function() {
+    return Array.from(document.querySelectorAll('.defense-name-input'))
+        .map(inp => inp.value.trim())
+        .filter(Boolean);
 };
 
 // جایگزین کردن تابع saveStudentProfile
@@ -874,6 +936,7 @@ EmployeeModule.saveStudentProfile = async function(studentId) {
         article2Status:     document.getElementById('edit-article2-status')?.value   || '',
         active:             document.getElementById('edit-active')?.checked          ?? true,
         currentPath:        document.getElementById('edit-current-path')?.value      || '',
+        defenseNames:       this.getDefenseNames ? this.getDefenseNames() : [],
         educationalSteps:   currentStudent.educationalSteps  || this.getDefaultEducationalSteps?.() || [],
         defenseSteps:       currentStudent.defenseSteps      || this.getDefaultDefenseSteps2?.()    || [],
         requirementsSteps:  currentStudent.requirementsSteps || this.getDefaultRequirementsSteps?.()|| [],
@@ -986,6 +1049,7 @@ EmployeeModule.saveStudentProfile = async function(studentId) {
                 field:           updatedData.field       || null,
                 degree:          updatedData.degree      || null,
                 passport_number: updatedData.passportNumber || null,
+                defense_names:   updatedData.defenseNames || [],
                 active:          updatedData.active,
                 // current_path — 'studying' (در حال تحصیل) هم یک مسیر مستقل است
                 // مقدار خالی («خودکار») ارسال نمی‌شود تا مقدار فعلی دیتابیس overwrite نشود

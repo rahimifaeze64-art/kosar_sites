@@ -188,6 +188,10 @@ function appController() {
               this.$nextTick(() => {
                   const container = document.getElementById('sheet-view-container');
                   if (!container) return;
+                  // مسیر انتخاب‌شده از تب‌های لیست دانشجویان (در صورت وجود)
+                  let sheetPath = '';
+                  try { sheetPath = localStorage.getItem('sheet_selected_path') || ''; } catch(e) {}
+                  const sheetSrc = 'student-progress-tracking.html' + (sheetPath ? '?path=' + encodeURIComponent(sheetPath) : '');
                   container.innerHTML = `
                     <div class="space-y-4">
                       <div class="flex items-center gap-3 mb-2">
@@ -196,8 +200,8 @@ function appController() {
                           <i class="fas fa-arrow-right"></i> بازگشت به مدیریت دانشجویان
                         </button>
                       </div>
-                      <iframe src="student-progress-tracking.html"
-                        style="width:100%;height:85vh;border:none;border-radius:12px;background:#fff;"
+                      <iframe src="${sheetSrc}"
+                        style="width:100%;height:94vh;border:none;border-radius:12px;background:#fff;"
                         allowfullscreen
                         title="نمای شیت"></iframe>
                     </div>`;

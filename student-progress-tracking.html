@@ -12,7 +12,14 @@
         }
         
         body {
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            background: #ffffff;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 8px 12px;
+            box-sizing: border-box;
+            overflow: hidden;
         }
         
         /* ── دایره وضعیت ───────────────────────── */
@@ -31,30 +38,30 @@
         .progress-circle:hover { transform: scale(1.15); }
 
         .progress-circle.completed {
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
-            box-shadow: 0 3px 10px rgba(16,185,129,0.5);
+            background: linear-gradient(135deg, #6ee7b7, #a7f3d0);
+            color: #065f46;
+            box-shadow: 0 3px 10px rgba(110,231,183,0.5);
         }
         .progress-circle.incomplete {
-            background: linear-gradient(135deg, #f87171, #ef4444);
-            color: white;
-            box-shadow: 0 3px 10px rgba(239,68,68,0.5);
+            background: linear-gradient(135deg, #fecaca, #fca5a5);
+            color: #7f1d1d;
+            box-shadow: 0 3px 10px rgba(252,165,165,0.5);
         }
         .progress-circle.current {
-            background: linear-gradient(135deg, #60a5fa, #3b82f6);
-            color: white;
-            box-shadow: 0 3px 15px rgba(59,130,246,0.6);
+            background: linear-gradient(135deg, #bfdbfe, #93c5fd);
+            color: #1e3a8a;
+            box-shadow: 0 3px 15px rgba(147,197,253,0.6);
             animation: pulse-current 2s infinite;
         }
         @keyframes pulse-current {
-            0%,100% { box-shadow: 0 3px 15px rgba(59,130,246,.6); }
-            50%      { box-shadow: 0 3px 25px rgba(59,130,246,1); }
+            0%,100% { box-shadow: 0 3px 15px rgba(147,197,253,.6); }
+            50%      { box-shadow: 0 3px 25px rgba(147,197,253,1); }
         }
         /* متوقف شده — خاکستری */
         .progress-circle.paused {
-            background: linear-gradient(135deg, #9ca3af, #6b7280);
-            color: white;
-            box-shadow: 0 3px 10px rgba(107,114,128,0.5);
+            background: linear-gradient(135deg, #d1d5db, #e5e7eb);
+            color: #374151;
+            box-shadow: 0 3px 10px rgba(209,213,219,0.5);
         }
 
         /* ── جدول اصلی ──────────────────────── */
@@ -67,8 +74,8 @@
 
         /* سرستون‌ها */
         .sheet-table thead th {
-            background: linear-gradient(135deg, #65a30d, #4d7c0f);
-            color: white;
+            background: linear-gradient(135deg, #d9f99d, #bef264);
+            color: #1a2e05;
             padding: 14px 8px;
             font-size: 13px;
             font-weight: bold;
@@ -76,14 +83,14 @@
             position: sticky;
             top: 0;
             z-index: 10;
-            border-left: 1px solid rgba(255,255,255,0.2);
+            border-left: 1px solid rgba(0,0,0,0.08);
             vertical-align: bottom;
             min-width: 90px;
         }
         .sheet-table thead th.student-header {
             position: sticky;
             right: 48px;
-            background: linear-gradient(135deg, #65a30d, #4d7c0f);
+            background: linear-gradient(135deg, #d9f99d, #bef264);
             z-index: 11;
             border-left: none;
             min-width: 200px;
@@ -94,7 +101,7 @@
         .sheet-table thead th.row-num-header {
             position: sticky;
             right: 0;
-            background: linear-gradient(135deg, #65a30d, #4d7c0f);
+            background: linear-gradient(135deg, #d9f99d, #bef264);
             z-index: 12;
             border-left: none;
             width: 48px;
@@ -142,7 +149,7 @@
             gap: 5px;
         }
         .stage-num {
-            background: rgba(255,255,255,0.25);
+            background: rgba(0,0,0,0.08);
             width: 26px;
             height: 26px;
             border-radius: 50%;
@@ -160,16 +167,22 @@
             text-align: center;
         }
 
+        /* ── Drag & Drop هدر ستون‌ها ── */
+        .sheet-table thead th[data-col-index] { cursor: grab; user-select: none; }
+        .sheet-table thead th[data-col-index]:active { cursor: grabbing; }
+        .sheet-table thead th.col-dragging { opacity: 0.5; }
+        .sheet-table thead th.col-drag-over { outline: 2px dashed #4d7c0f; outline-offset: -3px; }
+
         /* آواتار دانشجو */
         .avatar {
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            background: linear-gradient(135deg, #c7d2fe, #ddd6fe);
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            color: white;
+            color: #3730a3;
             font-weight: bold;
             font-size: 15px;
             flex-shrink: 0;
@@ -178,7 +191,9 @@
         /* ظرف اسکرول جدول */
         .table-wrapper {
             overflow: auto;
-            max-height: calc(100vh - 310px);
+            flex: 1;
+            min-height: 0;
+            max-height: none;
             background: white;
             border-radius: 16px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.1);
@@ -201,155 +216,16 @@
 
         /* دکمه‌های فیلتر */
         .filter-btn.active {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-            color: white;
-            border-color: #2563eb;
+            background: linear-gradient(135deg, #bfdbfe, #93c5fd);
+            color: #1e3a8a;
+            border-color: #93c5fd;
         }
-
-        /* ── حالت تمام صفحه ─────────────────────── */
-        .fs-toolbar { display: none; }
-
-        #fs-root:fullscreen {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            background: white;
-            padding: 8px 12px;
-            overflow: hidden;
-        }
-        #fs-root:fullscreen .fs-toolbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #e5e7eb;
-            margin-bottom: 8px;
-            flex-shrink: 0;
-        }
-        #fs-root:fullscreen .table-wrapper {
-            flex: 1;
-            min-height: 0;
-            max-height: none;
-            border-radius: 8px;
-            box-shadow: none;
-        }
-        #fs-root:fullscreen .progress-circle { width: 34px; height: 34px; font-size: 14px; }
-
-        /* حالت جایگزین (CSS) — وقتی iframe اجازه Fullscreen API نداد */
-        body.fs-fallback { overflow: hidden !important; }
-        body.fs-fallback #fs-root {
-            position: fixed;
-            top: 0; right: 0; bottom: 0; left: 0;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            background: white;
-            padding: 8px 12px;
-        }
-        body.fs-fallback .fs-toolbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #e5e7eb;
-            margin-bottom: 8px;
-            flex-shrink: 0;
-        }
-        body.fs-fallback .table-wrapper {
-            flex: 1;
-            min-height: 0;
-            max-height: none;
-            border-radius: 8px;
-            box-shadow: none;
-        }
-        body.fs-fallback .progress-circle { width: 34px; height: 34px; font-size: 14px; }
     </style>
 </head>
-<body class="min-h-screen p-4">
-    <div class="max-w-full mx-auto">
-        <!-- Header -->
-        <div class="bg-white rounded-xl shadow-lg p-4 mb-3">
-            <div class="flex justify-between items-center">
-                <div class="flex items-center gap-3">
-                    <a href="index.html" class="text-gray-400 hover:text-black-600">
-                        <i class="fas fa-arrow-right text-lg"></i>
-                    </a>
-                    <div>
-                        <h1 class="text-xl font-bold text-gray-800">
-                            <i class="fas fa-th-list text-black-600 ml-2"></i>
-                            نمای شیت
-                        </h1>
-                        <p class="text-xs text-gray-500">کلیک برای تغییر وضعیت: 🔴 → 🔵 → 🟢</p>
-                    </div>
-                </div>
-                
-                <div class="flex items-center gap-2">
-                    <!-- نشانگر ذخیرهٔ خودکار — هر toggle فوراً به Supabase می‌رود -->
-                    <span id="autosave-indicator" class="text-xs text-gray-500 px-2 py-1 rounded-lg bg-gray-100 hidden">
-                        <i class="fas fa-spinner fa-spin ml-1"></i>
-                    </span>
-                    <button onclick="toggleFullscreen()" id="fullscreen-btn" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium">
-                        <i class="fas fa-expand ml-1"></i>
-                        تمام صفحه
-                    </button>
-                    <button onclick="exportToExcel()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium">
-                        <i class="fas fa-file-excel ml-1"></i>
-                        خروجی
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Path Tabs -->
-        <div class="bg-white rounded-xl shadow p-3 mb-3">
-            <div class="flex gap-2 overflow-x-auto">
-                <div onclick="selectPath('defense')" id="tab-defense" 
-                     class="path-tab bg-blue-100 text-black-800 active flex-shrink-0">
-                    <i class="fas fa-shield-alt ml-1"></i>
-                    گردش دفاع
-                </div>
-                <div onclick="selectPath('requirements')" id="tab-requirements" 
-                     class="path-tab bg-emerald-100 text-emerald-800 flex-shrink-0">
-                    <i class="fas fa-clipboard-list ml-1"></i>
-                    ملزومات
-                </div>
-                <div onclick="selectPath('educational')" id="tab-educational" 
-                     class="path-tab bg-lime-100 text-lime-800 flex-shrink-0">
-                    <i class="fas fa-graduation-cap ml-1"></i>
-                    فارغ‌التحصیلی
-                </div>
-                <div onclick="selectPath('studying')" id="tab-studying" 
-                     class="path-tab bg-cyan-100 text-cyan-800 flex-shrink-0">
-                    <i class="fas fa-book-reader ml-1"></i>
-                    در حال تحصیل
-                </div>
-            </div>
-        </div>
-        
-        <!-- Stats -->
-        <div class="grid grid-cols-4 gap-2 mb-3">
-            <div class="bg-white rounded-lg p-3 shadow text-center">
-                <p class="text-xs text-gray-500 mb-1">کل دانشجویان</p>
-                <p class="text-2xl font-bold text-gray-800" id="total-students">0</p>
-            </div>
-            <div class="bg-white rounded-lg p-3 shadow text-center">
-                <p class="text-xs text-gray-500 mb-1">میانگین پیشرفت</p>
-                <p class="text-2xl font-bold text-green-600" id="avg-progress">0%</p>
-            </div>
-            <div class="bg-white rounded-lg p-3 shadow text-center">
-                <p class="text-xs text-gray-500 mb-1">در حال انجام</p>
-                <p class="text-2xl font-bold text-black-600" id="in-progress-count">0</p>
-            </div>
-            <div class="bg-white rounded-lg p-3 shadow text-center">
-                <p class="text-xs text-gray-500 mb-1">تکمیل شده</p>
-                <p class="text-2xl font-bold text-lime-600" id="completed-count">0</p>
-            </div>
-        </div>
-        
-        <!-- Filter & Search -->
-        <div class="bg-white rounded-xl shadow p-3 mb-3">
+<body>
+    <div class="max-w-full mx-auto" style="display:flex;flex-direction:column;flex:1;min-height:0;width:100%;">
+        <!-- کادر جستجو — تنها عنصر بالای جدول -->
+        <div class="bg-white rounded-xl shadow p-3 mb-3 flex-shrink-0" id="search-bar">
             <div class="flex gap-2 items-center">
                 <input type="text" id="search-input" placeholder="جستجوی دانشجو..." 
                        class="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
@@ -357,52 +233,14 @@
                 <button onclick="setFilter('all')" class="filter-btn active px-4 py-2 rounded-lg border-2 border-gray-200 text-sm" id="filter-all">همه</button>
                 <button onclick="setFilter('in-progress')" class="filter-btn px-4 py-2 rounded-lg border-2 border-gray-200 text-sm" id="filter-in-progress">در حال انجام</button>
                 <button onclick="setFilter('completed')" class="filter-btn px-4 py-2 rounded-lg border-2 border-gray-200 text-sm" id="filter-completed">تکمیل</button>
-            </div>
-        </div>
-        
-        <!-- Legend -->
-        <div class="bg-white rounded-lg p-3 mb-3 shadow flex items-center justify-center gap-6 text-sm">
-            <div class="flex items-center gap-2">
-                <div class="progress-circle incomplete"><i class="fas fa-times"></i></div>
-                <span class="font-medium">تکمیل نشده</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <div class="progress-circle current"><i class="fas fa-hourglass-half"></i></div>
-                <span class="font-medium">در حال انجام</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <div class="progress-circle completed"><i class="fas fa-check"></i></div>
-                <span class="font-medium">تکمیل شده</span>
+                <span id="autosave-indicator" class="text-xs text-gray-500 px-2 py-1 rounded-lg bg-gray-100 hidden">
+                    <i class="fas fa-spinner fa-spin ml-1"></i>
+                </span>
             </div>
         </div>
         
         <!-- Main Table -->
-        <div id="fs-root">
-            <!-- نوار ابزار فقط در حالت تمام صفحه دیده می‌شود -->
-            <div class="fs-toolbar">
-                <div class="flex gap-2">
-                    <div class="path-tab fs-tab bg-blue-100 text-black-800 flex-shrink-0" data-path="defense" onclick="selectPath('defense')">
-                        <i class="fas fa-shield-alt ml-1"></i>
-                        گردش دفاع
-                    </div>
-                    <div class="path-tab fs-tab bg-emerald-100 text-emerald-800 flex-shrink-0" data-path="requirements" onclick="selectPath('requirements')">
-                        <i class="fas fa-clipboard-list ml-1"></i>
-                        ملزومات
-                    </div>
-                    <div class="path-tab fs-tab bg-lime-100 text-lime-800 flex-shrink-0" data-path="educational" onclick="selectPath('educational')">
-                        <i class="fas fa-graduation-cap ml-1"></i>
-                        فارغ‌التحصیلی
-                    </div>
-                    <div class="path-tab fs-tab bg-cyan-100 text-cyan-800 flex-shrink-0" data-path="studying" onclick="selectPath('studying')">
-                        <i class="fas fa-book-reader ml-1"></i>
-                        در حال تحصیل
-                    </div>
-                </div>
-                <button onclick="toggleFullscreen()" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium flex-shrink-0">
-                    <i class="fas fa-compress ml-1"></i>
-                    خروج از تمام صفحه
-                </button>
-            </div>
+        <div id="fs-root" style="display:flex;flex-direction:column;flex:1;min-height:0;">
             <div class="table-wrapper" id="table-wrapper">
                 <table class="sheet-table" id="sheet-table">
                     <thead id="table-head">
@@ -604,8 +442,6 @@
             STEPS = loadStepsFromStorage();
             loadStudents();
             renderTable();
-            updateStats();
-            updateTabCounts();
         });
 
         // اگر از همان origin localStorage تغییر کند (تب دیگر / صفحه والد / iframe)
@@ -616,11 +452,9 @@
             if (stepKeys.includes(e.key) || dataKeys.includes(e.key) || isProgKey) {
                 if (stepKeys.includes(e.key)) {
                     STEPS = loadStepsFromStorage();
-                    updateTabCounts();
                 }
                 loadStudents();
                 renderTable();
-                updateStats();
             }
         });
 
@@ -668,12 +502,20 @@
                 }
                 console.log(`✅ sheet: پیشرفت ${Object.keys(map).length} دانشجو/مسیر از Supabase همگام شد`);
                 renderTable();
-                updateStats();
                 return true;
             } catch (e) { console.warn('⚠️ sheet Supabase pull خطا:', e); return false; }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            // ── مسیر اولیه از URL (?path=defense/requirements/educational/studying) ──
+            // (از دکمه‌های «نمای شیت» در تب‌های لیست دانشجویان)
+            try {
+                const qpPath = new URLSearchParams(window.location.search).get('path');
+                if (qpPath && STEPS[qpPath]) {
+                    currentPath = qpPath;
+                }
+            } catch(e) {}
+
             // ── اولین رندر فقط بعد از اولین pull از دیتابیس ──
             // علت: کلیدهای prog_ محلی ممکن است کهنه باشند (تغییرات از دستگاه دیگر
             // یا رفرش وسط ذخیره). رندر فوری با دادهٔ کهنه = «ریست شدن» کاذب.
@@ -685,13 +527,11 @@
                     <div style="margin-top:8px; font-size:13px;">در حال دریافت وضعیت از سرور...</div>
                 </td></tr>`;
             loadStudents();      // دادهٔ اولیه (لیست دانشجویان)
-            updateTabCounts();
 
             _flushProgressQueue().catch(() => {}).finally(() => {
                 // بعد از تلاش flush صف، پول اول — سپس رندر
                 _pullProgressFromSupabase().finally(() => {
                     renderTable();
-                    updateStats();
                 });
             });
 
@@ -1008,40 +848,82 @@
         
         function selectPath(path) {
             currentPath = path;
-            document.querySelectorAll('.path-tab').forEach(t => t.classList.remove('active'));
-            const tab = document.getElementById(`tab-${path}`);
-            if (tab) tab.classList.add('active');
-            // تب‌های داخل حالت تمام صفحه
-            document.querySelectorAll('.fs-tab').forEach(t => t.classList.toggle('active', t.dataset.path === path));
             renderTable();
-            updateStats();
         }
 
-        // بروزرسانی تعداد مراحل روی تب‌ها
-        function updateTabCounts() {
-            const tabLabels = {
-                defense:      `<i class="fas fa-shield-alt ml-1"></i> گردش دفاع (${STEPS.defense.length})`,
-                requirements: `<i class="fas fa-clipboard-list ml-1"></i> ملزومات (${STEPS.requirements.length})`,
-                educational:  `<i class="fas fa-graduation-cap ml-1"></i> فارغ‌التحصیلی (${STEPS.educational.length})`,
-                studying:     `<i class="fas fa-book-reader ml-1"></i> در حال تحصیل (${STEPS.studying.length})`
-            };
-            Object.entries(tabLabels).forEach(([key, html]) => {
-                const el = document.getElementById(`tab-${key}`);
-                if (el) el.innerHTML = html;
+        // ── ترتیب ستون‌ها (drag & drop) — ذخیره در localStorage برای هر مسیر ──
+        function loadColumnOrder() {
+            try {
+                const raw = localStorage.getItem(`sheet_col_order_${currentPath}`);
+                if (raw) {
+                    const arr = JSON.parse(raw);
+                    if (Array.isArray(arr) && arr.length === STEPS[currentPath].length) return arr;
+                }
+            } catch(e) {}
+            return STEPS[currentPath].map((_, i) => i);   // ترتیب پیش‌فرض
+        }
+        function saveColumnOrder(order) {
+            try { localStorage.setItem(`sheet_col_order_${currentPath}`, JSON.stringify(order)); } catch(e) {}
+        }
+
+        // ── Drag & Drop هدر ستون‌ها (شبیه چک‌لیست کاری) ──
+        function initColumnDragDrop() {
+            const thead = document.getElementById('table-head');
+            if (!thead) return;
+            let draggingTh = null;
+
+            thead.querySelectorAll('th[data-col-index]').forEach(th => {
+                th.setAttribute('draggable', 'true');
+
+                th.addEventListener('dragstart', (e) => {
+                    draggingTh = th;
+                    th.classList.add('col-dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    try { e.dataTransfer.setData('text/plain', th.dataset.colIndex); } catch(err) {}
+                });
+
+                th.addEventListener('dragend', () => {
+                    th.classList.remove('col-dragging');
+                    thead.querySelectorAll('th.col-drag-over').forEach(el => el.classList.remove('col-drag-over'));
+                    draggingTh = null;
+                    // ذخیره ترتیب جدید بر اساس DOM
+                    const domOrder = Array.from(thead.querySelectorAll('th[data-col-index]'))
+                        .map(el => parseInt(el.dataset.colIndex, 10));
+                    saveColumnOrder(domOrder);
+                    renderTable();
+                });
+
+                th.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    if (!draggingTh || draggingTh === th) return;
+                    e.dataTransfer.dropEffect = 'move';
+                    thead.querySelectorAll('th.col-drag-over').forEach(el => el.classList.remove('col-drag-over'));
+                    th.classList.add('col-drag-over');
+                    const rect = th.getBoundingClientRect();
+                    if (e.clientX > rect.left + rect.width / 2) {
+                        th.after(draggingTh);
+                    } else {
+                        th.before(draggingTh);
+                    }
+                });
             });
         }
-        
+
         function renderTable() {
             const thead = document.getElementById('table-head');
             const tbody = document.getElementById('table-body');
             const steps = STEPS[currentPath];
             
+            // ترتیب ستون‌ها (drag & drop)
+            const colOrder = loadColumnOrder();   // آرایه‌ای از اندیس‌های مرحله
+            
             // Header
             let headerHTML = '<tr><th class="row-num-header">#</th><th class="student-header">دانشجو</th>';
-            steps.forEach((step, i) => {
-                headerHTML += `<th>
+            colOrder.forEach(stepIdx => {
+                const step = steps[stepIdx];
+                headerHTML += `<th data-col-index="${stepIdx}" title="برای جابه‌جایی، ستون را بکشید">
                     <div class="stage-header">
-                        <div class="stage-num">${i + 1}</div>
+                        <div class="stage-num">${stepIdx + 1}</div>
                         <div class="stage-name">${step}</div>
                     </div>
                 </th>`;
@@ -1092,7 +974,7 @@
                 
                 bodyHTML += '<tr>';
                 bodyHTML += `<td class="row-num-cell">${rowNum}</td>`;
-                bodyHTML += `<td class="student-cell">
+                bodyHTML += `<td class="student-cell" style="cursor:pointer" title="ویرایش پروفایل دانشجو" onclick="openStudentProfile('${student.id}')">
                     <div class="flex items-center gap-2">
                         <div class="avatar">${student.avatar}</div>
                         <div class="overflow-hidden">
@@ -1102,7 +984,8 @@
                     </div>
                 </td>`;
                 
-                prog.forEach((stage, i) => {
+                colOrder.forEach(stageIdx => {
+                    const stage = prog[stageIdx];
                     const status = stage?.status ?? STATUS_INCOMPLETE;
                     let cls = 'incomplete', icon = '<i class="fas fa-times"></i>';
                     if (status === STATUS_COMPLETED)      { cls = 'completed'; icon = '<i class="fas fa-check"></i>'; }
@@ -1110,7 +993,7 @@
                     else if (status === STATUS_PAUSED)    { cls = 'paused';    icon = '<i class="fas fa-pause"></i>'; }
                     
                     bodyHTML += `<td>
-                        <div class="progress-circle ${cls}" title="${status===0?'تکمیل نشده':status===1?'در حال انجام':status===2?'تکمیل شده':'متوقف شده'}" onclick="toggleStage('${student.id}', ${i})">${icon}</div>
+                        <div class="progress-circle ${cls}" title="${status===0?'تکمیل نشده':status===1?'در حال انجام':status===2?'تکمیل شده':'متوقف شده'}" onclick="toggleStage('${student.id}', ${stageIdx})">${icon}</div>
                     </td>`;
                 });
                 
@@ -1123,6 +1006,20 @@
             });
             
             tbody.innerHTML = bodyHTML;
+            initColumnDragDrop();
+        }
+
+        // ── کلیک روی نام دانشجو → باز کردن ویرایش پروفایل در صفحه والد ──
+        function openStudentProfile(studentId) {
+            try {
+                if (window.parent && window.parent !== window &&
+                    window.parent.employeeModule &&
+                    typeof window.parent.employeeModule.editStudentProfile === 'function') {
+                    window.parent.employeeModule.editStudentProfile(studentId);
+                }
+            } catch(e) {
+                console.warn('openStudentProfile error:', e);
+            }
         }
         
         function toggleStage(studentId, stageIndex) {
@@ -1278,36 +1175,6 @@
             student._activePath = _getActivePath(student);
 
             renderTable();
-            updateStats();
-        }
-        
-        function updateStats() {
-            // همان دانشجویانی که در جدولِ همین تب نمایش داده می‌شوند
-            let relevant;
-            if (currentPath === 'educational')       relevant = students.filter(s => _shouldShowInEducational(s));
-            else if (currentPath === 'requirements') relevant = students.filter(s => _shouldShowInRequirements(s));
-            else if (currentPath === 'studying')     relevant = students.filter(s => _shouldShowInStudying(s));
-            else                                     relevant = students.filter(s => _shouldShowInDefense(s));
-            const total = relevant.length;
-            if (total === 0) {
-                document.getElementById('total-students').textContent = 0;
-                document.getElementById('avg-progress').textContent = '0%';
-                document.getElementById('in-progress-count').textContent = 0;
-                document.getElementById('completed-count').textContent = 0;
-                return;
-            }
-            let sum = 0, inProg = 0, done = 0;
-            relevant.forEach(s => {
-                const prog = s.progress[currentPath];
-                const d = prog.filter(p => p.status === STATUS_COMPLETED).length;
-                sum += (d / prog.length) * 100;
-                if (d === prog.length) done++;
-                else if (d > 0) inProg++;
-            });
-            document.getElementById('total-students').textContent = total;
-            document.getElementById('avg-progress').textContent = Math.round(sum / total) + '%';
-            document.getElementById('in-progress-count').textContent = inProg;
-            document.getElementById('completed-count').textContent = done;
         }
         
         function setFilter(f) {
@@ -1321,75 +1188,6 @@
             searchTerm = document.getElementById('search-input').value;
             renderTable();
         }
-        
-        // ── حالت تمام صفحه ──────────────────────────────────
-        // اگر iframe اجازه Fullscreen API نداد، به‌صورت CSS تمام‌صفحه می‌شود
-        function _isFullscreenActive() {
-            return !!(document.fullscreenElement || document.webkitFullscreenElement) ||
-                   document.body.classList.contains('fs-fallback');
-        }
-
-        function toggleFullscreen() {
-            if (_isFullscreenActive()) {
-                exitFullscreenMode();
-                return;
-            }
-            const root = document.getElementById('fs-root');
-            const req = root && (root.requestFullscreen || root.webkitRequestFullscreen);
-            if (req) {
-                try {
-                    const p = root.requestFullscreen
-                        ? root.requestFullscreen()
-                        : root.webkitRequestFullscreen();
-                    if (p && typeof p.catch === 'function') {
-                        p.catch(() => _enableFallbackFullscreen());
-                    }
-                } catch (e) {
-                    _enableFallbackFullscreen();
-                }
-            } else {
-                _enableFallbackFullscreen();
-            }
-        }
-
-        function exitFullscreenMode() {
-            const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
-            if (fsEl) {
-                const ex = document.exitFullscreen || document.webkitExitFullscreen;
-                if (ex) ex.call(document);
-            }
-            document.body.classList.remove('fs-fallback');
-            _updateFullscreenBtn();
-        }
-
-        function _enableFallbackFullscreen() {
-            document.body.classList.add('fs-fallback');
-            _updateFullscreenBtn();
-        }
-
-        function _updateFullscreenBtn() {
-            const active = _isFullscreenActive();
-            const btn = document.getElementById('fullscreen-btn');
-            if (btn) {
-                btn.innerHTML = active
-                    ? '<i class="fas fa-compress ml-1"></i> خروج از تمام صفحه'
-                    : '<i class="fas fa-expand ml-1"></i> تمام صفحه';
-            }
-        }
-
-        document.addEventListener('fullscreenchange', () => {
-            if (!document.fullscreenElement) document.body.classList.remove('fs-fallback');
-            _updateFullscreenBtn();
-        });
-        document.addEventListener('webkitfullscreenchange', () => {
-            if (!document.webkitFullscreenElement) document.body.classList.remove('fs-fallback');
-            _updateFullscreenBtn();
-        });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && document.body.classList.contains('fs-fallback')) {
-                exitFullscreenMode();
-            }
-        });
 
         function exportToExcel() {
             if (!STEPS[currentPath]) return;

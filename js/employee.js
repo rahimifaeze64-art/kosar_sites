@@ -602,11 +602,6 @@ const EmployeeModule = {
                             <span class="hidden sm:inline">اضافه کردن دانشجو</span>
                             <span class="sm:hidden">جدید</span>
                         </button>
-                        <button onclick="employeeModule.openStudentFlowchart('')"
-                                class="bg-lime-600 hover:bg-lime-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1">
-                            <i class="fas fa-project-diagram"></i>
-                            <span class="hidden sm:inline">فلوچارت</span>
-                        </button>
                         <button onclick="employeeModule.samLoginForStudent();"
                                 class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1">
                             <i class="fas fa-robot"></i>
@@ -625,11 +620,6 @@ const EmployeeModule = {
                             <span class="hidden sm:inline">کارهای معلق</span>
                         </button>
                         -->
-                        <button onclick="window._alpineSetPage && window._alpineSetPage('sheetView')"
-                                class="bg-lime-600 hover:bg-lime-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1">
-                            <i class="fas fa-th-list"></i>
-                            <span class="hidden sm:inline">نمای شیت</span>
-                        </button>
                     </div>
                 </div>
                 
@@ -867,7 +857,7 @@ const EmployeeModule = {
                     </h3>
                     
                     <!-- Tabs for Active/Inactive -->
-                    <div class="flex space-x-2 space-x-reverse mb-4 border-b border-slate-600 overflow-x-auto">
+                    <div class="flex space-x-2 space-x-reverse mb-4 border-b border-slate-600 overflow-x-auto items-end">
                         <button onclick="employeeModule.switchStudentListTab('active')" 
                                 id="student-list-tab-active"
                                 class="px-5 py-3 font-medium border-b-2 border-green-500 text-green-400 transition-all whitespace-nowrap">
@@ -912,14 +902,36 @@ const EmployeeModule = {
                     </div>
                     <!-- Studying Students (در حال تحصیل — یک فاز قبل از دفاع) -->
                     <div id="students-list-container-studying" style="display:none;">
+                        <div class="flex justify-start mb-2">
+                            <button onclick="employeeModule.openSheetView('studying')"
+                                    class="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1" title="نمای شیت در حال تحصیل">
+                                <i class="fas fa-th-list ml-1"></i>نمای شیت
+                            </button>
+                        </div>
                         ${this._renderStudentTable(students.filter(s => s.active && s.currentPath === 'studying'), 'دانشجویی در مرحله در حال تحصیل نیست')}
                     </div>
                     <!-- Defense Students -->
                     <div id="students-list-container-defense" style="display:none;">
+                        <div class="flex justify-start mb-2 gap-2">
+                            <button onclick="employeeModule.openSheetView('defense')"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1" title="نمای شیت گردش دفاع">
+                                <i class="fas fa-th-list ml-1"></i>نمای شیت گردش دفاع
+                            </button>
+                            <button onclick="employeeModule.openSheetView('requirements')"
+                                    class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1" title="نمای شیت ملزومات">
+                                <i class="fas fa-th-list ml-1"></i>نمای شیت ملزومات
+                            </button>
+                        </div>
                         ${this._renderStudentTable(students.filter(s => s.active && (s.currentPath === 'defense' || (!s.currentPath && !(s.defenseSteps||[]).every(x=>x.completed)))), 'دانشجویی در مرحله دفاع نیست')}
                     </div>
                     <!-- Educational Students -->
                     <div id="students-list-container-educational" style="display:none;">
+                        <div class="flex justify-start mb-2">
+                            <button onclick="employeeModule.openSheetView('educational')"
+                                    class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1" title="نمای شیت فارغ‌التحصیلی">
+                                <i class="fas fa-th-list ml-1"></i>نمای شیت
+                            </button>
+                        </div>
                         ${this._renderStudentTable(students.filter(s => s.active && (s.currentPath === 'educational' || (!(s.currentPath) && s.defenseSteps && s.defenseSteps.length > 0 && s.defenseSteps.every(x=>x.completed)))), 'دانشجویی در مرحله فارغ‌التحصیلی نیست')}
                     </div>
                     <!-- Graduated Students -->
@@ -1125,6 +1137,12 @@ const EmployeeModule = {
     openStudentFlowchart(studentId) {
         try { localStorage.setItem('fc_selected_student', studentId || ''); } catch (e) {}
         window._alpineSetPage && window._alpineSetPage('flowchartView');
+    },
+
+    // ── باز کردن نمای شیت با مسیر مشخص (از تب‌های لیست دانشجویان) ──
+    openSheetView(path) {
+        try { localStorage.setItem('sheet_selected_path', path || 'defense'); } catch (e) {}
+        window._alpineSetPage && window._alpineSetPage('sheetView');
     },
 
     // ── ورود به سامانه دانشگاه قم ────────────────────────────
