@@ -31,8 +31,15 @@
 
     // از بیرون (supabase-init.js) صدا زده می‌شود بعد از getAllStudentProgress
     function markInitialPullDone() {
+        if (_initialPullDone) return;
         _initialPullDone = true;
         console.log('✅ students-sync: گیت ضد-ریست باز شد — sync صعودی فعال');
+        // تغییراتی که پشت گیت مانده بودند (اگر تغییری واقعی باشد — diff تشخیص می‌دهد)
+        try {
+            if (_pendingStudents.size > 0) _flushPendingStudents();
+            const raw = localStorage.getItem(STUDENTS_KEY);
+            if (raw) _syncAll(JSON.parse(raw));
+        } catch (e) { /* diff در sync بعدی جبران می‌کند */ }
     }
 
     function _sig(student) {
@@ -55,6 +62,17 @@
         // 0=ناتمام، 1=در حال انجام، 2=تکمیل شده، 3=متوقف شده
         const statuses = stepsArr.map(s => s.completed ? 2 : (s.paused ? 3 : (s.inProgress ? 1 : 0)));
         return statuses.map(s => ({ status: s }));
+    }
+
+    // آیا هیچ مرحله‌ای وضعیت غیر-صفر ندارد؟ (همه 0 یا خالی)
+    // 🛡️ گارد نهایی ضد-ریست: آرایهٔ «همه-صفر» هرگز به DB فرستاده نمی‌شود.
+    // مرورگر تازهٔ بدون دادهٔ محلی، students_data پیش‌فرض (همه-ناتمام) دارد؛
+    // اگر همان صفرها به DB بروند، دادهٔ واقعی سایر مرورگرها/دستگاه‌ها پاک می‌شود.
+    // (ریست عمدی از نمای شیت مسیر مستقیم saveStudentProgress را طی می‌کند و
+    //  این گارد را ندارد — پس قابلیت ریست از دست نمی‌رود.)
+    function _isAllZero(arr) {
+        if (!Array.isArray(arr)) return true;
+        return arr.every(p => !p || (p.status ?? 0) === 0);
     }
 
     // ── sync یک دانشجو به Supabase ─────────────────────────
@@ -93,6 +111,12 @@
                 if (raw) {
                     const arr = JSON.parse(raw);
                     if (Array.isArray(arr) && arr.length > 0) {
+                        // 🛡️ گارد نهایی: اگر ALL-ZERO است و DB داده دارد → نفرست
+                        // (جلوگیری از پاک‌شدن دادهٔ واقعی توسط مرورگر تازه)
+                        if (_isAllZero(arr) && Number(localStorage.getItem(`progdbts_${studentId}_${pathType}`) || 0) > 0) {
+                            console.log(`🛡️ students-sync: ${studentId}/${pathType} — آرایهٔ همه-صفر با وجود داده در DB، ارسال نشد`);
+                            return null;
+                        }
                         // 🔍 دیاگستیک: وضعیتی که به DB فرستاده می‌شود
                         console.log(`📤 students-sync: ${studentId}/${pathType} → [${arr.map(p => (p && p.status) ?? 0).join(',')}] (از prog_ — تازه‌ترین)`);
                         return sb.saveStudentProgress(studentId, pathType, arr)
@@ -105,6 +129,11 @@
             if (!student[key] || !Array.isArray(student[key])) return null;
             const progress = _stepsToProgress(student[key]);
             if (progress.length === 0) return null;
+            // 🛡️ گارد نهایی: آرایهٔ همه-صفر با وجود داده در DB ارسال نشود
+            if (_isAllZero(progress) && Number(localStorage.getItem(`progdbts_${studentId}_${pathType}`) || 0) > 0) {
+                console.log(`🛡️ students-sync: ${studentId}/${pathType} — students_data همه-صفر با وجود داده در DB، ارسال نشد`);
+                return null;
+            }
             // 🔍 دیاگستیک: وضعیتی که به DB فرستاده می‌شود — برای ردیابی نویسندهٔ 0ها
             console.log(`📤 students-sync: ${studentId}/${pathType} → [${progress.map(p => p.status).join(',')}] (از students_data)`);
             return sb.saveStudentProgress(studentId, pathType, progress)
@@ -292,6 +321,7 @@
         const sb = _sb();
         if (!sb) return;
 
+        let pullSucceeded = false;
         try {
             const raw = localStorage.getItem(STUDENTS_KEY);
             let studentsData = raw ? JSON.parse(raw) : {};
@@ -385,6 +415,9 @@
             // merge فقط روی نسخهٔ تازه اعمال می‌شود.
             const progressMap = await sb.getAllStudentProgress();
 
+            // pull موفق بود؟ (progressMap=null یعنی خطا؛ {} یعنی جدول خوانده شد ولی خالی)
+            pullSucceeded = (progressMap !== null && progressMap !== undefined);
+
             // ── ریدِ تازه برای جلوگیری از پاک‌شدن toggles همزمان ──
             let freshData;
             try {
@@ -454,11 +487,24 @@
         } catch (e) {
             console.warn('⚠️ students-sync initial load خطا:', e.message);
         } finally {
-            // pull اولیه تمام شد (موفق یا شکست) — گیت sync باز شود
-            // (شکست هم باز می‌کنیم وگرنه تا ری‌استعاد بعدی هیچ‌چیز سینک نمی‌شود)
-            markInitialPullDone();
+            // ⚠️ گیت فقط با pull «موفق» باز می‌شود.
+            // اگر pull شکست خورد (progressMap=null)، گیت بسته می‌ماند تا هیچ
+            // sync صعودیِ کورکورانه‌ای (با data پیش‌فرض) DB را بازنویسی نکند.
+            // تلاش مجدد محدود (سقف ۶ بار / ۳۰ ثانیه)؛ بعد از آن گیت بسته می‌ماند
+            // ولی مسیرهای مستقیم (نمای شیت/پروفایل) همچنان به DB می‌نویسند.
+            if (pullSucceeded) {
+                markInitialPullDone();
+            } else if (_pullRetryCount < 6) {
+                _pullRetryCount++;
+                console.warn(`⏳ students-sync: pull ناموفق — تلاش ${_pullRetryCount}/6 در ۵ ثانیه...`);
+                setTimeout(() => { if (!_initialPullDone) _initialLoad(); }, 5000);
+            } else {
+                console.warn('⚠️ students-sync: pull چند بار ناموفق بود — گیت anti-reset بسته ماند (محافظت از دادهٔ DB)');
+            }
         }
     }
+
+    let _pullRetryCount = 0;
 
     // ── اجرای initial load به‌محض آنلاین شدن Supabase ────────
     // به‌جای صبرِ کورکورانهٔ ۲ ثانیه‌ای: هر ۵۰۰ms چک می‌کنیم و به‌محض

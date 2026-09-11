@@ -249,7 +249,7 @@
             if (report.errors.length)   console.log(`%c❌ ${report.errors.length} خطا`, 'color:#dc2626;font-weight:bold');
             if (report.warnings.length) console.log(`%c⚠️ ${report.warnings.length} هشدار`, 'color:#d97706;font-weight:bold');
         }
-        _info('ابزارها: watch() | student("id") | diff("id","defense") | forcePush("id","defense") | resetGuards("id") | backup() | restore(json) | pushAll()');
+        _info('ابزارها: watch() | student("id") | diff("id","defense") | pull("id") | heal("id") | forcePush("id","defense") | resetGuards("id") | resetAllGuards() | backup() | restore(json) | pushAll()');
 
         return report;
     }
@@ -442,6 +442,57 @@
         else _err('forcePush ناموفق');
     }
 
+    // ── همگام‌سازی اجباری از DB به محلی (بازیابی روی مرورگر تازه) ──
+    async function pull(studentId) {
+        const sb = _sb();
+        if (!sb) { _err('client نیست'); return; }
+        if (studentId) {
+            await sb.refreshStudentProgressKeys([String(studentId)]);
+            _ok(`pull: وضعیت ${studentId} از دیتابیس خوانده و روی محلی نوشته شد`);
+        } else {
+            await sb.getAllStudentProgress();
+            _ok('pull: وضعیت همهٔ دانشجویان از دیتابیس خوانده شد');
+        }
+        await diff(studentId, 'defense');
+    }
+
+    // ── بازنشانی کامل مهرها و محلی برای یک دانشجو از DB (تعمیر قوی) ──
+    // استفاده وقتی مرورگر تازه دادهٔ کهنه نشان می‌دهد:
+    //   SyncDebugger.heal('new053')  →  وضعیت واقعی DB روی محلی می‌نشیند
+    async function heal(studentId) {
+        const sb = _sb();
+        if (!sb) { _err('client نیست'); return; }
+        // ۱. مهرهای محلی این دانشجو را پاک کن تا هیچ گاردی سد راه نباشد
+        resetGuards(studentId);
+        // ۲. از DB بخوان و روی محلی بنویس
+        await sb.refreshStudentProgressKeys([String(studentId)]);
+        // ۳. مراحل پروفایل را هم merge کن
+        sb.mergeProgressIntoStudentsData([String(studentId)]);
+        // ۴. وضعیت واقعی را چاپ کن
+        _ok(`heal: ${studentId} از دیتابیس ترمیم شد`);
+        PATHS.forEach(p => {
+            const raw = localStorage.getItem(`prog_${studentId}_${p}`);
+            if (raw) {
+                try {
+                    const arr = JSON.parse(raw);
+                    _info(`  ${p}: [${arr.map(x => x?.status ?? 0).join(',')}] → ${arr.filter(x => (x?.status ?? 0) === 2).length} تکمیل`);
+                } catch (e) {}
+            }
+        });
+    }
+
+    // ── بازنشانی کامل مهرهای همهٔ دانشجویان (پس از اجرای SQL اصلاحی) ──
+    function resetAllGuards() {
+        let count = 0;
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+            const k = localStorage.key(i);
+            if (k && (k.startsWith('progts_') || k.startsWith('progdbts_'))) {
+                localStorage.removeItem(k); count++;
+            }
+        }
+        _ok(`resetAllGuards: ${count} مهر پاک شد — اکنون SyncDebugger.pull() تا از DB تازه شود`);
+    }
+
     // ── پاک‌کردن مهرهای زمانی گارد (وقتی خراب/ناهم‌تراز شده‌اند) ──
     function resetGuards(studentId) {
         let count = 0;
@@ -456,7 +507,7 @@
     }
 
     // expose
-    window.SyncDebugger = { run, student, diff, watch, stop, backup, restore, pushAll, forcePush, resetGuards, report };
+    window.SyncDebugger = { run, student, diff, watch, stop, backup, restore, pushAll, forcePush, pull, heal, resetGuards, resetAllGuards, report };
 
     // اگر این فایل با تگ script لود شده باشد، خودکار یک بار run نمی‌کنیم —
     // کاربر کنترل دارد. فقط آماده بودن را اعلام کن.

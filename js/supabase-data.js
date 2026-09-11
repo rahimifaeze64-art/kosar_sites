@@ -242,23 +242,20 @@ const SupabaseDataModule = {
         try { const v = localStorage.getItem('appset_' + key); if (v !== null) fallback = v; } catch(e) {}
         if (!this._online() || this._appSettingsUnavailable) return fallback;
         try {
+            // ⚠️ maybeSingle (نه single) — single وقتی کلید نیست خطای ۴۰۶ می‌دهد
             const { data, error } = await this._db()
                 .from('app_settings')
                 .select('value')
                 .eq('key', key)
-                .single();
+                .maybeSingle();
             if (error) {
-                // 404 = جدول وجود ندارد یا RLS — برای این session غیرفعال
-                if (error.code === '404' || error.code === 'PGRST116' || /404|does not exist|schema cache/i.test(error.message || '')) {
-                    if (error.code === '404' || /404|does not exist/i.test(error.message || '')) {
-                        this._appSettingsUnavailable = true;
-                        console.warn('⚠️ جدول app_settings در دیتابیس نیست — supabase/app_settings_migration.sql را اجرا کنید. (تنظیمات ترتیب ستون/سطر فقط محلی ذخیره می‌شود)');
-                    }
-                    return fallback;
-                }
-                // PGRST116 = فقط «ردیف یافت نشد» — عادی است
+                // هر خطایی (۴۰۴/۴۰۶/PGRST/RLS) → این قابلیت برای همین session
+                // غیرفعال می‌شود؛ ترتیب ستون/سطر فقط محلی ذخیره می‌شود (بدون اسپم کنسول)
+                this._appSettingsUnavailable = true;
+                console.warn(`⚠️ app_settings در دسترس نیست (${error.code || ''} ${error.message || ''}) — اگر قبلاً اجرا نکرده‌اید: supabase/sync_realtime_appsettings.sql را در Supabase اجرا کنید. ترتیب ستون/سطر موقتاً فقط محلی ذخیره می‌شود.`);
                 return fallback;
             }
+            if (!data) return fallback;
             let value = data.value;
             if (typeof value === 'string') {
                 try { value = JSON.parse(value); } catch(e) {}
@@ -760,12 +757,15 @@ const SupabaseDataModule = {
                 });
                 localStorage.setItem(`prog_${studentId}_${pathType}`, JSON.stringify(arr));
                 // مهر DB = جدیدترین updated_at این مسیر — گارد ضد بازنویسی بین مرورگرها
+                // ⚠️ اگر ردیف‌ها updated_at ندارند (NULL)، مهر = 1 (نه 0) —
+                // وگرنه گارد فکر می‌کند «دیتابیس خالی است» و به مرورگر جدید اجازهٔ
+                // نوشتن صفرهای پیش‌فرض روی داده‌های واقعی را می‌دهد (باگ ریست شدن).
                 try {
                     const newestTs = rows.reduce((mx, r) => {
                         const t = Date.parse(r.updated_at || '') || 0;
                         return t > mx ? t : mx;
                     }, 0);
-                    localStorage.setItem(`progdbts_${studentId}_${pathType}`, String(newestTs));
+                    localStorage.setItem(`progdbts_${studentId}_${pathType}`, String(newestTs || 1));
                 } catch (e) {}
             });
 
@@ -812,12 +812,13 @@ const SupabaseDataModule = {
                 });
                 localStorage.setItem(`prog_${studentId}_${pathType}`, JSON.stringify(arr));
                 // مهر DB — گارد ضد بازنویسی بین مرورگرها
+                // ⚠️ ردیف بدون updated_at = مهر 1 (نه 0) — «داده هست ولی زمان نامعلوم»
                 try {
                     const newestTs = rows.reduce((mx, r) => {
                         const t = Date.parse(r.updated_at || '') || 0;
                         return t > mx ? t : mx;
                     }, 0);
-                    localStorage.setItem(`progdbts_${studentId}_${pathType}`, String(newestTs));
+                    localStorage.setItem(`progdbts_${studentId}_${pathType}`, String(newestTs || 1));
                 } catch (e) {}
             });
 
