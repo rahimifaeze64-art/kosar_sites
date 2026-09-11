@@ -71,10 +71,22 @@
         ];
 
         // 🔒 ضد-بازنویسی کهنه: کلید prog_ «تازه‌ترین» وضعیت است — نما شیت با هر
-        // toggle فوراً آن را می‌نوید (و در DB ذخیره می‌کند). اگر از students_data
+        // toggle فوراً آن را می‌نویسد (و در DB ذخیره می‌کند). اگر از students_data
         // مشتق کنیم، دادهٔ ۱.۵ ثانیه کهنه‌تر (بدون status=1) ردیف تازهٔ DB را
         // خراب می‌کرد. پس اگر prog_ بود، همان ملاک است.
+        // 🔒 گارد دوم (بین دو مرورگر): اگر این مسیر در این مرورگر ویرایش نشده
+        // (progts_ ندارد) ولی DB داده دارد، مرورگر با کش کهنه has no right to
+        // push — وگرنه toggles مرورگر دیگر را صفر می‌کند.
         await Promise.all(pathMap.map(({ key, pathType }) => {
+            // گارد ضد-بازنویسی: فقط اگر محلی تازه‌تر از DB است یا DB خالی است
+            const guardOk = (sb.isLocalProgressNewer &&
+                             typeof sb.isLocalProgressNewer === 'function')
+                ? sb.isLocalProgressNewer(studentId, pathType)
+                : true;
+            if (!guardOk) {
+                console.log(`⏭️ students-sync: ${studentId}/${pathType} — محلی کهنه‌تر از DB است، ارسال نشد`);
+                return null;
+            }
             // اولویت ۱: کلید prog_ (تازه‌ترین — نما شیت نگهش می‌دارد)
             try {
                 const raw = localStorage.getItem(`prog_${studentId}_${pathType}`);

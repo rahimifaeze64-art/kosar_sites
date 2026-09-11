@@ -233,20 +233,33 @@ const SupabaseDataModule = {
     // ════════════════════════════════════════════════════════
     // APP SETTINGS — ذخیره/خواندن کلید-مقدار عمومی در جدول
     // app_settings (مثل ترتیب ستون‌ها و سطرهای نمای شیت)
+    // اگر جدول در DB نباشد (404)، برای کل session دیگر تلاش نمی‌کنیم
+    // (نه اسپم 404 در کنسول، نه تأخیر اضافی)
     // ════════════════════════════════════════════════════════
+    _appSettingsUnavailable: false,
 
     async getAppSetting(key, fallback = null) {
         try { const v = localStorage.getItem('appset_' + key); if (v !== null) fallback = v; } catch(e) {}
-        if (!this._online()) return fallback;
+        if (!this._online() || this._appSettingsUnavailable) return fallback;
         try {
             const { data, error } = await this._db()
                 .from('app_settings')
                 .select('value')
                 .eq('key', key)
                 .single();
-            if (error || !data) return fallback;
+            if (error) {
+                // 404 = جدول وجود ندارد یا RLS — برای این session غیرفعال
+                if (error.code === '404' || error.code === 'PGRST116' || /404|does not exist|schema cache/i.test(error.message || '')) {
+                    if (error.code === '404' || /404|does not exist/i.test(error.message || '')) {
+                        this._appSettingsUnavailable = true;
+                        console.warn('⚠️ جدول app_settings در دیتابیس نیست — supabase/app_settings_migration.sql را اجرا کنید. (تنظیمات ترتیب ستون/سطر فقط محلی ذخیره می‌شود)');
+                    }
+                    return fallback;
+                }
+                // PGRST116 = فقط «ردیف یافت نشد» — عادی است
+                return fallback;
+            }
             let value = data.value;
-            // value در DB ممکن است JSONB رشته‌ای باشد (مثل آرایه ذخیره‌شده به‌صورت string)
             if (typeof value === 'string') {
                 try { value = JSON.parse(value); } catch(e) {}
             }
@@ -262,12 +275,20 @@ const SupabaseDataModule = {
 
     async setAppSetting(key, value) {
         try { localStorage.setItem('appset_' + key, typeof value === 'string' ? value : JSON.stringify(value)); } catch(e) {}
-        if (!this._online()) return false;
+        if (!this._online() || this._appSettingsUnavailable) return false;
         try {
             const { error } = await this._db()
                 .from('app_settings')
                 .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
-            if (error) throw error;
+            if (error) {
+                if (/404|does not exist|schema cache/i.test(error.message || '')) {
+                    this._appSettingsUnavailable = true;
+                    console.warn('⚠️ جدول app_settings در دیتابیس نیست — supabase/app_settings_migration.sql را اجرا کنید.');
+                } else {
+                    throw error;
+                }
+                return false;
+            }
             return true;
         } catch (e) {
             console.warn(`⚠️ setAppSetting(${key}) خطا:`, e.message);
@@ -459,18 +480,22 @@ const SupabaseDataModule = {
     async saveStudentProgress(studentId, pathType, progressArray) {
         const localKey = `prog_${studentId}_${pathType}`;
         localStorage.setItem(localKey, JSON.stringify(progressArray));
+        // مهر زمانی نوشتن محلی — گارد ضد بازنویسی بین مرورگرها
+        // (مرورگری که این مسیر را ویرایش نکرده، هرگز آن را دوباره به DB نمی‌فرستد)
+        try { localStorage.setItem(`progts_${studentId}_${pathType}`, String(Date.now())); } catch(e) {}
 
         const client = this._db();
         if (!client) return true;
 
         try {
             // student_id در DB از نوع TEXT است (بعد از FINAL_FIX.sql) — بدون تبدیل UUID
+            const nowIso = new Date().toISOString();
             const rows = progressArray.map((item, idx) => ({
                 student_id: String(studentId),   // مستقیم — بدون _toUUID
                 path_type:  pathType,
                 step_index: idx,
                 status:     item ? (item.status ?? 0) : 0,
-                updated_at: new Date().toISOString()
+                updated_at: nowIso
             }));
 
             // ⚠️ نگه‌داشتن آخرین نسخهٔ هر (دانشجو،مسیر) در localStorage —
@@ -491,16 +516,151 @@ const SupabaseDataModule = {
                         .upsert(rows2, { onConflict: 'student_id,path_type,step_index' });
                     if (e2) throw e2;
                     delete this._lastUnsavedProgress[`${String(studentId)}|${pathType}`];
+                    try {
+                        const nowMs = Date.parse(nowIso) || Date.now();
+                        localStorage.setItem(`progdbts_${studentId}_${pathType}`, String(nowMs));
+                        const prevLocalTs = Number(localStorage.getItem(`progts_${studentId}_${pathType}`) || 0);
+                        localStorage.setItem(`progts_${studentId}_${pathType}`, String(Math.max(prevLocalTs, nowMs)));
+                    } catch(e) {}
                     return true;
                 }
                 throw error;
             }
-            // موفق — از صف «ارسال‌نشده‌ها» حذف
+            // موفق — از صف «ارسال‌نشده‌ها» حذف + هم‌ترازی مهرها:
+            // dbTs = progts_ = زمان ذخیره (تا پول بعدی در همین مرورگر،
+            // همین toggle موفق را «کهنه» تصور نکند و آن را بازنگرداند)
             delete this._lastUnsavedProgress[`${String(studentId)}|${pathType}`];
+            try {
+                const nowMs = Date.parse(nowIso) || Date.now();
+                localStorage.setItem(`progdbts_${studentId}_${pathType}`, String(nowMs));
+                const prevLocalTs = Number(localStorage.getItem(`progts_${studentId}_${pathType}`) || 0);
+                localStorage.setItem(`progts_${studentId}_${pathType}`, String(Math.max(prevLocalTs, nowMs)));
+            } catch(e) {}
             return true;
         } catch (e) {
             console.warn('⚠️ saveStudentProgress خطا:', e.message);
             return false;
+        }
+    },
+
+    // ── گارد ضد بازنویسی: آیا این مسیر محلی تازه‌تر از آخرین نوشتنِ DB است؟ ──
+    // اگر نه (محلی قدیمی/دست‌نخورده ولی DB داده دارد)، sync صعودی نباید آن را
+    // به DB بفرستد — وگرنه مرورگر دوم با کش کهنه، toggles مرورگر اول را صفر می‌کند.
+    isLocalProgressNewer(studentId, pathType) {
+        try {
+            const localTs = Number(localStorage.getItem(`progts_${studentId}_${pathType}`) || 0);
+            const dbTs    = Number(localStorage.getItem(`progdbts_${studentId}_${pathType}`) || 0);
+            // هیچ داده‌ای در DB نیست → ارسال مجاز است (seed دانشجوی جدید)
+            if (dbTs === 0) return true;
+            // DB داده دارد ولی محلی هرگز ویرایش نشده → محلی کهنه است — نفرست
+            if (localTs === 0) return false;
+            // محلی باید تازه‌تر یا مساوی آخرین نوشتن DB باشد
+            return localTs >= dbTs;
+        } catch (e) { return true; }
+    },
+
+    // ── merge پیشرفت (prog_) روی مراحل پروفایل (students_data) ──────────
+    // چرا لازم است: نمای شیت از prog_ می‌خواند و realtime فقط prog_ را در
+    // مرورگرهای دیگر آپدیت می‌کرد؛ ولی ویرایشگر پروفایل/کارت دانشجو از
+    // students_data می‌خواند → برای نقش‌های دیگر کهنه می‌ماند.
+    // این متد پس از هر pull/delta صدا زده می‌شود تا همه‌جا یکسان شود.
+    // 🔒 گارد: مسیری که در همین مرورگر تازه‌تر ویرایش شده، merge نمی‌شود.
+    mergeProgressIntoStudentsData(studentIds) {
+        try {
+            const raw = localStorage.getItem('students_data');
+            if (!raw) return 0;
+            const sd = JSON.parse(raw);
+            if (!sd || typeof sd !== 'object') return 0;
+
+            const targets = (Array.isArray(studentIds) && studentIds.length)
+                ? studentIds.map(String)
+                : Object.keys(sd);
+
+            const pathMap = [
+                { pt: 'defense',      key: 'defenseSteps'       },
+                { pt: 'educational',  key: 'educationalSteps'   },
+                { pt: 'requirements', key: 'requirementsSteps'  },
+            ];
+
+            let changed = 0;
+
+            const applyStatus = (step, p) => {
+                if (!p) return step;
+                const completed  = p.status === 2;
+                const paused     = p.status === 3;
+                const inProgress = p.status === 1;
+                if (!!step.completed === completed &&
+                    !!step.paused    === paused &&
+                    !!step.inProgress=== inProgress) return step;
+                return {
+                    ...step,
+                    completed, paused, inProgress,
+                    date: completed ? (step.date || new Date().toLocaleDateString('fa-IR')) : null
+                };
+            };
+
+            targets.forEach(id => {
+                const s = sd[id];
+                if (!s) return;
+
+                // مسیرهای عادی
+                pathMap.forEach(({ pt, key }) => {
+                    const rawP = localStorage.getItem(`prog_${id}_${pt}`);
+                    if (!rawP) return;
+                    if (!Array.isArray(s[key]) || s[key].length === 0) return;
+                    // 🔒 اگر همین مرورگر این مسیر را تازه‌تر ویرایش کرده، دست نزن
+                    const localTs = Number(localStorage.getItem(`progts_${id}_${pt}`) || 0);
+                    const dbTs    = Number(localStorage.getItem(`progdbts_${id}_${pt}`) || 0);
+                    if (localTs && localTs >= dbTs) return;
+
+                    let arr;
+                    try { arr = JSON.parse(rawP); } catch (e) { return; }
+                    if (!Array.isArray(arr) || arr.length === 0) return;
+
+                    const merged = s[key].map((step, i) => applyStatus(step, arr[i]));
+                    // فقط اگر واقعاً چیزی عوض شد بشمار
+                    if (merged.some((st, i) => st !== s[key][i])) {
+                        s[key] = merged;
+                        changed++;
+                    }
+                });
+
+                // مسیر studying → انتهای educationalSteps (آفست از انتها)
+                const rawSt = localStorage.getItem(`prog_${id}_studying`);
+                if (rawSt && Array.isArray(s.educationalSteps)) {
+                    const localTs = Number(localStorage.getItem(`progts_${id}_studying`) || 0);
+                    const dbTs    = Number(localStorage.getItem(`progdbts_${id}_studying`) || 0);
+                    if (!(localTs && localTs >= dbTs)) {
+                        let arr;
+                        try { arr = JSON.parse(rawSt); } catch (e) { arr = null; }
+                        if (Array.isArray(arr) && arr.length > 0) {
+                            const offset = s.educationalSteps.length - arr.length;
+                            if (offset >= 0) {
+                                let stChanged = false;
+                                const mergedEdu = s.educationalSteps.slice();
+                                arr.forEach((p, i) => {
+                                    const idx = offset + i;
+                                    if (!mergedEdu[idx]) return;
+                                    const next = applyStatus(mergedEdu[idx], p);
+                                    if (next !== mergedEdu[idx]) { mergedEdu[idx] = next; stChanged = true; }
+                                });
+                                if (stChanged) { s.educationalSteps = mergedEdu; changed++; }
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (changed > 0) {
+                // ذخیره از مسیر اصلی — StudentsSync override می‌گیرد ولی گارد
+                // anti-clobber اجازهٔ ارسال کهنه به DB را نمی‌دهد
+                localStorage.setItem('students_data', JSON.stringify(sd));
+                console.log(`🔄 mergeProgress: ${changed} مسیر از DB روی مراحل پروفایل اعمال شد`);
+            }
+            return changed;
+        } catch (e) {
+            console.warn('⚠️ mergeProgressIntoStudentsData خطا:', e.message);
+            return 0;
         }
     },
 
@@ -599,9 +759,20 @@ const SupabaseDataModule = {
                     return { status: row ? row.status : 0 };
                 });
                 localStorage.setItem(`prog_${studentId}_${pathType}`, JSON.stringify(arr));
+                // مهر DB = جدیدترین updated_at این مسیر — گارد ضد بازنویسی بین مرورگرها
+                try {
+                    const newestTs = rows.reduce((mx, r) => {
+                        const t = Date.parse(r.updated_at || '') || 0;
+                        return t > mx ? t : mx;
+                    }, 0);
+                    localStorage.setItem(`progdbts_${studentId}_${pathType}`, String(newestTs));
+                } catch (e) {}
             });
 
             console.log(`✅ پیشرفت ${Object.keys(grouped).length} دانشجو/مسیر از Supabase بارگذاری شد`);
+            // مراحل پروفایل (students_data) را هم با همین پیشرفت همگام کن —
+            // وگرنه ویرایشگر پروفایل/کارت دانشجو در نقش‌های دیگر کهنه می‌ماند
+            this.mergeProgressIntoStudentsData();
             return grouped;
         } catch (e) {
             console.warn('⚠️ getAllStudentProgress خطا:', e.message);
@@ -619,7 +790,7 @@ const SupabaseDataModule = {
         try {
             const { data, error } = await client
                 .from('student_progress')
-                .select('student_id, path_type, step_index, status')
+                .select('student_id, path_type, step_index, status, updated_at')
                 .in('student_id', targets);
             if (error) throw error;
 
@@ -640,7 +811,18 @@ const SupabaseDataModule = {
                     return { status: row ? row.status : 0 };
                 });
                 localStorage.setItem(`prog_${studentId}_${pathType}`, JSON.stringify(arr));
+                // مهر DB — گارد ضد بازنویسی بین مرورگرها
+                try {
+                    const newestTs = rows.reduce((mx, r) => {
+                        const t = Date.parse(r.updated_at || '') || 0;
+                        return t > mx ? t : mx;
+                    }, 0);
+                    localStorage.setItem(`progdbts_${studentId}_${pathType}`, String(newestTs));
+                } catch (e) {}
             });
+
+            // مراحل پروفایل (students_data) این دانشجوها را هم همگام کن
+            this.mergeProgressIntoStudentsData(targets);
         } catch (e) {
             console.warn('⚠️ refreshStudentProgressKeys خطا:', e.message);
         }

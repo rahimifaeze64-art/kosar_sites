@@ -270,19 +270,25 @@
     <!-- Supabase SDK + ماژول‌ها — تا شیت حتی به‌صورت مستقیم (بدون iframe والد)
          بتواند تغییرات را مستقیم در Supabase ذخیره کند -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-    <script src="js/supabase-config.js"></script>
-    <script src="js/supabase-auth.js"></script>
-    <script src="js/supabase-data.js"></script>
-
-    <!-- لود data.js برای دسترسی به داده‌های پیش‌فرض دانشجویان -->
-    <script src="js/config.js"></script>
-    <script src="js/realtime-events.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/data.js"></script>
-    <script src="js/sample-students.js"></script>
-    <script src="js/employee.js"></script>
-    <script src="js/step-assignment.js"></script>
-    <script src="js/sync-debugger.js"></script>
+    <script>
+        // cache-buster برای اسکریپت‌های شیت — همیشه آخرین نسخه (مثل index.html)
+        (function() {
+            var ts = new URLSearchParams(window.location.search).get('v') || Date.now();
+            [
+                'js/supabase-config.js',
+                'js/supabase-auth.js',
+                'js/supabase-data.js',
+                'js/config.js',
+                'js/realtime-events.js',
+                'js/data.js',
+                'js/employee.js',
+                'js/step-assignment.js',
+                'js/sync-debugger.js'
+            ].forEach(function(src) {
+                document.write('<script src="' + src + '?v=' + ts + '"><\/script>');
+            });
+        })();
+    </script>
     
     <script>
         // مقداردهی اولیه data.js تا دانشجویان پیش‌فرض در localStorage نوشته شوند
@@ -503,8 +509,30 @@
                 // وضعیت قبل از پول — برای تشخیص clobber
                 const _before = students.slice(0, 5).map(s =>
                     `${s.id}:${(s.progress[currentPath] || []).filter(p => p.status === STATUS_COMPLETED).length}`).join(' | ');
+                // 🔒 گارد ضد بازنویسی: کلیدهای محلیِ ویرایش‌شده در همین مرورگر را
+                // قبل از پول نگه می‌داریم؛ بعد از پول فقط اگر هنوز از مهر تازهٔ DB
+                // جدیدتر/مساوی بودند برمی‌گردانیم (برندهٔ واقعی = تازه‌تر)
+                const _localEdits = {};
+                try {
+                    for (const student of students) {
+                        const localTs = Number(localStorage.getItem(`progts_${student.id}_${currentPath}`) || 0);
+                        if (localTs) {
+                            const raw = localStorage.getItem(`prog_${student.id}_${currentPath}`);
+                            if (raw) _localEdits[student.id] = { raw, localTs };
+                        }
+                    }
+                } catch(e) {}
                 const map = await sb.getAllStudentProgress();
                 if (!map) return false;
+                // برگرداندن فقط نسخه‌های محلی که از مهر تازهٔ DB عقب‌تر نیستند
+                try {
+                    Object.entries(_localEdits).forEach(([id, { raw, localTs }]) => {
+                        const freshDbTs = Number(localStorage.getItem(`progdbts_${id}_${currentPath}`) || 0);
+                        if (localTs >= freshDbTs) {
+                            localStorage.setItem(`prog_${id}_${currentPath}`, raw);
+                        }
+                    });
+                } catch(e) {}
                 loadStudents();
                 // وضعیت بعد از پول — اگر تعداد تکمیل‌شده‌ها افت کرد = clobber از DB
                 const _after = students.slice(0, 5).map(s =>
@@ -742,6 +770,9 @@
             _syncProgressToSupabase(id, path, data);
 
             localStorage.setItem(`prog_${id}_${path}`, JSON.stringify(data));
+            // مهر نوشتن محلی — گارد ضد بازنویسی بین مرورگرها
+            // (مرورگر دیگر با کش کهنه، این مسیر را دوباره به DB نمی‌فرستد)
+            try { localStorage.setItem(`progts_${id}_${path}`, String(Date.now())); } catch(e) {}
             _lastLocalWriteAt = Date.now();   // پول دوره‌ایِ دیتابیس تا ۵ ثانیه این را بازنویسی نکند
             // اطلاع به فلوچارت (اگر در تب دیگری باز باشد)
             window.dispatchEvent(new StorageEvent('storage', { key: `prog_${id}_${path}` }));
@@ -880,17 +911,22 @@
         
         function selectPath(path) {
             currentPath = path;
-            renderTable();
+            loadColumnOrder().then(order => renderTable(order));
         }
 
         // ── ترتیب ستون‌ها (drag & drop) — ذخیره در localStorage + Supabase ──
+        let _colOrderCache = {};   // path → [indices] — تا رندرهای بعدی (toggle/focus) ترتیب حفظ شود
         async function loadColumnOrder() {
             const def = STEPS[currentPath].map((_, i) => i);   // ترتیب پیش‌فرض
+            if (_colOrderCache[currentPath]) return _colOrderCache[currentPath];
             try {
                 const raw = localStorage.getItem('appset_sheet_col_order_' + currentPath);
                 if (raw) {
                     const arr = JSON.parse(raw);
-                    if (Array.isArray(arr) && arr.length === STEPS[currentPath].length) return arr;
+                    if (Array.isArray(arr) && arr.length === STEPS[currentPath].length) {
+                        _colOrderCache[currentPath] = arr;
+                        return arr;
+                    }
                 }
             } catch(e) {}
             // از دیتابیس (app_settings)
@@ -898,12 +934,17 @@
                 const sb = _sheetSb();
                 if (sb && typeof sb.getAppSetting === 'function') {
                     const arr = await sb.getAppSetting('sheet_col_order_' + currentPath, null);
-                    if (Array.isArray(arr) && arr.length === STEPS[currentPath].length) return arr;
+                    if (Array.isArray(arr) && arr.length === STEPS[currentPath].length) {
+                        _colOrderCache[currentPath] = arr;
+                        return arr;
+                    }
                 }
             } catch(e) {}
+            _colOrderCache[currentPath] = def;
             return def;
         }
         function saveColumnOrder(order) {
+            _colOrderCache[currentPath] = order;
             try { localStorage.setItem('appset_sheet_col_order_' + currentPath, JSON.stringify(order)); } catch(e) {}
             // ذخیره در دیتابیس (app_settings) — همه دستگاه‌ها ترتیب یکسان می‌بینند
             const sb = _sheetSb();
@@ -1040,10 +1081,12 @@
             const tbody = document.getElementById('table-body');
             const steps = STEPS[currentPath];
             
-            // ترتیب ستون‌ها (drag & drop) — اگر از فراخواننده ارسال نشده، پیش‌فرض
+            // ترتیب ستون‌ها (drag & drop) — از آرگومان، وگرنه از کش (تا toggle/focus ترتیب را حفظ کند)
             colOrder = Array.isArray(colOrder) && colOrder.length === steps.length
                 ? colOrder
-                : STEPS[currentPath].map((_, i) => i);
+                : (_colOrderCache[currentPath] && _colOrderCache[currentPath].length === steps.length
+                    ? _colOrderCache[currentPath]
+                    : STEPS[currentPath].map((_, i) => i));
             
             // Header
             let headerHTML = '<tr><th class="row-num-header">#</th><th class="student-header">دانشجو</th>';
@@ -1224,50 +1267,21 @@
 
                     // مسیر ۲: مستقیم از خود شیت (وقتی StudentsSync والد نیست —
                     // شیت مستقل باز شده یا ماژول‌هایش اینجا لود شده‌اند)
-                    // students_data → student_progress (سه مسیر) + profiles.current_path/active
+                    // ⚠️ فقط وضعیت (current_path/active/graduated) sync می‌شود.
+                    // sync سه مسیر progress از students_data حذف شد — علت: شیت
+                    // خودش status=1/3 را فوراً در DB ذخیره می‌کند؛ ارسال موازیِ
+                    // نسخهٔ مشتق‌شده از students_data (که status=1 را نمی‌شناسد)
+                    // باعث بازنویسی/ریست toggles تازه می‌شد.
                     if (!syncedByParent) {
                         try {
                             const sb = _sheetSb();
                             if (sb) {
                                 const sData = studentsData[studentId];
-                                // نگهداشت وضعیت واقعی شیت (0|1|2|3) — به‌جای فشرده‌سازی به 0|2
-                                // (قبلاً status=1 و 3 اینجا نابود می‌شد و از بین می‌رفت)
-                                const stepsToProgress = (arr) => {
-                                    if (!Array.isArray(arr)) return null;
-                                    const names = STEPS[arguments.length > 1 ? arguments[1] : null] || null;
-                                    return arr.map(s => {
-                                        if (!s) return { status: 0 };
-                                        if (s.status !== undefined) return { status: s.status };
-                                        if (s.completed) return { status: 2 };
-                                        if (s.paused)    return { status: 3 };
-                                        return { status: 0 };
-                                    });
-                                };
-                                // مسیر studying → progress مستقل با path_type='studying'
-                                // (خطای CHECK constraint در DB یعنی supabase/fix_studying_path.sql اجرا نشده)
-                                const studyingProgress = (arr) => {
-                                    if (!Array.isArray(arr)) return null;
-                                    const names = STEPS.studying;
-                                    const tail = arr.slice(-names.length);
-                                    return names.map((_, i) => {
-                                        const s = tail[i];
-                                        if (!s) return { status: 0 };
-                                        if (s.status !== undefined) return { status: s.status };
-                                        if (s.completed) return { status: 2 };
-                                        if (s.paused)    return { status: 3 };
-                                        return { status: 0 };
-                                    });
-                                };
-                                const jobs = [
-                                    ['defense',      stepsToProgress(sData.defenseSteps)],
-                                    ['educational',  stepsToProgress(sData.educationalSteps)],
-                                    ['requirements', stepsToProgress(sData.requirementsSteps)],
-                                    ['studying',     studyingProgress(sData.educationalSteps)],
-                                ].filter(([, p]) => p && p.length > 0);
-                                jobs.forEach(([pt, p]) =>
-                                    sb.saveStudentProgress(studentId, pt, p)
-                                        .catch(e => console.warn(`⚠️ sheet profile-sync [${pt}]:`, e.message)));
-
+                                // ⚠️ اینجا progress مراحل ارسال نمی‌شود — شیت خودش با
+                                // toggleStage → saveProgress وضعیت 0|1|2|3 را فوراً در
+                                // student_progress ذخیره می‌کند (منبع حقیقت).
+                                // ارسال نسخهٔ مشتق‌شده از students_data (که status=1 را
+                                // نمی‌شناسد) ردیف تازهٔ DB را بازنویسی/ریست می‌کرد.
                                 const client = (typeof getSupabaseClient === 'function')
                                     ? (typeof window.parent !== 'undefined' && window.parent.getSupabaseClient
                                         ? window.parent.getSupabaseClient() : getSupabaseClient())

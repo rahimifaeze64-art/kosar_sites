@@ -79,6 +79,22 @@ function appController() {
                     if (el) el.innerHTML = EmployeeModule.getMyTasksContent(this.currentUser.id);
                 }
             }, 'app-controller');
+
+            // پیشرفت/مراحل دانشجوها تغییر کرد (نمای شیت از دستگاهی دیگر، تخصیص کارمند و...)
+            // صفحهٔ مدیریت دانشجویان و پروفایل باز را بدون رفرش دستی همگام کن
+            RealtimeEvents.on(RealtimeEvents.EVENTS.STUDENTS_CHANGED, () => {
+                if (this.currentPage === 'students') {
+                    this.$nextTick(() => {
+                        const el = document.querySelector('[x-show*="currentPage === \'students\'"]');
+                        if (el && typeof EmployeeModule !== 'undefined' &&
+                            typeof EmployeeModule.getStudentsContent === 'function') {
+                            try {
+                                el.innerHTML = EmployeeModule.getStudentsContent(this.currentUser.id);
+                            } catch (e) { /* رندر بعدی جبران می‌کند */ }
+                        }
+                    });
+                }
+            }, 'app-controller-students');
         }
 
         // Watch for page changes to load content
@@ -191,7 +207,9 @@ function appController() {
                   // مسیر انتخاب‌شده از تب‌های لیست دانشجویان (در صورت وجود)
                   let sheetPath = '';
                   try { sheetPath = localStorage.getItem('sheet_selected_path') || ''; } catch(e) {}
-                  const sheetSrc = 'student-progress-tracking.html' + (sheetPath ? '?path=' + encodeURIComponent(sheetPath) : '');
+                  // cache-buster — همیشه آخرین نسخهٔ شیت/اسکریپت‌هایش لود شود
+                  const ts = window._APP_TS || Date.now();
+                  const sheetSrc = 'student-progress-tracking.html?v=' + ts + (sheetPath ? '&path=' + encodeURIComponent(sheetPath) : '');
                   container.innerHTML = `
                     <div class="space-y-4">
                       <div class="flex items-center gap-3 mb-2">

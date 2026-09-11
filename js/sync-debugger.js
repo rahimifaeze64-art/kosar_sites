@@ -216,6 +216,31 @@
             report.errors.push('StudentsSync موجود نیست');
         }
 
+        // ── ۶.۵. گارد ضد بازنویسی (progts_ / progdbts_) ──
+        _info('── ۶.۵. گارد anti-clobber بین مرورگرها ──');
+        try {
+            let localEditCount = 0, dbStampCount = 0, staleCount = 0;
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith('progts_') && localStorage.getItem(k) !== '0') localEditCount++;
+                if (k && k.startsWith('progdbts_')) dbStampCount++;
+            }
+            studentIds.forEach(id => {
+                PATHS.forEach(p => {
+                    const localTs = Number(localStorage.getItem(`progts_${id}_${p}`) || 0);
+                    const dbTs    = Number(localStorage.getItem(`progdbts_${id}_${p}`) || 0);
+                    // محلی دست‌نخورده ولی DB داده دارد → در صورت sync اشتباه، DB خراب می‌شد
+                    if (dbTs > 0 && localTs === 0) staleCount++;
+                });
+            });
+            _info(`مهرهای ویرایش محلی: ${localEditCount} | مهرهای DB: ${dbStampCount} | مسیرهای دست‌نخوردهٔ محافظت‌شده: ${staleCount}`);
+            if (localEditCount === 0 && dbStampCount === 0) {
+                _warn('هنوز مهر زمانی ثبت نشده — ممکن است نسخهٔ جدید کد لود نشده باشد (hard refresh کنید).');
+            } else {
+                _ok('گارد anti-clobber فعال است — مرورگرهای دست‌نخورده نمی‌توانند DB را بازنویسی کنند');
+            }
+        } catch (e) {}
+
         // ── ۷. جمع‌بندی ──
         console.log('%c╔═══════ جمع‌بندی ═══════╗', 'color:#2563eb;font-weight:bold;font-size:13px');
         if (report.errors.length === 0 && report.warnings.length === 0) {
@@ -224,7 +249,7 @@
             if (report.errors.length)   console.log(`%c❌ ${report.errors.length} خطا`, 'color:#dc2626;font-weight:bold');
             if (report.warnings.length) console.log(`%c⚠️ ${report.warnings.length} هشدار`, 'color:#d97706;font-weight:bold');
         }
-        _info('برای مانیتور زنده: SyncDebugger.watch() | دانشجوی خاص: SyncDebugger.student("id") | مقایسه: SyncDebugger.diff("id","defense")');
+        _info('ابزارها: watch() | student("id") | diff("id","defense") | forcePush("id","defense") | resetGuards("id") | backup() | restore(json) | pushAll()');
 
         return report;
     }
@@ -340,8 +365,98 @@
         }
     }
 
+    // ── پشتیبان‌گیری کامل از کلیدهای prog_ (دانلود JSON) ──
+    function backup() {
+        const data = {};
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith('prog_')) data[k] = JSON.parse(localStorage.getItem(k));
+        }
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `progress-backup-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`;
+        a.click();
+        _ok(`پشتیبان‌گیری شد — ${Object.keys(data).length} کلید prog_`);
+        return data;
+    }
+
+    // ── بازیابی پشتیبان (localStorage + ارسال به DB) ──
+    async function restore(json) {
+        let data;
+        try { data = typeof json === 'string' ? JSON.parse(json) : json; }
+        catch (e) { _err('JSON نامعتبر: ' + e.message); return; }
+        const sb = _sb();
+        let localCount = 0, dbCount = 0;
+        for (const [key, arr] of Object.entries(data || {})) {
+            if (!key.startsWith('prog_') || !Array.isArray(arr)) continue;
+            localStorage.setItem(key, JSON.stringify(arr));
+            localCount++;
+            if (sb) {
+                const rest = key.slice(5);
+                const us = rest.lastIndexOf('_');
+                const studentId = rest.slice(0, us);
+                const pathType = rest.slice(us + 1);
+                const ok = await sb.saveStudentProgress(studentId, pathType, arr).catch(() => false);
+                if (ok) dbCount++;
+            }
+        }
+        _ok(`بازیابی شد — ${localCount} کلید محلی، ${dbCount} مسیر در دیتابیس`);
+    }
+
+    // ── ارسال فوری همهٔ کلیدهای prog_ محلی به دیتابیس (repair) ──
+    // استفاده وقتی DB صفر شده ولی نسخهٔ محلی سالم است (مثلاً همین مرورگر)
+    async function pushAll() {
+        const sb = _sb();
+        if (!sb) { _err('client نیست'); return; }
+        let count = 0, errors = 0;
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (!k || !k.startsWith('prog_')) continue;
+            const rest = k.slice(5);
+            const us = rest.lastIndexOf('_');
+            const studentId = rest.slice(0, us);
+            const pathType = rest.slice(us + 1);
+            if (!PATHS.includes(pathType)) continue;
+            try {
+                const arr = JSON.parse(localStorage.getItem(k));
+                if (!Array.isArray(arr) || arr.length === 0) continue;
+                const ok = await sb.saveStudentProgress(studentId, pathType, arr).catch(() => false);
+                if (ok) count++; else errors++;
+            } catch (e) { errors++; }
+        }
+        if (count > 0) _ok(`repair: ${count} مسیر محلی به دیتابیس ارسال شد${errors ? ` (${errors} خطا)` : ''}`);
+        else _err(`repair: چیزی ارسال نشد (${errors} خطا)`);
+    }
+
+    // ── ارسال اجباری یک مسیر از محلی به DB (با نادیده گرفتن گارد زمانی) ──
+    // استفاده وقتی می‌دانید نسخهٔ محلی همین مرورگر درست است
+    async function forcePush(studentId, pathType) {
+        const sb = _sb();
+        if (!sb) { _err('client نیست'); return; }
+        const raw = localStorage.getItem(`prog_${studentId}_${pathType}`);
+        if (!raw) { _err(`prog_${studentId}_${pathType} محلی یافت نشد`); return; }
+        const arr = JSON.parse(raw);
+        const ok = await sb.saveStudentProgress(studentId, pathType, arr).catch(() => false);
+        if (ok) _ok(`forcePush: ${studentId}/${pathType} → [${arr.map(p => p?.status ?? 0).join(',')}] در DB ذخیره شد`);
+        else _err('forcePush ناموفق');
+    }
+
+    // ── پاک‌کردن مهرهای زمانی گارد (وقتی خراب/ناهم‌تراز شده‌اند) ──
+    function resetGuards(studentId) {
+        let count = 0;
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+            const k = localStorage.key(i);
+            if (!k) continue;
+            if (k.startsWith('progts_') || k.startsWith('progdbts_')) {
+                if (!studentId || k.includes(`_${studentId}_`)) { localStorage.removeItem(k); count++; }
+            }
+        }
+        _ok(`resetGuards: ${count} مهر زمانی پاک شد${studentId ? ` (${studentId})` : ''} — بعدی: SyncDebugger.run()`);
+    }
+
     // expose
-    window.SyncDebugger = { run, student, diff, watch, stop, report };
+    window.SyncDebugger = { run, student, diff, watch, stop, backup, restore, pushAll, forcePush, resetGuards, report };
 
     // اگر این فایل با تگ script لود شده باشد، خودکار یک بار run نمی‌کنیم —
     // کاربر کنترل دارد. فقط آماده بودن را اعلام کن.
