@@ -50,6 +50,12 @@
             0%,100% { box-shadow: 0 3px 15px rgba(59,130,246,.6); }
             50%      { box-shadow: 0 3px 25px rgba(59,130,246,1); }
         }
+        /* متوقف شده — خاکستری */
+        .progress-circle.paused {
+            background: linear-gradient(135deg, #9ca3af, #6b7280);
+            color: white;
+            box-shadow: 0 3px 10px rgba(107,114,128,0.5);
+        }
 
         /* ── جدول اصلی ──────────────────────── */
         .sheet-table {
@@ -621,6 +627,7 @@
         const STATUS_INCOMPLETE = 0;
         const STATUS_CURRENT    = 1;
         const STATUS_COMPLETED  = 2;
+        const STATUS_PAUSED     = 3;   // متوقف شده
         
         let currentPath = 'defense';
         let students = [];
@@ -825,10 +832,8 @@
                 const tail = studentSteps.slice(-names.length);   // ۴+۱ مرحلهٔ انتهایی
                 const prog = names.map((n, i) => {
                     const st = tail[i];
-                    return { status: (st && st.completed) ? STATUS_COMPLETED : STATUS_INCOMPLETE };
+                    return { status: (st && st.completed) ? STATUS_COMPLETED : (st && st.paused) ? STATUS_PAUSED : STATUS_INCOMPLETE };
                 });
-                const firstOpen = prog.findIndex(p => p.status === STATUS_INCOMPLETE);
-                if (firstOpen !== -1) prog[firstOpen].status = STATUS_CURRENT;
                 return prog;
             }
 
@@ -845,14 +850,11 @@
             }
 
             // بدون prog_ ذخیره‌شده → از مراحل students_data استخراج کن
-            // (همان منطق _stepsToProgress در students-sync.js — هماهنگ با پروفایل دانشجو)
+            // (وضعیت واقعی: completed→2، paused→3، بقیه→0)
             if (studentSteps && Array.isArray(studentSteps) && studentSteps.length > 0) {
                 const prog = studentSteps.slice(0, stepCount).map(s => ({
-                    status: (s && s.completed) ? STATUS_COMPLETED : STATUS_INCOMPLETE
+                    status: (s && s.completed) ? STATUS_COMPLETED : (s && s.paused) ? STATUS_PAUSED : STATUS_INCOMPLETE
                 }));
-                // اولین مرحلهٔ ناتمام = «در حال انجام»
-                const firstOpen = prog.findIndex(p => p.status === STATUS_INCOMPLETE);
-                if (firstOpen !== -1) prog[firstOpen].status = STATUS_CURRENT;
                 // اگر مراحل شیت بیشتر از students_data بود، بقیه خالی
                 while (prog.length < stepCount) prog.push({ status: STATUS_INCOMPLETE });
                 return prog;
@@ -1103,11 +1105,12 @@
                 prog.forEach((stage, i) => {
                     const status = stage?.status ?? STATUS_INCOMPLETE;
                     let cls = 'incomplete', icon = '<i class="fas fa-times"></i>';
-                    if (status === STATUS_COMPLETED) { cls = 'completed'; icon = '<i class="fas fa-check"></i>'; }
-                    else if (status === STATUS_CURRENT) { cls = 'current'; icon = '<i class="fas fa-hourglass-half"></i>'; }
+                    if (status === STATUS_COMPLETED)      { cls = 'completed'; icon = '<i class="fas fa-check"></i>'; }
+                    else if (status === STATUS_CURRENT)   { cls = 'current';   icon = '<i class="fas fa-hourglass-half"></i>'; }
+                    else if (status === STATUS_PAUSED)    { cls = 'paused';    icon = '<i class="fas fa-pause"></i>'; }
                     
                     bodyHTML += `<td>
-                        <div class="progress-circle ${cls}" onclick="toggleStage('${student.id}', ${i})">${icon}</div>
+                        <div class="progress-circle ${cls}" title="${status===0?'تکمیل نشده':status===1?'در حال انجام':status===2?'تکمیل شده':'متوقف شده'}" onclick="toggleStage('${student.id}', ${i})">${icon}</div>
                     </td>`;
                 });
                 
@@ -1129,9 +1132,10 @@
             const prog = student.progress[currentPath];
             const current = prog[stageIndex]?.status ?? STATUS_INCOMPLETE;
             
-            // Cycle: incomplete → current → completed → incomplete
+            // Cycle: incomplete → current → completed → paused → incomplete
             if (current === STATUS_INCOMPLETE)      prog[stageIndex].status = STATUS_CURRENT;
             else if (current === STATUS_CURRENT)    prog[stageIndex].status = STATUS_COMPLETED;
+            else if (current === STATUS_COMPLETED)  prog[stageIndex].status = STATUS_PAUSED;
             else                                    prog[stageIndex].status = STATUS_INCOMPLETE;
             
             saveProgress(studentId, currentPath, prog);
@@ -1158,13 +1162,16 @@
                     studentsData[studentId][stepKey] = prog.map((p, idx) => ({
                         name: (STEPS[currentPath][idx] || `مرحله ${idx + 1}`),
                         completed: p.status === STATUS_COMPLETED,
+                        paused:    p.status === STATUS_PAUSED,
                         date: p.status === STATUS_COMPLETED ? new Date().toLocaleDateString('fa-IR') : null
                     }));
                     needSave = true;
                 }
                 if (stepKey && Array.isArray(studentsData[studentId][stepKey]) && studentsData[studentId][stepKey][profileStepIndex] !== undefined) {
                     const newStatus = prog[stageIndex].status;
+                    // 2=تکمیل شده | 0,1,3=تکمیل نشده (3=متوقف شده)
                     studentsData[studentId][stepKey][profileStepIndex].completed = (newStatus === STATUS_COMPLETED);
+                    studentsData[studentId][stepKey][profileStepIndex].paused    = (newStatus === STATUS_PAUSED);
                     if (newStatus === STATUS_COMPLETED) {
                         studentsData[studentId][stepKey][profileStepIndex].date = new Date().toLocaleDateString('fa-IR');
                     } else {
@@ -1194,14 +1201,18 @@
                             const sb = _sheetSb();
                             if (sb) {
                                 const sData = studentsData[studentId];
+                                // نگهداشت وضعیت واقعی شیت (0|1|2|3) — به‌جای فشرده‌سازی به 0|2
+                                // (قبلاً status=1 و 3 اینجا نابود می‌شد و از بین می‌رفت)
                                 const stepsToProgress = (arr) => {
                                     if (!Array.isArray(arr)) return null;
-                                    const st = arr.map(s => ({ status: s && s.completed ? 2 : 0 }));
-                                    let found = false;
-                                    for (let i = 0; i < st.length; i++) {
-                                        if (st[i].status === 0 && !found) { st[i].status = 1; found = true; }
-                                    }
-                                    return st;
+                                    const names = STEPS[arguments.length > 1 ? arguments[1] : null] || null;
+                                    return arr.map(s => {
+                                        if (!s) return { status: 0 };
+                                        if (s.status !== undefined) return { status: s.status };
+                                        if (s.completed) return { status: 2 };
+                                        if (s.paused)    return { status: 3 };
+                                        return { status: 0 };
+                                    });
                                 };
                                 // مسیر studying → progress مستقل با path_type='studying'
                                 // (خطای CHECK constraint در DB یعنی supabase/fix_studying_path.sql اجرا نشده)
@@ -1209,14 +1220,14 @@
                                     if (!Array.isArray(arr)) return null;
                                     const names = STEPS.studying;
                                     const tail = arr.slice(-names.length);
-                                    const st = names.map((_, i) => ({
-                                        status: (tail[i] && tail[i].completed) ? 2 : 0
-                                    }));
-                                    let found = false;
-                                    for (let i = 0; i < st.length; i++) {
-                                        if (st[i].status === 0 && !found) { st[i].status = 1; found = true; }
-                                    }
-                                    return st;
+                                    return names.map((_, i) => {
+                                        const s = tail[i];
+                                        if (!s) return { status: 0 };
+                                        if (s.status !== undefined) return { status: s.status };
+                                        if (s.completed) return { status: 2 };
+                                        if (s.paused)    return { status: 3 };
+                                        return { status: 0 };
+                                    });
                                 };
                                 const jobs = [
                                     ['defense',      stepsToProgress(sData.defenseSteps)],

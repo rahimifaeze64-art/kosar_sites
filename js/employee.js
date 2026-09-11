@@ -603,7 +603,7 @@ const EmployeeModule = {
                             <span class="sm:hidden">جدید</span>
                         </button>
                         <button onclick="employeeModule.openStudentFlowchart('')"
-                                class="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1">
+                                class="bg-lime-600 hover:bg-lime-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1">
                             <i class="fas fa-project-diagram"></i>
                             <span class="hidden sm:inline">فلوچارت</span>
                         </button>
@@ -626,7 +626,7 @@ const EmployeeModule = {
                         </button>
                         -->
                         <button onclick="window._alpineSetPage && window._alpineSetPage('sheetView')"
-                                class="bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1">
+                                class="bg-lime-600 hover:bg-lime-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1">
                             <i class="fas fa-th-list"></i>
                             <span class="hidden sm:inline">نمای شیت</span>
                         </button>
@@ -1662,10 +1662,18 @@ const EmployeeModule = {
                                 class="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 transform hover:scale-110 ${
                                     step.completed 
                                         ? 'bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg shadow-green-500/50' 
+                                        : step.paused
+                                        ? 'bg-gradient-to-br from-gray-400 to-gray-600 shadow-lg shadow-gray-500/50'
+                                        : step.inProgress
+                                        ? 'bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg shadow-blue-500/50'
                                         : 'bg-gray-300 hover:bg-green-300'
                                 }">
                                 ${step.completed 
                                     ? '<i class="fas fa-check text-white text-sm"></i>' 
+                                    : step.paused
+                                    ? '<i class="fas fa-pause text-white text-xs"></i>'
+                                    : step.inProgress
+                                    ? '<i class="fas fa-hourglass-half text-white text-xs"></i>'
                                     : '<i class="fas fa-circle text-gray-500 text-xs"></i>'
                                 }
                             </button>
@@ -1673,8 +1681,8 @@ const EmployeeModule = {
                         
                         <!-- Step Info -->
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-bold ${step.completed ? 'text-green-600' : 'text-gray-700'} leading-tight">
-                                ${step.name}
+                            <p class="text-sm font-bold ${step.completed ? 'text-green-600' : step.paused ? 'text-gray-500' : 'text-gray-700'} leading-tight">
+                                ${step.name}${step.paused ? ' <span class="text-xs font-normal text-gray-400">(متوقف شده)</span>' : ''}
                             </p>
                             ${step.date ? `
                                 <p class="text-xs text-gray-500 mt-1">
@@ -1741,10 +1749,18 @@ const EmployeeModule = {
                                 class="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 transform hover:scale-110 ${
                                     step.completed 
                                         ? 'bg-gradient-to-br from-blue-500 to-lime-600 shadow-lg shadow-blue-500/50' 
+                                        : step.paused
+                                        ? 'bg-gradient-to-br from-gray-400 to-gray-600 shadow-lg shadow-gray-500/50'
+                                        : step.inProgress
+                                        ? 'bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg shadow-blue-500/50'
                                         : 'bg-gray-300 hover:bg-blue-300'
                                 }">
                                 ${step.completed 
                                     ? '<i class="fas fa-check text-white text-sm"></i>' 
+                                    : step.paused
+                                    ? '<i class="fas fa-pause text-white text-xs"></i>'
+                                    : step.inProgress
+                                    ? '<i class="fas fa-hourglass-half text-white text-xs"></i>'
                                     : '<i class="fas fa-circle text-gray-500 text-xs"></i>'
                                 }
                             </button>
@@ -2066,7 +2082,7 @@ const EmployeeModule = {
         }
         
         UTILS.showNotification(
-            step.completed ? 'مرحله تکمیل شد' : 'مرحله به حالت در انتظار برگشت',
+            step.completed ? `✓ ${step.name} تکمیل شد` : (step.paused ? `${step.name} متوقف شد` : `${step.name} به حالت در انتظار برگشت`),
             'success'
         );
     },
@@ -2143,7 +2159,7 @@ const EmployeeModule = {
         }
         
         const step = student.defenseSteps[stepIndex];
-        step.completed = !step.completed;
+        this._cycleStepState(step);
         step.date = step.completed ? new Date().toLocaleDateString('fa-IR') : null;
         
         // Save to localStorage
@@ -2344,6 +2360,28 @@ const EmployeeModule = {
     },
     
     // Toggle educational step
+    // ── چرخهٔ وضعیت مرحله (۴ حالته) ────────────────────────────
+    // ناتمام → در حال انجام → تکمیل شده → متوقف شده → ناتمام
+    // فیلد paused روی آبجکت مرحله ذخیره می‌شود (فیلد completed دست نمی‌خورد
+    // تا منطق‌های موجودِ تکمیل مسیر نشوند)
+    _cycleStepState(step) {
+        if (step.completed) {
+            // تکمیل شده → متوقف شده
+            step.completed = false;
+            step.paused    = true;
+        } else if (step.paused) {
+            // متوقف شده → ناتمام
+            step.paused = false;
+        } else if (step.inProgress) {
+            // در حال انجام → تکمیل شده
+            step.inProgress = false;
+            step.completed  = true;
+        } else {
+            // ناتمام → در حال انجام
+            step.inProgress = true;
+        }
+    },
+
     toggleEducationalStep(studentId, stepIndex) {
         // Get fresh data from localStorage
         const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
@@ -2362,7 +2400,7 @@ const EmployeeModule = {
         }
         
         const step = student.educationalSteps[stepIndex];
-        step.completed = !step.completed;
+        this._cycleStepState(step);
         step.date = step.completed ? new Date().toLocaleDateString('fa-IR') : null;
         
         // Save to localStorage
@@ -6108,8 +6146,8 @@ EmployeeModule.getRequirementsStepsTimeline = function(student) {
                 <div class="flex items-start space-x-4 space-x-reverse">
                     <!-- Step Icon -->
                     <div class="flex-shrink-0">
-                        <div class="w-10 h-10 rounded-full flex items-center justify-center ${step.completed ? 'bg-green-500' : 'bg-gray-400'}">
-                            <i class="fas ${step.completed ? 'fa-check' : 'fa-circle'} text-white"></i>
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center ${step.completed ? 'bg-green-500' : step.paused ? 'bg-gray-500' : step.inProgress ? 'bg-blue-500' : 'bg-gray-400'}">
+                            <i class="fas ${step.completed ? 'fa-check' : step.paused ? 'fa-pause' : step.inProgress ? 'fa-hourglass-half' : 'fa-circle'} text-white"></i>
                         </div>
                         ${index < requirementsSteps.length - 1 ? `
                             <div class="w-0.5 h-12 bg-gray-300 mx-auto mt-2"></div>
@@ -6117,14 +6155,14 @@ EmployeeModule.getRequirementsStepsTimeline = function(student) {
                     </div>
                     
                     <!-- Step Content -->
-                    <div class="flex-1 bg-gray-50 rounded-lg p-4 border ${step.completed ? 'border-green-300' : 'border-gray-300'}">
+                    <div class="flex-1 bg-gray-50 rounded-lg p-4 border ${step.completed ? 'border-green-300' : step.paused ? 'border-gray-400' : 'border-gray-300'}">
                         <div class="flex items-center justify-between mb-2">
-                            <h5 class="font-bold text-gray-800">${step.name}</h5>
+                            <h5 class="font-bold text-gray-800">${step.name}${step.paused ? ' <span class="text-xs font-normal text-gray-400">(متوقف شده)</span>' : ''}</h5>
                             <label class="flex items-center cursor-pointer">
                                 <input type="checkbox" ${step.completed ? 'checked' : ''} 
                                        onchange="employeeModule.toggleRequirementStep('${student.id}', ${index})"
                                        class="w-5 h-5 text-green-600 bg-white border-gray-300 rounded focus:ring-green-500">
-                                <span class="mr-2 text-sm text-gray-600">${step.completed ? 'تکمیل شده' : 'تکمیل نشده'}</span>
+                                <span class="mr-2 text-sm text-gray-600">${step.completed ? 'تکمیل شده' : step.paused ? 'متوقف شده' : step.inProgress ? 'در حال انجام' : 'تکمیل نشده'}</span>
                             </label>
                         </div>
                         ${step.date ? `
@@ -6182,8 +6220,8 @@ EmployeeModule.toggleRequirementStep = function(studentId, stepIndex) {
         student.requirementsSteps = this.getDefaultRequirementsSteps();
     }
     
-    // Toggle the step
-    student.requirementsSteps[stepIndex].completed = !student.requirementsSteps[stepIndex].completed;
+    // Toggle the step — چرخهٔ چهارحالته
+    this._cycleStepState(student.requirementsSteps[stepIndex]);
     
     // Set date if completed
     if (student.requirementsSteps[stepIndex].completed) {
@@ -6615,7 +6653,8 @@ window.employeeModule = EmployeeModule; // alias with lowercase for compatibilit
 EmployeeModule._syncStepsToSupabase = function(studentId, pathType, steps) {
     try {
         // ۱. ساخت آرایه prog برای student_progress
-        const progArray = steps.map(s => ({ status: s.completed ? 2 : 0 }));
+        // 0=ناتمام، 1=در حال انجام، 2=تکمیل شده، 3=متوقف شده
+        const progArray = steps.map(s => ({ status: s.completed ? 2 : (s.paused ? 3 : (s.inProgress ? 1 : 0)) }));
         // ذخیره در localStorage (کلید مشترک با sheet view)
         localStorage.setItem(`prog_${studentId}_${pathType}`, JSON.stringify(progArray));
 

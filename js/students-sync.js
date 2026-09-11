@@ -39,16 +39,8 @@
     // فرمت student_progress:     [{ status: 0|1|2 }, ...]  (0=pending,1=current,2=done)
     function _stepsToProgress(stepsArr) {
         if (!Array.isArray(stepsArr)) return [];
-        let foundFirst = false;
-        // از آخر به اول می‌رویم تا اولین مرحله ناتمام رو پیدا کنیم
-        const statuses = stepsArr.map(s => s.completed ? 2 : 0);
-        // اولین 0 بعد از آخرین 2 = وضعیت 1 (در حال انجام)
-        for (let i = 0; i < statuses.length; i++) {
-            if (statuses[i] === 0 && !foundFirst) {
-                statuses[i] = 1;
-                foundFirst = true;
-            }
-        }
+        // 0=ناتمام، 1=در حال انجام، 2=تکمیل شده، 3=متوقف شده
+        const statuses = stepsArr.map(s => s.completed ? 2 : (s.paused ? 3 : (s.inProgress ? 1 : 0)));
         return statuses.map(s => ({ status: s }));
     }
 
@@ -333,12 +325,15 @@
                             if (!Array.isArray(localSteps) || localSteps.length === 0) continue;
 
                             // merge: وضعیت Supabase را اعمال کن روی ساختار محلی
+                            // 2=تکمیل، 3=متوقف، 1=در حال انجام، 0=ناتمام
                             const merged = localSteps.map((step, i) => {
                                 const prog = progress[i];
                                 if (!prog) return step;
                                 return {
                                     ...step,
-                                    completed: prog.status === 2,
+                                    completed:  prog.status === 2,
+                                    paused:     prog.status === 3,
+                                    inProgress: prog.status === 1,
                                 };
                             });
 

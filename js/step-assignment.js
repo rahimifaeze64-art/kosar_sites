@@ -610,7 +610,9 @@ const StepAssignmentModule = {
             }
 
             if (steps && steps[stepIndex]) {
-                steps[stepIndex].completed = true;
+                steps[stepIndex].completed  = true;
+                steps[stepIndex].inProgress = false;
+                steps[stepIndex].paused     = false;
                 steps[stepIndex].date = new Date().toLocaleDateString('fa-IR');
                 steps[stepIndex].completedBy = employeeId;
                 steps[stepIndex].completedByName = this.getEmployeeName(employeeId);
