@@ -231,6 +231,51 @@ const SupabaseDataModule = {
     },
 
     // ════════════════════════════════════════════════════════
+    // APP SETTINGS — ذخیره/خواندن کلید-مقدار عمومی در جدول
+    // app_settings (مثل ترتیب ستون‌ها و سطرهای نمای شیت)
+    // ════════════════════════════════════════════════════════
+
+    async getAppSetting(key, fallback = null) {
+        try { const v = localStorage.getItem('appset_' + key); if (v !== null) fallback = v; } catch(e) {}
+        if (!this._online()) return fallback;
+        try {
+            const { data, error } = await this._db()
+                .from('app_settings')
+                .select('value')
+                .eq('key', key)
+                .single();
+            if (error || !data) return fallback;
+            let value = data.value;
+            // value در DB ممکن است JSONB رشته‌ای باشد (مثل آرایه ذخیره‌شده به‌صورت string)
+            if (typeof value === 'string') {
+                try { value = JSON.parse(value); } catch(e) {}
+            }
+            if (value !== null && value !== undefined) {
+                try { localStorage.setItem('appset_' + key, typeof value === 'string' ? value : JSON.stringify(value)); } catch(e) {}
+            }
+            return value !== null && value !== undefined ? value : fallback;
+        } catch (e) {
+            console.warn(`⚠️ getAppSetting(${key}) خطا:`, e.message);
+            return fallback;
+        }
+    },
+
+    async setAppSetting(key, value) {
+        try { localStorage.setItem('appset_' + key, typeof value === 'string' ? value : JSON.stringify(value)); } catch(e) {}
+        if (!this._online()) return false;
+        try {
+            const { error } = await this._db()
+                .from('app_settings')
+                .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+            if (error) throw error;
+            return true;
+        } catch (e) {
+            console.warn(`⚠️ setAppSetting(${key}) خطا:`, e.message);
+            return false;
+        }
+    },
+
+    // ════════════════════════════════════════════════════════
     // ORDERS
     // ════════════════════════════════════════════════════════
 

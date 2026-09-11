@@ -70,14 +70,31 @@
             { key: 'requirementsSteps',  pathType: 'requirements' },
         ];
 
-        // سه مسیر به‌صورت «موازی» ارسال می‌شوند — await ترتیبی یعنی ۳ round-trip
-        // پشت‌سرهم به‌ازای هر دانشجو (یکی از علت‌های اصلی کندی sync)
+        // 🔒 ضد-بازنویسی کهنه: کلید prog_ «تازه‌ترین» وضعیت است — نما شیت با هر
+        // toggle فوراً آن را می‌نوید (و در DB ذخیره می‌کند). اگر از students_data
+        // مشتق کنیم، دادهٔ ۱.۵ ثانیه کهنه‌تر (بدون status=1) ردیف تازهٔ DB را
+        // خراب می‌کرد. پس اگر prog_ بود، همان ملاک است.
         await Promise.all(pathMap.map(({ key, pathType }) => {
+            // اولویت ۱: کلید prog_ (تازه‌ترین — نما شیت نگهش می‌دارد)
+            try {
+                const raw = localStorage.getItem(`prog_${studentId}_${pathType}`);
+                if (raw) {
+                    const arr = JSON.parse(raw);
+                    if (Array.isArray(arr) && arr.length > 0) {
+                        // 🔍 دیاگستیک: وضعیتی که به DB فرستاده می‌شود
+                        console.log(`📤 students-sync: ${studentId}/${pathType} → [${arr.map(p => (p && p.status) ?? 0).join(',')}] (از prog_ — تازه‌ترین)`);
+                        return sb.saveStudentProgress(studentId, pathType, arr)
+                            .catch(e => { ok = false; console.warn(`⚠️ students-sync [${studentId}/${pathType}]:`, e.message); });
+                    }
+                }
+            } catch (e) { /* بدون prog_ — ادامه */ }
+
+            // اولویت ۲: مشتق از students_data
             if (!student[key] || !Array.isArray(student[key])) return null;
             const progress = _stepsToProgress(student[key]);
             if (progress.length === 0) return null;
             // 🔍 دیاگستیک: وضعیتی که به DB فرستاده می‌شود — برای ردیابی نویسندهٔ 0ها
-            console.log(`📤 students-sync: ${studentId}/${pathType} → [${progress.map(p => p.status).join(',')}]`);
+            console.log(`📤 students-sync: ${studentId}/${pathType} → [${progress.map(p => p.status).join(',')}] (از students_data)`);
             return sb.saveStudentProgress(studentId, pathType, progress)
                 .catch(e => { ok = false; console.warn(`⚠️ students-sync [${studentId}/${pathType}]:`, e.message); });
         }));
@@ -265,9 +282,44 @@
 
         try {
             const raw = localStorage.getItem(STUDENTS_KEY);
-            const studentsData = raw ? JSON.parse(raw) : {};
-            const studentIds = Object.keys(studentsData);
-            if (studentIds.length === 0) return;
+            let studentsData = raw ? JSON.parse(raw) : {};
+            let studentIds = Object.keys(studentsData);
+
+            // ⚠️ مرورگر جدید: students_data هنوز خالی است (init-students-data هنوز
+            // اجرا نشده یا دادهٔ پیش‌فرض نوشته). نباید زود برگشت — وگرنه merge از DB
+            // انجام نمی‌شود و بعداً دادهٔ پیش‌فرضِ همه-ناتمام به DB فرستاده می‌شود
+            // (باگ «ریست شدن مراحل تکمیل‌شده در مرورگر جدید»).
+            // صبر می‌کنیم تا edu_system_users (از Supabase pull شده) برسد.
+            if (studentIds.length === 0) {
+                const WAIT_STEP = 500, WAIT_MAX = 15000;
+                let waited = 0;
+                while (studentIds.length === 0 && waited < WAIT_MAX) {
+                    await new Promise(r => setTimeout(r, WAIT_STEP));
+                    waited += WAIT_STEP;
+                    try {
+                        const usersRaw = JSON.parse(localStorage.getItem('edu_system_users') || '[]');
+                        if (Array.isArray(usersRaw) && usersRaw.some(u => u && u.role === 'student')) {
+                            // ساخت students_data اولیه از edu_system_users (فقط ساختار —
+                            // مراحل از progressMap در ادامه merge می‌شوند)
+                            const seed = {};
+                            usersRaw.filter(u => u && u.role === 'student').forEach(u => {
+                                seed[u.id] = {
+                                    id: u.id, name: u.name, field: u.field || '', role: 'student',
+                                    currentPath: u.currentPath || null,
+                                    graduated: !!u.graduated, active: u.active !== false,
+                                };
+                            });
+                            studentsData = seed;
+                            studentIds = Object.keys(seed);
+                        }
+                    } catch (e) {}
+                }
+                if (studentIds.length === 0) {
+                    console.warn('⚠️ students-sync: دانشجویی نه در students_data بود و نه از Supabase آمد');
+                    return;
+                }
+                console.log(`📥 students-sync: students_data خالی بود — seed از edu_system_users (${studentIds.length} دانشجو)`);
+            }
 
             const pathTypes = ['defense', 'educational', 'requirements'];
             const pathToKey = {
@@ -378,9 +430,11 @@
             // دانشجویانی که داده‌شان از Supabase آمد «سینک‌شده» فرض می‌شوند تا اولین
             // ویرایش کاربر فقط همان دانشجو را sync کند. دانشجویان بدون داده در
             // Supabase علامت نمی‌خورند تا در اولین sync (مثل رفتار قدیمی) ارسال شوند.
+            // ⚠️ seed روی freshData (نسخهٔ merge‌شده) است نه studentsData کهنه —
+            // وگرنه اولین ذخیرهٔ نامرتبط، دادهٔ merge‌شده را دوباره به DB می‌فرستد.
             if (_syncedSigs === null && progressMap) {
                 _syncedSigs = {};
-                Object.entries(studentsData).forEach(([id, student]) => {
+                Object.entries(freshData).forEach(([id, student]) => {
                     const hasDbData = pathTypes.some(pt => Array.isArray(progressMap[`${id}_${pt}`]));
                     if (hasDbData) _syncedSigs[id] = _sig(student);
                 });

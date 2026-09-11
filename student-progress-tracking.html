@@ -167,11 +167,22 @@
             text-align: center;
         }
 
-        /* ── Drag & Drop هدر ستون‌ها ── */
+        /* ── Drag & Drop هدر ستون‌ها و سطرها ── */
         .sheet-table thead th[data-col-index] { cursor: grab; user-select: none; }
         .sheet-table thead th[data-col-index]:active { cursor: grabbing; }
         .sheet-table thead th.col-dragging { opacity: 0.5; }
         .sheet-table thead th.col-drag-over { outline: 2px dashed #4d7c0f; outline-offset: -3px; }
+
+        .sheet-table tbody tr[data-student-id] { cursor: grab; }
+        .sheet-table tbody tr[data-student-id]:active { cursor: grabbing; }
+        .sheet-table tbody tr.row-dragging { opacity: 0.5; }
+        .sheet-table tbody tr.row-drag-over td { border-top: 2px dashed #4d7c0f !important; }
+        .row-drag-handle {
+            color: #94a3b8;
+            font-size: 14px;
+            cursor: grab;
+            user-select: none;
+        }
 
         /* آواتار دانشجو */
         .avatar {
@@ -271,6 +282,7 @@
     <script src="js/sample-students.js"></script>
     <script src="js/employee.js"></script>
     <script src="js/step-assignment.js"></script>
+    <script src="js/sync-debugger.js"></script>
     
     <script>
         // مقداردهی اولیه data.js تا دانشجویان پیش‌فرض در localStorage نوشته شوند
@@ -501,6 +513,23 @@
                     console.warn(`🔍 sheet pull دیاگستیک — قبل: [${_before}] بعد: [${_after}]`);
                 }
                 console.log(`✅ sheet: پیشرفت ${Object.keys(map).length} دانشجو/مسیر از Supabase همگام شد`);
+                // ترتیب ستون/سطر هم ممکن است از دستگاه دیگری تغییر کرده باشد
+                try {
+                    const sb2 = _sheetSb();
+                    if (sb2 && typeof sb2.getAppSetting === 'function') {
+                        const [colArr, rowArr] = await Promise.all([
+                            sb2.getAppSetting('sheet_col_order_' + currentPath, null),
+                            sb2.getAppSetting('sheet_row_order_' + currentPath, null)
+                        ]);
+                        if (Array.isArray(colArr) && colArr.length === STEPS[currentPath].length) {
+                            try { localStorage.setItem('appset_sheet_col_order_' + currentPath, JSON.stringify(colArr)); } catch(e) {}
+                        }
+                        if (Array.isArray(rowArr)) {
+                            _rowOrderCache[currentPath] = rowArr;
+                            try { localStorage.setItem('appset_sheet_row_order_' + currentPath, JSON.stringify(rowArr)); } catch(e) {}
+                        }
+                    }
+                } catch(e) {}
                 renderTable();
                 return true;
             } catch (e) { console.warn('⚠️ sheet Supabase pull خطا:', e); return false; }
@@ -530,8 +559,11 @@
 
             _flushProgressQueue().catch(() => {}).finally(() => {
                 // بعد از تلاش flush صف، پول اول — سپس رندر
+                // ترتیب ستون‌ها و سطرها هم قبل از رندر از دیتابیس خوانده می‌شود
                 _pullProgressFromSupabase().finally(() => {
-                    renderTable();
+                    Promise.all([loadColumnOrder(), loadRowOrder()]).then(([colOrder]) => {
+                        renderTable(colOrder);
+                    });
                 });
             });
 
@@ -851,32 +883,89 @@
             renderTable();
         }
 
-        // ── ترتیب ستون‌ها (drag & drop) — ذخیره در localStorage برای هر مسیر ──
-        function loadColumnOrder() {
+        // ── ترتیب ستون‌ها (drag & drop) — ذخیره در localStorage + Supabase ──
+        async function loadColumnOrder() {
+            const def = STEPS[currentPath].map((_, i) => i);   // ترتیب پیش‌فرض
             try {
-                const raw = localStorage.getItem(`sheet_col_order_${currentPath}`);
+                const raw = localStorage.getItem('appset_sheet_col_order_' + currentPath);
                 if (raw) {
                     const arr = JSON.parse(raw);
                     if (Array.isArray(arr) && arr.length === STEPS[currentPath].length) return arr;
                 }
             } catch(e) {}
-            return STEPS[currentPath].map((_, i) => i);   // ترتیب پیش‌فرض
+            // از دیتابیس (app_settings)
+            try {
+                const sb = _sheetSb();
+                if (sb && typeof sb.getAppSetting === 'function') {
+                    const arr = await sb.getAppSetting('sheet_col_order_' + currentPath, null);
+                    if (Array.isArray(arr) && arr.length === STEPS[currentPath].length) return arr;
+                }
+            } catch(e) {}
+            return def;
         }
         function saveColumnOrder(order) {
-            try { localStorage.setItem(`sheet_col_order_${currentPath}`, JSON.stringify(order)); } catch(e) {}
+            try { localStorage.setItem('appset_sheet_col_order_' + currentPath, JSON.stringify(order)); } catch(e) {}
+            // ذخیره در دیتابیس (app_settings) — همه دستگاه‌ها ترتیب یکسان می‌بینند
+            const sb = _sheetSb();
+            if (sb && typeof sb.setAppSetting === 'function') {
+                sb.setAppSetting('sheet_col_order_' + currentPath, order)
+                    .then(ok => { if (!ok) console.warn('⚠️ ذخیره ترتیب ستون‌ها در دیتابیس ناموفق بود'); });
+            }
         }
 
-        // ── Drag & Drop هدر ستون‌ها (شبیه چک‌لیست کاری) ──
-        function initColumnDragDrop() {
-            const thead = document.getElementById('table-head');
-            if (!thead) return;
-            let draggingTh = null;
+        // ── ترتیب سطرها (دانشجوها) — ذخیره در localStorage + Supabase ──
+        // آرایه‌ای از id دانشجوها به ترتیب دلخواه
+        let _rowOrderCache = {};   // path → [ids]
+        async function loadRowOrder() {
+            if (_rowOrderCache[currentPath]) return _rowOrderCache[currentPath];
+            try {
+                const raw = localStorage.getItem('appset_sheet_row_order_' + currentPath);
+                if (raw) {
+                    const arr = JSON.parse(raw);
+                    if (Array.isArray(arr)) { _rowOrderCache[currentPath] = arr; return arr; }
+                }
+            } catch(e) {}
+            try {
+                const sb = _sheetSb();
+                if (sb && typeof sb.getAppSetting === 'function') {
+                    const arr = await sb.getAppSetting('sheet_row_order_' + currentPath, null);
+                    if (Array.isArray(arr)) { _rowOrderCache[currentPath] = arr; return arr; }
+                }
+            } catch(e) {}
+            return [];
+        }
+        function saveRowOrder(orderedIds) {
+            _rowOrderCache[currentPath] = orderedIds;
+            try { localStorage.setItem('appset_sheet_row_order_' + currentPath, JSON.stringify(orderedIds)); } catch(e) {}
+            const sb = _sheetSb();
+            if (sb && typeof sb.setAppSetting === 'function') {
+                sb.setAppSetting('sheet_row_order_' + currentPath, orderedIds)
+                    .then(ok => { if (!ok) console.warn('⚠️ ذخیره ترتیب سطرها در دیتابیس ناموفق بود'); });
+            }
+        }
+        function applyRowOrder(list, order) {
+            if (!order || order.length === 0) return list;
+            const rank = new Map(order.map((id, i) => [id, i]));
+            return list.slice().sort((a, b) => {
+                const ra = rank.has(a.id) ? rank.get(a.id) : Number.MAX_SAFE_INTEGER;
+                const rb = rank.has(b.id) ? rank.get(b.id) : Number.MAX_SAFE_INTEGER;
+                return ra - rb;
+            });
+        }
 
+        // ── Drag & Drop هدر ستون‌ها و سطرها (شبیه چک‌لیست کاری) ──
+        function initDragDrop() {
+            const thead = document.getElementById('table-head');
+            const tbody = document.getElementById('table-body');
+            if (!thead || !tbody) return;
+            let draggingEl = null;
+
+            // ── ستون‌ها ──
             thead.querySelectorAll('th[data-col-index]').forEach(th => {
                 th.setAttribute('draggable', 'true');
 
                 th.addEventListener('dragstart', (e) => {
-                    draggingTh = th;
+                    draggingEl = th;
                     th.classList.add('col-dragging');
                     e.dataTransfer.effectAllowed = 'move';
                     try { e.dataTransfer.setData('text/plain', th.dataset.colIndex); } catch(err) {}
@@ -885,7 +974,7 @@
                 th.addEventListener('dragend', () => {
                     th.classList.remove('col-dragging');
                     thead.querySelectorAll('th.col-drag-over').forEach(el => el.classList.remove('col-drag-over'));
-                    draggingTh = null;
+                    draggingEl = null;
                     // ذخیره ترتیب جدید بر اساس DOM
                     const domOrder = Array.from(thead.querySelectorAll('th[data-col-index]'))
                         .map(el => parseInt(el.dataset.colIndex, 10));
@@ -895,27 +984,66 @@
 
                 th.addEventListener('dragover', (e) => {
                     e.preventDefault();
-                    if (!draggingTh || draggingTh === th) return;
+                    if (!draggingEl || draggingEl === th || !draggingEl.dataset?.colIndex) return;
                     e.dataTransfer.dropEffect = 'move';
                     thead.querySelectorAll('th.col-drag-over').forEach(el => el.classList.remove('col-drag-over'));
                     th.classList.add('col-drag-over');
                     const rect = th.getBoundingClientRect();
                     if (e.clientX > rect.left + rect.width / 2) {
-                        th.after(draggingTh);
+                        th.after(draggingEl);
                     } else {
-                        th.before(draggingTh);
+                        th.before(draggingEl);
+                    }
+                });
+            });
+
+            // ── سطرها (دانشجوها) ──
+            tbody.querySelectorAll('tr[data-student-id]').forEach(tr => {
+                tr.setAttribute('draggable', 'true');
+
+                tr.addEventListener('dragstart', (e) => {
+                    draggingEl = tr;
+                    tr.classList.add('row-dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    try { e.dataTransfer.setData('text/plain', tr.dataset.studentId); } catch(err) {}
+                });
+
+                tr.addEventListener('dragend', () => {
+                    tr.classList.remove('row-dragging');
+                    tbody.querySelectorAll('tr.row-drag-over').forEach(el => el.classList.remove('row-drag-over'));
+                    draggingEl = null;
+                    // ذخیره ترتیب جدید بر اساس DOM
+                    const domOrder = Array.from(tbody.querySelectorAll('tr[data-student-id]'))
+                        .map(el => el.dataset.studentId);
+                    saveRowOrder(domOrder);
+                });
+
+                tr.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    if (!draggingEl || draggingEl === tr || !draggingEl.dataset?.studentId) return;
+                    e.dataTransfer.dropEffect = 'move';
+                    const rect = tr.getBoundingClientRect();
+                    tbody.querySelectorAll('tr.row-drag-over').forEach(el => el.classList.remove('row-drag-over'));
+                    if (e.clientY > rect.top + rect.height / 2) {
+                        tr.after(draggingEl);
+                        tr.classList.add('row-drag-over');
+                    } else {
+                        tr.before(draggingEl);
+                        tr.classList.add('row-drag-over');
                     }
                 });
             });
         }
 
-        function renderTable() {
+        function renderTable(colOrder) {
             const thead = document.getElementById('table-head');
             const tbody = document.getElementById('table-body');
             const steps = STEPS[currentPath];
             
-            // ترتیب ستون‌ها (drag & drop)
-            const colOrder = loadColumnOrder();   // آرایه‌ای از اندیس‌های مرحله
+            // ترتیب ستون‌ها (drag & drop) — اگر از فراخواننده ارسال نشده، پیش‌فرض
+            colOrder = Array.isArray(colOrder) && colOrder.length === steps.length
+                ? colOrder
+                : STEPS[currentPath].map((_, i) => i);
             
             // Header
             let headerHTML = '<tr><th class="row-num-header">#</th><th class="student-header">دانشجو</th>';
@@ -955,6 +1083,8 @@
                 if (currentFilter === 'in-progress') return done > 0 && done < prog.length;
                 return true;
             });
+            // ترتیب دلخواه سطرها (drag & drop)
+            filtered = applyRowOrder(filtered, _rowOrderCache[currentPath] || []);
             
             // Body
             if (filtered.length === 0) {
@@ -972,8 +1102,10 @@
                 const done = prog.filter(p => p.status === STATUS_COMPLETED).length;
                 const pct = Math.round((done / prog.length) * 100);
                 
-                bodyHTML += '<tr>';
-                bodyHTML += `<td class="row-num-cell">${rowNum}</td>`;
+                bodyHTML += `<tr data-student-id="${student.id}">`;
+                bodyHTML += `<td class="row-num-cell" title="برای جابه‌جایی، سطر را بکشید">
+                    <span class="row-drag-handle">⠿</span> ${rowNum}
+                </td>`;
                 bodyHTML += `<td class="student-cell" style="cursor:pointer" title="ویرایش پروفایل دانشجو" onclick="openStudentProfile('${student.id}')">
                     <div class="flex items-center gap-2">
                         <div class="avatar">${student.avatar}</div>
@@ -1006,7 +1138,7 @@
             });
             
             tbody.innerHTML = bodyHTML;
-            initColumnDragDrop();
+            initDragDrop();
         }
 
         // ── کلیک روی نام دانشجو → باز کردن ویرایش پروفایل در صفحه والد ──
