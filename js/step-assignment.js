@@ -679,6 +679,8 @@ const StepAssignmentModule = {
             }
 
             localStorage.setItem(progKey, JSON.stringify(prog));
+            // مهر ویرایش محلی — اینجا تکمیل مرحله توسط کارمند است (ویرایش واقعی)
+            try { localStorage.setItem(`progts_${studentId}_${stepType}`, String(Date.now())); } catch (e) {}
             console.log(`✅ Sheet view updated: prog_${studentId}_${stepType}[${stepIndex}] = completed`);
 
             // ── sync به Supabase ──────────────────────────────

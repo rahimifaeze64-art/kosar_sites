@@ -105,19 +105,39 @@
                 console.log(`⏭️ students-sync: ${studentId}/${pathType} — محلی کهنه‌تر از DB است، ارسال نشد`);
                 return null;
             }
+
+            // 🛡️ گارد «عقب‌گرد پیشرفت»: اگر آرایهٔ در حال ارسال از آرایهٔ فعلیِ
+            // محلی (که از DB آمده) «کمتر» باشد، نفرست. مثال خطرناک در لاگ:
+            // new040/educational → [0,...,2] در حالی که DB مقدارهای بیشتری داشت.
+            const dbCount = (() => {
+                try {
+                    const raw = localStorage.getItem(`prog_${studentId}_${pathType}`);
+                    if (!raw) return -1;
+                    return JSON.parse(raw).filter(p => (p?.status ?? 0) === 2).length;
+                } catch (e) { return -1; }
+            })();
+            const _isRegression = (arr) => {
+                if (dbCount < 0) return false;                 // داده‌ای برای مقایسه نیست
+                const localCount = arr.filter(p => (p?.status ?? 0) === 2).length;
+                // ⚠️ فقط زمانی «عقب‌گرد» است که آرایه واقعاً کمتری داشته باشد؛
+                // چون خودِ DB همان لحظه قابل تغییر است، این گارد محافظه‌کارانه است
+                return localCount < dbCount;
+            };
+
             // اولویت ۱: کلید prog_ (تازه‌ترین — نما شیت نگهش می‌دارد)
             try {
                 const raw = localStorage.getItem(`prog_${studentId}_${pathType}`);
                 if (raw) {
                     const arr = JSON.parse(raw);
+                    // ⚠️ نکته: اگر «همین» prog_ در حال ارسال است، مقایسه با خودش
+                    // بی‌معناست (dbCount == localCount) → گارد زیر فقط برای
+                    // نسخهٔ مشتق‌شده از students_data لازم است.
                     if (Array.isArray(arr) && arr.length > 0) {
-                        // 🛡️ گارد نهایی: اگر ALL-ZERO است و DB داده دارد → نفرست
-                        // (جلوگیری از پاک‌شدن دادهٔ واقعی توسط مرورگر تازه)
+                        // گارد نهایی: ALL-ZERO با وجود داده در DB → نفرست
                         if (_isAllZero(arr) && Number(localStorage.getItem(`progdbts_${studentId}_${pathType}`) || 0) > 0) {
                             console.log(`🛡️ students-sync: ${studentId}/${pathType} — آرایهٔ همه-صفر با وجود داده در DB، ارسال نشد`);
                             return null;
                         }
-                        // 🔍 دیاگستیک: وضعیتی که به DB فرستاده می‌شود
                         console.log(`📤 students-sync: ${studentId}/${pathType} → [${arr.map(p => (p && p.status) ?? 0).join(',')}] (از prog_ — تازه‌ترین)`);
                         return sb.saveStudentProgress(studentId, pathType, arr)
                             .catch(e => { ok = false; console.warn(`⚠️ students-sync [${studentId}/${pathType}]:`, e.message); });
@@ -129,9 +149,14 @@
             if (!student[key] || !Array.isArray(student[key])) return null;
             const progress = _stepsToProgress(student[key]);
             if (progress.length === 0) return null;
-            // 🛡️ گارد نهایی: آرایهٔ همه-صفر با وجود داده در DB ارسال نشود
-            if (_isAllZero(progress) && Number(localStorage.getItem(`progdbts_${studentId}_${pathType}`) || 0) > 0) {
+            // گارد نهایی: همه-صفر با وجود داده در DB → نفرست
+            if (_isAllZero(progress) && Number(localStorage.getItem(`progdbts_${studentId}/${pathType}`) || 0) > 0) {
                 console.log(`🛡️ students-sync: ${studentId}/${pathType} — students_data همه-صفر با وجود داده در DB، ارسال نشد`);
+                return null;
+            }
+            // 🛡️ گارد عقب‌گرد: نسخهٔ مشتق‌شده کمتر از DB → نفرست
+            if (_isRegression(progress)) {
+                console.log(`🛡️ students-sync: ${studentId}/${pathType} — students_data (${progress.filter(p=>p.status===2).length} تکمیل) کمتر از DB (${dbCount})، ارسال نشد`);
                 return null;
             }
             // 🔍 دیاگستیک: وضعیتی که به DB فرستاده می‌شود — برای ردیابی نویسندهٔ 0ها
@@ -300,6 +325,9 @@
 
         // اگر students_data تغییر کرد، sync کن
         if (key === STUDENTS_KEY) {
+            // 🔒 merge از دیتابیس (supabase-data) باعث حلقهٔ sync می‌شد —
+            // آن مسیر این flag را ست می‌کند تا اینجا sync صعودی ساخته نشود.
+            if (typeof window !== 'undefined' && window.__suppressStudentsSync) return;
             try {
                 const parsed = JSON.parse(value);
                 if (parsed && typeof parsed === 'object') {

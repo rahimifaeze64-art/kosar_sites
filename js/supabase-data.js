@@ -477,9 +477,12 @@ const SupabaseDataModule = {
     async saveStudentProgress(studentId, pathType, progressArray) {
         const localKey = `prog_${studentId}_${pathType}`;
         localStorage.setItem(localKey, JSON.stringify(progressArray));
-        // مهر زمانی نوشتن محلی — گارد ضد بازنویسی بین مرورگرها
-        // (مرورگری که این مسیر را ویرایش نکرده، هرگز آن را دوباره به DB نمی‌فرستد)
-        try { localStorage.setItem(`progts_${studentId}_${pathType}`, String(Date.now())); } catch(e) {}
+        // ⚠️ اینجا مهر «ویرایش محلی» (progts_) را نمی‌گذاریم!
+        // saveStudentProgress دو نوع فراخوانی دارد: (۱) ویرایش واقعی کاربر
+        // (نمای شیت/پروفایل — که خودشان progts_ را می‌گذارند) و (۲) propagation
+        // از students-sync/merge که «ویرایش» نیست. اگر اینجا مهر می‌گذاشتیم،
+        // هر sync عادی به‌غلط ویرایش محلی تلقی می‌شد → گارد anti-clobber بی‌اثر
+        // و حلقهٔ merge/pull. پس فقط مهر DB (progdbts_) اینجا ثبت می‌شود.
 
         const client = this._db();
         if (!client) return true;
@@ -649,9 +652,11 @@ const SupabaseDataModule = {
             });
 
             if (changed > 0) {
-                // ذخیره از مسیر اصلی — StudentsSync override می‌گیرد ولی گارد
-                // anti-clobber اجازهٔ ارسال کهنه به DB را نمی‌دهد
+                // ذخیره بدون trigger کردن sync صعودی (merge از DB است، نه ویرایش
+                // کاربر) — وگرنه هر pull یک _syncAll جدید می‌ساخت و حلقه می‌شد.
+                try { window.__suppressStudentsSync = true; } catch (e) {}
                 localStorage.setItem('students_data', JSON.stringify(sd));
+                try { window.__suppressStudentsSync = false; } catch (e) {}
                 console.log(`🔄 mergeProgress: ${changed} مسیر از DB روی مراحل پروفایل اعمال شد`);
             }
             return changed;

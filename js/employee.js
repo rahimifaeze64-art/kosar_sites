@@ -6675,6 +6675,9 @@ EmployeeModule._syncStepsToSupabase = function(studentId, pathType, steps) {
         const progArray = steps.map(s => ({ status: s.completed ? 2 : (s.paused ? 3 : (s.inProgress ? 1 : 0)) }));
         // ذخیره در localStorage (کلید مشترک با sheet view)
         localStorage.setItem(`prog_${studentId}_${pathType}`, JSON.stringify(progArray));
+        // مهر ویرایش محلی — اینجا «ویرایش واقعی کاربر» است (از پروفایل/تایم‌لاین)
+        // تا گارد anti-clobber اجازهٔ ارسال آن را بدهد و merge هم آن را نگرداند
+        try { localStorage.setItem(`progts_${studentId}_${pathType}`, String(Date.now())); } catch(e) {}
 
         // ۲. ارسال به Supabase در پس‌زمینه
         const sb = (typeof SupabaseDataModule !== 'undefined') ? SupabaseDataModule : null;
