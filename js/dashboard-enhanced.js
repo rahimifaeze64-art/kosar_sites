@@ -178,6 +178,20 @@ const EnhancedDashboardModule = {
 
             return `
                 <div class="space-y-6">
+                    <!-- هدر پنل مدیر + دکمهٔ به‌روزرسانی -->
+                    <div class="bg-gradient-to-r from-lime-600 to-lime-700 text-white rounded-xl p-6">
+                        <div class="flex justify-between items-center flex-wrap gap-3">
+                            <div>
+                                <h2 class="text-2xl font-bold mb-1">پنل مدیر</h2>
+                                <p class="text-lime-100 text-sm">آخرین وضعیت دانشجویان، سفارشات و کارمندان</p>
+                            </div>
+                            <button id="global-refresh-btn" onclick="UIRefresh.full()"
+                                    class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50">
+                                <i class="fas fa-sync-alt ml-1"></i> به‌روزرسانی
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Row 1: 4 کارت اصلی -->
                     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
 
@@ -355,8 +369,8 @@ const EnhancedDashboardModule = {
                                 <h2 class="text-2xl font-bold mb-1">پنل کارمند</h2>
                                 <p class="text-lime-100 text-sm">مدیریت و هماهنگی سفارشات</p>
                             </div>
-                            <button onclick="location.reload()"
-                                    class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                            <button id="global-refresh-btn" onclick="UIRefresh.full()"
+                                    class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50">
                                 <i class="fas fa-sync-alt ml-1"></i> به‌روزرسانی
                             </button>
                         </div>
