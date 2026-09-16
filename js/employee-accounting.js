@@ -101,16 +101,89 @@ const EmployeeAccountingModule = (function() {
         return known ? known.employeeName : 'نامشخص';
     }
 
-    // ── اعتبار تسویه: تسویه‌های ثبت‌شده ابتدا هزینه‌های تأیید شده را می‌پوشانند ──
-    // مانده هزینه‌ها = هزینه تأیید شده − سهم تسویه؛ مازاد تسویه از مبلغ ساعات تأیید شده کسر می‌شود
-    function _getSettlementCredit(employeeId, totalExpensesApproved, totalHoursAmount) {
+    // ════════════════════════════════════════════════════════
+    // ابزارهای تاریخ شمسی
+    // مبنای تمام تاریخ‌های حسابداری «شمسی» است. این توابع هر ورودی
+    // (شمسی یا میلادی، با اسلش/خط‌تیره، ارقام فارسی/عربی) را به قالب
+    // استاندارد شمسی 'YYYY-MM-DD' تبدیل می‌کنند تا مقایسه‌ها درست باشد.
+    // ════════════════════════════════════════════════════════
+    function _faToEnDigits(s) {
+        return String(s || '')
+            .replace(/[۰-۹]/g, d => String.fromCharCode(d.charCodeAt(0) - 1728))
+            .replace(/[٠-٩]/g, d => String.fromCharCode(d.charCodeAt(0) - 1584));
+    }
+
+    // هر تاریخ → 'YYYY-MM-DD' شمسی (رشتهٔ خالی اگر نامعتبر باشد)
+    function toJalaliISOSafe(v) {
+        if (!v) return '';
+        if (v instanceof Date) {
+            if (typeof Jalali !== 'undefined' && Jalali.toJalaliISO) return Jalali.toJalaliISO(v);
+            return '';
+        }
+        const s = _faToEnDigits(v).trim().replace(/\./g, '-').replace(/\//g, '-');
+        const m = s.match(/^(\d{3,4})-(\d{1,2})-(\d{1,2})/);
+        if (!m) return '';
+        const y = +m[1], mo = +m[2], dy = +m[3];
+        if (!y || mo < 1 || mo > 12 || dy < 1 || dy > 31) return '';
+        const pad = n => String(n).padStart(2, '0');
+        if (y < 1700) return `${y}-${pad(mo)}-${pad(dy)}`;          // از قبل شمسی است
+        try {
+            if (typeof Jalali !== 'undefined' && Jalali.toJalaali) { // میلادی → شمسی
+                const j = Jalali.toJalaali(y, mo, dy);
+                return `${j.jy}-${pad(j.jm)}-${pad(j.jd)}`;
+            }
+        } catch (e) {}
+        return `${y - 621}-${pad(mo)}-${pad(dy)}`;                  // fallback تقریبی
+    }
+
+    // امروز به شمسی ISO
+    function _jalaliTodayISO() {
+        let d = new Date();
+        try { d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tehran' })); } catch (e) {}
+        if (typeof Jalali !== 'undefined' && Jalali.toJalaliISO) {
+            try { return Jalali.toJalaliISO(d); } catch (e) {}
+        }
+        return toJalaliISOSafe(d);
+    }
+
+    // بازهٔ «ماه شمسی جاری» — از اول ماه تا امروز (مبنای داشبوردهای ماهانه)
+    function currentJalaliMonthRange() {
+        const today = _jalaliTodayISO();
+        const p = String(today).split('-');
+        if (p.length !== 3) return { from: null, to: null, monthKey: '' };
+        return { from: `${p[0]}-${p[1]}-01`, to: today, monthKey: `${p[0]}-${p[1]}` };
+    }
+
+    // آیا این تاریخ داخل بازهٔ شمسی است؟ (تاریخ نامشخص → حذف نشود)
+    function _inJalaliRange(v, fromJ, toJ) {
+        const j = toJalaliISOSafe(v);
+        if (!j) return true;
+        if (fromJ && j < fromJ) return false;
+        if (toJ   && j > toJ)   return false;
+        return true;
+    }
+
+    // ── اعتبار تسویه در محدودهٔ تاریخ ─────────────────────────
+    // تسویه‌های ثبت‌شده ابتدا هزینه‌های تأیید شده را می‌پوشانند؛ مازاد از
+    // مبلغ ساعات تأیید شده کسر می‌شود. با fromJ/toJ فقط تسویه‌های همان بازه
+    // (مثلاً ماه جاری) اعمال می‌شوند تا داشبورد هر ماه از نو شروع شود.
+    function _getSettlementCredit(employeeId, totalExpensesApproved, totalHoursAmount, fromJ = null, toJ = null) {
         const readLS = (k) => { try { return JSON.parse(localStorage.getItem(k) || '[]'); } catch { return []; } };
         const paid = readLS('work_settlements')
-            .filter(s => s.employeeId === employeeId)
+            .filter(s => String(s.employeeId) === String(employeeId) && _inJalaliRange(s.date, fromJ, toJ))
             .reduce((s, r) => s + Number(r.amount || 0), 0);
         const expenseCredit = Math.min(paid, Math.max(0, totalExpensesApproved || 0));
         const hoursCredit   = Math.min(Math.max(0, paid - expenseCredit), Math.max(0, totalHoursAmount || 0));
         return { paid, expenseCredit, hoursCredit };
+    }
+
+    // ── جمع کسورات/هدایا/تسویه‌های یک کارمند در بازهٔ شمسی ────
+    function getEmployeeRangeTotals(employeeId, fromJ = null, toJ = null) {
+        const readLS = (k) => { try { return JSON.parse(localStorage.getItem(k) || '[]'); } catch { return []; } };
+        const sum = (k) => readLS(k)
+            .filter(r => String(r.employeeId) === String(employeeId) && _inJalaliRange(r.date, fromJ, toJ))
+            .reduce((s, r) => s + Number(r.amount || 0), 0);
+        return { paid: sum('work_settlements'), deductions: sum('work_deductions'), gifts: sum('work_gifts') };
     }
 
     // سهم تسویه‌شده از هزینه‌های تأیید شده یک کارمند (برای نمایش در مودال‌ها)
@@ -122,9 +195,12 @@ const EmployeeAccountingModule = (function() {
     function getEmployeeFinancialSummary(employeeId, startDate = null, endDate = null, overrideName = null) {
         const allEntries = WorkHoursModule.getAllEntriesByEmployee(employeeId);
 
+        // بازهٔ شمسی نرمال — ورودی ممکن است میلادی یا شمسی با فرمت متفاوت باشد
+        const fromJ = startDate ? (toJalaliISOSafe(startDate) || String(startDate)) : null;
+        const toJ   = endDate   ? (toJalaliISOSafe(endDate)   || String(endDate))   : null;
+
         let filteredEntries = allEntries;
-        if (startDate) filteredEntries = filteredEntries.filter(e => e.date >= startDate);
-        if (endDate) filteredEntries = filteredEntries.filter(e => e.date <= endDate);
+        if (fromJ || toJ) filteredEntries = filteredEntries.filter(e => _inJalaliRange(e.date, fromJ, toJ));
 
         const workHours = filteredEntries.filter(e => e.type === 'work' || !e.type);
         const expenses = filteredEntries.filter(e => e.type === 'expense');
@@ -145,15 +221,19 @@ const EmployeeAccountingModule = (function() {
         const totalAmount = totalHoursApproved * hourlyRate;
         const grandTotal = totalAmount + totalExpensesApproved;
 
-        // ── اعتبار تسویه: فقط برای خلاصه کل (بدون فیلتر تاریخ) اعمال می‌شود ──
-        // تسویه‌های ثبت‌شده ابتدا هزینه‌های تأیید شده را می‌پوشانند (کاهش باکس هزینه‌ها)
-        const _isFullSummary = !startDate && !endDate;
-        const _credit = _isFullSummary
-            ? _getSettlementCredit(employeeId, totalExpensesApproved, totalAmount)
-            : { paid: 0, expenseCredit: 0, hoursCredit: 0 };
+        // ── اعتبار تسویه در همان بازهٔ انتخابی ──
+        // تسویه‌های ثبت‌شده ابتدا هزینه‌های تأیید شده را می‌پوشانند و مازاد از
+        // مبلغ ساعات کسر می‌شود. محدود کردن به بازه یعنی داشبورد ماهانه هر ماه
+        // از نو محاسبه می‌شود و تسویه‌های ماه‌های قبل روی ماندهٔ ماه جاری اثر ندارد.
+        const _credit = _getSettlementCredit(employeeId, totalExpensesApproved, totalAmount, fromJ, toJ);
+        // کسورات/هدایا/تسویه‌های همان بازه — برای «مانده نهایی»
+        const _rangeTotals = getEmployeeRangeTotals(employeeId, fromJ, toJ);
         const totalExpensesApprovedRemaining = Math.max(0, totalExpensesApproved - _credit.expenseCredit);
         const totalAmountRemaining           = Math.max(0, totalAmount - _credit.hoursCredit);
         const grandTotalRemaining            = totalAmountRemaining + totalExpensesApprovedRemaining;
+        // مانده نهایی قابل پرداخت = (ساعات تأیید + هزینهٔ تأیید − تسویه) + هدایا − کسورات
+        const netPayable = Math.max(0,
+            grandTotalRemaining + _rangeTotals.gifts - _rangeTotals.deductions);
 
         const workDays = new Set(submittedHours.map(h => h.date)).size;
 
@@ -197,6 +277,10 @@ const EmployeeAccountingModule = (function() {
             totalAmountRemaining,
             grandTotal,
             grandTotalRemaining,
+            // مانده‌های بازه‌ای (ماهانه)
+            totalDeductions: _rangeTotals.deductions,
+            totalGifts: _rangeTotals.gifts,
+            netPayable,
             workDays,
             hoursCount: submittedHours.length,
             expensesCount: submittedExpenses.length,
@@ -283,9 +367,15 @@ const EmployeeAccountingModule = (function() {
         getEmployeeFinancialSummary,
         getAllEmployeesSummary,
         getExpensesSettled,
+        getEmployeeRangeTotals,
         formatCurrency,
         formatHoursDisplay: _fmtHours,
-        formatDate
+        formatDate,
+        // ابزار تاریخ شمسی (مبنای همهٔ تاریخ‌های حسابداری)
+        toJalaliISOSafe,
+        todayJalaliISO: _jalaliTodayISO,
+        currentJalaliMonthRange,
+        inJalaliRange: _inJalaliRange
     };
 })();
 
@@ -743,12 +833,12 @@ const EmployeeAccountingUI = (function() {
         const summary = EmployeeAccountingModule.getEmployeeFinancialSummary(currentUser.id);
         const allEntries = WorkHoursModule.getAllEntriesByEmployee(currentUser.id);
 
-        const now = new Date();
-        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        // ── بازهٔ ماه شمسی جاری (نه میلادی) — مبنای «خلاصه ماه جاری» ──
+        const monthRange = EmployeeAccountingModule.currentJalaliMonthRange();
         const monthlySummary = EmployeeAccountingModule.getEmployeeFinancialSummary(
             currentUser.id,
-            EmployeeAccountingModule.formatDate(firstDay),
-            EmployeeAccountingModule.formatDate(now)
+            monthRange.from,
+            monthRange.to
         );
 
         const hoursPayment = parseFloat(monthlySummary.totalHoursApprovedRaw || monthlySummary.totalHoursApproved) * monthlySummary.hourlyRate;
@@ -778,9 +868,9 @@ const EmployeeAccountingUI = (function() {
                                 <i class="fas fa-clock text-2xl text-black-400"></i>
                             </div>
                             <div>
-                                <p class="text-black-400 text-sm">جمع ساعات ارسالی</p>
-                                <p class="text-3xl font-bold text-white">${EmployeeAccountingModule.formatHoursDisplay(summary.totalHoursApprovedRaw ?? summary.totalHours)}</p>
-                                <p class="text-black-300 text-xs">${summary.hoursCount} گزارش · ${summary.workDays} روز</p>
+                                <p class="text-black-400 text-sm">جمع ساعات ارسالی (این ماه)</p>
+                                <p class="text-3xl font-bold text-white">${EmployeeAccountingModule.formatHoursDisplay(monthlySummary.totalHoursApprovedRaw ?? monthlySummary.totalHours)}</p>
+                                <p class="text-black-300 text-xs">${monthlySummary.hoursCount} گزارش · ${monthlySummary.workDays} روز</p>
                             </div>
                         </div>
                     </div>
@@ -791,9 +881,9 @@ const EmployeeAccountingUI = (function() {
                                 <i class="fas fa-money-bill-wave text-2xl text-orange-400"></i>
                             </div>
                             <div>
-                                <p class="text-black-400 text-sm">جمع هزینه‌های ارسالی</p>
-                                <p class="text-xl font-bold text-white">${EmployeeAccountingModule.formatCurrency(summary.totalExpenses)}</p>
-                                <p class="text-black-300 text-xs">${summary.expensesCount} مورد</p>
+                                <p class="text-black-400 text-sm">جمع هزینه‌های ارسالی (این ماه)</p>
+                                <p class="text-xl font-bold text-white">${EmployeeAccountingModule.formatCurrency(monthlySummary.totalExpenses)}</p>
+                                <p class="text-black-300 text-xs">${monthlySummary.expensesCount} مورد</p>
                             </div>
                         </div>
                     </div>
@@ -817,9 +907,9 @@ const EmployeeAccountingUI = (function() {
                                 <i class="fas fa-wallet text-2xl text-emerald-400"></i>
                             </div>
                             <div>
-                                <p class="text-black-400 text-sm">مبلغ کل (تأیید شده)</p>
-                                <p class="text-xl font-bold text-emerald-400">${EmployeeAccountingModule.formatCurrency(summary.grandTotalRemaining ?? summary.grandTotal)}</p>
-                                ${(summary.settlementsPaid ?? 0) > 0 ? `<p class="text-black-300 text-xs"><i class="fas fa-check-circle text-green-400 ml-0.5"></i>${EmployeeAccountingModule.formatCurrency(summary.settlementsPaid)} تسویه شده</p>` : ''}
+                                <p class="text-black-400 text-sm">مبلغ کل تأییدشده (این ماه)</p>
+                                <p class="text-xl font-bold text-emerald-400">${EmployeeAccountingModule.formatCurrency(monthlySummary.grandTotalRemaining ?? monthlySummary.grandTotal)}</p>
+                                ${(monthlySummary.settlementsPaid ?? 0) > 0 ? `<p class="text-black-300 text-xs"><i class="fas fa-check-circle text-green-400 ml-0.5"></i>${EmployeeAccountingModule.formatCurrency(monthlySummary.settlementsPaid)} تسویه شده</p>` : ''}
                             </div>
                         </div>
                     </div>
@@ -830,14 +920,9 @@ const EmployeeAccountingUI = (function() {
                                 <i class="fas fa-minus-circle text-2xl text-red-400"></i>
                             </div>
                             <div>
-                                <p class="text-black-400 text-sm">جمع کسورات</p>
+                                <p class="text-black-400 text-sm">جمع کسورات (این ماه)</p>
                                 <p class="text-xl font-bold text-red-400">${EmployeeAccountingModule.formatCurrency(
-                                    (() => { try {
-                                        const u = JSON.parse(localStorage.getItem('currentUser')||'{}');
-                                        return JSON.parse(localStorage.getItem('work_deductions')||'[]')
-                                            .filter(d => d.employeeId === u.id)
-                                            .reduce((s,d) => s + Number(d.amount||0), 0);
-                                    } catch { return 0; } })()
+                                    monthlySummary.totalDeductions || 0
                                 )}</p>
                             </div>
                         </div>
@@ -917,7 +1002,9 @@ const EmployeeAccountingUI = (function() {
     }
 
     function getManagerEmployeesContent() {
-        const employeesSummary = EmployeeAccountingModule.getAllEmployeesSummary();
+        // ── مبنای داشبورد: ماه شمسی جاری (هر ماه از نو ریست می‌شود) ──
+        const monthRange = EmployeeAccountingModule.currentJalaliMonthRange();
+        const employeesSummary = EmployeeAccountingModule.getAllEmployeesSummary(monthRange.from, monthRange.to);
 
         const totalHours  = employeesSummary.reduce((sum, emp) => sum + (emp.totalHoursApprovedRaw || parseFloat(emp.totalHoursApproved) || 0), 0);
 
@@ -981,7 +1068,7 @@ const EmployeeAccountingUI = (function() {
                                     class="px-2 py-1 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded-lg text-xs transition-all">
                                 <i class="fas fa-minus ml-1"></i>کسر
                             </button>
-                            <button onclick="EmployeeAccountingUI.showSettlementModal('${emp.employeeId}', '${safeName}', ${emp.grandTotal})"
+                            <button onclick="EmployeeAccountingUI.showSettlementModal('${emp.employeeId}', '${safeName}', ${emp.netPayable ?? emp.grandTotalRemaining ?? emp.grandTotal})"
                                     class="px-2 py-1 bg-lime-500/20 hover:bg-lime-500/40 text-lime-400 rounded-lg text-xs transition-all">
                                 <i class="fas fa-hand-holding-usd ml-1"></i>تسویه
                             </button>
@@ -1047,36 +1134,25 @@ const EmployeeAccountingUI = (function() {
                     </div>
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-red-400/20">
                         <i class="fas fa-minus-circle text-red-400 mb-2 block"></i>
-                        <p class="text-black-400 text-xs mb-1">جمع کسورات</p>
+                        <p class="text-black-400 text-xs mb-1">جمع کسورات (این ماه)</p>
                         <p class="text-sm font-bold text-red-400">${EmployeeAccountingModule.formatCurrency(
-                            (() => { try { return JSON.parse(localStorage.getItem('work_deductions')||'[]').reduce((s,d)=>s+Number(d.amount||0),0); } catch { return 0; } })()
+                            employeesSummary.reduce((s,e)=>s+(e.totalDeductions ?? 0),0)
                         )}</p>
                     </div>
 
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-green-400/20">
                         <i class="fas fa-gift text-green-400 mb-2 block"></i>
-                        <p class="text-black-400 text-xs mb-1">جمع هدایا</p>
+                        <p class="text-black-400 text-xs mb-1">جمع هدایا (این ماه)</p>
                         <p class="text-sm font-bold text-green-400">${EmployeeAccountingModule.formatCurrency(
-                            (() => { try { return JSON.parse(localStorage.getItem('work_gifts')||'[]').reduce((s,g)=>s+Number(g.amount||0),0); } catch { return 0; } })()
+                            employeesSummary.reduce((s,e)=>s+(e.totalGifts ?? 0),0)
                         )}</p>
                     </div>
 
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-lime-400/20">
                         <i class="fas fa-wallet text-lime-400 mb-2 block"></i>
-                        <p class="text-black-400 text-xs mb-1">مبالغ تسویه‌نشده</p>
+                        <p class="text-black-400 text-xs mb-1">مبالغ تسویه‌نشده (این ماه)</p>
                         <p class="text-sm font-bold text-lime-400">${EmployeeAccountingModule.formatCurrency(
-                            (() => {
-                                const settlements = (() => { try { return JSON.parse(localStorage.getItem('work_settlements')||'[]'); } catch { return []; } })();
-                                const deductions  = (() => { try { return JSON.parse(localStorage.getItem('work_deductions')||'[]'); } catch { return []; } })();
-                                const gifts       = (() => { try { return JSON.parse(localStorage.getItem('work_gifts')||'[]'); } catch { return []; } })();
-                                return employeesSummary.reduce((total, emp) => {
-                                    const paid = settlements.filter(s=>s.employeeId===emp.employeeId).reduce((s,r)=>s+Number(r.amount||0),0);
-                                    const ded  = deductions.filter(d=>d.employeeId===emp.employeeId).reduce((s,d)=>s+Number(d.amount||0),0);
-                                    const gift = gifts.filter(g=>g.employeeId===emp.employeeId).reduce((s,g)=>s+Number(g.amount||0),0);
-                                    const rem  = emp.grandTotal + gift - ded - paid;
-                                    return total + Math.max(0, rem);
-                                }, 0);
-                            })()
+                            employeesSummary.reduce((total, emp) => total + Math.max(0, emp.netPayable ?? 0), 0)
                         )}</p>
                     </div>
                     
@@ -1132,14 +1208,19 @@ const EmployeeAccountingUI = (function() {
     function showSettlementModal(employeeId, employeeName, grandTotal) {
         document.getElementById('settlement-modal')?.remove();
 
-        // محاسبه مانده واقعی
-        const paid = (() => { try { return JSON.parse(localStorage.getItem('work_settlements')||'[]').filter(s=>s.employeeId===employeeId).reduce((s,r)=>s+Number(r.amount||0),0); } catch { return 0; } })();
-        const ded  = (() => { try { return JSON.parse(localStorage.getItem('work_deductions')||'[]').filter(d=>d.employeeId===employeeId).reduce((s,d)=>s+Number(d.amount||0),0); } catch { return 0; } })();
-        const gift = (() => { try { return JSON.parse(localStorage.getItem('work_gifts')||'[]').filter(g=>g.employeeId===employeeId).reduce((s,g)=>s+Number(g.amount||0),0); } catch { return 0; } })();
-        const remaining = grandTotal + gift - ded - paid;
+        // ── محاسبهٔ مانده در بازهٔ ماه شمسی جاری (مبنا: شمسی) ──
+        // پس از هر تسویه، همین اعداد دوباره محاسبه و داشبورد آپدیت می‌شود.
+        const monthRange = EmployeeAccountingModule.currentJalaliMonthRange();
+        const monthSum   = EmployeeAccountingModule.getEmployeeFinancialSummary(employeeId, monthRange.from, monthRange.to);
+        const grossClaim = Number(monthSum.totalAmount || 0) + Number(monthSum.totalExpensesApproved || 0) + Number(monthSum.totalGifts || 0);
+        const ded        = Number(monthSum.totalDeductions || 0);
+        const paid       = Number(monthSum.settlementsPaid || 0);
+        const remaining  = Number(monthSum.netPayable || 0);
+        // سهم تسویه از هزینه‌های تأیید شده (این بخش از باکس هزینه‌ها کسر می‌شود)
+        const expSet     = Number(monthSum.expensesSettled || 0);
 
-        // تاریخچه تسویه‌ها
-        const history = (() => { try { return JSON.parse(localStorage.getItem('work_settlements')||'[]').filter(s=>s.employeeId===employeeId); } catch { return []; } })();
+        // تاریخچه تسویه‌ها (همهٔ دوره‌ها — برای مرجع)
+        const history = (() => { try { return JSON.parse(localStorage.getItem('work_settlements')||'[]').filter(s=>String(s.employeeId)===String(employeeId)); } catch { return []; } })();
         const historyRows = history.length ? history.map(s=>`
             <tr class="border-b border-white/5 text-xs">
                 <td class="py-1.5 px-3 text-white">${_jalaliDateDisplay(s.date)}</td>
@@ -1158,33 +1239,28 @@ const EmployeeAccountingUI = (function() {
                     </h3>
                     <button onclick="document.getElementById('settlement-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
                 </div>
-                <p class="text-lime-300 font-semibold mb-4">${employeeName}</p>
+                <p class="text-lime-300 font-semibold mb-1">${employeeName}</p>
+                <p class="text-black-300 text-xs mb-4">بازه: ${_fmtJalali(monthRange.from)} تا ${_fmtJalali(monthRange.to)}</p>
 
                 <!-- مانده -->
                 <div class="bg-lime-500/10 border border-lime-400/20 rounded-xl p-4 mb-5">
                     <div class="flex justify-between items-center">
                         <span class="text-black-400 text-sm">جمع طلب کارمند</span>
-                        <span class="text-emerald-400 font-bold">${EmployeeAccountingModule.formatCurrency(grandTotal + gift)}</span>
+                        <span class="text-emerald-400 font-bold">${EmployeeAccountingModule.formatCurrency(grossClaim)}</span>
                     </div>
                     <div class="flex justify-between items-center mt-1">
                         <span class="text-black-400 text-sm">کسر کسورات</span>
                         <span class="text-red-400 font-bold">- ${EmployeeAccountingModule.formatCurrency(ded)}</span>
                     </div>
                     <div class="flex justify-between items-center mt-1">
-                        <span class="text-black-400 text-sm">تسویه‌های قبلی</span>
+                        <span class="text-black-400 text-sm">تسویه‌های این بازه</span>
                         <span class="text-lime-400 font-bold">- ${EmployeeAccountingModule.formatCurrency(paid)}</span>
                     </div>
-                    ${(() => {
-                        // سهم تسویه‌های قبلی از هزینه‌های تأیید شده (این بخش از باکس هزینه‌ها کسر می‌شود)
-                        const expSet = EmployeeAccountingModule.getExpensesSettled
-                            ? EmployeeAccountingModule.getExpensesSettled(employeeId)
-                            : 0;
-                        return expSet > 0 ? `
-                        <div class="flex justify-between items-center mt-1">
-                            <span class="text-black-400 text-xs">سهم هزینه‌های تسویه‌شده</span>
-                            <span class="text-teal-400 font-bold text-xs">${EmployeeAccountingModule.formatCurrency(expSet)} از هزینه‌ها کسر شد</span>
-                        </div>` : '';
-                    })()}
+                    ${expSet > 0 ? `
+                    <div class="flex justify-between items-center mt-1">
+                        <span class="text-black-400 text-xs">سهم هزینه‌های تسویه‌شده</span>
+                        <span class="text-teal-400 font-bold text-xs">${EmployeeAccountingModule.formatCurrency(expSet)} از هزینه‌ها کسر شد</span>
+                    </div>` : ''}
                     <hr class="border-white/10 my-2">
                     <div class="flex justify-between items-center">
                         <span class="text-white font-semibold">مانده طلب</span>
@@ -1196,14 +1272,14 @@ const EmployeeAccountingUI = (function() {
                 <div class="space-y-3 mb-5">
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
-                        <!-- مقدار میلادی (ذخیره‌سازی) -->
+                        <!-- مقدار شمسی (مبنای ذخیره‌سازی حسابداری: مثل work_hours.date) -->
                         <input type="hidden" id="settle-date">
-                        <!-- فیلد شمسی — کتابخانه jalalidatepicker آن را کنترل می‌کند (مثل بقیه صفحه‌ها) -->
+                        <!-- فیلد شمسی — کتابخانه jalalidatepicker آن را کنترل می‌کند -->
                         <input type="text"
                                id="settle-date-disp"
                                data-jdp
                                data-jdp-target-value-input="#settle-date"
-                               data-jdp-target-value-type="gregorian"
+                               data-jdp-target-value-type="jalali"
                                placeholder="انتخاب تاریخ شمسی"
                                autocomplete="off"
                                readonly
@@ -1257,12 +1333,12 @@ const EmployeeAccountingUI = (function() {
             </div>`;
         document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-        // تاریخ پیش‌فرض: امروز — hidden میلادی + نمایش شمسی (فرمت قابل خواندن توسط jalalidatepicker)
-        const _todayGreg = new Date().toISOString().split('T')[0];
+        // تاریخ پیش‌فرض: امروزِ شمسی (مبنای ذخیره‌سازی: شمسی)
+        const _todayJ = EmployeeAccountingModule.todayJalaliISO();
         const _settleHid = document.getElementById('settle-date');
         const _settleDisp = document.getElementById('settle-date-disp');
-        if (_settleHid) _settleHid.value = _todayGreg;
-        if (_settleDisp) _settleDisp.value = _jalaliDateDisplay(_todayGreg);
+        if (_settleHid) _settleHid.value = _todayJ;
+        if (_settleDisp) _settleDisp.value = _jalaliDateDisplay(_todayJ);
         // راه‌اندازی مجدد jalalidatepicker برای input جدید در مودال
         if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
             setTimeout(function() { jalaliDatepicker.startWatch(); }, 50);
@@ -1272,7 +1348,8 @@ const EmployeeAccountingUI = (function() {
     function saveSettlement(employeeId, employeeName) {
         const dateHidden = document.getElementById('settle-date')?.value;
         const dateDisp   = document.getElementById('settle-date-disp')?.value;
-        const date   = dateHidden || dateDisp || '';
+        // نرمال‌سازی به شمسی (مبنای حسابداری) — چه hidden شمسی باشد چه میلادی
+        const date   = EmployeeAccountingModule.toJalaliISOSafe(dateHidden || dateDisp) || dateHidden || dateDisp || '';
         const amount = parseFloat(document.getElementById('settle-amount')?.value) || 0;
         const note   = document.getElementById('settle-note')?.value?.trim() || '';
         if (!date || !amount) { alert('تاریخ و مبلغ الزامی است'); return; }

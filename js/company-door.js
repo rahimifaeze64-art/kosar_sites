@@ -6,9 +6,8 @@
 const CompanyDoorModule = (function () {
     'use strict';
 
-    // ── تنظیمات — آدرس Raspberry Pi رو اینجا بذار ─────────
-    // مثال: 'http://192.168.1.50:5000'  یا آدرس public با port forward
-    const DOOR_API_BASE = localStorage.getItem('door_api_base') || '';
+    // آدرس Raspberry Pi از localStorage خوانده می‌شود (کلید `door_api_base`)
+    // و توکن اختیاری از `door_api_token` — از چرخ‌دنده بالای صفحه تنظیم کن.
 
     const LOG_TABLE = 'door_logs';
 
@@ -19,6 +18,21 @@ const CompanyDoorModule = (function () {
 
     function sb() {
         return (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+    }
+
+    function _getBase() {
+        return (localStorage.getItem('door_api_base') || '').trim().replace(/\/$/, '');
+    }
+
+    function _getToken() {
+        return (localStorage.getItem('door_api_token') || '').trim();
+    }
+
+    function _authHeaders() {
+        const h = { 'Content-Type': 'application/json' };
+        const t = _getToken();
+        if (t) h['X-Door-Token'] = t;
+        return h;
     }
 
     function esc(s) {
@@ -80,9 +94,9 @@ const CompanyDoorModule = (function () {
     async function sendCommand(action) {
         if (_loading) return;
 
-        const base = (localStorage.getItem('door_api_base') || '').trim();
+        const base = _getBase();
         if (!base) {
-            _showToast('اتصالات برقرار نیست', 'error');
+            _showToast('آدرس Raspberry Pi تنظیم نشده', 'error');
             return;
         }
 
@@ -90,10 +104,10 @@ const CompanyDoorModule = (function () {
         _updateButtons();
 
         try {
-            const endpoint = base.replace(/\/$/, '') + (action === 'open' ? '/open' : '/close');
+            const endpoint = base + (action === 'open' ? '/open' : '/close');
             const res = await fetch(endpoint, {
                 method:  'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: _authHeaders(),
                 body:    JSON.stringify({ action, requested_by: _currentUser?.name || 'app' }),
                 signal:  AbortSignal.timeout(8000),
             });
@@ -103,14 +117,18 @@ const CompanyDoorModule = (function () {
                 await saveLog(action);
                 _showToast(action === 'open' ? ' در باز شد' : ' در بسته شد', 'success');
                 _updateAll();
+            } else if (res.status === 401) {
+                _showToast('توکن اتصال نامعتبر است', 'error');
+            } else if (res.status === 409) {
+                _showToast('در حال اجرای دستور قبلی است', 'error');
             } else {
                 _showToast(`خطا از سرور: ${res.status}`, 'error');
             }
         } catch (e) {
             if (e.name === 'TimeoutError' || e.name === 'AbortError') {
-                _showToast('Raspberry Pi نرسید', 'error');
+                _showToast('Raspberry Pi پاسخ نداد', 'error');
             } else {
-                _showToast('به Raspberry Pi ناموفق بود', 'error');
+                _showToast('اتصال به Raspberry Pi ناموفق بود', 'error');
             }
         } finally {
             _loading = false;
@@ -292,6 +310,7 @@ const CompanyDoorModule = (function () {
     function showSettings() {
         document.getElementById('door-settings-modal')?.remove();
         const current = localStorage.getItem('door_api_base') || '';
+        const token   = localStorage.getItem('door_api_token') || '';
         const modal   = document.createElement('div');
         modal.id = 'door-settings-modal';
         modal.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-[999] p-4';
@@ -317,6 +336,14 @@ const CompanyDoorModule = (function () {
                         endpoint های مورد نیاز: <code class="text-lime-400">POST /open</code> و <code class="text-lime-400">POST /close</code>
                     </p>
                 </div>
+                <div>
+                    <label class="text-white/70 text-xs mb-1 block">توکن امنیتی (اختیاری)</label>
+                    <input id="door-token-input" type="text" value="${esc(token)}"
+                        placeholder="در صورت تنظیم DOOR_TOKEN روی رزبری"
+                        class="w-full bg-white/10 text-white placeholder-white/30 px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-lime-500 text-left" dir="ltr"/>
+                    <p class="text-white/40 text-xs mt-1">باید با مقدار <code class="text-lime-400">DOOR_TOKEN</code> روی Raspberry Pi یکسان باشد.</p>
+                </div>
+                <div id="door-test-result" class="hidden text-xs rounded-xl px-3 py-2"></div>
                 <div class="bg-white/5 rounded-xl p-3 text-xs text-white/50 space-y-1">
                     <p class="text-white/70 font-medium mb-1">نمونه کد Python برای Raspberry Pi:</p>
                     <pre class="text-lime-300 text-xs overflow-x-auto" dir="ltr">from flask import Flask, request
@@ -341,6 +368,10 @@ app.run(host='0.0.0.0', port=5000)</pre>
                 </div>
             </div>
             <div class="flex gap-3 mt-5">
+                <button onclick="CompanyDoorModule.testConnection()"
+                    class="px-4 bg-white/10 hover:bg-white/20 text-lime-300 font-bold py-2.5 rounded-xl transition-all">
+                    <i class="fas fa-plug ml-1"></i>تست اتصال
+                </button>
                 <button onclick="CompanyDoorModule.saveSettings()"
                     class="flex-1 bg-lime-600 hover:bg-lime-500 text-white font-bold py-2.5 rounded-xl transition-all">
                     <i class="fas fa-save ml-1"></i>ذخیره
@@ -357,9 +388,37 @@ app.run(host='0.0.0.0', port=5000)</pre>
 
     function saveSettings() {
         const val = document.getElementById('door-api-input')?.value.trim() || '';
+        const tok = document.getElementById('door-token-input')?.value.trim() || '';
         localStorage.setItem('door_api_base', val);
+        localStorage.setItem('door_api_token', tok);
         document.getElementById('door-settings-modal')?.remove();
         _showToast('تنظیمات ذخیره شد', 'success');
+    }
+
+    async function testConnection() {
+        const box = document.getElementById('door-test-result');
+        const base = (document.getElementById('door-api-input')?.value.trim() || '').replace(/\/$/, '');
+        const tok  = (document.getElementById('door-token-input')?.value.trim() || '');
+
+        const setResult = (ok, msg) => {
+            if (!box) return;
+            box.className = `text-xs rounded-xl px-3 py-2 ${ok ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`;
+            box.textContent = msg;
+        };
+
+        if (!base) return setResult(false, 'آدرس API را وارد کن');
+        setResult(true, 'در حال بررسی...');
+        try {
+            const headers = {};
+            if (tok) headers['X-Door-Token'] = tok;
+            const res = await fetch(base + '/health', { headers, signal: AbortSignal.timeout(8000) });
+            if (res.status === 401) return setResult(false, 'توکن نامعتبر است');
+            if (!res.ok) return setResult(false, `سرور خطا داد: ${res.status}`);
+            const data = await res.json().catch(() => ({}));
+            setResult(true, `اتصال برقرار است · وضعیت در: ${data.status || 'نامشخص'}`);
+        } catch (e) {
+            setResult(false, e.name === 'TimeoutError' || e.name === 'AbortError' ? 'سرور پاسخ نداد' : 'اتصال برقرار نشد');
+        }
     }
 
     // ── public API ────────────────────────────────────────────
@@ -383,7 +442,7 @@ app.run(host='0.0.0.0', port=5000)</pre>
         </div>`;
     }
 
-    return { init, getContent, openDoor, closeDoor, showSettings, saveSettings };
+    return { init, getContent, openDoor, closeDoor, showSettings, saveSettings, testConnection };
 
 })();
 

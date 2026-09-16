@@ -516,25 +516,18 @@ const SupabaseDataModule = {
                         .upsert(rows2, { onConflict: 'student_id,path_type,step_index' });
                     if (e2) throw e2;
                     delete this._lastUnsavedProgress[`${String(studentId)}|${pathType}`];
+                    // ⚠️ فقط مهر DB — مهر «ویرایش محلی» را اینجا نمی‌گذاریم (بالا توضیح داده شد)
                     try {
-                        const nowMs = Date.parse(nowIso) || Date.now();
-                        localStorage.setItem(`progdbts_${studentId}_${pathType}`, String(nowMs));
-                        const prevLocalTs = Number(localStorage.getItem(`progts_${studentId}_${pathType}`) || 0);
-                        localStorage.setItem(`progts_${studentId}_${pathType}`, String(Math.max(prevLocalTs, nowMs)));
+                        localStorage.setItem(`progdbts_${studentId}_${pathType}`, String(Date.parse(nowIso) || Date.now()));
                     } catch(e) {}
                     return true;
                 }
                 throw error;
             }
-            // موفق — از صف «ارسال‌نشده‌ها» حذف + هم‌ترازی مهرها:
-            // dbTs = progts_ = زمان ذخیره (تا پول بعدی در همین مرورگر،
-            // همین toggle موفق را «کهنه» تصور نکند و آن را بازنگرداند)
+            // موفق — از صف «ارسال‌نشده‌ها» حذف + ثبت مهر DB
             delete this._lastUnsavedProgress[`${String(studentId)}|${pathType}`];
             try {
-                const nowMs = Date.parse(nowIso) || Date.now();
-                localStorage.setItem(`progdbts_${studentId}_${pathType}`, String(nowMs));
-                const prevLocalTs = Number(localStorage.getItem(`progts_${studentId}_${pathType}`) || 0);
-                localStorage.setItem(`progts_${studentId}_${pathType}`, String(Math.max(prevLocalTs, nowMs)));
+                localStorage.setItem(`progdbts_${studentId}_${pathType}`, String(Date.parse(nowIso) || Date.now()));
             } catch(e) {}
             return true;
         } catch (e) {
@@ -603,6 +596,21 @@ const SupabaseDataModule = {
                 const s = sd[id];
                 if (!s) return;
 
+                // 🔒 رفع تضاد educational/studying: مراحل «در حال تحصیل» انتهای
+                // educationalSteps هستند و مسیر studying هم روی همان‌ها می‌نویسد.
+                // اگر هر دو مسیر در یک pull اعمال شوند، هر بار همدیگر را بازنویسی
+                // می‌کنند (flutter و mergeProgress تکراری در هر pull).
+                // پس برای دانشجوی دارای prog_ studying، انتهای educationalSteps
+                // از merge آموزشی مستثنی می‌شود (فقط studying مالک آن است).
+                let studyingTailLen = 0;
+                try {
+                    const rawStPre = localStorage.getItem(`prog_${id}_studying`);
+                    if (rawStPre) {
+                        const stPre = JSON.parse(rawStPre);
+                        if (Array.isArray(stPre)) studyingTailLen = stPre.length;
+                    }
+                } catch (e) {}
+
                 // مسیرهای عادی
                 pathMap.forEach(({ pt, key }) => {
                     const rawP = localStorage.getItem(`prog_${id}_${pt}`);
@@ -617,7 +625,16 @@ const SupabaseDataModule = {
                     try { arr = JSON.parse(rawP); } catch (e) { return; }
                     if (!Array.isArray(arr) || arr.length === 0) return;
 
-                    const merged = s[key].map((step, i) => applyStatus(step, arr[i]));
+                    // محدودهٔ مجاز merge: برای educational، انتهای متعلق به studying
+                    // را رد کن تا دو مسیر با هم نجنگند
+                    const lockTail = (pt === 'educational' && studyingTailLen > 0)
+                        ? s[key].length - studyingTailLen
+                        : s[key].length;
+
+                    const merged = s[key].map((step, i) => {
+                        if (i >= lockTail) return step;   // مالک: studying
+                        return applyStatus(step, arr[i]);
+                    });
                     // فقط اگر واقعاً چیزی عوض شد بشمار
                     if (merged.some((st, i) => st !== s[key][i])) {
                         s[key] = merged;

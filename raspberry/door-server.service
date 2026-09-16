@@ -1,0 +1,24 @@
+[Unit]
+Description=Kosar Company Door Server (Raspberry Pi GPIO)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/door
+# ── تنظیمات را اینجا وارد کن ──────────────────────────
+Environment=DOOR_PORT=5000
+Environment=DOOR_OPEN_PIN=18
+Environment=DOOR_CLOSE_PIN=23
+Environment=DOOR_PULSE_SECONDS=1.0
+Environment=DOOR_RELAY_MODE=dual
+Environment=DOOR_ACTIVE_HIGH=0
+Environment=DOOR_TOKEN=توکن-دلخواه-خودت-را-اینجا-بگذار
+# ──────────────────────────────────────────────────────
+ExecStart=/usr/bin/python3 /home/pi/door/door_server.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
