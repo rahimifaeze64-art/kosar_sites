@@ -904,7 +904,7 @@ const EmployeeModule = {
                     <div id="students-list-container-studying" style="display:none;">
                         <div class="flex justify-start mb-2">
                             <button onclick="employeeModule.openSheetView('studying')"
-                                    class="bg-lime-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1" title="نمای شیت در حال تحصیل">
+                                    class="bg-lime-600 hover:bg-lime-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1" title="نمای شیت در حال تحصیل">
                                 <i class="fas fa-th-list ml-1"></i>نمای شیت
                             </button>
                         </div>
