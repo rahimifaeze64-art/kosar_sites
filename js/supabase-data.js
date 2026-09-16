@@ -925,6 +925,42 @@ const SupabaseDataModule = {
         }
     },
 
+    // ── همهٔ وظایف همهٔ کارمندان (برای صفحهٔ «کارهای معلق») ────────────
+    // صفحهٔ کارهای معلق از روی localStorage['employee_tasks'] گراف می‌سازد؛
+    // ولی برای مدیر فقط وظایف چند کارمند در حافظه است. این متد کل جدول را
+    // می‌خواند و گروه‌بندی‌شده در localStorage می‌نویسد.
+    async getAllEmployeeTasks() {
+        if (!this._online()) return JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+        try {
+            const { data, error } = await this._db()
+                .from('employee_tasks')
+                .select('*')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+
+            const grouped = {};
+            (data || []).forEach(r => {
+                const t = this._dbToTask(r);
+                const empId = String(r.assigned_to || t.assignedTo || '');
+                if (!empId) return;
+                if (!grouped[empId]) grouped[empId] = [];
+                grouped[empId].push(t);
+            });
+
+            const all = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+            // گروه‌های DB ملاک‌اند؛ گروه‌هایی که در DB نیستند دست‌نخورده می‌مانند
+            // (وظایف محلیِ هنوز ذخیره‌نشده از دست نروند)
+            Object.keys(grouped).forEach(empId => { all[empId] = grouped[empId]; });
+            localStorage.setItem('employee_tasks', JSON.stringify(all));
+
+            console.log(`✅ ${data.length} وظیفه کارکنان از Supabase بارگذاری شد (${Object.keys(grouped).length} کارمند)`);
+            return all;
+        } catch (e) {
+            console.warn('⚠️ getAllEmployeeTasks خطا:', e.message);
+            return JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+        }
+    },
+
     async saveEmployeeTask(employeeId, task) {
         // ذخیره محلی
         const all = JSON.parse(localStorage.getItem('employee_tasks') || '{}');

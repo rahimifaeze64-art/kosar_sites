@@ -612,19 +612,16 @@ const EmployeeModule = {
                             <i class="fas fa-tasks"></i>
                             <span class="hidden sm:inline">مدیریت مراحل</span>
                         </button>
-                        <!-- دکمه «کارهای معلق» موقتاً غیرفعال شد — برای فعال‌سازی مجدد کامنت زیر را بردارید -->
-                        <!--
                         <button onclick="window._alpineSetPage && window._alpineSetPage('pendingTasksView')"
                                 class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1">
                             <i class="fas fa-hourglass-half"></i>
                             <span class="hidden sm:inline">کارهای معلق</span>
                         </button>
-                        -->
                     </div>
                 </div>
                 
                 <!-- Stats Cards -->
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 gap-3">
                     <div class="bg-slate-800 rounded-lg p-3">
                         <div class="flex items-center justify-between">
                             <div>
@@ -632,15 +629,6 @@ const EmployeeModule = {
                                 <p class="text-xl font-bold text-green-400">${students.filter(s => s.active).length}</p>
                             </div>
                             <i class="fas fa-user-check text-2xl text-green-400 opacity-70"></i>
-                        </div>
-                    </div>
-                    <div class="bg-slate-800 rounded-lg p-3">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-gray-400 text-xs">خاتمه یافته</p>
-                                <p class="text-xl font-bold text-gray-400">${students.filter(s => !s.active).length}</p>
-                            </div>
-                            <i class="fas fa-user-times text-2xl text-gray-400 opacity-70"></i>
                         </div>
                     </div>
                 </div>
@@ -714,7 +702,6 @@ const EmployeeModule = {
                                         class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lime-500">
                                     <option value="all">همه</option>
                                     <option value="active">فعال</option>
-                                    <option value="inactive">خاتمه یافته</option>
                                 </select>
                             </div>
                         </div>
@@ -888,12 +875,6 @@ const EmployeeModule = {
                             <i class="fas fa-award ml-1"></i>
                             فارغ‌التحصیل شده (${students.filter(s => s.graduated || (s.educationalSteps && s.educationalSteps.length > 0 && s.educationalSteps.every(x=>x.completed)) || (!s.active && s.finishedDate)).length})
                         </button>
-                        <button onclick="employeeModule.switchStudentListTab('inactive')" 
-                                id="student-list-tab-inactive"
-                                class="px-5 py-3 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300 transition-all whitespace-nowrap">
-                            <i class="fas fa-user-times ml-1"></i>
-                            خاتمه یافته (${students.filter(s => !s.active && !s.graduated).length})
-                        </button>
                     </div>
                     
                     <!-- Active Students -->
@@ -904,7 +885,7 @@ const EmployeeModule = {
                     <div id="students-list-container-studying" style="display:none;">
                         <div class="flex justify-start mb-2">
                             <button onclick="employeeModule.openSheetView('studying')"
-                                    class="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1" title="نمای شیت در حال تحصیل">
+                                    class="bg-lime-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1" title="نمای شیت در حال تحصیل">
                                 <i class="fas fa-th-list ml-1"></i>نمای شیت
                             </button>
                         </div>
@@ -937,10 +918,6 @@ const EmployeeModule = {
                     <!-- Graduated Students -->
                     <div id="students-list-container-graduated" style="display:none;">
                         ${this._renderStudentTable(students.filter(s => s.graduated || (s.educationalSteps && s.educationalSteps.length > 0 && s.educationalSteps.every(x=>x.completed)) || (!s.active && s.finishedDate)), 'دانشجوی فارغ‌التحصیل‌شده‌ای وجود ندارد')}
-                    </div>
-                    <!-- Inactive Students -->
-                    <div id="students-list-container-inactive" style="display: none;">
-                        ${this._renderStudentTable(students.filter(s => !s.active && !s.graduated), 'دانشجوی خاتمه یافته‌ای وجود ندارد')}
                     </div>
                 </div>
             </div>
@@ -1010,8 +987,8 @@ const EmployeeModule = {
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <span class="text-xs font-bold text-gray-400 w-6 text-center">${rowNumber}</span>
-                        <div class="w-10 h-10 rounded-full bg-lime-600 flex items-center justify-center text-gray-900 font-bold text-xs flex-shrink-0">
-                            ${s.studentId || '—'}
+                        <div class="w-10 h-10 rounded-full bg-lime-600 flex items-center justify-center text-gray-900 flex-shrink-0">
+                            <i class="fas fa-user"></i>
                         </div>
                         <div>
                             <div class="font-semibold text-white text-sm">${s.name || '—'}</div>
@@ -1026,9 +1003,8 @@ const EmployeeModule = {
                     <div class="truncate"><i class="fas fa-book ml-1 text-lime-400"></i>${s.field || '—'}</div>
                     <div>${s.active
                         ? `<span class="text-green-400"><i class="fas fa-circle text-xs ml-1"></i>فعال</span>`
-                        : `<span class="text-gray-500"><i class="fas fa-circle text-xs ml-1"></i>خاتمه</span>`
-                    }</div>
-                </div>
+                        : `<span class="text-yellow-400"><i class="fas fa-award text-xs ml-1"></i>فارغ‌التحصیل</span>`
+                    }</div>                </div>
                 <div>
                     <div class="flex justify-between mb-1">
                         <span class="text-xs text-gray-400">پیشرفت</span>
@@ -1064,8 +1040,8 @@ const EmployeeModule = {
                 <td class="px-3 py-3 text-sm font-bold text-gray-300 text-center">${rowNumber}</td>
                 <td class="px-4 py-3">
                     <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-full bg-lime-600 flex items-center justify-center text-gray-900 font-bold text-[10px] flex-shrink-0" title="${s.name || ''}">
-                            ${s.studentId || '—'}
+                        <div class="w-9 h-9 rounded-full bg-lime-600 flex items-center justify-center text-gray-900 flex-shrink-0" title="${s.name || ''}">
+                            <i class="fas fa-user"></i>
                         </div>
                         <div class="font-semibold text-white text-sm">${s.name || '—'}</div>
                     </div>
@@ -1080,7 +1056,6 @@ const EmployeeModule = {
                             <div class="flex-1 bg-slate-600 rounded-full h-1.5">
                                 <div class="h-1.5 rounded-full ${barColor}" style="width:${pct}%"></div>
                             </div>
-                            <span class="text-xs font-bold text-gray-300 w-8 text-left">${pct}%</span>
                         </div>
                         <div class="text-xs text-gray-500 truncate max-w-[130px]">${curStep ? curStep.name : '✓ تکمیل شده'}</div>
                     </div>
@@ -1555,14 +1530,13 @@ const EmployeeModule = {
             console.log(`📊 After empty-field filter (${filterEmptyField}): ${filteredStudents.length} students`);
         }
         
-        // Update the display - support both old single container and new active/inactive containers
+        // Update the display - support both old single container and new containers
         const countSpan = document.getElementById('filter-count');
         if (countSpan) {
             countSpan.textContent = filteredStudents.length;
         }
         
         const containerActive = document.getElementById('students-list-container-active');
-        const containerInactive = document.getElementById('students-list-container-inactive');
         const containerOld = document.getElementById('students-list-container');
 
         const emptyHTML = `
@@ -1572,25 +1546,14 @@ const EmployeeModule = {
             </div>
         `;
 
-        if (containerActive || containerInactive) {
-            // New layout: split active/inactive
+        if (containerActive) {
+            // New layout: active students
             const activeStudents = filteredStudents.filter(s => s.active);
-            const inactiveStudents = filteredStudents.filter(s => !s.active);
-
-            if (containerActive) {
-                containerActive.innerHTML = activeStudents.length === 0 ? emptyHTML : `
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        ${activeStudents.map(student => this.getStudentCardWithProgress(student)).join('')}
-                    </div>
-                `;
-            }
-            if (containerInactive) {
-                containerInactive.innerHTML = inactiveStudents.length === 0 ? emptyHTML : `
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        ${inactiveStudents.map(student => this.getStudentCardWithProgress(student)).join('')}
-                    </div>
-                `;
-            }
+            containerActive.innerHTML = activeStudents.length === 0 ? emptyHTML : `
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    ${activeStudents.map(student => this.getStudentCardWithProgress(student)).join('')}
+                </div>
+            `;
         } else if (containerOld) {
             containerOld.innerHTML = filteredStudents.length === 0 ? `
                     <div class="text-center py-8">
@@ -5761,7 +5724,6 @@ EmployeeModule.applyStudentFilter = function() {
 
     // ── اطلاعات تخصصی ─────────────────────────────────────────
     if (filterStatus === 'active')   f = f.filter(s => s.active);
-    if (filterStatus === 'inactive') f = f.filter(s => !s.active);
     if (filterGraduated === 'graduated')     f = f.filter(s => s.graduated);
     if (filterGraduated === 'not_graduated') f = f.filter(s => !s.graduated);
 
@@ -5848,7 +5810,6 @@ EmployeeModule.applyStudentFilter = function() {
 
     const containers = {
         'students-list-container-active':      s => s.active,
-        'students-list-container-inactive':    s => !s.active && !s.graduated,
         'students-list-container-studying':    s => s.active && s.currentPath === 'studying',
         'students-list-container-defense':     s => s.active && (s.currentPath === 'defense' || (!s.currentPath && !(s.defenseSteps||[]).every(x=>x.completed))),
         'students-list-container-educational': s => s.active && (s.currentPath === 'educational' || (!(s.currentPath) && s.defenseSteps && s.defenseSteps.length > 0 && s.defenseSteps.every(x=>x.completed))),
@@ -5856,7 +5817,6 @@ EmployeeModule.applyStudentFilter = function() {
     };
     const emptyMsgs = {
         'students-list-container-active':      'دانشجوی فعالی با این فیلتر یافت نشد',
-        'students-list-container-inactive':    'دانشجوی خاتمه‌یافته‌ای با این فیلتر یافت نشد',
         'students-list-container-studying':    'دانشجویی در مرحله در حال تحصیل با این فیلتر یافت نشد',
         'students-list-container-defense':     'دانشجویی در مرحله دفاع با این فیلتر یافت نشد',
         'students-list-container-educational': 'دانشجویی در مرحله فارغ‌التحصیلی با این فیلتر یافت نشد',
@@ -5912,14 +5872,13 @@ EmployeeModule._switchFilterTab = function(tab) {
 
 // Switch between student list tabs
 EmployeeModule.switchStudentListTab = function(tab) {
-    const allTabs = ['active','studying','defense','educational','graduated','inactive'];
+    const allTabs = ['active','studying','defense','educational','graduated'];
     const tabColors = {
         active:      'border-green-500 text-green-400',
         studying:    'border-cyan-500 text-cyan-400',
         defense:     'border-blue-500 text-blue-400',
         educational: 'border-emerald-500 text-emerald-400',
         graduated:   'border-yellow-500 text-yellow-400',
-        inactive:    'border-gray-500 text-gray-300',
     };
 
     allTabs.forEach(t => {
@@ -5928,8 +5887,7 @@ EmployeeModule.switchStudentListTab = function(tab) {
         if (btn) {
             btn.classList.remove('border-green-500','text-green-400','border-blue-500','text-blue-400',
                 'border-cyan-500','text-cyan-400',
-                'border-emerald-500','text-emerald-400','border-yellow-500','text-yellow-400',
-                'border-gray-500','text-gray-300');
+                'border-emerald-500','text-emerald-400','border-yellow-500','text-yellow-400');
             if (t === tab) {
                 const cls = (tabColors[t] || 'border-lime-500 text-lime-400').split(' ');
                 btn.classList.add(...cls);
@@ -6111,9 +6069,9 @@ EmployeeModule.startStudentDefense = function(studentId) {
     if (typeof this.refreshStudents === 'function') this.refreshStudents();
 };
 
-// Finish student work (deactivate student)
+// Finish student work (mark student as finished/graduated)
 EmployeeModule.finishStudentWork = function(studentId) {
-    if (!confirm('آیا مطمئن هستید که می‌خواهید دانشجو را به حالت غیرفعال تغییر دهید؟\nدانشجو به قسمت "دانشجویان خاتمه یافته" منتقل خواهد شد.')) {
+    if (!confirm('آیا مطمئن هستید که می‌خواهید این دانشجو را به حالت پایانی تغییر دهید؟')) {
         return;
     }
     
@@ -6139,7 +6097,7 @@ EmployeeModule.finishStudentWork = function(studentId) {
         DataModule.updateUser(studentId, { active: false, finishedDate: student.finishedDate });
     }
     
-    UTILS.showNotification('دانشجو با موفقیت به حالت غیرفعال تغییر یافت', 'success');
+    UTILS.showNotification('وضعیت پایانی دانشجو ثبت شد', 'success');
     
     // Close modal and refresh
     this.closeModal('edit-student-modal');

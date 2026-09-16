@@ -526,11 +526,34 @@ function onFilterChange() {
 
 function manualRefresh() {
     hideNodeInfo();
-    refreshData(true);
     const icon = document.querySelector('#btn-refresh i');
-    if (icon) {
-        icon.classList.add('fa-spin');
-        setTimeout(() => icon.classList.remove('fa-spin'), 900);
+    if (icon) { icon.classList.add('fa-spin'); }
+    pullFromSupabase().finally(() => {
+        refreshData(true);
+        if (icon) setTimeout(() => icon.classList.remove('fa-spin'), 500);
+    });
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  دریافت تازه از Supabase (برای مدیر که وظایف همهٔ کارمندان را ندارد)
+//  داخل iframe به ماژول‌های صفحهٔ اصلی دسترسی داریم؛ در حالت مستقل،
+//  همان کلیدها در localStorage این صفحه به اشتراک گذاشته می‌شوند.
+// ══════════════════════════════════════════════════════════════════
+async function pullFromSupabase() {
+    try {
+        const host = (() => {
+            try { return window.parent && window.parent !== window ? window.parent : window; } catch (e) { return window; }
+        })();
+        const sb = host.SupabaseDataModule;
+        if (sb && typeof sb.getAllEmployeeTasks === 'function') {
+            await sb.getAllEmployeeTasks();
+        }
+        // کاربران هم اگر در این مرورگر نبودند، از صفحهٔ اصلی بگیر
+        if (!localStorage.getItem('edu_system_users') && sb && typeof sb.getUsers === 'function') {
+            await sb.getUsers();
+        }
+    } catch (e) {
+        console.warn('⚠️ pullFromSupabase خطا:', e.message);
     }
 }
 
@@ -701,6 +724,8 @@ document.addEventListener('DOMContentLoaded', () => {
     draw();
     // رندر مجدد بعد از لود فونت فارسی
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => draw());
+    // دریافت تازه از Supabase (اگر آنلاین بود) و رندر دوباره با داده کامل
+    pullFromSupabase().finally(() => refreshData(true));
 });
 </script>
 </body>
