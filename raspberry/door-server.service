@@ -15,10 +15,19 @@ Environment=DOOR_PULSE_SECONDS=1.0
 Environment=DOOR_RELAY_MODE=dual
 Environment=DOOR_ACTIVE_HIGH=0
 Environment=DOOR_TOKEN=توکن-دلخواه-خودت-را-اینجا-بگذار
+Environment=DOOR_SETUP_FIREWALL=1
+Environment=DOOR_LAN_ONLY=1
+# اگر پنل با https باز می‌شود، این را 1 کن و در پنل از https استفاده کن
+Environment=DOOR_HTTPS=0
 # ──────────────────────────────────────────────────────
 ExecStart=/usr/bin/python3 /home/pi/door/door_server.py
 Restart=always
 RestartSec=3
+# ── اجرای ۲۴ ساعته: بعد از هر کرش/ری‌استارت دوباره بالا می‌آید ──
+# اگر می‌خواهی فایروال هم خودکار باز شود و sudo رمز نخواهد،
+# به‌جای User=pi این دو خط را فعال کن:
+# User=root
+# Group=root
 
 [Install]
 WantedBy=multi-user.target

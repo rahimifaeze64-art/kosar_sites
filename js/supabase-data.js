@@ -592,6 +592,35 @@ const SupabaseDataModule = {
                 };
             };
 
+            // ساخت آرایهٔ مراحل از پیش‌فرض‌ها وقتی students_data آن را ندارد.
+            // ⚠️ بدون این، merge فقط برای دانشجویانی انجام می‌شد که آرایهٔ مراحل
+            // از قبل در students_data داشتند (در لاگ فقط ۴ مسیر از ۳۴۴ دانشجو!)؛
+            // نتیجه: صفحهٔ «مدیریت دانشجویان» — که از students_data می‌خواند —
+            // برای نقش مدیر همهٔ مراحل را قرمز نشان می‌داد در حالی که DB سبز بود.
+            const buildSteps = (pt) => {
+                try {
+                    if (typeof EmployeeModule !== 'undefined') {
+                        const fn = pt === 'defense' ? EmployeeModule.getDefaultDefenseSteps2
+                                 : pt === 'educational' ? EmployeeModule.getDefaultEducationalSteps
+                                 : EmployeeModule.getDefaultRequirementsSteps;
+                        if (typeof fn === 'function') {
+                            const def = fn.call(EmployeeModule);
+                            if (Array.isArray(def) && def.length > 0) {
+                                return def.map(st => ({
+                                    name: st.name,
+                                    completed: false,
+                                    paused: false,
+                                    inProgress: false,
+                                    date: null,
+                                    notes: st.notes || ''
+                                }));
+                            }
+                        }
+                    }
+                } catch (e) { /* بدون پیش‌فرض — merge انجام نمی‌شود */ }
+                return null;
+            };
+
             targets.forEach(id => {
                 const s = sd[id];
                 if (!s) return;
@@ -615,7 +644,13 @@ const SupabaseDataModule = {
                 pathMap.forEach(({ pt, key }) => {
                     const rawP = localStorage.getItem(`prog_${id}_${pt}`);
                     if (!rawP) return;
-                    if (!Array.isArray(s[key]) || s[key].length === 0) return;
+                    // اگر آرایهٔ مراحل در students_data نبود/خالی بود، از پیش‌فرض بساز
+                    // (وگرنه merge رد می‌شد و نمای مدیریت دانشجویان کهنه می‌ماند)
+                    if (!Array.isArray(s[key]) || s[key].length === 0) {
+                        const built = buildSteps(pt);
+                        if (built && built.length > 0) s[key] = built;
+                        else return;
+                    }
                     // 🔒 اگر همین مرورگر این مسیر را تازه‌تر ویرایش کرده، دست نزن
                     const localTs = Number(localStorage.getItem(`progts_${id}_${pt}`) || 0);
                     const dbTs    = Number(localStorage.getItem(`progdbts_${id}_${pt}`) || 0);
@@ -643,6 +678,8 @@ const SupabaseDataModule = {
                 });
 
                 // مسیر studying → انتهای educationalSteps (آفست از انتها)
+                // 🛡️ گارد: اگر progress مسیر studying همه-صفر است، چیزی برای اعمال
+                // نیست — وگرنه انتهای مراحل فارغ‌التحصیلی بی‌دلیل به «ناتمام» برمی‌گشت.
                 const rawSt = localStorage.getItem(`prog_${id}_studying`);
                 if (rawSt && Array.isArray(s.educationalSteps)) {
                     const localTs = Number(localStorage.getItem(`progts_${id}_studying`) || 0);
@@ -650,7 +687,8 @@ const SupabaseDataModule = {
                     if (!(localTs && localTs >= dbTs)) {
                         let arr;
                         try { arr = JSON.parse(rawSt); } catch (e) { arr = null; }
-                        if (Array.isArray(arr) && arr.length > 0) {
+                        const stAllZero = !Array.isArray(arr) || arr.every(p => !p || (p.status ?? 0) === 0);
+                        if (Array.isArray(arr) && arr.length > 0 && !stAllZero) {
                             const offset = s.educationalSteps.length - arr.length;
                             if (offset >= 0) {
                                 let stChanged = false;
