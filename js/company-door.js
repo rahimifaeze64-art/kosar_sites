@@ -117,6 +117,11 @@ const CompanyDoorModule = (function () {
             return;
         }
 
+        if (location.protocol === 'https:' && base.startsWith('http://')) {
+            _showToast('صفحه https است و مرورگر http را بلاک میکند — رزبری را با DOOR_HTTPS=1 اجرا کن', 'error');
+            return;
+        }
+
         _loading = true;
         _updateButtons();
 
