@@ -120,8 +120,8 @@ const CompanyDoorModule = (function () {
         _loading = true;
         _updateButtons();
 
+        const endpoint = base + (action === 'open' ? '/open' : '/close');
         try {
-            const endpoint = base + (action === 'open' ? '/open' : '/close');
             const res = await fetch(endpoint, {
                 method:  'POST',
                 headers: _authHeaders(),
@@ -142,10 +142,11 @@ const CompanyDoorModule = (function () {
                 _showToast(`خطا از سرور: ${res.status}`, 'error');
             }
         } catch (e) {
+            console.error('[door]', endpoint, e.name, e.message);
             if (e.name === 'TimeoutError' || e.name === 'AbortError') {
-                _showToast('Raspberry Pi پاسخ نداد', 'error');
+                _showToast(`Raspberry Pi پاسخ نداد · ${base}`, 'error');
             } else {
-                _showToast('اتصال به Raspberry Pi ناموفق بود', 'error');
+                _showToast(`اتصال ناموفق · ${base}`, 'error');
             }
         } finally {
             _loading = false;
@@ -424,17 +425,26 @@ app.run(host='0.0.0.0', port=5000)</pre>
         };
 
         if (!base) return setResult(false, 'آدرس API را وارد کن');
-        setResult(true, 'در حال بررسی...');
+        const scheme = location.protocol === 'https:' ? 'https' : 'http';
+        if (scheme === 'https' && base.startsWith('http://')) {
+            setResult(false, '⚠ صفحه https است ولی آدرس API با http — مرورگر بلاک میکند. رزبری را با DOOR_HTTPS=1 اجرا کن.');
+            return;
+        }
+        setResult(true, `در حال بررسی ${base} ...`);
         try {
             const headers = {};
             if (tok) headers['X-Door-Token'] = tok;
             const res = await fetch(base + '/health', { headers, signal: AbortSignal.timeout(8000) });
             if (res.status === 401) return setResult(false, 'توکن نامعتبر است');
+            if (res.status === 403) return setResult(false, 'از بیرون شبکه شرکت — گوشی باید روی همان وایفای مودم باشد');
             if (!res.ok) return setResult(false, `سرور خطا داد: ${res.status}`);
             const data = await res.json().catch(() => ({}));
-            setResult(true, `اتصال برقرار است · وضعیت در: ${data.status || 'نامشخص'}`);
+            setResult(true, `اتصال برقرار است ✅ · وضعیت در: ${data.status || 'نامشخص'} · GPIO: ${data.gpio ? 'واقعی' : 'شبیه‌سازی'}`);
         } catch (e) {
-            setResult(false, e.name === 'TimeoutError' || e.name === 'AbortError' ? 'سرور پاسخ نداد' : 'اتصال برقرار نشد');
+            console.error('[door test]', base + '/health', e.name, e.message);
+            setResult(false, e.name === 'TimeoutError' || e.name === 'AbortError'
+                ? `سرور پاسخ نداد (${base}) — احتمالاً رزبری خاموش است یا IP عوض شده`
+                : `اتصال برقرار نشد (${base}) — صفحه https + رزبری http یا شبکه جدا`);
         }
     }
 
