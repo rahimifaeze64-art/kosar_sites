@@ -6,10 +6,25 @@
 const CompanyDoorModule = (function () {
     'use strict';
 
-    // آدرس Raspberry Pi از localStorage خوانده می‌شود (کلید `door_api_base`)
-    // و توکن اختیاری از `door_api_token` — از چرخ‌دنده بالای صفحه تنظیم کن.
+    // ── تنظیمات پیش‌فرض Raspberry Pi ─────────────────────────
+    const DOOR_CONFIG = {
+        // آدرس رزبری در شبکه شرکت (بدون http/https — پروتکل خودکار انتخاب می‌شود)
+        apiBase: '192.168.1.85:5000',
+        // اگر پنل با https باز شود، خودکار https استفاده می‌شود (باید رزبری با DOOR_HTTPS=1 اجرا شده باشد)
+        autoHttpsOnHttpsPage: true,
+        // توکن امنیتی؛ در حالت LAN_ONLY خالی بگذار
+        token: '',
+    };
 
+    // کاربر می‌تواند از چرخ‌دنده بالای صفحه اینها را override کند.
     const LOG_TABLE = 'door_logs';
+
+    function _defaultBase() {
+        const host = String(DOOR_CONFIG.apiBase || '').replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+        if (!host) return '';
+        const useHttps = DOOR_CONFIG.autoHttpsOnHttpsPage && location.protocol === 'https:';
+        return (useHttps ? 'https://' : 'http://') + host;
+    }
 
     let _currentUser = null;
     let _logs        = [];
@@ -21,11 +36,13 @@ const CompanyDoorModule = (function () {
     }
 
     function _getBase() {
-        return (localStorage.getItem('door_api_base') || '').trim().replace(/\/$/, '');
+        const saved = (localStorage.getItem('door_api_base') || '').trim().replace(/\/$/, '');
+        return saved || _defaultBase();
     }
 
     function _getToken() {
-        return (localStorage.getItem('door_api_token') || '').trim();
+        const saved = (localStorage.getItem('door_api_token') || '').trim();
+        return saved || String(DOOR_CONFIG.token || '').trim();
     }
 
     function _authHeaders() {
@@ -309,8 +326,8 @@ const CompanyDoorModule = (function () {
     // ── مودال تنظیمات آدرس API ───────────────────────────────
     function showSettings() {
         document.getElementById('door-settings-modal')?.remove();
-        const current = localStorage.getItem('door_api_base') || '';
-        const token   = localStorage.getItem('door_api_token') || '';
+        const current = localStorage.getItem('door_api_base') || _defaultBase();
+        const token   = localStorage.getItem('door_api_token') || String(DOOR_CONFIG.token || '');
         const modal   = document.createElement('div');
         modal.id = 'door-settings-modal';
         modal.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-[999] p-4';
