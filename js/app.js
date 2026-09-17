@@ -257,7 +257,7 @@ function appController() {
                     <div class="space-y-4">
                       <div class="flex items-center gap-3 mb-2">
                         <button onclick="window._alpineSetPage('students')"
-                          class="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm font-medium transition-all">
+                          class="flex items-center gap-2 text-green-400 hover:text-green-300 text-sm font-medium transition-all">
                           <i class="fas fa-arrow-right"></i> بازگشت به مدیریت دانشجویان
                         </button>
                       </div>
@@ -265,6 +265,40 @@ function appController() {
                         style="width:100%;height:85vh;border:none;border-radius:12px;background:#fff;"
                         title="کارهای معلق"></iframe>
                     </div>`;
+              });
+          }
+          // مراحل معلق - نمای گرافی دانشجویان مانده در هر مرحله (۳ مسیر)
+          if (newPage === 'pendingStagesView') {
+              this.$nextTick(() => {
+                  const container = document.getElementById('pending-stages-view-container');
+                  if (!container) return;
+                  container.innerHTML = `
+                    <div class="space-y-4">
+                      <div class="flex items-center gap-3 mb-2">
+                        <button onclick="window._alpineSetPage('students')"
+                          class="flex items-center gap-2 text-teal-400 hover:text-teal-300 text-sm font-medium transition-all">
+                          <i class="fas fa-arrow-right"></i> بازگشت به مدیریت دانشجویان
+                        </button>
+                      </div>
+                      <iframe src="pending-stages.html"
+                        style="width:100%;height:85vh;border:none;border-radius:12px;background:#fff;"
+                        title="مراحل معلق"></iframe>
+                    </div>`;
+              });
+          }
+          // دستیار هوشمند دانشجویان
+          if (newPage === 'aiAssistantView') {
+              this.$nextTick(() => {
+                  const root = document.getElementById('ai-assistant-root');
+                  if (!root) return;
+                  if (typeof AiAssistantModule === 'undefined') {
+                      console.warn('⚠️ AiAssistantModule لود نشده است');
+                      return;
+                  }
+                  if (!root.querySelector('#ai-messages')) {
+                      root.innerHTML = AiAssistantModule.getContent();
+                  }
+                  setTimeout(() => AiAssistantModule.init(), 60);
               });
           }
         });

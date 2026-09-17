@@ -1,0 +1,810 @@
+﻿<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مراحل معلق</title>
+    <script src="assets/libs/tailwindcss.js"></script>
+    <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
+    <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+    <style>
+        * { font-family: 'Vazirmatn', sans-serif; box-sizing: border-box; }
+        body { margin: 0; background: #f1f5f9; color: #1e293b; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+        #app-header {
+            background: #ffffff; border-bottom: 2px solid #e2e8f0;
+            padding: 10px 18px; display: flex; align-items: center; gap: 12px;
+            z-index: 100; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,.08);
+        }
+        #app-header h1 { font-size: 16px; font-weight: 800; color: #1e293b; margin: 0; }
+        #app-header p  { font-size: 11px; color: #64748b; margin: 0; }
+        .stat-badge {
+            display: flex; align-items: center; gap: 6px;
+            background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d;
+            border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 700;
+        }
+        .stat-badge.warn { background: #fffbeb; border-color: #fde68a; color: #b45309; }
+        #toolbar {
+            position: fixed; top: 50%; right: 16px; transform: translateY(-50%);
+            background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px;
+            padding: 10px 8px; display: flex; flex-direction: column; gap: 6px;
+            z-index: 200; box-shadow: 0 4px 16px rgba(0,0,0,.1);
+        }
+        .tb-btn {
+            width: 42px; height: 42px; border-radius: 10px;
+            border: 1.5px solid #e2e8f0; background: #f8fafc; color: #64748b;
+            font-size: 15px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+        }
+        .tb-btn:hover { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+        .tb-btn.active { background: #16a34a; color: white; border-color: #16a34a; }
+        .tb-sep { height: 1px; background: #e2e8f0; margin: 2px 0; }
+        #canvas-wrap { flex: 1; position: relative; overflow: hidden; cursor: default; }
+        #canvas-wrap.pan-mode { cursor: grab; }
+        #canvas-wrap.pan-mode.panning { cursor: grabbing; }
+        canvas#ps { position: absolute; top: 0; left: 0; }
+        #zoom-badge {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px;
+            padding: 5px 14px; font-size: 12px; color: #64748b; z-index: 200;
+            pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,.08);
+        }
+        #filter-bar {
+            position: fixed; bottom: 20px; right: 80px;
+            background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px;
+            padding: 6px 12px; display: flex; align-items: center; gap: 8px;
+            z-index: 200; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.08); flex-wrap: wrap;
+        }
+        #filter-bar select {
+            background: #f8fafc; color: #1e293b; border: 1px solid #cbd5e1;
+            border-radius: 6px; padding: 4px 8px; font-size: 12px;
+            font-family: 'Vazirmatn', sans-serif; outline: none;
+        }
+        #node-info {
+            position: fixed; display: none; background: #ffffff;
+            border: 1px solid #bbf7d0; border-radius: 12px; padding: 12px 14px;
+            z-index: 500; min-width: 250px; max-width: 340px;
+            box-shadow: 0 8px 30px rgba(0,0,0,.18); font-size: 12px;
+        }
+        #node-info h4 { margin: 0 0 6px; font-size: 13px; color: #1e293b; display: flex; align-items: center; gap: 6px; }
+        #node-info .row { color: #475569; margin: 3px 0; display: flex; gap: 6px; align-items: flex-start; }
+        #node-info .row i { color: #16a34a; margin-top: 2px; width: 12px; }
+        #node-info .pill { display:inline-block; font-size:10px; padding:1px 7px; border-radius:10px; margin:1px 2px; }
+    </style>
+</head>
+<body>
+<!-- Header -->
+<div id="app-header">
+    <a href="index.html" id="back-link" style="color:#64748b;font-size:18px;text-decoration:none">
+        <i class="fas fa-arrow-right"></i>
+    </a>
+    <div style="flex:1">
+        <h1><i class="fas fa-diagram-project" style="color:#16a34a;margin-left:6px"></i>مراحل معلق</h1>
+        <p>دانشجویانِ مانده در هر مرحله — ۳ مسیر: در حال تحصیل، گردش دفاع، فارغ‌التحصیلی | Drag برای جابه‌جایی | Scroll برای zoom | کلیک روی نود برای جزئیات</p>
+    </div>
+    <div class="stat-badge"><i class="fas fa-layer-group"></i><span id="stat-stages">0 مرحله</span></div>
+    <div class="stat-badge"><i class="fas fa-user-clock"></i><span id="stat-students">0 دانشجو</span></div>
+    <div class="stat-badge warn" id="stat-out-wrap" style="display:none"><i class="fas fa-circle-exclamation"></i><span id="stat-out">0 خارج از نما</span></div>
+</div>
+
+<!-- Canvas -->
+<div id="canvas-wrap">
+    <canvas id="ps"></canvas>
+</div>
+
+<!-- Toolbar -->
+<div id="toolbar">
+    <div class="tb-btn active" id="tb-select" onclick="setTool('select')" title="انتخاب و جابه‌جایی">
+        <i class="fas fa-mouse-pointer"></i>
+    </div>
+    <div class="tb-btn" id="tb-pan" onclick="setTool('pan')" title="پان (یا دکمه وسط موس)">
+        <i class="fas fa-hand-paper"></i>
+    </div>
+    <div class="tb-sep"></div>
+    <div class="tb-btn" onclick="zoomIn()" title="بزرگ‌نمایی"><i class="fas fa-plus"></i></div>
+    <div class="tb-btn" onclick="zoomOut()" title="کوچک‌نمایی"><i class="fas fa-minus"></i></div>
+    <div class="tb-btn" onclick="resetView()" title="بازنشانی نما"><i class="fas fa-compress-arrows-alt"></i></div>
+    <div class="tb-sep"></div>
+    <div class="tb-btn" onclick="autoArrange()" title="مرتب‌سازی خودکار"><i class="fas fa-magic" style="color:#16a34a"></i></div>
+    <div class="tb-btn" id="btn-refresh" onclick="manualRefresh()" title="بروزرسانی از سیستم"><i class="fas fa-sync-alt" style="color:#22c55e"></i></div>
+</div>
+
+<!-- Zoom badge -->
+<div id="zoom-badge">100%</div>
+
+<!-- Filter bar -->
+<div id="filter-bar">
+    <i class="fas fa-filter" style="color:#16a34a"></i>
+    <select id="path-sel" onchange="onFilterChange()">
+        <option value="all" selected>هر ۳ مسیر</option>
+        <option value="studying">در حال تحصیل</option>
+        <option value="defense">گردش دفاع</option>
+        <option value="educational">فارغ‌التحصیلی</option>
+    </select>
+    <select id="mode-sel" onchange="onFilterChange()">
+        <option value="withStudents" selected>فقط مراحل دارای دانشجو</option>
+        <option value="all">همه مراحل هر مسیر</option>
+    </select>
+    <span style="color:#cbd5e1">|</span>
+    <label style="display:flex;align-items:center;gap:4px;color:#64748b;cursor:pointer">
+        <input type="checkbox" id="chk-tasks" onchange="onFilterChange()" checked style="accent-color:#16a34a">
+        نمایش تخصیص کارتابل
+    </label>
+</div>
+
+<!-- Node info -->
+<div id="node-info"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+//  مراحل معلق — گراف مرحله‌محور (مرکز: مرحله، دور: دانشجویان مانده)
+//  منبع داده: EmployeeModule صفحهٔ والد (iframe هم‌origin) + localStorage
+// ══════════════════════════════════════════════════════════════════
+
+const PATHS = [
+    { id: 'studying',    label: 'در حال تحصیل',  color: '#0f766e', stroke: '#2dd4bf', stepKey: 'custom_studying_steps',    defKey: 'getDefaultStudyingSteps' },
+    { id: 'defense',     label: 'گردش دفاع',     color: '#166534', stroke: '#4ade80', stepKey: 'custom_defense_steps',     defKey: 'getDefaultDefenseSteps2' },
+    { id: 'educational', label: 'فارغ‌التحصیلی', color: '#3f6212', stroke: '#a3e635', stepKey: 'custom_educational_steps', defKey: 'getDefaultEducationalSteps' },
+];
+
+// مراحل پیش‌فرض پشتیبان (وقتی EmployeeModule در دسترس نیست)
+const DEFAULT_STEPS = {
+    studying:    ['در حال تحصیل', 'پاس کردن واحد ها', 'پرداخت اقساط', 'قفل کردن دروس', 'تنزیل نمرات'],
+    defense:     ['ثبت عنوان','تنضید','ترجمه','استلال','ملخص','مدرک لغت(فیش)','بارگزاری','تایید استاد','مشابهت','مدیر گروه','معاون','سفارش','ق و م','تسویه حساب','وکالت','ثبت نام ایرانداک','زمان پور'],
+    educational: ['در حال تحصیل','وکالت','تسویه حساب','تعدیلات','مدرک کارشناسی','استلال عراقی','ملخص','محضر و اصالت','تنضید ایرانداک','تنضید تجلید','تجلید','بارگزاری ایرانداک','ایجاد گردش','آزفا','اسماعیلی','کتابخانه','کد','خروج قطعی','دریافت مدرک','تصدیق','تسویه حساب نهایی','ارسال'],
+};
+
+let zoom = 1, panX = 0, panY = 0;
+let currentTool = 'select';
+let pathFilter = 'all';
+let modeFilter = 'withStudents';
+let showTasks  = true;
+let nodes = [];
+let selectedNodeId = null;
+let dragging = null, dragOffX = 0, dragOffY = 0;
+let isPanning = false, panStartX = 0, panStartY = 0, panStartCamX = 0, panStartCamY = 0;
+let graphBounds = { minX: 0, minY: 0, maxX: 0, maxY: 0 };
+let graphEmpty = false;
+let bands = [];   // اطلاعات باند هر مسیر برای رسم پس‌زمینه و برچسب
+
+// چیدمان ذخیره‌شده (جابه‌جایی دستی حفظ می‌شود)
+let layout = (() => {
+    try { return JSON.parse(localStorage.getItem('ps_layout_v1') || '{}'); } catch (e) { return {}; }
+})();
+function saveLayout() { try { localStorage.setItem('ps_layout_v1', JSON.stringify(layout)); } catch (e) {} }
+
+const canvas = document.getElementById('ps');
+const ctx    = canvas.getContext('2d');
+
+// ── دسترسی به ماژول‌های صفحهٔ والد (هم‌origin) ──────────────────
+function getHost() {
+    try { return (window.parent && window.parent !== window) ? window.parent : window; } catch (e) { return window; }
+}
+function hostEM() { const h = getHost(); return h && h.EmployeeModule ? h.EmployeeModule : null; }
+
+function loadJSON(key, fb) {
+    try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fb; } catch (e) { return fb; }
+}
+
+function normFa(s) {
+    return String(s || '')
+        .replace(/[\u064B-\u065F\u0670]/g, '')
+        .replace(/\u064A/g, '\u06CC').replace(/\u0643/g, '\u06A9')
+        .replace(/\u0629/g, '\u0647').replace(/\u200c/g, ' ')
+        .replace(/\s+/g, ' ').trim();
+}
+
+function getStageNames(path) {
+    const EM = hostEM();
+    let arr = null;
+    try { const raw = localStorage.getItem(path.stepKey); if (raw) arr = JSON.parse(raw); } catch (e) {}
+    if (!arr && EM && typeof EM[path.defKey] === 'function') { try { arr = EM[path.defKey](); } catch (e) {} }
+    if (!arr || !arr.length) arr = DEFAULT_STEPS[path.id].map(n => ({ name: n, completed: false }));
+    return (arr || []).map(x => (typeof x === 'string' ? x : (x && x.name) || '')).filter(Boolean);
+}
+
+function getStudents() {
+    const EM = hostEM();
+    if (EM && typeof EM.getAllStudents === 'function') {
+        try { return EM.getAllStudents() || []; } catch (e) {}
+    }
+    return Object.values(loadJSON('students_data', {})).filter(s => s && s.role === 'student');
+}
+
+function getActivePath(s) {
+    const EM = hostEM();
+    if (EM && typeof EM._getStudentActivePath === 'function') {
+        try { return EM._getStudentActivePath(s); } catch (e) {}
+    }
+    return s.currentPath || 'defense';
+}
+
+function getStepsForPath(s, pathId) {
+    if (pathId === 'defense')     return s.defenseSteps     || [];
+    if (pathId === 'educational') return s.educationalSteps || [];
+    if (pathId === 'studying')    return s.studyingSteps || s.educationalSteps || [];
+    return [];
+}
+
+function empName(id) {
+    if (!id) return '';
+    const users = loadJSON('edu_system_users', []);
+    const u = (Array.isArray(users) ? users : []).find(x => x && x.id === id);
+    if (u) return u.name || u.username || id;
+    const EM = hostEM();
+    if (EM && EM.getEmployees) {
+        const e = EM.getEmployees().find(x => x.id === id);
+        if (e) return e.name;
+    }
+    return id;
+}
+
+function getAssignments() { return loadJSON('step_assignments', {}) || {}; }
+
+// وظایف مرحله‌ایِ معلق در کارتابل کارمندان: Set کلید + نگاشت به کارمند
+function buildTaskIndex() {
+    const set = new Set();
+    const byKey = {};
+    const tasksData = loadJSON('employee_tasks', {}) || {};
+    Object.keys(tasksData).forEach(empId => {
+        const arr = Array.isArray(tasksData[empId]) ? tasksData[empId] : [];
+        arr.forEach(t => {
+            if (!t || !t.isStepTask) return;
+            if (t.status === 'completed' || t.status === 'approved') return;
+            const key = `${t.studentId}|${t.stepType}|${t.stepIndex}`;
+            set.add(key);
+            if (!byKey[key]) byKey[key] = [];
+            if (byKey[key].indexOf(empId) === -1) byKey[key].push(empId);
+        });
+    });
+    return { set, byKey };
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  ساخت گراف
+// ══════════════════════════════════════════════════════════════════
+function buildGraph() {
+    const students = getStudents().filter(s => s && s.active !== false);
+    const assignments = getAssignments();
+    const taskIdx = showTasks ? buildTaskIndex() : { set: new Set(), byKey: {} };
+
+    const activePaths = PATHS.filter(p => pathFilter === 'all' || p.id === pathFilter);
+    nodes = [];
+    bands = [];
+
+    // آمار خارج از نما (مسیر ملزومات)
+    const outCount = students.filter(s => getActivePath(s) === 'requirements').length;
+
+    const NODE_STAGE   = { w: 250, h: 88,  r: 16 };
+    const NODE_STUDENT = { w: 186, h: 76,  r: 12 };
+    const COL_GAP = 120, BAND_PAD = 70, BAND_GAP = 130, LABEL_H = 54;
+
+    // ── آماده‌سازی گروه‌ها: برای هر مسیر → هر مرحله → دانشجویان مانده ──
+    const bandData = activePaths.map(path => {
+        const stageNames = getStageNames(path);
+        const groupsByKey = new Map();
+        const order = [];
+
+        students.forEach(s => {
+            if (getActivePath(s) !== path.id) return;
+            const steps = getStepsForPath(s, path.id);
+            if (!Array.isArray(steps) || !steps.length) return;
+            const idx = steps.findIndex(x => x && !x.completed);
+            if (idx === -1) return; // مرحله‌ای نمانده → معلق نیست
+            const stepName = (steps[idx] && steps[idx].name) || ('مرحله ' + (idx + 1));
+            const key = idx + '|' + normFa(stepName);
+            if (!groupsByKey.has(key)) {
+                groupsByKey.set(key, { index: idx, name: stepName, students: [] });
+                order.push(key);
+            }
+            const tKey = `${s.id}|${path.id}|${idx}`;
+            groupsByKey.get(key).students.push({
+                student: s,
+                pathId: path.id,
+                stepIndex: idx,
+                stepName,
+                total: steps.length,
+                done: steps.filter(x => x && x.completed).length,
+                assignedEmp: (assignments[path.id] && assignments[path.id][idx]) || null,
+                taskEmps: taskIdx.byKey[tKey] || null,
+                hasPendingTask: taskIdx.set.has(tKey),
+            });
+        });
+
+        // ترتیب: بر اساس ایندکس مرحله (نزدیک به ترتیب مسیر)
+        let groups = order.map(k => groupsByKey.get(k)).sort((a, b) => a.index - b.index);
+        if (modeFilter === 'withStudents') {
+            groups = groups.filter(g => g.students.length > 0);
+        } else {
+            // حالت «همه مراحل»: مراحل بدون دانشجو هم به‌صورت نود مرکزی نمایش داده شوند
+            stageNames.forEach((name, idx) => {
+                const key = idx + '|' + normFa(name);
+                if (!groupsByKey.has(key)) groups.push({ index: idx, name, students: [] });
+            });
+            groups.sort((a, b) => a.index - b.index);
+        }
+        return { path, groups };
+    });
+
+    // ── محاسبه ابعاد و چیدمان کل ──
+    bandData.forEach(b => {
+        b.groups.forEach(g => {
+            g.R = Math.max(250, 90 + g.students.length * 44);
+            g.colW = NODE_STAGE.w + g.R * 2 + 60;
+        });
+        b.maxR = b.groups.length ? Math.max.apply(null, b.groups.map(g => g.R)) : 250;
+        b.contentW = b.groups.reduce((s, g) => s + g.colW, 0) + Math.max(0, b.groups.length - 1) * COL_GAP;
+    });
+    const W = BAND_PAD * 2 + Math.max(900, ...bandData.map(b => b.contentW));
+    const bandWidth = W;
+
+    let curY = BAND_PAD;
+    bandData.forEach(b => {
+        const bandH = LABEL_H + b.maxR * 1.44 + NODE_STAGE.h + 70;
+        const cy = curY + LABEL_H + bandH / 2 - 10;
+        const bandCy = curY + bandH / 2;
+
+        bands.push({ path: b.path, x: bandWidth / 2, y: bandCy, w: bandWidth, h: bandH, cy });
+
+        // چیدمان راست‌به‌چپ: مرحلهٔ اول سمت راست
+        let cursorRight = bandWidth - BAND_PAD;
+        b.groups.forEach(g => {
+            const R = g.R;
+            const colW = g.colW;
+            const cx = cursorRight - colW / 2;
+            cursorRight -= (colW + COL_GAP);
+
+            const stageKey = `stage::${b.path.id}::${g.index}`;
+            const stagePos = layout[stageKey] || { x: cx, y: cy };
+            const assignedEmp = (getAssignments()[b.path.id] && getAssignments()[b.path.id][g.index]) || null;
+
+            nodes.push({
+                id: stageKey, kind: 'stage',
+                pathId: b.path.id, pathLabel: b.path.label, pathStroke: b.path.stroke,
+                index: g.index, label: g.name,
+                count: g.students.length, assignedEmp,
+                x: stagePos.x, y: stagePos.y, w: NODE_STAGE.w, h: NODE_STAGE.h,
+            });
+
+            const n = g.students.length;
+            g.students.forEach((st, i) => {
+                const ang = -Math.PI / 2 + i * (2 * Math.PI / Math.max(n, 1));
+                const defX = cx + Math.cos(ang) * R;
+                const defY = cy + Math.sin(ang) * R * 0.72;
+                const key = `stu::${st.student.id}::${b.path.id}::${g.index}`;
+                const pos = layout[key] || { x: defX, y: defY };
+                nodes.push({
+                    id: key, kind: 'student',
+                    pathId: b.path.id, pathLabel: b.path.label, pathStroke: b.path.stroke,
+                    ref: st, label: st.student.name || 'بی‌نام',
+                    x: pos.x, y: pos.y, w: NODE_STUDENT.w, h: NODE_STUDENT.h,
+                });
+            });
+        });
+
+        curY += bandH + BAND_GAP;
+    });
+
+    graphBounds = { minX: 0, minY: 0, maxX: W, maxY: Math.max(curY, 700) };
+    graphEmpty = nodes.filter(n => n.kind === 'stage').length === 0;
+
+    // آمار
+    const stageCount = nodes.filter(n => n.kind === 'stage' && n.count > 0).length;
+    const studentCount = nodes.filter(n => n.kind === 'student').length;
+    document.getElementById('stat-stages').textContent = stageCount + ' مرحله فعال';
+    document.getElementById('stat-students').textContent = studentCount + ' دانشجو';
+    const outWrap = document.getElementById('stat-out-wrap');
+    if (outCount > 0) { outWrap.style.display = ''; document.getElementById('stat-out').textContent = outCount + ' در مسیر ملزومات'; }
+    else outWrap.style.display = 'none';
+}
+
+function refreshData(keepView) {
+    const vb = keepView ? { z: zoom, x: panX, y: panY, sel: selectedNodeId } : null;
+    buildGraph();
+    if (vb) {
+        zoom = vb.z; panX = vb.x; panY = vb.y;
+        selectedNodeId = nodes.some(n => n.id === vb.sel) ? vb.sel : null;
+        draw();
+    } else {
+        resetView();
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  CANVAS / COORDINATES
+// ══════════════════════════════════════════════════════════════════
+function resizeCanvas() {
+    const wrap = document.getElementById('canvas-wrap');
+    canvas.width  = wrap.clientWidth;
+    canvas.height = wrap.clientHeight;
+    draw();
+}
+function nodeHit(node, wx, wy) {
+    return wx >= node.x - node.w / 2 && wx <= node.x + node.w / 2 &&
+           wy >= node.y - node.h / 2 && wy <= node.y + node.h / 2;
+}
+function rectEdgePoint(node, tx, ty) {
+    const dx = tx - node.x, dy = ty - node.y;
+    if (!dx && !dy) return { x: node.x, y: node.y };
+    const hw = node.w / 2, hh = node.h / 2;
+    const s = Math.min(dx ? hw / Math.abs(dx) : Infinity, dy ? hh / Math.abs(dy) : Infinity);
+    return { x: node.x + dx * s, y: node.y + dy * s };
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  DRAW
+// ══════════════════════════════════════════════════════════════════
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGrid();
+
+    ctx.save();
+    ctx.translate(panX, panY);
+    ctx.scale(zoom, zoom);
+    ctx.direction = 'rtl';
+
+    // پس‌زمینه و برچسب باند هر مسیر
+    bands.forEach(b => {
+        ctx.save();
+        ctx.fillStyle = 'rgba(148,163,184,0.08)';
+        roundRectPath(b.x, b.y, b.w, b.h, 22);
+        ctx.fill();
+        ctx.strokeStyle = b.path.stroke + '66';
+        ctx.lineWidth = 1.2 / zoom;
+        ctx.setLineDash([8 / zoom, 6 / zoom]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // برچسب مسیر (بالا-راست باند)
+        const labelRight = b.x + b.w / 2 - 24;
+        const labelTop   = b.y - b.h / 2 + 30;
+        ctx.fillStyle = b.path.stroke;
+        ctx.font = 'bold 17px Vazirmatn, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(b.path.label, labelRight, labelTop);
+        ctx.font = '12px Vazirmatn, sans-serif';
+        ctx.fillStyle = '#64748b';
+        const doneCount = nodes.filter(n => n.kind === 'stage' && n.pathId === b.path.id && n.count > 0).length;
+        const stuCount  = nodes.filter(n => n.kind === 'student' && n.pathId === b.path.id).length;
+        ctx.fillText(`${doneCount} مرحله فعال • ${stuCount} دانشجو`, labelRight, labelTop + 20);
+        ctx.restore();
+    });
+
+    // خطوط اتصال
+    nodes.filter(n => n.kind === 'student').forEach(sn => {
+        const stage = nodes.find(n => n.kind === 'stage' && n.pathId === sn.pathId && n.index === sn.ref.stepIndex);
+        if (stage) drawEdge(stage, sn);
+    });
+
+    nodes.forEach(n => drawNode(n));
+    ctx.restore();
+
+    if (graphEmpty) {
+        ctx.save();
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 18px Vazirmatn, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.direction = 'rtl';
+        ctx.fillText('دانشجوی معلقی در این مسیرها وجود ندارد', canvas.width / 2, canvas.height / 2 - 20);
+        ctx.font = '13px Vazirmatn, sans-serif';
+        ctx.fillText('همهٔ دانشجویان مراحل خود را تکمیل کرده‌اند یا خارج از این ۳ مسیر هستند', canvas.width / 2, canvas.height / 2 + 12);
+        ctx.restore();
+    }
+    document.getElementById('zoom-badge').textContent = Math.round(zoom * 100) + '%';
+}
+
+function drawGrid() {
+    const step = 30 * zoom;
+    const offX = ((panX % step) + step) % step;
+    const offY = ((panY % step) + step) % step;
+    ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+    ctx.lineWidth = 1;
+    for (let x = offX; x < canvas.width; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
+    for (let y = offY; y < canvas.height; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
+}
+
+function roundRectPath(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x - w / 2 + r, y - h / 2);
+    ctx.arcTo(x + w / 2, y - h / 2, x + w / 2, y + h / 2, r);
+    ctx.arcTo(x + w / 2, y + h / 2, x - w / 2, y + h / 2, r);
+    ctx.arcTo(x - w / 2, y + h / 2, x - w / 2, y - h / 2, r);
+    ctx.arcTo(x - w / 2, y - h / 2, x + w / 2, y - h / 2, r);
+    ctx.closePath();
+}
+
+function drawNode(node) {
+    const sel = node.id === selectedNodeId;
+    const isStage = node.kind === 'stage';
+
+    const fill   = isStage ? '#0f172a' : (node.ref && node.ref.hasPendingTask ? '#1c1917' : '#1e293b');
+    const stroke = isStage ? node.pathStroke
+                 : (node.ref && node.ref.hasPendingTask ? '#f59e0b' : '#94a3b8');
+
+    ctx.save();
+    ctx.shadowColor = sel ? '#16a34a' : stroke;
+    ctx.shadowBlur  = sel ? 20 / zoom : 8 / zoom;
+    roundRectPath(node.x, node.y, node.w, node.h, isStage ? 16 : 12);
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.lineWidth = (sel ? 3 : (isStage ? 2.4 : 1.8)) / zoom;
+    ctx.strokeStyle = sel ? '#22c55e' : stroke;
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    if (isStage) {
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = 'bold 15px Vazirmatn, sans-serif';
+        const lines = wrapLines(node.label, node.w - 26, 'bold 15px Vazirmatn, sans-serif', 2);
+        const startY = node.y - (lines.length === 2 ? 16 : 8);
+        lines.forEach((ln, i) => ctx.fillText(ln, node.x, startY + i * 19));
+        ctx.fillStyle = node.pathStroke;
+        ctx.font = 'bold 12px Vazirmatn, sans-serif';
+        ctx.fillText(`${node.count} دانشجو`, node.x, node.y + 20);
+        if (node.assignedEmp) {
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = '10.5px Vazirmatn, sans-serif';
+            ctx.fillText('مسئول: ' + empName(node.assignedEmp), node.x, node.y + node.h / 2 - 12);
+        }
+    } else {
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = 'bold 12px Vazirmatn, sans-serif';
+        const lines = wrapLines(node.label, node.w - 22, 'bold 12px Vazirmatn, sans-serif', 2);
+        const startY = node.y - (lines.length === 2 ? 16 : 10);
+        lines.forEach((ln, i) => ctx.fillText(ln, node.x, startY + i * 17));
+
+        const st = node.ref || {};
+        let sub = `مرحله ${st.stepIndex + 1} از ${st.total}`;
+        let subColor = '#94a3b8';
+        if (node.ref && node.ref.hasPendingTask) {
+            const emps = (node.ref.taskEmps || []).map(empName).join('، ');
+            sub = emps ? ('کارتابل: ' + emps) : 'در کارتابل';
+            subColor = '#f59e0b';
+        }
+        ctx.fillStyle = subColor;
+        ctx.font = '10.5px Vazirmatn, sans-serif';
+        ctx.fillText(ellipsize(sub, node.w - 20, '10.5px Vazirmatn, sans-serif'), node.x, node.y + node.h / 2 - 14);
+    }
+    ctx.restore();
+}
+
+function drawEdge(stage, stu) {
+    const from = rectEdgePoint(stage, stu.x, stu.y);
+    const to   = rectEdgePoint(stu, stage.x, stage.y);
+    ctx.save();
+    ctx.strokeStyle = (stu.ref && stu.ref.hasPendingTask) ? '#f59e0b' : '#cbd5e1';
+    ctx.lineWidth = 1.6 / zoom;
+    ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(to.x, to.y); ctx.stroke();
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.beginPath(); ctx.arc(to.x, to.y, 3 / zoom, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+}
+
+function ellipsize(text, maxW, font) {
+    if (!text) return '';
+    ctx.font = font;
+    if (ctx.measureText(text).width <= maxW) return text;
+    let t = text;
+    while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+    return t + '…';
+}
+
+function wrapLines(text, maxW, font, maxLines) {
+    if (!text) return [''];
+    ctx.font = font;
+    if (ctx.measureText(text).width <= maxW) return [text];
+    const mid = Math.floor(text.length / 2);
+    let best = -1, bestDiff = Infinity;
+    for (let i = 0; i < text.length; i++) {
+        if (text[i] === ' ') { const d = Math.abs(i - mid); if (d < bestDiff) { bestDiff = d; best = i; } }
+    }
+    if (best === -1) return [ellipsize(text, maxW, font)];
+    let l1 = text.slice(0, best).trim();
+    let l2 = text.slice(best + 1).trim();
+    l1 = ellipsize(l1, maxW, font);
+    l2 = ellipsize(l2, maxW, font);
+    return (maxLines === 2) ? [l1, l2] : [l1, l2];
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  ZOOM / PAN / TOOLBAR
+// ══════════════════════════════════════════════════════════════════
+function zoomIn()  { setZoom(zoom * 1.15); }
+function zoomOut() { setZoom(zoom / 1.15); }
+function setZoom(z) { zoom = Math.max(0.08, Math.min(3, z)); draw(); }
+
+function resetView() {
+    if (!nodes.length) { zoom = 1; panX = 60; panY = 60; draw(); return; }
+    const bw = graphBounds.maxX - graphBounds.minX;
+    const bh = graphBounds.maxY - graphBounds.minY;
+    const cw = canvas.width, ch = canvas.height;
+    zoom = Math.max(0.08, Math.min(1.1, Math.min(cw / (bw + 140), ch / (bh + 140))));
+    panX = (cw - bw * zoom) / 2 - graphBounds.minX * zoom;
+    panY = (ch - bh * zoom) / 2 - graphBounds.minY * zoom;
+    draw();
+}
+
+function autoArrange() { layout = {}; saveLayout(); hideNodeInfo(); refreshData(false); }
+function setTool(t) {
+    currentTool = t;
+    document.querySelectorAll('.tb-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(t === 'pan' ? 'tb-pan' : 'tb-select').classList.add('active');
+    document.getElementById('canvas-wrap').classList.toggle('pan-mode', t === 'pan');
+}
+function onFilterChange() {
+    pathFilter = document.getElementById('path-sel').value;
+    modeFilter = document.getElementById('mode-sel').value;
+    showTasks  = document.getElementById('chk-tasks').checked;
+    hideNodeInfo();
+    refreshData(false);
+}
+function manualRefresh() {
+    hideNodeInfo();
+    const icon = document.querySelector('#btn-refresh i');
+    if (icon) icon.classList.add('fa-spin');
+    pullFromSupabase().finally(() => {
+        refreshData(true);
+        if (icon) setTimeout(() => icon.classList.remove('fa-spin'), 500);
+    });
+}
+
+// ── دریافت تازه از Supabase (اگر داخل iframe باشیم) ──
+async function pullFromSupabase() {
+    try {
+        const host = getHost();
+        const sb = host.SupabaseDataModule;
+        if (sb && typeof sb.getAllEmployeeTasks === 'function') await sb.getAllEmployeeTasks();
+        if (!localStorage.getItem('edu_system_users') && sb && typeof sb.getUsers === 'function') await sb.getUsers();
+    } catch (e) { console.warn('⚠️ pullFromSupabase خطا:', e.message); }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  NODE INFO
+// ══════════════════════════════════════════════════════════════════
+function hideNodeInfo() { document.getElementById('node-info').style.display = 'none'; }
+
+function showNodeInfo(node) {
+    const el = document.getElementById('node-info');
+    const esc = s => String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    if (node.kind === 'student') {
+        const r = node.ref || {};
+        const s = r.student || {};
+        const emp = r.assignedEmp ? empName(r.assignedEmp) : null;
+        const cartable = r.hasPendingTask ? (r.taskEmps || []).map(empName).join('، ') : null;
+        const pct = r.total ? Math.round(r.done / r.total * 100) : 0;
+        el.innerHTML = `
+            <h4><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${node.pathStroke}"></span>${esc(s.name || 'بی‌نام')}</h4>
+            <div class="row"><i class="fas fa-route"></i><span>مسیر: ${esc(node.pathLabel)}</span></div>
+            <div class="row"><i class="fas fa-list-check"></i><span>مرحلهٔ فعلی: ${esc(r.stepName)} (${r.stepIndex + 1} از ${r.total})</span></div>
+            <div class="row"><i class="fas fa-percent"></i><span>پیشرفت مسیر: ${pct}٪</span></div>
+            ${s.studentId ? `<div class="row"><i class="fas fa-id-card"></i><span>شماره دانشجویی: ${esc(s.studentId)}</span></div>` : ''}
+            ${emp ? `<div class="row"><i class="fas fa-user-gear"></i><span>مسئول این مرحله: ${esc(emp)}</span></div>` : ''}
+            ${cartable ? `<div class="row"><i class="fas fa-inbox"></i><span>در کارتابل: ${esc(cartable)}</span></div>` : `<div class="row"><i class="fas fa-inbox"></i><span>وظیفهٔ مرحله‌ای در کارتابل ثبت نشده</span></div>`}
+        `;
+    } else {
+        const list = nodes.filter(n => n.kind === 'student' && n.pathId === node.pathId && n.ref && n.ref.stepIndex === node.index);
+        const emp = node.assignedEmp ? empName(node.assignedEmp) : null;
+        const names = list.slice(0, 12).map(n => `<span class="pill" style="background:#f1f5f9;color:#334155">${esc(n.label)}</span>`).join('');
+        el.innerHTML = `
+            <h4><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${node.pathStroke}"></span>${esc(node.label)}</h4>
+            <div class="row"><i class="fas fa-route"></i><span>مسیر: ${esc(node.pathLabel)}</span></div>
+            <div class="row"><i class="fas fa-user-clock"></i><span>${node.count} دانشجو در این مرحله مانده است</span></div>
+            ${emp ? `<div class="row"><i class="fas fa-user-gear"></i><span>کارمند مسئول: ${esc(emp)}</span></div>` : `<div class="row"><i class="fas fa-user-gear"></i><span>بدون تخصیص کارمند</span></div>`}
+            ${names ? `<div style="margin-top:6px">${names}${list.length > 12 ? ` <span class="pill" style="background:#f0fdf4;color:#166534">+${list.length - 12}</span>` : ''}</div>` : ''}
+        `;
+    }
+
+    const sx = node.x * zoom + panX;
+    const sy = (node.y + node.h / 2) * zoom + panY + 10;
+    el.style.display = 'block';
+    const r = el.getBoundingClientRect();
+    el.style.left = Math.max(10, Math.min(window.innerWidth - r.width - 10, sx - r.width / 2)) + 'px';
+    el.style.top  = Math.max(10, Math.min(window.innerHeight - r.height - 10, sy)) + 'px';
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  MOUSE
+// ══════════════════════════════════════════════════════════════════
+canvas.addEventListener('mousedown', onMouseDown);
+canvas.addEventListener('mousemove', onMouseMove);
+canvas.addEventListener('mouseup',   onMouseUp);
+canvas.addEventListener('wheel',     onWheel, { passive: false });
+canvas.addEventListener('mouseleave', () => { isPanning = false; dragging = null; });
+window.addEventListener('mouseup', () => { isPanning = false; document.getElementById('canvas-wrap').classList.remove('panning'); });
+
+function onMouseDown(e) {
+    hideNodeInfo();
+    if (e.button === 1 || e.button === 2 || currentTool === 'pan') {
+        isPanning = true;
+        panStartX = e.clientX; panStartY = e.clientY;
+        panStartCamX = panX;   panStartCamY = panY;
+        if (currentTool === 'pan') document.getElementById('canvas-wrap').classList.add('panning');
+        e.preventDefault();
+        return;
+    }
+    const rect = canvas.getBoundingClientRect();
+    const wx = (e.clientX - rect.left - panX) / zoom;
+    const wy = (e.clientY - rect.top  - panY) / zoom;
+    const hit = nodes.slice().reverse().find(n => nodeHit(n, wx, wy));
+    if (hit) { selectedNodeId = hit.id; dragging = hit; dragOffX = wx - hit.x; dragOffY = wy - hit.y; }
+    else selectedNodeId = null;
+    draw();
+}
+
+function onMouseMove(e) {
+    if (isPanning) {
+        panX = panStartCamX + (e.clientX - panStartX);
+        panY = panStartCamY + (e.clientY - panStartY);
+        draw(); return;
+    }
+    if (dragging) {
+        const rect = canvas.getBoundingClientRect();
+        const wx = (e.clientX - rect.left - panX) / zoom;
+        const wy = (e.clientY - rect.top  - panY) / zoom;
+        dragging.x = wx - dragOffX;
+        dragging.y = wy - dragOffY;
+        layout[dragging.id] = { x: dragging.x, y: dragging.y };
+        draw();
+    }
+}
+
+function onMouseUp(e) {
+    if (dragging) {
+        saveLayout();
+        const rect = canvas.getBoundingClientRect();
+        const wx = (e.clientX - rect.left - panX) / zoom;
+        const wy = (e.clientY - rect.top  - panY) / zoom;
+        if (nodeHit(dragging, wx, wy)) showNodeInfo(dragging);
+        dragging = null;
+    }
+    isPanning = false;
+    document.getElementById('canvas-wrap').classList.remove('panning');
+}
+
+function onWheel(e) {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+    const nz = Math.max(0.08, Math.min(3, zoom * factor));
+    panX = mx - (mx - panX) * (nz / zoom);
+    panY = my - (my - panY) * (nz / zoom);
+    zoom = nz;
+    draw();
+}
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+// ══════════════════════════════════════════════════════════════════
+//  LIVE REFRESH
+// ══════════════════════════════════════════════════════════════════
+window.addEventListener('storage', e => {
+    if (!e.key || e.key === 'students_data' || e.key === 'employee_tasks' ||
+        e.key === 'step_assignments' || e.key === 'edu_system_users' ||
+        (e.key && e.key.indexOf('custom_') === 0)) {
+        refreshData(true);
+    }
+});
+window.addEventListener('focus', () => refreshData(true));
+setInterval(() => refreshData(true), 10000);
+window.addEventListener('resize', () => resizeCanvas());
+
+// ══════════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+    try { if (window.self !== window.top) document.getElementById('back-link').style.display = 'none'; } catch (e) {}
+    resizeCanvas();
+    buildGraph();
+    resetView();
+    draw();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => draw());
+    pullFromSupabase().finally(() => refreshData(true));
+});
+</script>
+</body>
+</html>

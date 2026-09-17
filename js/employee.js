@@ -228,11 +228,11 @@ const EmployeeModule = {
 
                 <!-- ═══ وظایف دریافتی از همکاران ═══ -->
                 ${receivedTasks.length > 0 ? `
-                <div class="bg-slate-800 rounded-lg shadow-md p-4 border-r-4 border-purple-500">
+                <div class="bg-slate-800 rounded-lg shadow-md p-4 border-r-4 border-green-500">
                     <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                        <i class="fas fa-inbox text-purple-400"></i>
+                        <i class="fas fa-inbox text-green-400"></i>
                         وظایف دریافتی از همکاران
-                        <span class="bg-purple-600 text-white text-xs rounded-full px-2 py-0.5">${receivedTasks.filter(t=>t.status==='pending').length}</span>
+                        <span class="bg-green-600 text-white text-xs rounded-full px-2 py-0.5">${receivedTasks.filter(t=>t.status==='pending').length}</span>
                     </h3>
                     <div class="space-y-3">
                         ${receivedTasks.map(task => {
@@ -251,7 +251,7 @@ const EmployeeModule = {
                                         </div>
                                         ${task.description ? `<p class="text-xs text-gray-400 mb-2">${task.description}</p>` : ''}
                                         <div class="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
-                                            <span><i class="fas fa-user ml-1 text-purple-400"></i>${task.fromName || 'همکار'}</span>
+                                            <span><i class="fas fa-user ml-1 text-green-400"></i>${task.fromName || 'همکار'}</span>
                                             ${task.dueDate ? `<span><i class="fas fa-calendar ml-1"></i>${task.dueDate}</span>` : ''}
                                         </div>
                                     </div>
@@ -617,6 +617,20 @@ const EmployeeModule = {
                             <i class="fas fa-hourglass-half"></i>
                             <span class="hidden sm:inline">کارهای معلق</span>
                         </button>
+                        <button onclick="window._alpineSetPage && window._alpineSetPage('pendingStagesView')"
+                                class="bg-teal-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1">
+                            <i class="fas fa-diagram-project"></i>
+                            <span class="hidden sm:inline">مراحل معلق</span>
+                            <span class="sm:hidden">مراحل</span>
+                        </button>
+                        <!-- دکمه دستیار هوشمند — فعلاً غیرفعال است. برای فعال‌سازی این کامنت را بردارید.
+                        <button onclick="window._alpineSetPage && window._alpineSetPage('aiAssistantView')"
+                                class="bg-gradient-to-l from-lime-600 to-green-600 hover:from-lime-500 hover:to-green-500 text-gray-900 px-3 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-1 shadow-lg shadow-lime-900/30">
+                            <i class="fas fa-wand-magic-sparkles"></i>
+                            <span class="hidden sm:inline">دستیار هوشمند</span>
+                            <span class="sm:hidden">هوشمند</span>
+                        </button>
+                        -->
                     </div>
                 </div>
                 
@@ -736,7 +750,7 @@ const EmployeeModule = {
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-400 mb-1"><i class="fas fa-envelope ml-1 text-purple-400"></i>ایمیل</label>
+                                <label class="block text-xs font-medium text-gray-400 mb-1"><i class="fas fa-envelope ml-1 text-lime-400"></i>ایمیل</label>
                                 <select id="filter-has-email" onchange="employeeModule.applyStudentFilter()"
                                         class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lime-500">
                                     <option value="all">همه</option>

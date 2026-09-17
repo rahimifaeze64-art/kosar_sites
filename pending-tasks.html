@@ -19,7 +19,7 @@
         #app-header p  { font-size: 11px; color: #64748b; margin: 0; }
         .stat-badge {
             display: flex; align-items: center; gap: 6px;
-            background: #f5f3ff; border: 1px solid #ddd6fe; color: #6d28d9;
+            background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d;
             border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 700;
         }
         #toolbar {
@@ -34,8 +34,8 @@
             font-size: 15px; cursor: pointer;
             display: flex; align-items: center; justify-content: center; transition: all 0.2s;
         }
-        .tb-btn:hover { background: #f5f3ff; color: #7c3aed; border-color: #ddd6fe; }
-        .tb-btn.active { background: #7c3aed; color: white; border-color: #7c3aed; }
+        .tb-btn:hover { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+        .tb-btn.active { background: #16a34a; color: white; border-color: #16a34a; }
         .tb-sep { height: 1px; background: #e2e8f0; margin: 2px 0; }
         #canvas-wrap { flex: 1; position: relative; overflow: hidden; cursor: default; }
         #canvas-wrap.pan-mode { cursor: grab; }
@@ -58,16 +58,16 @@
             border-radius: 6px; padding: 4px 8px; font-size: 12px;
             font-family: 'Vazirmatn', sans-serif; outline: none;
         }
-        #btn-refresh:hover { background: #f5f3ff; color: #7c3aed; }
+        #btn-refresh:hover { background: #f0fdf4; color: #16a34a; }
         #node-info {
             position: fixed; display: none; background: #ffffff;
-            border: 1px solid #ddd6fe; border-radius: 12px; padding: 12px 14px;
+            border: 1px solid #bbf7d0; border-radius: 12px; padding: 12px 14px;
             z-index: 500; min-width: 240px; max-width: 320px;
             box-shadow: 0 8px 30px rgba(0,0,0,.18); font-size: 12px;
         }
         #node-info h4 { margin: 0 0 6px; font-size: 13px; color: #1e293b; display: flex; align-items: center; gap: 6px; }
         #node-info .row { color: #475569; margin: 3px 0; display: flex; gap: 6px; align-items: flex-start; }
-        #node-info .row i { color: #8b5cf6; margin-top: 2px; width: 12px; }
+        #node-info .row i { color: #16a34a; margin-top: 2px; width: 12px; }
     </style>
 </head>
 <body>
@@ -77,7 +77,7 @@
         <i class="fas fa-arrow-right"></i>
     </a>
     <div style="flex:1">
-        <h1><i class="fas fa-hourglass-half" style="color:#8b5cf6;margin-left:6px"></i>کارهای معلق</h1>
+        <h1><i class="fas fa-hourglass-half" style="color:#16a34a;margin-left:6px"></i>کارهای معلق</h1>
         <p>وظایف در جریان هر کارمند | Drag برای جابه‌جایی | Scroll برای zoom | کلیک روی مربع وظیفه برای جزئیات</p>
     </div>
     <div class="stat-badge"><i class="fas fa-users"></i><span id="stat-emps">0 کارمند</span></div>
@@ -109,7 +109,7 @@
     </div>
     <div class="tb-sep"></div>
     <div class="tb-btn" onclick="autoArrange()" title="مرتب‌سازی خودکار نودها">
-        <i class="fas fa-magic" style="color:#8b5cf6"></i>
+        <i class="fas fa-magic" style="color:#16a34a"></i>
     </div>
     <div class="tb-btn" id="btn-refresh" onclick="manualRefresh()" title="بروزرسانی از سیستم">
         <i class="fas fa-sync-alt" style="color:#22c55e"></i>
@@ -121,7 +121,7 @@
 
 <!-- Filter bar -->
 <div id="filter-bar">
-    <i class="fas fa-filter" style="color:#8b5cf6"></i>
+    <i class="fas fa-filter" style="color:#16a34a"></i>
     <label style="color:#94a3b8">نمایش:</label>
     <select id="filter-sel" onchange="onFilterChange()">
         <option value="withTasks" selected>فقط کارمندان دارای وظیفه معلق</option>

@@ -84,6 +84,7 @@
                 'js/progress.js',
                 'js/tasks.js',
                 'js/employee.js',
+                'js/ai-assistant.js',
                 'js/step-assignment.js',
                 'js/agent.js',
                 'js/agent-accounting.js',
@@ -570,7 +571,25 @@
             <div x-show="currentPage === 'pendingTasksView' && (currentUser.role === 'manager' || currentUser.role === 'employee')">
                 <div id="pending-tasks-view-container">
                     <div class="flex items-center justify-center py-16">
-                        <i class="fas fa-spinner fa-spin text-3xl text-purple-400"></i>
+                        <i class="fas fa-spinner fa-spin text-3xl text-green-400"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Stages Graph View - مراحل معلق -->
+            <div x-show="currentPage === 'pendingStagesView' && (currentUser.role === 'manager' || currentUser.role === 'employee')">
+                <div id="pending-stages-view-container">
+                    <div class="flex items-center justify-center py-16">
+                        <i class="fas fa-spinner fa-spin text-3xl text-teal-400"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Assistant View - دستیار هوشمند دانشجویان -->
+            <div x-show="currentPage === 'aiAssistantView' && (currentUser.role === 'manager' || currentUser.role === 'employee')">
+                <div id="ai-assistant-root">
+                    <div class="flex items-center justify-center py-16">
+                        <i class="fas fa-spinner fa-spin text-3xl text-lime-400"></i>
                     </div>
                 </div>
             </div>
