@@ -9,20 +9,20 @@
     <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
     <style>
         * { font-family: 'Vazirmatn', sans-serif; box-sizing: border-box; }
-        body { margin: 0; background: #f1f5f9; color: #1e293b; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+        body { margin: 0; background: #f1f5f9; color: #000000; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
         #app-header {
             background: #ffffff; border-bottom: 2px solid #e2e8f0;
             padding: 10px 18px; display: flex; align-items: center; gap: 12px;
             z-index: 100; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,.08);
         }
-        #app-header h1 { font-size: 16px; font-weight: 800; color: #1e293b; margin: 0; }
-        #app-header p  { font-size: 11px; color: #64748b; margin: 0; }
+        #app-header h1 { font-size: 16px; font-weight: 800; color: #000000; margin: 0; }
+        #app-header p  { font-size: 11px; color: #000000; margin: 0; }
         .stat-badge {
             display: flex; align-items: center; gap: 6px;
-            background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d;
+            background: #f0fdf4; border: 1px solid #bbf7d0; color: #000000;
             border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 700;
         }
-        .stat-badge.warn { background: #fffbeb; border-color: #fde68a; color: #b45309; }
+        .stat-badge.warn { background: #f7fee7; border-color: #d9f99d; color: #000000; }
         #toolbar {
             position: fixed; top: 50%; right: 16px; transform: translateY(-50%);
             background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px;
@@ -45,7 +45,7 @@
         #zoom-badge {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
             background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px;
-            padding: 5px 14px; font-size: 12px; color: #64748b; z-index: 200;
+            padding: 5px 14px; font-size: 12px; color: #000000; z-index: 200;
             pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,.08);
         }
         #filter-bar {
@@ -55,7 +55,7 @@
             z-index: 200; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.08); flex-wrap: wrap;
         }
         #filter-bar select {
-            background: #f8fafc; color: #1e293b; border: 1px solid #cbd5e1;
+            background: #f0fdf4; color: #000000; border: 1px solid #bbf7d0;
             border-radius: 6px; padding: 4px 8px; font-size: 12px;
             font-family: 'Vazirmatn', sans-serif; outline: none;
         }
@@ -65,8 +65,8 @@
             z-index: 500; min-width: 250px; max-width: 340px;
             box-shadow: 0 8px 30px rgba(0,0,0,.18); font-size: 12px;
         }
-        #node-info h4 { margin: 0 0 6px; font-size: 13px; color: #1e293b; display: flex; align-items: center; gap: 6px; }
-        #node-info .row { color: #475569; margin: 3px 0; display: flex; gap: 6px; align-items: flex-start; }
+        #node-info h4 { margin: 0 0 6px; font-size: 13px; color: #000000; display: flex; align-items: center; gap: 6px; }
+        #node-info .row { color: #000000; margin: 3px 0; display: flex; gap: 6px; align-items: flex-start; }
         #node-info .row i { color: #16a34a; margin-top: 2px; width: 12px; }
         #node-info .pill { display:inline-block; font-size:10px; padding:1px 7px; border-radius:10px; margin:1px 2px; }
     </style>
@@ -74,7 +74,7 @@
 <body>
 <!-- Header -->
 <div id="app-header">
-    <a href="index.html" id="back-link" style="color:#64748b;font-size:18px;text-decoration:none">
+    <a href="index.html" id="back-link" style="color:#000000;font-size:18px;text-decoration:none">
         <i class="fas fa-arrow-right"></i>
     </a>
     <div style="flex:1">
@@ -124,8 +124,8 @@
         <option value="withStudents" selected>فقط مراحل دارای دانشجو</option>
         <option value="all">همه مراحل هر مسیر</option>
     </select>
-    <span style="color:#cbd5e1">|</span>
-    <label style="display:flex;align-items:center;gap:4px;color:#64748b;cursor:pointer">
+    <span style="color:#000000">|</span>
+    <label style="display:flex;align-items:center;gap:4px;color:#000000;font-weight:700;cursor:pointer">
         <input type="checkbox" id="chk-tasks" onchange="onFilterChange()" checked style="accent-color:#16a34a">
         نمایش تخصیص کارتابل
     </label>
@@ -141,9 +141,9 @@
 // ══════════════════════════════════════════════════════════════════
 
 const PATHS = [
-    { id: 'studying',    label: 'در حال تحصیل',  color: '#0f766e', stroke: '#2dd4bf', stepKey: 'custom_studying_steps',    defKey: 'getDefaultStudyingSteps' },
-    { id: 'defense',     label: 'گردش دفاع',     color: '#166534', stroke: '#4ade80', stepKey: 'custom_defense_steps',     defKey: 'getDefaultDefenseSteps2' },
-    { id: 'educational', label: 'فارغ‌التحصیلی', color: '#3f6212', stroke: '#a3e635', stepKey: 'custom_educational_steps', defKey: 'getDefaultEducationalSteps' },
+    { id: 'studying',    label: 'در حال تحصیل',  color: '#d1fae5', stroke: '#34d399', stepKey: 'custom_studying_steps',    defKey: 'getDefaultStudyingSteps' },
+    { id: 'defense',     label: 'گردش دفاع',     color: '#dcfce7', stroke: '#22c55e', stepKey: 'custom_defense_steps',     defKey: 'getDefaultDefenseSteps2' },
+    { id: 'educational', label: 'فارغ‌التحصیلی', color: '#ecfccb', stroke: '#84cc16', stepKey: 'custom_educational_steps', defKey: 'getDefaultEducationalSteps' },
 ];
 
 // مراحل پیش‌فرض پشتیبان (وقتی EmployeeModule در دسترس نیست)

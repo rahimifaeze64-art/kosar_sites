@@ -9,17 +9,17 @@
     <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
     <style>
         * { font-family: 'Vazirmatn', sans-serif; box-sizing: border-box; }
-        body { margin: 0; background: #f1f5f9; color: #1e293b; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+        body { margin: 0; background: #f1f5f9; color: #000000; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
         #app-header {
             background: #ffffff; border-bottom: 2px solid #e2e8f0;
             padding: 10px 18px; display: flex; align-items: center; gap: 12px;
             z-index: 100; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,.08);
         }
-        #app-header h1 { font-size: 16px; font-weight: 800; color: #1e293b; margin: 0; }
-        #app-header p  { font-size: 11px; color: #64748b; margin: 0; }
+        #app-header h1 { font-size: 16px; font-weight: 800; color: #000000; margin: 0; }
+        #app-header p  { font-size: 11px; color: #000000; margin: 0; }
         .stat-badge {
             display: flex; align-items: center; gap: 6px;
-            background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d;
+            background: #f0fdf4; border: 1px solid #bbf7d0; color: #000000;
             border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 700;
         }
         #toolbar {
@@ -44,7 +44,7 @@
         #zoom-badge {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
             background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px;
-            padding: 5px 14px; font-size: 12px; color: #64748b; z-index: 200;
+            padding: 5px 14px; font-size: 12px; color: #000000; z-index: 200;
             pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,.08);
         }
         #filter-bar {
@@ -54,7 +54,7 @@
             z-index: 200; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.08);
         }
         #filter-bar select {
-            background: #f8fafc; color: #1e293b; border: 1px solid #cbd5e1;
+            background: #f0fdf4; color: #000000; border: 1px solid #bbf7d0;
             border-radius: 6px; padding: 4px 8px; font-size: 12px;
             font-family: 'Vazirmatn', sans-serif; outline: none;
         }
@@ -65,15 +65,15 @@
             z-index: 500; min-width: 240px; max-width: 320px;
             box-shadow: 0 8px 30px rgba(0,0,0,.18); font-size: 12px;
         }
-        #node-info h4 { margin: 0 0 6px; font-size: 13px; color: #1e293b; display: flex; align-items: center; gap: 6px; }
-        #node-info .row { color: #475569; margin: 3px 0; display: flex; gap: 6px; align-items: flex-start; }
+        #node-info h4 { margin: 0 0 6px; font-size: 13px; color: #000000; display: flex; align-items: center; gap: 6px; }
+        #node-info .row { color: #000000; margin: 3px 0; display: flex; gap: 6px; align-items: flex-start; }
         #node-info .row i { color: #16a34a; margin-top: 2px; width: 12px; }
     </style>
 </head>
 <body>
 <!-- Header -->
 <div id="app-header">
-    <a href="index.html" id="back-link" style="color:#64748b;font-size:18px;text-decoration:none">
+    <a href="index.html" id="back-link" style="color:#000000;font-size:18px;text-decoration:none">
         <i class="fas fa-arrow-right"></i>
     </a>
     <div style="flex:1">
@@ -122,7 +122,7 @@
 <!-- Filter bar -->
 <div id="filter-bar">
     <i class="fas fa-filter" style="color:#16a34a"></i>
-    <label style="color:#94a3b8">نمایش:</label>
+    <label style="color:#000000;font-weight:700">نمایش:</label>
     <select id="filter-sel" onchange="onFilterChange()">
         <option value="withTasks" selected>فقط کارمندان دارای وظیفه معلق</option>
         <option value="all">همه کارمندان</option>
@@ -140,13 +140,13 @@
 const DONE_STATUSES = ['completed', 'approved'];
 
 const TASK_STYLE = {
-    pending:     { fill: '#713f12', stroke: '#fbbf24', label: 'در انتظار' },
-    in_progress: { fill: '#1e3a8a', stroke: '#60a5fa', label: 'در حال انجام' },
-    delayed:     { fill: '#7c2d12', stroke: '#fb923c', label: 'به تأخیر' },
-    rejected:    { fill: '#7f1d1d', stroke: '#f87171', label: 'رد شده' }
+    pending:     { fill: '#ecfccb', stroke: '#a3e635', label: 'در انتظار' },
+    in_progress: { fill: '#dcfce7', stroke: '#22c55e', label: 'در حال انجام' },
+    delayed:     { fill: '#d1fae5', stroke: '#10b981', label: 'به تأخیر' },
+    rejected:    { fill: '#f7fee7', stroke: '#4d7c0f', label: 'رد شده' }
 };
-const TASK_STYLE_FALLBACK = { fill: '#334155', stroke: '#94a3b8', label: '' };
-const EMP_STYLE = { fill: '#365314', stroke: '#a3e635' };
+const TASK_STYLE_FALLBACK = { fill: '#f1f5f9', stroke: '#94a3b8', label: '' };
+const EMP_STYLE = { fill: '#bbf7d0', stroke: '#16a34a' };
 
 let zoom = 1, panX = 0, panY = 0;
 let currentTool = 'select';
@@ -340,7 +340,7 @@ function draw() {
 
     if (empty) {
         ctx.save();
-        ctx.fillStyle = '#94a3b8';
+        ctx.fillStyle = '#000000';
         ctx.font = 'bold 18px Vazirmatn, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -394,19 +394,19 @@ function drawNode(node) {
     if (node.kind === 'emp') {
         // مستطیل مرکزی کارمند: اسم + تعداد وظیفه
         ctx.save();
-        ctx.fillStyle = '#f8fafc';
+        ctx.fillStyle = '#000000';
         ctx.font = 'bold 15px Vazirmatn, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(ellipsize(node.label, node.w - 26), node.x, node.y - 12);
-        ctx.fillStyle = '#d9f99d';
+        ctx.fillStyle = '#000000';
         ctx.font = '11px Vazirmatn, sans-serif';
         ctx.fillText(node.sub, node.x, node.y + 14);
         ctx.restore();
     } else {
         // مربع وظیفه: عنوان + وضعیت
         ctx.save();
-        ctx.fillStyle = '#f8fafc';
+        ctx.fillStyle = '#000000';
         ctx.font = 'bold 12px Vazirmatn, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -415,11 +415,11 @@ function drawNode(node) {
         lines.forEach((ln, i) => ctx.fillText(ln, node.x, startY + i * 17));
         const due = node.taskRef && node.taskRef.dueDate ? ' | ' + node.taskRef.dueDate : '';
         if (node.taskRef && node.taskRef.priority === 'high') {
-            ctx.fillStyle = '#f87171';
+            ctx.fillStyle = '#000000';
             ctx.font = 'bold 10.5px Vazirmatn, sans-serif';
             ctx.fillText('فوری', node.x, node.y + node.h / 2 - 30);
         }
-        ctx.fillStyle = st.stroke;
+        ctx.fillStyle = '#000000';
         ctx.font = '10.5px Vazirmatn, sans-serif';
         ctx.fillText((st.label || node.status) + due, node.x, node.y + node.h / 2 - 14);
         ctx.restore();
@@ -431,7 +431,7 @@ function drawEdge(emp, taskNode) {
     const to   = rectEdgePoint(taskNode, emp.x, emp.y);
 
     ctx.save();
-    ctx.strokeStyle = '#94a3b8';
+    ctx.strokeStyle = '#16a34a';
     ctx.lineWidth = 1.8 / zoom;
     ctx.beginPath();
     ctx.moveTo(from.x, from.y);
@@ -439,7 +439,7 @@ function drawEdge(emp, taskNode) {
     ctx.stroke();
 
     // دایره‌ی کوچک انتها روی مربع وظیفه
-    ctx.fillStyle = '#64748b';
+    ctx.fillStyle = '#16a34a';
     ctx.beginPath();
     ctx.arc(to.x, to.y, 3.2 / zoom, 0, Math.PI * 2);
     ctx.fill();
