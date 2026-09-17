@@ -55,7 +55,8 @@ OPEN_PIN  = int(os.environ.get("DOOR_OPEN_PIN", "23"))
 CLOSE_PIN = int(os.environ.get("DOOR_CLOSE_PIN", "24"))
 
 # مدت فعال بودن خروجی برای هر دستور (ثانیه)
-PULSE_SECONDS = float(os.environ.get("DOOR_PULSE_SECONDS", "1.0"))
+# حداقل ۵ ثانیه لازم است تا کنترلر/ریموت در فرمان را تشخیص دهد.
+PULSE_SECONDS = float(os.environ.get("DOOR_PULSE_SECONDS", "5.0"))
 
 # dual = دو کانال جدا | single = یک کانال تاگل
 RELAY_MODE = os.environ.get("DOOR_RELAY_MODE", "dual").strip().lower()
