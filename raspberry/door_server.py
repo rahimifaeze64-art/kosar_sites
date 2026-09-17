@@ -29,6 +29,7 @@ import os
 import sys
 import time
 import hmac
+import errno
 import socket
 import shutil
 import signal
@@ -541,6 +542,17 @@ def run_forever():
             log.warning("سرور متوقف شد؛ راه‌اندازی مجدد در ۳ ثانیه...")
         except (KeyboardInterrupt, SystemExit):
             raise
+        except OSError as e:
+            if e.errno == errno.EADDRINUSE:
+                log.error(
+                    "پورت %d قبلاً اشغال است (یک نمونهٔ دیگر در حال اجراست).\n"
+                    "   ببندش و دوباره اجرا کن:\n"
+                    "     sudo systemctl stop door-server 2>/dev/null; pkill -f door_server.py\n"
+                    "     sudo ss -tlnp | grep %d", PORT, PORT)
+                log.error("تلاش مجدد در ۱۵ ثانیه...")
+                time.sleep(15)
+                continue
+            log.error("خطای سرور: %s → راه‌اندازی مجدد در ۳ ثانیه", e)
         except Exception as e:
             log.error("خطای سرور: %s → راه‌اندازی مجدد در ۳ ثانیه", e)
         time.sleep(3)

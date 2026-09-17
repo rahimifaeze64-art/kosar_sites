@@ -52,6 +52,48 @@ const CompanyDoorModule = (function () {
         return h;
     }
 
+    // اگر پروتکل پنل با پروتکل رزبری فرق کند، خودکار پروتکل دیگر را هم امتحان می‌کنیم.
+    function _basesToTry(overrideBase) {
+        let primary = (overrideBase || _getBase()).trim().replace(/\/+$/, '');
+        if (!/^https?:\/\//i.test(primary)) {
+            const https = DOOR_CONFIG.autoHttpsOnHttpsPage && location.protocol === 'https:';
+            primary = (https ? 'https://' : 'http://') + primary;
+        }
+        const list = [primary];
+        const m = primary.match(/^(https?):\/\/(.+)$/i);
+        if (m && DOOR_CONFIG.autoHttpsOnHttpsPage) {
+            const other = (m[1].toLowerCase() === 'https' ? 'http' : 'https') + '://' + m[2];
+            list.push(other);
+        }
+        return list;
+    }
+
+    async function _fetchDoor(path, { method = 'GET', body = null, timeout = 8000, base = null, token = null } = {}) {
+        const bases = _basesToTry(base);
+        const headers = _authHeaders();
+        if (token) headers['X-Door-Token'] = token;
+        let lastErr = null;
+        for (let i = 0; i < bases.length; i++) {
+            const url = bases[i].replace(/\/$/, '') + path;
+            try {
+                const opts = {
+                    method,
+                    headers,
+                    signal: AbortSignal.timeout(i === 0 ? Math.min(timeout, 5000) : timeout),
+                };
+                if (body) opts.body = JSON.stringify(body);
+                const res = await fetch(url, opts);
+                return { res, url };
+            } catch (e) {
+                lastErr = e;
+                const retryable = e.name === 'TimeoutError' || e.name === 'AbortError' || e.name === 'TypeError';
+                console.warn('[door] تلاش ناموفق:', url, e.name, e.message);
+                if (!retryable || i === bases.length - 1) throw e;
+            }
+        }
+        throw lastErr;
+    }
+
     function esc(s) {
         return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
@@ -117,21 +159,14 @@ const CompanyDoorModule = (function () {
             return;
         }
 
-        if (location.protocol === 'https:' && base.startsWith('http://')) {
-            _showToast('صفحه https است و مرورگر http را بلاک میکند — رزبری را با DOOR_HTTPS=1 اجرا کن', 'error');
-            return;
-        }
-
         _loading = true;
         _updateButtons();
 
-        const endpoint = base + (action === 'open' ? '/open' : '/close');
+        const path = action === 'open' ? '/open' : '/close';
         try {
-            const res = await fetch(endpoint, {
-                method:  'POST',
-                headers: _authHeaders(),
-                body:    JSON.stringify({ action, requested_by: _currentUser?.name || 'app' }),
-                signal:  AbortSignal.timeout(8000),
+            const { res, url } = await _fetchDoor(path, {
+                method: 'POST',
+                body: { action, requested_by: _currentUser?.name || 'app' },
             });
 
             if (res.ok) {
@@ -141,17 +176,19 @@ const CompanyDoorModule = (function () {
                 _updateAll();
             } else if (res.status === 401) {
                 _showToast('توکن اتصال نامعتبر است', 'error');
+            } else if (res.status === 403) {
+                _showToast('خارج از شبکه شرکت — گوشی باید روی همان وایفای مودم باشد', 'error');
             } else if (res.status === 409) {
                 _showToast('در حال اجرای دستور قبلی است', 'error');
             } else {
                 _showToast(`خطا از سرور: ${res.status}`, 'error');
             }
         } catch (e) {
-            console.error('[door]', endpoint, e.name, e.message);
+            console.error('[door]', path, e.name, e.message);
             if (e.name === 'TimeoutError' || e.name === 'AbortError') {
-                _showToast(`Raspberry Pi پاسخ نداد · ${base}`, 'error');
+                _showToast('Raspberry Pi پاسخ نداد — سرور روشن است و روی همان وایفای هستی؟', 'error');
             } else {
-                _showToast(`اتصال ناموفق · ${base}`, 'error');
+                _showToast('اتصال برقرار نشد — http/https یا شبکه را چک کن', 'error');
             }
         } finally {
             _loading = false;
@@ -430,26 +467,19 @@ app.run(host='0.0.0.0', port=5000)</pre>
         };
 
         if (!base) return setResult(false, 'آدرس API را وارد کن');
-        const scheme = location.protocol === 'https:' ? 'https' : 'http';
-        if (scheme === 'https' && base.startsWith('http://')) {
-            setResult(false, '⚠ صفحه https است ولی آدرس API با http — مرورگر بلاک میکند. رزبری را با DOOR_HTTPS=1 اجرا کن.');
-            return;
-        }
         setResult(true, `در حال بررسی ${base} ...`);
         try {
-            const headers = {};
-            if (tok) headers['X-Door-Token'] = tok;
-            const res = await fetch(base + '/health', { headers, signal: AbortSignal.timeout(8000) });
+            const { res, url } = await _fetchDoor('/health', { base, token: tok || null, timeout: 8000 });
             if (res.status === 401) return setResult(false, 'توکن نامعتبر است');
             if (res.status === 403) return setResult(false, 'از بیرون شبکه شرکت — گوشی باید روی همان وایفای مودم باشد');
             if (!res.ok) return setResult(false, `سرور خطا داد: ${res.status}`);
             const data = await res.json().catch(() => ({}));
-            setResult(true, `اتصال برقرار است ✅ · وضعیت در: ${data.status || 'نامشخص'} · GPIO: ${data.gpio ? 'واقعی' : 'شبیه‌سازی'}`);
+            setResult(true, `اتصال برقرار است ✅ (${url}) · وضعیت در: ${data.status || 'نامشخص'} · GPIO: ${data.gpio ? 'واقعی' : 'شبیه‌سازی'}`);
         } catch (e) {
             console.error('[door test]', base + '/health', e.name, e.message);
             setResult(false, e.name === 'TimeoutError' || e.name === 'AbortError'
-                ? `سرور پاسخ نداد (${base}) — احتمالاً رزبری خاموش است یا IP عوض شده`
-                : `اتصال برقرار نشد (${base}) — صفحه https + رزبری http یا شبکه جدا`);
+                ? `سرور پاسخ نداد (${base}) — رزبری روشن است؟ IP عوض نشده؟ روی همان وایفایی؟`
+                : `اتصال برقرار نشد (${base}) — پروتکل http/https یا شبکه را چک کن`);
         }
     }
 
