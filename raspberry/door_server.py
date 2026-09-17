@@ -179,16 +179,39 @@ _action_lock   = threading.Lock()
 _state         = "unknown"
 _last_action   = None
 _last_at       = None
+_last_pin      = None
+_last_level    = None
 _started_at    = datetime.now()
 _command_count = 0
 
+# پین فیزیکی روی هدر ۴۰ پین متناظر هر BCM
+_PHYSICAL_PIN = {23: 16, 24: 18, 25: 22, 17: 11, 27: 13, 22: 15, 5: 29, 6: 31,
+                 12: 32, 13: 33, 16: 36, 19: 35, 20: 38, 21: 40, 26: 37}
+
+
+def _pin_label(pin):
+    phys = _PHYSICAL_PIN.get(pin)
+    return f"BCM {pin}" + (f" (پین فیزیکی {phys})" if phys else "")
+
+
+def _active_level():
+    return GPIO.HIGH if ACTIVE_HIGH else GPIO.LOW
+
+
+def _inactive_level():
+    return GPIO.HIGH if not ACTIVE_HIGH else GPIO.LOW
+
+
+def _level_name(level):
+    return "HIGH (3.3V)" if level == GPIO.HIGH else "LOW (0V)"
+
 
 def _relay_on(pin):
-    GPIO.output(pin, GPIO.HIGH if ACTIVE_HIGH else GPIO.LOW)
+    GPIO.output(pin, _active_level())
 
 
 def _relay_off(pin):
-    GPIO.output(pin, GPIO.HIGH if not ACTIVE_HIGH else GPIO.LOW)
+    GPIO.output(pin, _inactive_level())
 
 
 def setup_gpio():
@@ -198,35 +221,46 @@ def setup_gpio():
     GPIO.setup(CLOSE_PIN, GPIO.OUT)
     _relay_off(OPEN_PIN)
     _relay_off(CLOSE_PIN)
+    log.info("🔧 GPIO آماده: باز=%s | بستن=%s | حالت=%s | پالس=%.1fs",
+             _pin_label(OPEN_PIN), _pin_label(CLOSE_PIN), RELAY_MODE, PULSE_SECONDS)
 
 
-def _pulse(pin):
+def _pulse(pin, action):
+    on, off = _active_level(), _inactive_level()
+    log.info("🔌 دستور «%s» → %s فعال شد | سطح: %s | مدت: %.1f ثانیه",
+             "باز کردن" if action == "open" else "بستن", _pin_label(pin), _level_name(on), PULSE_SECONDS)
     _relay_on(pin)
     time.sleep(PULSE_SECONDS)
     _relay_off(pin)
+    log.info("   ↳ %s غیرفعال شد | سطح: %s", _pin_label(pin), _level_name(off))
 
 
 def execute_action(action):
-    global _state, _last_action, _last_at, _command_count
+    global _state, _last_action, _last_at, _last_pin, _last_level, _command_count
 
     if not _action_lock.acquire(blocking=False):
         return False, "busy"
 
     try:
         if RELAY_MODE == "single":
-            _pulse(OPEN_PIN)
+            pin = OPEN_PIN
         elif action == "open":
-            _pulse(OPEN_PIN)
+            pin = OPEN_PIN
         else:
-            _pulse(CLOSE_PIN)
+            pin = CLOSE_PIN
+
+        _pulse(pin, action)
 
         with _state_lock:
             _state       = "open" if action == "open" else "closed"
             _last_action = action
             _last_at     = datetime.now().isoformat(timespec="seconds")
+            _last_pin    = pin
+            _last_level  = _level_name(_active_level())
             _command_count += 1
 
-        log.info("✅ دستور %s اجرا شد (توسط: %s)", action, _client_name())
+        log.info("✅ دستور «%s» روی %s اجرا شد (توسط: %s)",
+                 "باز کردن" if action == "open" else "بستن", _pin_label(pin), _client_name())
         return True, "ok"
     finally:
         _action_lock.release()
