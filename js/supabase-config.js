@@ -11,8 +11,8 @@
 //      Project URL  → SUPABASE_URL
 //      anon/public  → SUPABASE_ANON_KEY
 // ════════════════════════════════════════════════════════════════════
-const SUPABASE_URL      = 'https://cikwuctdkatcxwzwxvff.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpa3d1Y3Rka2F0Y3h3end4dmZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2NzY1MzcsImV4cCI6MjA5OTI1MjUzN30.HiOMF3J4DSR21qreVrlhCxdXjshzOidhvwv96CeJDd8';
+const SUPABASE_URL      = 'https://tyzrexkneoexmcegaxlc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5enJleGtuZW9leG1jZWdheGxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MTcwMjMsImV4cCI6MjEwNTM5MzAyM30.xw_dY8jT13Kt0G1JCg3HaiL5l_0fgVE-9POkxn8jLOU';
 
 // ── singleton client ─────────────────────────────────────────
 let supabaseClient = null;
