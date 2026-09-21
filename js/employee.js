@@ -618,7 +618,7 @@ const EmployeeModule = {
                             <span class="hidden sm:inline">کارهای معلق</span>
                         </button>
                         <button onclick="window._alpineSetPage && window._alpineSetPage('pendingStagesView')"
-                                class="bg-teal-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1">
+                                class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1">
                             <i class="fas fa-diagram-project"></i>
                             <span class="hidden sm:inline">مراحل معلق</span>
                             <span class="sm:hidden">مراحل</span>

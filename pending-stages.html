@@ -22,7 +22,7 @@
             background: #f0fdf4; border: 1px solid #bbf7d0; color: #000000;
             border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 700;
         }
-        .stat-badge.warn { background: #f7fee7; border-color: #d9f99d; color: #000000; }
+        .stat-badge.warn { background: #f0fdf4; border-color: #bbf7d0; color: #000000; }
         #toolbar {
             position: fixed; top: 50%; right: 16px; transform: translateY(-50%);
             background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px;
@@ -145,6 +145,13 @@ const PATHS = [
     { id: 'defense',     label: 'گردش دفاع',     color: '#dcfce7', stroke: '#22c55e', stepKey: 'custom_defense_steps',     defKey: 'getDefaultDefenseSteps2' },
     { id: 'educational', label: 'فارغ‌التحصیلی', color: '#ecfccb', stroke: '#84cc16', stepKey: 'custom_educational_steps', defKey: 'getDefaultEducationalSteps' },
 ];
+
+// ── پالت رنگ دقیقاً مطابق صفحهٔ «کارهای معلق» (pending-tasks.html) ──
+// نود مرکزی (مرحله) مثل نود کارمند، و نود دانشجو مثل نود وظیفه رنگ می‌شود.
+const STAGE_STYLE        = { fill: '#bbf7d0', stroke: '#16a34a' }; // مثل نود کارمند
+const STUDENT_STYLE      = { fill: '#ecfccb', stroke: '#a3e635' }; // مثل وظیفهٔ «در انتظار»
+const STUDENT_TASK_STYLE = { fill: '#dcfce7', stroke: '#22c55e' }; // مثل وظیفهٔ «در حال انجام»
+const EDGE_COLOR         = '#16a34a';
 
 // مراحل پیش‌فرض پشتیبان (وقتی EmployeeModule در دسترس نیست)
 const DEFAULT_STEPS = {
@@ -480,7 +487,7 @@ function draw() {
 
     if (graphEmpty) {
         ctx.save();
-        ctx.fillStyle = '#94a3b8';
+        ctx.fillStyle = '#000000';
         ctx.font = 'bold 18px Vazirmatn, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -516,19 +523,21 @@ function roundRectPath(x, y, w, h, r) {
 function drawNode(node) {
     const sel = node.id === selectedNodeId;
     const isStage = node.kind === 'stage';
+    const hasTask = !!(node.ref && node.ref.hasPendingTask);
 
-    const fill   = isStage ? '#0f172a' : (node.ref && node.ref.hasPendingTask ? '#1c1917' : '#1e293b');
-    const stroke = isStage ? node.pathStroke
-                 : (node.ref && node.ref.hasPendingTask ? '#f59e0b' : '#94a3b8');
+    // مثل صفحهٔ «کارهای معلق»: نود مرکزی = سبز روشن (کارمند)، دانشجو = سبز/لایم روشن
+    const st     = isStage ? STAGE_STYLE : (hasTask ? STUDENT_TASK_STYLE : STUDENT_STYLE);
+    const fill   = st.fill;
+    const stroke = st.stroke;
 
     ctx.save();
-    ctx.shadowColor = sel ? '#16a34a' : stroke;
-    ctx.shadowBlur  = sel ? 20 / zoom : 8 / zoom;
-    roundRectPath(node.x, node.y, node.w, node.h, isStage ? 16 : 12);
+    ctx.shadowColor = sel ? '#ffffff' : stroke;
+    ctx.shadowBlur  = sel ? 18 / zoom : 8 / zoom;
+    roundRectPath(node.x, node.y, node.w, node.h, isStage ? 14 : 10);
     ctx.fillStyle = fill;
     ctx.fill();
-    ctx.lineWidth = (sel ? 3 : (isStage ? 2.4 : 1.8)) / zoom;
-    ctx.strokeStyle = sel ? '#22c55e' : stroke;
+    ctx.lineWidth = (sel ? 3 : 2) / zoom;
+    ctx.strokeStyle = sel ? '#ffffff' : stroke;
     ctx.stroke();
     ctx.restore();
 
@@ -537,33 +546,33 @@ function drawNode(node) {
     ctx.textBaseline = 'middle';
 
     if (isStage) {
-        ctx.fillStyle = '#f8fafc';
+        ctx.fillStyle = '#000000';
         ctx.font = 'bold 15px Vazirmatn, sans-serif';
         const lines = wrapLines(node.label, node.w - 26, 'bold 15px Vazirmatn, sans-serif', 2);
         const startY = node.y - (lines.length === 2 ? 16 : 8);
         lines.forEach((ln, i) => ctx.fillText(ln, node.x, startY + i * 19));
-        ctx.fillStyle = node.pathStroke;
+        ctx.fillStyle = '#000000';
         ctx.font = 'bold 12px Vazirmatn, sans-serif';
         ctx.fillText(`${node.count} دانشجو`, node.x, node.y + 20);
         if (node.assignedEmp) {
-            ctx.fillStyle = '#cbd5e1';
+            ctx.fillStyle = '#000000';
             ctx.font = '10.5px Vazirmatn, sans-serif';
             ctx.fillText('مسئول: ' + empName(node.assignedEmp), node.x, node.y + node.h / 2 - 12);
         }
     } else {
-        ctx.fillStyle = '#f8fafc';
+        ctx.fillStyle = '#000000';
         ctx.font = 'bold 12px Vazirmatn, sans-serif';
         const lines = wrapLines(node.label, node.w - 22, 'bold 12px Vazirmatn, sans-serif', 2);
         const startY = node.y - (lines.length === 2 ? 16 : 10);
         lines.forEach((ln, i) => ctx.fillText(ln, node.x, startY + i * 17));
 
-        const st = node.ref || {};
-        let sub = `مرحله ${st.stepIndex + 1} از ${st.total}`;
-        let subColor = '#94a3b8';
+        const stRef = node.ref || {};
+        let sub = `مرحله ${stRef.stepIndex + 1} از ${stRef.total}`;
+        let subColor = '#000000';
         if (node.ref && node.ref.hasPendingTask) {
             const emps = (node.ref.taskEmps || []).map(empName).join('، ');
             sub = emps ? ('کارتابل: ' + emps) : 'در کارتابل';
-            subColor = '#f59e0b';
+            subColor = '#000000';
         }
         ctx.fillStyle = subColor;
         ctx.font = '10.5px Vazirmatn, sans-serif';
@@ -576,11 +585,11 @@ function drawEdge(stage, stu) {
     const from = rectEdgePoint(stage, stu.x, stu.y);
     const to   = rectEdgePoint(stu, stage.x, stage.y);
     ctx.save();
-    ctx.strokeStyle = (stu.ref && stu.ref.hasPendingTask) ? '#f59e0b' : '#cbd5e1';
-    ctx.lineWidth = 1.6 / zoom;
+    ctx.strokeStyle = EDGE_COLOR;
+    ctx.lineWidth = 1.8 / zoom;
     ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(to.x, to.y); ctx.stroke();
-    ctx.fillStyle = ctx.strokeStyle;
-    ctx.beginPath(); ctx.arc(to.x, to.y, 3 / zoom, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = EDGE_COLOR;
+    ctx.beginPath(); ctx.arc(to.x, to.y, 3.2 / zoom, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
 }
 
