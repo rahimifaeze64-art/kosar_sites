@@ -2593,6 +2593,241 @@ const SupabaseDataModule = {
         }
     },
 
+    // ════════════════════════════════════════════════════════
+    // EMPLOYEE ACCOUNTING — نرخ ساعتی / شارژ ماهانه / هدایا / کسورات / تسویه
+    // منبع اصلی Supabase؛ localStorage فقط کش آفلاین است.
+    // ════════════════════════════════════════════════════════
+
+    _localList(key) {
+        try { const v = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(v) ? v : []; }
+        catch { return []; }
+    },
+
+    _localRates() {
+        try { const v = JSON.parse(localStorage.getItem('employee_hourly_rates') || '{}'); return (v && typeof v === 'object') ? v : {}; }
+        catch { return {}; }
+    },
+
+    _localCharges() {
+        try { const v = JSON.parse(localStorage.getItem('employee_monthly_charges') || '{}'); return (v && typeof v === 'object') ? v : {}; }
+        catch { return {}; }
+    },
+
+    // ── نرخ ساعتی + شارژ ماهانه همه کارمندان ──
+    async getEmployeeRates() {
+        const rates = this._localRates();
+        const charges = this._localCharges();
+        if (!this._online()) return { rates, charges };
+
+        let data = null;
+        try {
+            const { data: d1, error } = await this._db()
+                .from('employee_hourly_rates')
+                .select('employee_id, hourly_rate, monthly_charge');
+            if (error) throw error;
+            data = d1;
+        } catch (e) {
+            // ستون monthly_charge ممکن است نباشد (FINAL_FIX جدول را بازسازی کرده) → بدون آن بخوان
+            try {
+                const { data: d2, error: e2 } = await this._db()
+                    .from('employee_hourly_rates')
+                    .select('employee_id, hourly_rate');
+                if (e2) throw e2;
+                data = d2;
+            } catch (e2) {
+                // fallback: جدول ext (کلید TEXT)
+                try {
+                    const { data: d3, error: e3 } = await this._db()
+                        .from('employee_hourly_rates_ext')
+                        .select('id, hourly_rate, monthly_charge');
+                    if (e3) throw e3;
+                    (d3 || []).forEach(r => {
+                        const id = String(r.id);
+                        rates[id] = Number(r.hourly_rate) || 0;
+                        charges[id] = Number(r.monthly_charge) || 0;
+                    });
+                    localStorage.setItem('employee_hourly_rates', JSON.stringify(rates));
+                    localStorage.setItem('employee_monthly_charges', JSON.stringify(charges));
+                    return { rates, charges };
+                } catch (e3) {
+                    console.warn('⚠️ getEmployeeRates:', e.message);
+                    return { rates, charges };
+                }
+            }
+        }
+
+        (data || []).forEach(r => {
+            const id = String(r.employee_id);
+            rates[id] = Number(r.hourly_rate) || 0;
+            if (r.monthly_charge !== undefined && r.monthly_charge !== null) {
+                charges[id] = Number(r.monthly_charge) || 0;
+            }
+        });
+        localStorage.setItem('employee_hourly_rates', JSON.stringify(rates));
+        localStorage.setItem('employee_monthly_charges', JSON.stringify(charges));
+        return { rates, charges };
+    },
+
+    // ── ذخیره نرخ ساعتی + شارژ ماهانه یک کارمند ──
+    async saveEmployeeRate(employeeId, hourlyRate, monthlyCharge) {
+        const rates = this._localRates();
+        const charges = this._localCharges();
+        rates[String(employeeId)] = Number(hourlyRate) || 0;
+        charges[String(employeeId)] = Number(monthlyCharge) || 0;
+        localStorage.setItem('employee_hourly_rates', JSON.stringify(rates));
+        localStorage.setItem('employee_monthly_charges', JSON.stringify(charges));
+        if (!this._online()) return true;
+
+        const row = {
+            employee_id: String(employeeId),
+            hourly_rate: Number(hourlyRate) || 0,
+            monthly_charge: Number(monthlyCharge) || 0,
+            currency: 'تومان',
+            updated_at: new Date().toISOString()
+        };
+        try {
+            const { error } = await this._db()
+                .from('employee_hourly_rates')
+                .upsert(row, { onConflict: 'employee_id' });
+            if (error) throw error;
+            return true;
+        } catch (e) {
+            // اگر ستون monthly_charge نبود، بدون آن ذخیره کن
+            try {
+                const { error: e2 } = await this._db()
+                    .from('employee_hourly_rates')
+                    .upsert({
+                        employee_id: String(employeeId),
+                        hourly_rate: Number(hourlyRate) || 0,
+                        currency: 'تومان',
+                        updated_at: new Date().toISOString()
+                    }, { onConflict: 'employee_id' });
+                if (e2) throw e2;
+                console.warn('⚠️ monthly_charge در DB نیست — فقط نرخ ساعتی ذخیره شد. SQL را اجرا کنید.');
+                return true;
+            } catch (e2) {
+                console.warn('⚠️ saveEmployeeRate:', e2.message);
+                return false;
+            }
+        }
+    },
+
+    // ── نگاشت ردیف DB ↔ localStorage (هدایا/کسورات/تسویه) ──
+    _dbToAdjustment(r) {
+        return {
+            id:            String(r.id),
+            employeeId:    String(r.employee_id),
+            employeeName:  r.employee_name || '',
+            date:          r.date,
+            amount:        Number(r.amount) || 0,
+            reason:        r.reason || '',
+            note:          r.note || '',
+            category:      r.category || '',
+            createdAt:     r.created_at
+        };
+    },
+
+    _adjustmentToDb(it, table) {
+        const base = {
+            id:            String(it.id),
+            employee_id:   String(it.employeeId),
+            employee_name: it.employeeName || null,
+            date:          it.date,
+            amount:        Number(it.amount) || 0
+        };
+        // جدول تسویه‌حساب ستون note دارد؛ هدایا/کسورات ستون reason (و category) دارند
+        if (table === 'work_settlements') {
+            base.note = it.note || null;
+        } else {
+            base.reason = it.reason || null;
+            base.category = it.category || null;
+        }
+        return base;
+    },
+
+    // ادغام ابر + محلی بر اساس id (از دست نرفتن رکوردهای ذخیره‌نشدهٔ قبلی)
+    _mergeAdjustments(key, cloudItems) {
+        const local = this._localList(key);
+        const map = {};
+        local.forEach(it => { if (it && it.id) map[String(it.id)] = it; });
+        (cloudItems || []).forEach(it => { if (it && it.id) map[String(it.id)] = it; });
+        const merged = Object.values(map).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+        localStorage.setItem(key, JSON.stringify(merged));
+        return merged;
+    },
+
+    async _getAdjustments(key, table, orderCol = 'date') {
+        if (!this._online()) return this._localList(key);
+        try {
+            const { data, error } = await this._db()
+                .from(table)
+                .select('*')
+                .order(orderCol, { ascending: false });
+            if (error) throw error;
+            const items = (data || []).map(r => this._dbToAdjustment(r));
+            return this._mergeAdjustments(key, items);
+        } catch (e) {
+            console.warn(`⚠️ get ${table}:`, e.message);
+            return this._localList(key);
+        }
+    },
+
+    async _saveAdjustment(key, table, item) {
+        const local = this._localList(key);
+        const idx = local.findIndex(x => String(x.id) === String(item.id));
+        if (idx >= 0) local[idx] = item; else local.push(item);
+        localStorage.setItem(key, JSON.stringify(local));
+        if (!this._online()) return true;
+
+        let row = this._adjustmentToDb(item, table);
+        try {
+            const { error } = await this._db().from(table).upsert(row, { onConflict: 'id' });
+            if (error) throw error;
+            return true;
+        } catch (e) {
+            // اگر ستون category وجود نداشت، بدون آن تلاش کن
+            delete row.category;
+            try {
+                const { error: e2 } = await this._db().from(table).upsert(row, { onConflict: 'id' });
+                if (e2) throw e2;
+                console.warn(`⚠️ ستون category در ${table} نیست — SQL را اجرا کنید.`);
+                return true;
+            } catch (e2) {
+                console.warn(`⚠️ save ${table}:`, e2.message);
+                return false;
+            }
+        }
+    },
+
+    async _deleteAdjustment(key, table, id) {
+        const local = this._localList(key).filter(x => String(x.id) !== String(id));
+        localStorage.setItem(key, JSON.stringify(local));
+        if (!this._online()) return true;
+        try {
+            const { error } = await this._db().from(table).delete().eq('id', String(id));
+            if (error) throw error;
+            return true;
+        } catch (e) {
+            console.warn(`⚠️ delete ${table}:`, e.message);
+            return false;
+        }
+    },
+
+    // ── هدایا ──
+    async getWorkGifts()            { return this._getAdjustments('work_gifts', 'work_gifts'); },
+    async saveWorkGift(gift)        { return this._saveAdjustment('work_gifts', 'work_gifts', gift); },
+    async deleteWorkGift(id)        { return this._deleteAdjustment('work_gifts', 'work_gifts', id); },
+
+    // ── کسورات ──
+    async getWorkDeductions()       { return this._getAdjustments('work_deductions', 'work_deductions'); },
+    async saveWorkDeduction(ded)    { return this._saveAdjustment('work_deductions', 'work_deductions', ded); },
+    async deleteWorkDeduction(id)   { return this._deleteAdjustment('work_deductions', 'work_deductions', id); },
+
+    // ── تسویه‌حساب‌ها ──
+    async getWorkSettlements()      { return this._getAdjustments('work_settlements', 'work_settlements'); },
+    async saveWorkSettlement(s)     { return this._saveAdjustment('work_settlements', 'work_settlements', s); },
+    async deleteWorkSettlement(id)  { return this._deleteAdjustment('work_settlements', 'work_settlements', id); },
+
 };
 
 console.log('📦 supabase-data.js بارگذاری شد');

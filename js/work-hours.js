@@ -12,9 +12,13 @@ const WorkHoursModule = (function() {
 
     // ── آیا Supabase در دسترس و آنلاین است؟ ─────────────────
     function _sb() {
-        return typeof SupabaseDataModule !== 'undefined' &&
-               typeof SupabaseConnection !== 'undefined' &&
-               SupabaseConnection.isOnline === true
+        if (typeof SupabaseDataModule === 'undefined') return null;
+        // سازگار با SupabaseDataModule._online() — تا اگر check اولیه به هر دلیلی
+        // isOnline را false گذاشته بود، خواندن/نوشتن ابری متوقف نشود
+        if (typeof SupabaseDataModule._online === 'function') {
+            return SupabaseDataModule._online() ? SupabaseDataModule : null;
+        }
+        return (typeof SupabaseConnection !== 'undefined' && SupabaseConnection.isOnline === true)
                ? SupabaseDataModule : null;
     }
 
@@ -569,6 +573,15 @@ const WorkHoursUI = (function() {
                                     <span id="workDate-pdisp-text" class="text-xs text-gray-300 font-normal"></span>
                                 </button>
                             </div>
+                            <!-- تقویم شمسی — انتخاب دقیق روز -->
+                            <input type="text" id="workDate-jdp" data-jdp
+                                data-jdp-target-value-input="#workDate"
+                                data-jdp-target-value-type="jalali"
+                                placeholder="انتخاب دقیق روز (تقویم شمسی)"
+                                autocomplete="off"
+                                readonly
+                                onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                                class="mt-2 w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white text-sm text-center cursor-pointer focus:outline-none focus:border-emerald-400">
                         </div>
                         
                         <div>
@@ -707,6 +720,15 @@ const WorkHoursUI = (function() {
                                     <span id="expenseDate-pdisp-text" class="text-xs text-gray-300 font-normal"></span>
                                 </button>
                             </div>
+                            <!-- تقویم شمسی — انتخاب دقیق روز -->
+                            <input type="text" id="expenseDate-jdp" data-jdp
+                                data-jdp-target-value-input="#expenseDate"
+                                data-jdp-target-value-type="jalali"
+                                placeholder="انتخاب دقیق روز (تقویم شمسی)"
+                                autocomplete="off"
+                                readonly
+                                onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                                class="mt-2 w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white text-sm text-center cursor-pointer focus:outline-none focus:border-orange-400">
                         </div>
                         
                         <div>
@@ -929,6 +951,133 @@ const WorkHoursUI = (function() {
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- ═══ ثبت ساعت کاری جدید (مدیر) ═══ -->
+                <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+                    <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                        <i class="fas fa-plus-circle text-emerald-400"></i>
+                        ثبت ساعت کاری جدید
+                    </h3>
+                    <form id="workHoursForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-black-600 text-sm mb-2">تاریخ</label>
+                            <input type="hidden" id="workDate">
+                            <div class="flex gap-2">
+                                <button type="button"
+                                        onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp-btn',-4)"
+                                        class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
+                                    <i class="fas fa-calendar-minus text-yellow-400"></i>
+                                    <span>دیروز</span>
+                                    <span id="workDate-disp-text" class="text-xs text-gray-300 font-normal"></span>
+                                </button>
+                                <button type="button"
+                                        onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp-btn',-3)"
+                                        class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
+                                    <i class="fas fa-calendar-times text-orange-400"></i>
+                                    <span>امروز</span>
+                                    <span id="workDate-pdisp-text" class="text-xs text-gray-300 font-normal"></span>
+                                </button>
+                            </div>
+                            <input type="text" id="workDate-jdp" data-jdp
+                                data-jdp-target-value-input="#workDate"
+                                data-jdp-target-value-type="jalali"
+                                placeholder="انتخاب دقیق روز (تقویم شمسی)"
+                                autocomplete="off" readonly
+                                onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                                class="mt-2 w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white text-sm text-center cursor-pointer focus:outline-none focus:border-emerald-400">
+                        </div>
+                        <div>
+                            <label class="block text-black-400 text-sm mb-2">ساعت شروع</label>
+                            <input type="text" id="startTime" placeholder="مثال: 08:30" maxlength="5" dir="ltr"
+                                   oninput="this.value=this.value.replace(/[^0-9:]/g,''); if(this.value.length===2&&!this.value.includes(':'))this.value+=':';"
+                                   onchange="WorkHoursUI.updateTotalHours()"
+                                   class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400 text-left font-mono" style="color-scheme:dark">
+                        </div>
+                        <div>
+                            <label class="block text-black-400 text-sm mb-2">ساعت پایان</label>
+                            <input type="text" id="endTime" placeholder="مثال: 17:00" maxlength="5" dir="ltr"
+                                   oninput="this.value=this.value.replace(/[^0-9:]/g,''); if(this.value.length===2&&!this.value.includes(':'))this.value+=':';"
+                                   onchange="WorkHoursUI.updateTotalHours()"
+                                   class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400 text-left font-mono" style="color-scheme:dark">
+                        </div>
+                        <div>
+                            <label class="block text-black-400 text-sm mb-2">ساعت کل</label>
+                            <div id="totalHoursDisplay" class="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-2xl font-bold text-emerald-400 text-center">0 ساعت</div>
+                        </div>
+                        <div class="md:col-span-2 lg:col-span-4">
+                            <label class="block text-black-400 text-sm mb-2">شرح کار</label>
+                            <textarea id="workDescription" rows="2" placeholder="توضیحاتی درباره کار انجام‌شده بنویسید..."
+                                   class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300/50 focus:outline-none focus:border-blue-400 resize-none"></textarea>
+                        </div>
+                        <div class="md:col-span-2 lg:col-span-4 flex justify-end gap-3">
+                            <button type="button" onclick="WorkHoursUI.resetForm()"
+                                    class="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all">
+                                <i class="fas fa-redo ml-2"></i>پاک کردن
+                            </button>
+                            <button type="submit"
+                                    class="px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white rounded-xl transition-all font-medium">
+                                <i class="fas fa-save ml-2"></i>ثبت ساعت کاری
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ═══ ثبت هزینه‌های شرکت (مدیر) ═══ -->
+                <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+                    <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                        <i class="fas fa-money-bill-wave text-orange-400"></i>
+                        ثبت هزینه‌های شرکت
+                    </h3>
+                    <form id="expenseForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-black-400 text-sm mb-2">تاریخ</label>
+                            <input type="hidden" id="expenseDate">
+                            <div class="flex gap-2">
+                                <button type="button"
+                                        onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp-btn',-4)"
+                                        class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
+                                    <i class="fas fa-calendar-minus text-yellow-400"></i>
+                                    <span>دیروز</span>
+                                    <span id="expenseDate-disp-text" class="text-xs text-gray-300 font-normal"></span>
+                                </button>
+                                <button type="button"
+                                        onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp-btn',-3)"
+                                        class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
+                                    <i class="fas fa-calendar-times text-orange-400"></i>
+                                    <span>امروز</span>
+                                    <span id="expenseDate-pdisp-text" class="text-xs text-gray-300 font-normal"></span>
+                                </button>
+                            </div>
+                            <input type="text" id="expenseDate-jdp" data-jdp
+                                data-jdp-target-value-input="#expenseDate"
+                                data-jdp-target-value-type="jalali"
+                                placeholder="انتخاب دقیق روز (تقویم شمسی)"
+                                autocomplete="off" readonly
+                                onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                                class="mt-2 w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white text-sm text-center cursor-pointer focus:outline-none focus:border-orange-400">
+                        </div>
+                        <div>
+                            <label class="block text-black-400 text-sm mb-2"><i class="fas fa-dollar-sign ml-1"></i>مبلغ (تومان)</label>
+                            <input type="number" id="expenseAmount" min="0" step="1000" placeholder="مبلغ را وارد کنید"
+                                   class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300/50 focus:outline-none focus:border-blue-400">
+                        </div>
+                        <div>
+                            <label class="block text-black-400 text-sm mb-2">شرح هزینه</label>
+                            <input type="text" id="expenseDescription" placeholder="مثال: بنزین، پارکینگ، غذا..."
+                                   class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300/50 focus:outline-none focus:border-blue-400">
+                        </div>
+                        <div class="md:col-span-3 flex justify-end gap-3">
+                            <button type="button" onclick="WorkHoursUI.resetExpenseForm()"
+                                    class="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all">
+                                <i class="fas fa-redo ml-2"></i>پاک کردن
+                            </button>
+                            <button type="submit"
+                                    class="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl transition-all font-medium">
+                                <i class="fas fa-save ml-2"></i>ثبت هزینه
+                            </button>
+                        </div>
+                    </form>
                 </div>
                 
                 <!-- درخواست‌های ساعات کاری در انتظار -->
@@ -1431,6 +1580,8 @@ const WorkHoursUI = (function() {
         var pt = document.getElementById('workDate-pdisp-text');
         if (dt) dt.textContent = '';
         if (pt) pt.textContent = '';
+        var wdJdp = document.getElementById('workDate-jdp');
+        if (wdJdp) wdJdp.value = '';
         // reset هایلایت دکمه‌ها
         var container = wdHidden ? wdHidden.parentElement : null;
         if (container) container.querySelectorAll('button[type="button"]').forEach(function(b){
@@ -1450,6 +1601,8 @@ const WorkHoursUI = (function() {
         var pt = document.getElementById('expenseDate-pdisp-text');
         if (dt) dt.textContent = '';
         if (pt) pt.textContent = '';
+        var edJdp = document.getElementById('expenseDate-jdp');
+        if (edJdp) edJdp.value = '';
         // reset هایلایت دکمه‌ها
         var container = edHidden ? edHidden.parentElement : null;
         if (container) container.querySelectorAll('button[type="button"]').forEach(function(b){
@@ -1673,6 +1826,23 @@ const WorkHoursUI = (function() {
             }
         } catch (e) {
             console.warn('refreshContent خطا:', e.message);
+        }
+
+        // روش ۱.۵: صفحه ساعات کاری مدیر داخل تب «حسابداری» رندر می‌شود
+        try {
+            if (window._empAccPage === 'work_hours') {
+                const accContainer = Array.from(document.querySelectorAll('[x-show]'))
+                    .find(el => (el.getAttribute('x-show') || '').includes("'accounting'"));
+                const app = (typeof UIRefresh !== 'undefined' && UIRefresh._getApp) ? UIRefresh._getApp() : null;
+                if (accContainer && app && typeof app.getAccountingContent === 'function') {
+                    accContainer.innerHTML = app.getAccountingContent();
+                    setupEventListeners();
+                    _reInitDatepicker();
+                    return;
+                }
+            }
+        } catch (e) {
+            console.warn('refreshContent (accounting) خطا:', e.message);
         }
 
         // روش ۲: از UIRefresh استفاده کن
@@ -2202,6 +2372,10 @@ const WorkHoursUI = (function() {
         var clearSpan  = document.getElementById(hiddenId + (isYesterday ? '-disp-text' : '-pdisp-text'));
         if (activeSpan) activeSpan.textContent = display;
         if (clearSpan)  clearSpan.textContent  = '';
+
+        // همگام‌سازی فیلد تقویم شمسی (jdp) با تاریخ انتخاب‌شده
+        var jdpInput = document.getElementById(hiddenId + '-jdp');
+        if (jdpInput) jdpInput.value = jStr;
 
         // هایلایت دکمه انتخاب‌شده
         var container = hidden ? hidden.parentElement : null;

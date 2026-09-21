@@ -9,12 +9,16 @@ const EmployeeAccountingModule = (function() {
 
     const STORAGE_KEY      = 'employee_accounting_settings';
     const HOURLY_RATES_KEY = 'employee_hourly_rates';
+    const MONTHLY_CHARGES_KEY = 'employee_monthly_charges';
 
     // ── Helper ───────────────────────────────────────────────
     function _sb() {
-        return typeof SupabaseDataModule !== 'undefined' &&
-               typeof SupabaseConnection  !== 'undefined' &&
-               SupabaseConnection.isOnline === true
+        if (typeof SupabaseDataModule === 'undefined') return null;
+        // سازگار با SupabaseDataModule._online() (بر پایهٔ وجود client) نه isOnline
+        if (typeof SupabaseDataModule._online === 'function') {
+            return SupabaseDataModule._online() ? SupabaseDataModule : null;
+        }
+        return (typeof SupabaseConnection !== 'undefined' && SupabaseConnection.isOnline === true)
                ? SupabaseDataModule : null;
     }
 
@@ -76,7 +80,7 @@ const EmployeeAccountingModule = (function() {
             const client = sb._db();
             if (client) {
                 client.from('employee_hourly_rates')
-                    .select('hourly_rate')
+                    .select('hourly_rate, monthly_charge')
                     .eq('employee_id', employeeId)
                     .maybeSingle()
                     .then(({ data, error }) => {
@@ -84,6 +88,24 @@ const EmployeeAccountingModule = (function() {
                             const rates = getHourlyRates();
                             rates[employeeId] = parseFloat(data.hourly_rate) || 0;
                             localStorage.setItem(HOURLY_RATES_KEY, JSON.stringify(rates));
+                            if (data.monthly_charge !== undefined && data.monthly_charge !== null) {
+                                const charges = getMonthlyCharges();
+                                charges[employeeId] = parseFloat(data.monthly_charge) || 0;
+                                localStorage.setItem(MONTHLY_CHARGES_KEY, JSON.stringify(charges));
+                            }
+                        } else if (error && /monthly_charge/i.test(error.message || '')) {
+                            // ستون monthly_charge در DB نیست → فقط نرخ ساعتی
+                            client.from('employee_hourly_rates')
+                                .select('hourly_rate')
+                                .eq('employee_id', employeeId)
+                                .maybeSingle()
+                                .then(({ data: d2 }) => {
+                                    if (d2) {
+                                        const rates = getHourlyRates();
+                                        rates[employeeId] = parseFloat(d2.hourly_rate) || 0;
+                                        localStorage.setItem(HOURLY_RATES_KEY, JSON.stringify(rates));
+                                    }
+                                }).catch(() => {});
                         }
                     }).catch(() => {});
             }
@@ -91,6 +113,28 @@ const EmployeeAccountingModule = (function() {
         const rates = getHourlyRates();
         const settings = getSettings();
         return rates[employeeId] ?? settings.defaultHourlyRate ?? 0;
+    }
+
+    // ── شارژ ماهانه کارمند (مبلغ ثابت ماهانه) ────────────────
+    function getMonthlyCharges() {
+        try {
+            const data = localStorage.getItem(MONTHLY_CHARGES_KEY);
+            return data ? JSON.parse(data) : {};
+        } catch (error) { return {}; }
+    }
+
+    function setEmployeeMonthlyCharge(employeeId, amount) {
+        try {
+            const charges = getMonthlyCharges();
+            charges[employeeId] = parseFloat(amount) || 0;
+            localStorage.setItem(MONTHLY_CHARGES_KEY, JSON.stringify(charges));
+            return true;
+        } catch (error) { return false; }
+    }
+
+    function getEmployeeMonthlyCharge(employeeId) {
+        const charges = getMonthlyCharges();
+        return parseFloat(charges[employeeId]) || 0;
     }
 
     function resolveEmployeeName(employeeId, entries) {
@@ -218,6 +262,7 @@ const EmployeeAccountingModule = (function() {
         const totalExpensesApproved = approvedExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
 
         const hourlyRate = getEmployeeHourlyRate(employeeId);
+        const monthlyCharge = getEmployeeMonthlyCharge(employeeId);
         const totalAmount = totalHoursApproved * hourlyRate;
         const grandTotal = totalAmount + totalExpensesApproved;
 
@@ -231,9 +276,9 @@ const EmployeeAccountingModule = (function() {
         const totalExpensesApprovedRemaining = Math.max(0, totalExpensesApproved - _credit.expenseCredit);
         const totalAmountRemaining           = Math.max(0, totalAmount - _credit.hoursCredit);
         const grandTotalRemaining            = totalAmountRemaining + totalExpensesApprovedRemaining;
-        // مانده نهایی قابل پرداخت = (ساعات تأیید + هزینهٔ تأیید − تسویه) + هدایا − کسورات
+        // مانده نهایی قابل پرداخت = (ساعات تأیید + هزینهٔ تأیید − تسویه) + شارژ ماهانه + هدایا − کسورات
         const netPayable = Math.max(0,
-            grandTotalRemaining + _rangeTotals.gifts - _rangeTotals.deductions);
+            grandTotalRemaining + monthlyCharge + _rangeTotals.gifts - _rangeTotals.deductions);
 
         const workDays = new Set(submittedHours.map(h => h.date)).size;
 
@@ -273,6 +318,7 @@ const EmployeeAccountingModule = (function() {
             hoursSettledAmount: _credit.hoursCredit,
             settlementsPaid: _credit.paid,
             hourlyRate,
+            monthlyCharge,
             totalAmount,
             totalAmountRemaining,
             grandTotal,
@@ -364,6 +410,9 @@ const EmployeeAccountingModule = (function() {
         getHourlyRates,
         setHourlyRate,
         getEmployeeHourlyRate,
+        getMonthlyCharges,
+        setEmployeeMonthlyCharge,
+        getEmployeeMonthlyCharge,
         getEmployeeFinancialSummary,
         getAllEmployeesSummary,
         getExpensesSettled,
@@ -549,6 +598,41 @@ const EmployeeAccountingUI = (function() {
                 console.error('Error parsing currentUser:', e);
             }
         }
+        hydrateFromCloud();
+    }
+
+    // ── همگام‌سازی داده‌ها از Supabase در ابتدای ورود ─────────
+    // چون دارایی‌های اصلی (ساعات، هدایا، کسورات، تسویه، نرخ/شارژ) در ابر
+    // هستند و کش محلی ممکن است خالی باشد (مثلاً بعد از انتقال پروژه به
+    // اکانت Supabase جدید) — یک‌بار از ابر می‌خوانیم و داشبورد را دوباره
+    // رندر می‌کنیم تا اعداد صفر نمایش داده نشوند.
+    let _hydratedOnce = false;
+    function hydrateFromCloud() {
+        if (_hydratedOnce) return;
+        if (typeof SupabaseDataModule === 'undefined') return;
+        _hydratedOnce = true;
+
+        const safe = p => (p && typeof p.catch === 'function') ? p.catch(() => null) : Promise.resolve(p);
+
+        const tasks = [];
+        tasks.push((typeof WorkHoursModule !== 'undefined' && WorkHoursModule.getWorkHoursAsync)
+            ? safe(WorkHoursModule.getWorkHoursAsync()) : Promise.resolve(null));
+        tasks.push(SupabaseDataModule.getEmployeeRates       ? safe(SupabaseDataModule.getEmployeeRates())       : Promise.resolve(null));
+        tasks.push(SupabaseDataModule.getWorkGifts           ? safe(SupabaseDataModule.getWorkGifts())           : Promise.resolve(null));
+        tasks.push(SupabaseDataModule.getWorkDeductions      ? safe(SupabaseDataModule.getWorkDeductions())      : Promise.resolve(null));
+        tasks.push(SupabaseDataModule.getWorkSettlements     ? safe(SupabaseDataModule.getWorkSettlements())     : Promise.resolve(null));
+
+        Promise.all(tasks).then(results => {
+            const hours = results[0] || [];
+            const changed = (Array.isArray(hours) && hours.length > 0)
+                || (results[1] && Object.keys(results[1].rates || {}).length > 0)
+                || (Array.isArray(results[2]) && results[2].length > 0)
+                || (Array.isArray(results[3]) && results[3].length > 0)
+                || (Array.isArray(results[4]) && results[4].length > 0);
+            if (changed) {
+                setTimeout(() => { try { refreshContent(); } catch (e) {} }, 50);
+            }
+        }).catch(() => {});
     }
 
     function refreshContent() {
@@ -938,8 +1022,7 @@ const EmployeeAccountingUI = (function() {
                                 <p class="text-xl font-bold text-lime-400">${EmployeeAccountingModule.formatCurrency(
                                     (() => { try {
                                         const u = JSON.parse(localStorage.getItem('currentUser')||'{}');
-                                        const charges = JSON.parse(localStorage.getItem('employee_monthly_charges')||'{}');
-                                        return charges[u.id] || 0;
+                                        return EmployeeAccountingModule.getEmployeeMonthlyCharge(u.id);
                                     } catch { return 0; } })()
                                 )}</p>
                                 <p class="text-black-300 text-xs">مبلغ ثابت ماهانه</p>
@@ -1033,7 +1116,7 @@ const EmployeeAccountingUI = (function() {
                                 ${EmployeeAccountingModule.formatCurrency(emp.hourlyRate)}/ساعت
                                 <i class="fas fa-edit mr-1"></i>
                             </button>
-                            ${(()=>{ const mc=(()=>{try{return JSON.parse(localStorage.getItem('employee_monthly_charges')||'{}');}catch{return{};}})(); const v=mc[emp.employeeId]||0; return v>0?`<div class="mt-1"><span class="text-xs bg-lime-500/20 text-lime-300 px-2 py-0.5 rounded-full"><i class="fas fa-calendar-check ml-1" style="font-size:9px;"></i>${EmployeeAccountingModule.formatCurrency(v)}/ماه</span></div>`:''; })()}</td>
+                            ${(()=>{ const v=EmployeeAccountingModule.getEmployeeMonthlyCharge(emp.employeeId); return v>0?`<div class="mt-1"><span class="text-xs bg-lime-500/20 text-lime-300 px-2 py-0.5 rounded-full"><i class="fas fa-calendar-check ml-1" style="font-size:9px;"></i>${EmployeeAccountingModule.formatCurrency(v)}/ماه</span></div>`:''; })()}</td>
                         <td class="text-center py-4 px-4">
                             <span class="text-xl font-bold text-black-400">${EmployeeAccountingModule.formatHoursDisplay(emp.totalHoursApprovedRaw ?? emp.totalHoursApproved)}</span>
                             <p class="text-black-400/60 text-xs">${emp.hoursCount} گزارش</p>
@@ -1355,8 +1438,15 @@ const EmployeeAccountingUI = (function() {
         if (!date || !amount) { alert('تاریخ و مبلغ الزامی است'); return; }
 
         const list = (() => { try { return JSON.parse(localStorage.getItem('work_settlements') || '[]'); } catch { return []; } })();
-        list.push({ id: 'settle_' + Date.now(), employeeId, employeeName, date, amount, note, createdAt: new Date().toISOString() });
+        const record = { id: 'settle_' + Date.now(), employeeId, employeeName, date, amount, note, createdAt: new Date().toISOString() };
+        list.push(record);
         localStorage.setItem('work_settlements', JSON.stringify(list));
+        // sync به Supabase (جدول work_settlements)
+        try {
+            if (typeof SupabaseDataModule !== 'undefined' && SupabaseDataModule.saveWorkSettlement) {
+                SupabaseDataModule.saveWorkSettlement(record);
+            }
+        } catch (e) { console.warn('⚠️ saveSettlement sync:', e.message); }
 
         document.getElementById('settlement-modal')?.remove();
         showNotification(`تسویه ${Number(amount).toLocaleString('fa-IR')} تومان برای ${employeeName} ثبت شد ✓`, 'success');
@@ -1399,6 +1489,14 @@ const EmployeeAccountingUI = (function() {
                             class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-green-400">
                     </div>
                     <div>
+                        <label class="text-black-400 text-sm mb-1 block">نوع هدیه <span class="text-red-400">*</span></label>
+                        <select id="gift-category"
+                            class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-green-400">
+                            <option value="مناسبتی">مناسبتی</option>
+                            <option value="فرهنگی">فرهنگی</option>
+                        </select>
+                    </div>
+                    <div>
                         <label class="text-black-400 text-sm mb-1 block">توضیحات</label>
                         <input type="text" id="gift-reason" placeholder="مثال: پاداش عملکرد..."
                             class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-green-400">
@@ -1428,13 +1526,23 @@ const EmployeeAccountingUI = (function() {
     }
 
     function saveGift(employeeId, employeeName) {
-        const date   = document.getElementById('gift-date')?.value || document.getElementById('gift-date-disp')?.value || '';
+        const rawDate = document.getElementById('gift-date')?.value || document.getElementById('gift-date-disp')?.value || '';
+        // نرمال‌سازی به شمسی برای مقایسه/نمایش یکسان (مثل کسورات/تسویه)
+        const date   = EmployeeAccountingModule.toJalaliISOSafe(rawDate) || rawDate;
         const amount = parseFloat(document.getElementById('gift-amount')?.value) || 0;
+        const category = document.getElementById('gift-category')?.value || 'مناسبتی';
         const reason = document.getElementById('gift-reason')?.value?.trim() || 'هدیه';
         if (!date || !amount) { alert('تاریخ و مبلغ الزامی است'); return; }
         const gifts = (() => { try { return JSON.parse(localStorage.getItem('work_gifts') || '[]'); } catch { return []; } })();
-        gifts.push({ id: 'gift_' + Date.now(), employeeId, employeeName, date, amount, reason, createdAt: new Date().toISOString() });
+        const record = { id: 'gift_' + Date.now(), employeeId, employeeName, date, amount, category, reason, createdAt: new Date().toISOString() };
+        gifts.push(record);
         localStorage.setItem('work_gifts', JSON.stringify(gifts));
+        // sync به Supabase (جدول work_gifts + ستون category)
+        try {
+            if (typeof SupabaseDataModule !== 'undefined' && SupabaseDataModule.saveWorkGift) {
+                SupabaseDataModule.saveWorkGift(record);
+            }
+        } catch (e) { console.warn('⚠️ saveGift sync:', e.message); }
         document.getElementById('gift-modal')?.remove();
         showNotification('هدیه با موفقیت ثبت شد ✓', 'success');
         refreshContent();
@@ -1505,13 +1613,20 @@ const EmployeeAccountingUI = (function() {
     }
 
     function saveDeductionInline(employeeId, employeeName) {
-        const date   = document.getElementById('ded2-date')?.value || document.getElementById('ded2-date-disp')?.value || '';
+        const rawDate = document.getElementById('ded2-date')?.value || document.getElementById('ded2-date-disp')?.value || '';
+        const date   = EmployeeAccountingModule.toJalaliISOSafe(rawDate) || rawDate;
         const amount = parseFloat(document.getElementById('ded2-amount')?.value) || 0;
         const reason = document.getElementById('ded2-reason')?.value?.trim();
         if (!date || !amount || !reason) { alert('همه فیلدها الزامی است'); return; }
         const list = (() => { try { return JSON.parse(localStorage.getItem('work_deductions') || '[]'); } catch { return []; } })();
-        list.push({ id: 'ded_' + Date.now(), employeeId, employeeName, date, amount, reason, createdAt: new Date().toISOString() });
+        const record = { id: 'ded_' + Date.now(), employeeId, employeeName, date, amount, reason, createdAt: new Date().toISOString() };
+        list.push(record);
         localStorage.setItem('work_deductions', JSON.stringify(list));
+        try {
+            if (typeof SupabaseDataModule !== 'undefined' && SupabaseDataModule.saveWorkDeduction) {
+                SupabaseDataModule.saveWorkDeduction(record);
+            }
+        } catch (e) { console.warn('⚠️ saveDeductionInline sync:', e.message); }
         document.getElementById('deduction-inline-modal')?.remove();
         showNotification('کسر با موفقیت ثبت شد', 'success');
         refreshContent();
@@ -1601,7 +1716,8 @@ const EmployeeAccountingUI = (function() {
 
     function saveDeduction() {
         const empSel = document.getElementById('ded-emp');
-        const date   = document.getElementById('ded-date')?.value || document.getElementById('ded-date-disp')?.value || '';
+        const rawDate = document.getElementById('ded-date')?.value || document.getElementById('ded-date-disp')?.value || '';
+        const date   = EmployeeAccountingModule.toJalaliISOSafe(rawDate) || rawDate;
         const amount = parseFloat(document.getElementById('ded-amount')?.value) || 0;
         const reason = document.getElementById('ded-reason')?.value?.trim();
 
@@ -1621,6 +1737,11 @@ const EmployeeAccountingUI = (function() {
         const list = (() => { try { return JSON.parse(localStorage.getItem('work_deductions') || '[]'); } catch { return []; } })();
         list.push(record);
         localStorage.setItem('work_deductions', JSON.stringify(list));
+        try {
+            if (typeof SupabaseDataModule !== 'undefined' && SupabaseDataModule.saveWorkDeduction) {
+                SupabaseDataModule.saveWorkDeduction(record);
+            }
+        } catch (e) { console.warn('⚠️ saveDeduction sync:', e.message); }
 
         document.getElementById('add-deduction-modal')?.remove();
 
@@ -1644,6 +1765,12 @@ const EmployeeAccountingUI = (function() {
         if (!confirm('این کسر حذف شود؟')) return;
         const list = (() => { try { return JSON.parse(localStorage.getItem('work_deductions') || '[]'); } catch { return []; } })();
         localStorage.setItem('work_deductions', JSON.stringify(list.filter(d => d.id !== id)));
+        // حذف از Supabase هم
+        try {
+            if (typeof SupabaseDataModule !== 'undefined' && SupabaseDataModule.deleteWorkDeduction) {
+                SupabaseDataModule.deleteWorkDeduction(id);
+            }
+        } catch (e) { console.warn('⚠️ deleteDeduction sync:', e.message); }
         // رفرش
         saveDeduction._refresh && saveDeduction._refresh();
         window.location.reload();
@@ -1697,8 +1824,7 @@ const EmployeeAccountingUI = (function() {
         document.getElementById('edit-rate-modal')?.remove();
 
         // خواندن شارژ ماهانه موجود
-        const monthlyCharges = (() => { try { return JSON.parse(localStorage.getItem('employee_monthly_charges')||'{}'); } catch { return {}; } })();
-        const currentMonthly = monthlyCharges[employeeId] || 0;
+        const currentMonthly = EmployeeAccountingModule.getEmployeeMonthlyCharge(employeeId);
 
         const modal = `
             <div id="edit-rate-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onclick="if(event.target === this) this.remove()">
@@ -1751,22 +1877,12 @@ const EmployeeAccountingUI = (function() {
         const rate    = parseFloat(document.getElementById('employee-hourly-rate').value) || 0;
         const monthly = parseFloat(document.getElementById('employee-monthly-charge')?.value) || 0;
 
-        EmployeeAccountingModule.setHourlyRate(employeeId, rate);
-
-        // ذخیره شارژ ماهانه
-        const charges = (() => { try { return JSON.parse(localStorage.getItem('employee_monthly_charges')||'{}'); } catch { return {}; } })();
-        charges[employeeId] = monthly;
-        localStorage.setItem('employee_monthly_charges', JSON.stringify(charges));
-
-        // sync شارژ ماهانه به Supabase
-        const sb = (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseConnection !== 'undefined' && SupabaseConnection.isOnline === true) ? SupabaseDataModule : null;
-        if (sb && typeof sb._db === 'function') {
-            const client = sb._db();
-            if (client) {
-                client.from('employee_hourly_rates')
-                    .upsert({ employee_id: employeeId, hourly_rate: rate, monthly_charge: monthly, currency: 'تومان', updated_at: new Date().toISOString() }, { onConflict: 'employee_id' })
-                    .then(({ error }) => { if (error) console.warn('⚠️ saveEmployeeRate Supabase:', error.message); });
-            }
+        // ذخیره محلی (کش) + همگام‌سازی با Supabase — نرخ ساعتی و شارژ ماهانه با هم
+        if (typeof SupabaseDataModule !== 'undefined' && SupabaseDataModule.saveEmployeeRate) {
+            SupabaseDataModule.saveEmployeeRate(employeeId, rate, monthly);
+        } else {
+            EmployeeAccountingModule.setHourlyRate(employeeId, rate);
+            EmployeeAccountingModule.setEmployeeMonthlyCharge(employeeId, monthly);
         }
 
         document.getElementById('edit-rate-modal')?.remove();
@@ -1979,9 +2095,12 @@ const EmployeeAccountingUI = (function() {
         const giftBlock = gifts.length ? gifts.map(g=>`
         <tr class="border-b border-white/5">
             <td class="py-2 px-3 text-white text-xs">${g.date||'—'}</td>
+            <td class="py-2 px-3 text-center">
+                <span class="${String(g.category||'') === 'فرهنگی' ? 'bg-purple-500/20 text-purple-300' : 'bg-green-500/20 text-green-300'} px-2 py-0.5 rounded-full text-[10px]">${g.category || 'مناسبتی'}</span>
+            </td>
             <td class="py-2 px-3 text-green-300 font-bold text-xs">${Number(g.amount||0).toLocaleString('fa-IR')} ت</td>
             <td class="py-2 px-3 text-white text-xs">${g.reason||'—'}</td>
-        </tr>`).join('') : `<tr><td colspan="3" class="text-center py-3 text-white text-xs">هدیه‌ای ثبت نشده</td></tr>`;
+        </tr>`).join('') : `<tr><td colspan="4" class="text-center py-3 text-white text-xs">هدیه‌ای ثبت نشده</td></tr>`;
 
         const modal = document.createElement('div');
         modal.id = 'employee-details-modal';
@@ -2086,6 +2205,7 @@ const EmployeeAccountingUI = (function() {
                     <table class="w-full text-sm">
                         <thead><tr class="border-b border-white/10 text-xs">
                             <th class="text-right text-black-400 py-1 px-3">تاریخ</th>
+                            <th class="text-center text-black-400 py-1 px-3">نوع</th>
                             <th class="text-right text-black-400 py-1 px-3">مبلغ</th>
                             <th class="text-right text-black-400 py-1 px-3">توضیحات</th>
                         </tr></thead>
@@ -2256,7 +2376,7 @@ const EmployeeAccountingUI = (function() {
                     <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
                         <p class="text-blue-300 text-xs flex items-center gap-2">
                             <i class="fas fa-info-circle"></i>
-                            خروجی شامل <strong class="text-white">سه بخش</strong> است: خلاصه کارمندان، جزئیات کامل سوابق، و کسورات/هدایا
+                            خروجی شامل <strong class="text-white">چهار بخش</strong> است: خلاصه مالی (مطابق جزئیات مالی)، جزئیات کامل سوابق، کسورات/هدایا/تسویه، و درخواست‌های مهلت مجدد
                         </p>
                     </div>
                 <div class="flex gap-3 mt-5">
@@ -2297,47 +2417,42 @@ const EmployeeAccountingUI = (function() {
         const escCell   = v => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
         // ══════════════════════════════════════════════════
-        // بخش ۱ — جدول خلاصه کارمندان
+        // بخش ۱ — خلاصه مالی کارمندان (دقیقاً مطابق کارت‌های «جزئیات مالی»)
         // ══════════════════════════════════════════════════
         const summaryHeaders = [
-            'نام کارمند','نرخ ساعتی (تومان)',
-            'جمع ساعات ارسالی','ساعات تأیید شده','ساعات در انتظار','ساعات رد شده',
-            'جمع هزینه ارسالی (تومان)','هزینه تأیید شده (تومان)','هزینه در انتظار (تومان)','هزینه رد شده (تومان)',
-            'مبلغ ساعات تأیید (تومان)','جمع کل قابل پرداخت (تومان)',
-            'جمع هدایا (تومان)','جمع کسورات (تومان)','تسویه شده (تومان)','مانده طلب (تومان)'
+            'نام کارمند','نرخ ساعتی (تومان)','شارژ ماهانه (تومان)',
+            'ساعات ارسال‌شده','ساعات تأیید شده','روزهای کارکرد',
+            'هزینه تأیید شده (تومان)','هزینه تسویه‌شده (تومان)','مانده هزینه (تومان)',
+            'مبلغ ساعات تأیید (تومان)','جمع کسورات (تومان)','جمع هدایا (تومان)',
+            'تسویه شده (تومان)','جمع کل (تومان)','مانده پرداختنی (تومان)'
         ];
 
         const summaryRows = summary.map(emp => {
-            const paid     = settlements.filter(s=>s.employeeId===emp.employeeId).reduce((s,r)=>s+Number(r.amount||0),0);
-            const ded      = deductions.filter(d=>d.employeeId===emp.employeeId).reduce((s,d)=>s+Number(d.amount||0),0);
-            const gift     = gifts.filter(g=>g.employeeId===emp.employeeId).reduce((s,g)=>s+Number(g.amount||0),0);
-
-            // محاسبه دقیق ساعات/هزینه‌های هر وضعیت
-            const allEnts  = WorkHoursModule.getAllEntriesByEmployee(emp.employeeId);
-            const hoursAll = allEnts.filter(e=>e.type!=='expense');
-            const expsAll  = allEnts.filter(e=>e.type==='expense');
-
-            const hoursApproved = hoursAll.filter(e=>e.status==='approved').reduce((s,e)=>s+parseFloat(e.totalHours||0),0);
-            const hoursPending  = hoursAll.filter(e=>e.status==='pending').reduce((s,e)=>s+parseFloat(e.totalHours||0),0);
-            const hoursRejected = hoursAll.filter(e=>e.status==='rejected').reduce((s,e)=>s+parseFloat(e.totalHours||0),0);
-            const hoursTotal    = hoursApproved + hoursPending + hoursRejected;
-
-            const expsApproved  = expsAll.filter(e=>e.status==='approved').reduce((s,e)=>s+Number(e.amount||0),0);
-            const expsPending   = expsAll.filter(e=>e.status==='pending').reduce((s,e)=>s+Number(e.amount||0),0);
-            const expsRejected  = expsAll.filter(e=>e.status==='rejected').reduce((s,e)=>s+Number(e.amount||0),0);
-            const expsTotal     = expsApproved + expsPending + expsRejected;
-
-            const hoursAmount   = hoursApproved * (emp.hourlyRate || 0);
-            const grandTotal    = hoursAmount + expsApproved;
-            const remaining     = grandTotal + gift - ded - paid;
+            const hoursSubmitted = emp.totalHoursApprovedRaw || 0; // مثل کارت «ساعات ارسال‌شده» در جزئیات مالی
+            const expApproved    = emp.totalExpensesApproved || 0;
+            const expSettled     = emp.expensesSettled || 0;
+            const expRemaining   = emp.totalExpensesApprovedRemaining ?? expApproved;
+            const hoursAmount    = emp.totalAmount || 0;
+            const grandTotal     = emp.grandTotal || (hoursAmount + expApproved);
+            // مانده پرداختنی — همان فرمول مودال جزئیات مالی
+            const remaining      = Math.max(0, grandTotal + (emp.totalGifts || 0) - (emp.totalDeductions || 0) - (emp.settlementsPaid || 0));
 
             return [
                 emp.employeeName,
-                emp.hourlyRate,
-                +hoursTotal.toFixed(2), +hoursApproved.toFixed(2), +hoursPending.toFixed(2), +hoursRejected.toFixed(2),
-                Math.round(expsTotal), Math.round(expsApproved), Math.round(expsPending), Math.round(expsRejected),
-                Math.round(hoursAmount), Math.round(grandTotal),
-                Math.round(gift), Math.round(ded), Math.round(paid), Math.round(remaining)
+                Math.round(emp.hourlyRate || 0),
+                Math.round(emp.monthlyCharge || 0),
+                +Number(hoursSubmitted).toFixed(2),
+                +Number(emp.totalHoursApprovedRaw || 0).toFixed(2),
+                emp.workDays || 0,
+                Math.round(expApproved),
+                Math.round(expSettled),
+                Math.round(expRemaining),
+                Math.round(hoursAmount),
+                Math.round(emp.totalDeductions || 0),
+                Math.round(emp.totalGifts || 0),
+                Math.round(emp.settlementsPaid || 0),
+                Math.round(grandTotal),
+                Math.round(remaining)
             ];
         });
 
@@ -2408,21 +2523,51 @@ const EmployeeAccountingUI = (function() {
         });
 
         // ══════════════════════════════════════════════════
-        // بخش ۳ — جدول کسورات و هدایا
+        // بخش ۳ — کسورات، هدایا (با نوع) و تسویه‌حساب
         // ══════════════════════════════════════════════════
-        const adjHeaders = ['نام کارمند','نوع','تاریخ','مبلغ (تومان)','توضیح / علت'];
+        const adjHeaders = ['نام کارمند','نوع','تاریخ','مبلغ (تومان)','نوع/علت','توضیح'];
         const adjRows    = [];
+        const _normAdj = d => String(d||'').trim().replace(/\//g,'-').replace(/[۰-۹]/g,c=>String.fromCharCode(c.charCodeAt(0)-1728));
+        const _inAdjRange = d => {
+            const x = _normAdj(_jalaliDateDisplay(d));
+            if (from && x && x < _normAdj(from)) return false;
+            if (to   && x && x > _normAdj(to))   return false;
+            return true;
+        };
         // استفاده از همه کارمندان (نه فقط فیلتر شده) برای کسورات/هدایا/تسویه
         const adjEmpIds = selIds.length ? selIds : Object.keys(empNameMap);
         adjEmpIds.forEach(empId => {
             const empName = empNameMap[empId] || empId;
-            deductions.filter(d=>d.employeeId===empId).forEach(d =>
-                adjRows.push([empName, 'کسورات', _jalaliDateDisplay(d.date), Math.round(d.amount||0), d.reason||'']));
-            gifts.filter(g=>g.employeeId===empId).forEach(g =>
-                adjRows.push([empName, 'هدیه / پاداش', _jalaliDateDisplay(g.date), Math.round(g.amount||0), g.reason||'']));
-            settlements.filter(s=>s.employeeId===empId).forEach(s =>
-                adjRows.push([empName, 'تسویه حساب', _jalaliDateDisplay(s.date), Math.round(s.amount||0), s.note||'']));
+            deductions.filter(d=>d.employeeId===empId && _inAdjRange(d.date)).forEach(d =>
+                adjRows.push([empName, 'کسورات', _jalaliDateDisplay(d.date), Math.round(d.amount||0), '—', d.reason||'']));
+            gifts.filter(g=>g.employeeId===empId && _inAdjRange(g.date)).forEach(g =>
+                adjRows.push([empName, 'هدیه / پاداش', _jalaliDateDisplay(g.date), Math.round(g.amount||0), g.category||'مناسبتی', g.reason||'']));
+            settlements.filter(s=>s.employeeId===empId && _inAdjRange(s.date)).forEach(s =>
+                adjRows.push([empName, 'تسویه حساب', _jalaliDateDisplay(s.date), Math.round(s.amount||0), '—', s.note||'']));
         });
+
+        // ══════════════════════════════════════════════════
+        // بخش ۴ — درخواست‌های مهلت مجدد (مثل صفحه جزئیات مالی)
+        // ══════════════════════════════════════════════════
+        const lateHeaders = ['نام کارمند','تاریخ درخواست','نوع','مقدار','دلیل','شرح کار','وضعیت'];
+        const lateRows    = [];
+        let allLate = [];
+        try { allLate = JSON.parse(localStorage.getItem('work_late_requests') || '[]'); } catch (_) {}
+        const lateNameOf = r => empNameMap[r.employeeId] || r.employeeName || r.employeeId || 'نامشخص';
+        allLate
+            .filter(r => !selIds.length || selIds.includes(r.employeeId) || selIds.includes(String(r.employeeId)))
+            .forEach(r => {
+                const st = r.status === 'approved' ? 'تأیید شد' : r.status === 'rejected' ? 'رد شد' : 'در انتظار';
+                lateRows.push([
+                    lateNameOf(r),
+                    r.requestedDate || '—',
+                    r.entryType === 'expense' ? 'هزینه' : 'ساعت کاری',
+                    r.entryType === 'expense' ? Math.round(r.amount||0) : `${r.startTime||'?'} - ${r.endTime||'?'}`,
+                    r.reason || '',
+                    r.description || '',
+                    st
+                ]);
+            });
 
         // ══════════════════════════════════════════════════
         // ساخت فایل Excel با سه جدول در یک شیت
@@ -2483,8 +2628,12 @@ ${buildTable(summaryHeaders, summaryRows, 'هیچ کارمندی یافت نشد
 ${buildTable(detailHeaders, detailRows, 'هیچ سابقه‌ای در این بازه یافت نشد')}
 
 <h2>▌ بخش سوم — کسورات، هدایا و تسویه‌حساب</h2>
-<p class="sub">تمام تعدیلات مالی ثبت‌شده برای کارمندان</p>
+<p class="sub">تمام تعدیلات مالی ثبت‌شده برای کارمندان (نوع هدیه: فرهنگی / مناسبتی)</p>
 ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
+
+<h2>▌ بخش چهارم — درخواست‌های مهلت مجدد</h2>
+<p class="sub">درخواست‌های ثبت‌شده برای ساعات کاری و هزینه‌ها</p>
+${buildTable(lateHeaders, lateRows, 'هیچ درخواستی ثبت نشده')}
 
 </body>
 </html>`;
@@ -2616,7 +2765,7 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
                     <div class="bg-lime-500/10 border border-lime-500/20 rounded-lg p-3">
                         <p class="text-lime-300 text-xs flex items-start gap-2">
                             <i class="fas fa-info-circle mt-0.5"></i>
-                            <span>هر فیش شامل اطلاعات کارمند، دستمزد ساعات، جبران هزینه‌ها، هدایا، کسورات، پرداخت‌های نقدی و <strong class="text-white">خالص قابل پرداخت به‌همراه عدد به حروف</strong> است. هر کارمند در یک صفحه A4 چاپ می‌شود.</span>
+                            <span>هر فیش شامل اطلاعات کارمند، دستمزد ساعات، جبران هزینه‌ها، هدایا و پاداش (شارژ ماهانه + هدایای فرهنگی/مناسبتی)، کسورات، پرداخت‌های نقدی و <strong class="text-white">خالص قابل پرداخت به‌همراه عدد به حروف</strong> است. هر کارمند در یک صفحه A4 چاپ می‌شود.</span>
                         </p>
                     </div>
                     <div class="flex gap-3 pt-1">
@@ -2691,12 +2840,20 @@ ${buildTable(adjHeaders, adjRows, 'هیچ رکوردی ثبت نشده')}
             const dedTotal  = dedRows.reduce((s, dd) => s + Number(dd.amount || 0), 0);
             const paidTotal = payRows.reduce((s, pp) => s + Number(pp.amount || 0), 0);
 
-            const gross = hoursAmount + expsAmount + giftTotal;
+            // شارژ ماهانه ثابت + تفکیک هدایا بر اساس نوع (فرهنگی / مناسبتی)
+            const monthlyCharge   = EmployeeAccountingModule.getEmployeeMonthlyCharge(emp.employeeId);
+            const giftCultural    = giftRows.filter(g => String(g.category || '') === 'فرهنگی')
+                                            .reduce((s, g) => s + Number(g.amount || 0), 0);
+            const giftOccasional  = giftRows.filter(g => String(g.category || '') !== 'فرهنگی')
+                                            .reduce((s, g) => s + Number(g.amount || 0), 0);
+
+            const gross = hoursAmount + expsAmount + giftTotal + monthlyCharge;
             const net   = gross - dedTotal - paidTotal;
             const workDays = new Set(hours.map(h => String(h.date || '').trim())).size;
 
             return { emp, hours, exps, giftRows, dedRows, payRows,
                      totalHours, hoursAmount, expsAmount, giftTotal, dedTotal, paidTotal,
+                     monthlyCharge, giftCultural, giftOccasional,
                      gross, net, workDays };
         });
 
@@ -2822,6 +2979,7 @@ ${body}
         const earn = [
             ['دستمزد ساعات کارکرد <span style="font-weight:normal;font-size:9px">(' + fmtH(d.totalHours) + ' ساعت × ' + fmtNum(d.emp.hourlyRate) + ' تومان)</span>', d.hoursAmount],
             ['جبران هزینه‌ها (مأموریت،...)', d.expsAmount],
+            ['شارژ ماهانه', d.monthlyCharge || 0],
             ['هدیه و پاداش', d.giftTotal]
         ];
         const deds = [
@@ -2856,50 +3014,27 @@ ${body}
             <tr><td class="net-words">به حروف: ${netWords}</td></tr>
           </table>`;
 
-        // ── ریز ساعات کارکرد ──
-        const hCols = ctx.showStatus ? 7 : 6;
-        const hoursRows = d.hours.map((e, i) => `<tr>
-            <td style="${cellL};text-align:center">${toFa(i + 1)}</td>
-            <td style="${cellL};text-align:center">${_jalaliDateDisplay(e.date)}</td>
-            <td style="${cellL};text-align:center">${toFa(e.startTime || '—')}</td>
-            <td style="${cellL};text-align:center">${toFa(e.endTime || '—')}</td>
-            <td style="${cellL};text-align:center">${fmtH(e.totalHours)}</td>
-            ${ctx.showStatus ? `<td style="${cellL};text-align:center">${ctx.statusMap[e.status] || e.status || ''}</td>` : ''}
-            <td style="${cellL}">${esc(e.description || '—')}</td>
-        </tr>`).join('');
-
-        const hoursTbl = sec('ریز ساعات کارکرد') + `
-          <table>
-            <thead><tr><th>ردیف</th><th>تاریخ</th><th>از ساعت</th><th>تا ساعت</th><th>مدت</th>${ctx.showStatus ? '<th>وضعیت</th>' : ''}<th>شرح</th></tr></thead>
-            <tbody>${hoursRows || `<tr><td colspan="${hCols}" style="${cellL};text-align:center;color:#777">ثبت نشده</td></tr>`}</tbody>
-          </table>`;
-
-        // ── ریز جبران هزینه‌ها ──
-        const eCols = ctx.showStatus ? 5 : 4;
-        const expRows = d.exps.map((e, i) => `<tr>
-            <td style="${cellL};text-align:center">${toFa(i + 1)}</td>
-            <td style="${cellL};text-align:center">${_jalaliDateDisplay(e.date)}</td>
-            <td style="${cellL};text-align:center">${fmtNum(e.amount)}</td>
-            ${ctx.showStatus ? `<td style="${cellL};text-align:center">${ctx.statusMap[e.status] || e.status || ''}</td>` : ''}
-            <td style="${cellL}">${esc(e.description || '—')}</td>
-        </tr>`).join('');
-
-        const expTbl = sec('ریز جبران هزینه‌ها') + `
-          <table>
-            <thead><tr><th>ردیف</th><th>تاریخ</th><th>مبلغ (تومان)</th>${ctx.showStatus ? '<th>وضعیت</th>' : ''}<th>شرح</th></tr></thead>
-            <tbody>${expRows || `<tr><td colspan="${eCols}" style="${cellL};text-align:center;color:#777">ثبت نشده</td></tr>`}</tbody>
-          </table>`;
-
         // ── هدایا / کسورات / پرداخت‌های نقدی ──
+        // بخش «هدایا و پاداش» شامل: ۱) شارژ ماهانه  ۲) هدایای فرهنگی/مناسبتی
         const giftRows = d.giftRows.map(g => `<tr>
             <td style="${cellL};text-align:center">${_jalaliDateDisplay(g.date)}</td>
+            <td style="${cellL};text-align:center">${esc(g.category || 'مناسبتی')}</td>
             <td style="${cellL};text-align:center">${fmtNum(g.amount)}</td>
             <td style="${cellL}">${esc(g.reason || '—')}</td>
         </tr>`).join('');
         const giftTbl = sec('هدایا و پاداش') + `
           <table>
-            <thead><tr><th>تاریخ</th><th>مبلغ (تومان)</th><th>علت / توضیح</th></tr></thead>
-            <tbody>${giftRows || `<tr><td colspan="3" style="${cellL};text-align:center;color:#777">ثبت نشده</td></tr>`}</tbody>
+            <thead><tr><th style="width:34%">شرح</th><th>مبلغ (تومان)</th></tr></thead>
+            <tbody>
+              <tr><td style="${cellL}">شارژ ماهانه</td><td style="${cellV};text-align:center">${fmtNum(d.monthlyCharge || 0)}</td></tr>
+              <tr><td style="${cellL}">هدایای مناسبتی</td><td style="${cellV};text-align:center">${fmtNum(d.giftOccasional || 0)}</td></tr>
+              <tr><td style="${cellL}">هدایای فرهنگی</td><td style="${cellV};text-align:center">${fmtNum(d.giftCultural || 0)}</td></tr>
+              <tr style="background:#e5e7eb"><td style="${cellL};font-weight:bold">جمع هدایا و پاداش</td><td style="${cellV};text-align:center">${fmtNum((d.monthlyCharge || 0) + (d.giftTotal || 0))}</td></tr>
+            </tbody>
+          </table>
+          <table style="margin-top:6px">
+            <thead><tr><th>تاریخ</th><th>نوع</th><th>مبلغ (تومان)</th><th>علت / توضیح</th></tr></thead>
+            <tbody>${giftRows || `<tr><td colspan="4" style="${cellL};text-align:center;color:#777">هدیه‌ای ثبت نشده</td></tr>`}</tbody>
           </table>`;
 
         const dedRows = d.dedRows.map(dd => `<tr>
@@ -2947,8 +3082,6 @@ ${body}
             ${info}
             ${edTable}
             ${netBlock}
-            ${hoursTbl}
-            ${expTbl}
             ${giftTbl}
             ${dedTbl}
             ${payTbl}
