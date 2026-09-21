@@ -1354,7 +1354,7 @@ const EmployeeAccountingUI = (function() {
                 <!-- فرم تسویه جدید -->
                 <div class="space-y-3 mb-5">
                     <div>
-                        <label class="text-black-400 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
+                        <label class="text-black-400 text-sm mb-1 block">تاریخ <span class="text-yellow-400">*</span></label>
                         <!-- مقدار شمسی (مبنای ذخیره‌سازی حسابداری: مثل work_hours.date) -->
                         <input type="hidden" id="settle-date">
                         <!-- فیلد شمسی — کتابخانه jalalidatepicker آن را کنترل می‌کند -->
