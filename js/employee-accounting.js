@@ -2402,10 +2402,10 @@ const EmployeeAccountingUI = (function() {
             .map(e => `<option value="${e.employeeId}">${e.employeeName}</option>`)
             .join('');
 
-        // پیش‌فرض: از اول «ماه شمسی جاری» تا امروز
-        const jr     = EmployeeAccountingModule.currentJalaliMonthRange();
-        const todayJ = jr.to || EmployeeAccountingModule.todayJalaliISO();
-        const firstJ = jr.from || todayJ;
+        // انتخاب ماه (پیش‌فرض: ماه جاری شمسی)
+        const selMonth  = EmployeeAccountingModule.currentJalaliMonthKey();
+        const monthOpts = EmployeeAccountingModule.lastJalaliMonths(18).map(m =>
+            `<option value="${m.key}" ${m.key === selMonth ? 'selected' : ''}>${m.label}</option>`).join('');
 
         const modal = document.createElement('div');
         modal.id = 'emp-export-modal';
@@ -2419,37 +2419,13 @@ const EmployeeAccountingUI = (function() {
                     <button onclick="document.getElementById('emp-export-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="space-y-3 text-sm">
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="text-gray-400 text-xs mb-1 block">از تاریخ</label>
-                            <input type="hidden" id="emp-exp-from" value="${firstJ}">
-                            <input type="text"
-                                   id="emp-exp-from-jdp"
-                                   data-jdp
-                                   data-jdp-target-value-input="#emp-exp-from"
-                                   data-jdp-target-value-type="jalali"
-                                   value="${_fmtJalali(firstJ)}"
-                                   placeholder="انتخاب تاریخ"
-                                   autocomplete="off"
-                                   readonly
-                                   onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
-                                   class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none hover:border-green-400 cursor-pointer transition-colors">
-                        </div>
-                        <div>
-                            <label class="text-gray-400 text-xs mb-1 block">تا تاریخ</label>
-                            <input type="hidden" id="emp-exp-to" value="${todayJ}">
-                            <input type="text"
-                                   id="emp-exp-to-jdp"
-                                   data-jdp
-                                   data-jdp-target-value-input="#emp-exp-to"
-                                   data-jdp-target-value-type="jalali"
-                                   value="${_fmtJalali(todayJ)}"
-                                   placeholder="انتخاب تاریخ"
-                                   autocomplete="off"
-                                   readonly
-                                   onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
-                                   class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none hover:border-green-400 cursor-pointer transition-colors">
-                        </div>
+                    <div>
+                        <label class="text-gray-400 text-xs mb-1 block">انتخاب ماه</label>
+                        <select id="emp-exp-month"
+                            class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400 cursor-pointer">
+                            ${monthOpts}
+                        </select>
+                        <p class="text-gray-500 text-xs mt-1">خروجی فقط برای رکوردهای همین ماه شمسی محاسبه می‌شود.</p>
                     </div>
                     <div>
                         <label class="text-gray-400 text-xs mb-1 block">کارمندان (چند انتخابی)</label>
@@ -2485,17 +2461,14 @@ const EmployeeAccountingUI = (function() {
             </div>`;
         document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-        // راه‌اندازی jalalidatepicker برای input های تاریخ
-        setTimeout(function() {
-            if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
-                jalaliDatepicker.startWatch({ showTodayBtn: true, showEmptyBtn: true, showCloseBtn: true });
-            }
-        }, 50);
     }
 
     function doExportEmployeesCSV() {
-        const from      = document.getElementById('emp-exp-from')?.value   || '';
-        const to        = document.getElementById('emp-exp-to')?.value     || '';
+        // ماه انتخاب‌شده → بازهٔ کامل همان ماه شمسی
+        const monthKey  = document.getElementById('emp-exp-month')?.value || EmployeeAccountingModule.currentJalaliMonthKey();
+        const monthRng  = EmployeeAccountingModule.jalaliMonthRange(monthKey);
+        const from      = monthRng.from;
+        const to        = monthRng.to;
         const statusFlt = document.getElementById('emp-exp-status')?.value || '';
         const selIds    = Array.from(document.getElementById('emp-exp-names')?.selectedOptions || []).map(o=>o.value);
 
@@ -2517,6 +2490,7 @@ const EmployeeAccountingUI = (function() {
         const summaryHeaders = [
             'نام کارمند','نرخ ساعتی (تومان)','شارژ ماهانه (تومان)',
             'ساعات ارسال‌شده','ساعات تأیید شده','روزهای کارکرد',
+            'تعداد گزارش ساعات','تعداد اسناد هزینه',
             'هزینه تأیید شده (تومان)','هزینه تسویه‌شده (تومان)','مانده هزینه (تومان)',
             'مبلغ ساعات تأیید (تومان)','جمع کسورات (تومان)','جمع هدایا (تومان)',
             'تسویه شده (تومان)','جمع کل (تومان)','مانده پرداختنی (تومان)'
@@ -2539,6 +2513,8 @@ const EmployeeAccountingUI = (function() {
                 +Number(hoursSubmitted).toFixed(2),
                 +Number(emp.totalHoursApprovedRaw || 0).toFixed(2),
                 emp.workDays || 0,
+                emp.hoursCount || 0,
+                emp.expensesCount || 0,
                 Math.round(expApproved),
                 Math.round(expSettled),
                 Math.round(expRemaining),
@@ -2798,10 +2774,10 @@ ${buildTable(lateHeaders, lateRows, 'هیچ درخواستی ثبت نشده')}
             .map(e => `<option value="${e.employeeId}">${e.employeeName}</option>`)
             .join('');
 
-        // پیش‌فرض: از اول «ماه شمسی جاری» تا امروز (تاریخ صدور = امروز شمسی)
-        const jr     = EmployeeAccountingModule.currentJalaliMonthRange();
-        const todayJ = jr.to || EmployeeAccountingModule.todayJalaliISO();
-        const firstJ = jr.from || todayJ;
+        // انتخاب ماه (پیش‌فرض: ماه جاری شمسی — تاریخ صدور = امروز شمسی)
+        const selMonth  = EmployeeAccountingModule.currentJalaliMonthKey();
+        const monthOpts = EmployeeAccountingModule.lastJalaliMonths(18).map(m =>
+            `<option value="${m.key}" ${m.key === selMonth ? 'selected' : ''}>${m.label}</option>`).join('');
 
         const modal = document.createElement('div');
         modal.id = 'payslip-modal';
@@ -2823,29 +2799,13 @@ ${buildTable(lateHeaders, lateRows, 'هیچ درخواستی ثبت نشده')}
                         </select>
                         <p class="text-gray-500 text-xs mt-1">Ctrl+کلیک برای چند انتخاب — خالی = همه کارمندان</p>
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="text-gray-400 text-xs mb-1 block">از تاریخ</label>
-                            <input type="hidden" id="pslp-from" value="${firstJ}">
-                            <input type="text" id="pslp-from-jdp" data-jdp
-                                   data-jdp-target-value-input="#pslp-from"
-                                   data-jdp-target-value-type="jalali"
-                                   value="${_fmtJalali(firstJ)}"
-                                   placeholder="انتخاب تاریخ" autocomplete="off" readonly
-                                   onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
-                                   class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none hover:border-lime-400 cursor-pointer transition-colors">
-                        </div>
-                        <div>
-                            <label class="text-gray-400 text-xs mb-1 block">تا تاریخ</label>
-                            <input type="hidden" id="pslp-to" value="${todayJ}">
-                            <input type="text" id="pslp-to-jdp" data-jdp
-                                   data-jdp-target-value-input="#pslp-to"
-                                   data-jdp-target-value-type="jalali"
-                                   value="${_fmtJalali(todayJ)}"
-                                   placeholder="انتخاب تاریخ" autocomplete="off" readonly
-                                   onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
-                                   class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none hover:border-lime-400 cursor-pointer transition-colors">
-                        </div>
+                    <div>
+                        <label class="text-gray-400 text-xs mb-1 block">انتخاب ماه</label>
+                        <select id="pslp-month"
+                            class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-lime-400 cursor-pointer">
+                            ${monthOpts}
+                        </select>
+                        <p class="text-gray-500 text-xs mt-1">فیش برای رکوردهای همین ماه شمسی صادر می‌شود.</p>
                     </div>
                     <div>
                         <label class="text-gray-400 text-xs mb-1 block">وضعیت رکوردهای محاسبه</label>
@@ -2873,18 +2833,15 @@ ${buildTable(lateHeaders, lateRows, 'هیچ درخواستی ثبت نشده')}
             </div>`;
         document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-        // راه‌اندازی jalalidatepicker برای input های تاریخ
-        setTimeout(function() {
-            if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
-                jalaliDatepicker.startWatch({ showTodayBtn: true, showEmptyBtn: true, showCloseBtn: true });
-            }
-        }, 50);
     }
 
     // ── تولید و چاپ فیش‌ها ──────────────────────────────────
     function doPrintPayslips() {
-        const from      = document.getElementById('pslp-from')?.value   || '';
-        const to        = document.getElementById('pslp-to')?.value     || '';
+        // ماه انتخاب‌شده → بازهٔ کامل همان ماه شمسی
+        const monthKey  = document.getElementById('pslp-month')?.value || EmployeeAccountingModule.currentJalaliMonthKey();
+        const monthRng  = EmployeeAccountingModule.jalaliMonthRange(monthKey);
+        const from      = monthRng.from;
+        const to        = monthRng.to;
         const statusFlt = document.getElementById('pslp-status')?.value || 'approved';
         const selIds    = Array.from(document.getElementById('pslp-employees')?.selectedOptions || []).map(o => o.value);
 
@@ -2956,7 +2913,7 @@ ${buildTable(lateHeaders, lateRows, 'هیچ درخواستی ثبت نشده')}
 
         const ctx = {
             orgName   : (document.title || 'سازمان').trim(),
-            from, to,
+            from, to, monthKey,
             todayJ    : _toJalaliISO(dNow),
             showStatus: statusFlt !== 'approved',
             statusMap : { pending: 'در انتظار', approved: 'تأیید شده', rejected: 'رد شده' }
@@ -3033,8 +2990,10 @@ ${body}
         const cellV = cellL + 'font-weight:bold;white-space:nowrap;';
         const sec   = t => `<div class="sec">${t}</div>`;
 
-        const periodTxt = 'از ' + (ctx.from ? _fmtJalali(ctx.from) : 'ابتدای فعالیت') +
-                          ' تا ' + (ctx.to ? _fmtJalali(ctx.to) : _fmtJalali(ctx.todayJ));
+        const periodTxt = ctx.monthKey
+            ? 'ماه ' + EmployeeAccountingModule.jalaliMonthLabel(ctx.monthKey)
+            : ('از ' + (ctx.from ? _fmtJalali(ctx.from) : 'ابتدای فعالیت') +
+               ' تا ' + (ctx.to ? _fmtJalali(ctx.to) : _fmtJalali(ctx.todayJ)));
         const serial = _slipSerial(d.emp.employeeId, ctx.from, ctx.to);
 
         // ── سربرگ ──
@@ -3065,6 +3024,14 @@ ${body}
             <tr>
               <td style="${cellL}">ساعات کارکرد دوره</td><td style="${cellV}">${fmtH(d.totalHours)} ساعت</td>
               <td style="${cellL}">روزهای کارکرد</td><td style="${cellV}">${toFa(d.workDays)} روز</td>
+            </tr>
+            <tr>
+              <td style="${cellL}">تعداد گزارش ساعات</td><td style="${cellV}">${toFa(d.hours.length)} مورد</td>
+              <td style="${cellL}">تعداد اسناد هزینه</td><td style="${cellV}">${toFa(d.exps.length)} مورد</td>
+            </tr>
+            <tr>
+              <td style="${cellL}">جمع هزینه‌های تأییدشده</td><td style="${cellV}">${fmtNum(d.expsAmount)} تومان</td>
+              <td style="${cellL}">مبلغ ساعات کارکرد</td><td style="${cellV}">${fmtNum(d.hoursAmount)} تومان</td>
             </tr>
           </table>`;
 
@@ -3186,11 +3153,10 @@ ${body}
     // ── تقویم کاری (فیلتر بازه تاریخ) ──────────────────────
     function showWorkCalendarModal() {
         document.getElementById('work-calendar-modal')?.remove();
-        // ── مبنا: تاریخ شمسی (مثل ستون date جدول work_hours در Supabase: «1405-05-24») ──
-        let dNow = new Date();
-        try { dNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tehran' })); } catch (e) {}
-        const todayJ        = _toJalaliISO(dNow);
-        const firstOfMonthJ = _toJalaliISO(new Date(dNow.getFullYear(), dNow.getMonth(), 1, 12));
+        // ── انتخاب ماه (پیش‌فرض: ماه جاری شمسی) ──
+        const selMonth  = EmployeeAccountingModule.currentJalaliMonthKey();
+        const monthOpts = EmployeeAccountingModule.lastJalaliMonths(18).map(m =>
+            `<option value="${m.key}" ${m.key === selMonth ? 'selected' : ''}>${m.label}</option>`).join('');
 
         const modal = document.createElement('div');
         modal.id = 'work-calendar-modal';
@@ -3203,36 +3169,13 @@ ${body}
                     </h3>
                     <button onclick="document.getElementById('work-calendar-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
                 </div>
-                <p class="text-gray-600 text-sm mb-4">بازه تاریخ را انتخاب کنید تا سوابق کاری، هزینه‌ها و کسورات نمایش داده شوند.</p>
-                <div class="grid grid-cols-2 gap-4 mb-5">
-                    <div>
-                        <label class="text-gray-400 text-sm mb-1 block">از تاریخ</label>
-                        <!-- مقدار شمسی (مبنای ذخیره‌سازی در Supabase — مثل work_hours.date) -->
-                        <input type="hidden" id="cal-from" value="${firstOfMonthJ}">
-                        <!-- فیلد شمسی — کتابخانه jalalidatepicker آن را کنترل می‌کند (مثل مودال تسویه) -->
-                        <input type="text" id="cal-from-disp" data-jdp
-                            data-jdp-target-value-input="#cal-from"
-                            data-jdp-target-value-type="jalali"
-                            value="${_fmtJalali(firstOfMonthJ)}"
-                            placeholder="انتخاب تاریخ شمسی"
-                            autocomplete="off"
-                            readonly
-                            onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
-                            class="w-full bg-slate-700 text-white border border-white/20 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-lime-400 cursor-pointer">
-                    </div>
-                    <div>
-                        <label class="text-gray-400 text-sm mb-1 block">تا تاریخ</label>
-                        <input type="hidden" id="cal-to" value="${todayJ}">
-                        <input type="text" id="cal-to-disp" data-jdp
-                            data-jdp-target-value-input="#cal-to"
-                            data-jdp-target-value-type="jalali"
-                            value="${_fmtJalali(todayJ)}"
-                            placeholder="انتخاب تاریخ شمسی"
-                            autocomplete="off"
-                            readonly
-                            onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
-                            class="w-full bg-slate-700 text-white border border-white/20 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-lime-400 cursor-pointer">
-                    </div>
+                <p class="text-gray-600 text-sm mb-4">ماه را انتخاب کنید تا سوابق کاری، هزینه‌ها و کسورات همان ماه نمایش داده شوند.</p>
+                <div class="mb-5">
+                    <label class="text-gray-400 text-sm mb-1 block">انتخاب ماه</label>
+                    <select id="cal-month"
+                        class="w-full bg-slate-700 text-white border border-white/20 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-lime-400 cursor-pointer">
+                        ${monthOpts}
+                    </select>
                 </div>
                 <div class="flex gap-3 mb-5">
                     <button onclick="EmployeeAccountingUI.applyCalendarFilter()"
@@ -3246,62 +3189,52 @@ ${body}
             </div>`;
         document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-        // راه‌اندازی jalalidatepicker برای input های تاریخ
-        if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
-            setTimeout(function() { jalaliDatepicker.startWatch(); }, 50);
-        }
     }
 
     function applyCalendarFilter() {
-        const from = document.getElementById('cal-from')?.value;
-        const to   = document.getElementById('cal-to')?.value;
-        if (!from || !to) { alert('لطفاً هر دو تاریخ را انتخاب کنید'); return; }
-
-        // ── نرمال‌سازی به شمسیِ ISO — مبنا مثل ستون date جدول work_hours در Supabase («1405-05-24») ──
-        // ورودی hidden شمسی است؛ اگر میلادی یا با اسلش هم بود، به شمسیِ نرمال تبدیل می‌شود
-        const toJalaliISOSafe = v => {
-            const s = String(v || '').trim();
-            const m = s.match(/^(\d{3,4})[-\/](\d{1,2})[-\/](\d{1,2})/);
-            if (!m) return s;
-            const y = +m[1], mo = +m[2], dy = +m[3];
-            if (y < 1700) return `${y}-${String(mo).padStart(2, '0')}-${String(dy).padStart(2, '0')}`; // خودش شمسی است
-            try { return _toJalaliISO(new Date(y, mo - 1, dy, 12, 0, 0)); } catch (e) { return s; }      // میلادی → شمسی
-        };
-        const fromJ = toJalaliISOSafe(from);
-        const toJ   = toJalaliISOSafe(to);
-        const fromDisp = _fmtJalali(fromJ);
-        const toDisp   = _fmtJalali(toJ);
+        // ماه انتخاب‌شده → بازهٔ کامل همان ماه شمسی
+        const monthKey = document.getElementById('cal-month')?.value || EmployeeAccountingModule.currentJalaliMonthKey();
+        const monthRng = EmployeeAccountingModule.jalaliMonthRange(monthKey);
+        const fromJ = monthRng.from;
+        const toJ   = monthRng.to;
+        const monthLabel = EmployeeAccountingModule.jalaliMonthLabel(monthKey);
 
         // فیلتر با بازه‌ی شمسی — تاریخ‌های work_hours و کسورات شمسی ذخیره شده‌اند
         const employeesSummary = EmployeeAccountingModule.getAllEmployeesSummary(fromJ, toJ);
-        const deductions = (() => { try { return JSON.parse(localStorage.getItem('work_deductions')||'[]').filter(d=>{ const dj=toJalaliISOSafe(d.date); return dj>=fromJ&&dj<=toJ; }); } catch { return []; } })();
+        const deductions = (() => { try { return JSON.parse(localStorage.getItem('work_deductions')||'[]').filter(d=>{ const dj=EmployeeAccountingModule.toJalaliISOSafe(d.date); return dj>=fromJ&&dj<=toJ; }); } catch { return []; } })();
         const totalDed = deductions.reduce((s,d)=>s+Number(d.amount||0),0);
 
-        const rows = employeesSummary.filter(e => parseFloat(e.totalHours)>0 || e.totalExpenses>0).map(emp => `
+        const rows = employeesSummary.filter(e => parseFloat(e.totalHours)>0 || e.totalExpenses>0 || (e.monthlyCharge||0)>0).map(emp => `
             <div class="bg-white/5 rounded-xl p-4 border border-white/10">
-                <div class="flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
                     <div class="flex items-center gap-3">
                         <div class="w-9 h-9 bg-lime-500/20 rounded-full flex items-center justify-center">
                             <i class="fas fa-user text-lime-400 text-xs"></i>
                         </div>
                         <span class="text-white font-semibold">${emp.employeeName}</span>
                     </div>
-                    <div class="flex gap-4 flex-wrap text-sm">
-                        <span class="text-gray-400"><i class="fas fa-clock ml-1"></i>${EmployeeAccountingModule.formatHoursDisplay(emp.totalHoursApprovedRaw ?? emp.totalHours)} ارسالی</span>
-                        <span class="text-emerald-400"><i class="fas fa-check ml-1"></i>${EmployeeAccountingModule.formatHoursDisplay(emp.totalHoursApprovedRaw ?? emp.totalHoursApproved)} تأیید</span>
-                        <span class="text-orange-400"><i class="fas fa-receipt ml-1"></i>${EmployeeAccountingModule.formatCurrency(emp.totalExpenses)} هزینه</span>
-                        <span class="text-lime-400 font-bold"><i class="fas fa-wallet ml-1"></i>${EmployeeAccountingModule.formatCurrency(emp.grandTotal)} جمع کل</span>
-                    </div>
+                    <span class="text-lime-400 font-bold text-sm"><i class="fas fa-wallet ml-1"></i>مانده پرداختنی: ${EmployeeAccountingModule.formatCurrency(emp.netPayable ?? emp.grandTotal)}</span>
+                </div>
+                <div class="flex gap-4 flex-wrap text-xs">
+                    <span class="text-gray-400"><i class="fas fa-clock ml-1"></i>ارسالی: ${EmployeeAccountingModule.formatHoursDisplay(emp.totalHoursApprovedRaw ?? emp.totalHours)}</span>
+                    <span class="text-emerald-400"><i class="fas fa-check ml-1"></i>تأیید: ${EmployeeAccountingModule.formatHoursDisplay(emp.totalHoursApprovedRaw ?? emp.totalHoursApproved)}</span>
+                    <span class="text-teal-300"><i class="fas fa-coins ml-1"></i>مبلغ ساعات: ${EmployeeAccountingModule.formatCurrency(emp.totalAmountRemaining ?? emp.totalAmount)}</span>
+                    <span class="text-orange-400"><i class="fas fa-receipt ml-1"></i>هزینه: ${EmployeeAccountingModule.formatCurrency(emp.totalExpensesApprovedRemaining ?? emp.totalExpensesApproved)}</span>
+                    <span class="text-lime-300"><i class="fas fa-calendar-check ml-1"></i>شارژ ماهانه: ${EmployeeAccountingModule.formatCurrency(emp.monthlyCharge || 0)}</span>
+                    <span class="text-green-300"><i class="fas fa-gift ml-1"></i>هدایا: ${EmployeeAccountingModule.formatCurrency(emp.totalGifts || 0)}</span>
+                    <span class="text-red-300"><i class="fas fa-minus-circle ml-1"></i>کسورات: ${EmployeeAccountingModule.formatCurrency(emp.totalDeductions || 0)}</span>
+                    <span class="text-cyan-300"><i class="fas fa-hand-holding-usd ml-1"></i>تسویه: ${EmployeeAccountingModule.formatCurrency(emp.settlementsPaid || 0)}</span>
+                    <span class="text-lime-400 font-bold"><i class="fas fa-sigma ml-1"></i>جمع کل: ${EmployeeAccountingModule.formatCurrency(emp.grandTotal)}</span>
                 </div>
             </div>`).join('');
 
         const dedRows = deductions.length ? deductions.map(d=>`
             <div class="flex items-center justify-between bg-white/5 rounded-lg p-3 text-sm gap-2 flex-wrap">
                 <span class="text-white">${d.employeeName||'—'}</span>
-                <span class="text-gray-400 text-xs">${_fmtJalali(toJalaliISOSafe(d.date))}</span>
+                <span class="text-gray-400 text-xs">${_fmtJalali(EmployeeAccountingModule.toJalaliISOSafe(d.date))}</span>
                 <span class="text-red-400 font-bold">${Number(d.amount||0).toLocaleString('fa-IR')} ت</span>
                 <span class="text-gray-400 text-xs">${d.reason||'—'}</span>
-            </div>`).join('') : '<p class="text-gray-400 text-xs text-center py-2">کسوراتی در این بازه ثبت نشده</p>';
+            </div>`).join('') : '<p class="text-gray-400 text-xs text-center py-2">کسوراتی در این ماه ثبت نشده</p>';
 
         const resultEl = document.getElementById('cal-result');
         if (resultEl) {
@@ -3309,12 +3242,12 @@ ${body}
                 <div class="border-t border-white/10 pt-4">
                     <h4 class="text-white font-semibold mb-3 text-sm flex items-center gap-2">
                         <i class="fas fa-chart-bar text-lime-400"></i>
-                        گزارش بازه <span class="text-lime-300">${fromDisp}</span> تا <span class="text-lime-300">${toDisp}</span>
+                        گزارش ماه <span class="text-lime-300">${monthLabel}</span>
                     </h4>
-                    ${rows || '<p class="text-gray-400 text-sm text-center py-4">رکوردی در این بازه یافت نشد</p>'}
+                    ${rows || '<p class="text-gray-400 text-sm text-center py-4">رکوردی در این ماه یافت نشد</p>'}
                     <div class="mt-4 bg-red-500/10 border border-red-400/20 rounded-xl p-3">
                         <h5 class="text-red-300 text-sm font-semibold mb-2 flex items-center gap-1">
-                            <i class="fas fa-minus-circle text-xs"></i>کسورات این بازه
+                            <i class="fas fa-minus-circle text-xs"></i>کسورات این ماه
                             <span class="text-red-400 font-bold mr-2">${EmployeeAccountingModule.formatCurrency(totalDed)}</span>
                         </h5>
                         ${dedRows}
