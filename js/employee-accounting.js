@@ -198,6 +198,56 @@ const EmployeeAccountingModule = (function() {
         return { from: `${p[0]}-${p[1]}-01`, to: today, monthKey: `${p[0]}-${p[1]}` };
     }
 
+    // ── ابزارهای ماه شمسی (برای انتخاب ماه در جزئیات مالی و تسویه) ──
+    function currentJalaliMonthKey() {
+        const t = _jalaliTodayISO();
+        return String(t).slice(0, 7);
+    }
+
+    // کلید ماه 'YYYY-MM' → بازهٔ کامل همان ماه شمسی
+    function jalaliMonthRange(monthKey) {
+        const key = monthKey || currentJalaliMonthKey();
+        return { from: `${key}-01`, to: `${key}-31`, monthKey: key };
+    }
+
+    function _faDigits(s) {
+        return String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+    }
+
+    // 'YYYY-MM' → «شهریور ۱۴۰۵»
+    function jalaliMonthLabel(monthKey) {
+        const p = String(monthKey || '').split('-');
+        if (p.length !== 2) return monthKey || '';
+        const jm = parseInt(p[1], 10);
+        const name = (typeof Jalali !== 'undefined' && Jalali.monthName) ? Jalali.monthName(jm) : '';
+        return `${name} ${_faDigits(p[0])}`.trim();
+    }
+
+    // آخرین n ماه شمسی (جدیدترین اول) برای <option>
+    function lastJalaliMonths(n) {
+        n = n || 18;
+        const t = _jalaliTodayISO();
+        let p = String(t).split('-');
+        let jy = parseInt(p[0], 10) || 1405;
+        let jm = parseInt(p[1], 10) || 1;
+        const out = [];
+        for (let i = 0; i < n; i++) {
+            const key = `${jy}-${String(jm).padStart(2, '0')}`;
+            out.push({ key, label: jalaliMonthLabel(key) });
+            jm--;
+            if (jm < 1) { jm = 12; jy--; }
+        }
+        return out;
+    }
+
+    // آیا این تاریخ داخل ماه شمسی انتخاب‌شده است؟
+    function _inJalaliMonth(v, monthKey) {
+        if (!monthKey) return true;
+        const j = toJalaliISOSafe(v);
+        if (!j) return true;                 // تاریخ نامشخص حذف نشود
+        return j.slice(0, 7) === monthKey;
+    }
+
     // آیا این تاریخ داخل بازهٔ شمسی است؟ (تاریخ نامشخص → حذف نشود)
     function _inJalaliRange(v, fromJ, toJ) {
         const j = toJalaliISOSafe(v);
@@ -424,6 +474,11 @@ const EmployeeAccountingModule = (function() {
         toJalaliISOSafe,
         todayJalaliISO: _jalaliTodayISO,
         currentJalaliMonthRange,
+        currentJalaliMonthKey,
+        jalaliMonthRange,
+        jalaliMonthLabel,
+        lastJalaliMonths,
+        inJalaliMonth: _inJalaliMonth,
         inJalaliRange: _inJalaliRange
     };
 })();
@@ -1134,6 +1189,11 @@ const EmployeeAccountingUI = (function() {
                         <td class="text-center py-4 px-4">
                             <span class="text-emerald-400 font-bold text-lg">${EmployeeAccountingModule.formatCurrency(emp.grandTotalRemaining ?? emp.grandTotal)}</span>
                             <p class="text-black-300/60 text-xs mt-0.5">(ساعات × نرخ) + هزینه‌ها</p>
+                            <p class="text-xs mt-1">
+                                <span class="text-teal-300 font-bold">ساعات: ${EmployeeAccountingModule.formatCurrency(emp.totalAmountRemaining ?? emp.totalAmount)}</span>
+                                <span class="text-black-300/50 mx-1">|</span>
+                                <span class="text-orange-300 font-bold">هزینه: ${EmployeeAccountingModule.formatCurrency(emp.totalExpensesApprovedRemaining ?? emp.totalExpensesApproved)}</span>
+                            </p>
                             ${(emp.settlementsPaid ?? 0) > 0 ? `<p class="text-black-300/60 text-xs mt-0.5"><i class="fas fa-hand-holding-usd text-lime-400/70 ml-0.5"></i>${EmployeeAccountingModule.formatCurrency(emp.settlementsPaid)} تسویه شده</p>` : ''}
                         </td>
                     <td class="text-center py-4 px-4">${statusBadge}</td>
@@ -1181,8 +1241,8 @@ const EmployeeAccountingUI = (function() {
                     </div>
                 </div>
 
-                <!-- ۷ کارت متریک -->
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+                <!-- کارت‌های متریک -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 gap-3">
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-blue-400/20">
                         <i class="fas fa-paper-plane text-black-400 mb-2 block"></i>
                         <p class="text-black-400 text-xs mb-1">ساعات ارسال‌شده</p>
@@ -1192,6 +1252,14 @@ const EmployeeAccountingUI = (function() {
                         <i class="fas fa-check-circle text-emerald-400 mb-2 block"></i>
                         <p class="text-black-400 text-xs mb-1">ساعات تأیید شده</p>
                         <p class="text-lg font-bold text-emerald-400">${EmployeeAccountingModule.formatHoursDisplay(totalHours)}</p>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-teal-400/20">
+                        <i class="fas fa-coins text-teal-400 mb-2 block"></i>
+                        <p class="text-black-400 text-xs mb-1">مبلغ ساعات تأیید</p>
+                        <p class="text-sm font-bold text-teal-300">${EmployeeAccountingModule.formatCurrency(
+                            employeesSummary.reduce((s,e)=>s+(e.totalAmountRemaining ?? e.totalAmount ?? 0),0)
+                        )}</p>
+                        <p class="text-black-300/60 text-[10px] mt-0.5">ساعات تأییدشده × نرخ</p>
                     </div>
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-orange-400/20">
                         <i class="fas fa-receipt text-orange-400 mb-2 block"></i>
@@ -1288,14 +1356,16 @@ const EmployeeAccountingUI = (function() {
     }
 
     // ── مودال تسویه ──────────────────────────────────────────
-    function showSettlementModal(employeeId, employeeName, grandTotal) {
+    function showSettlementModal(employeeId, employeeName, grandTotal, monthKey) {
         document.getElementById('settlement-modal')?.remove();
 
-        // ── محاسبهٔ مانده در بازهٔ ماه شمسی جاری (مبنا: شمسی) ──
-        // پس از هر تسویه، همین اعداد دوباره محاسبه و داشبورد آپدیت می‌شود.
-        const monthRange = EmployeeAccountingModule.currentJalaliMonthRange();
+        // ── انتخاب ماه شمسی (پیش‌فرض: ماه جاری) ──
+        const selMonth = monthKey || EmployeeAccountingModule.currentJalaliMonthKey();
+        const monthRange = EmployeeAccountingModule.jalaliMonthRange(selMonth);
+        const monthOpts = EmployeeAccountingModule.lastJalaliMonths(18).map(m =>
+            `<option value="${m.key}" ${m.key === selMonth ? 'selected' : ''}>${m.label}</option>`).join('');
         const monthSum   = EmployeeAccountingModule.getEmployeeFinancialSummary(employeeId, monthRange.from, monthRange.to);
-        const grossClaim = Number(monthSum.totalAmount || 0) + Number(monthSum.totalExpensesApproved || 0) + Number(monthSum.totalGifts || 0);
+        const grossClaim = Number(monthSum.totalAmount || 0) + Number(monthSum.totalExpensesApproved || 0) + Number(monthSum.totalGifts || 0) + Number(monthSum.monthlyCharge || 0);
         const ded        = Number(monthSum.totalDeductions || 0);
         const paid       = Number(monthSum.settlementsPaid || 0);
         const remaining  = Number(monthSum.netPayable || 0);
@@ -1323,11 +1393,23 @@ const EmployeeAccountingUI = (function() {
                     <button onclick="document.getElementById('settlement-modal').remove()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
                 </div>
                 <p class="text-lime-300 font-semibold mb-1">${employeeName}</p>
-                <p class="text-black-300 text-xs mb-4">بازه: ${_fmtJalali(monthRange.from)} تا ${_fmtJalali(monthRange.to)}</p>
+                <p class="text-black-300 text-xs mb-4">ماه: ${EmployeeAccountingModule.jalaliMonthLabel(selMonth)}</p>
 
                 <!-- مانده -->
                 <div class="bg-lime-500/10 border border-lime-400/20 rounded-xl p-4 mb-5">
                     <div class="flex justify-between items-center">
+                        <span class="text-black-400 text-sm">مبلغ ساعات تأیید</span>
+                        <span class="text-teal-300 text-sm font-bold">${EmployeeAccountingModule.formatCurrency(monthSum.totalAmount || 0)}</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-1">
+                        <span class="text-black-400 text-sm">شارژ ماهانه</span>
+                        <span class="text-lime-300 text-sm font-bold">${EmployeeAccountingModule.formatCurrency(monthSum.monthlyCharge || 0)}</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-1">
+                        <span class="text-black-400 text-sm">هزینه‌های تأیید شده</span>
+                        <span class="text-orange-300 text-sm font-bold">${EmployeeAccountingModule.formatCurrency(monthSum.totalExpensesApproved || 0)}</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-1">
                         <span class="text-black-400 text-sm">جمع طلب کارمند</span>
                         <span class="text-emerald-400 font-bold">${EmployeeAccountingModule.formatCurrency(grossClaim)}</span>
                     </div>
@@ -1354,20 +1436,13 @@ const EmployeeAccountingUI = (function() {
                 <!-- فرم تسویه جدید -->
                 <div class="space-y-3 mb-5">
                     <div>
-                        <label class="text-black-400 text-sm mb-1 block">تاریخ <span class="text-yellow-400">*</span></label>
-                        <!-- مقدار شمسی (مبنای ذخیره‌سازی حسابداری: مثل work_hours.date) -->
-                        <input type="hidden" id="settle-date">
-                        <!-- فیلد شمسی — کتابخانه jalalidatepicker آن را کنترل می‌کند -->
-                        <input type="text"
-                               id="settle-date-disp"
-                               data-jdp
-                               data-jdp-target-value-input="#settle-date"
-                               data-jdp-target-value-type="jalali"
-                               placeholder="انتخاب تاریخ شمسی"
-                               autocomplete="off"
-                               readonly
-                               onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
-                               class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 cursor-pointer text-sm">
+                        <label class="text-black-400 text-sm mb-1 block">ماه تسویه <span class="text-yellow-400">*</span></label>
+                        <select id="settle-month"
+                                onchange="EmployeeAccountingUI.showSettlementModal('${employeeId}', '${employeeName}', null, this.value)"
+                                class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 text-sm cursor-pointer">
+                            ${monthOpts}
+                        </select>
+                        <p class="text-black-300 text-[11px] mt-1">ثبت تسویه برای ماه انتخاب‌شده (مبلغ از ابتدای همان ماه شمسی محاسبه می‌شود)</p>
                     </div>
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">مبلغ تسویه (تومان) <span class="text-red-400">*</span></label>
@@ -1416,26 +1491,16 @@ const EmployeeAccountingUI = (function() {
             </div>`;
         document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-        // تاریخ پیش‌فرض: امروزِ شمسی (مبنای ذخیره‌سازی: شمسی)
-        const _todayJ = EmployeeAccountingModule.todayJalaliISO();
-        const _settleHid = document.getElementById('settle-date');
-        const _settleDisp = document.getElementById('settle-date-disp');
-        if (_settleHid) _settleHid.value = _todayJ;
-        if (_settleDisp) _settleDisp.value = _jalaliDateDisplay(_todayJ);
-        // راه‌اندازی مجدد jalalidatepicker برای input جدید در مودال
-        if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
-            setTimeout(function() { jalaliDatepicker.startWatch(); }, 50);
-        }
     }
 
     function saveSettlement(employeeId, employeeName) {
-        const dateHidden = document.getElementById('settle-date')?.value;
-        const dateDisp   = document.getElementById('settle-date-disp')?.value;
-        // نرمال‌سازی به شمسی (مبنای حسابداری) — چه hidden شمسی باشد چه میلادی
-        const date   = EmployeeAccountingModule.toJalaliISOSafe(dateHidden || dateDisp) || dateHidden || dateDisp || '';
+        // ماه انتخاب‌شده (پیش‌فرض: ماه جاری). تاریخ ذخیره = اولِ همان ماه شمسی
+        const monthKey = document.getElementById('settle-month')?.value
+            || EmployeeAccountingModule.currentJalaliMonthKey();
+        const date = `${monthKey}-01`;
         const amount = parseFloat(document.getElementById('settle-amount')?.value) || 0;
         const note   = document.getElementById('settle-note')?.value?.trim() || '';
-        if (!date || !amount) { alert('تاریخ و مبلغ الزامی است'); return; }
+        if (!monthKey || !amount) { alert('ماه و مبلغ الزامی است'); return; }
 
         const list = (() => { try { return JSON.parse(localStorage.getItem('work_settlements') || '[]'); } catch { return []; } })();
         const record = { id: 'settle_' + Date.now(), employeeId, employeeName, date, amount, note, createdAt: new Date().toISOString() };
@@ -2057,27 +2122,37 @@ const EmployeeAccountingUI = (function() {
         }).join('');
     }
 
-    async function showEmployeeDetails(employeeId) {
+    async function showEmployeeDetails(employeeId, monthKey, skipSync) {
         // همگام‌سازی درخواست‌های مهلت مجدد از Supabase قبل از رندر (اگر آنلاین)
-        // حداکثر ۱.۵ ثانیه صبر می‌کند تا باز شدن modal کند نشود
-        try {
-            if (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseDataModule.getLateRequests === 'function') {
-                await Promise.race([
-                    SupabaseDataModule.getLateRequests(),
-                    new Promise(res => setTimeout(res, 1500))
-                ]);
-            }
-        } catch (e) { /* آفلاین — ادامه با localStorage */ }
+        // حداکثر ۱.۵ ثانیه صبر می‌کند تا باز شدن modal کند نشود (فقط بار اول)
+        if (!skipSync) {
+            try {
+                if (typeof SupabaseDataModule !== 'undefined' && typeof SupabaseDataModule.getLateRequests === 'function') {
+                    await Promise.race([
+                        SupabaseDataModule.getLateRequests(),
+                        new Promise(res => setTimeout(res, 1500))
+                    ]);
+                }
+            } catch (e) { /* آفلاین — ادامه با localStorage */ }
+        }
 
-        const summary    = EmployeeAccountingModule.getEmployeeFinancialSummary(employeeId);
-        const entries    = WorkHoursModule.getAllEntriesByEmployee(employeeId);
-        const deductions = (() => { try { return JSON.parse(localStorage.getItem('work_deductions')||'[]').filter(d=>d.employeeId===employeeId); } catch { return []; } })();
-        const gifts      = (() => { try { return JSON.parse(localStorage.getItem('work_gifts')||'[]').filter(g=>g.employeeId===employeeId); } catch { return []; } })();
-        const settlements= (() => { try { return JSON.parse(localStorage.getItem('work_settlements')||'[]').filter(s=>s.employeeId===employeeId); } catch { return []; } })();
-        const totalDed   = deductions.reduce((s,d) => s + Number(d.amount||0), 0);
-        const totalGift  = gifts.reduce((s,g) => s + Number(g.amount||0), 0);
-        const totalPaid  = settlements.reduce((s,r) => s + Number(r.amount||0), 0);
-        const remaining  = Math.max(0, summary.grandTotal + totalGift - totalDed - totalPaid);
+        // ماه انتخابی (پیش‌فرض: ماه جاری شمسی)
+        const selMonth   = monthKey || EmployeeAccountingModule.currentJalaliMonthKey();
+        const monthRange = EmployeeAccountingModule.jalaliMonthRange(selMonth);
+        const monthOpts  = EmployeeAccountingModule.lastJalaliMonths(18).map(m =>
+            `<option value="${m.key}" ${m.key === selMonth ? 'selected' : ''}>${m.label}</option>`).join('');
+
+        const summary    = EmployeeAccountingModule.getEmployeeFinancialSummary(employeeId, monthRange.from, monthRange.to);
+        const _inMonth   = d => EmployeeAccountingModule.inJalaliMonth(d, selMonth);
+        const entries    = WorkHoursModule.getAllEntriesByEmployee(employeeId).filter(e => _inMonth(e.date));
+        const deductions = (() => { try { return JSON.parse(localStorage.getItem('work_deductions')||'[]').filter(d=>d.employeeId===employeeId && _inMonth(d.date)); } catch { return []; } })();
+        const gifts      = (() => { try { return JSON.parse(localStorage.getItem('work_gifts')||'[]').filter(g=>g.employeeId===employeeId && _inMonth(g.date)); } catch { return []; } })();
+        const totalDed   = summary.totalDeductions || 0;
+        const totalGift  = summary.totalGifts || 0;
+        const totalPaid  = summary.settlementsPaid || 0;
+        const hoursAmount= summary.totalAmount || 0;
+        // مانده پرداختنی همان ماه (شامل شارژ ماهانه، هدایا، کسورات و تسویه‌های همان ماه)
+        const remaining  = summary.netPayable || 0;
         const safeName   = (summary.employeeName||'').replace(/'/g,"\\'");
 
         document.getElementById('employee-details-modal')?.remove();
@@ -2111,8 +2186,18 @@ const EmployeeAccountingUI = (function() {
                 <div class="flex items-center justify-between mb-5">
                     <h3 class="text-xl font-bold text-white flex items-center gap-2">
                         <i class="fas fa-user text-lime-400"></i>جزئیات مالی: ${summary.employeeName}
+                        <span class="text-xs font-normal text-indigo-300">— ${EmployeeAccountingModule.jalaliMonthLabel(selMonth)}</span>
                     </h3>
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 items-center">
+                        <div class="flex items-center gap-1 px-3 py-1.5 bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 rounded-lg text-sm">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span class="hidden sm:inline">انتخاب ماه:</span>
+                            <select id="emp-detail-month"
+                                onchange="EmployeeAccountingUI.showEmployeeDetails('${employeeId}', this.value, true)"
+                                class="bg-transparent text-indigo-200 font-semibold cursor-pointer focus:outline-none text-sm">
+                                ${monthOpts}
+                            </select>
+                        </div>
                         <button onclick="EmployeeAccountingUI.showGiftModal('${employeeId}','${safeName}'); document.getElementById('employee-details-modal').remove()"
                             class="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg text-sm hover:bg-green-500/40">
                             <i class="fas fa-gift ml-1"></i>هدیه
@@ -2138,6 +2223,18 @@ const EmployeeAccountingUI = (function() {
                         <p class="text-gray-400 text-xs mb-0.5">ساعات تأیید شده</p>
                         <p class="text-xl font-bold text-emerald-400">${EmployeeAccountingModule.formatHoursDisplay(summary.totalHoursApprovedRaw ?? summary.totalHoursApproved)}</p>
                         <p class="text-gray-500 text-xs">× ${EmployeeAccountingModule.formatCurrency(summary.hourlyRate)}/ساعت</p>
+                    </div>
+                    <div class="bg-teal-500/10 border border-teal-400/20 rounded-xl p-3 text-center">
+                        <i class="fas fa-coins text-teal-400 mb-1 block text-sm"></i>
+                        <p class="text-gray-400 text-xs mb-0.5">مبلغ ساعات تأیید</p>
+                        <p class="text-lg font-bold text-teal-300">${EmployeeAccountingModule.formatCurrency(hoursAmount)}</p>
+                        <p class="text-gray-500 text-xs">ساعات تأییدشده × نرخ</p>
+                    </div>
+                    <div class="bg-lime-500/10 border border-lime-400/20 rounded-xl p-3 text-center">
+                        <i class="fas fa-calendar-check text-lime-400 mb-1 block text-sm"></i>
+                        <p class="text-gray-400 text-xs mb-0.5">شارژ ماهانه</p>
+                        <p class="text-lg font-bold text-lime-300">${EmployeeAccountingModule.formatCurrency(summary.monthlyCharge || 0)}</p>
+                        <p class="text-gray-500 text-xs">مبلغ ثابت این ماه</p>
                     </div>
                     <div class="bg-orange-500/10 border border-orange-400/20 rounded-xl p-3 text-center">
                         <i class="fas fa-receipt text-orange-400 mb-1 block text-sm"></i>
@@ -2305,12 +2402,10 @@ const EmployeeAccountingUI = (function() {
             .map(e => `<option value="${e.employeeId}">${e.employeeName}</option>`)
             .join('');
 
-        // تاریخ امروز و اول ماه به شمسی
-        let d = new Date();
-        try { d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tehran' })); } catch(e) {}
-        const todayJ = _toJalaliISO(d);
-        const firstD = new Date(d.getFullYear(), d.getMonth(), 1);
-        const firstJ  = _toJalaliISO(firstD);
+        // پیش‌فرض: از اول «ماه شمسی جاری» تا امروز
+        const jr     = EmployeeAccountingModule.currentJalaliMonthRange();
+        const todayJ = jr.to || EmployeeAccountingModule.todayJalaliISO();
+        const firstJ = jr.from || todayJ;
 
         const modal = document.createElement('div');
         modal.id = 'emp-export-modal';
@@ -2703,12 +2798,10 @@ ${buildTable(lateHeaders, lateRows, 'هیچ درخواستی ثبت نشده')}
             .map(e => `<option value="${e.employeeId}">${e.employeeName}</option>`)
             .join('');
 
-        // اول ماه و امروز به شمسی (پیش‌فرض: ماه جاری)
-        let d = new Date();
-        try { d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tehran' })); } catch (e) {}
-        const todayJ = _toJalaliISO(d);
-        const firstD = new Date(d.getFullYear(), d.getMonth(), 1);
-        const firstJ = _toJalaliISO(firstD);
+        // پیش‌فرض: از اول «ماه شمسی جاری» تا امروز (تاریخ صدور = امروز شمسی)
+        const jr     = EmployeeAccountingModule.currentJalaliMonthRange();
+        const todayJ = jr.to || EmployeeAccountingModule.todayJalaliISO();
+        const firstJ = jr.from || todayJ;
 
         const modal = document.createElement('div');
         modal.id = 'payslip-modal';

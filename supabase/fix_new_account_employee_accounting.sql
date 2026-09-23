@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS public.work_gifts (
     id            TEXT PRIMARY KEY,
     employee_id   TEXT NOT NULL,
     employee_name TEXT,
-    date          DATE NOT NULL,
+    date          TEXT NOT NULL,
     amount        NUMERIC(12,2) NOT NULL DEFAULT 0,
     category      TEXT DEFAULT 'مناسبتی',
     reason        TEXT,
@@ -147,7 +147,7 @@ CREATE TABLE IF NOT EXISTS public.work_deductions (
     id            TEXT PRIMARY KEY,
     employee_id   TEXT NOT NULL,
     employee_name TEXT,
-    date          DATE NOT NULL,
+    date          TEXT NOT NULL,
     amount        NUMERIC(12,2) NOT NULL DEFAULT 0,
     category      TEXT,
     reason        TEXT,
@@ -172,7 +172,7 @@ CREATE TABLE IF NOT EXISTS public.work_settlements (
     id            TEXT PRIMARY KEY,
     employee_id   TEXT NOT NULL,
     employee_name TEXT,
-    date          DATE NOT NULL,
+    date          TEXT NOT NULL,
     amount        NUMERIC(12,2) NOT NULL DEFAULT 0,
     note          TEXT,
     created_at    TIMESTAMPTZ DEFAULT now()
@@ -185,6 +185,36 @@ CREATE POLICY "settlements_anon_all"
 
 CREATE INDEX IF NOT EXISTS idx_settlements_employee ON public.work_settlements (employee_id);
 CREATE INDEX IF NOT EXISTS idx_settlements_date     ON public.work_settlements (date DESC);
+
+-- ════════════════════════════════════════════════════════════
+-- ۵.۵. ستون «date» → TEXT
+--   تاریخهای سیستم شمسیاند (مثل 1405-06-31) و اگر ستون از نوع DATE
+--   باشد، PostgreSQL آن را میلادی تفسیر میکند و چون ۳۱ ژوئن وجود ندارد
+--   خطای «date/time field value out of range: 1405-06-31» میدهد.
+--   این بلوک هر ستون date موجود را به TEXT تبدیل میکند.
+-- ════════════════════════════════════════════════════════════
+DO $$
+DECLARE
+    tbl text;
+    col record;
+BEGIN
+    FOREACH tbl IN ARRAY ARRAY['work_hours','work_gifts','work_deductions','work_settlements'] LOOP
+        IF to_regclass('public.' || tbl) IS NULL THEN CONTINUE; END IF;
+        FOR col IN
+            SELECT data_type
+            FROM information_schema.columns
+            WHERE table_schema = 'public' AND table_name = tbl AND column_name = 'date'
+        LOOP
+            IF col.data_type <> 'text' THEN
+                EXECUTE format(
+                    'ALTER TABLE public.%I ALTER COLUMN date TYPE TEXT USING to_char(date, ''YYYY-MM-DD'')',
+                    tbl
+                );
+                RAISE NOTICE 'Converted %.date to TEXT', tbl;
+            END IF;
+        END LOOP;
+    END LOOP;
+END $$;
 
 -- ════════════════════════════════════════════════════════════
 -- ۶. work_late_requests — jalali_date + RLS
@@ -235,4 +265,10 @@ SELECT
     (SELECT column_name FROM information_schema.columns
       WHERE table_schema='public' AND table_name='work_gifts'
         AND column_name='category')                                 AS gift_category_col,
+    (SELECT data_type FROM information_schema.columns
+      WHERE table_schema='public' AND table_name='work_hours'
+        AND column_name='date')                                     AS work_hours_date_type,
+    (SELECT data_type FROM information_schema.columns
+      WHERE table_schema='public' AND table_name='work_gifts'
+        AND column_name='date')                                     AS gifts_date_type,
     'fix_new_account_employee_accounting OK ✓'                       AS status;

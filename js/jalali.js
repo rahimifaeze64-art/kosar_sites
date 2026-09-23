@@ -69,7 +69,7 @@
 
     function j2d(jy, jm, jd) {
         var r = jalCal(jy);
-        return g2d(r.gy, 3, r.march) + (jm-1)*30 + div(jm-1,6)*(-1) + (jm > 6 ? 6*(jm-7) : 0) + jd - 1;
+        return g2d(r.gy, 3, r.march) + (jm - 1) * 31 - div(jm, 7) * (jm - 7) + jd - 1;
     }
 
     function d2j(jd) {
@@ -78,21 +78,24 @@
         var r = jalCal(jy);
         var jdn = g2d(gy, 3, r.march);
         var j = jd - jdn;
+        var jm, jd2;
         if (j >= 0) {
-            if (j >= 365) {
-                jy++;
-                r = jalCal(jy);
-                jdn = g2d(r.gy, 3, r.march);
-                j = jd - jdn;
+            if (j <= 185) {
+                jm = 1 + div(j, 31);
+                jd2 = mod(j, 31) + 1;
+                return { jy: jy, jm: jm, jd: jd2 };
             }
+            j -= 186;
         } else {
             jy--;
             r = jalCal(jy);
             jdn = g2d(r.gy, 3, r.march);
             j = jd - jdn;
+            j += 179;
+            if (r.leap === 1) j += 1;
         }
-        var jm = div(j*2, 61) + 1;
-        var jd2 = j - (div(jm-1, 2)*31 + div(jm, 2)*30) + 1;
+        jm = 7 + div(j, 30);
+        jd2 = mod(j, 30) + 1;
         return { jy: jy, jm: jm, jd: jd2 };
     }
 
