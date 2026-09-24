@@ -559,29 +559,21 @@ const WorkHoursUI = (function() {
                             <div class="flex gap-2">
                                 <button type="button"
                                         id="workDate-disp-btn"
-                                        onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp-btn',-4)"
+                                        onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp-btn',-1)"
                                         class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                     <i class="fas fa-calendar-minus text-yellow-400"></i>
                                     <span>دیروز</span>
                                     <span id="workDate-disp-text" class="text-xs text-gray-300 font-normal"></span>
                                 </button>
                                 <button type="button"
-                                        onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp-btn',-3)"
+                                        onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp-btn',0)"
                                         class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                     <i class="fas fa-calendar-times text-orange-400"></i>
                                     <span>امروز</span>
                                     <span id="workDate-pdisp-text" class="text-xs text-gray-300 font-normal"></span>
                                 </button>
                             </div>
-                            <!-- تقویم شمسی — انتخاب دقیق روز -->
-                            <input type="text" id="workDate-jdp" data-jdp
-                                data-jdp-target-value-input="#workDate"
-                                data-jdp-target-value-type="jalali"
-                                placeholder="انتخاب دقیق روز (تقویم شمسی)"
-                                autocomplete="off"
-                                readonly
-                                onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
-                                class="mt-2 w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white text-sm text-center cursor-pointer focus:outline-none focus:border-emerald-400">
+                            <!-- انتخاب روز فقط با دکمه‌های دیروز/امروز -->
                         </div>
                         
                         <div>
@@ -650,14 +642,14 @@ const WorkHoursUI = (function() {
                                 <div class="flex gap-2">
                                     <button type="button"
                                             id="deductionDate-disp-btn"
-                                            onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp-btn',-4)"
+                                            onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp-btn',-1)"
                                             class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                         <i class="fas fa-calendar-minus text-yellow-400"></i>
                                         <span>دیروز</span>
                                         <span id="deductionDate-disp-text" class="text-xs text-gray-300 font-normal"></span>
                                     </button>
                                     <button type="button"
-                                            onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp-btn',-3)"
+                                            onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp-btn',0)"
                                             class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                         <i class="fas fa-calendar-times text-orange-400"></i>
                                         <span>امروز</span>
@@ -706,29 +698,21 @@ const WorkHoursUI = (function() {
                             <div class="flex gap-2">
                                 <button type="button"
                                         id="expenseDate-disp-btn"
-                                        onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp-btn',-4)"
+                                        onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp-btn',-1)"
                                         class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                     <i class="fas fa-calendar-minus text-yellow-400"></i>
                                     <span>دیروز</span>
                                     <span id="expenseDate-disp-text" class="text-xs text-gray-300 font-normal"></span>
                                 </button>
                                 <button type="button"
-                                        onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp-btn',-3)"
+                                        onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp-btn',0)"
                                         class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                     <i class="fas fa-calendar-times text-orange-400"></i>
                                     <span>امروز</span>
                                     <span id="expenseDate-pdisp-text" class="text-xs text-gray-300 font-normal"></span>
                                 </button>
                             </div>
-                            <!-- تقویم شمسی — انتخاب دقیق روز -->
-                            <input type="text" id="expenseDate-jdp" data-jdp
-                                data-jdp-target-value-input="#expenseDate"
-                                data-jdp-target-value-type="jalali"
-                                placeholder="انتخاب دقیق روز (تقویم شمسی)"
-                                autocomplete="off"
-                                readonly
-                                onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
-                                class="mt-2 w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white text-sm text-center cursor-pointer focus:outline-none focus:border-orange-400">
+                            <!-- انتخاب روز فقط با دکمه‌های دیروز/امروز -->
                         </div>
                         
                         <div>
@@ -965,14 +949,14 @@ const WorkHoursUI = (function() {
                             <input type="hidden" id="workDate">
                             <div class="flex gap-2">
                                 <button type="button"
-                                        onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp-btn',-4)"
+                                        onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp-btn',-1)"
                                         class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                     <i class="fas fa-calendar-minus text-yellow-400"></i>
                                     <span>دیروز</span>
                                     <span id="workDate-disp-text" class="text-xs text-gray-300 font-normal"></span>
                                 </button>
                                 <button type="button"
-                                        onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp-btn',-3)"
+                                        onclick="WorkHoursUI.setQuickDate('workDate','workDate-disp-btn',0)"
                                         class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                     <i class="fas fa-calendar-times text-orange-400"></i>
                                     <span>امروز</span>
@@ -1035,14 +1019,14 @@ const WorkHoursUI = (function() {
                             <input type="hidden" id="expenseDate">
                             <div class="flex gap-2">
                                 <button type="button"
-                                        onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp-btn',-4)"
+                                        onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp-btn',-1)"
                                         class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                     <i class="fas fa-calendar-minus text-yellow-400"></i>
                                     <span>دیروز</span>
                                     <span id="expenseDate-disp-text" class="text-xs text-gray-300 font-normal"></span>
                                 </button>
                                 <button type="button"
-                                        onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp-btn',-3)"
+                                        onclick="WorkHoursUI.setQuickDate('expenseDate','expenseDate-disp-btn',0)"
                                         class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                     <i class="fas fa-calendar-times text-orange-400"></i>
                                     <span>امروز</span>
@@ -2332,12 +2316,11 @@ const WorkHoursUI = (function() {
     }
 
     function setQuickDate(hiddenId, dispBtnId, offset) {
-        // دقیقاً همان روش Jalali.todayJalali() — از new Date() مستقیم
+        // مبنای «امروز» از همان منبع تقویم شمسی (Jalali) — سازگار با jalalidatepicker
+        // offset: 0 = امروز ، -1 = دیروز
         var now = new Date();
         var j = Jalali.toJalaali(now.getFullYear(), now.getMonth() + 1, now.getDate());
-
-        // اعمال offset روزانه در شمسی با کمک daysInMonth
-        var jy = j.jy, jm = j.jm, jd = j.jd + offset;
+        var jy = j.jy, jm = j.jm, jd = j.jd + (offset || 0);
 
         // normalize: اگر jd زیر ۱ شد به ماه قبل برو
         while (jd < 1) {
@@ -2345,7 +2328,7 @@ const WorkHoursUI = (function() {
             if (jm < 1) { jm = 12; jy--; }
             jd += (jm <= 6 ? 31 : jm <= 11 ? 30 : 29);
         }
-        // normalize: اگر jd از ماه رد شد (نباید بشه ولی برای امنیت)
+        // normalize: اگر jd از ماه رد شد
         var maxD = jm <= 6 ? 31 : jm <= 11 ? 30 : 29;
         while (jd > maxD) {
             jd -= maxD;
@@ -2366,10 +2349,10 @@ const WorkHoursUI = (function() {
         var toFa = function(n){ return String(n).replace(/\d/g, function(d){ return '۰۱۲۳۴۵۶۷۸۹'[d]; }); };
         var display = toFa(jd) + ' ' + MONTHS[jm - 1] + ' ' + toFa(jy);
 
-        // offset=-3 → امروز → span/btn دوم ، offset=-4 → دیروز → span/btn اول
-        var isYesterday = (offset === -3);
-        var activeSpan = document.getElementById(hiddenId + (isYesterday ? '-pdisp-text' : '-disp-text'));
-        var clearSpan  = document.getElementById(hiddenId + (isYesterday ? '-disp-text' : '-pdisp-text'));
+        // دکمه دوم = امروز (offset 0)، دکمه اول = دیروز (offset -1)
+        var isToday = (offset === 0);
+        var activeSpan = document.getElementById(hiddenId + (isToday ? '-pdisp-text' : '-disp-text'));
+        var clearSpan  = document.getElementById(hiddenId + (isToday ? '-disp-text' : '-pdisp-text'));
         if (activeSpan) activeSpan.textContent = display;
         if (clearSpan)  clearSpan.textContent  = '';
 
@@ -2386,10 +2369,10 @@ const WorkHoursUI = (function() {
             });
             var btns = container.querySelectorAll('button[type="button"]');
             // btns[0] = دیروز ، btns[1] = امروز
-            var targetBtn = isYesterday ? btns[1] : btns[0];
+            var targetBtn = isToday ? btns[1] : btns[0];
             if (targetBtn) {
                 targetBtn.classList.remove('bg-white/10');
-                targetBtn.classList.add('bg-white/30','ring-2', isYesterday ? 'ring-orange-400' : 'ring-lime-400');
+                targetBtn.classList.add('bg-white/30','ring-2', isToday ? 'ring-lime-400' : 'ring-orange-400');
             }
         }
     }
