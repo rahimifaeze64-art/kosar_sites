@@ -3002,8 +3002,8 @@ ${body}
 
         // ── سربرگ ──
         const logoUrl = (() => {
-            try { return new URL('assets/logoi.jpg', window.location.href).href; }
-            catch (e) { return 'assets/logoi.jpg'; }
+            try { return new URL('assets/logoo.png', window.location.href).href; }
+            catch (e) { return 'assets/logoo.png'; }
         })();
         const head = `
           <div class="head">
