@@ -2943,7 +2943,7 @@ ${buildTable(lateHeaders, lateRows, 'هیچ درخواستی ثبت نشده')}
   .head { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px double #000; padding-bottom: 8px; margin-bottom: 10px; gap: 10px; }
   .head .h-left { flex: 1 1 0; text-align: right; }
   .head .h-logo { flex: 0 0 auto; text-align: center; }
-  .head .h-logo img { height: 60px; width: auto; max-width: 130px; object-fit: contain; }
+  .head .h-logo img { height: 150px; width: auto; max-width: 325px; object-fit: contain; }
   .org  { font-size: 12px; color: #333; }
   .ttl  { font-size: 16px; font-weight: bold; margin: 2px 0; }
   .period { font-size: 11px; color: #333; }
