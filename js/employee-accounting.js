@@ -1522,6 +1522,9 @@ const EmployeeAccountingUI = (function() {
     // ── مودال ثبت هدیه ────────────────────────────────────────
     function showGiftModal(employeeId, employeeName) {
         document.getElementById('gift-modal')?.remove();
+        const selMonth  = EmployeeAccountingModule.currentJalaliMonthKey();
+        const monthOpts = EmployeeAccountingModule.lastJalaliMonths(18).map(m =>
+            `<option value="${m.key}" ${m.key === selMonth ? 'selected' : ''}>${m.label}</option>`).join('');
         const modal = document.createElement('div');
         modal.id = 'gift-modal';
         modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50';
@@ -1536,18 +1539,11 @@ const EmployeeAccountingUI = (function() {
                 <p class="text-lime-300 text-sm mb-4 font-semibold">${employeeName}</p>
                 <div class="space-y-3">
                     <div>
-                        <label class="text-black-400 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
-                        <!-- مقدار میلادی (ذخیره‌سازی) -->
-                        <input type="hidden" id="gift-date">
-                        <!-- فیلد شمسی — کتابخانه jalalidatepicker آن را کنترل می‌کند (مثل مودال تسویه) -->
-                        <input type="text" id="gift-date-disp" data-jdp
-                            data-jdp-target-value-input="#gift-date"
-                            data-jdp-target-value-type="gregorian"
-                            placeholder="انتخاب تاریخ شمسی"
-                            autocomplete="off"
-                            readonly
-                            onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                        <label class="text-black-400 text-sm mb-1 block">ماه <span class="text-red-400">*</span></label>
+                        <select id="gift-month"
                             class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-green-400 cursor-pointer text-sm">
+                            ${monthOpts}
+                        </select>
                     </div>
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">مبلغ هدیه (تومان) <span class="text-red-400">*</span></label>
@@ -1579,26 +1575,16 @@ const EmployeeAccountingUI = (function() {
             </div>`;
         document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-        // تاریخ پیش‌فرض: امروز — hidden میلادی + نمایش شمسی (مثل مودال تسویه)
-        const today = new Date().toISOString().split('T')[0];
-        const _giftHid = document.getElementById('gift-date');
-        const _giftDisp = document.getElementById('gift-date-disp');
-        if (_giftHid) _giftHid.value = today;
-        if (_giftDisp) _giftDisp.value = _jalaliDateDisplay(today);
-        // راه‌اندازی مجدد jalalidatepicker برای input جدید در مودال
-        if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
-            setTimeout(function() { jalaliDatepicker.startWatch(); }, 50);
-        }
     }
 
     function saveGift(employeeId, employeeName) {
-        const rawDate = document.getElementById('gift-date')?.value || document.getElementById('gift-date-disp')?.value || '';
-        // نرمال‌سازی به شمسی برای مقایسه/نمایش یکسان (مثل کسورات/تسویه)
-        const date   = EmployeeAccountingModule.toJalaliISOSafe(rawDate) || rawDate;
+        // ماه انتخاب‌شده → تاریخ ذخیره = اول همان ماه شمسی
+        const monthKey = document.getElementById('gift-month')?.value || EmployeeAccountingModule.currentJalaliMonthKey();
+        const date   = `${monthKey}-01`;
         const amount = parseFloat(document.getElementById('gift-amount')?.value) || 0;
         const category = document.getElementById('gift-category')?.value || 'مناسبتی';
         const reason = document.getElementById('gift-reason')?.value?.trim() || 'هدیه';
-        if (!date || !amount) { alert('تاریخ و مبلغ الزامی است'); return; }
+        if (!monthKey || !amount) { alert('ماه و مبلغ الزامی است'); return; }
         const gifts = (() => { try { return JSON.parse(localStorage.getItem('work_gifts') || '[]'); } catch { return []; } })();
         const record = { id: 'gift_' + Date.now(), employeeId, employeeName, date, amount, category, reason, createdAt: new Date().toISOString() };
         gifts.push(record);
@@ -1617,6 +1603,9 @@ const EmployeeAccountingUI = (function() {
     // ── مودال ثبت کسر (inline برای یک کارمند) ───────────────
     function showDeductionModal(employeeId, employeeName) {
         document.getElementById('deduction-inline-modal')?.remove();
+        const selMonth  = EmployeeAccountingModule.currentJalaliMonthKey();
+        const monthOpts = EmployeeAccountingModule.lastJalaliMonths(18).map(m =>
+            `<option value="${m.key}" ${m.key === selMonth ? 'selected' : ''}>${m.label}</option>`).join('');
         const modal = document.createElement('div');
         modal.id = 'deduction-inline-modal';
         modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50';
@@ -1631,18 +1620,11 @@ const EmployeeAccountingUI = (function() {
                 <p class="text-lime-300 text-sm mb-4 font-semibold">${employeeName}</p>
                 <div class="space-y-3">
                     <div>
-                        <label class="text-black-400 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
-                        <!-- مقدار میلادی (ذخیره‌سازی) -->
-                        <input type="hidden" id="ded2-date">
-                        <!-- فیلد شمسی — کتابخانه jalalidatepicker آن را کنترل می‌کند (مثل مودال تسویه) -->
-                        <input type="text" id="ded2-date-disp" data-jdp
-                            data-jdp-target-value-input="#ded2-date"
-                            data-jdp-target-value-type="gregorian"
-                            placeholder="انتخاب تاریخ شمسی"
-                            autocomplete="off"
-                            readonly
-                            onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                        <label class="text-black-400 text-sm mb-1 block">ماه <span class="text-red-400">*</span></label>
+                        <select id="ded2-month"
                             class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-red-400 cursor-pointer text-sm">
+                            ${monthOpts}
+                        </select>
                     </div>
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">مبلغ کسر (تومان) <span class="text-red-400">*</span></label>
@@ -1666,24 +1648,14 @@ const EmployeeAccountingUI = (function() {
             </div>`;
         document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-        // تاریخ پیش‌فرض: امروز — hidden میلادی + نمایش شمسی (مثل مودال تسویه)
-        const _today2 = new Date().toISOString().split('T')[0];
-        const _d2Hid = document.getElementById('ded2-date');
-        const _d2Disp = document.getElementById('ded2-date-disp');
-        if (_d2Hid) _d2Hid.value = _today2;
-        if (_d2Disp) _d2Disp.value = _jalaliDateDisplay(_today2);
-        // راه‌اندازی مجدد jalalidatepicker برای input جدید در مودال
-        if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
-            setTimeout(function() { jalaliDatepicker.startWatch(); }, 50);
-        }
     }
 
     function saveDeductionInline(employeeId, employeeName) {
-        const rawDate = document.getElementById('ded2-date')?.value || document.getElementById('ded2-date-disp')?.value || '';
-        const date   = EmployeeAccountingModule.toJalaliISOSafe(rawDate) || rawDate;
+        const monthKey = document.getElementById('ded2-month')?.value || EmployeeAccountingModule.currentJalaliMonthKey();
+        const date   = `${monthKey}-01`;
         const amount = parseFloat(document.getElementById('ded2-amount')?.value) || 0;
         const reason = document.getElementById('ded2-reason')?.value?.trim();
-        if (!date || !amount || !reason) { alert('همه فیلدها الزامی است'); return; }
+        if (!monthKey || !amount || !reason) { alert('همه فیلدها الزامی است'); return; }
         const list = (() => { try { return JSON.parse(localStorage.getItem('work_deductions') || '[]'); } catch { return []; } })();
         const record = { id: 'ded_' + Date.now(), employeeId, employeeName, date, amount, reason, createdAt: new Date().toISOString() };
         list.push(record);
@@ -1701,6 +1673,10 @@ const EmployeeAccountingUI = (function() {
     // ── مودال ثبت کسر جدید (برای مدیر) ──────────────────────
     function showAddDeductionModal() {
         document.getElementById('add-deduction-modal')?.remove();
+
+        const selMonth  = EmployeeAccountingModule.currentJalaliMonthKey();
+        const monthOpts = EmployeeAccountingModule.lastJalaliMonths(18).map(m =>
+            `<option value="${m.key}" ${m.key === selMonth ? 'selected' : ''}>${m.label}</option>`).join('');
 
         const users = (() => {
             try { return JSON.parse(localStorage.getItem('edu_system_users') || '[]').filter(u => u.role === 'employee'); }
@@ -1733,18 +1709,11 @@ const EmployeeAccountingUI = (function() {
                         </select>
                     </div>
                     <div>
-                        <label class="text-black-400 text-sm mb-1 block">تاریخ <span class="text-red-400">*</span></label>
-                        <!-- مقدار میلادی (ذخیره‌سازی) -->
-                        <input type="hidden" id="ded-date">
-                        <!-- فیلد شمسی — کتابخانه jalalidatepicker آن را کنترل می‌کند (مثل مودال تسویه) -->
-                        <input type="text" id="ded-date-disp" data-jdp
-                            data-jdp-target-value-input="#ded-date"
-                            data-jdp-target-value-type="gregorian"
-                            placeholder="انتخاب تاریخ شمسی"
-                            autocomplete="off"
-                            readonly
-                            onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                        <label class="text-black-400 text-sm mb-1 block">ماه <span class="text-red-400">*</span></label>
+                        <select id="ded-month"
                             class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 cursor-pointer text-sm">
+                            ${monthOpts}
+                        </select>
                     </div>
                     <div>
                         <label class="text-black-400 text-sm mb-1 block">مبلغ (تومان) <span class="text-red-400">*</span></label>
@@ -1770,24 +1739,16 @@ const EmployeeAccountingUI = (function() {
             </div>`;
         document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-        // تاریخ پیش‌فرض: امروز — hidden میلادی + نمایش شمسی (مثل مودال تسویه)
-        const _today3 = new Date().toISOString().split('T')[0];
-        document.getElementById('ded-date').value = _today3;
-        document.getElementById('ded-date-disp').value = _jalaliDateDisplay(_today3);
-        // راه‌اندازی مجدد jalalidatepicker برای input جدید در مودال
-        if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
-            setTimeout(function() { jalaliDatepicker.startWatch(); }, 50);
-        }
     }
 
     function saveDeduction() {
         const empSel = document.getElementById('ded-emp');
-        const rawDate = document.getElementById('ded-date')?.value || document.getElementById('ded-date-disp')?.value || '';
-        const date   = EmployeeAccountingModule.toJalaliISOSafe(rawDate) || rawDate;
+        const monthKey = document.getElementById('ded-month')?.value || EmployeeAccountingModule.currentJalaliMonthKey();
+        const date   = `${monthKey}-01`;
         const amount = parseFloat(document.getElementById('ded-amount')?.value) || 0;
         const reason = document.getElementById('ded-reason')?.value?.trim();
 
-        if (!empSel?.value || !date || !amount || !reason) {
+        if (!empSel?.value || !monthKey || !amount || !reason) {
             alert('همه فیلدها را پر کنید'); return;
         }
 

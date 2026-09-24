@@ -963,13 +963,7 @@ const WorkHoursUI = (function() {
                                     <span id="workDate-pdisp-text" class="text-xs text-gray-300 font-normal"></span>
                                 </button>
                             </div>
-                            <input type="text" id="workDate-jdp" data-jdp
-                                data-jdp-target-value-input="#workDate"
-                                data-jdp-target-value-type="jalali"
-                                placeholder="انتخاب دقیق روز (تقویم شمسی)"
-                                autocomplete="off" readonly
-                                onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
-                                class="mt-2 w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white text-sm text-center cursor-pointer focus:outline-none focus:border-emerald-400">
+                            <!-- انتخاب روز فقط با دکمه‌های دیروز/امروز -->
                         </div>
                         <div>
                             <label class="block text-black-400 text-sm mb-2">ساعت شروع</label>
@@ -1033,13 +1027,7 @@ const WorkHoursUI = (function() {
                                     <span id="expenseDate-pdisp-text" class="text-xs text-gray-300 font-normal"></span>
                                 </button>
                             </div>
-                            <input type="text" id="expenseDate-jdp" data-jdp
-                                data-jdp-target-value-input="#expenseDate"
-                                data-jdp-target-value-type="jalali"
-                                placeholder="انتخاب دقیق روز (تقویم شمسی)"
-                                autocomplete="off" readonly
-                                onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
-                                class="mt-2 w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white text-sm text-center cursor-pointer focus:outline-none focus:border-orange-400">
+                            <!-- انتخاب روز فقط با دکمه‌های دیروز/امروز -->
                         </div>
                         <div>
                             <label class="block text-black-400 text-sm mb-2"><i class="fas fa-dollar-sign ml-1"></i>مبلغ (تومان)</label>
