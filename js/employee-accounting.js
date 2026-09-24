@@ -360,6 +360,7 @@ const EmployeeAccountingModule = (function() {
             employeeName,
             totalHours: _fmtH(totalHoursSubmitted),
             totalHoursApproved: _fmtH(totalHoursApproved),
+            totalHoursSubmittedRaw: totalHoursSubmitted,  // عدد خام ساعات ارسال‌شده (شامل در انتظار)
             totalHoursApprovedRaw: totalHoursApproved,   // برای محاسبات ریاضی
             totalExpenses: totalExpensesSubmitted,
             totalExpensesApproved,
@@ -1008,7 +1009,7 @@ const EmployeeAccountingUI = (function() {
                             </div>
                             <div>
                                 <p class="text-black-400 text-sm">جمع ساعات ارسالی (این ماه)</p>
-                                <p class="text-3xl font-bold text-white">${EmployeeAccountingModule.formatHoursDisplay(monthlySummary.totalHoursApprovedRaw ?? monthlySummary.totalHours)}</p>
+                                <p class="text-3xl font-bold text-white">${EmployeeAccountingModule.formatHoursDisplay(monthlySummary.totalHoursSubmittedRaw ?? 0)}</p>
                                 <p class="text-black-300 text-xs">${monthlySummary.hoursCount} گزارش · ${monthlySummary.workDays} روز</p>
                             </div>
                         </div>
@@ -1094,7 +1095,7 @@ const EmployeeAccountingUI = (function() {
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div class="bg-white/10 rounded-xl p-4">
                             <p class="text-lime-200 text-sm mb-1">ساعات این ماه</p>
-                        <p class="text-2xl font-bold text-white">${EmployeeAccountingModule.formatHoursDisplay(monthlySummary.totalHoursApprovedRaw ?? monthlySummary.totalHours)}</p>
+                        <p class="text-2xl font-bold text-white">${EmployeeAccountingModule.formatHoursDisplay(monthlySummary.totalHoursSubmittedRaw ?? 0)}</p>
                             <p class="text-lime-300 text-xs mt-1">${monthlySummary.hoursCount} گزارش روزانه</p>
                         </div>
                         <div class="bg-white/10 rounded-xl p-4">
@@ -1173,8 +1174,8 @@ const EmployeeAccountingUI = (function() {
                             </button>
                             ${(()=>{ const v=EmployeeAccountingModule.getEmployeeMonthlyCharge(emp.employeeId); return v>0?`<div class="mt-1"><span class="text-xs bg-lime-500/20 text-lime-300 px-2 py-0.5 rounded-full"><i class="fas fa-calendar-check ml-1" style="font-size:9px;"></i>${EmployeeAccountingModule.formatCurrency(v)}/ماه</span></div>`:''; })()}</td>
                         <td class="text-center py-4 px-4">
-                            <span class="text-xl font-bold text-black-400">${EmployeeAccountingModule.formatHoursDisplay(emp.totalHoursApprovedRaw ?? emp.totalHoursApproved)}</span>
-                            <p class="text-black-400/60 text-xs">${emp.hoursCount} گزارش</p>
+                            <span class="text-xl font-bold text-black-400">${EmployeeAccountingModule.formatHoursDisplay(emp.totalHoursSubmittedRaw ?? 0)}</span>
+                            <p class="text-black-400/60 text-xs">${emp.hoursCount} گزارش · تأیید: ${EmployeeAccountingModule.formatHoursDisplay(emp.totalHoursApprovedRaw ?? 0)}</p>
                         </td>                       
                         <td class="text-center py-4 px-4">
                             ${(() => {
@@ -1246,7 +1247,7 @@ const EmployeeAccountingUI = (function() {
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-blue-400/20">
                         <i class="fas fa-paper-plane text-black-400 mb-2 block"></i>
                         <p class="text-black-400 text-xs mb-1">ساعات ارسال‌شده</p>
-                        <p class="text-lg font-bold text-black-400">${EmployeeAccountingModule.formatHoursDisplay(employeesSummary.reduce((s,e)=>s+(e.totalHoursApprovedRaw||parseFloat(e.totalHours)||0),0))}</p>
+                        <p class="text-lg font-bold text-black-400">${EmployeeAccountingModule.formatHoursDisplay(employeesSummary.reduce((s,e)=>s+(e.totalHoursSubmittedRaw||0),0))}</p>
                     </div>
                     <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-emerald-400/20">
                         <i class="fas fa-check-circle text-emerald-400 mb-2 block"></i>
@@ -2189,12 +2190,12 @@ const EmployeeAccountingUI = (function() {
                         <span class="text-xs font-normal text-indigo-300">— ${EmployeeAccountingModule.jalaliMonthLabel(selMonth)}</span>
                     </h3>
                     <div class="flex gap-2 items-center">
-                        <div class="flex items-center gap-1 px-3 py-1.5 bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 rounded-lg text-sm">
+                        <div class="flex items-center gap-1 px-3 py-1.5 bg-lime-500/20 text-lime-300 border border-lime-400/30 rounded-lg text-sm">
                             <i class="fas fa-calendar-alt"></i>
                             <span class="hidden sm:inline">انتخاب ماه:</span>
                             <select id="emp-detail-month"
                                 onchange="EmployeeAccountingUI.showEmployeeDetails('${employeeId}', this.value, true)"
-                                class="bg-transparent text-indigo-200 font-semibold cursor-pointer focus:outline-none text-sm">
+                                class="bg-transparent text-lime-200 font-semibold cursor-pointer focus:outline-none text-sm">
                                 ${monthOpts}
                             </select>
                         </div>
@@ -2215,7 +2216,7 @@ const EmployeeAccountingUI = (function() {
                     <div class="bg-blue-500/10 border border-blue-400/20 rounded-xl p-3 text-center">
                         <i class="fas fa-paper-plane text-blue-400 mb-1 block text-sm"></i>
                         <p class="text-gray-400 text-xs mb-0.5">ساعات ارسال‌شده</p>
-                        <p class="text-xl font-bold text-blue-400">${EmployeeAccountingModule.formatHoursDisplay(summary.totalHoursApprovedRaw ?? summary.totalHours)}</p>
+                        <p class="text-xl font-bold text-blue-400">${EmployeeAccountingModule.formatHoursDisplay(summary.totalHoursSubmittedRaw ?? 0)}</p>
                         <p class="text-gray-500 text-xs">${summary.hoursCount} گزارش · ${summary.workDays} روز</p>
                     </div>
                     <div class="bg-emerald-500/10 border border-emerald-400/20 rounded-xl p-3 text-center">
@@ -2497,7 +2498,7 @@ const EmployeeAccountingUI = (function() {
         ];
 
         const summaryRows = summary.map(emp => {
-            const hoursSubmitted = emp.totalHoursApprovedRaw || 0; // مثل کارت «ساعات ارسال‌شده» در جزئیات مالی
+            const hoursSubmitted = emp.totalHoursSubmittedRaw || 0; // ساعات ارسال‌شده (شامل در انتظار تأیید)
             const expApproved    = emp.totalExpensesApproved || 0;
             const expSettled     = emp.expensesSettled || 0;
             const expRemaining   = emp.totalExpensesApprovedRemaining ?? expApproved;
@@ -2939,11 +2940,14 @@ ${buildTable(lateHeaders, lateRows, 'هیچ درخواستی ثبت نشده')}
   .toolbar button { background: #65a30d; color: #fff; border: 0; padding: 8px 24px; border-radius: 8px; font-family: inherit; font-size: 13px; font-weight: bold; cursor: pointer; }
   .toolbar .hint { font-size: 11px; opacity: .75; }
   .slip { background: #fff; max-width: 820px; margin: 16px auto; padding: 18px 22px; box-shadow: 0 2px 10px rgba(0,0,0,.15); border: 1px solid #d1d5db; }
-  .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px double #000; padding-bottom: 8px; margin-bottom: 10px; }
+  .head { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px double #000; padding-bottom: 8px; margin-bottom: 10px; gap: 10px; }
+  .head .h-left { flex: 1 1 0; text-align: right; }
+  .head .h-logo { flex: 0 0 auto; text-align: center; }
+  .head .h-logo img { height: 60px; width: auto; max-width: 130px; object-fit: contain; }
   .org  { font-size: 12px; color: #333; }
   .ttl  { font-size: 16px; font-weight: bold; margin: 2px 0; }
   .period { font-size: 11px; color: #333; }
-  .hmeta { text-align: left; font-size: 10.5px; line-height: 1.9; color: #222; }
+  .hmeta { flex: 1 1 0; text-align: left; font-size: 10.5px; line-height: 1.9; color: #222; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
   th { background: #e5e7eb; padding: 5px 8px; border: 1px solid #555; font-size: 10.5px; text-align: center; }
   .sec { font-size: 11.5px; font-weight: bold; background: #f1f5f9; border: 1px solid #555; padding: 4px 8px; margin-top: 10px; }
@@ -2966,7 +2970,7 @@ ${buildTable(lateHeaders, lateRows, 'هیچ درخواستی ثبت نشده')}
   <span class="hint">پنجره چاپ به‌صورت خودکار باز می‌شود — در صورت باز نشدن روی دکمه کلیک کنید</span>
 </div>
 ${body}
-<script>window.onload = function () { setTimeout(function () { window.print(); }, 500); };<\/script>
+<script>window.onload = function () { var imgs = document.images, n = imgs.length, done = 0; function go(){ if (done >= n) { setTimeout(function(){ window.print(); }, 300); } } if (!n) { setTimeout(function(){ window.print(); }, 400); } else { for (var i=0;i<n;i++){ if (imgs[i].complete) { done++; } else { imgs[i].onload = imgs[i].onerror = function(){ done++; go(); }; } } go(); } };<\/script>
 </body>
 </html>`);
         win.document.close();
@@ -2997,12 +3001,19 @@ ${body}
         const serial = _slipSerial(d.emp.employeeId, ctx.from, ctx.to);
 
         // ── سربرگ ──
+        const logoUrl = (() => {
+            try { return new URL('assets/logoi.jpg', window.location.href).href; }
+            catch (e) { return 'assets/logoi.jpg'; }
+        })();
         const head = `
           <div class="head">
-            <div>
+            <div class="h-left">
               <div class="org">شرکةالکوثر</div>
               <div class="ttl">فیش حقوق و دستمزد</div>
               <div class="period">دوره: ${periodTxt}</div>
+            </div>
+            <div class="h-logo">
+              <img src="${logoUrl}" alt="لوگو">
             </div>
             <div class="hmeta">
               شماره فیش: <b>${serial}</b><br>
@@ -3038,7 +3049,7 @@ ${body}
         // ── جدول دوستونه حقوق و مزایا / کسورات ──
         const earn = [
             ['دستمزد ساعات کارکرد <span style="font-weight:normal;font-size:9px">(' + fmtH(d.totalHours) + ' ساعت × ' + fmtNum(d.emp.hourlyRate) + ' تومان)</span>', d.hoursAmount],
-            ['جبران هزینه‌ها (مأموریت،...)', d.expsAmount],
+            ['جبران هزینه‌ها (پاداش...)', d.expsAmount],
             ['شارژ ماهانه', d.monthlyCharge || 0],
             ['هدیه و پاداش', d.giftTotal]
         ];
@@ -3204,7 +3215,7 @@ ${body}
         const deductions = (() => { try { return JSON.parse(localStorage.getItem('work_deductions')||'[]').filter(d=>{ const dj=EmployeeAccountingModule.toJalaliISOSafe(d.date); return dj>=fromJ&&dj<=toJ; }); } catch { return []; } })();
         const totalDed = deductions.reduce((s,d)=>s+Number(d.amount||0),0);
 
-        const rows = employeesSummary.filter(e => parseFloat(e.totalHours)>0 || e.totalExpenses>0 || (e.monthlyCharge||0)>0).map(emp => `
+        const rows = employeesSummary.filter(e => (e.totalHoursSubmittedRaw||0)>0 || (e.totalHoursApprovedRaw||0)>0 || e.totalExpenses>0 || (e.monthlyCharge||0)>0).map(emp => `
             <div class="bg-white/5 rounded-xl p-4 border border-white/10">
                 <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
                     <div class="flex items-center gap-3">
@@ -3216,7 +3227,7 @@ ${body}
                     <span class="text-lime-400 font-bold text-sm"><i class="fas fa-wallet ml-1"></i>مانده پرداختنی: ${EmployeeAccountingModule.formatCurrency(emp.netPayable ?? emp.grandTotal)}</span>
                 </div>
                 <div class="flex gap-4 flex-wrap text-xs">
-                    <span class="text-gray-400"><i class="fas fa-clock ml-1"></i>ارسالی: ${EmployeeAccountingModule.formatHoursDisplay(emp.totalHoursApprovedRaw ?? emp.totalHours)}</span>
+                    <span class="text-gray-400"><i class="fas fa-clock ml-1"></i>ارسالی: ${EmployeeAccountingModule.formatHoursDisplay(emp.totalHoursSubmittedRaw ?? 0)}</span>
                     <span class="text-emerald-400"><i class="fas fa-check ml-1"></i>تأیید: ${EmployeeAccountingModule.formatHoursDisplay(emp.totalHoursApprovedRaw ?? emp.totalHoursApproved)}</span>
                     <span class="text-teal-300"><i class="fas fa-coins ml-1"></i>مبلغ ساعات: ${EmployeeAccountingModule.formatCurrency(emp.totalAmountRemaining ?? emp.totalAmount)}</span>
                     <span class="text-orange-400"><i class="fas fa-receipt ml-1"></i>هزینه: ${EmployeeAccountingModule.formatCurrency(emp.totalExpensesApprovedRemaining ?? emp.totalExpensesApproved)}</span>
