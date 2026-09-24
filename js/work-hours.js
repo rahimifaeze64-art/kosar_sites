@@ -628,60 +628,82 @@ const WorkHoursUI = (function() {
                     </form>
                 </div>
 
-                <!-- ── بخش کسورات ── -->
+                <!-- ── بخش ثبت هدیه ── -->
                 <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                     <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                        <i class="fas fa-minus-circle text-red-400"></i>
-                        کسورات
+                        <i class="fas fa-gift text-green-400"></i>
+                        ثبت هدیه
                     </h3>
-                    <form id="deductionForm" onsubmit="WorkHoursUI.submitDeductionForm(event)">
+                    <form id="giftForm" onsubmit="WorkHoursUI.submitGiftForm(event)">
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                             <div>
-                                <label class="block text-black-400 text-sm mb-2">تاریخ کسر <span class="text-red-400">*</span></label>
-                                <input type="hidden" id="deductionDate">
+                                <label class="block text-black-400 text-sm mb-2">تاریخ <span class="text-green-400">*</span></label>
+                                <input type="hidden" id="giftDate">
                                 <div class="flex gap-2">
                                     <button type="button"
-                                            id="deductionDate-disp-btn"
-                                            onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp-btn',-1)"
+                                            id="giftDate-disp-btn"
+                                            onclick="WorkHoursUI.setQuickDate('giftDate','giftDate-disp-btn',-1)"
                                             class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                         <i class="fas fa-calendar-minus text-yellow-400"></i>
                                         <span>دیروز</span>
-                                        <span id="deductionDate-disp-text" class="text-xs text-gray-300 font-normal"></span>
+                                        <span id="giftDate-disp-text" class="text-xs text-gray-300 font-normal"></span>
                                     </button>
                                     <button type="button"
-                                            onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp-btn',0)"
+                                            onclick="WorkHoursUI.setQuickDate('giftDate','giftDate-disp-btn',0)"
                                             class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
                                         <i class="fas fa-calendar-times text-orange-400"></i>
                                         <span>امروز</span>
-                                        <span id="deductionDate-pdisp-text" class="text-xs text-gray-300 font-normal"></span>
+                                        <span id="giftDate-pdisp-text" class="text-xs text-gray-300 font-normal"></span>
                                     </button>
                                 </div>
                             </div>
                             <div>
-                                <label class="block text-black-400 text-sm mb-2">مبلغ کسر (تومان) <span class="text-red-400">*</span></label>
-                                <input type="number" id="deductionAmount" required min="0" step="1000"
-                                    placeholder="مثال: 500000"
-                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300/50 focus:outline-none focus:border-red-400">
+                                <label class="block text-black-400 text-sm mb-2">نوع هدیه <span class="text-green-400">*</span></label>
+                                <select id="giftType" required
+                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-400">
+                                    <option value="فرهنگی" selected>فرهنگی</option>
+                                    <option value="مناسبتی">مناسبتی</option>
+                                </select>
                             </div>
                             <div>
-                                <label class="block text-black-400 text-sm mb-2">علت کسر <span class="text-red-400">*</span></label>
-                                <input type="text" id="deductionReason" required
-                                    placeholder="مثال: غیبت، تأخیر، جریمه..."
-                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300/50 focus:outline-none focus:border-red-400">
+                                <label class="block text-black-400 text-sm mb-5">گزینه‌های هدیه <span class="text-green-400">*</span></label>
+                                <div class="flex flex-wrap gap-3">
+                                    <label class="flex items-center gap-2 bg-white/5 border border-white/20 rounded-xl px-5 py-4 cursor-pointer hover:bg-white/10">
+                                        <input type="checkbox" id="giftNamaz" class="w-6 h-6 accent-green-500">
+                                        <span class="text-white text-sm">نماز</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 bg-white/5 border border-white/20 rounded-xl px-5 py-4 cursor-pointer hover:bg-white/10">
+                                        <input type="checkbox" id="giftAshura" class="w-6 h-6 accent-green-500">
+                                        <span class="text-white text-sm">زیارت عاشورا</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 bg-white/5 border border-white/20 rounded-xl px-3 py-2 cursor-pointer hover:bg-white/10">
+                                        <input type="checkbox" id="giftOther" onchange="WorkHoursUI.toggleGiftOther()" class="w-4 h-4 accent-green-500">
+                                        <span class="text-white text-sm">سایر</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div id="giftAmountWrap" class="hidden md:col-span-3">
+                                <label class="block text-black-400 text-sm mb-2">مبلغ هدیه (تومان) <span class="text-green-400">*</span></label>
+                                <input type="number" id="giftAmount" min="0" step="1000" placeholder="مثال: 500000"
+                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300/50 focus:outline-none focus:border-green-400">
+                            </div>
+                            <div class="md:col-span-3">
+                                <label class="block text-black-400 text-sm mb-2">توضیحات</label>
+                                <input type="text" id="giftReason" placeholder="مثال: هدیه مناسبتی، پاداش..."
+                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300/50 focus:outline-none focus:border-green-400">
                             </div>
                         </div>
-                        <div class="flex justify-end">
+                        <div class="flex justify-end gap-3">
+                            <button type="button" onclick="WorkHoursUI.resetGiftForm()"
+                                class="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all">
+                                <i class="fas fa-redo ml-2"></i>پاک کردن
+                            </button>
                             <button type="submit"
-                                class="px-6 py-3 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white rounded-xl transition-all font-medium">
-                                <i class="fas fa-save ml-2"></i>ثبت کسر
+                                class="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-xl transition-all font-medium">
+                                <i class="fas fa-save ml-2"></i>ثبت هدیه
                             </button>
                         </div>
                     </form>
-
-                    <!-- لیست کسورات ثبت‌شده -->
-                    <div class="mt-6" id="deductions-list">
-                        ${typeof _renderDeductions === 'function' ? _renderDeductions() : ''}
-                    </div>
                 </div>
 
                 <!-- فرم ثبت هزینه مستقل -->
@@ -741,6 +763,60 @@ const WorkHoursUI = (function() {
                             </button>
                         </div>
                     </form>
+                <!-- ── بخش کسورات (آخرین بخش فرم‌ها) ── -->
+                <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+                    <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                        <i class="fas fa-minus-circle text-red-400"></i>
+                        کسورات
+                    </h3>
+                    <form id="deductionForm" onsubmit="WorkHoursUI.submitDeductionForm(event)">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div>
+                                <label class="block text-black-400 text-sm mb-2">تاریخ کسر <span class="text-red-400">*</span></label>
+                                <input type="hidden" id="deductionDate">
+                                <div class="flex gap-2">
+                                    <button type="button"
+                                            id="deductionDate-disp-btn"
+                                            onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp-btn',-1)"
+                                            class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
+                                        <i class="fas fa-calendar-minus text-yellow-400"></i>
+                                        <span>دیروز</span>
+                                        <span id="deductionDate-disp-text" class="text-xs text-gray-300 font-normal"></span>
+                                    </button>
+                                    <button type="button"
+                                            onclick="WorkHoursUI.setQuickDate('deductionDate','deductionDate-disp-btn',0)"
+                                            class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
+                                        <i class="fas fa-calendar-times text-orange-400"></i>
+                                        <span>امروز</span>
+                                        <span id="deductionDate-pdisp-text" class="text-xs text-gray-300 font-normal"></span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-black-400 text-sm mb-2">مبلغ کسر (تومان) <span class="text-red-400">*</span></label>
+                                <input type="number" id="deductionAmount" required min="0" step="1000"
+                                    placeholder="مثال: 500000"
+                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300/50 focus:outline-none focus:border-red-400">
+                            </div>
+                            <div>
+                                <label class="block text-black-400 text-sm mb-2">علت کسر <span class="text-red-400">*</span></label>
+                                <input type="text" id="deductionReason" required
+                                    placeholder="مثال: غیبت، تأخیر، جریمه..."
+                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300/50 focus:outline-none focus:border-red-400">
+                            </div>
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit"
+                                class="px-6 py-3 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white rounded-xl transition-all font-medium">
+                                <i class="fas fa-save ml-2"></i>ثبت کسر
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- لیست کسورات ثبت‌شده -->
+                    <div class="mt-6" id="deductions-list">
+                        ${typeof _renderDeductions === 'function' ? _renderDeductions() : ''}
+                    </div>
                 </div>
                 
                 <!-- لیست ساعات کاری -->
@@ -996,6 +1072,83 @@ const WorkHoursUI = (function() {
                             <button type="submit"
                                     class="px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white rounded-xl transition-all font-medium">
                                 <i class="fas fa-save ml-2"></i>ثبت ساعت کاری
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ═══ ثبت هدیه (مدیر) ═══ -->
+                <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+                    <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                        <i class="fas fa-gift text-green-400"></i>
+                        ثبت هدیه
+                    </h3>
+                    <form id="giftForm" onsubmit="WorkHoursUI.submitGiftForm(event)">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div>
+                                <label class="block text-black-400 text-sm mb-2">تاریخ <span class="text-green-400">*</span></label>
+                                <input type="hidden" id="giftDate">
+                                <div class="flex gap-2">
+                                    <button type="button" id="giftDate-disp-btn"
+                                            onclick="WorkHoursUI.setQuickDate('giftDate','giftDate-disp-btn',-1)"
+                                            class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
+                                        <i class="fas fa-calendar-minus text-yellow-400"></i>
+                                        <span>دیروز</span>
+                                        <span id="giftDate-disp-text" class="text-xs text-gray-300 font-normal"></span>
+                                    </button>
+                                    <button type="button"
+                                            onclick="WorkHoursUI.setQuickDate('giftDate','giftDate-disp-btn',0)"
+                                            class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-3 py-3 text-white text-sm font-medium transition-all flex flex-col items-center gap-1">
+                                        <i class="fas fa-calendar-times text-orange-400"></i>
+                                        <span>امروز</span>
+                                        <span id="giftDate-pdisp-text" class="text-xs text-gray-300 font-normal"></span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-black-400 text-sm mb-2">نوع هدیه <span class="text-green-400">*</span></label>
+                                <select id="giftType" required
+                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-400">
+                                    <option value="فرهنگی" selected>فرهنگی</option>
+                                    <option value="مناسبتی">مناسبتی</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-black-400 text-sm mb-2">گزینه‌های هدیه <span class="text-green-400">*</span></label>
+                                <div class="flex flex-wrap gap-3">
+                                    <label class="flex items-center gap-2 bg-white/5 border border-white/20 rounded-xl px-3 py-2 cursor-pointer hover:bg-white/10">
+                                        <input type="checkbox" id="giftNamaz" class="w-4 h-4 accent-green-500">
+                                        <span class="text-white text-sm">نماز</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 bg-white/5 border border-white/20 rounded-xl px-3 py-2 cursor-pointer hover:bg-white/10">
+                                        <input type="checkbox" id="giftAshura" class="w-4 h-4 accent-green-500">
+                                        <span class="text-white text-sm">زیارت عاشورا</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 bg-white/5 border border-white/20 rounded-xl px-3 py-2 cursor-pointer hover:bg-white/10">
+                                        <input type="checkbox" id="giftOther" onchange="WorkHoursUI.toggleGiftOther()" class="w-4 h-4 accent-green-500">
+                                        <span class="text-white text-sm">سایر</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div id="giftAmountWrap" class="hidden md:col-span-3">
+                                <label class="block text-black-400 text-sm mb-2">مبلغ هدیه (تومان) <span class="text-green-400">*</span></label>
+                                <input type="number" id="giftAmount" min="0" step="1000" placeholder="مثال: 500000"
+                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300/50 focus:outline-none focus:border-green-400">
+                            </div>
+                            <div class="md:col-span-3">
+                                <label class="block text-black-400 text-sm mb-2">توضیحات</label>
+                                <input type="text" id="giftReason" placeholder="مثال: هدیه مناسبتی، پاداش..."
+                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300/50 focus:outline-none focus:border-green-400">
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-3">
+                            <button type="button" onclick="WorkHoursUI.resetGiftForm()"
+                                class="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all">
+                                <i class="fas fa-redo ml-2"></i>پاک کردن
+                            </button>
+                            <button type="submit"
+                                class="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-xl transition-all font-medium">
+                                <i class="fas fa-save ml-2"></i>ثبت هدیه
                             </button>
                         </div>
                     </form>
@@ -2045,9 +2198,104 @@ const WorkHoursUI = (function() {
 
     // ── کسورات ───────────────────────────────────────────────
     const DEDUCTION_KEY = 'work_deductions';
+    const GIFT_KEY      = 'work_gifts';
 
     function _getDeductions() {
         try { return JSON.parse(localStorage.getItem(DEDUCTION_KEY) || '[]'); } catch { return []; }
+    }
+
+    function _getGifts() {
+        try { return JSON.parse(localStorage.getItem(GIFT_KEY) || '[]'); } catch { return []; }
+    }
+
+    // ── ثبت هدیه (نوع پیش‌فرض: فرهنگی) ──
+    const GIFT_UNIT = 50000; // مبلغ ثابت هر گزینه (نماز / زیارت عاشورا)
+
+    function toggleGiftOther() {
+        const on  = !!document.getElementById('giftOther')?.checked;
+        const wrap = document.getElementById('giftAmountWrap');
+        const inp  = document.getElementById('giftAmount');
+        if (wrap) wrap.classList.toggle('hidden', !on);
+        if (inp) {
+            inp.required = on;
+            if (on) { try { inp.focus(); } catch (e) {} }
+            else inp.value = '';
+        }
+    }
+
+    function submitGiftForm(e) {
+        e.preventDefault();
+        const hidden = document.getElementById('giftDate');
+        let rawDate  = hidden ? hidden.value : '';
+        const date     = _toJalaliISOSafe(rawDate);
+        const category = document.getElementById('giftType')?.value || 'فرهنگی';
+
+        const namaz  = !!document.getElementById('giftNamaz')?.checked;
+        const ashura = !!document.getElementById('giftAshura')?.checked;
+        const other  = !!document.getElementById('giftOther')?.checked;
+        const otherAmt = other ? (parseFloat(document.getElementById('giftAmount')?.value) || 0) : 0;
+
+        const amount = (namaz ? GIFT_UNIT : 0) + (ashura ? GIFT_UNIT : 0) + otherAmt;
+
+        const items = [];
+        if (namaz)  items.push('نماز');
+        if (ashura) items.push('زیارت عاشورا');
+        if (other)  items.push('سایر');
+        const note = (document.getElementById('giftReason')?.value || '').trim();
+        const reason = items.length ? (note ? (items.join('، ') + ' — ' + note) : items.join('، ')) : (note || category);
+
+        if (!date) {
+            showNotification('تاریخ هدیه را انتخاب کنید', 'error'); return;
+        }
+        if (amount <= 0) {
+            showNotification('حداقل یکی از گزینه‌های هدیه را انتخاب کنید (نماز، زیارت عاشورا یا سایر)', 'error'); return;
+        }
+
+        const u = (() => { try { return JSON.parse(localStorage.getItem('currentUser') || '{}'); } catch { return {}; } })();
+        const record = {
+            id:           'gift_' + Date.now(),
+            employeeId:   u.id   || '',
+            employeeName: u.name || '',
+            date, amount, category, reason,
+            createdAt:    new Date().toISOString()
+        };
+        const list = _getGifts();
+        list.push(record);
+        localStorage.setItem(GIFT_KEY, JSON.stringify(list));
+
+        // sync به Supabase (جدول work_gifts با ستون category)
+        try {
+            if (typeof SupabaseDataModule !== 'undefined' && SupabaseDataModule.saveWorkGift) {
+                SupabaseDataModule.saveWorkGift(record);
+            }
+        } catch (err) { console.warn('⚠️ submitGiftForm sync:', err.message); }
+
+        resetGiftForm();
+        showNotification('هدیه با موفقیت ثبت شد ✓', 'success');
+    }
+
+    function resetGiftForm() {
+        const form = document.getElementById('giftForm');
+        if (form && form.reset) form.reset();
+        // ریست گزینه‌های چک‌باکسی و فیلد «سایر»
+        ['giftNamaz','giftAshura','giftOther'].forEach(function(id){
+            const c = document.getElementById(id); if (c) c.checked = false;
+        });
+        const wrap = document.getElementById('giftAmountWrap');
+        if (wrap) wrap.classList.add('hidden');
+        const amt = document.getElementById('giftAmount');
+        if (amt) { amt.value = ''; amt.required = false; }
+        const h = document.getElementById('giftDate');
+        if (h) h.value = '';
+        const t = document.getElementById('giftDate-disp-text');
+        const p = document.getElementById('giftDate-pdisp-text');
+        if (t) t.textContent = '';
+        if (p) p.textContent = '';
+        const container = h ? h.parentElement : null;
+        if (container) container.querySelectorAll('button[type="button"]').forEach(function(b){
+            b.classList.remove('ring-2','ring-lime-400','ring-orange-400','bg-white/30');
+            b.classList.add('bg-white/10');
+        });
     }
 
     function submitDeductionForm(e) {
@@ -2388,6 +2636,10 @@ const WorkHoursUI = (function() {
         submitDeductionForm,
         _renderDeductions,
         _deleteDeduction,
+        submitGiftForm,
+        resetGiftForm,
+        toggleGiftOther,
+        _getGifts,
         _renderManagerDeductions,
         _deleteManagerDeduction,
         showAddDeductionForEmployeeModal,
