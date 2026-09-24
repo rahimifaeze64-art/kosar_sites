@@ -18,6 +18,32 @@ EmployeeModule.editStudentProfile = function(studentId) {
         student.defenseSteps = this.getDefaultDefenseSteps2();
     }
     
+    // تبدیل تاریخ ذخیره‌شده (میلادی YYYY-MM-DD) به نمایش شمسی برای فیلدهای jalalidatepicker
+    const _g2jDisp = (g) => {
+        if (!g) return '';
+        const s = String(g).trim();
+        const m = s.match(/^(\d{3,4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+        if (!m) return s;
+        const y = +m[1], mo = +m[2], d = +m[3];
+        const pad = n => String(n).padStart(2, '0');
+        if (y < 1700) return `${y}/${pad(mo)}/${pad(d)}`; // از قبل شمسی است
+        try {
+            if (typeof Jalali !== 'undefined') {
+                if (Jalali.toJalaliISO) return String(Jalali.toJalaliISO(new Date(y, mo - 1, d, 12))).replace(/-/g, '/');
+                if (Jalali.toJalaali) {
+                    const j = Jalali.toJalaali(y, mo, d);
+                    return `${j.jy}/${pad(j.jm)}/${pad(j.jd)}`;
+                }
+            }
+            const parts = new Intl.DateTimeFormat('en-US-u-ca-persian', {
+                calendar: 'persian', numberingSystem: 'latn',
+                year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC'
+            }).formatToParts(new Date(Date.UTC(y, mo - 1, d, 12)));
+            const p = {}; parts.forEach(x => { if (p[x.type] === undefined) p[x.type] = x.value; });
+            return `${p.year}/${p.month}/${p.day}`;
+        } catch (e) { return s; }
+    };
+
     const modalHTML = `
         <div id="edit-student-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div class="bg-gradient-to-br from-blue-50 to-lime-100 rounded-lg max-w-6xl w-full max-h-[95vh] overflow-y-auto">
@@ -105,8 +131,15 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
                             <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">تاریخ تولد</label>
-                                <input type="date" id="edit-birthdate" value="${student.birthDate || ''}"
-                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg">
+                                <input type="hidden" id="edit-birthdate" value="${student.birthDate || ''}">
+                                <input type="text" id="edit-birthdate-jdp" data-jdp
+                                       data-jdp-target-value-input="#edit-birthdate"
+                                       data-jdp-target-value-type="gregorian"
+                                       value="${_g2jDisp(student.birthDate)}"
+                                       placeholder="انتخاب تاریخ شمسی"
+                                       autocomplete="off" readonly
+                                       onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg text-right cursor-pointer">
                             </div>
                             <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">جنسیت</label>
@@ -219,8 +252,15 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </div>
                             <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">تاریخ تحویل</label>
-                                <input type="date" id="edit-delivery-date" value="${student.deliveryDate || ''}"
-                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg">
+                                <input type="hidden" id="edit-delivery-date" value="${student.deliveryDate || ''}">
+                                <input type="text" id="edit-delivery-date-jdp" data-jdp
+                                       data-jdp-target-value-input="#edit-delivery-date"
+                                       data-jdp-target-value-type="gregorian"
+                                       value="${_g2jDisp(student.deliveryDate)}"
+                                       placeholder="انتخاب تاریخ شمسی"
+                                       autocomplete="off" readonly
+                                       onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg text-right cursor-pointer">
                             </div>
                             <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">مسیر فعلی دانشجو</label>
@@ -834,6 +874,13 @@ EmployeeModule.editStudentProfile = function(studentId) {
     `;
     
     document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // راه‌اندازی تقویم شمسی (jalalidatepicker) برای همه فیلدهای data-jdp داخل مودال
+    setTimeout(function() {
+        if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
+            jalaliDatepicker.startWatch({ showTodayBtn: true, showEmptyBtn: true, showCloseBtn: true });
+        }
+    }, 60);
 
     // نگهداری id دانشجو در حال ویرایش (برای حذف فایل‌ها)
     this.currentEditStudentId = studentId;
