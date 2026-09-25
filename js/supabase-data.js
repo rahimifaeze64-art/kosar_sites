@@ -778,11 +778,29 @@ const SupabaseDataModule = {
             // updated_at هم می‌گیریم — جدول ممکن است ردیف‌های تکراری با دو هویت داشته باشد:
             // قدیمی با student_id=UUID هش‌شده (قبل از sync_fix_all.sql) و جدید با TEXT.
             // هر دو به یک کلید محلی می‌رسند → فقط «جدیدترین» هر (دانشجو،مسیر،مرحله) معتبر است.
-            const { data, error } = await client
-                .from('student_progress')
-                .select('student_id, path_type, step_index, status, updated_at');
-            if (error) throw error;
+            // ⚠️ Supabase/PostgREST به‌صورت پیش‌فرض حداکثر ۱۰۰۰ ردیف برمی‌گرداند.
+            // جدول student_progress با ۳۵۰ دانشجو × ۴ مسیر × چند مرحله بیش از این
+            // تعداد ردیف دارد؛ بدون صفحه‌بندی، بخش بزرگی از پیشرفت لود نمی‌شد و
+            // نمای شیت مراحل را «ثبت عنوان» (پیش‌فرض) نشان می‌داد.
+            const PAGE = 1000;
+            let data = [];
+            let from = 0;
+            while (true) {
+                const { data: page, error } = await client
+                    .from('student_progress')
+                    .select('student_id, path_type, step_index, status, updated_at')
+                    .order('student_id', { ascending: true })
+                    .order('path_type', { ascending: true })
+                    .order('step_index', { ascending: true })
+                    .range(from, from + PAGE - 1);
+                if (error) throw error;
+                if (!page || page.length === 0) break;
+                data = data.concat(page);
+                if (page.length < PAGE) break;
+                from += PAGE;
+            }
             if (!data || data.length === 0) return {};
+            console.log(`📥 getAllStudentProgress: ${data.length} ردیف در ${Math.ceil(data.length / PAGE)} صفحه از DB خوانده شد`);
 
             // اگر جدول هنوز UUID باشد (قبل از اجرای supabase/sync_fix_all.sql)،
             // ردیف‌ها زیر UUID هش‌شده ذخیره شده‌اند — به id محلی برگردان تا
@@ -877,11 +895,25 @@ const SupabaseDataModule = {
         const targets = studentIds.filter(Boolean).map(String);
         if (targets.length === 0) return;
         try {
-            const { data, error } = await client
-                .from('student_progress')
-                .select('student_id, path_type, step_index, status, updated_at')
-                .in('student_id', targets);
-            if (error) throw error;
+            // صفحه‌بندی: PostgREST حداکثر ۱۰۰۰ ردیف می‌دهد
+            const PAGE = 1000;
+            let data = [];
+            let from = 0;
+            while (true) {
+                const { data: page, error } = await client
+                    .from('student_progress')
+                    .select('student_id, path_type, step_index, status, updated_at')
+                    .in('student_id', targets)
+                    .order('student_id', { ascending: true })
+                    .order('path_type', { ascending: true })
+                    .order('step_index', { ascending: true })
+                    .range(from, from + PAGE - 1);
+                if (error) throw error;
+                if (!page || page.length === 0) break;
+                data = data.concat(page);
+                if (page.length < PAGE) break;
+                from += PAGE;
+            }
 
             // گروه‌بندی و بازسازی آرایهٔ مراحل فقط برای همین دانشجوها
             const grouped = {};
