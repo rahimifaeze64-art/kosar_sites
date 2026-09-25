@@ -1400,9 +1400,19 @@ const EmployeeModule = {
                     } catch (e) {}
 
                     return users.map(student => {
-                        // اطلاعات ویرایش‌شده از students_data را ادغام کن
+                        // اطلاعات ویرایش‌شده را ادغام کن، اما فیلدهای هویتی
+                        // (نام، شماره دانشجویی، رشته، مقطع، رمز سامانه، دانشگاه، ...)
+                        // باید از منبع دیتابیس بیایند و کشِ قدیمیِ students_data آن‌ها را
+                        // سایه نیندازد. پس student (DB) بعد از stored قرار می‌گیرد.
                         const stored = storedData[student.id];
-                        const merged = stored ? { ...student, ...stored } : student;
+                        const merged = stored ? { ...stored, ...student } : student;
+
+                        // مراحل/یادداشت‌های ذخیره‌شده محلی هم حفظ شوند
+                        if (stored) {
+                            ['defenseSteps','educationalSteps','requirementsSteps','studyingSteps',
+                             'graduationWorkflow','defenseWorkflow','notes','requirementsExcluded']
+                                .forEach(k => { if (stored[k] !== undefined) merged[k] = stored[k]; });
+                        }
 
                         if (!merged.educationalSteps) merged.educationalSteps = this.getDefaultEducationalSteps();
                         if (!merged.defenseSteps)     merged.defenseSteps     = this.getDefaultDefenseSteps2();

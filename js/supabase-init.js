@@ -139,7 +139,8 @@ async function _pullDataFromSupabase() {
 
     _runTask((async () => { try {
         // ── کاربران/پروفایل‌ها ──────────────────────────────
-        const users = await SupabaseDataModule.getUsers();
+        // force تا کش محلی نادیده گرفته شود و مقادیر دیتابیس منبع حقیقت باشند
+        const users = await SupabaseDataModule.getUsers({ force: true });
         if (users && users.length > 0) {
             localStorage.setItem('edu_system_users', JSON.stringify(users));
             console.log(`✅ ${users.length} کاربر از Supabase بارگذاری شد`);
