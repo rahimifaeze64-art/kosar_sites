@@ -126,6 +126,20 @@ async function _pullDataFromSupabase() {
     const _runTask = (p) => { _pullTasks.push(p); return p; };
 
     _runTask((async () => { try {
+        // ── ترتیب/فهرست مراحل (app_settings → steps_config_*) ─
+        // بدون این، جابجایی/ویرایش/حذف مراحل فقط محلی می‌ماند و در مرورگر
+        // تازه، ترتیب پیش‌فرض نمایش داده می‌شود.
+        if (typeof EmployeeModule !== 'undefined' && typeof EmployeeModule._loadCustomStepsFromDb === 'function') {
+            await EmployeeModule._loadCustomStepsFromDb();
+            console.log('✅ ترتیب/فهرست مراحل از Supabase (app_settings) بارگذاری شد');
+        }
+    } catch (e) {
+        console.warn('⚠️ pull steps_config خطا:', e.message);
+    }
+    })());
+    const _stepsPull = _pullTasks[_pullTasks.length - 1];
+
+    _runTask((async () => { try {
         // ── سفارشات ─────────────────────────────────────────
         const orders = await SupabaseDataModule.getOrders();
         if (orders && orders.length > 0) {
@@ -151,8 +165,9 @@ async function _pullDataFromSupabase() {
     })());
     const _usersPull = _pullTasks[_pullTasks.length - 1];
 
-    // student_progress باید بعد از users تمام شود (وابستگی نگاشت UUID→id)
-    _runTask(_usersPull.then(async () => { try {
+    // student_progress باید بعد از users (نگاشت UUID→id) و بعد از بارگذاری
+    // ترتیب مراحل (تا نام مراحل روی آرایهٔ درست اعمال شود) اجرا شود
+    _runTask(Promise.all([_usersPull, _stepsPull]).then(async () => { try {
         // ── پیشرفت دانشجویان (برای نما شیت و فلوچارت) ───────
         // کلیدهای prog_ را مستقیماً در localStorage می‌نویسد
         await SupabaseDataModule.getAllStudentProgress();

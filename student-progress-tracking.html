@@ -455,6 +455,43 @@
         // STEPS به صورت پویا از localStorage خوانده می‌شود
         let STEPS = loadStepsFromStorage();
 
+        // ── بارگیری فهرست/ترتیب مراحل از دیتابیس (app_settings) ──────────────
+        // تا جابجایی/ویرایش مراحل که در «مدیریت مراحل» انجام شده، در مرورگر
+        // تازه هم دیده شود (نه فقط در localStorage همان دستگاه).
+        (async () => {
+            try {
+                const sb = (typeof SupabaseDataModule !== 'undefined') ? SupabaseDataModule : null;
+                if (!sb || typeof sb.getAppSetting !== 'function') return;
+                const map = [
+                    ['defense',      'custom_defense_steps'],
+                    ['educational',  'custom_educational_steps'],
+                    ['requirements', 'custom_requirements_steps'],
+                    ['studying',     'custom_studying_steps']
+                ];
+                let changed = false;
+                for (const [type, key] of map) {
+                    try {
+                        const val = await sb.getAppSetting('steps_config_' + type, null);
+                        if (Array.isArray(val)) {
+                            if (val.length > 0) {
+                                localStorage.setItem(key, JSON.stringify(val));
+                                changed = true;
+                            } else if (localStorage.getItem(key)) {
+                                localStorage.removeItem(key); // بازنشانیِ صریح
+                                changed = true;
+                            }
+                        }
+                    } catch (e) { /* ignore per-key */ }
+                }
+                if (changed) {
+                    STEPS = loadStepsFromStorage();
+                    loadStudents();
+                    renderTable();
+                    console.log('✅ sheet: ترتیب مراحل از app_settings بارگذاری شد');
+                }
+            } catch (e) { console.warn('sheet steps_config load:', e.message); }
+        })();
+
         // وقتی صفحه focus می‌گیرد (برگشت از تب مدیریت) مراحل را دوباره بارگذاری کن
         window.addEventListener('focus', () => {
             STEPS = loadStepsFromStorage();

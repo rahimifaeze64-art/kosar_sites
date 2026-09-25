@@ -5540,8 +5540,9 @@ EmployeeModule._loadCustomStepsFromDb = async function() {
         const types = ['defense', 'educational', 'requirements', 'studying'];
         await Promise.all(types.map(async (type) => {
             const val = await sb.getAppSetting('steps_config_' + type, null);
-            if (Array.isArray(val) && val.length > 0) {
-                localStorage.setItem(this._stepsStorageKey(type), JSON.stringify(val));
+            if (Array.isArray(val)) {
+                if (val.length > 0) localStorage.setItem(this._stepsStorageKey(type), JSON.stringify(val));
+                else localStorage.removeItem(this._stepsStorageKey(type)); // بازنشانیِ صریح
             }
         }));
     } catch (e) { console.warn('_loadCustomStepsFromDb:', e.message); }
