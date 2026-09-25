@@ -6670,6 +6670,12 @@ EmployeeModule.toggleRequirementStep = function(studentId, stepIndex) {
     if (!student.requirementsSteps) {
         student.requirementsSteps = this.getDefaultRequirementsSteps();
     }
+
+    // ملزومهٔ «لازم نیست» غیرقابل تغییر است (زرد در نمای شیت)
+    if (student.requirementsSteps[stepIndex] && student.requirementsSteps[stepIndex].excluded) {
+        UTILS.showNotification('این ملزومه برای این دانشجو «لازم نیست» و غیرفعال است', 'info');
+        return;
+    }
     
     // Toggle the step — چرخهٔ چهارحالته
     this._cycleStepState(student.requirementsSteps[stepIndex]);
@@ -6678,11 +6684,11 @@ EmployeeModule.toggleRequirementStep = function(studentId, stepIndex) {
     if (student.requirementsSteps[stepIndex].completed) {
         student.requirementsSteps[stepIndex].date = new Date().toISOString();
 
-        // ── مراحل قبلی هم خودکار تکمیل شوند (قبل از sync تا DB درست شود) ──
+        // ── مراحل قبلی هم خودکار تکمیل شوند (مراحل «لازم نیست» دست‌نخورده) ──
         const _today = new Date().toLocaleDateString('fa-IR');
         for (let i = 0; i < stepIndex && i < student.requirementsSteps.length; i++) {
             const _st = student.requirementsSteps[i];
-            if (_st && !_st.completed) {
+            if (_st && !_st.completed && !_st.excluded) {
                 _st.completed = true; _st.inProgress = false; _st.paused = false;
                 _st.date = _st.date || _today;
             }
@@ -7114,8 +7120,10 @@ window.employeeModule = EmployeeModule; // alias with lowercase for compatibilit
 EmployeeModule._syncStepsToSupabase = function(studentId, pathType, steps) {
     try {
         // ۱. ساخت آرایه prog برای student_progress
-        // 0=ناتمام، 1=در حال انجام، 2=تکمیل شده، 3=متوقف شده
-        const progArray = steps.map(s => ({ status: s.completed ? 2 : (s.paused ? 3 : (s.inProgress ? 1 : 0)) }));
+        // 0=ناتمام، 1=در حال انجام، 2=تکمیل شده، 3=متوقف شده، 4=لازم نیست
+        const progArray = steps.map(s => ({
+            status: s.completed ? 2 : (s.excluded ? 4 : (s.paused ? 3 : (s.inProgress ? 1 : 0)))
+        }));
         // ذخیره در localStorage (کلید مشترک با sheet view)
         localStorage.setItem(`prog_${studentId}_${pathType}`, JSON.stringify(progArray));
         // مهر ویرایش محلی — اینجا «ویرایش واقعی کاربر» است (از پروفایل/تایم‌لاین)

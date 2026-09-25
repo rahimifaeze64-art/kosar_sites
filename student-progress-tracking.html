@@ -63,6 +63,15 @@
             color: #374151;
             box-shadow: 0 3px 10px rgba(209,213,219,0.5);
         }
+        /* لازم نیست — زرد و غیرقابل کلیک */
+        .progress-circle.excluded {
+            background: linear-gradient(135deg, #fde68a, #fcd34d);
+            color: #78350f;
+            box-shadow: 0 3px 10px rgba(252,211,77,0.5);
+            cursor: not-allowed;
+            opacity: 0.9;
+        }
+        .progress-circle.excluded:hover { transform: none; }
 
         /* ── جدول اصلی ──────────────────────── */
         .sheet-table {
@@ -517,6 +526,7 @@
         const STATUS_CURRENT    = 1;
         const STATUS_COMPLETED  = 2;
         const STATUS_PAUSED     = 3;   // متوقف شده
+        const STATUS_EXCLUDED   = 4;   // لازم نیست (ملزومهٔ حذف‌شده) — زرد و غیرقابل کلیک
         
         let currentPath = 'defense';
         let students = [];
@@ -769,7 +779,9 @@
                 const tail = studentSteps.slice(-names.length);   // ۴+۱ مرحلهٔ انتهایی
                 const prog = names.map((n, i) => {
                     const st = tail[i];
-                    return { status: (st && st.completed) ? STATUS_COMPLETED : (st && st.paused) ? STATUS_PAUSED : STATUS_INCOMPLETE };
+                    return { status: (st && st.completed) ? STATUS_COMPLETED
+                                    : (st && st.excluded) ? STATUS_EXCLUDED
+                                    : (st && st.paused) ? STATUS_PAUSED : STATUS_INCOMPLETE };
                 });
                 return prog;
             }
@@ -790,7 +802,9 @@
             // (وضعیت واقعی: completed→2، paused→3، بقیه→0)
             if (studentSteps && Array.isArray(studentSteps) && studentSteps.length > 0) {
                 const prog = studentSteps.slice(0, stepCount).map(s => ({
-                    status: (s && s.completed) ? STATUS_COMPLETED : (s && s.paused) ? STATUS_PAUSED : STATUS_INCOMPLETE
+                    status: (s && s.completed) ? STATUS_COMPLETED
+                          : (s && s.excluded) ? STATUS_EXCLUDED
+                          : (s && s.paused) ? STATUS_PAUSED : STATUS_INCOMPLETE
                 }));
                 // اگر مراحل شیت بیشتر از students_data بود، بقیه خالی
                 while (prog.length < stepCount) prog.push({ status: STATUS_INCOMPLETE });
@@ -1158,9 +1172,10 @@
             }
             filtered = filtered.filter(s => {
                 const prog = s.progress[currentPath];
+                const applicable = prog.filter(p => p.status !== STATUS_EXCLUDED).length;
                 const done = prog.filter(p => p.status === STATUS_COMPLETED).length;
-                if (currentFilter === 'completed') return done === prog.length;
-                if (currentFilter === 'in-progress') return done > 0 && done < prog.length;
+                if (currentFilter === 'completed') return applicable > 0 && done === applicable;
+                if (currentFilter === 'in-progress') return done > 0 && done < applicable;
                 return true;
             });
             // مرتب‌سازی پله‌ای: تکمیل‌شده‌ترین دانشجو بالا، تکمیل‌نشده‌ها پایین.
@@ -1190,7 +1205,8 @@
                 rowNum++;
                 const prog = student.progress[currentPath];
                 const done = prog.filter(p => p.status === STATUS_COMPLETED).length;
-                const pct = Math.round((done / prog.length) * 100);
+                const applicable = prog.filter(p => p.status !== STATUS_EXCLUDED).length;
+                const pct = applicable > 0 ? Math.round((done / applicable) * 100) : 0;
                 
                 bodyHTML += `<tr data-student-id="${student.id}">`;
                 bodyHTML += `<td class="row-num-cell" title="برای جابه‌جایی، سطر را بکشید">
@@ -1213,9 +1229,15 @@
                     if (status === STATUS_COMPLETED)      { cls = 'completed'; icon = '<i class="fas fa-check"></i>'; }
                     else if (status === STATUS_CURRENT)   { cls = 'current';   icon = '<i class="fas fa-hourglass-half"></i>'; }
                     else if (status === STATUS_PAUSED)    { cls = 'paused';    icon = '<i class="fas fa-pause"></i>'; }
-                    
+                    else if (status === STATUS_EXCLUDED)  { cls = 'excluded';  icon = '<i class="fas fa-ban"></i>'; }
+
+                    const _title = status === STATUS_EXCLUDED
+                        ? 'لازم نیست (حذف‌شده)'
+                        : (status === 0 ? 'تکمیل نشده' : status === 1 ? 'در حال انجام' : status === 2 ? 'تکمیل شده' : 'متوقف شده');
+                    const _onclick = status === STATUS_EXCLUDED ? '' : `onclick="toggleStage('${student.id}', ${stageIdx})"`;
+
                     bodyHTML += `<td>
-                        <div class="progress-circle ${cls}" title="${status===0?'تکمیل نشده':status===1?'در حال انجام':status===2?'تکمیل شده':'متوقف شده'}" onclick="toggleStage('${student.id}', ${stageIdx})">${icon}</div>
+                        <div class="progress-circle ${cls}" title="${_title}" ${_onclick}>${icon}</div>
                     </td>`;
                 });
                 
@@ -1250,6 +1272,14 @@
             
             const prog = student.progress[currentPath];
             const current = prog[stageIndex]?.status ?? STATUS_INCOMPLETE;
+
+            // ملزومهٔ «لازم نیست» قابل کلیک/تغییر نیست
+            if (current === STATUS_EXCLUDED) {
+                if (window.UTILS && UTILS.showNotification) {
+                    UTILS.showNotification('این ملزومه برای این دانشجو «لازم نیست» و غیرفعال است', 'info');
+                }
+                return;
+            }
             
             // Cycle: incomplete → current → completed → paused → incomplete
             if (current === STATUS_INCOMPLETE)      prog[stageIndex].status = STATUS_CURRENT;
@@ -1258,10 +1288,11 @@
             else                                    prog[stageIndex].status = STATUS_INCOMPLETE;
 
             // ── رفع باگ «قرمز شدن مرحلهٔ قبلی»: با تکمیل یک مرحله،
-            //    همهٔ مراحل قبلیِ همان مسیر هم خودکار تکمیل می‌شوند ──
+            //    همهٔ مراحل قبلیِ همان مسیر هم خودکار تکمیل می‌شوند
+            //    (اما مراحل «لازم نیست» دست‌نخورده می‌مانند) ──
             if (prog[stageIndex].status === STATUS_COMPLETED) {
                 for (let i = 0; i < stageIndex; i++) {
-                    if (prog[i] && prog[i].status !== STATUS_COMPLETED) {
+                    if (prog[i] && prog[i].status !== STATUS_COMPLETED && prog[i].status !== STATUS_EXCLUDED) {
                         prog[i].status = STATUS_COMPLETED;
                     }
                 }

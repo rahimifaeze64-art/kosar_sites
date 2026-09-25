@@ -596,12 +596,14 @@ const SupabaseDataModule = {
                 const completed  = p.status === 2;
                 const paused     = p.status === 3;
                 const inProgress = p.status === 1;
+                const excluded   = p.status === 4;   // «لازم نیست» (ملزومهٔ حذف‌شده)
                 if (!!step.completed === completed &&
                     !!step.paused    === paused &&
-                    !!step.inProgress=== inProgress) return step;
+                    !!step.inProgress=== inProgress &&
+                    !!step.excluded  === excluded) return step;
                 return {
                     ...step,
-                    completed, paused, inProgress,
+                    completed, paused, inProgress, excluded,
                     date: completed ? (step.date || new Date().toLocaleDateString('fa-IR')) : null
                 };
             };

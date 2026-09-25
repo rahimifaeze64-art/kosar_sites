@@ -649,10 +649,10 @@ const StepAssignmentModule = {
             const today = new Date().toLocaleDateString('fa-IR');
             let changed = false;
 
-            // ۱) مراحل ۰..stepIndex را تکمیل کن
+            // ۱) مراحل ۰..stepIndex را تکمیل کن (مراحل «لازم نیست» دست‌نخورده)
             for (let i = 0; i <= stepIndex && i < steps.length; i++) {
                 const st = steps[i];
-                if (!st || st.completed) continue;
+                if (!st || st.completed || st.excluded) continue;
                 st.completed  = true;
                 st.paused     = false;
                 st.inProgress = false;
@@ -676,11 +676,15 @@ const StepAssignmentModule = {
 
             let progChanged = false;
             for (let i = 0; i <= stepIndex && i < totalSteps; i++) {
+                // وضعیت ۴ («لازم نیست») نباید به «تکمیل» تبدیل شود
+                if (prog[i] && prog[i].status === 4) continue;
                 if (!prog[i] || prog[i].status !== 2) { prog[i] = { status: 2 }; progChanged = true; }
             }
             if (stepIndex + 1 < totalSteps) {
                 if (!prog[stepIndex + 1] || prog[stepIndex + 1].status !== 2) {
-                    if (prog[stepIndex + 1]?.status !== 1) { prog[stepIndex + 1] = { status: 1 }; progChanged = true; }
+                    if (prog[stepIndex + 1]?.status !== 1 && prog[stepIndex + 1]?.status !== 4) {
+                        prog[stepIndex + 1] = { status: 1 }; progChanged = true;
+                    }
                 }
             }
             if (progChanged) {
@@ -803,7 +807,7 @@ const StepAssignmentModule = {
                 // عمداً روی همان آبجکت محلی انجام می‌شود تا نوشتن بعدی آن را از دست ندهد
                 for (let i = 0; i < stepIndex && i < steps.length; i++) {
                     const st = steps[i];
-                    if (st && !st.completed) {
+                    if (st && !st.completed && !st.excluded) {
                         st.completed  = true;
                         st.inProgress = false;
                         st.paused     = false;

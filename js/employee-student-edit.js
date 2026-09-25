@@ -1548,12 +1548,13 @@ EmployeeModule.toggleStudentRequirement = function(studentId, stepName, checked)
     if (targetIdx >= 0) {
         const st = student.requirementsSteps[targetIdx];
         if (!checked) {
-            // «لازم نیست» → مثل تکمیل‌شده در نظر گرفته می‌شود تا گردش کار بلاک نشود
+            // «لازم نیست» → وضعیت ۴ (زرد و غیرقابل کلیک در نمای شیت).
+            // در گردش کار مثل «رد شده» رفتار می‌شود و بلاک نمی‌کند.
             st.excluded   = true;
-            st.completed  = true;
+            st.completed  = false;
             st.paused     = false;
             st.inProgress = false;
-            st.date       = st.date || new Date().toLocaleDateString('fa-IR');
+            st.date       = null;
         } else {
             st.excluded = false;
             // اگر واقعاً توسط کسی تکمیل نشده بود، برگردان به ناتمام
@@ -1577,7 +1578,7 @@ EmployeeModule.toggleStudentRequirement = function(studentId, stepName, checked)
         while (prog.length < student.requirementsSteps.length) prog.push({ status: 0 });
         if (targetIdx >= 0) {
             if (!checked) {
-                prog[targetIdx] = { status: 2 };      // تکمیل‌شده (لازم نیست)
+                prog[targetIdx] = { status: 4 };      // لازم نیست (زرد)
             } else if (!student.requirementsSteps[targetIdx].completed) {
                 prog[targetIdx] = { status: 0 };      // ناتمام
             }

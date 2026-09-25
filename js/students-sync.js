@@ -59,8 +59,8 @@
     // فرمت student_progress:     [{ status: 0|1|2 }, ...]  (0=pending,1=current,2=done)
     function _stepsToProgress(stepsArr) {
         if (!Array.isArray(stepsArr)) return [];
-        // 0=ناتمام، 1=در حال انجام، 2=تکمیل شده، 3=متوقف شده
-        const statuses = stepsArr.map(s => s.completed ? 2 : (s.paused ? 3 : (s.inProgress ? 1 : 0)));
+        // 0=ناتمام، 1=در حال انجام، 2=تکمیل شده، 3=متوقف شده، 4=لازم نیست
+        const statuses = stepsArr.map(s => s.completed ? 2 : (s.excluded ? 4 : (s.paused ? 3 : (s.inProgress ? 1 : 0))));
         return statuses.map(s => ({ status: s }));
     }
 
