@@ -790,7 +790,18 @@ const SupabaseDataModule = {
             const uuidToLocal = {};
             try {
                 const localIds = new Set();
-                const usersRaw = JSON.parse(localStorage.getItem('edu_system_users') || '[]');
+                let usersRaw = [];
+                try { usersRaw = JSON.parse(localStorage.getItem('edu_system_users') || '[]'); } catch (e) { usersRaw = []; }
+                // ⚠️ اگر فهرست کاربران محلی خالی است (مثلاً بعد از پاک‌کردن کش/کوکی)،
+                // نگاشت UUID→id محلی ساخته نمی‌شود و ردیف‌های قدیمیِ UUIDدار زیر کلید
+                // اشتباه نوشته می‌شوند → گارد ضد-ریست نمی‌تواند جلوی نوشتن صفرها را
+                // بگیرد. پس قبل از ساخت نگاشت، کاربران را از DB می‌گیریم.
+                if (!Array.isArray(usersRaw) || usersRaw.length === 0) {
+                    try {
+                        const fresh = await this.getUsers({ force: true });
+                        if (Array.isArray(fresh)) usersRaw = fresh;
+                    } catch (e) { /* آفلاین — با students_data ادامه بده */ }
+                }
                 if (Array.isArray(usersRaw)) usersRaw.forEach(u => { if (u && u.id) localIds.add(String(u.id)); });
                 const sd = JSON.parse(localStorage.getItem('students_data') || '{}');
                 Object.keys(sd || {}).forEach(k => localIds.add(String(k)));
@@ -845,6 +856,9 @@ const SupabaseDataModule = {
             });
 
             console.log(`✅ پیشرفت ${Object.keys(grouped).length} دانشجو/مسیر از Supabase بارگذاری شد`);
+            // نشانه‌گذاری مسیرهایی که در DB داده دارند — گارد مستقل از progdbts_
+            // برای جلوگیری از ارسال صفرهای پیش‌فرض روی دادهٔ واقعی
+            try { window.__dbProgressKeys = new Set(Object.keys(grouped)); } catch (e) {}
             // مراحل پروفایل (students_data) را هم با همین پیشرفت همگام کن —
             // وگرنه ویرایشگر پروفایل/کارت دانشجو در نقش‌های دیگر کهنه می‌ماند
             this.mergeProgressIntoStudentsData();

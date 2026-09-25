@@ -3,7 +3,16 @@
 
 function initializeStudentsData() {
     console.log('🔄 Initializing students data...');
-    
+
+    // ⏳ اگر Supabase آنلاین است ولی کاربران هنوز از دیتابیس نیامده‌اند،
+    // از ساختن students_data با کاربران پیش‌فرضِ داخلی (grad*/std*) خودداری کن —
+    // وگرنه این شناسه‌های دموی بدون پروفایل به دیتابیس سینک می‌شوند.
+    const _online = (typeof SupabaseConnection !== 'undefined' && SupabaseConnection.isOnline === true);
+    if (_online && !localStorage.getItem(CONFIG.STORAGE_KEYS.USERS)) {
+        console.log('⏳ در انتظار دریافت کاربران از Supabase — seed دادهٔ پیش‌فرض انجام نشد');
+        return;
+    }
+
     // First, ensure all users are saved to localStorage
     let users = DataModule.getUsers();
     if (!localStorage.getItem(CONFIG.STORAGE_KEYS.USERS)) {
@@ -80,6 +89,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Small delay to ensure all modules are loaded
     setTimeout(() => {
         try {
+            // ⏳ اگر Supabase آنلاین است ولی کاربران هنوز از دیتابیس بارگذاری نشده‌اند،
+            // دادهٔ پیش‌فرضِ داخلی (grad*/std*) را seed نکن؛ منتظر pull بمان.
+            const _online = (typeof SupabaseConnection !== 'undefined' && SupabaseConnection.isOnline === true);
+            if (_online && !localStorage.getItem(CONFIG.STORAGE_KEYS.USERS)) {
+                console.log('⏳ منتظر pull کاربران از Supabase — seed پیش‌فرض skipped');
+                return;
+            }
+
             // Ensure users are in localStorage
             if (!localStorage.getItem(CONFIG.STORAGE_KEYS.USERS)) {
                 console.log('🚀 Initializing users in localStorage...');

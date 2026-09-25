@@ -75,10 +75,30 @@
         return arr.every(p => !p || (p.status ?? 0) === 0);
     }
 
+    // شناسهٔ دموی داخلی (grad001…، std001…) که ممکن است در students_data باشد
+    function _looksLikeDemoId(id) {
+        return /^(grad|std)\d+$/i.test(String(id || ''));
+    }
+    // آیا این شناسه در فهرست کاربرانِ واقعی (از دیتابیس) هست؟
+    function _isRealUserId(id) {
+        try {
+            const users = JSON.parse(localStorage.getItem('edu_system_users') || '[]');
+            if (!Array.isArray(users) || users.length === 0) return false;
+            return users.some(u => u && String(u.id) === String(id));
+        } catch (e) { return false; }
+    }
+
     // ── sync یک دانشجو به Supabase ─────────────────────────
     async function _syncStudent(studentId, student) {
         const sb = _sb();
         if (!sb) return false;
+
+        // ⛔ دانشجویان دموی داخلی (grad*/std*) که کاربر واقعی دیتابیس نیستند،
+        // نباید پیشرفتشان به DB برود (باعث ردیف‌های بی‌صاحب در student_progress می‌شد)
+        if (_looksLikeDemoId(studentId) && !_isRealUserId(studentId)) {
+            console.log(`⏭️ students-sync: ${studentId} شناسهٔ دموی بدون کاربر واقعی — sync نشد`);
+            return true;
+        }
         let ok = true; // نتیجه نهایی — false یعنی بخشی سینک نشد (بعداً دوباره تلاش شود)
 
         // ── ۱. sync پیشرفت مراحل (student_progress) ──────────
@@ -150,8 +170,13 @@
             if (!student[key] || !Array.isArray(student[key])) return null;
             const progress = _stepsToProgress(student[key]);
             if (progress.length === 0) return null;
-            // گارد نهایی: همه-صفر با وجود داده در DB → نفرست
-            if (_isAllZero(progress) && Number(localStorage.getItem(`progdbts_${studentId}/${pathType}`) || 0) > 0) {
+            // 🛡️ گارد نهایی ضد-ریست: آرایهٔ «همه-صفر» وقتی در DB داده وجود دارد
+            // هرگز نباید ارسال شود. (قبلاً کلید progdbts_ اشتباهاً با «/» نوشته
+            // شده بود → گارد هیچ‌وقت فعال نمی‌شد و صفرهای پیش‌فرض DB را پاک می‌کردند.)
+            const _dbHasRows = Number(localStorage.getItem(`progdbts_${studentId}_${pathType}`) || 0) > 0
+                || (typeof window !== 'undefined' && window.__dbProgressKeys &&
+                    window.__dbProgressKeys.has(`${studentId}_${pathType}`));
+            if (_isAllZero(progress) && _dbHasRows) {
                 console.log(`🛡️ students-sync: ${studentId}/${pathType} — students_data همه-صفر با وجود داده در DB، ارسال نشد`);
                 return null;
             }
