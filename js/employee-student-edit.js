@@ -1134,6 +1134,7 @@ EmployeeModule.saveStudentProfile = async function(studentId) {
                 email:           updatedData.email       || null,
                 university:      updatedData.university  || null,
                 student_id:      updatedData.studentId   || null,
+                system_password: updatedData.systemPassword || null,
                 field:           updatedData.field       || null,
                 degree:          updatedData.degree      || null,
                 passport_number: updatedData.passportNumber || null,

@@ -224,6 +224,7 @@ const SupabaseAuth = {
             department:      p.department   || '',
             university:      p.university   || '',
             studentId:       p.student_id   || '',
+            systemPassword:  p.system_password || '',
             field:           p.field        || '',
             degree:          p.degree       || 'masters',   // English DB value
             degreeLabel:     this._persianDegree(p.degree), // Persian display only

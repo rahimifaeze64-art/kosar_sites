@@ -136,6 +136,19 @@ const SupabaseDataModule = {
                 .upsert(changedRows, { onConflict: 'id', ignoreDuplicates: false });
             if (error) {
                 console.warn(`⚠️ saveUsers خطا (${changedRows.length} ردیف از ${users.length}):`, error.message, error.code);
+                // fallback: اگر ستون system_password هنوز در جدول نیست، بدون آن ذخیره کن
+                if (/system_password|PGRST204/i.test((error.message || '') + ' ' + (error.code || ''))) {
+                    console.warn('⚠️ ستون system_password در profiles نیست — بدون آن ذخیره می‌شود. mایگریشن update_students_from_db_stu.sql را اجرا کنید');
+                    const rows2 = changedRows.map(r => { const o = { ...r }; delete o.system_password; return o; });
+                    const { error: e2 } = await client
+                        .from('profiles')
+                        .upsert(rows2, { onConflict: 'id', ignoreDuplicates: false });
+                    if (!e2) {
+                        this._syncSigs.users = nextSigs;
+                        this._cacheInvalidate('users');
+                        return true;
+                    }
+                }
                 if (error.code === '42501' || error.message.includes('policy')) {
                     console.error('🔒 RLS مشکل دارد! supabase/fix_rls_anon.sql را اجرا کن');
                 }
@@ -2010,6 +2023,7 @@ const SupabaseDataModule = {
             department:      u.department      || null,
             university:      u.university      || null,
             student_id:      u.studentId       || null,
+            system_password: u.systemPassword  || null,
             field:           u.field           || null,
             degree:          SupabaseAuth._normalizeDegree(u.degree),
             passport_number: u.passportNumber  || null,
