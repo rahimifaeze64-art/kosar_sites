@@ -185,8 +185,8 @@ const EmployeeModule = {
                             <p class="text-gray-600 text-xs mt-1">مدیر پس از تیک زدن مرحله قبلی، مرحله بعدی را ارسال می‌کند</p>
                         </div>
                     ` : `
-                        <div class="space-y-3">
-                            ${pendingStepTasks.map((task, i) => this.getStepTaskCard(task, userId, i + 1)).join('')}
+                        <div class="space-y-4">
+                            ${this._renderStepTaskGroups(pendingStepTasks, userId, false)}
                         </div>
                     `}
 
@@ -197,8 +197,8 @@ const EmployeeModule = {
                                 انجام‌شده‌ها (${doneStepTasks.length})
                                 <i class="fas fa-chevron-down text-xs mr-auto"></i>
                             </summary>
-                            <div class="space-y-2 mt-3">
-                                ${doneStepTasks.map((task, i) => this.getStepTaskCard(task, userId, i + 1)).join('')}
+                            <div class="space-y-4 mt-3">
+                                ${this._renderStepTaskGroups(doneStepTasks, userId, true)}
                             </div>
                         </details>
                     ` : ''}
@@ -412,6 +412,48 @@ const EmployeeModule = {
         if (el) el.outerHTML = this.getMyCreatedTasksSection(userId);
     },
 
+    // وظایف کارتابل را بر اساس مسیر تحصیلی تفکیک و رندر می‌کند
+    // (هر وظیفه با یک خط از وظیفه بعدی جدا می‌شود)
+    _renderStepTaskGroups(tasks, userId, isDone) {
+        const meta = {
+            defense:      { label: 'گردش دفاع',      color: 'blue',    icon: 'fa-shield-alt' },
+            educational:  { label: 'فارغ‌التحصیلی',  color: 'green',   icon: 'fa-graduation-cap' },
+            requirements: { label: 'ملزومات',        color: 'emerald', icon: 'fa-clipboard-check' },
+            studying:     { label: 'در حال تحصیل',   color: 'cyan',    icon: 'fa-book-reader' },
+        };
+        const order = ['defense', 'educational', 'requirements', 'studying'];
+        const groups = {};
+        (tasks || []).forEach(t => {
+            const k = t.stepType || 'other';
+            if (!groups[k]) groups[k] = [];
+            groups[k].push(t);
+        });
+        const keys = Object.keys(groups).sort((a, b) => {
+            const ia = order.indexOf(a), ib = order.indexOf(b);
+            return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+        });
+
+        return keys.map(k => {
+            const m = meta[k] || { label: k, color: 'lime', icon: 'fa-tasks' };
+            const list = groups[k].slice().sort((a, b) => (a.stepIndex ?? 0) - (b.stepIndex ?? 0));
+            const sep = '<div class="border-b border-slate-600 my-3"></div>';
+            const cards = list.map((task, i) =>
+                this.getStepTaskCard(task, userId, i + 1) + (i < list.length - 1 ? sep : '')
+            ).join('');
+            return `
+            <div>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="w-1.5 h-4 rounded bg-${m.color}-500"></span>
+                    <h4 class="text-sm font-bold text-gray-200">
+                        <i class="fas ${m.icon} text-${m.color}-400 ml-1"></i>${m.label}
+                    </h4>
+                    <span class="text-xs bg-slate-600 text-gray-300 rounded-full px-2 py-0.5">${list.length}</span>
+                </div>
+                <div class="space-y-0">${cards}</div>
+            </div>`;
+        }).join('');
+    },
+
     // کارت مرحله دانشجو در کارتابل
     getStepTaskCard(task, userId, num) {
         const typeColors = { defense: 'blue', educational: 'green', requirements: 'emerald' };
@@ -427,43 +469,67 @@ const EmployeeModule = {
         const st = statusMap[task.status] || statusMap.pending;
         const isDone = task.status === 'completed';
 
+        // فایل ضمیمه‌شده به این وظیفه (سنجاق)
+        const file = task.attachedFile;
+        const fileHTML = file ? `
+            <div class="mt-2 flex items-center gap-2 bg-slate-800 rounded-lg px-2 py-1.5 border border-slate-600">
+                <i class="fas ${this.getFileIcon(file.name || 'file')} text-sm"></i>
+                <span class="text-xs text-gray-200 truncate max-w-[150px]" title="${file.name || ''}">${file.name || 'فایل'}</span>
+                ${file.category ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-lime-700/40 text-lime-300 whitespace-nowrap">${file.category}</span>` : ''}
+                ${!isDone ? `
+                    <button onclick="employeeModule.removeStepTaskFile('${task.id}', '${userId}')"
+                            title="حذف ضمیمه" class="text-red-400 hover:text-red-300 mr-auto">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>` : ''}
+            </div>` : '';
+
         return `
-            <div class="flex items-center gap-3 bg-slate-700 rounded-xl p-4 ${isDone ? 'opacity-60' : 'hover:bg-slate-600 transition-colors'}">
-                <!-- شماره مرحله -->
-                <div class="w-10 h-10 rounded-full bg-${color}-600 flex items-center justify-center font-bold text-white flex-shrink-0 text-sm">
-                    ${(task.stepIndex !== undefined ? task.stepIndex + 1 : num)}
-                </div>
-                <!-- اطلاعات -->
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <span class="text-white font-semibold text-sm">${task.stepName || task.title}</span>
-                        <span class="text-xs px-2 py-0.5 rounded-full bg-slate-600 text-gray-300">${typeName}</span>
+            <div class="bg-slate-700 rounded-xl p-4 border border-slate-600 ${isDone ? 'opacity-60' : 'hover:bg-slate-600 transition-colors'}">
+                <div class="flex items-start gap-3">
+                    <!-- شماره مرحله -->
+                    <div class="w-10 h-10 rounded-full bg-${color}-600 flex items-center justify-center font-bold text-white flex-shrink-0 text-sm">
+                        ${(task.stepIndex !== undefined ? task.stepIndex + 1 : num)}
                     </div>
-                    <div class="flex items-center gap-3 mt-1 flex-wrap">
-                        <span class="text-xs text-gray-400">
-                            <i class="fas fa-user-graduate ml-1 text-lime-400"></i>
-                            ${task.studentName || task.studentId || '—'}
-                        </span>
-                        <span class="text-xs text-gray-500">
-                            <i class="fas fa-calendar ml-1"></i>
-                            ${task.createdAt ? new Date(task.createdAt).toLocaleDateString('fa-IR') : ''}
-                        </span>
+                    <!-- اطلاعات -->
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-white font-semibold text-sm">${task.stepName || task.title}</span>
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-slate-600 text-gray-300">${typeName}</span>
+                        </div>
+                        <div class="flex items-center gap-3 mt-1 flex-wrap">
+                            <span class="text-xs text-gray-400">
+                                <i class="fas fa-user-graduate ml-1 text-lime-400"></i>
+                                ${task.studentName || task.studentId || '—'}
+                            </span>
+                            <span class="text-xs text-gray-500">
+                                <i class="fas fa-calendar ml-1"></i>
+                                ${task.createdAt ? new Date(task.createdAt).toLocaleDateString('fa-IR') : ''}
+                            </span>
+                        </div>
+                        ${fileHTML}
                     </div>
-                </div>
-                <!-- وضعیت + دکمه -->
-                <div class="flex flex-col items-end gap-2 flex-shrink-0">
-                    <span class="text-xs px-2 py-1 rounded-full ${st.cls} text-white font-medium whitespace-nowrap">${st.label}</span>
-                    ${!isDone ? `
-                        <button onclick="employeeModule.updateTaskStatus('${task.id}', '${userId}')"
-                                class="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-medium transition-all whitespace-nowrap">
-                            <i class="fas fa-check ml-1"></i>انجام شد
-                        </button>
-                    ` : `
-                        <span class="text-xs text-green-400 whitespace-nowrap">
-                            <i class="fas fa-check-circle ml-1"></i>
-                            ${task.completedAt ? new Date(task.completedAt).toLocaleDateString('fa-IR') : 'تکمیل'}
-                        </span>
-                    `}
+                    <!-- وضعیت + دکمه -->
+                    <div class="flex flex-col items-end gap-2 flex-shrink-0">
+                        <span class="text-xs px-2 py-1 rounded-full ${st.cls} text-white font-medium whitespace-nowrap">${st.label}</span>
+                        ${!isDone ? `
+                            <div class="flex items-center gap-1">
+                                <button onclick="employeeModule.attachStepTaskFile('${task.id}', '${userId}')"
+                                        title="پیوست فایل به این وظیفه"
+                                        class="text-xs bg-slate-600 hover:bg-slate-500 text-lime-300 border border-slate-500 px-2 py-1.5 rounded-lg transition-all">
+                                    <i class="fas fa-paperclip"></i>
+                                </button>
+                                <button onclick="employeeModule.confirmStepTaskComplete('${task.id}', '${userId}')"
+                                        class="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-medium transition-all whitespace-nowrap">
+                                    <i class="fas fa-check ml-1"></i>انجام شد
+                                </button>
+                            </div>
+                        ` : `
+                            <span class="text-xs text-green-400 whitespace-nowrap">
+                                <i class="fas fa-check-circle ml-1"></i>
+                                ${task.completedAt ? new Date(task.completedAt).toLocaleDateString('fa-IR') : 'تکمیل'}
+                            </span>
+                        `}
+                    </div>
                 </div>
             </div>
         `;
@@ -2158,7 +2224,20 @@ const EmployeeModule = {
         const step = student.defenseSteps[stepIndex];
         this._cycleStepState(step);
         step.date = step.completed ? new Date().toLocaleDateString('fa-IR') : null;
-        
+
+        // ── مراحل قبلی هم خودکار تکمیل شوند (رفع باگ قرمز شدن مرحلهٔ قبل) ──
+        // عمداً «قبل از sync» تا وضعیت درست (نه کهنه) به دیتابیس برود
+        if (step.completed) {
+            const _today = new Date().toLocaleDateString('fa-IR');
+            for (let i = 0; i < stepIndex && i < student.defenseSteps.length; i++) {
+                const _st = student.defenseSteps[i];
+                if (_st && !_st.completed) {
+                    _st.completed = true; _st.inProgress = false; _st.paused = false;
+                    _st.date = _st.date || _today;
+                }
+            }
+        }
+
         // Save to localStorage
         studentsData[studentId] = student;
         localStorage.setItem('students_data', JSON.stringify(studentsData));
@@ -2399,7 +2478,19 @@ const EmployeeModule = {
         const step = student.educationalSteps[stepIndex];
         this._cycleStepState(step);
         step.date = step.completed ? new Date().toLocaleDateString('fa-IR') : null;
-        
+
+        // ── مراحل قبلی هم خودکار تکمیل شوند (قبل از sync تا DB درست شود) ──
+        if (step.completed) {
+            const _today = new Date().toLocaleDateString('fa-IR');
+            for (let i = 0; i < stepIndex && i < student.educationalSteps.length; i++) {
+                const _st = student.educationalSteps[i];
+                if (_st && !_st.completed) {
+                    _st.completed = true; _st.inProgress = false; _st.paused = false;
+                    _st.date = _st.date || _today;
+                }
+            }
+        }
+
         // Save to localStorage
         studentsData[studentId] = student;
         localStorage.setItem('students_data', JSON.stringify(studentsData));
@@ -3763,6 +3854,17 @@ const EmployeeModule = {
             if (tasks[taskIndex].isStepTask && typeof StepAssignmentModule !== 'undefined') {
                 StepAssignmentModule.onTaskCompleted(tasks[taskIndex], userId);
             }
+
+            // فایل ضمیمه‌شده به وظیفه، خودکار در بخش «فایل ها»ی پروفایل دانشجو ذخیره شود
+            const _t = tasks[taskIndex];
+            if (_t.isStepTask && _t.attachedFile && _t.studentId &&
+                typeof EmployeeModule.saveAttachedTaskFileToProfile === 'function') {
+                EmployeeModule.saveAttachedTaskFileToProfile(_t.studentId, _t.attachedFile.category, _t.attachedFile)
+                    .then(ok => {
+                        if (ok) UTILS.showNotification('📎 فایل وظیفه در پروفایل دانشجو ذخیره شد', 'success');
+                    })
+                    .catch(e => console.warn('⚠️ saveAttachedTaskFileToProfile:', e.message));
+            }
         }
         
         // ۱. ذخیره فوری در localStorage
@@ -3816,7 +3918,224 @@ const EmployeeModule = {
         this.refreshMyTasks(userId);
         UTILS.showNotification('وظیفه به حالت «در حال انجام» برگشت', 'info');
     },
-    
+
+    // ══════════════════════════════════════════════════════════
+    // سنجاق فایل روی وظایف کارتابل + تأیید دومرحله‌ای
+    // ══════════════════════════════════════════════════════════
+
+    // باز کردن مودال پیوست فایل به یک وظیفهٔ مرحله‌ای
+    attachStepTaskFile(taskId, userId) {
+        const task = this.getMyTasks(userId).find(t => t.id === taskId);
+        if (!task) return;
+
+        const cats = (typeof EmployeeModule !== 'undefined' && Array.isArray(EmployeeModule.PROFILE_FILE_CATEGORIES))
+            ? EmployeeModule.PROFILE_FILE_CATEGORIES
+            : ['سایر'];
+
+        const modalId = 'attach-step-file-modal';
+        this.closeModal(modalId);
+
+        const html = `
+        <div id="${modalId}" class="fixed inset-0 bg-black bg-opacity-60 z-[70] flex items-center justify-center p-4">
+            <div class="bg-slate-800 rounded-xl max-w-md w-full p-5 border border-slate-600 shadow-2xl">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-white font-bold flex items-center gap-2">
+                        <i class="fas fa-paperclip text-lime-400"></i>
+                        پیوست فایل به وظیفه
+                    </h3>
+                    <button onclick="employeeModule.closeModal('${modalId}')" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <p class="text-xs text-gray-400 mb-3">
+                    ${task.stepName || task.title}${task.studentName ? ` — ${task.studentName}` : ''}
+                </p>
+                <label class="block text-sm text-gray-300 mb-1">ذخیره در فیلد (بخش فایل‌های پروفایل دانشجو):</label>
+                <select id="attach-step-category"
+                        class="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 mb-3 focus:outline-none focus:ring-2 focus:ring-lime-500">
+                    ${cats.map(c => `<option value="${c}">${c}</option>`).join('')}
+                </select>
+                <label class="block text-sm text-gray-300 mb-1">انتخاب فایل:</label>
+                <input type="file" id="attach-step-input"
+                       class="w-full text-xs text-gray-300 bg-slate-700 border border-slate-600 rounded-lg p-2 file:bg-lime-600 file:text-gray-900 file:border-0 file:rounded file:px-2 file:py-1 file:ml-2">
+                <div id="attach-step-preview" class="mt-2 text-xs text-gray-400"></div>
+                <div class="flex justify-end gap-2 mt-4">
+                    <button onclick="employeeModule.closeModal('${modalId}')"
+                            class="px-4 py-2 text-sm text-gray-300 bg-slate-700 hover:bg-slate-600 rounded-lg">انصراف</button>
+                    <button onclick="employeeModule._doAttachStepTaskFile('${taskId}', '${userId}')"
+                            class="px-4 py-2 text-sm text-white bg-lime-600 hover:bg-lime-700 rounded-lg font-medium">
+                        <i class="fas fa-paperclip ml-1"></i>پیوست
+                    </button>
+                </div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', html);
+    },
+
+    // انجام واقعی پیوست (خواندن فایل + آپلود/ذخیره‌سازی)
+    async _doAttachStepTaskFile(taskId, userId) {
+        const tasks = this.getMyTasks(userId);
+        const idx = tasks.findIndex(t => t.id === taskId);
+        if (idx === -1) return;
+
+        const sel   = document.getElementById('attach-step-category');
+        const input = document.getElementById('attach-step-input');
+        const file  = input && input.files ? input.files[0] : null;
+        if (!file) { UTILS.showNotification('ابتدا یک فایل انتخاب کنید', 'error'); return; }
+
+        const preview = document.getElementById('attach-step-preview');
+        if (preview) preview.innerHTML = '<i class="fas fa-spinner fa-spin text-lime-400"></i> در حال آماده‌سازی فایل...';
+
+        const task = tasks[idx];
+        const up = await this._readTaskFile(file, task);
+
+        task.attachedFile = {
+            name:        file.name,
+            size:        file.size,
+            type:        file.type || (file.name.split('.').pop() || '').toLowerCase(),
+            category:    sel ? sel.value : 'سایر',
+            storagePath: up.storagePath || null,
+            displayUrl:  up.displayUrl  || null,
+            data:        up.data        || null,
+            attachedAt:  new Date().toISOString(),
+        };
+        tasks[idx] = task;
+        this.saveMyTasks(userId, tasks);
+
+        if (typeof SupabaseDataModule !== 'undefined' &&
+            typeof SupabaseDataModule._online === 'function' && SupabaseDataModule._online()) {
+            SupabaseDataModule.saveEmployeeTask(userId, task)
+                .catch(e => console.warn('⚠️ saveEmployeeTask (attach) خطا:', e.message));
+        }
+
+        this.closeModal('attach-step-file-modal');
+        this.refreshMyTasks(userId);
+        UTILS.showNotification('📎 فایل به وظیفه پیوست شد', 'success');
+    },
+
+    // خواندن فایل وظیفه و آپلود به Storage (در صورت آنلاین بودن) — وگرنه base64
+    async _readTaskFile(file, task) {
+        let storagePath = null, displayUrl = null, data = null;
+        const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+        if (client && typeof EmployeeModule._uploadToStorage === 'function') {
+            try {
+                const fieldId = `task_${task.stepType || 'step'}_${task.stepIndex ?? 0}`;
+                storagePath = await EmployeeModule._uploadToStorage(file, task.studentId, fieldId);
+                if (storagePath && typeof EmployeeModule._getStorageUrl === 'function') {
+                    displayUrl = await EmployeeModule._getStorageUrl(storagePath);
+                }
+            } catch (e) {
+                console.warn('⚠️ _readTaskFile upload:', e.message);
+                storagePath = null;
+            }
+        }
+        if (!storagePath) {
+            data = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload  = (ev) => resolve(ev.target.result);
+                reader.onerror = () => resolve(null);
+                reader.readAsDataURL(file);
+            });
+        }
+        return { storagePath, displayUrl, data };
+    },
+
+    // حذف فایل ضمیمه از وظیفه
+    removeStepTaskFile(taskId, userId) {
+        if (!confirm('فایل ضمیمهٔ این وظیفه حذف شود؟')) return;
+        const tasks = this.getMyTasks(userId);
+        const idx = tasks.findIndex(t => t.id === taskId);
+        if (idx === -1) return;
+
+        const att = tasks[idx].attachedFile;
+        tasks[idx].attachedFile = null;
+        this.saveMyTasks(userId, tasks);
+
+        // حذف فایل آپلودشده از Storage (اگر ذخیره نشده بود)
+        try {
+            if (att && att.storagePath && !att.storagePath.startsWith('data:')) {
+                const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+                if (client && typeof EmployeeModule.FILES_BUCKET !== 'undefined') {
+                    client.storage.from(EmployeeModule.FILES_BUCKET).remove([att.storagePath]).catch(() => {});
+                }
+            }
+        } catch (e) { /* ignore */ }
+
+        if (typeof SupabaseDataModule !== 'undefined' &&
+            typeof SupabaseDataModule._online === 'function' && SupabaseDataModule._online()) {
+            SupabaseDataModule.saveEmployeeTask(userId, tasks[idx]).catch(() => {});
+        }
+        this.refreshMyTasks(userId);
+        UTILS.showNotification('فایل ضمیمه حذف شد', 'info');
+    },
+
+    // تأیید دومرحله‌ای برای تکمیل وظیفهٔ مرحله (پاپ‌آپ دو مرحله)
+    confirmStepTaskComplete(taskId, userId) {
+        const task = this.getMyTasks(userId).find(t => t.id === taskId);
+        if (!task) return;
+
+        const modalId = 'step-confirm-modal';
+        this.closeModal(modalId);
+
+        const fileNote = task.attachedFile
+            ? `<p class="text-xs text-lime-300 bg-lime-900/30 border border-lime-700/40 rounded-lg p-2 mt-2">
+                   <i class="fas fa-paperclip ml-1"></i>
+                   فایل «${task.attachedFile.name}» در فیلد «${task.attachedFile.category || 'سایر'}» پروفایل دانشجو ذخیره می‌شود.
+               </p>`
+            : '';
+
+        const html = `
+        <div id="${modalId}" class="fixed inset-0 bg-black bg-opacity-60 z-[70] flex items-center justify-center p-4">
+            <div class="bg-slate-800 rounded-xl max-w-md w-full p-5 border border-slate-600 shadow-2xl">
+                <div id="step-confirm-body">
+                    <h3 class="text-white font-bold flex items-center gap-2 mb-2">
+                        <i class="fas fa-question-circle text-lime-400"></i>
+                        تأیید انجام مرحله (۱ از ۲)
+                    </h3>
+                    <p class="text-sm text-gray-300">
+                        آیا مرحله «${task.stepName || task.title}»
+                        ${task.studentName ? `برای دانشجو <span class="text-white font-semibold">${task.studentName}</span>` : ''}
+                        انجام شده است؟
+                    </p>
+                    ${fileNote}
+                </div>
+                <div class="flex justify-end gap-2 mt-4">
+                    <button onclick="employeeModule.closeModal('${modalId}')"
+                            class="px-4 py-2 text-sm text-gray-300 bg-slate-700 hover:bg-slate-600 rounded-lg">انصراف</button>
+                    <button id="step-confirm-next"
+                            onclick="employeeModule._stepConfirmNext('${taskId}', '${userId}')"
+                            class="px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg font-medium">
+                        ادامه <i class="fas fa-arrow-left mr-1"></i>
+                    </button>
+                </div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', html);
+    },
+
+    // مرحله دوم تأیید
+    _stepConfirmNext(taskId, userId) {
+        const body = document.getElementById('step-confirm-body');
+        const btn  = document.getElementById('step-confirm-next');
+        if (!body || !btn) return;
+
+        body.innerHTML = `
+            <h3 class="text-white font-bold flex items-center gap-2 mb-2">
+                <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                تأیید نهایی (۲ از ۲)
+            </h3>
+            <p class="text-sm text-gray-300">
+                با تأیید نهایی، این مرحله در پروفایل دانشجو «تکمیل‌شده» ثبت می‌شود و
+                مرحله بعدی برای کارمند مربوطه ارسال می‌گردد. ادامه می‌دهید؟
+            </p>`;
+        btn.className = 'px-4 py-2 text-sm text-white bg-green-600 hover:bg-green-700 rounded-lg font-medium';
+        btn.innerHTML = '<i class="fas fa-check ml-1"></i>تأیید و تکمیل';
+        btn.onclick = () => {
+            employeeModule.closeModal('step-confirm-modal');
+            employeeModule.updateTaskStatus(taskId, userId);
+        };
+    },
+
     sendMessage(userId) {
         const input = document.getElementById('emp-message-input');
         const text = input.value.trim();
@@ -5172,8 +5491,73 @@ EmployeeModule.saveNewStudent = async function() {
     }
 };
 
+// ── ابزارهای مشترک مدیریت مراحل (۴ مسیر: studying/defense/requirements/educational) ──
+EmployeeModule._stepsStorageKey = function(type) {
+    return type === 'educational' ? 'custom_educational_steps'
+         : type === 'defense'      ? 'custom_defense_steps'
+         : type === 'studying'     ? 'custom_studying_steps'
+                                   : 'custom_requirements_steps';
+};
+EmployeeModule._stepsDefault = function(type) {
+    if (type === 'educational') return this.getDefaultEducationalSteps();
+    if (type === 'defense')     return this.getDefaultDefenseSteps2();
+    if (type === 'studying' && typeof this.getDefaultStudyingSteps === 'function') return this.getDefaultStudyingSteps();
+    return this.getDefaultRequirementsSteps();
+};
+// ذخیرهٔ فهرست مراحل سفارشی در دیتابیس (app_settings) — تا فقط محلی نباشد
+EmployeeModule._saveCustomStepsToDb = function(type, steps) {
+    try {
+        const sb = (typeof SupabaseDataModule !== 'undefined') ? SupabaseDataModule : null;
+        if (!sb || typeof sb.setAppSetting !== 'function') return;
+        const key = 'steps_config_' + type;
+        if (steps === null) {
+            // حذف تنظیم (بازنشانی) — مقدار خالی ذخیره می‌شود
+            sb.setAppSetting(key, []).then(ok => {
+                if (!ok) console.warn(`⚠️ حذف steps_config_${type} در دیتابیس ناموفق`);
+            });
+            return;
+        }
+        sb.setAppSetting(key, steps).then(ok => {
+            if (!ok) console.warn(`⚠️ ذخیره steps_config_${type} در دیتابیس ناموفق (app_settings را بررسی کنید)`);
+        });
+    } catch (e) { console.warn('_saveCustomStepsToDb:', e.message); }
+};
+// بارگذاری فهرست مراحل سفارشی از دیتابیس به localStorage (دیتابیس منبع حقیقت)
+EmployeeModule._loadCustomStepsFromDb = async function() {
+    try {
+        const sb = (typeof SupabaseDataModule !== 'undefined') ? SupabaseDataModule : null;
+        if (!sb || typeof sb.getAppSetting !== 'function') return;
+        const types = ['defense', 'educational', 'requirements', 'studying'];
+        await Promise.all(types.map(async (type) => {
+            const val = await sb.getAppSetting('steps_config_' + type, null);
+            if (Array.isArray(val) && val.length > 0) {
+                localStorage.setItem(this._stepsStorageKey(type), JSON.stringify(val));
+            }
+        }));
+    } catch (e) { console.warn('_loadCustomStepsFromDb:', e.message); }
+};
+
 // Show steps management modal
 EmployeeModule.showStepsManagementModal = function() {
+    // قبل از رندر، فهرست مراحل سفارشی را از دیتابیس بگیر (تا فقط محلی نباشد)
+    if (typeof EmployeeModule._loadCustomStepsFromDb === 'function') {
+        EmployeeModule._loadCustomStepsFromDb().then(() => {
+            const modal = document.getElementById('steps-management-modal');
+            if (!modal || !modal.__renderStepRow) return;
+            const fn = modal.__renderStepRow;
+            const refreshTab = (contentId, steps, type, color) => {
+                const container = modal.querySelector('#' + contentId + ' .grid');
+                if (container) {
+                    container.innerHTML = steps.map((step, i) => fn(step, i, steps.length, type, color)).join('');
+                }
+            };
+            refreshTab('steps-content-defense', EmployeeModule.getDefaultDefenseSteps2(), 'defense', 'blue');
+            refreshTab('steps-content-requirements', EmployeeModule.getDefaultRequirementsSteps(), 'requirements', 'emerald');
+            refreshTab('steps-content-educational', EmployeeModule.getDefaultEducationalSteps(), 'educational', 'green');
+            refreshTab('steps-content-studying', EmployeeModule.getDefaultStudyingSteps(), 'studying', 'cyan');
+        }).catch(() => {});
+    }
+
     // قبل از رندر، تخصیص‌ها را از Supabase sync کن
     if (typeof StepAssignmentModule !== 'undefined' &&
         typeof StepAssignmentModule.syncAssignmentsFromSupabase === 'function') {
@@ -5193,12 +5577,14 @@ EmployeeModule.showStepsManagementModal = function() {
             refreshTab('steps-content-defense', EmployeeModule.getDefaultDefenseSteps2(), 'defense', 'blue');
             refreshTab('steps-content-requirements', EmployeeModule.getDefaultRequirementsSteps(), 'requirements', 'emerald');
             refreshTab('steps-content-educational', EmployeeModule.getDefaultEducationalSteps(), 'educational', 'green');
+            refreshTab('steps-content-studying', EmployeeModule.getDefaultStudyingSteps(), 'studying', 'cyan');
         }).catch(() => {});
     }
 
     const educationalSteps = this.getDefaultEducationalSteps();
     const defenseSteps = this.getDefaultDefenseSteps2();
     const requirementsSteps = this.getDefaultRequirementsSteps();
+    const studyingSteps = (typeof this.getDefaultStudyingSteps === 'function') ? this.getDefaultStudyingSteps() : [];
     
     const renderStepRow = (step, index, total, type, color) => {
         // تخصیص کارمند (اگر StepAssignmentModule موجود باشد)
@@ -5296,6 +5682,12 @@ EmployeeModule.showStepsManagementModal = function() {
                             <i class="fas fa-graduation-cap ml-1"></i>
                             فارغ‌التحصیلی
                         </button>
+                        <button onclick="employeeModule.switchStepsTab('studying')" 
+                                id="steps-tab-studying"
+                                class="px-5 py-3 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300 transition-all whitespace-nowrap">
+                            <i class="fas fa-book-reader ml-1"></i>
+                            در حال تحصیل
+                        </button>
                     </div>
                     
                     <!-- Defense Steps Content (default visible) -->
@@ -5351,6 +5743,24 @@ EmployeeModule.showStepsManagementModal = function() {
                             ${educationalSteps.map((step, index) => renderStepRow(step, index, educationalSteps.length, 'educational', 'green')).join('')}
                         </div>
                     </div>
+
+                    <!-- Studying (در حال تحصیل) Steps Content -->
+                    <div id="steps-content-studying" style="display: none;">
+                        <div class="mb-4 flex items-center justify-between">
+                            <p class="text-gray-300 text-sm">
+                                <i class="fas fa-info-circle text-cyan-400 ml-1"></i>
+                                فاز پیش از دفاع. دانشجویان جدید به‌صورت پیش‌فرض در این مسیر قرار می‌گیرند.
+                            </p>
+                            <button onclick="employeeModule.addCustomStudyingStep()" 
+                                    class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex-shrink-0 mr-3">
+                                <i class="fas fa-plus ml-1"></i>
+                                افزودن مرحله
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            ${studyingSteps.map((step, index) => renderStepRow(step, index, studyingSteps.length, 'studying', 'cyan')).join('')}
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="p-6 border-t border-slate-700 flex justify-between items-center space-x-3 space-x-reverse">
@@ -5389,9 +5799,10 @@ EmployeeModule.switchStepsTab = function(tabName) {
     const tabColors = {
         'educational': { border: 'border-green-500', text: 'text-green-400' },
         'defense': { border: 'border-blue-500', text: 'text-black-400' },
-        'requirements': { border: 'border-emerald-500', text: 'text-emerald-400' }
+        'requirements': { border: 'border-emerald-500', text: 'text-emerald-400' },
+        'studying': { border: 'border-cyan-500', text: 'text-cyan-400' }
     };
-    ['educational', 'defense', 'requirements'].forEach(tab => {
+    ['educational', 'defense', 'requirements', 'studying'].forEach(tab => {
         const tabButton = document.getElementById(`steps-tab-${tab}`);
         const tabContent = document.getElementById(`steps-content-${tab}`);
         if (!tabButton || !tabContent) return;
@@ -5415,6 +5826,9 @@ EmployeeModule.resetAllStepsToDefault = function() {
     localStorage.removeItem('custom_educational_steps');
     localStorage.removeItem('custom_defense_steps');
     localStorage.removeItem('custom_requirements_steps');
+    localStorage.removeItem('custom_studying_steps');
+    // پاک‌کردن نسخهٔ ذخیره‌شده در دیتابیس هم تا در دستگاه‌های دیگر بازنگردد
+    ['defense','educational','requirements','studying'].forEach(t => this._saveCustomStepsToDb(t, null));
     // Notify storage listeners
     localStorage.setItem('steps_last_updated', Date.now().toString());
     this.closeModal('steps-management-modal');
@@ -5513,14 +5927,37 @@ EmployeeModule.addCustomRequirementsStep = function() {
     setTimeout(() => this.showStepsManagementModal(), 100);
 };
 
+// Add custom studying step
+EmployeeModule.addCustomStudyingStep = function() {
+    const stepName = prompt('نام مرحله جدید «در حال تحصیل» را وارد کنید:');
+    if (!stepName || stepName.trim() === '') return;
+
+    const customSteps = JSON.parse(localStorage.getItem('custom_studying_steps') || 'null');
+    const defaultSteps = customSteps || this.getDefaultStudyingSteps();
+
+    defaultSteps.push({
+        name: stepName.trim(),
+        completed: false,
+        date: null,
+        notes: '',
+        isCustom: true
+    });
+
+    localStorage.setItem('custom_studying_steps', JSON.stringify(defaultSteps));
+    this.applyStepsToAllStudents('studying', defaultSteps);
+    UTILS.showNotification('مرحله «در حال تحصیل» اضافه شد', 'success');
+
+    this.closeModal('steps-management-modal');
+    setTimeout(() => {
+        this.showStepsManagementModal();
+        setTimeout(() => this.switchStepsTab('studying'), 50);
+    }, 100);
+};
+
 // Move step up or down
 EmployeeModule.moveStep = function(type, index, direction) {
-    const storageKey = type === 'educational' ? 'custom_educational_steps'
-                     : type === 'defense'      ? 'custom_defense_steps'
-                                               : 'custom_requirements_steps';
-    const getDefault = type === 'educational' ? () => this.getDefaultEducationalSteps()
-                     : type === 'defense'      ? () => this.getDefaultDefenseSteps2()
-                                               : () => this.getDefaultRequirementsSteps();
+    const storageKey = this._stepsStorageKey(type);
+    const getDefault = () => this._stepsDefault(type);
 
     const steps = JSON.parse(localStorage.getItem(storageKey) || 'null') || getDefault();
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
@@ -5543,12 +5980,8 @@ EmployeeModule.moveStep = function(type, index, direction) {
 
 // Edit step
 EmployeeModule.editStep = function(type, index) {
-    const storageKey = type === 'educational' ? 'custom_educational_steps'
-                     : type === 'defense'      ? 'custom_defense_steps'
-                                               : 'custom_requirements_steps';
-    const getDefault = type === 'educational' ? () => this.getDefaultEducationalSteps()
-                     : type === 'defense'      ? () => this.getDefaultDefenseSteps2()
-                                               : () => this.getDefaultRequirementsSteps();
+    const storageKey = this._stepsStorageKey(type);
+    const getDefault = () => this._stepsDefault(type);
 
     const customSteps = JSON.parse(localStorage.getItem(storageKey) || 'null');
     const defaultSteps = customSteps || getDefault();
@@ -5589,12 +6022,8 @@ EmployeeModule.deleteStep = function(type, index) {
         return;
     }
     
-    const storageKey = type === 'educational' ? 'custom_educational_steps'
-                     : type === 'defense'      ? 'custom_defense_steps'
-                                               : 'custom_requirements_steps';
-    const getDefault = type === 'educational' ? () => this.getDefaultEducationalSteps()
-                     : type === 'defense'      ? () => this.getDefaultDefenseSteps2()
-                                               : () => this.getDefaultRequirementsSteps();
+    const storageKey = this._stepsStorageKey(type);
+    const getDefault = () => this._stepsDefault(type);
 
     const customSteps = JSON.parse(localStorage.getItem(storageKey) || 'null');
     const defaultSteps = customSteps || getDefault();
@@ -5633,6 +6062,7 @@ EmployeeModule.applyStepsToAllStudents = function(type, newSteps) {
     const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
     const stepKey = type === 'educational' ? 'educationalSteps'
                   : type === 'defense'      ? 'defenseSteps'
+                  : type === 'studying'     ? 'studyingSteps'
                                             : 'requirementsSteps';
     
     // Update each student
@@ -5663,23 +6093,33 @@ EmployeeModule.applyStepsToAllStudents = function(type, newSteps) {
         });
         
         student[stepKey] = updatedSteps;
+
+        // sync پیشرفت همین مسیر به Supabase (تا فقط محلی نباشد)
+        try {
+            if (typeof EmployeeModule._syncStepsToSupabase === 'function') {
+                EmployeeModule._syncStepsToSupabase(studentId, type, updatedSteps);
+            }
+        } catch (e) { /* ignore */ }
     });
     
     // Save back
     localStorage.setItem('students_data', JSON.stringify(studentsData));
 
     // پاک کردن cache گراف فلوچارت تا از مراحل جدید rebuild بشه
-    ['defense', 'educational', 'requirements'].forEach(path => {
+    ['defense', 'educational', 'requirements', 'studying'].forEach(path => {
         localStorage.removeItem(`fc_graph_${path}`);
     });
 
     // timestamp برای trigger کردن storage event در flowchart.html (cross-tab)
     localStorage.setItem('steps_last_updated', Date.now().toString());
 
+    // ذخیرهٔ فهرست مراحل در دیتابیس (app_settings)
+    if (typeof EmployeeModule._saveCustomStepsToDb === 'function') {
+        EmployeeModule._saveCustomStepsToDb(type, newSteps);
+    }
+
     // اطلاع به نمای شیت و فلوچارت (اگر در تب دیگری باز باشد)
-    const storageKey = type === 'educational' ? 'custom_educational_steps'
-                     : type === 'defense'      ? 'custom_defense_steps'
-                                               : 'custom_requirements_steps';
+    const storageKey = this._stepsStorageKey(type);
     window.dispatchEvent(new StorageEvent('storage', { key: storageKey }));
 
     console.log(`✅ Applied ${type} steps to ${Object.keys(studentsData).length} students`);
@@ -6056,8 +6496,13 @@ EmployeeModule.startStudentDefense = function(studentId) {
     // مقداردهی اولیه مراحل — دفاع و ملزومات موازی پیش می‌روند (بدون تکمیل)
     if (!student.defenseSteps || student.defenseSteps.length === 0)
         student.defenseSteps = this.getDefaultDefenseSteps2();
-    if (!student.requirementsSteps || student.requirementsSteps.length === 0)
-        student.requirementsSteps = (typeof this.getDefaultRequirementsSteps === 'function') ? this.getDefaultRequirementsSteps() : [];
+
+    // ملزومات: آرایه باید با فهرست سراسری هم‌تراز باشد (چک‌باکس‌ها بر اساس نام)
+    const globalReqSteps = (typeof this.getDefaultRequirementsSteps === 'function') ? this.getDefaultRequirementsSteps() : [];
+    const prevReqByName = {};
+    (student.requirementsSteps || []).forEach(s => { if (s && s.name) prevReqByName[s.name] = s; });
+    student.requirementsSteps = globalReqSteps.map(gs => ({ ...gs, ...(prevReqByName[gs.name] || {}) }));
+    if (!Array.isArray(student.requirementsExcluded)) student.requirementsExcluded = [];
 
     // انتقال به مسیر دفاع
     student.currentPath      = 'defense';
@@ -6072,6 +6517,9 @@ EmployeeModule.startStudentDefense = function(studentId) {
     EmployeeModule._syncStepsToSupabase(studentId, 'defense', student.defenseSteps);
     EmployeeModule._syncStepsToSupabase(studentId, 'requirements', student.requirementsSteps);
     EmployeeModule._syncStudentProfileToSupabase(studentId, { current_path: 'defense' });
+    if (typeof EmployeeModule._syncRequirementsExcludedToSupabase === 'function') {
+        EmployeeModule._syncRequirementsExcludedToSupabase(studentId, student.requirementsExcluded || []);
+    }
 
     // ثبت در DataModule (users)
     if (typeof DataModule !== 'undefined' && DataModule.updateUser) {
@@ -6218,17 +6666,27 @@ EmployeeModule.toggleRequirementStep = function(studentId, stepIndex) {
     // Set date if completed
     if (student.requirementsSteps[stepIndex].completed) {
         student.requirementsSteps[stepIndex].date = new Date().toISOString();
+
+        // ── مراحل قبلی هم خودکار تکمیل شوند (قبل از sync تا DB درست شود) ──
+        const _today = new Date().toLocaleDateString('fa-IR');
+        for (let i = 0; i < stepIndex && i < student.requirementsSteps.length; i++) {
+            const _st = student.requirementsSteps[i];
+            if (_st && !_st.completed) {
+                _st.completed = true; _st.inProgress = false; _st.paused = false;
+                _st.date = _st.date || _today;
+            }
+        }
     } else {
         student.requirementsSteps[stepIndex].date = null;
     }
-    
+
     // Save
     studentsData[studentId] = student;
     localStorage.setItem('students_data', JSON.stringify(studentsData));
 
     // ── sync پیشرفت به Supabase ──────────────────────────────────────────
     EmployeeModule._syncStepsToSupabase(studentId, 'requirements', student.requirementsSteps);
-    
+
     // Also update in DataModule if exists
     if (typeof DataModule !== 'undefined' && DataModule.updateUser) {
         DataModule.updateUser(studentId, { requirementsSteps: student.requirementsSteps });

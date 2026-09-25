@@ -286,6 +286,16 @@ const StepAssignmentModule = {
                 // ۲) مرحله دانشجو تکمیل شده؟ (فقط اگر داده دانشجو روی این دستگاه موجود باشد)
                 const student = studentsData[t.studentId];
                 if (student) {
+                    // مسیر اشتباه (مثلاً وظیفه دفاع برای دانشجوی «در حال تحصیل») → حذف
+                    // فقط وقتی currentPath صریح داریم تا حذف اشتباه رخ ندهد
+                    if (student.currentPath && !this.isStepPathEligible(student, t.stepType)) {
+                        toDelete.push(t); return;
+                    }
+                    // ملزومه‌ای که برای این دانشجو «لازم نیست» → وظیفهٔ آن حذف شود
+                    if (t.stepType === 'requirements' && t.stepName &&
+                        !this.isRequirementSelected(student, t.stepName)) {
+                        toDelete.push(t); return;
+                    }
                     let steps = null;
                     if (t.stepType === 'defense')          steps = student.defenseSteps;
                     else if (t.stepType === 'educational') steps = student.educationalSteps;
@@ -376,26 +386,33 @@ const StepAssignmentModule = {
     _createTaskIfStepActive(type, stepIndex, employeeId) {
         try {
             const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
-            const typeNames = { defense: 'گردش دفاع', educational: 'فارغ‌التحصیلی', requirements: 'ملزومات' };
+            const typeNames = { defense: 'گردش دفاع', educational: 'فارغ‌التحصیلی', requirements: 'ملزومات', studying: 'در حال تحصیل' };
             const typeName = typeNames[type] || type;
 
             Object.keys(studentsData).forEach(studentId => {
                 const student = studentsData[studentId];
                 if (!student) return;
 
-                let steps = [];
-                if (type === 'defense')      steps = student.defenseSteps      || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultDefenseSteps2()       : []);
-                else if (type === 'educational') steps = student.educationalSteps  || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultEducationalSteps()    : []);
-                else if (type === 'requirements') steps = student.requirementsSteps || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultRequirementsSteps()  : []);
+                // 🔒 فقط دانشجویان همین مسیر — جلوگیری از ارسال انبوه وظایف دفاع
+                // به دانشجویان «در حال تحصیل»
+                if (!this.isStepPathEligible(student, type)) return;
 
+                const steps = this._stepsForPath(student, type);
                 if (!steps || !steps[stepIndex]) return;
                 const thisStep = steps[stepIndex];
+
+                // اگر این ملزومه برای دانشجو لازم نیست، وظیفه‌ای ساخته نشود
+                if (type === 'requirements' && !this.isRequirementSelected(student, thisStep.name)) return;
 
                 // اگر این مرحله قبلاً تکمیل شده، نیازی نیست
                 if (thisStep.completed) return;
 
                 // بررسی: مرحله قبلی تکمیل شده باشد یا این اولین مرحله باشد
-                const prevCompleted = stepIndex === 0 || (steps[stepIndex - 1] && steps[stepIndex - 1].completed);
+                // (ملزومه‌ای که «لازم نیست» هم مثل تکمیل‌شده در نظر گرفته می‌شود)
+                const prev = steps[stepIndex - 1];
+                const prevCompleted = stepIndex === 0 ||
+                    (prev && (prev.completed ||
+                        (type === 'requirements' && !this.isRequirementSelected(student, prev.name))));
                 if (!prevCompleted) return;
 
                 // بررسی تکراری نبودن task
@@ -475,34 +492,49 @@ const StepAssignmentModule = {
      * @param {object} [opts]    - { stepName, totalSteps } - اگر مراحل از students_data نباشند
      */
     triggerNextStepTask(studentId, type, doneIndex, opts = {}) {
-        const nextIndex = doneIndex + 1;
-
-        const assignedEmployeeId = this.getAssignedEmployee(type, nextIndex);
-        if (!assignedEmployeeId) return; // مرحله بعدی به کسی تخصیص داده نشده
-
         // دریافت اطلاعات دانشجو
         const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
         const student = studentsData[studentId] || { name: studentId };
 
-        // تعیین نام مرحله بعدی
-        let nextStepName = opts.nextStepName || '';
-        if (!nextStepName) {
-            let steps = [];
-            if (type === 'defense') steps = student.defenseSteps || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultDefenseSteps2() : []);
-            else if (type === 'educational') steps = student.educationalSteps || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultEducationalSteps() : []);
-            else if (type === 'requirements') steps = student.requirementsSteps || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultRequirementsSteps() : []);
+        // 🔒 فقط دانشجویان همین مسیر
+        if (!this.isStepPathEligible(student, type)) return;
 
+        // مراحل مربوط به این مسیر
+        const steps = this._stepsForPath(student, type);
+
+        // تعیین ایندکس مرحله بعدی
+        // برای «ملزومات»، ملزومه‌های «لازم نیست» (requirementsExcluded) رد می‌شوند
+        let nextIndex = doneIndex + 1;
+        if (type === 'requirements') {
+            nextIndex = -1;
+            for (let j = doneIndex + 1; j < steps.length; j++) {
+                const s = steps[j];
+                if (!s || s.completed) continue;
+                if (!this.isRequirementSelected(student, s.name)) continue;
+                nextIndex = j;
+                break;
+            }
+            if (nextIndex === -1) return; // ملزومهٔ لازمِ بعدی وجود ندارد
+        }
+
+        const assignedEmployeeId = this.getAssignedEmployee(type, nextIndex);
+        if (!assignedEmployeeId) return; // مرحله بعدی به کسی تخصیص داده نشده
+
+        // تعیین نام مرحله بعدی
+        let nextStepName = (type === 'requirements') ? '' : (opts.nextStepName || '');
+        if (!nextStepName) {
             if (nextIndex >= steps.length) return;
             const nextStep = steps[nextIndex];
             if (!nextStep) return;
             nextStepName = nextStep.name || `مرحله ${nextIndex + 1}`;
 
-            // بررسی آیا قبلاً تکمیل شده
+            // بررسی آیا قبلاً تکمیل شده / لازم نیست
             if (nextStep.completed) return;
+            if (type === 'requirements' && !this.isRequirementSelected(student, nextStep.name)) return;
         }
 
         // نوع مسیر به فارسی
-        const typeNames = { defense: 'گردش دفاع', educational: 'فارغ‌التحصیلی', requirements: 'ملزومات' };
+        const typeNames = { defense: 'گردش دفاع', educational: 'فارغ‌التحصیلی', requirements: 'ملزومات', studying: 'در حال تحصیل' };
         const typeName = typeNames[type] || type;
 
         // ایجاد وظیفه برای کارمند
@@ -578,6 +610,152 @@ const StepAssignmentModule = {
         }
     },
 
+    // ─── تکمیل خودکار مراحل قبلی ─────────────────────────────────────────────
+
+    /**
+     * وقتی مرحله‌ای تکمیل می‌شود، همهٔ مراحل قبلیِ همان مسیر هم باید «تکمیل شده» شوند.
+     * دلیل: گردش کار ترتیبی است؛ تا مرحلهٔ N در اختیار کارمند قرار بگیرد یعنی
+     * مراحل ۰..N-1 از قبل انجام شده‌اند. بدون این کار، نمای شیت مراحل قبلی را
+     * قرمز (تکمیل‌نشده) نشان می‌داد.
+     *
+     * @param {string} studentId
+     * @param {string} stepType  - "defense" | "educational" | "requirements"
+     * @param {number} stepIndex - ایندکس مرحله‌ای که تازه تکمیل شده
+     * @param {object} [opts]    - { skipSync: true } برای جلوگیری از sync دوباره
+     * @returns {boolean} true اگر چیزی تغییر کرد
+     */
+    autoCompletePreviousSteps(studentId, stepType, stepIndex, opts = {}) {
+        try {
+            const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
+            const student = studentsData[studentId];
+            if (!student) return false;
+
+            let steps;
+            if (stepType === 'defense') {
+                if (!student.defenseSteps) student.defenseSteps = (typeof EmployeeModule !== 'undefined') ? EmployeeModule.getDefaultDefenseSteps2() : [];
+                steps = student.defenseSteps;
+            } else if (stepType === 'educational') {
+                if (!student.educationalSteps) student.educationalSteps = (typeof EmployeeModule !== 'undefined') ? EmployeeModule.getDefaultEducationalSteps() : [];
+                steps = student.educationalSteps;
+            } else if (stepType === 'requirements') {
+                if (!student.requirementsSteps) student.requirementsSteps = (typeof EmployeeModule !== 'undefined') ? EmployeeModule.getDefaultRequirementsSteps() : [];
+                steps = student.requirementsSteps;
+            } else if (stepType === 'studying') {
+                if (!student.studyingSteps) student.studyingSteps = (typeof EmployeeModule !== 'undefined') ? EmployeeModule.getDefaultStudyingSteps() : [];
+                steps = student.studyingSteps;
+            }
+            if (!Array.isArray(steps) || steps.length === 0) return false;
+
+            const today = new Date().toLocaleDateString('fa-IR');
+            let changed = false;
+
+            // ۱) مراحل ۰..stepIndex را تکمیل کن
+            for (let i = 0; i <= stepIndex && i < steps.length; i++) {
+                const st = steps[i];
+                if (!st || st.completed) continue;
+                st.completed  = true;
+                st.paused     = false;
+                st.inProgress = false;
+                st.date       = st.date || today;
+                changed = true;
+            }
+            if (changed) {
+                studentsData[studentId] = student;
+                localStorage.setItem('students_data', JSON.stringify(studentsData));
+            }
+
+            // ۲) آرایهٔ prog_ نمای شیت را هم‌راستا کن
+            const totalSteps = steps.length;
+            const progKey = `prog_${studentId}_${stepType}`;
+            let prog = [];
+            try {
+                const raw = localStorage.getItem(progKey);
+                if (raw) prog = JSON.parse(raw) || [];
+            } catch (e) { prog = []; }
+            while (prog.length < totalSteps) prog.push({ status: 0 });
+
+            let progChanged = false;
+            for (let i = 0; i <= stepIndex && i < totalSteps; i++) {
+                if (!prog[i] || prog[i].status !== 2) { prog[i] = { status: 2 }; progChanged = true; }
+            }
+            if (stepIndex + 1 < totalSteps) {
+                if (!prog[stepIndex + 1] || prog[stepIndex + 1].status !== 2) {
+                    if (prog[stepIndex + 1]?.status !== 1) { prog[stepIndex + 1] = { status: 1 }; progChanged = true; }
+                }
+            }
+            if (progChanged) {
+                localStorage.setItem(progKey, JSON.stringify(prog));
+                try { localStorage.setItem(`progts_${studentId}_${stepType}`, String(Date.now())); } catch (e) {}
+            }
+
+            // ۳) sync به Supabase
+            if (!opts.skipSync) {
+                const sb = (typeof SupabaseDataModule !== 'undefined') ? SupabaseDataModule : null;
+                if (sb && typeof sb.saveStudentProgress === 'function') {
+                    sb.saveStudentProgress(studentId, stepType, prog)
+                        .catch(e => console.warn('⚠️ autoCompletePreviousSteps sync خطا:', e.message));
+                }
+            }
+
+            return changed || progChanged;
+        } catch (e) {
+            console.warn('⚠️ autoCompletePreviousSteps خطا:', e);
+            return false;
+        }
+    },
+
+    /**
+     * آیا این ملزومه برای دانشجو لازم است؟
+     * دانشجوی بدون تنظیمات → همه لازم است.
+     */
+    isRequirementSelected(student, stepName) {
+        if (!student) return true;
+        const excluded = student.requirementsExcluded;
+        if (!Array.isArray(excluded)) return true;
+        return !excluded.includes(stepName);
+    },
+
+    /**
+     * آیا این دانشجو واقعاً در این مسیر قرار دارد؟
+     * جلوگیری از ساخته‌شدن وظیفه برای دانشجویان «در حال تحصیل» در مسیر دفاع.
+     * اگر currentPath موجود نباشد، به نشانه‌های شروع مسیر تکیه می‌کنیم.
+     */
+    isStepPathEligible(student, type) {
+        if (!student) return false;
+        const cp = student.currentPath;
+
+        if (type === 'defense') {
+            if (cp) return cp === 'defense';
+            return student.defenseStarted === true ||
+                (Array.isArray(student.defenseSteps) && student.defenseSteps.some(s => s && s.completed));
+        }
+        if (type === 'requirements') {
+            if (cp) return cp === 'defense' || cp === 'requirements';
+            return student.defenseStarted === true ||
+                (Array.isArray(student.requirementsSteps) && student.requirementsSteps.some(s => s && s.completed));
+        }
+        if (type === 'educational') {
+            if (cp) return cp === 'educational';
+            return student.graduated === true ||
+                (Array.isArray(student.educationalSteps) && student.educationalSteps.some(s => s && s.completed));
+        }
+        if (type === 'studying') {
+            if (cp) return cp === 'studying';
+            return (Array.isArray(student.studyingSteps) && student.studyingSteps.some(s => s && s.completed));
+        }
+        return true;
+    },
+
+    /** انتخاب آرایهٔ مراحل یک مسیر از دانشجو */
+    _stepsForPath(student, type) {
+        if (!student) return [];
+        if (type === 'defense')      return student.defenseSteps      || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultDefenseSteps2() : []);
+        if (type === 'educational')  return student.educationalSteps  || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultEducationalSteps() : []);
+        if (type === 'requirements') return student.requirementsSteps || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultRequirementsSteps() : []);
+        if (type === 'studying')     return student.studyingSteps     || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultStudyingSteps() : []);
+        return [];
+    },
+
     // ─── تکمیل خودکار مرحله وقتی کارمند وظیفه را انجام داد ─────────────────
 
     /**
@@ -607,15 +785,32 @@ const StepAssignmentModule = {
             } else if (stepType === 'requirements') {
                 if (!student.requirementsSteps) student.requirementsSteps = (typeof EmployeeModule !== 'undefined') ? EmployeeModule.getDefaultRequirementsSteps() : [];
                 steps = student.requirementsSteps;
+            } else if (stepType === 'studying') {
+                if (!student.studyingSteps) student.studyingSteps = (typeof EmployeeModule !== 'undefined') ? EmployeeModule.getDefaultStudyingSteps() : [];
+                steps = student.studyingSteps;
             }
 
             if (steps && steps[stepIndex]) {
+                const today = new Date().toLocaleDateString('fa-IR');
                 steps[stepIndex].completed  = true;
                 steps[stepIndex].inProgress = false;
                 steps[stepIndex].paused     = false;
-                steps[stepIndex].date = new Date().toLocaleDateString('fa-IR');
+                steps[stepIndex].date = today;
                 steps[stepIndex].completedBy = employeeId;
                 steps[stepIndex].completedByName = this.getEmployeeName(employeeId);
+
+                // مراحل قبلیِ همان مسیر هم خودکار تکمیل شوند (رفع باگ قرمز شدن مرحلهٔ قبل)
+                // عمداً روی همان آبجکت محلی انجام می‌شود تا نوشتن بعدی آن را از دست ندهد
+                for (let i = 0; i < stepIndex && i < steps.length; i++) {
+                    const st = steps[i];
+                    if (st && !st.completed) {
+                        st.completed  = true;
+                        st.inProgress = false;
+                        st.paused     = false;
+                        st.date       = st.date || today;
+                    }
+                }
+
                 studentsData[studentId] = student;
                 localStorage.setItem('students_data', JSON.stringify(studentsData));
             }
@@ -653,6 +848,7 @@ const StepAssignmentModule = {
                 if (stepType === 'defense')      totalSteps = EmployeeModule.getDefaultDefenseSteps2().length;
                 else if (stepType === 'educational') totalSteps = EmployeeModule.getDefaultEducationalSteps().length;
                 else if (stepType === 'requirements') totalSteps = EmployeeModule.getDefaultRequirementsSteps().length;
+                else if (stepType === 'studying') totalSteps = EmployeeModule.getDefaultStudyingSteps().length;
             }
 
             // بارگذاری یا ساخت آرایه پیشرفت
@@ -669,6 +865,13 @@ const StepAssignmentModule = {
 
             // تیک سبز در نمای شیت
             prog[stepIndex] = { status: STATUS_COMPLETED };
+
+            // مراحل قبلی هم سبز شوند (رفع باگ قرمز شدن مرحلهٔ قبل)
+            for (let i = 0; i < stepIndex; i++) {
+                if (!prog[i] || prog[i].status !== STATUS_COMPLETED) {
+                    prog[i] = { status: STATUS_COMPLETED };
+                }
+            }
 
             // مرحله بعدی را "در حال انجام" کن (اگر وجود دارد و هنوز کامل نشده)
             if (stepIndex + 1 < totalSteps) {
@@ -720,8 +923,8 @@ const StepAssignmentModule = {
      */
     syncAllActiveSteps() {
         const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
-        const types = ['defense', 'educational', 'requirements'];
-        const typeNames = { defense: 'گردش دفاع', educational: 'فارغ‌التحصیلی', requirements: 'ملزومات' };
+        const types = ['studying', 'defense', 'educational', 'requirements'];
+        const typeNames = { defense: 'گردش دفاع', educational: 'فارغ‌التحصیلی', requirements: 'ملزومات', studying: 'در حال تحصیل' };
         let created = 0;
 
         Object.keys(studentsData).forEach(studentId => {
@@ -729,18 +932,17 @@ const StepAssignmentModule = {
             if (!student) return;
 
             types.forEach(type => {
-                let steps = [];
-                if (type === 'defense')
-                    steps = student.defenseSteps || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultDefenseSteps2() : []);
-                else if (type === 'educational')
-                    steps = student.educationalSteps || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultEducationalSteps() : []);
-                else if (type === 'requirements')
-                    steps = student.requirementsSteps || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultRequirementsSteps() : []);
+                // 🔒 فقط دانشجویان همین مسیر (جلوگیری از ارسال وظایف دفاع به «در حال تحصیل»)
+                if (!this.isStepPathEligible(student, type)) return;
 
+                const steps = this._stepsForPath(student, type);
                 if (!steps || steps.length === 0) return;
 
                 // پیدا کردن اولین مرحله‌ای که تکمیل نشده
-                const activeIdx = steps.findIndex(s => !s.completed);
+                // برای «ملزومات»، ملزومه‌های لازم‌نبوده (requirementsExcluded) رد می‌شوند
+                const activeIdx = (type === 'requirements')
+                    ? steps.findIndex(s => s && !s.completed && this.isRequirementSelected(student, s.name))
+                    : steps.findIndex(s => s && !s.completed);
                 if (activeIdx === -1) return; // همه تموم شده
 
                 const employeeId = this.getAssignedEmployee(type, activeIdx);
@@ -794,34 +996,40 @@ const StepAssignmentModule = {
         const student = studentsData[studentId];
         if (!student) return;
 
-        let steps = [];
-        if (type === 'defense')
-            steps = student.defenseSteps || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultDefenseSteps2() : []);
-        else if (type === 'educational')
-            steps = student.educationalSteps || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultEducationalSteps() : []);
-        else if (type === 'requirements')
-            steps = student.requirementsSteps || (typeof EmployeeModule !== 'undefined' ? EmployeeModule.getDefaultRequirementsSteps() : []);
+        // 🔒 فقط دانشجویان همین مسیر
+        if (!this.isStepPathEligible(student, type)) return;
 
-        if (!steps || !steps[0] || steps[0].completed) return;
+        const steps = this._stepsForPath(student, type);
+        if (!steps || steps.length === 0) return;
 
-        const typeNames = { defense: 'گردش دفاع', educational: 'فارغ‌التحصیلی', requirements: 'ملزومات' };
-        const stepName = steps[0].name || 'مرحله ۱';
+        // برای «ملزومات» اولین ملزومهٔ لازم و تکمیل‌نشده را هدف بگیر
+        let targetIdx = 0;
+        if (type === 'requirements') {
+            targetIdx = steps.findIndex(s => s && !s.completed && this.isRequirementSelected(student, s.name));
+            if (targetIdx === -1) return;
+        } else if (steps[0].completed) {
+            return;
+        }
+
+        const targetEmployeeId = this.getAssignedEmployee(type, targetIdx) || employeeId;
+        const typeNames = { defense: 'گردش دفاع', educational: 'فارغ‌التحصیلی', requirements: 'ملزومات', studying: 'در حال تحصیل' };
+        const stepName = steps[targetIdx].name || ('مرحله ' + (targetIdx + 1));
 
         // بررسی تکراری
         const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
-        const empTasks = tasksData[employeeId] || [];
+        const empTasks = tasksData[targetEmployeeId] || [];
         const exists = empTasks.find(t =>
             t.isStepTask && t.studentId === studentId &&
-            t.stepType === type && t.stepIndex === 0 && t.status !== 'completed'
+            t.stepType === type && t.stepIndex === targetIdx && t.status !== 'completed'
         );
         if (exists) return;
 
         this.createTaskForEmployee({
-            employeeId,
+            employeeId: targetEmployeeId,
             studentId,
             studentName: student.name || studentId,
             type,
-            stepIndex: 0,
+            stepIndex: targetIdx,
             stepName,
             typeName: typeNames[type] || type,
         });

@@ -86,6 +86,7 @@
             { key: 'defenseSteps',       pathType: 'defense'      },
             { key: 'educationalSteps',   pathType: 'educational'  },
             { key: 'requirementsSteps',  pathType: 'requirements' },
+            { key: 'studyingSteps',      pathType: 'studying'     },
         ];
 
         // 🔒 ضد-بازنویسی کهنه: کلید prog_ «تازه‌ترین» وضعیت است — نما شیت با هر
@@ -192,6 +193,10 @@
             // finished_date
             if (student.finishedDate)
                 profileUpdate.finished_date = student.finishedDate;
+
+            // requirements_excluded — ملزومات لازم‌نبودهٔ هر دانشجو
+            if (Array.isArray(student.requirementsExcluded))
+                profileUpdate.requirements_excluded = student.requirementsExcluded;
 
             // students_meta — ذخیره کامل برای fallback
             profileUpdate.students_meta = {
@@ -406,7 +411,7 @@
                 if (client) {
                     const { data: profileRows, error } = await client
                         .from('profiles')
-                        .select('id, graduated, graduated_date, current_path, active, finished_date')
+                        .select('id, graduated, graduated_date, current_path, active, finished_date, requirements_excluded')
                         .in('id', studentIds)
                         .eq('role', 'student');
 
@@ -425,6 +430,8 @@
                                 s.active = p.active;
                             if (p.finished_date)
                                 s.finishedDate = p.finished_date;
+                            if (Array.isArray(p.requirements_excluded))
+                                s.requirementsExcluded = p.requirements_excluded;
                         });
                         console.log(`✅ students-sync: loaded status for ${profileRows.length} students from profiles`);
                     }

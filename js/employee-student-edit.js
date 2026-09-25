@@ -276,6 +276,21 @@ EmployeeModule.editStudentProfile = function(studentId) {
                         </div>
                     </div>
                     
+                    <!-- 📋 ملزومات مورد نیاز — انتخاب چک‌باکسی -->
+                    <div class="bg-white rounded-lg p-5 shadow-sm border border-blue-200 profile-section" id="requirements-checklist-section">
+                        <h4 class="text-lg font-bold text-gray-800 mb-2 border-b pb-2">
+                            <i class="fas fa-clipboard-check text-lime-600 ml-2"></i>
+                            ملزومات مورد نیاز
+                        </h4>
+                        <p class="text-xs text-gray-500 mb-3">
+                            تنها ملزومه‌هایی که تیک خورده‌اند برای کارمندان ارسال می‌شوند.
+                            برای حذف/اضافه کردن یک ملزومه در وسط کار، تیک آن را بردارید یا دوباره بزنید.
+                        </p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="requirements-checklist">
+                            ${EmployeeModule._getRequirementsChecklistHTML(studentId, student)}
+                        </div>
+                    </div>
+
                     <!-- 🗂 فایل ها — بالای مدارک و تصاویر -->
                     <div class="bg-white rounded-lg p-5 shadow-sm border border-blue-200 profile-section">
                         <h4 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
@@ -888,16 +903,41 @@ EmployeeModule.editStudentProfile = function(studentId) {
     // رندر ردیف‌های داورها
     this._renderDefenseRows(student.defenseNames || []);
 
-    // لود داورها از Supabase (اگر در profiles ذخیره شده ولی در کش محلی نیست)
+    // لود داورها و ملزومات لازم‌نبوده از Supabase (اگر در profiles ذخیره شده ولی در کش محلی نیست)
     (async () => {
         try {
             const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
-            if (!client || (student.defenseNames && student.defenseNames.length > 0)) return;
-            const { data } = await client.from('profiles').select('defense_names').eq('id', studentId).single();
-            if (data && Array.isArray(data.defense_names) && data.defense_names.length > 0) {
-                this._renderDefenseRows(data.defense_names);
+            if (!client) return;
+
+            // داورها
+            if (!(student.defenseNames && student.defenseNames.length > 0)) {
+                const { data } = await client.from('profiles').select('defense_names').eq('id', studentId).single();
+                if (data && Array.isArray(data.defense_names) && data.defense_names.length > 0) {
+                    this._renderDefenseRows(data.defense_names);
+                }
             }
-        } catch(e) { /* ستون defense_names ممکن است هنوز در دیتابیس نباشد */ }
+
+            // ملزومات لازم‌نبوده (requirements_excluded)
+            const { data: pData } = await client
+                .from('profiles')
+                .select('requirements_excluded')
+                .eq('id', studentId)
+                .single();
+            if (pData && Array.isArray(pData.requirements_excluded)) {
+                const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
+                if (studentsData[studentId]) {
+                    studentsData[studentId].requirementsExcluded = pData.requirements_excluded;
+                    localStorage.setItem('students_data', JSON.stringify(studentsData));
+                }
+                const cont = document.getElementById('requirements-checklist');
+                if (cont) {
+                    cont.innerHTML = EmployeeModule._getRequirementsChecklistHTML(studentId, {
+                        ...student,
+                        requirementsExcluded: pData.requirements_excluded,
+                    });
+                }
+            }
+        } catch(e) { /* ستون‌ها ممکن است هنوز در دیتابیس نباشند */ }
     })();
 
     // لود مدارک از Supabase و نمایش preview
@@ -987,6 +1027,7 @@ EmployeeModule.saveStudentProfile = async function(studentId) {
         educationalSteps:   currentStudent.educationalSteps  || this.getDefaultEducationalSteps?.() || [],
         defenseSteps:       currentStudent.defenseSteps      || this.getDefaultDefenseSteps2?.()    || [],
         requirementsSteps:  currentStudent.requirementsSteps || this.getDefaultRequirementsSteps?.()|| [],
+        requirementsExcluded: Array.isArray(currentStudent.requirementsExcluded) ? currentStudent.requirementsExcluded : [],
     };
 
     // مدارک — path های ذخیره‌شده در inputs
@@ -1178,6 +1219,104 @@ EmployeeModule._getStorageUrl = async function(path) {
     } catch { return null; }
 };
 
+// ── helper: تبدیل dataURL به Blob (برای آپلود فایل ضمیمهٔ وظیفه) ──
+EmployeeModule._dataUrlToBlob = function(dataUrl) {
+    try {
+        const parts = String(dataUrl).split(',');
+        const meta  = parts[0] || '';
+        const b64   = parts[1] || '';
+        const mime  = (meta.match(/data:([^;]+)/) || [])[1] || 'application/octet-stream';
+        const bin   = atob(b64);
+        const arr   = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        return new Blob([arr], { type: mime });
+    } catch (e) {
+        console.warn('_dataUrlToBlob:', e.message);
+        return null;
+    }
+};
+
+// ── ذخیرهٔ فایل ضمیمهٔ وظیفه در بخش «فایل ها»ی پروفایل دانشجو ──
+// attached: { name, type, category, storagePath, displayUrl, data }
+EmployeeModule.saveAttachedTaskFileToProfile = async function(studentId, category, attached) {
+    if (!studentId || !category || !attached) return false;
+    try {
+        const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+        const cu = (() => { try { return JSON.parse(localStorage.getItem('currentUser') || '{}'); } catch { return {}; } })();
+
+        let filePath   = attached.storagePath || null;
+        let displayUrl = attached.displayUrl  || null;
+
+        const rawExt = (attached.name || '').split('.').pop() || '';
+        const ext = /^[a-zA-Z0-9]{1,10}$/.test(rawExt) ? rawExt.toLowerCase() : 'bin';
+
+        // اگر مسیر Storage نداشتیم ولی base64 داشتیم → آپلود کن (وقتی آنلاین شدیم)
+        if (!filePath && attached.data && client && typeof EmployeeModule._dataUrlToBlob === 'function') {
+            const blob = EmployeeModule._dataUrlToBlob(attached.data);
+            if (blob) {
+                const safeCat = (typeof UTILS !== 'undefined' && UTILS.safeStorageKey)
+                    ? UTILS.safeStorageKey(category) : category;
+                const candidate = `${studentId}/files/${safeCat}_${Date.now()}.${ext}`;
+                const { error: upErr } = await client.storage
+                    .from(EmployeeModule.FILES_BUCKET)
+                    .upload(candidate, blob, { cacheControl: '3600', upsert: true });
+                if (upErr) {
+                    console.warn('saveAttachedTaskFileToProfile upload:', upErr.message);
+                } else {
+                    filePath = candidate;
+                    if (typeof EmployeeModule._getStorageUrl === 'function') {
+                        displayUrl = await EmployeeModule._getStorageUrl(filePath);
+                    }
+                }
+            }
+        }
+
+        if (client) {
+            const payload = {
+                student_id:       studentId,
+                category:         category,
+                file_name:        attached.name || category,
+                file_path:        filePath || attached.data || null,
+                display_url:      displayUrl || null,
+                file_type:        ext,
+                uploaded_by:      cu.id   || null,
+                uploaded_by_name: cu.name || null,
+            };
+            const { error } = await client
+                .from('student_files')
+                .upsert(payload, { onConflict: 'student_id,category' });
+            if (error) {
+                console.error('student_files upsert (task file):', error.message);
+                return false;
+            }
+        }
+
+        // کش محلی برای نمایش در دکمهٔ «فایل ها»
+        try {
+            const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
+            if (studentsData[studentId]) {
+                studentsData[studentId].profileFiles = studentsData[studentId].profileFiles || {};
+                studentsData[studentId].profileFiles[category] = filePath || attached.data || category;
+                localStorage.setItem('students_data', JSON.stringify(studentsData));
+            }
+        } catch (e) { /* ignore */ }
+
+        // اگر مودال ویرایش همان دانشجو باز است، preview به‌روز شود
+        try {
+            if (document.getElementById('edit-student-modal') &&
+                EmployeeModule.currentEditStudentId === studentId &&
+                typeof EmployeeModule._loadStudentProfileFiles === 'function') {
+                EmployeeModule._loadStudentProfileFiles(studentId);
+            }
+        } catch (e) { /* ignore */ }
+
+        return true;
+    } catch (e) {
+        console.warn('saveAttachedTaskFileToProfile:', e.message);
+        return false;
+    }
+};
+
 // تابع آپلود تصویر — با Supabase Storage
 EmployeeModule.uploadImage = function(fieldId, studentId) {
     const fileInput = document.createElement('input');
@@ -1345,6 +1484,164 @@ EmployeeModule._loadStudentDocumentPreviews = async function(studentId) {
     } catch(e) {
         console.warn('_loadStudentDocumentPreviews:', e.message);
     }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// 📋 ملزومات مورد نیاز — انتخاب چک‌باکسی per دانشجو
+// ═══════════════════════════════════════════════════════════════
+
+// HTML چک‌باکس ملزومات برای یک دانشجو
+EmployeeModule._getRequirementsChecklistHTML = function(studentId, student) {
+    const steps = (typeof EmployeeModule.getDefaultRequirementsSteps === 'function')
+        ? EmployeeModule.getDefaultRequirementsSteps() : [];
+    const excluded = Array.isArray(student?.requirementsExcluded) ? student.requirementsExcluded : [];
+
+    if (!steps.length) {
+        return '<p class="text-sm text-gray-500">ملزومه‌ای تعریف نشده است.</p>';
+    }
+
+    return steps.map((st, i) => {
+        const name = st.name || ('مرحله ' + (i + 1));
+        const checked = !excluded.includes(name);
+        const safeName = String(name).replace(/"/g, '&quot;');
+        return `
+        <label class="profile-field flex items-center gap-3 rounded-lg p-3 border cursor-pointer transition-all
+                      ${checked ? 'bg-lime-50 border-lime-300' : 'bg-gray-50 border-gray-200'}">
+            <input type="checkbox" ${checked ? 'checked' : ''}
+                   data-req-name="${safeName}"
+                   onchange="employeeModule.toggleStudentRequirement('${studentId}', '${safeName}', this.checked)"
+                   class="w-5 h-5 text-lime-600 bg-white border-gray-300 rounded focus:ring-lime-500">
+            <div class="flex-1">
+                <div class="font-bold text-gray-800">${name}</div>
+                <div class="text-xs ${checked ? 'text-lime-600' : 'text-gray-400'}">${checked ? 'لازم است' : 'لازم نیست'}</div>
+            </div>
+        </label>`;
+    }).join('');
+};
+
+// فعال/غیرفعال کردن یک ملزومه برای این دانشجو
+EmployeeModule.toggleStudentRequirement = function(studentId, stepName, checked) {
+    const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
+    const student = studentsData[studentId];
+    if (!student) return;
+
+    // آرایهٔ ملزومات را با فهرست سراسری هم‌تراز کن (حفظ تکمیل‌شده‌ها بر اساس نام)
+    const globalSteps = (typeof EmployeeModule.getDefaultRequirementsSteps === 'function')
+        ? EmployeeModule.getDefaultRequirementsSteps() : [];
+    const prevByName = {};
+    (student.requirementsSteps || []).forEach(s => { if (s && s.name) prevByName[s.name] = s; });
+    student.requirementsSteps = globalSteps.map(gs => ({ ...gs, ...(prevByName[gs.name] || {}) }));
+
+    // به‌روزرسانی requirementsExcluded
+    const excluded = Array.isArray(student.requirementsExcluded) ? student.requirementsExcluded.slice() : [];
+    const exIdx = excluded.indexOf(stepName);
+    if (checked) {
+        if (exIdx >= 0) excluded.splice(exIdx, 1);
+    } else {
+        if (exIdx === -1) excluded.push(stepName);
+    }
+    student.requirementsExcluded = excluded;
+
+    // به‌روزرسانی وضعیت خود مرحله
+    const targetIdx = student.requirementsSteps.findIndex(s => s && s.name === stepName);
+    if (targetIdx >= 0) {
+        const st = student.requirementsSteps[targetIdx];
+        if (!checked) {
+            // «لازم نیست» → مثل تکمیل‌شده در نظر گرفته می‌شود تا گردش کار بلاک نشود
+            st.excluded   = true;
+            st.completed  = true;
+            st.paused     = false;
+            st.inProgress = false;
+            st.date       = st.date || new Date().toLocaleDateString('fa-IR');
+        } else {
+            st.excluded = false;
+            // اگر واقعاً توسط کسی تکمیل نشده بود، برگردان به ناتمام
+            if (!st.completedBy) {
+                st.completed  = false;
+                st.paused     = false;
+                st.inProgress = false;
+                st.date       = null;
+            }
+        }
+    }
+
+    studentsData[studentId] = student;
+    localStorage.setItem('students_data', JSON.stringify(studentsData));
+
+    // آرایهٔ prog_ نمای شیت
+    try {
+        const progKey = `prog_${studentId}_requirements`;
+        let prog = [];
+        try { const raw = localStorage.getItem(progKey); if (raw) prog = JSON.parse(raw) || []; } catch (e) { prog = []; }
+        while (prog.length < student.requirementsSteps.length) prog.push({ status: 0 });
+        if (targetIdx >= 0) {
+            if (!checked) {
+                prog[targetIdx] = { status: 2 };      // تکمیل‌شده (لازم نیست)
+            } else if (!student.requirementsSteps[targetIdx].completed) {
+                prog[targetIdx] = { status: 0 };      // ناتمام
+            }
+        }
+        localStorage.setItem(progKey, JSON.stringify(prog));
+        try { localStorage.setItem(`progts_${studentId}_requirements`, String(Date.now())); } catch (e) {}
+        if (typeof EmployeeModule._syncStepsToSupabase === 'function') {
+            EmployeeModule._syncStepsToSupabase(studentId, 'requirements', student.requirementsSteps);
+        }
+    } catch (e) { console.warn('toggleStudentRequirement prog:', e.message); }
+
+    // sync به Supabase (profiles.requirements_excluded)
+    EmployeeModule._syncRequirementsExcludedToSupabase(studentId, excluded);
+
+    // حذف وظایفِ در انتظارِ این ملزومه از کارتابل همهٔ کارمندان (وقتی «لازم نیست» شد)
+    if (!checked) {
+        try {
+            const tasksData = JSON.parse(localStorage.getItem('employee_tasks') || '{}');
+            const removedIds = [];
+            Object.keys(tasksData).forEach(empId => {
+                const arr = tasksData[empId] || [];
+                const keep = arr.filter(t => {
+                    const isTarget = t.isStepTask &&
+                        t.studentId === studentId &&
+                        t.stepType === 'requirements' &&
+                        (t.stepName === stepName || t.stepIndex === targetIdx) &&
+                        t.status !== 'completed';
+                    if (isTarget) removedIds.push(t.id);
+                    return !isTarget;
+                });
+                tasksData[empId] = keep;
+            });
+            if (removedIds.length > 0) {
+                localStorage.setItem('employee_tasks', JSON.stringify(tasksData));
+                if (typeof SupabaseDataModule !== 'undefined' &&
+                    typeof SupabaseDataModule.deleteEmployeeTaskById === 'function') {
+                    removedIds.forEach(id =>
+                        SupabaseDataModule.deleteEmployeeTaskById(id).catch(() => {}));
+                }
+            }
+        } catch (e) { console.warn('toggleStudentRequirement task cleanup:', e.message); }
+    }
+
+    // به‌روزرسانی UI چک‌باکس
+    const cont = document.getElementById('requirements-checklist');
+    if (cont) cont.innerHTML = EmployeeModule._getRequirementsChecklistHTML(studentId, student);
+
+    UTILS.showNotification(
+        checked ? `«${stepName}» به ملزومات اضافه شد` : `«${stepName}» از ملزومات حذف شد`,
+        'success'
+    );
+};
+
+// sync ستون requirements_excluded به profiles
+EmployeeModule._syncRequirementsExcludedToSupabase = function(studentId, excluded) {
+    try {
+        const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+        if (!client) return;
+        client.from('profiles')
+            .update({ requirements_excluded: Array.isArray(excluded) ? excluded : [] })
+            .eq('id', studentId)
+            .then(({ error }) => {
+                if (error) console.warn('requirements_excluded sync:', error.message);
+            });
+    } catch (e) { console.warn('_syncRequirementsExcludedToSupabase:', e.message); }
 };
 
 // ═══════════════════════════════════════════════════════════════

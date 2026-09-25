@@ -1126,8 +1126,18 @@
                 if (currentFilter === 'in-progress') return done > 0 && done < prog.length;
                 return true;
             });
-            // ترتیب دلخواه سطرها (drag & drop)
-            filtered = applyRowOrder(filtered, _rowOrderCache[currentPath] || []);
+            // مرتب‌سازی پله‌ای: تکمیل‌شده‌ترین دانشجو بالا، تکمیل‌نشده‌ها پایین.
+            // ترتیب دلخواه (drag) فقط به‌عنوان تی‌بِرِیکر برای تعداد مساوی استفاده می‌شود.
+            const _ro    = _rowOrderCache[currentPath] || [];
+            const _rank  = new Map(_ro.map((id, i) => [id, i]));
+            const _doneOf = (s) => ((s.progress[currentPath] || []).filter(p => (p && p.status) === STATUS_COMPLETED).length);
+            filtered = filtered.slice().sort((a, b) => {
+                const d = _doneOf(b) - _doneOf(a);
+                if (d !== 0) return d;
+                const ra = _rank.has(a.id) ? _rank.get(a.id) : Number.MAX_SAFE_INTEGER;
+                const rb = _rank.has(b.id) ? _rank.get(b.id) : Number.MAX_SAFE_INTEGER;
+                return ra - rb;
+            });
             
             // Body
             if (filtered.length === 0) {
@@ -1209,7 +1219,17 @@
             else if (current === STATUS_CURRENT)    prog[stageIndex].status = STATUS_COMPLETED;
             else if (current === STATUS_COMPLETED)  prog[stageIndex].status = STATUS_PAUSED;
             else                                    prog[stageIndex].status = STATUS_INCOMPLETE;
-            
+
+            // ── رفع باگ «قرمز شدن مرحلهٔ قبلی»: با تکمیل یک مرحله،
+            //    همهٔ مراحل قبلیِ همان مسیر هم خودکار تکمیل می‌شوند ──
+            if (prog[stageIndex].status === STATUS_COMPLETED) {
+                for (let i = 0; i < stageIndex; i++) {
+                    if (prog[i] && prog[i].status !== STATUS_COMPLETED) {
+                        prog[i].status = STATUS_COMPLETED;
+                    }
+                }
+            }
+
             saveProgress(studentId, currentPath, prog);
 
             // ── sync وضعیت به students_data ──────────────────────────────────
@@ -1307,6 +1327,10 @@
             // ── اگر وضعیت به "تکمیل شده" رسید، وظیفه مرحله بعدی را trigger کن
             if (prog[stageIndex].status === STATUS_COMPLETED && window.StepAssignmentModule) {
                 try {
+                    // مراحل قبلی را در students_data هم تکمیل کن (رفع باگ قرمز)
+                    if (typeof window.StepAssignmentModule.autoCompletePreviousSteps === 'function') {
+                        window.StepAssignmentModule.autoCompletePreviousSteps(studentId, currentPath, stageIndex);
+                    }
                     const studentsData = JSON.parse(localStorage.getItem('students_data') || '{}');
                     if (!studentsData[studentId]) {
                         studentsData[studentId] = { id: studentId, name: student.name, field: student.major };

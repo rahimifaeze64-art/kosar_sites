@@ -573,6 +573,7 @@ const SupabaseDataModule = {
                 { pt: 'defense',      key: 'defenseSteps'       },
                 { pt: 'educational',  key: 'educationalSteps'   },
                 { pt: 'requirements', key: 'requirementsSteps'  },
+                { pt: 'studying',     key: 'studyingSteps'      },
             ];
 
             let changed = 0;
@@ -602,6 +603,7 @@ const SupabaseDataModule = {
                     if (typeof EmployeeModule !== 'undefined') {
                         const fn = pt === 'defense' ? EmployeeModule.getDefaultDefenseSteps2
                                  : pt === 'educational' ? EmployeeModule.getDefaultEducationalSteps
+                                 : pt === 'studying' ? EmployeeModule.getDefaultStudyingSteps
                                  : EmployeeModule.getDefaultRequirementsSteps;
                         if (typeof fn === 'function') {
                             const def = fn.call(EmployeeModule);
@@ -976,12 +978,13 @@ const SupabaseDataModule = {
                 .from('employee_tasks')
                 .upsert(row, { onConflict: 'id' });
 
-            // fallback: اگر ستون student_name هنوز در جدول اضافه نشده باشد
-            // (قبل از اجرای supabase/fix_step_assignments_and_student_name.sql)
-            if (error && /student_name|PGRST204/i.test((error.message || '') + ' ' + (error.code || ''))) {
-                console.warn('⚠️ ستون student_name در employee_tasks نیست — بدون آن ذخیره می‌شود. مایگریشن SQL را اجرا کنید');
+            // fallback: اگر ستون student_name یا attached_file هنوز در جدول اضافه نشده باشد
+            // (قبل از اجرای mایگریشن‌های مربوطه) بدون آن‌ها ذخیره می‌شود
+            if (error && /student_name|attached_file|PGRST204/i.test((error.message || '') + ' ' + (error.code || ''))) {
+                console.warn('⚠️ ستون student_name/attached_file در employee_tasks نیست — بدون آن‌ها ذخیره می‌شود. مایگریشن SQL را اجرا کنید');
                 const row2 = { ...row };
                 delete row2.student_name;
+                delete row2.attached_file;
                 ({ error } = await this._db()
                     .from('employee_tasks')
                     .upsert(row2, { onConflict: 'id' }));
@@ -2162,6 +2165,7 @@ const SupabaseDataModule = {
             voice_message:  t.voiceMessage   || null,
             voice_duration: t.voiceDuration  || null,
             additional_text: t.additionalText || null,
+            attached_file:  t.attachedFile   || null,
             order_id:       t.orderId        || null,
             reject_note:    t.rejectNote     || null,
             approved_at:    t.approvedAt     || null,
@@ -2189,6 +2193,7 @@ const SupabaseDataModule = {
             voiceMessage:   r.voice_message  || null,
             voiceDuration:  r.voice_duration || null,
             additionalText: r.additional_text || null,
+            attachedFile:   r.attached_file  || null,
             orderId:        r.order_id       || null,
             createdBy:      r.created_by     || null,
             rejectNote:     r.reject_note    || null,
