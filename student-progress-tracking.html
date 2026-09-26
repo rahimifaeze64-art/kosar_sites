@@ -240,6 +240,114 @@
             color: #1e3a8a;
             border-color: #93c5fd;
         }
+
+        /* ── پاپ‌آپ انتخاب وضعیت مرحله ───────────────── */
+        .stage-popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            z-index: 9999;
+        }
+        .stage-popup-overlay.open { display: flex; }
+        .stage-popup-card {
+            width: 100%;
+            max-width: 380px;
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.28);
+            padding: 16px 18px 12px;
+            animation: stage-popup-in 0.18s ease-out;
+        }
+        @keyframes stage-popup-in {
+            from { opacity: 0; transform: translateY(14px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .stage-popup-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 10px;
+            margin-bottom: 12px;
+        }
+        .stage-popup-title { font-size: 15px; font-weight: bold; color: #1f2937; }
+        .stage-popup-sub   { font-size: 12px; color: #6b7280; margin-top: 3px; }
+        .stage-popup-close {
+            border: none;
+            background: #f3f4f6;
+            color: #4b5563;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .stage-popup-close:hover { background: #fee2e2; color: #b91c1c; }
+
+        /* گزینه‌های وضعیت داخل پاپ‌آپ */
+        .status-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 9px 12px;
+            margin-bottom: 8px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            background: #fff;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.18s;
+            text-align: right;
+        }
+        .status-option:hover { background: #f9fafb; transform: translateX(-3px); }
+        .status-option .status-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+        .status-option .status-text { flex: 1; }
+        .status-option[data-status="0"] .status-icon { background: linear-gradient(135deg, #f87171, #dc2626); }
+        .status-option[data-status="1"] .status-icon { background: linear-gradient(135deg, #60a5fa, #2563eb); }
+        .status-option[data-status="2"] .status-icon { background: linear-gradient(135deg, #34d399, #059669); }
+        .status-option[data-status="3"] .status-icon { background: linear-gradient(135deg, #9ca3af, #4b5563); }
+        .status-option[data-status="0"].is-active { border-color: #dc2626; background: #fef2f2; }
+        .status-option[data-status="1"].is-active { border-color: #2563eb; background: #eff6ff; }
+        .status-option[data-status="2"].is-active { border-color: #059669; background: #ecfdf5; }
+        .status-option[data-status="3"].is-active { border-color: #4b5563; background: #f3f4f6; }
+        .status-current-badge {
+            font-size: 10px;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: #1f2937;
+            color: #fff;
+            white-space: nowrap;
+        }
+        .stage-popup-hint {
+            font-size: 11px;
+            color: #9ca3af;
+            text-align: center;
+            margin-top: 2px;
+        }
     </style>
 </head>
 <body>
@@ -274,6 +382,24 @@
         </div>
     </div>
     
+    <!-- ── پاپ‌آپ انتخاب وضعیت مرحله (با کلیک روی دایرهٔ هر مرحله باز می‌شود) ── -->
+    <div class="stage-popup-overlay" id="stage-popup"
+         onclick="if (event.target === this) closeStageStatusPopup();">
+        <div class="stage-popup-card" role="dialog" aria-modal="true" aria-labelledby="stage-popup-step">
+            <div class="stage-popup-head">
+                <div>
+                    <div class="stage-popup-title" id="stage-popup-step">وضعیت مرحله</div>
+                    <div class="stage-popup-sub" id="stage-popup-student">—</div>
+                </div>
+                <button type="button" class="stage-popup-close" onclick="closeStageStatusPopup()" title="بستن">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="stage-popup-options"><!-- گزینه‌های وضعیت با JS ساخته می‌شوند --></div>
+            <div class="stage-popup-hint">برای بستن، بیرون کادر کلیک کنید یا Esc بزنید</div>
+        </div>
+    </div>
+
     <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
     
     <!-- Supabase SDK + ماژول‌ها — تا شیت حتی به‌صورت مستقیم (بدون iframe والد)
@@ -1233,7 +1359,8 @@
 
                     const _title = status === STATUS_EXCLUDED
                         ? 'لازم نیست (حذف‌شده)'
-                        : (status === 0 ? 'تکمیل نشده' : status === 1 ? 'در حال انجام' : status === 2 ? 'تکمیل شده' : 'متوقف شده');
+                        : (status === 0 ? 'تکمیل نشده' : status === 1 ? 'در حال انجام' : status === 2 ? 'تکمیل شده' : 'متوقف شده')
+                          + ' — برای انتخاب وضعیت کلیک کنید';
                     const _onclick = status === STATUS_EXCLUDED ? '' : `onclick="toggleStage('${student.id}', ${stageIdx})"`;
 
                     bodyHTML += `<td>
@@ -1266,12 +1393,120 @@
             }
         }
         
+        // ── کلیک روی دایرهٔ هر مرحله → پاپ‌آپ انتخاب وضعیت ──────────────
+        // (به‌جای چرخش خودکار وضعیت‌ها، کاربر خودش وضعیت را انتخاب می‌کند:
+        //  تکمیل شده / در حال انجام / تکمیل نشده / متوقف شده)
+        let _stagePopupCtx = null;   // { studentId, stageIndex }
+        const STAGE_STATUS_OPTIONS = [
+            { value: STATUS_COMPLETED,  label: 'تکمیل شده',    icon: 'fa-check' },
+            { value: STATUS_CURRENT,    label: 'در حال انجام', icon: 'fa-hourglass-half' },
+            { value: STATUS_INCOMPLETE, label: 'تکمیل نشده',   icon: 'fa-times' },
+            { value: STATUS_PAUSED,     label: 'متوقف شده',    icon: 'fa-pause' }
+        ];
+
         function toggleStage(studentId, stageIndex) {
+            const student = students.find(s => s.id === studentId);
+            if (!student) return;
+
+            const prog = student.progress[currentPath] || [];
+            const current = (prog[stageIndex] && prog[stageIndex].status) ?? STATUS_INCOMPLETE;
+
+            // ملزومهٔ «لازم نیست» قابل کلیک/تغییر نیست
+            if (current === STATUS_EXCLUDED) {
+                if (window.UTILS && UTILS.showNotification) {
+                    UTILS.showNotification('این ملزومه برای این دانشجو «لازم نیست» و غیرفعال است', 'info');
+                }
+                return;
+            }
+
+            openStageStatusPopup(studentId, stageIndex);
+        }
+
+        // ── باز کردن پاپ‌آپ انتخاب وضعیت مرحله ────────────────────────
+        function openStageStatusPopup(studentId, stageIndex) {
+            const student = students.find(s => s.id === studentId);
+            if (!student) return;
+
+            const box = document.getElementById('stage-popup');
+            if (!box) return;
+
+            const prog = student.progress[currentPath] || [];
+            const current = (prog[stageIndex] && prog[stageIndex].status) ?? STATUS_INCOMPLETE;
+            const stepName = (STEPS[currentPath] && STEPS[currentPath][stageIndex])
+                ? STEPS[currentPath][stageIndex]
+                : ('مرحله ' + (stageIndex + 1));
+
+            _stagePopupCtx = { studentId: studentId, stageIndex: stageIndex };
+
+            const titleEl = document.getElementById('stage-popup-step');
+            const subEl   = document.getElementById('stage-popup-student');
+            const optEl   = document.getElementById('stage-popup-options');
+
+            if (titleEl) titleEl.textContent = stepName;
+            if (subEl)   subEl.textContent   = student.name
+                + (student.major ? ' — ' + student.major : '')
+                + ' • مرحله ' + (stageIndex + 1);
+
+            if (optEl) {
+                optEl.innerHTML = STAGE_STATUS_OPTIONS.map(function (opt) {
+                    const active = (opt.value === current) ? ' is-active' : '';
+                    const badge  = (opt.value === current)
+                        ? '<span class="status-current-badge">وضعیت فعلی</span>'
+                        : '';
+                    return '<button type="button" class="status-option' + active + '"'
+                        + ' data-status="' + opt.value + '"'
+                        + ' onclick="chooseStageStatus(' + opt.value + ')">'
+                        + '<span class="status-icon"><i class="fas ' + opt.icon + '"></i></span>'
+                        + '<span class="status-text">' + opt.label + '</span>' + badge
+                        + '</button>';
+                }).join('');
+            }
+
+            box.classList.add('open');
+        }
+
+        // ── بستن پاپ‌آپ انتخاب وضعیت ──
+        function closeStageStatusPopup() {
+            const box = document.getElementById('stage-popup');
+            if (box) box.classList.remove('open');
+            _stagePopupCtx = null;
+        }
+
+        // ── انتخاب وضعیت در پاپ‌آپ → اعمال و ذخیره ───────────────────
+        function chooseStageStatus(newStatus) {
+            if (!_stagePopupCtx) return;
+            const ctx = _stagePopupCtx;
+            const student = students.find(s => s.id === ctx.studentId);
+            const prog = (student && student.progress[currentPath]) || [];
+            const before = (prog[ctx.stageIndex] && prog[ctx.stageIndex].status) ?? STATUS_INCOMPLETE;
+
+            closeStageStatusPopup();
+
+            // همان وضعیت فعلی انتخاب شد → بدون تغییر و بدون نوشتن در دیتابیس
+            if (before === newStatus) return;
+
+            applyStageStatus(ctx.studentId, ctx.stageIndex, newStatus);
+
+            const opt = STAGE_STATUS_OPTIONS.find(function (o) { return o.value === newStatus; });
+            if (opt && window.UTILS && UTILS.showNotification) {
+                UTILS.showNotification('وضعیت مرحله به «' + opt.label + '» تغییر کرد', 'success', 2500);
+            }
+        }
+
+        // بستن پاپ‌آپ با کلید Esc
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeStageStatusPopup();
+        });
+
+        // ── اعمال وضعیتِ انتخاب‌شده روی مرحله (منطق پیشین toggleStage) ──
+        function applyStageStatus(studentId, stageIndex, newStatus) {
             const student = students.find(s => s.id === studentId);
             if (!student) return;
             
             const prog = student.progress[currentPath];
-            const current = prog[stageIndex]?.status ?? STATUS_INCOMPLETE;
+            if (!Array.isArray(prog)) return;
+
+            const current = (prog[stageIndex] && prog[stageIndex].status) ?? STATUS_INCOMPLETE;
 
             // ملزومهٔ «لازم نیست» قابل کلیک/تغییر نیست
             if (current === STATUS_EXCLUDED) {
@@ -1281,11 +1516,13 @@
                 return;
             }
             
-            // Cycle: incomplete → current → completed → paused → incomplete
-            if (current === STATUS_INCOMPLETE)      prog[stageIndex].status = STATUS_CURRENT;
-            else if (current === STATUS_CURRENT)    prog[stageIndex].status = STATUS_COMPLETED;
-            else if (current === STATUS_COMPLETED)  prog[stageIndex].status = STATUS_PAUSED;
-            else                                    prog[stageIndex].status = STATUS_INCOMPLETE;
+            // ── وضعیت انتخابی کاربر از پاپ‌آپ (0|1|2|3) ──
+            if (!prog[stageIndex]) prog[stageIndex] = { status: STATUS_INCOMPLETE };
+
+            // همان وضعیتِ فعلی انتخاب شده → بدون تغییر و بدون نوشتن در دیتابیس
+            if (current === newStatus) return;
+
+            prog[stageIndex].status = newStatus;
 
             // ── رفع باگ «قرمز شدن مرحلهٔ قبلی»: با تکمیل یک مرحله،
             //    همهٔ مراحل قبلیِ همان مسیر هم خودکار تکمیل می‌شوند
