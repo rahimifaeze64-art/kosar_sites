@@ -163,6 +163,34 @@
         .ctx-item.danger { color: #d76767; }
         .ctx-item.danger:hover { background: #fef2f2; }
         .ctx-sep { height: 1px; background: #e2e8f0; margin: 4px 0; }
+
+        /* ── Node info popup ── */
+        #node-info {
+            position: fixed;
+            z-index: 500;
+            width: 300px;
+            max-width: calc(100vw - 24px);
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-top: 4px solid #3b82f6;
+            border-radius: 12px;
+            box-shadow: 0 12px 36px rgba(0,0,0,.18);
+            display: none;
+            overflow: hidden;
+            direction: rtl;
+        }
+        #node-info .ni-head {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 12px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;
+        }
+        #node-info .ni-title { font-size: 13px; font-weight: 800; color: #1e293b; }
+        #node-info .ni-close { cursor: pointer; color: #94a3b8; background: none; border: none; font-size: 15px; }
+        #node-info .ni-close:hover { color: #ef4444; }
+        #node-info .ni-body { padding: 10px 12px; font-size: 12px; color: #334155; line-height: 2; }
+        #node-info .ni-row { display: flex; justify-content: space-between; gap: 10px; }
+        #node-info .ni-row b { font-weight: 700; color: #0f172a; }
+        #node-info .ni-badge { padding: 2px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 700; }
+        #node-info .ni-sep { height: 1px; background: #f1f5f9; margin: 6px 0; }
     </style>
 </head>
 <body>
@@ -178,18 +206,7 @@
     </div>
 </div>
 
-<!-- Path tabs -->
-<div id="path-tabs">
-    <div class="path-tab active" data-path="defense" onclick="switchPath('defense')">
-        <i class="fas fa-shield-alt" style="margin-left:6px"></i>گردش دفاع
-    </div>
-    <div class="path-tab" data-path="requirements" onclick="switchPath('requirements')">
-        <i class="fas fa-clipboard-list" style="margin-left:6px"></i>ملزومات
-    </div>
-    <div class="path-tab" data-path="educational" onclick="switchPath('educational')">
-        <i class="fas fa-graduation-cap" style="margin-left:6px"></i>فارغ‌التحصیلی
-    </div>
-</div>
+<!-- مسیر پیش‌فرض: گردش دفاع (دکمه‌های تعویض مسیر تحصیلی حذف شدند) -->
 
 <!-- Canvas -->
 <div id="canvas-wrap">
@@ -245,9 +262,17 @@
     </select>
 </div>
 
+<!-- Node info popup -->
+<div id="node-info">
+    <div class="ni-head">
+        <span class="ni-title" id="ni-title">اطلاعات مرحله</span>
+        <button class="ni-close" onclick="hideNodeInfo()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="ni-body" id="ni-body"></div>
+</div>
+
 <!-- Context menu -->
-<div id="ctx-menu">
-    <div class="ctx-item" onclick="ctxEdit()"><i class="fas fa-edit" style="color:#60a5fa"></i>ویرایش متن</div>
+<div id="ctx-menu">    <div class="ctx-item" onclick="ctxEdit()"><i class="fas fa-edit" style="color:#60a5fa"></i>ویرایش متن</div>
     <div class="ctx-item" onclick="ctxAddBelow()"><i class="fas fa-plus-circle" style="color:#22c55e"></i>افزودن مرحله بعد</div>
     <div class="ctx-item" onclick="ctxAddCondition()"><i class="fas fa-diamond" style="color:#f59e0b"></i>افزودن شرط بعد</div>
     <div class="ctx-sep"></div>
@@ -299,6 +324,7 @@ let isPanning = false, panStartX = 0, panStartY = 0, panStartCamX = 0, panStartC
 let selectedNodeId = null;
 let ctxTargetId = null;
 let idCounter = 0;
+let _pressX = 0, _pressY = 0;
 
 const canvas = document.getElementById('fc');
 const ctx    = canvas.getContext('2d');
@@ -707,6 +733,7 @@ function switchPath(path) {
     currentPath = path;
     connecting  = null;
     selectedNodeId = null;
+    hideNodeInfo();
     document.querySelectorAll('.path-tab').forEach(tb => {
         tb.classList.toggle('active', tb.dataset.path === path);
     });
@@ -727,6 +754,7 @@ function saveCurrentPath() {
 
 function onStudentChange() {
     currentStudent = document.getElementById('student-sel').value;
+    hideNodeInfo();
     // Refresh prog status on rect nodes for all paths
     ['defense','requirements','educational'].forEach(p => {
         if (!graphs[p]) return;
@@ -784,6 +812,8 @@ document.addEventListener('keydown', onKeyDown);
 
 function onMouseDown(e) {
     hideCtxMenu();
+    hideNodeInfo();
+    _pressX = e.clientX; _pressY = e.clientY;
     if (e.button === 1 || currentTool === 'pan') {
         isPanning = true;
         panStartX = e.clientX; panStartY = e.clientY;
@@ -877,6 +907,13 @@ function onMouseUp(e) {
         saveGraph(currentPath);
         dragging = null;
     }
+    // کلیک (بدون جابه‌جایی) روی یک مرحله → نمایش پنجرهٔ اطلاعات
+    const dist = Math.abs(e.clientX - _pressX) + Math.abs(e.clientY - _pressY);
+    if (currentTool === 'select' && dist < 6 && selectedNodeId) {
+        const g = getOrBuildGraph(currentPath);
+        const n = g.nodes.find(nd => nd.id === selectedNodeId);
+        if (n && n.type === NT_RECT) showNodeInfo(n, e.clientX, e.clientY);
+    }
 }
 
 function onWheel(e) {
@@ -926,6 +963,7 @@ function onKeyDown(e) {
     if (e.key === '+' || e.key === '=') zoomIn();
     if (e.key === '-') zoomOut();
     if (e.key === ' ') { e.preventDefault(); setTool('pan'); }
+    if (e.key === 'Escape') { hideNodeInfo(); hideCtxMenu(); }
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -939,6 +977,119 @@ function showCtxMenu(x, y) {
 }
 function hideCtxMenu() {
     document.getElementById('ctx-menu').style.display = 'none';
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  NODE INFO POPUP — اطلاعات مختصر مرحله (کارتابل، مدت عدم تکمیل، دانشجو)
+// ══════════════════════════════════════════════════════════════════
+const PATH_LABEL = { defense: 'گردش دفاع', requirements: 'ملزومات', educational: 'فارغ‌التحصیلی', studying: 'در حال تحصیل' };
+
+function _niLoadJSON(key, fb) {
+    try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fb; } catch (e) { return fb; }
+}
+function _niUsers() {
+    const map = {};
+    try {
+        Object.values(_niLoadJSON('students_data', {}) || {}).forEach(s => { if (s && s.id) map[s.id] = s; });
+    } catch (e) {}
+    try {
+        (_niLoadJSON('edu_system_users', []) || []).forEach(u => { if (u && u.id) map[u.id] = Object.assign({}, map[u.id] || {}, u); });
+    } catch (e) {}
+    return map;
+}
+function _niEmpName(id) {
+    if (!id) return '';
+    const u = _niUsers()[id];
+    return (u && (u.name || u.username)) || String(id);
+}
+function _niTaskEmps(studentId, path, stepIndex) {
+    const out = [];
+    const tasksData = _niLoadJSON('employee_tasks', {}) || {};
+    Object.keys(tasksData).forEach(empId => {
+        const arr = Array.isArray(tasksData[empId]) ? tasksData[empId] : [];
+        arr.forEach(t => {
+            if (!t || !t.isStepTask) return;
+            if (t.status === 'completed' || t.status === 'approved') return;
+            if (String(t.studentId) === String(studentId) && t.stepType === path && t.stepIndex === stepIndex) {
+                if (out.indexOf(empId) === -1) out.push(empId);
+            }
+        });
+    });
+    return out;
+}
+function _niStatusMeta(status) {
+    if (status === STATUS_COMPLETED) return { label: 'تکمیل شده', bg: '#dcfce7', color: '#166534' };
+    if (status === STATUS_CURRENT)   return { label: 'در حال انجام', bg: '#dbeafe', color: '#1e40af' };
+    if (status === 4)                return { label: 'لازم نیست', bg: '#fef3c7', color: '#92400e' };
+    return { label: 'تکمیل نشده', bg: '#fee2e2', color: '#991b1b' };
+}
+
+function showNodeInfo(node, clientX, clientY) {
+    if (!node || node.type !== NT_RECT) return hideNodeInfo();
+    const path     = currentPath;
+    const stepIndex = (node.stepIndex !== undefined) ? node.stepIndex : -1;
+    const allSteps = loadManagedSteps();
+    const steps    = allSteps[path] || [];
+    const sid      = currentStudent;
+    const student  = sid ? (_niUsers()[sid] || null) : null;
+    const meta     = _niStatusMeta(node.status);
+
+    // کارتابل: کارمند مسئول یا کارمندانی که وظیفهٔ معلق دارند
+    const assign = _niLoadJSON('step_assignments', {}) || {};
+    const assignedEmp = (assign[path] && assign[path][stepIndex]) || null;
+    const taskEmps = sid ? _niTaskEmps(sid, path, stepIndex) : [];
+    let cartable = '—';
+    if (taskEmps.length) cartable = taskEmps.map(_niEmpName).join('، ');
+    else if (assignedEmp) cartable = _niEmpName(assignedEmp) + ' (مسئول مرحله)';
+
+    // مدت عدم تکمیل بر اساس آخرین به‌روزرسانی پیشرفت
+    let daysTxt = '—';
+    if (sid) {
+        const ts = Number(localStorage.getItem(`progts_${sid}_${path}`) || 0);
+        if (ts > 0) daysTxt = Math.max(0, Math.floor((Date.now() - ts) / 86400000)).toLocaleString('fa-IR') + ' روز';
+    }
+
+    // پیشرفت دانشجو
+    let progressTxt = '—';
+    if (sid) {
+        const prog = _niLoadJSON(`prog_${sid}_${path}`, null);
+        if (Array.isArray(prog)) {
+            const done = prog.filter(p => p && p.status === STATUS_COMPLETED).length;
+            progressTxt = `${done.toLocaleString('fa-IR')} از ${steps.length.toLocaleString('fa-IR')}`;
+        }
+    }
+
+    document.getElementById('ni-title').textContent = 'مرحله: ' + (steps[stepIndex] || node.label || '—');
+    document.getElementById('ni-body').innerHTML = `
+        <div class="ni-row"><span>مسیر</span><b>${PATH_LABEL[path] || path}</b></div>
+        <div class="ni-row"><span>وضعیت</span>
+            <span class="ni-badge" style="background:${meta.bg};color:${meta.color}">${meta.label}</span>
+        </div>
+        <div class="ni-row"><span>شماره مرحله</span><b>${stepIndex >= 0 ? (stepIndex + 1).toLocaleString('fa-IR') + ' از ' + steps.length.toLocaleString('fa-IR') : '—'}</b></div>
+        <div class="ni-sep"></div>
+        <div class="ni-row"><span>کارتابل</span><b>${cartable}</b></div>
+        <div class="ni-row"><span>مدت عدم تکمیل</span><b>${daysTxt}</b></div>
+        <div class="ni-sep"></div>
+        <div class="ni-row"><span>دانشجو</span><b>${student ? (student.name || sid) : 'انتخاب نشده'}</b></div>
+        <div class="ni-row"><span>مسیر فعلی دانشجو</span><b>${student ? (PATH_LABEL[student.currentPath] || student.currentPath || '—') : '—'}</b></div>
+        <div class="ni-row"><span>پیشرفت این مسیر</span><b>${progressTxt}</b></div>
+    `;
+
+    const box = document.getElementById('node-info');
+    box.style.display = 'block';
+    const w = box.offsetWidth || 300;
+    const h = box.offsetHeight || 220;
+    let left = clientX + 14;
+    let top  = clientY + 14;
+    if (left + w > window.innerWidth - 8)  left = Math.max(8, clientX - w - 14);
+    if (top + h  > window.innerHeight - 8) top  = Math.max(8, window.innerHeight - h - 8);
+    box.style.left = left + 'px';
+    box.style.top  = top + 'px';
+}
+
+function hideNodeInfo() {
+    const box = document.getElementById('node-info');
+    if (box) box.style.display = 'none';
 }
 
 function ctxEdit() {
@@ -1061,9 +1212,8 @@ function populateStudentSel() {
 
 window.addEventListener('resize', () => resizeCanvas());
 window.addEventListener('focus', () => {
-    // reload managed steps & rebuild from scratch on focus (in case steps changed)
-    graphs[currentPath] = null;
-    getOrBuildGraph(currentPath);
+    // فقط دوباره ترسیم کن — بازسازی گراف اینجا باعث می‌شد با کلیک روی صفحه،
+    // وضعیت‌های تکمیل‌شده پاک و همه مراحل قرمز شوند.
     draw();
 });
 window.addEventListener('storage', e => {

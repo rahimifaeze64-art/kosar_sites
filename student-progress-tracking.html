@@ -364,6 +364,10 @@
                 <span id="autosave-indicator" class="text-xs text-gray-500 px-2 py-1 rounded-lg bg-gray-100 hidden">
                     <i class="fas fa-spinner fa-spin ml-1"></i>
                 </span>
+                <button onclick="toggleFullscreen()" id="fs-btn" title="نمای تمام صفحه — دیدن همه در یک نگاه"
+                        class="px-3 py-2 rounded-lg border-2 border-gray-200 text-sm hover:bg-gray-50 flex items-center gap-1 whitespace-nowrap">
+                    <i class="fas fa-expand"></i><span class="hidden sm:inline">نمای تمام صفحه</span>
+                </button>
             </div>
         </div>
         
@@ -1663,6 +1667,30 @@
             searchTerm = document.getElementById('search-input').value;
             renderTable();
         }
+
+        // ── نمای تمام صفحه ──
+        function toggleFullscreen() {
+            const el = document.getElementById('fs-root') || document.documentElement;
+            const isFs = document.fullscreenElement || document.webkitFullscreenElement;
+            if (!isFs) {
+                if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+                else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            }
+        }
+        function _fsUpdateBtn() {
+            const btn = document.getElementById('fs-btn');
+            if (!btn) return;
+            const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+            btn.innerHTML = isFs
+                ? '<i class="fas fa-compress"></i><span class="hidden sm:inline">خروج از تمام صفحه</span>'
+                : '<i class="fas fa-expand"></i><span class="hidden sm:inline">نمای تمام صفحه</span>';
+            if (isFs) setTimeout(() => { try { renderTable(); } catch (e) {} }, 60);
+        }
+        document.addEventListener('fullscreenchange', _fsUpdateBtn);
+        document.addEventListener('webkitfullscreenchange', _fsUpdateBtn);
 
         function exportToExcel() {
             if (!STEPS[currentPath]) return;

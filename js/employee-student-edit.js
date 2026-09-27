@@ -45,7 +45,8 @@ EmployeeModule.editStudentProfile = function(studentId) {
     };
 
     const modalHTML = `
-        <div id="edit-student-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div id="edit-student-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+             onclick="if(event.target===this) employeeModule.closeModal('edit-student-modal')">
             <div class="bg-gradient-to-br from-blue-50 to-lime-100 rounded-lg max-w-6xl w-full max-h-[95vh] overflow-y-auto">
                 <div class="p-6 border-b border-blue-200 sticky top-0 bg-gradient-to-r from-blue-100 to-lime-100 z-10">
                     <div class="flex items-center justify-between flex-wrap gap-3">
@@ -83,6 +84,12 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                     class="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-2 rounded-lg font-medium transition-all text-xs flex items-center gap-1">
                                 <i class="fas fa-book-reader"></i>
                                 <span>اتمام در حال تحصیل</span>
+                            </button>
+                            <button onclick="employeeModule.archiveStudent('${studentId}', ${student.archived ? 'false' : 'true'})"
+                                    title="${student.archived ? 'بازگردانی از بایگانی گردش دفاع و فارغ‌التحصیلی' : 'انتقال به بایگانی گردش دفاع و فارغ‌التحصیلی (نیاز به ادامهٔ مسیر ندارد)'}"
+                                    class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg font-medium transition-all text-xs flex items-center gap-1">
+                                <i class="fas fa-${student.archived ? 'box-open' : 'box-archive'}"></i>
+                                <span>${student.archived ? 'بازگردانی از بایگانی' : 'انتقال به بایگانی'}</span>
                             </button>
 
                             <button onclick="employeeModule.finishStudentWork('${studentId}')" 
@@ -251,7 +258,7 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                 <p class="text-xs text-gray-500 mt-1">معمولاً ۲ داور و برای دکتری ۴ داور — می‌توانید چند اسم اضافه یا حذف کنید</p>
                             </div>
                             <div class="profile-field">
-                                <label class="block text-base font-bold text-gray-800 mb-2">تاریخ تحویل</label>
+                                <label class="block text-base font-bold text-gray-800 mb-2">تاریخ دفاع</label>
                                 <input type="hidden" id="edit-delivery-date" value="${student.deliveryDate || ''}">
                                 <input type="text" id="edit-delivery-date-jdp" data-jdp
                                        data-jdp-target-value-input="#edit-delivery-date"
@@ -261,6 +268,13 @@ EmployeeModule.editStudentProfile = function(studentId) {
                                        autocomplete="off" readonly
                                        onclick="if(typeof jalaliDatepicker!=='undefined')jalaliDatepicker.show(this)"
                                        class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg text-right cursor-pointer">
+                            </div>
+                            <div class="profile-field">
+                                <label class="block text-base font-bold text-gray-800 mb-2">ساعت دفاع</label>
+                                <input type="text" id="edit-defense-time" value="${student.defenseTime || ''}"
+                                       placeholder="مثال: 10:30" maxlength="5" dir="ltr"
+                                       oninput="this.value=this.value.replace(/[^0-9:]/g,''); if(this.value.length===2&&!this.value.includes(':'))this.value+=':';"
+                                       class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-lg text-left font-mono">
                             </div>
                             <div class="profile-field">
                                 <label class="block text-base font-bold text-gray-800 mb-2">مسیر فعلی دانشجو</label>
@@ -1012,6 +1026,7 @@ EmployeeModule.saveStudentProfile = async function(studentId) {
         supervisor:         document.getElementById('edit-supervisor')?.value        || '',
         writer:             document.getElementById('edit-writer')?.value            || '',
         deliveryDate:       document.getElementById('edit-delivery-date')?.value     || '',
+        defenseTime:        document.getElementById('edit-defense-time')?.value       || '',
         orderType:          document.getElementById('edit-order-type')?.value        || '',
         committeeStatus:    document.getElementById('edit-committee-status')?.value  || '',
         irandocStatus:      document.getElementById('edit-irandoc-status')?.value    || '',
