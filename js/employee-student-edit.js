@@ -75,19 +75,19 @@ EmployeeModule.editStudentProfile = function(studentId) {
                             </button>
                             <button onclick="employeeModule.completeStudentPath('${studentId}','educational')"
                                     title="تمام مراحل فارغ‌التحصیلی را تکمیل کن"
-                                    class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded-lg font-medium transition-all text-xs flex items-center gap-1">
+                                    class="bg-lime-600 hover:bg-lime-700 text-white px-3 py-2 rounded-lg font-medium transition-all text-xs flex items-center gap-1">
                                 <i class="fas fa-graduation-cap"></i>
                                 <span>اتمام فارغ‌التحصیلی</span>
                             </button>
                             <button onclick="employeeModule.completeStudentPath('${studentId}','studying')"
                                     title="اتمام فاز در حال تحصیل و انتقال به فارغ‌التحصیلی"
-                                    class="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-2 rounded-lg font-medium transition-all text-xs flex items-center gap-1">
+                                    class="bg-lime-600 hover:bg-lime-700 text-white px-3 py-2 rounded-lg font-medium transition-all text-xs flex items-center gap-1">
                                 <i class="fas fa-book-reader"></i>
                                 <span>اتمام در حال تحصیل</span>
                             </button>
                             <button onclick="employeeModule.archiveStudent('${studentId}', ${student.archived ? 'false' : 'true'})"
                                     title="${student.archived ? 'بازگردانی از بایگانی گردش دفاع و فارغ‌التحصیلی' : 'انتقال به بایگانی گردش دفاع و فارغ‌التحصیلی (نیاز به ادامهٔ مسیر ندارد)'}"
-                                    class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg font-medium transition-all text-xs flex items-center gap-1">
+                                    class="bg-lime-600 hover:bg-lime-700 text-white px-3 py-2 rounded-lg font-medium transition-all text-xs flex items-center gap-1">
                                 <i class="fas fa-${student.archived ? 'box-open' : 'box-archive'}"></i>
                                 <span>${student.archived ? 'بازگردانی از بایگانی' : 'انتقال به بایگانی'}</span>
                             </button>
