@@ -6,6 +6,51 @@
 // ============================================================
 
 // ════════════════════════════════════════════════════════════════════
+// 🔐 Session Version Guard — خروج اجباری همهٔ کاربران
+// این فایل با «?v=timestamp» بارگذاری می‌شود، پس حتی اگر
+// index.html توسط مرورگر کش شده باشد، این گارد همیشه تازه اجرا می‌شود.
+// برای بیرون کردن اجباری همه در هر دپلوی: فقط SESSION_VERSION را عوض کن
+// (همین مقدار باید در index.html و login.html هم یکسان باشد).
+// ════════════════════════════════════════════════════════════════════
+window.SESSION_VERSION = '2026-10-01-force-relogin-2';
+(function() {
+    try {
+        var p = (window.location.pathname || '').toLowerCase();
+        var isAppPage = (p === '/' || p === '' ||
+                         p.slice(-11) === '/index.html' ||
+                         p.slice(-10) === 'index.html');
+        if (!isAppPage) return;          // فقط صفحهٔ اصلی اپ
+        if (window.top !== window) return; // داخل iframe اجرا نشود
+
+        function clearSupabaseSession() {
+            try {
+                var toRemove = [];
+                for (var i = 0; i < localStorage.length; i++) {
+                    var k = localStorage.key(i);
+                    if (!k) continue;
+                    if (k.indexOf('sb-') === 0 && k.indexOf('-auth-token') !== -1) toRemove.push(k);
+                    if (k === 'supabase.auth.token') toRemove.push(k);
+                }
+                for (var j = 0; j < toRemove.length; j++) localStorage.removeItem(toRemove[j]);
+            } catch(e) {}
+        }
+        function forceLogout() {
+            try {
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('edu_system_current_user');
+                localStorage.removeItem('sessionVersion');
+            } catch(e) {}
+            clearSupabaseSession();
+        }
+
+        if (localStorage.getItem('sessionVersion') !== window.SESSION_VERSION) {
+            forceLogout();
+            window.location.replace('landing.html');
+        }
+    } catch(e) {}
+})();
+
+// ════════════════════════════════════════════════════════════════════
 // ⚙️  تنظیمات اتصال — این دو مقدار را با مقادیر واقعی پروژه‌ات جایگزین کن
 //    Settings > API در داشبورد Supabase:
 //      Project URL  → SUPABASE_URL
