@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ورود به سیستم - الکوثر للخدمات الجامعیة</title>
+    <!-- ═══ Session Version — باید با مقدار index.html یکسان باشد ═══ -->
+    <script>
+        window.SESSION_VERSION = '2026-10-01-force-relogin';
+    </script>
     <script src="assets/libs/tailwindcss.js"></script>
     <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
     <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
@@ -14,7 +18,7 @@
         { id:'emp001', name:'سارا سادات حسینی',       username:'sareh',       password:'sareh1786',       role:'employee', email:'sareh@alkawsar.com',       department:'هماهنگی عمومی',   active:true },
         { id:'emp002', name:'زینب بتول محمدی',       username:'zainab',      password:'zainab1385',      role:'employee', email:'zainab@alkawsar.com',      department:'هماهنگی پروژه‌ها',active:true },
         { id:'emp003', name:'علیرضا غلامی فرزاد',      username:'farzad',      password:'farzad1406',      role:'employee', email:'farzad@alkawsar.com',      department:'هماهنگی مالی',    active:true },
-        { id:'emp004', name:'سید محمد فاضلی',      username:'fazeli',    password:'fazeli1111',    role:'employee', email:'fazeli@alkawsar.com',    department:'هماهنگی فنی',     active:true },
+        { id:'emp004', name:'خانم محمد حکیم',      username:'hakim',    password:'hakim1111',    role:'employee', email:'hakim@alkawsar.com',    department:'هماهنگی فنی',     active:true },
         { id:'emp005', name:'مهدی خدایاری',       username:'mahdi',       password:'mahdi1384',       role:'employee', email:'mahdi@alkawsar.com',       department:'هماهنگی عمومی',   active:true },
         { id:'doc001', name:'معصومی',     username:'masoumi',     password:'masoumi1403',     role:'agent',    email:'masoumi@alkawsar.com',     specialization:'نوشتن رساله', active:true },
         { id:'doc002', name:'ذوقی',       username:'zoghi',       password:'zoghi1403',       role:'agent',    email:'zoghi@alkawsar.com',       specialization:'نوشتن مقاله', active:true },
@@ -231,6 +235,7 @@ async function handleLogin(event) {
         };
         localStorage.setItem('currentUser', JSON.stringify(sessionUser));
         localStorage.setItem('edu_system_current_user', JSON.stringify(sessionUser));
+        localStorage.setItem('sessionVersion', window.SESSION_VERSION || '');
         console.log('✅ ورود موفق:', sessionUser.username, '|', sessionUser.role);
 
         // ── همگام‌سازی empAccAllowedIds از Supabase هنگام لاگین ─
@@ -270,7 +275,18 @@ async function handleLogin(event) {
 }
 
 // ── اگر قبلاً لاگین شده، مستقیم برو به index ────────────────
+// فقط وقتی نسخهٔ نشست فعلی است؛ در غیر این صورت خروج اجباری.
 (function checkSession() {
+    let savedVer = null;
+    try { savedVer = localStorage.getItem('sessionVersion'); } catch(e) {}
+    if (savedVer !== window.SESSION_VERSION) {
+        try {
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('edu_system_current_user');
+            localStorage.removeItem('sessionVersion');
+        } catch(e) {}
+        return;
+    }
     const saved = localStorage.getItem('currentUser');
     if (saved) {
         try {
