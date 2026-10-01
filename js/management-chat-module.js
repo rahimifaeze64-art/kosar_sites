@@ -54,7 +54,7 @@ const ManagementChatModule = {
             <div class="border-t border-gray-200 px-4 py-3" style="background:#f1f5f9;">
                 <div class="flex items-end gap-2">
                     <textarea id="managesChatInput" rows="1"
-                        placeholder="پیام بنویسید... (Enter = ارسال، Shift+Enter = خط جدید)"
+                        placeholder="پیام بنویخانم... (Enter = ارسال، Shift+Enter = خط جدید)"
                         class="flex-1 bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-gray-800 text-sm resize-none focus:outline-none focus:border-green-400 transition-colors"
                         style="min-height:42px;max-height:120px;"
                         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();if(window.managesChatInstance)window.managesChatInstance.sendMessage();}"

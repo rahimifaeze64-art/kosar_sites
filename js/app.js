@@ -607,10 +607,10 @@ function appController() {
           },
           {
             id: "emp004",
-            name: "سید محمد فاضلی",
-            username: "fazeli",
+            name: "خانم  حکیم",
+            username: "hakim",
             role: "employee",
-            email: "fazeli@edu-system.com",
+            email: "hakim@edu-system.com",
           },
         ];
 

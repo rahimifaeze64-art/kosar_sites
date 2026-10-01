@@ -372,7 +372,7 @@ const AccountingUI = (function () {
                         <th class="px-3 py-3 text-right">شخص</th>
                         <th class="px-3 py-3 text-right">تاریخ</th>
                         <th class="px-3 py-3 text-right">آخرین آپدیت</th>
-                        <th class="px-3 py-3 text-center">رسید</th>
+                        <th class="px-3 py-3 text-center">رخانم</th>
                         <th class="px-3 py-3 text-center">
                             تسویه شده
                             <span class="block text-gray-300 font-normal mt-0.5">
@@ -997,9 +997,9 @@ const AccountingUI = (function () {
                         </select>
                     </div>
                     <input type="text" id="tx-person-text" value="${esc(tx?.person_free_text||tx?.person_name||'')}"
-                        placeholder="یا نام شخص را بنویسید (به لیست اضافه می‌شود)"
+                        placeholder="یا نام شخص را بنویخانم (به لیست اضافه می‌شود)"
                         class="w-full mt-1 bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none">
-                    <p class="text-gray-400 text-xs mt-0.5">اگر نام بنویسید به لیست اشخاص اضافه می‌شود</p>
+                    <p class="text-gray-400 text-xs mt-0.5">اگر نام بنویخانم به لیست اشخاص اضافه می‌شود</p>
                 </div>
                 <div>
                     <label class="text-gray-600 text-xs mb-1 block">توضیحات</label>
@@ -1007,8 +1007,8 @@ const AccountingUI = (function () {
                         class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 focus:outline-none resize-none">${esc(tx?.description||tx?.note||'')}</textarea>
                 </div>
                 <div>
-                    <label class="text-gray-600 text-xs mb-1 block">رسید / پیوست</label>
-                    ${tx?.receipt_url ? `<a href="${esc(tx.receipt_url)}" target="_blank" class="text-blue-500 text-xs mb-1 block"><i class="fas fa-paperclip ml-1"></i>رسید موجود</a>` : ''}
+                    <label class="text-gray-600 text-xs mb-1 block">رخانم / پیوست</label>
+                    ${tx?.receipt_url ? `<a href="${esc(tx.receipt_url)}" target="_blank" class="text-blue-500 text-xs mb-1 block"><i class="fas fa-paperclip ml-1"></i>رخانم موجود</a>` : ''}
                     <input type="file" id="tx-receipt" accept="image/*,application/pdf"
                         class="w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                 </div>
@@ -1145,7 +1145,7 @@ const AccountingUI = (function () {
             personName = p?.name || '';
         }
         
-        // آپلود رسید
+        // آپلود رخانم
         let receiptUrl = editId ? (_txns.find(t=>t.id===editId)?.receipt_url || null) : null;
         const fileInput = document.getElementById('tx-receipt');
         if (fileInput?.files?.length) {

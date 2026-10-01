@@ -545,7 +545,7 @@ const PersonalNotesModule = {
                         color:#1e293b;outline:none;">
 
           <!-- متن -->
-          <textarea id="pnFormContent" placeholder="متن یادداشت را اینجا بنویسید..."
+          <textarea id="pnFormContent" placeholder="متن یادداشت را اینجا بنویخانم..."
                     rows="6"
                     style="width:100%;padding:12px;border:1.5px solid #e2e8f0;border-radius:10px;
                            font-family:inherit;font-size:.95rem;resize:vertical;box-sizing:border-box;
@@ -719,7 +719,7 @@ const PersonalNotesModule = {
             ${isFiltered ? 'یادداشتی پیدا نشد' : 'هنوز یادداشتی ندارید'}
           </h3>
           <p style="font-size:.85rem;margin-bottom:20px;">
-            ${isFiltered ? 'فیلترها را تغییر دهید یا جستجوی جدیدی انجام دهید.' : 'اولین یادداشت خود را بنویسید!'}
+            ${isFiltered ? 'فیلترها را تغییر دهید یا جستجوی جدیدی انجام دهید.' : 'اولین یادداشت خود را بنویخانم!'}
           </p>
           ${!isFiltered ? `<button id="pnEmptyNew" class="pn-btn-primary"><i class="fas fa-plus" style="margin-left:6px;"></i>یادداشت جدید</button>` : ''}
         </div>`;

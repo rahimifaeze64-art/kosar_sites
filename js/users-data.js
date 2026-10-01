@@ -48,11 +48,11 @@ const HARDCODED_USERS = [
     },
     {
         id: 'emp004',
-        name: 'سید محمد فاضلی',
-        username: 'fazeli',
-        password: 'fazeli1403',
+        name: 'خانم محمد حکیم',
+        username: 'hakim',
+        password: 'hakim1403',
         role: 'employee',
-        email: 'fazeli@alkawsar.com',
+        email: 'hakim@alkawsar.com',
         department: 'هماهنگی فنی',
         active: true
     },
@@ -68,11 +68,11 @@ const HARDCODED_USERS = [
     },
     {
         id: 'emp006',
-        name: 'سید محمد فاضلی',
-        username: 'fazeli',
-        password: 'fazeli1403',
+        name: 'خانم محمد حکیم',
+        username: 'hakim',
+        password: 'hakim1403',
         role: 'employee',
-        email: 'fazeli@alkawsar.com',
+        email: 'hakim@alkawsar.com',
         department: 'هماهنگی عمومی',
         active: true
     },

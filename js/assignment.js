@@ -96,7 +96,7 @@ const AssignmentModule = {
                             <label class="block text-sm font-medium text-gray-700 mb-2">توضیحات تخصیص:</label>
                             <textarea id="assignment-notes" rows="4" 
                                       class="w-full border border-gray-300 rounded-lg px-3 py-2"
-                                      placeholder="توضیحات و راهنمایی‌های لازم برای عامل را در اینجا بنویسید..."></textarea>
+                                      placeholder="توضیحات و راهنمایی‌های لازم برای عامل را در اینجا بنویخانم..."></textarea>
                         </div>
                         
                         <div class="flex justify-end space-x-3 space-x-reverse pt-4 border-t">

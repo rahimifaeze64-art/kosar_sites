@@ -74,7 +74,7 @@ const AgentChatModule = {
                     <div style="display: flex; gap: 12px; align-items: flex-end;">
                         <textarea 
                             id="agentChatInput" 
-                            placeholder="پیام خود را بنویسید... (از @ برای منشن استفاده کنید)"
+                            placeholder="پیام خود را بنویخانم... (از @ برای منشن استفاده کنید)"
                             rows="1"
                             style="flex: 1; background: #1e293b; border: 1px solid #475569; border-radius: 12px; padding: 12px 16px; color: white; resize: none; min-height: 44px; max-height: 120px; font-family: inherit;"
                             onkeypress="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); if(window.agentChatInstance) window.agentChatInstance.sendMessage(); }"

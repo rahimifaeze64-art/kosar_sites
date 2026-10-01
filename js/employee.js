@@ -3703,7 +3703,7 @@ const EmployeeModule = {
                                 <div class="flex space-x-2 space-x-reverse">
                                     <input type="text" id="emp-message-input" 
                                            class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white"
-                                           placeholder="پیام خود را بنویسید..."
+                                           placeholder="پیام خود را بنویخانم..."
                                            onkeypress="if(event.key === 'Enter') employeeModule.sendMessage('${userId}')">
                                     <button onclick="employeeModule.sendMessage('${userId}')" 
                                             class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-4 py-2 rounded-lg">
@@ -3799,7 +3799,7 @@ const EmployeeModule = {
             { id: 'emp001', name: 'سارا سادات حسینی', email: 'zahra@edu-system.com' },
             { id: 'emp002', name: 'زینب بتول محمدی', email: 'fatemeh@edu-system.com' },
             { id: 'emp003', name: 'علیرضا غلامی فرزاد', email: 'farzad@edu-system.com' },
-            { id: 'emp004', name: 'سید محمد فاضلی', email: 'fazeli@edu-system.com' },
+            { id: 'emp004', name: 'خانم محمد حکیم', email: 'hakim@edu-system.com' },
             { id: 'emp005', name: 'مهدی خدایاری', email: 'mahdi@alkawsar.com' }
         ];
         const found = employees.find(c => c.id === userId);

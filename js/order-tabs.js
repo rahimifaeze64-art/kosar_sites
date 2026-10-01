@@ -472,7 +472,7 @@ const OrderTabsModule = {
                         <div class="space-y-3">
                             <textarea id="new-message-${order.id}" rows="3" 
                                       class="w-full border border-gray-300 rounded-lg px-3 py-2"
-                                      placeholder="پیام خود را بنویسید..."></textarea>
+                                      placeholder="پیام خود را بنویخانم..."></textarea>
                             <div class="flex justify-between items-center">
                                 <span class="text-sm text-gray-500">
                                     ${isAssignedDoctor ? 'پیام شما برای مدیر ارسال خواهد شد' : 'پیام شما برای عامل ارسال خواهد شد'}

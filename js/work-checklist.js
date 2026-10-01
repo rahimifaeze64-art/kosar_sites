@@ -898,7 +898,7 @@ const WorkChecklistModule = {
                 </div>
                 <div class="flex gap-2 mt-3">
                     <input type="text" id="wc-new-task-input-${item.id}"
-                           placeholder="وظیفه جدید را بنویسید..."
+                           placeholder="وظیفه جدید را بنویخانم..."
                            onkeydown="if(event.key==='Enter') WorkChecklistModule.addTask('${item.id}')"
                            class="flex-1 bg-white/10 text-white placeholder-blue-300/50 text-sm px-3 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-lime-500"/>
                     <button onclick="WorkChecklistModule.addTask('${item.id}')"

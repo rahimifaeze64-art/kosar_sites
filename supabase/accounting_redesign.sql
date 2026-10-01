@@ -15,7 +15,7 @@ ALTER TABLE public.company_accounting
     ADD COLUMN IF NOT EXISTS amounts     jsonb       DEFAULT '[]'::jsonb;
 -- فرمت: [{"amount": 5000000, "currency": "تومان"}, {"amount": 100, "currency": "دلار"}]
 
--- رسید / پیوست تراکنش (URL در Supabase Storage)
+-- رخانم / پیوست تراکنش (URL در Supabase Storage)
 ALTER TABLE public.company_accounting
     ADD COLUMN IF NOT EXISTS receipt_url text;
 
@@ -63,7 +63,7 @@ CREATE POLICY "acc_persons_auth"
 ALTER TABLE public.company_accounting
     ADD COLUMN IF NOT EXISTS person_acc_id uuid REFERENCES public.accounting_persons(id) ON DELETE SET NULL;
 
--- ── ۴. Storage bucket برای رسیدها ──────────────────────────
+-- ── ۴. Storage bucket برای رخانمها ──────────────────────────
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
     'accounting-receipts',

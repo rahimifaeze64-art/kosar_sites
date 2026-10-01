@@ -269,7 +269,7 @@ const CityWorld = (function () {
       stance: 0.6,
     },
     {
-      name: 'فاضلی', role: 'employee', color: 0xff8c00, headColor: 0xffa07a, speed: 3.2,
+      name: 'حکیم', role: 'employee', color: 0xff8c00, headColor: 0xffa07a, speed: 3.2,
       gender: 'male',
       gait: 'casual',
       energy: 0.5,
@@ -314,9 +314,9 @@ const CityWorld = (function () {
     'زینب': [
       'سلام عزیزم! چطوری؟ خسته که نیستی؟',
       'دیروز تا دیر مشغول پرونده‌ها بودم... پشمم ریخت!',
-      'دانشجوهای ترم جدید رسیدن؛ فضای دانشگاهی شده!',
+      'دانشجوهای ترم جدید رخانمن؛ فضای دانشگاهی شده!',
       'چایی می‌خوری؟ من همین الان دارم دم می‌کنم.',
-      'مواظب باش، فاضلی الان حال‌وحالای خرید ماشین داره!',
+      'مواظب باش، حکیم الان حال‌وحالای خرید ماشین داره!',
     ],
     'فرزاد': [
       'سلام! سرت شلوغ نیست؟ یه سوال فنی داشتم.',
@@ -325,7 +325,7 @@ const CityWorld = (function () {
       'من اگه جای تو بودم اول سراغ داشبورد می‌رفتم.',
       'شنیدی می‌خوان برای بخش وظایف اتاق جدید بگیرن؟',
     ],
-    'فاضلی': [
+    'حکیم': [
       'سلام سلام! خوبی داداش؟',
       'دارم دنبال یه ماشین خوب می‌گردم... پیشنهادی داری؟',
       'امروزم حسابی ورزش کردم، صبح پارک دویدم!',
@@ -4245,7 +4245,7 @@ const CityWorld = (function () {
         const dz = tz - npc.position.z;
         const dist = Math.sqrt(dx*dx + dz*dz);
         if (dist < 2.5) {
-          // رسید — برو داخل
+          // رخانم — برو داخل
           npc.visible = false;
           ud.state = 'inside';
           ud.insideTimer = 4 + Math.random() * 8;
@@ -5290,7 +5290,7 @@ const CityWorld = (function () {
       'سارا':   u => u.name?.includes('سارا')    || u.username === 'sareh',
       'زینب':   u => u.name?.includes('زینب')    || u.username === 'zainab',
       'فرزاد':  u => u.name?.includes('فرزاد')   || u.username === 'farzad',
-      'فاضلی':  u => u.name?.includes('فاضلی')   || u.username === 'fazeli',
+      'حکیم':  u => u.name?.includes('حکیم')   || u.username === 'hakim',
       'دکتر':   u => u.name?.includes('خدایاری') || u.username === 'mahdi',
       'معصومی': u => u.name?.includes('معصومی')  || u.role === 'agent',
       '-صادقی': u => u.name?.includes('صادقی')   || u.role === 'agent',
@@ -5304,7 +5304,7 @@ const CityWorld = (function () {
   function _guessEmployeeId(npcName) {
     const fallback = {
       'سارا': 'emp001', 'زینب': 'emp002', 'فرزاد': 'emp003',
-      'فاضلی': 'emp004', 'دکتر': 'emp005',
+      'حکیم': 'emp004', 'دکتر': 'emp005',
       'معصومی': 'agent001', '-صادقی': 'agent002',
     };
     return fallback[npcName] || null;
@@ -5391,7 +5391,7 @@ const CityWorld = (function () {
         break;
 
       case 'roll': {
-        // خزش روی باند تا رسیدن به محور باند
+        // خزش روی باند تا رخانمن به محور باند
         jetSpeed = Math.min(jetSpeed + 20 * delta, 30);
         _jetMoveForward(delta);
         // هم‌تراز شدن با محور باند (رو به شرق، x افزایشی)
@@ -5497,7 +5497,7 @@ const CityWorld = (function () {
     }
   }
 
-  // پرواز به سمت نقطه — برمی‌گرداند true وقتی رسید
+  // پرواز به سمت نقطه — برمی‌گرداند true وقتی رخانم
   function _jetFlyToward(tx, ty, tz, delta, speed) {
     const dx = tx - fighterJet.position.x;
     const dy = ty - fighterJet.position.y;

@@ -28,7 +28,7 @@
 
 ## لیست دانشجویان نمونه
 
-### 1. حسن یاسر کرار زینب فاضلی
+### 1. حسن یاسر کرار زینب حکیم
 - **شناسه**: ST001
 - **دانشگاه**: دانشگاه قم
 - **رشته**: حقوق عمومی
@@ -113,7 +113,7 @@ console.log(students.length); // 10
 
 ```javascript
 const student = SampleStudentsData.getStudentById('student001');
-console.log(student.name); // حسن یاسر کرار زینب فاضلی
+console.log(student.name); // حسن یاسر کرار زینب حکیم
 ```
 
 ### `getStudentsByField(field)`

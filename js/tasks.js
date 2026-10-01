@@ -151,7 +151,7 @@ const TasksModule = {
                 { id: 'emp001', name: 'سارا سادات حسینی', username: 'sareh',   email: 'sareh@alkawsar.com',   role: 'employee' },
                 { id: 'emp002', name: 'زینب بتول محمدی',  username: 'zainab',  email: 'zainab@alkawsar.com',  role: 'employee' },
                 { id: 'emp003', name: 'علیرضا غلامی فرزاد', username: 'farzad', email: 'farzad@alkawsar.com', role: 'employee' },
-                { id: 'emp004', name: 'سید محمد فاضلی',       username: 'fazeli', email: 'fazeli@alkawsar.com', role: 'employee' },
+                { id: 'emp004', name: 'خانم محمد حکیم',       username: 'hakim', email: 'hakim@alkawsar.com', role: 'employee' },
                 { id: 'emp005', name: 'مهدی خدایاری',     username: 'mahdi',   email: 'mahdi@alkawsar.com',   role: 'employee' }
             ];
 
@@ -502,7 +502,7 @@ const TasksModule = {
                 <div class="flex space-x-2 space-x-reverse">
                     <input type="text" id="employee-message-input" 
                            class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white"
-                           placeholder="پیام خود را بنویسید..."
+                           placeholder="پیام خود را بنویخانم..."
                            onkeypress="if(event.key === 'Enter') TasksModule.sendemployeeMessage()">
                     <button onclick="TasksModule.sendemployeeMessage()" 
                             class="bg-lime-600 hover:bg-lime-700 text-gray-900 px-4 py-2 rounded-lg">
@@ -713,7 +713,7 @@ const TasksModule = {
                         <textarea 
                             id="managesChatInput" 
                             class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white resize-none"
-                            placeholder="پیام خود را بنویسید... (از @ برای منشن استفاده کنید)"
+                            placeholder="پیام خود را بنویخانم... (از @ برای منشن استفاده کنید)"
                             rows="2"
                             style="min-height: 44px; max-height: 120px; direction: rtl;"></textarea>
                         
@@ -2124,7 +2124,7 @@ const TasksModule = {
                     <i class="fas fa-times-circle text-red-400"></i>
                     رد وظیفه
                 </h3>
-                <p class="text-xs text-gray-400 mb-4">توضیحات رد شدن را بنویسید — این پیام به کارمند ارسال می‌شود.</p>
+                <p class="text-xs text-gray-400 mb-4">توضیحات رد شدن را بنویخانم — این پیام به کارمند ارسال می‌شود.</p>
                 <textarea id="__reject-note-input" rows="4"
                           placeholder="دلیل رد کردن را توضیح دهید..."
                           class="w-full bg-slate-700 border border-slate-600 focus:border-red-500 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none resize-none text-sm"></textarea>
@@ -2146,7 +2146,7 @@ const TasksModule = {
     rejectTask(taskId) {
         const note = document.getElementById('__reject-note-input')?.value.trim() || '';
         if (!note) {
-            UTILS.showNotification('لطفاً دلیل رد را بنویسید', 'error');
+            UTILS.showNotification('لطفاً دلیل رد را بنویخانم', 'error');
             return;
         }
         if (!this.selectedemployee) return;

@@ -611,7 +611,7 @@ const WorkHoursUI = (function() {
                         
                         <div class="md:col-span-2 lg:col-span-4">
                             <label class="block text-black-400 text-sm mb-2">شرح کار</label>
-                            <textarea id="workDescription" rows="2" placeholder="توضیحاتی درباره کار انجام‌شده بنویسید..."
+                            <textarea id="workDescription" rows="2" placeholder="توضیحاتی درباره کار انجام‌شده بنویخانم..."
                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300/50 focus:outline-none focus:border-blue-400 resize-none"></textarea>
                         </div>
                         
@@ -1061,7 +1061,7 @@ const WorkHoursUI = (function() {
                         </div>
                         <div class="md:col-span-2 lg:col-span-4">
                             <label class="block text-black-400 text-sm mb-2">شرح کار</label>
-                            <textarea id="workDescription" rows="2" placeholder="توضیحاتی درباره کار انجام‌شده بنویسید..."
+                            <textarea id="workDescription" rows="2" placeholder="توضیحاتی درباره کار انجام‌شده بنویخانم..."
                                    class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300/50 focus:outline-none focus:border-blue-400 resize-none"></textarea>
                         </div>
                         <div class="md:col-span-2 lg:col-span-4 flex justify-end gap-3">

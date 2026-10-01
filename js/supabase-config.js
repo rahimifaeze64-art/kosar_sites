@@ -79,7 +79,7 @@ const SupabaseConnection = {
 
 // ── ترجمه خطاهای Supabase به فارسی ─────────────────────────
 function translateSupabaseError(error) {
-    if (!error) return 'خطای فاضلی';
+    if (!error) return 'خطای حکیم';
     const msg = error.message || error.toString();
 
     const map = {
@@ -95,7 +95,7 @@ function translateSupabaseError(error) {
         'permission denied':                   'دسترسی مجاز نیست',
         'Failed to fetch':                     'اتصال به اینترنت قطع است',
         'NetworkError':                        'خطای شبکه — اتصال اینترنت را بررسی کن',
-        'timeout':                             'زمان اتصال به پایان رسید',
+        'timeout':                             'زمان اتصال به پایان رخانم',
     };
 
     for (const [key, fa] of Object.entries(map)) {

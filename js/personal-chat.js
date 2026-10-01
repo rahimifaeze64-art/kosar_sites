@@ -41,7 +41,7 @@ const PersonalChatModule = {
                 { id: 'emp001',   name: 'سارا سادات حسینی',   username: 'zahra',   role: 'employee' },
                 { id: 'emp002',   name: 'زینب بتول محمدی',     username: 'fatemeh', role: 'employee' },
                 { id: 'emp003',   name: 'علیرضا غلامی فرزاد', username: 'farzad',  role: 'employee' },
-                { id: 'emp004',   name: 'سید محمد فاضلی',      username: 'fazeli',  role: 'employee' },
+                { id: 'emp004',   name: 'خانم محمد حکیم',      username: 'hakim',  role: 'employee' },
                 { id: 'doc001',   name: 'دکتر معصومی',          username: 'masoumi', role: 'agent'    },
                 { id: 'doc002',   name: 'دکتر ذوقی',            username: 'zoghi',   role: 'agent'    },
                 { id: 'agent001', name: 'دکتر فتحی',            username: 'fathi',   role: 'agent'    },
@@ -392,7 +392,7 @@ const PersonalChatModule = {
             </div>
             <div style="padding:16px 20px;border-top:1px solid #e2e8f0;background:#f1f5f9;">
                 <div style="display:flex;gap:12px;align-items:flex-end;">
-                    <textarea id="personalChatInput" placeholder="پیام خود را بنویسید..." rows="1"
+                    <textarea id="personalChatInput" placeholder="پیام خود را بنویخانم..." rows="1"
                         onkeypress="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();PersonalChatModule.sendMessage();}"
                         oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';"
                         style="flex:1;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px 16px;color:#333;resize:none;min-height:44px;max-height:120px;font-family:inherit;"></textarea>

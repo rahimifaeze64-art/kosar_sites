@@ -3295,7 +3295,7 @@ ${body}
                     </div>
                     <div>
                         <label class="text-gray-400 text-sm mb-1 block">شرح کار</label>
-                        <textarea id="lr-description" rows="2" placeholder="توضیحاتی درباره کار انجام‌شده بنویسید..."
+                        <textarea id="lr-description" rows="2" placeholder="توضیحاتی درباره کار انجام‌شده بنویخانم..."
                             class="w-full bg-blue-800 text-white border border-blue-600 rounded-lg px-3 py-2 focus:outline-none focus:border-lime-400 resize-none"></textarea>
                     </div>
                 </div>

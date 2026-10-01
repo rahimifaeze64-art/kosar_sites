@@ -83,7 +83,7 @@ const WhatsAppManager = {
                 id: 'wa_002',
                 sender: 'اسرا البدیری ',
                 phone: '+964 750 987 6543',
-                text: ' سلام دکتر مدراک  من به دستم رسید ',
+                text: ' سلام دکتر مدراک  من به دستم رخانم ',
                 category: 'order',
                 priority: 'high',
                 status: 'pending',
@@ -275,7 +275,7 @@ const WhatsAppManager = {
         return msg;
     },
 
-    // ── یادآوری‌های سررسید ───────────────────────────────────
+    // ── یادآوری‌های سررخانم ───────────────────────────────────
     getDueReminders() {
         const now = Date.now();
         return this._messages.filter(m =>
@@ -334,7 +334,7 @@ const WhatsAppManager = {
         ${this._renderStatCard('زمان‌بندی شده', stats.scheduled, 'fa-calendar-check', 'purple')}
     </div>
 
-    <!-- ── هشدار سررسید ───────────────────────────────────── -->
+    <!-- ── هشدار سررخانم ───────────────────────────────────── -->
     ${this._renderDueAlerts()}
 
     <!-- ── فیلتر + جستجو + مرتب‌سازی ─────────────────────── -->
@@ -596,7 +596,7 @@ const WhatsAppManager = {
         </div>`;
     },
 
-    // ── هشدار سررسید ─────────────────────────────────────────
+    // ── هشدار سررخانم ─────────────────────────────────────────
     _renderDueAlerts() {
         const due = this.getDueReminders();
         if (due.length === 0) return '';
@@ -612,7 +612,7 @@ const WhatsAppManager = {
         return `
         <div class="bg-lime-500/10 border border-lime-500/30 rounded-2xl p-4">
             <p class="text-lime-400 font-bold text-sm mb-3 flex items-center gap-2">
-                <i class="fas fa-bell animate-bounce"></i> یادآوری — پاسخ‌های سررسید شده
+                <i class="fas fa-bell animate-bounce"></i> یادآوری — پاسخ‌های سررخانم شده
             </p>
             <div class="space-y-3">${items}</div>
         </div>`;
@@ -738,7 +738,7 @@ const WhatsAppManager = {
                 btn.className = btn.className.replace('bg-lime-500 text-black font-bold shadow-lg shadow-lime-500/20', 'bg-white/10 text-gray-300 hover:bg-white/20');
             }
         });
-        // آپدیت هشدارهای سررسید
+        // آپدیت هشدارهای سررخانم
         const alertArea = document.querySelector('#wa-root > div:nth-child(3)');
         // re-render due alerts در صورت نیاز
     },

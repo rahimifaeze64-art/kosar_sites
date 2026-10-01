@@ -113,7 +113,7 @@ const ProgressModule = {
                 id: UTILS.generateId(),
                 type: 'completion',
                 message: 'پروژه تکمیل شد',
-                notes: 'پروژه با موفقیت به پایان رسید',
+                notes: 'پروژه با موفقیت به پایان رخانم',
                 timestamp: new Date().toISOString(),
                 userId: getCurrentUserId()
             });
@@ -145,7 +145,7 @@ const ProgressModule = {
                         </div>
                         <h3 class="text-xl font-bold text-gray-800 mb-2">پروژه تکمیل شد!</h3>
                         <p class="text-gray-600 mb-4">
-                            پروژه ${order.studentName} با موفقیت به پایان رسید.
+                            پروژه ${order.studentName} با موفقیت به پایان رخانم.
                         </p>
                         <div class="space-y-2 text-sm text-gray-500 mb-6">
                             <p><strong>نوع پروژه:</strong> ${order.type}</p>

@@ -1561,7 +1561,7 @@ const OrderDetailRedesign = (function () {
     const fileId  = document.getElementById('review-file-id')?.value;
     const status  = document.querySelector('input[name="review-status"]:checked')?.value||'rejected';
     const comment = document.getElementById('review-comment')?.value?.trim()||'';
-    if (status==='rejected'&&!comment) { notify('لطفاً توضیحات اصلاحات را بنویسید','error'); return; }
+    if (status==='rejected'&&!comment) { notify('لطفاً توضیحات اصلاحات را بنویخانم','error'); return; }
     const orders = getOrders();
     const idx = orders.findIndex(o=>o.id===orderId);
     if (idx===-1) return;
