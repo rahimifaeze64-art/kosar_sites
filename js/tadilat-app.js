@@ -431,7 +431,10 @@
     recording: false,
     tab: 'send',
     hasRequest: false,
-    writer: null          // {agent_id, agent_name, order_id} — نویسندهٔ مربوطه
+    writer: null,         // {agent_id, agent_name, order_id} — نویسندهٔ مربوطه
+    matched: null,        // {id, name, student_no} — دانشجوی تشخیص/انتخاب‌شده
+    voiceHeard: '',       // متنی که از ویس فهمیدیم
+    voiceDone: false      // آیا ویس اسم ضبط شده است
   };
 
   // ── تب‌ها: ارسال / وضعیت / راهنما ─────────────────────────
@@ -555,18 +558,22 @@
           text = normName(text);
           if (text) {
             state.voiceText = text;
+            state.voiceHeard = text;
             state.voiceNameSource = 'voice_stt';
             $('in-name').value = text;
             $('voice-text').textContent = '🗣 ' + text;
             $('voice-text').className = 'voice-text ok';
+            // همین حالا با نزدیک‌ترین نام در profiles تطبیق بده
+            matchHeardName(text);
           }
         };
         speech.onerror = function (ev) {
           console.warn('speech error', ev.error);
           if (!state.voiceText) {
             $('voice-text').textContent =
-              '🎤 ضبط شد. تشخیص خودکار روی این دستگاه کار نکرد — نامت را تایپ کن (ویس پیوست می‌شود).';
+              '🎤 ویس ضبط شد. تشخیص خودکار روی این دستگاه کار نکرد — نامت را از فهرست انتخاب کن.';
             $('voice-text').className = 'voice-text bad';
+            showPicker('تشخیص خودکار ممکن نشد؛ اسمت را از فهرست انتخاب کن');
           }
         };
         speech.onend = function () { speech = null; };
@@ -577,7 +584,7 @@
       }
     } else {
       $('voice-text').textContent =
-        '🎤 در حال ضبط… (تشخیص خودکار روی این دستگاه نیست — نامت را تایپ کن)';
+        '🎤 ویس ضبط شد (این مرورگر تشخیص گفتار ندارد) — اسمت را از فهرست انتخاب کن.';
       $('voice-text').className = 'voice-text';
     }
 
@@ -622,11 +629,137 @@
     if (!state.voiceText && !state.voiceNameSource) {
       state.voiceNameSource = state.voiceBlob ? 'voice' : null;
     }
+    state.voiceDone = !!state.voiceBlob || !!state.voiceText;
     $('btn-voice-stop').classList.add('hidden');
     if (!state.voiceText && state.voiceBlob) {
       $('voice-text').textContent = '🎤 ویس اسمت ضبط شد و همراه درخواست ذخیره می‌شود.';
       $('voice-text').className = 'voice-text';
     }
+    // اگر تشخیص گفتار در دسترس نبود، فهرست انتخاب را باز کن
+    if (!state.voiceHeard && !SpeechRec && state.voiceBlob) {
+      showPicker('این مرورگر تشخیص خودکار ندارد؛ اسمت را از فهرست انتخاب کن');
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // تطبیق نام شنیده‌شده با نزدیک‌ترین دانشجو در profiles
+  // ══════════════════════════════════════════════════════════
+  function showResolved(student, heard) {
+    state.matched = {
+      id: student.id,
+      name: student.name,
+      student_no: student.student_no || null
+    };
+    var box = $('name-resolved');
+    box.className = 'match-box match-ok';
+    $('name-resolved-text').innerHTML =
+      (heard ? '🗣 شنیدم: «' + esc(heard) + '»<br>' : '') +
+      '✅ اسم تو: <b>' + esc(student.name) + '</b>' +
+      (student.student_no ? ' <span class="hint">(' + esc(student.student_no) + ')</span>' : '');
+    show(box);
+    hide($('name-picker'));
+    $('in-name').value = student.name;
+    $('in-no').value = student.student_no || $('in-no').value;
+    haptic.ok();
+  }
+
+  /** نزدیک‌ترین نام را در فهرست دانشجوها پیدا می‌کند */
+  function matchHeardName(heard) {
+    return loadStudents().then(function (rows) {
+      var key = normKey(heard);
+      if (!key || key.length < 3) { showPicker('اسمت را از فهرست انتخاب کن'); return null; }
+      var exact = rows.filter(function (r) { return r.key === key; });
+      if (exact.length === 1) {
+        showResolved({ id: exact[0].id, name: exact[0].name, student_no: exact[0].student_id }, heard);
+        return exact[0];
+      }
+      var best = null;
+      rows.forEach(function (r) {
+        if (!r.key || r.key.length < 3) return;
+        var ratio = 0, i;
+        if (r.key === key) ratio = 1;
+        else if (r.key.indexOf(key) !== -1 || key.indexOf(r.key) !== -1) {
+          ratio = Math.min(r.key.length, key.length) / Math.max(r.key.length, key.length) * 0.95;
+        } else {
+          // شباهت حرف‌به‌حرف (برای خطای تشخیص گفتار)
+          i = lcs(r.key, key);
+          ratio = (2 * i) / (r.key.length + key.length);
+        }
+        if (!best || ratio > best.ratio) best = { ratio: ratio, row: r };
+      });
+      if (best && best.ratio >= 0.62) {
+        showResolved({ id: best.row.id, name: best.row.name, student_no: best.row.student_id }, heard);
+        return best.row;
+      }
+      // مطمئن نبود → فهرست پیشنهادی را نشان بده
+      showPicker('مطمئن نشدم؛ اسمت را از فهرست انتخاب کن', heard);
+      return null;
+    });
+  }
+
+  /** طول بلندترین زیررشتهٔ مشترک */
+  function lcs(a, b) {
+    var m = a.length, n = b.length;
+    if (!m || !n) return 0;
+    var prev = new Array(n + 1).fill(0), cur = new Array(n + 1).fill(0), i, j;
+    for (i = 1; i <= m; i++) {
+      for (j = 1; j <= n; j++) {
+        cur[j] = (a[i - 1] === b[j - 1]) ? prev[j - 1] + 1 : Math.max(prev[j], cur[j - 1]);
+      }
+      var t = prev; prev = cur; cur = t;
+    }
+    return prev[n];
+  }
+
+  // ── فهرست انتخاب دستی ────────────────────────────────────
+  function showPicker(hint, seed) {
+    var box = $('name-picker');
+    if (!box) return;
+    if (hint) $('picker-hint-text').textContent = hint;
+    show(box);
+    hide($('name-resolved'));
+    state.matched = null;
+    renderNameList(seed || $('name-search').value || '');
+  }
+
+  function renderNameList(query) {
+    var list = $('name-list');
+    if (!list) return;
+    var q = normKey(query || '');
+    loadStudents().then(function (rows) {
+      var items = rows;
+      if (q) {
+        items = rows.filter(function (r) {
+          return r.key.indexOf(q) !== -1 ||
+                 String(r.student_id || '').indexOf(q) !== -1;
+        });
+      }
+      if (!items.length) {
+        list.innerHTML = '<p class="name-empty">دانشجویی با این نام پیدا نشد — می‌توانی خودت بنویسی</p>';
+        return;
+      }
+      list.innerHTML = items.slice(0, 60).map(function (r) {
+        return '<button class="name-item" type="button" data-pick="' + esc(r.id) + '">' +
+          '<span>' + esc(r.name) + '</span>' +
+          '<span class="ni-no">' + esc(r.student_id || '') + '</span></button>';
+      }).join('') +
+      (items.length > 60
+        ? '<p class="name-empty">و ' + fa(items.length - 60) + ' مورد دیگر — دقیق‌تر جستجو کن</p>'
+        : '');
+    });
+  }
+
+  function pickStudent(id) {
+    loadStudents().then(function (rows) {
+      var hit = rows.filter(function (r) { return r.id === id; })[0];
+      if (hit) showResolved({ id: hit.id, name: hit.name, student_no: hit.student_id }, '');
+    });
+  }
+
+  function clearResolved() {
+    state.matched = null;
+    hide($('name-resolved'));
+    showPicker('اسمت را از فهرست انتخاب کن یا خودت بنویس');
   }
 
   function clearVoice() {
@@ -635,10 +768,15 @@
     state.voiceUrl = null;
     state.voiceText = '';
     state.voiceNameSource = null;
+    state.voiceHeard = '';
+    state.voiceDone = false;
     hide($('voice-box'));
     hide($('btn-voice-clear'));
+    hide($('name-resolved'));
+    hide($('name-picker'));
     $('voice-audio').src = '';
     $('voice-text').textContent = '';
+    $('voice-title').textContent = 'در حال ضبط…';
   }
 
   // ══════════════════════════════════════════════════════════
@@ -662,6 +800,8 @@
     hide($('card-note'));
     hide($('card-done'));
     hide($('identity-result'));
+    hide($('name-resolved'));
+    hide($('name-picker'));
     updateSubmitBar();
     var u = tgUser();
     var input = $('in-name');
@@ -682,12 +822,22 @@
   }
 
   function doIdentity() {
-    var name = normName($('in-name').value);
+    var typed = normName($('in-name').value);
     var no = toEnDigits($('in-no').value).trim();
 
-    if (name.length < 3) {
-      toast('اسمت را کامل بنویس 🙂');
-      $('in-name').focus();
+    // ۱) گفتن اسم الزامی است
+    if (!state.voiceDone) {
+      toast('🎤 اول روی دکمهٔ میکروفن بزن و اسمت را بگو.');
+      try { $('btn-mic').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+      return;
+    }
+
+    // ۲) نام باید مشخص باشد: تطبیق خودکار، انتخاب از فهرست، یا نوشتن
+    var chosen = state.matched;
+    var name = chosen ? chosen.name : typed;
+    if (!name || name.length < 3) {
+      showPicker('اسمت را از فهرست انتخاب کن یا خودت بنویس');
+      toast('اسمت را انتخاب کن یا بنویس 🙂');
       return;
     }
     if (no && no.replace(/[^0-9A-Za-z]/g, '').length < 4) {
@@ -700,7 +850,13 @@
     var btn = $('btn-identity');
     btn.disabled = true;
 
-    matchStudent(name + ' ' + no)
+    // اگر از فهرست انتخاب شده، همان را قطعی می‌گیریم؛ وگرنه دوباره تطبیق می‌زنیم
+    var lookup = chosen
+      ? Promise.resolve({ student_id: chosen.id, name: chosen.name,
+                          student_no: chosen.student_no })
+      : matchStudent(name + ' ' + no);
+
+    lookup
       .then(function (res) {
         state.identity = {
           name: name,
@@ -887,6 +1043,7 @@
     var u = tgUser();
     var tgId = u ? u.id : null;
     var requestId = null;
+    var requestCode = null;
 
     // ۱) اگر ویس اسم داریم، اول آپلودش کن
     var voicePathPromise = Promise.resolve(null);
@@ -937,6 +1094,7 @@
       })
       .then(function (rows) {
         requestId = rows && rows[0] && rows[0].id;
+        requestCode = rows && rows[0] && rows[0].code;
         if (!requestId) throw new Error('درخواست ساخته نشد');
         return uploadAll(requestId, tgId);
       })
@@ -946,12 +1104,33 @@
           'return=minimal').then(function () { return sum; });
       })
       .then(function (sum) {
+        // ۴) اتصال به پروفایل دانشجو:
+        //    • مسیر فایل تعدیلات در ستون tadilat_doc (فیلد «تعدیلات» پروفایل)
+        //    • و ثبت فایل در بخش «فایل ها» با دستهٔ «تعدیل شده»
         if (state.identity.student_id && sum.primaryPath) {
-          return sbRest('POST', 'student_documents?on_conflict=student_id',
-            [{ student_id: state.identity.student_id, tadilat_doc: sum.primaryPath }],
-            'resolution=merge-duplicates,return=minimal')
-            .catch(function (e) { console.warn('profile link failed', e); return null; })
-            .then(function () { return sum; });
+          var sid = state.identity.student_id;
+          var fileName = sum.primaryName || 'تعدیلات';
+          var fileType = (fileName.split('.').pop() || '').toLowerCase();
+          return Promise.all([
+            sbRest('POST', 'student_documents?on_conflict=student_id',
+              [{ student_id: sid, tadilat_doc: sum.primaryPath }],
+              'resolution=merge-duplicates,return=minimal')
+              .catch(function (e) { console.warn('profile doc link failed', e); return null; }),
+            sbRest('POST', 'student_files?on_conflict=student_id,category',
+              [{
+                student_id: sid,
+                category: 'تعدیل شده',           // بخش «فایل ها» در ویرایش پروفایل
+                file_name: fileName,
+                file_path: sum.primaryPath,
+                display_url: null,
+                file_type: fileType || null,
+                file_size_text: sum.primarySize ? bytes(sum.primarySize) : null,
+                uploaded_by: 'mini_app',
+                uploaded_by_name: state.identity.name || 'دانشجو'
+              }],
+              'resolution=merge-duplicates,return=minimal')
+              .catch(function (e) { console.warn('student_files (تعدیل شده) failed', e); return null; })
+          ]).then(function () { return sum; });
         }
         return sum;
       })
@@ -962,7 +1141,7 @@
         clearVoice();
         hide($('card-files'));
         hide($('card-note'));
-        showDone(requestId, sum);
+        showDone(requestId, requestCode, sum);
         updateSubmitBar();
         setTab('status');
         if (sum.failed) toast('⚠️ ' + fa(sum.failed) + ' فایل ارسال نشد؛ می‌توانی دوباره بفرستی.');
@@ -988,18 +1167,20 @@
 
     function summary() {
       var doneItems = state.queue.filter(function (i) { return i.status === 'done'; });
-      var primary = null;
+      var primaryItem = null;
       for (var i = 0; i < doneItems.length; i++) {
         if (doneItems[i].kindDb === 'photo' || doneItems[i].kindDb === 'document') {
-          primary = doneItems[i].storagePath; break;
+          primaryItem = doneItems[i]; break;
         }
       }
-      if (!primary && doneItems.length) primary = doneItems[0].storagePath;
+      if (!primaryItem && doneItems.length) primaryItem = doneItems[0];
       return {
         total: state.queue.length,
         done: doneItems.length,
         failed: state.queue.filter(function (i) { return i.status === 'failed'; }).length,
-        primaryPath: primary
+        primaryPath: primaryItem ? primaryItem.storagePath : null,
+        primaryName: primaryItem && primaryItem.file ? primaryItem.file.name : null,
+        primarySize: primaryItem && primaryItem.file ? primaryItem.file.size : null
       };
     }
 
@@ -1041,11 +1222,12 @@
   // ══════════════════════════════════════════════════════════
   // پایان
   // ══════════════════════════════════════════════════════════
-  function showDone(requestId, sum) {
+  function showDone(requestId, requestCode, sum) {
     show($('card-done'));
     $('done-name').textContent = state.identity ? state.identity.name : '—';
     $('done-count').textContent = fa(sum.done);
-    $('done-code').textContent = requestId;
+    // کد پیگیری ۵ رقمی (اگر تریگر دیتابیس کد را برگردانده باشد)
+    $('done-code').textContent = requestCode ? fa(requestCode) : '—';
     updateClosingGuard();
   }
 
@@ -1135,9 +1317,10 @@
 
     // نویسندهٔ درخواست — در سرتیتر کارت وضعیت
     if ($('status-sub')) {
-      $('status-sub').textContent = req.assigned_agent_name
-        ? ('✍️ نویسنده: ' + req.assigned_agent_name)
-        : '⏳ در انتظار تعیین نویسنده';
+      $('status-sub').textContent = (req.code ? 'کد پیگیری ' + fa(req.code) + ' · ' : '') +
+        (req.assigned_agent_name
+          ? ('✍️ نویسنده: ' + req.assigned_agent_name)
+          : '⏳ در انتظار تعیین نویسنده');
     }
 
     // ── کاشی‌های آماری ──
@@ -1274,7 +1457,18 @@
       if (state.recording) stopRecording(); else startRecording();
     });
     on($('btn-voice-stop'), 'click', stopRecording);
-    on($('btn-voice-clear'), 'click', clearVoice);
+    on($('btn-voice-clear'), 'click', function () { clearVoice(); startRecording(); });
+    on($('btn-name-change'), 'click', clearResolved);
+    on($('name-list'), 'click', function (e) {
+      var btn = e.target.closest ? e.target.closest('[data-pick]') : null;
+      if (btn) pickStudent(btn.getAttribute('data-pick'));
+    });
+    var searchTimer = null;
+    on($('name-search'), 'input', function (e) {
+      var v = e.target.value;
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(function () { renderNameList(v); }, 220);
+    });
 
     on($('who-chip'), 'click', function (e) {
       var t = e.target.closest ? e.target.closest('[data-edit-id]') : null;

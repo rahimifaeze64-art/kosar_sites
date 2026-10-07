@@ -553,11 +553,11 @@ class TadilatBot:
         self._send_app(
             chat_id,
             "📎 %s دریافت شد و به آخرین درخواستت وصل شد (جمعاً %s فایل).\n%s\n"
-            "کد پیگیری: <code>%s</code>"
+            "کد پیگیری: <b>%s</b>"
             % (label, files_count,
                ("✍️ نویسنده: <b>%s</b>" % html.escape(writer_name)) if writer_name
                else "⏳ در انتظار تعیین نویسنده",
-               html.escape(str(request_id))))
+               html.escape(str(req.get("code") or request_id))))
         log("فایل فورواردشده به %s اضافه شد (%s)" % (request_id, kind_db))
 
     # ── دستورها ─────────────────────────────────────────────
@@ -610,7 +610,7 @@ class TadilatBot:
         try:
             rows = self.sb.select(
                 "tadilat_requests",
-                "select=id,status,files_count,created_at,source"
+                "select=id,code,status,files_count,created_at,source"
                 "&telegram_user_id=eq.%d&order=created_at.desc&limit=5" % chat_id)
         except SupabaseError as exc:
             self._send_app(chat_id, "❌ خواندن وضعیت ناموفق بود: %s" % html.escape(str(exc)))
@@ -623,12 +623,13 @@ class TadilatBot:
         lines = ["📋 <b>آخرین ارسال‌های شما</b>", ""]
         for row in rows:
             when = str(row.get("created_at") or "")[:16].replace("T", " ")
+            code = row.get("code") or row.get("id") or "—"
             lines.append(
-                "• %s فایل — %s\n  <i>%s</i>\n  <code>%s</code>"
+                "• %s فایل — %s\n  <i>%s</i>\n  کد پیگیری: <b>%s</b>"
                 % (row.get("files_count") or 0,
                    STATUS_FA.get(row.get("status"), row.get("status") or "—"),
                    html.escape(when),
-                   html.escape(str(row.get("id") or ""))))
+                   html.escape(str(code))))
         self._send_app(chat_id, "\n".join(lines))
 
     # ── اطلاع‌رسانی اختیاری به مدیرها ───────────────────────

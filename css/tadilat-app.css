@@ -272,6 +272,63 @@ textarea { resize: vertical; min-height: 96px; font-weight: 600; line-height: 1.
 }
 .mic-hint { font-size: 12.5px; color: var(--muted); margin-top: 9px; font-weight: 700; }
 
+/* ── دکمهٔ اصلی «اسمت را بگو» ── */
+.mic-hero { text-align: center; padding: 10px 0 6px; }
+.mic-hero-btn {
+  width: 104px; height: 104px;
+  border-radius: 50%; border: none;
+  background: linear-gradient(145deg, #a99bff, #6c8cff);
+  color: #fff; font-size: 40px;
+  cursor: pointer;
+  box-shadow: var(--sh-tile), 0 18px 34px -18px rgba(108, 140, 255, .95);
+  transition: transform .14s;
+}
+.mic-hero-btn:active { transform: scale(.93); }
+.mic-hero-btn.recording {
+  background: linear-gradient(145deg, #ff9aae, #ef445f);
+  box-shadow: var(--sh-tile), 0 18px 34px -18px rgba(239, 68, 95, .95);
+  animation: pulse 1.3s ease-in-out infinite;
+}
+.mic-hero-hint { margin: 14px 0 4px; font-size: 13.5px; font-weight: 800; color: var(--ink-2); }
+.mic-hero-hint b { color: var(--purple-2); }
+
+/* ── انتخاب دستی نام ── */
+.picker-box {
+  background: #fbfbff;
+  border-radius: 22px;
+  padding: 14px;
+  margin-top: 14px;
+  box-shadow: inset 0 2px 5px rgba(96, 108, 196, .10);
+}
+.picker-hint {
+  display: flex; gap: 8px; align-items: flex-start;
+  margin: 0 0 10px; font-size: 12.5px; font-weight: 700; color: var(--muted);
+}
+.picker-box input {
+  width: 100%; padding: 13px 16px; border-radius: 18px;
+  border: 1px solid var(--line); background: #fff; color: var(--ink);
+  font-family: inherit; font-size: 14.5px; font-weight: 700; outline: none;
+  margin-bottom: 10px;
+}
+.picker-box input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(69, 96, 240, .13); }
+.name-list {
+  max-height: 260px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.name-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; text-align: start;
+  background: #fff; border: 1px solid var(--line);
+  border-radius: 18px; padding: 12px 15px;
+  font-family: inherit; font-size: 13.5px; font-weight: 800; color: var(--ink);
+  cursor: pointer;
+}
+.name-item:active { background: var(--accent-soft); }
+.name-item .ni-no { font-size: 11.5px; font-weight: 700; color: var(--muted); }
+.name-item.on { background: var(--accent); color: #fff; }
+.name-item.on .ni-no { color: rgba(255, 255, 255, .85); }
+.name-empty { text-align: center; color: var(--muted); font-size: 13px; padding: 14px 0; font-weight: 700; }
+
 /* ══════════════ جعبهٔ ویس ══════════════ */
 .voice-box {
   background: var(--lav-1);

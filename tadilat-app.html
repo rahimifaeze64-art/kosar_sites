@@ -46,23 +46,20 @@
 
     <!-- باکس ۱ — اسم -->
     <section id="card-name" class="card">
-      <div class="card-top" style="display:flex;align-items:flex-start;gap:14px;margin-bottom:18px">
+      <div class="card-top" style="display:flex;align-items:flex-start;gap:14px;margin-bottom:14px">
         <span class="icon-badge g-lav">🙋‍♂️</span>
         <div class="card-titles" style="flex:1;min-width:0">
           <h2 style="margin:0;font-size:18px;font-weight:900">اسمت چیه؟</h2>
-          <p class="muted" style="margin-top:2px;font-size:13px">بنویس یا بگو — تا تعدیلاتت به پروفایلت وصل بشه</p>
+          <p class="muted" style="margin-top:2px;font-size:13px">اسمت را <b>بگو</b> تا خودمان پیدایت کنیم</p>
         </div>
       </div>
 
-      <div class="field">
-        <label class="field-label" for="in-name">نام و نام خانوادگی</label>
-        <div class="input-row">
-          <input id="in-name" type="text" autocomplete="name" placeholder="مثال: علی رضایی">
-          <button id="btn-mic" class="mic-btn" type="button" title="اسمت را بگو">
-            <i class="fas fa-microphone"></i>
-          </button>
-        </div>
-        <div id="mic-hint" class="mic-hint">🎤 دکمه را بزن و اسمت را بگو</div>
+      <!-- دکمهٔ اصلی: گفتن اسم -->
+      <div class="mic-hero">
+        <button id="btn-mic" class="mic-hero-btn" type="button" aria-label="اسمت را بگو">
+          <i class="fas fa-microphone"></i>
+        </button>
+        <p id="mic-hero-hint" class="mic-hero-hint">🎤 بزن و اسمت را بگو <b>(الزامی)</b></p>
       </div>
 
       <div id="voice-box" class="voice-box hidden">
@@ -78,15 +75,40 @@
             <i class="fas fa-stop"></i><span>تمام</span>
           </button>
           <button id="btn-voice-clear" class="pill pill-soft hidden" type="button">
-            <i class="fas fa-trash"></i><span>حذف ویس</span>
+            <i class="fas fa-trash"></i><span>ضبط دوباره</span>
           </button>
         </div>
         <audio id="voice-audio" class="voice-audio hidden" controls></audio>
       </div>
 
+      <!-- نتیجهٔ تشخیص خودکار / انتخاب -->
+      <div id="name-resolved" class="match-box match-ok hidden">
+        <div id="name-resolved-text"></div>
+        <button id="btn-name-change" class="pill pill-soft" type="button" style="height:36px;margin-top:8px">
+          <i class="fas fa-pen"></i><span>اسم من این نیست</span>
+        </button>
+      </div>
+
+      <!-- انتخاب دستی از فهرست دانشجوها -->
+      <div id="name-picker" class="picker-box hidden">
+        <p class="picker-hint">
+          <i class="fas fa-circle-info"></i>
+          <span id="picker-hint-text">از فهرست انتخاب کن یا خودت بنویس</span>
+        </p>
+        <input id="name-search" type="text" placeholder="🔍 جستجوی نام یا شمارهٔ دانشجویی…">
+        <div id="name-list" class="name-list"></div>
+      </div>
+
+      <div class="field" style="margin-top:14px">
+        <label class="field-label" for="in-name">
+          یا خودت بنویس <span class="hint">(اختیاری)</span>
+        </label>
+        <input id="in-name" type="text" autocomplete="name" placeholder="نام و نام خانوادگی">
+      </div>
+
       <div class="field">
         <label class="field-label" for="in-no">
-          شمارهٔ دانشجویی <span class="hint">— برای اتصال دقیق‌تر</span>
+          شمارهٔ دانشجویی <span class="hint">(اختیاری — برای دقت بیشتر)</span>
         </label>
         <input id="in-no" type="text" inputmode="numeric" placeholder="مثال: 40254021132">
       </div>
@@ -94,7 +116,7 @@
       <div id="identity-result" class="match-box hidden"></div>
 
       <button id="btn-identity" class="btn btn-primary">
-        <span>ثبت مشخصات</span><i class="fas fa-arrow-left"></i>
+        <span>ادامه</span><i class="fas fa-arrow-left"></i>
       </button>
     </section>
 

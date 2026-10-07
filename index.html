@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -346,7 +346,7 @@
                 </button>
             </template>
 
-            <!-- تعدیلات (دریافتی از ربات تلگرام) - فقط عامل / نویسنده -->
+            <!-- تعدیلات - فقط عامل / نویسنده -->
             <template x-if="currentUser.role === 'agent'">
                 <button @click="currentPage = 'tadilat'"
                         :class="currentPage === 'tadilat' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
@@ -356,13 +356,13 @@
                 </button>
             </template>
 
-            <!-- تعدیلات تلگرام - کارمند و مدیر -->
+            <!-- تعدیلات - کارمند و مدیر -->
             <template x-if="currentUser.role === 'employee' || currentUser.role === 'manager'">
                 <button @click="currentPage = 'tadilat'"
                         :class="currentPage === 'tadilat' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
                         class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                     <i class="fas fa-file-pen text-lg"></i>
-                    <span class="font-medium">تعدیلات تلگرام</span>
+                    <span class="font-medium">تعدیلات</span>
                 </button>
             </template>
 
