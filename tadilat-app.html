@@ -195,18 +195,16 @@
         </button>
       </div>
 
-      <!-- انتخاب دستی از فهرست دانشجوها -->
-      <div id="name-picker" class="picker-box hidden">
-        <p class="picker-hint">
-          <i class="fas fa-circle-info"></i>
-          <span id="picker-hint-text" data-i18n="picker_hint">از فهرست انتخاب کن یا خودت بنویس</span>
-        </p>
-        <input id="name-search" type="text" data-i18n-ph="ph_search" placeholder="🔍 جستجوی نام یا شمارهٔ دانشجویی…">
-        <div id="name-list" class="name-list"></div>
+      <!-- راهنمای ورود دستی —
+           ⚠️ هرگز فهرستی از دانشجوها نمایش داده نمی‌شود؛ دانشجو فقط
+           نام خودش را می‌بیند و در صورت اشتباه، خودش تایپ می‌کند. -->
+      <div id="name-manual" class="manual-box hidden">
+        <i class="fas fa-keyboard"></i>
+        <span id="name-manual-text"></span>
       </div>
 
-      <div class="field" style="margin-top:14px">
-        <label class="field-label" for="in-name" data-i18n-html="label_write">یا خودت بنویس <span class="hint">(اختیاری)</span></label>
+      <div class="field" id="name-write-wrap" style="margin-top:14px">
+        <label class="field-label" for="in-name" data-i18n-html="label_write">یا اسمت را خودت بنویس</label>
         <input id="in-name" type="text" autocomplete="name" data-i18n-ph="ph_name" placeholder="نام و نام خانوادگی">
       </div>
 

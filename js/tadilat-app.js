@@ -22,7 +22,6 @@
   var PREFIX = 'tadilat';
   var MAX_FILE_BYTES = 50 * 1024 * 1024;
   var LS_IDENTITY = 'tadilat_app_identity_v2';
-  var SS_STUDENTS = 'tadilat_app_students_v2';
   var LS_LANG = 'tadilat_app_lang_v1';
 
   // ══════════════════════════════════════════════════════════
@@ -41,7 +40,12 @@
       btn_not_my_name: 'اسم من این نیست',
       picker_hint: 'از فهرست انتخاب کن یا خودت بنویس',
       ph_search: '🔍 جستجوی نام یا شمارهٔ دانشجویی…',
-      label_write: 'یا خودت بنویس <span class="hint">(اختیاری)</span>',
+      label_write: 'یا اسمت را خودت بنویس <span class="hint">(اگر بالا درست نبود)</span>',
+      manual_hint: 'اسمت را کامل بنویس تا پیدایت کنیم.',
+      manual_wrong: 'باشد، اسمت را خودت بنویس.',
+      manual_no_stt: 'این مرورگر تشخیص گفتار ندارد؛ اسمت را خودت بنویس.',
+      manual_short: 'اسمت را کامل بنویس.',
+      manual_unsure: 'مطمئن نشدم؛ اسمت را کامل بنویس.',
       ph_name: 'نام و نام خانوادگی',
       label_no: 'شمارهٔ دانشجویی <span class="hint">(اختیاری — برای دقت بیشتر)</span>',
       ph_no: 'مثال: 40254021132', btn_continue: 'ادامه',
@@ -71,7 +75,7 @@
       empty_sub: 'اولین تعدیلاتت را از تب «ارسال» بفرست.', btn_go_send: 'رفتن به ارسال',
       // راهنما
       how_title: 'چطور کار می‌کند؟',
-      how1_t: 'اسمت را بگو', how1_s: 'با 🎤 اسمت را بگو تا بدونیم تعدیلات مال کیه',
+      how1_t: 'اسمت را بگو', how1_s: 'با 🎤 اسمت را بگو تا تطبیق داده شود؛ اگر درست تشخیص داده نشد، خودت تایپش کن',
       how2_t: 'فایل‌ها را بفرست', how2_s: 'عکس، PDF، Word یا فایل صوتی — چندتایی',
       how3_t: 'وضعیت را دنبال کن', how3_s: 'دریافت شد ← شروع شد ← در حال انجام ← آماده تحویل',
       wa_card_title: 'فایل از واتساپ داری؟', wa_card_sub: 'یک راه سریع',
@@ -114,7 +118,8 @@
       who_unlinked: '• در انتظار اتصال کارشناس',
       who_edit: 'ویرایش',
       toast_voice_first: '🎤 اول روی دکمهٔ میکروفن بزن و اسمت را بگو.',
-      toast_pick_name: 'اسمت را انتخاب کن یا بنویس 🙂',
+      toast_pick_name: 'اسمت را کامل بنویس 🙂',
+      toast_write_name: 'اسمت را کامل بنویس 🙂',
       toast_bad_no: 'شمارهٔ دانشجویی معتبر نیست.',
       toast_identity_fail: 'بررسی مشخصات ناموفق بود: {0}',
       toast_min_file: '🙂 حداقل یک فایل تعدیلات انتخاب کن.',
@@ -157,7 +162,12 @@
       btn_not_my_name: 'ليس اسمي',
       picker_hint: 'اختر من القائمة أو اكتبه بنفسك',
       ph_search: '🔍 ابحث بالاسم أو برقم الطالب…',
-      label_write: 'أو اكتبه بنفسك <span class="hint">(اختياري)</span>',
+      label_write: 'أو اكتب اسمك بنفسك <span class="hint">(إن لم يكن صحيحاً)</span>',
+      manual_hint: 'اكتب اسمك كاملاً لنبحث عنك.',
+      manual_wrong: 'حسناً، اكتب اسمك بنفسك.',
+      manual_no_stt: 'هذا المتصفح لا يتعرّف على الكلام؛ اكتب اسمك بنفسك.',
+      manual_short: 'اكتب اسمك كاملاً.',
+      manual_unsure: 'لست متأكداً؛ اكتب اسمك كاملاً.',
       ph_name: 'الاسم الكامل',
       label_no: 'رقم الطالب <span class="hint">(اختياري — لدقة أكبر)</span>',
       ph_no: 'مثال: 40254021132', btn_continue: 'متابعة',
@@ -182,7 +192,7 @@
       empty_title: 'لا توجد تعديلات بعد',
       empty_sub: 'أرسل تعديلاتك الأولى من تبويب «إرسال».', btn_go_send: 'الذهاب إلى الإرسال',
       how_title: 'كيف يعمل؟',
-      how1_t: 'قل اسمك', how1_s: 'قل اسمك بصوتك 🎤 لنعرف صاحب التعديلات',
+      how1_t: 'قل اسمك', how1_s: 'قل اسمك بصوتك 🎤 ليطابَق تلقائياً؛ وإن لم يُتعرَّف عليه بشكل صحيح، اكتبه بنفسك',
       how2_t: 'أرسل الملفات', how2_s: 'صور، PDF، Word أو ملف صوتي — ويمكن أكثر من ملف',
       how3_t: 'تابع الحالة', how3_s: 'تم الاستلام ← بدأ العمل ← قيد التنفيذ ← جاهز للتسليم',
       wa_card_title: 'لديك ملف من واتساب؟', wa_card_sub: 'طريقة سريعة',
@@ -222,7 +232,8 @@
       who_unlinked: '• بانتظار ربط المختص',
       who_edit: 'تعديل',
       toast_voice_first: '🎤 أولاً اضغط زر الميكروفون وقل اسمك.',
-      toast_pick_name: 'اختر اسمك أو اكتبه 🙂',
+      toast_pick_name: 'اكتب اسمك كاملاً 🙂',
+      toast_write_name: 'اكتب اسمك كاملاً 🙂',
       toast_bad_no: 'رقم الطالب غير صالح.',
       toast_identity_fail: 'تعذّر التحقق من بياناتك: {0}',
       toast_min_file: '🙂 اختر ملف تعديلات واحداً على الأقل.',
@@ -574,27 +585,19 @@
   // ══════════════════════════════════════════════════════════
   var studentsCache = null;
 
+  /**
+   * فهرست دانشجوها فقط برای «تطبیق» در حافظهٔ همین صفحه نگه داشته می‌شود
+   * و هیچ‌وقت به دانشجو نمایش داده نمی‌شود و در sessionStorage هم ذخیره
+   * نمی‌شود (تا در ابزار توسعه‌دهنده قابل دیدن نباشد).
+   */
   function loadStudents() {
     if (studentsCache) return Promise.resolve(studentsCache);
-    try {
-      var raw = sessionStorage.getItem(SS_STUDENTS);
-      if (raw) {
-        var p = JSON.parse(raw);
-        if (p && p.rows && (Date.now() - p.at) < 30 * 60 * 1000) {
-          studentsCache = p.rows;
-          return Promise.resolve(studentsCache);
-        }
-      }
-    } catch (e) { /* نادیده */ }
     return sbRest('GET', 'profiles?select=id,name,student_id&role=eq.student&limit=5000')
       .then(function (rows) {
         studentsCache = (rows || []).map(function (r) {
           return { id: r.id, name: r.name || '', key: normKey(r.name),
                    student_id: String(r.student_id || '').trim() };
         });
-        try {
-          sessionStorage.setItem(SS_STUDENTS, JSON.stringify({ at: Date.now(), rows: studentsCache }));
-        } catch (e) { /* حافظه پر */ }
         return studentsCache;
       });
   }
@@ -903,7 +906,7 @@
           if (!state.voiceText) {
             $('voice-text').textContent = t('voice_heard_fail');
             $('voice-text').className = 'voice-text bad';
-            showPicker(t('picker_no_stt'));
+            promptManual('manual_no_stt');
           }
         };
         speech.onend = function () { speech = null; };
@@ -966,7 +969,7 @@
     }
     // اگر تشخیص گفتار در دسترس نبود، فهرست انتخاب را باز کن
     if (!state.voiceHeard && !SpeechRec && state.voiceBlob) {
-      showPicker(t('picker_no_stt'));
+      promptManual('manual_no_stt');
     }
   }
 
@@ -987,7 +990,9 @@
         ? t('resolved_you_no', esc(student.name), esc(student.student_no))
         : t('resolved_you', esc(student.name)));
     show(box);
-    hide($('name-picker'));
+    hide($('name-manual'));
+    var wrap = $('name-write-wrap');
+    if (wrap) wrap.classList.remove('attention');
     $('in-name').value = student.name;
     $('in-no').value = student.student_no || $('in-no').value;
     haptic.ok();
@@ -997,7 +1002,7 @@
   function matchHeardName(heard) {
     return loadStudents().then(function (rows) {
       var key = normKey(heard);
-      if (!key || key.length < 3) { showPicker(t('picker_choose')); return null; }
+      if (!key || key.length < 3) { promptManual('manual_short'); return null; }
       var exact = rows.filter(function (r) { return r.key === key; });
       if (exact.length === 1) {
         showResolved({ id: exact[0].id, name: exact[0].name, student_no: exact[0].student_id }, heard);
@@ -1022,7 +1027,7 @@
         return best.row;
       }
       // مطمئن نبود → فهرست پیشنهادی را نشان بده
-      showPicker(t('picker_unsure'), heard);
+      promptManual('manual_unsure');
       return null;
     });
   }
@@ -1041,55 +1046,34 @@
     return prev[n];
   }
 
-  // ── فهرست انتخاب دستی ────────────────────────────────────
-  function showPicker(hint, seed) {
-    var box = $('name-picker');
-    if (!box) return;
-    if (hint) $('picker-hint-text').textContent = hint;
-    show(box);
-    hide($('name-resolved'));
+  // ── ورود دستی نام (هیچ فهرستی به دانشجو نشان داده نمی‌شود) ──
+  /**
+   * وقتی تطبیق خودکار مطمئن نبود یا دانشجو گفت «اسم من این نیست»،
+   * او را به نوشتن نام خودش راهنمایی می‌کنیم.
+   * ⚠️ عمداً هیچ فهرستی از دانشجوها نمایش داده نمی‌شود — حریم خصوصی.
+   */
+  function promptManual(hintKey) {
     state.matched = null;
-    renderNameList(seed || $('name-search').value || '');
-  }
+    hide($('name-resolved'));
 
-  function renderNameList(query) {
-    var list = $('name-list');
-    if (!list) return;
-    var q = normKey(query || '');
-    loadStudents().then(function (rows) {
-      var items = rows;
-      if (q) {
-        items = rows.filter(function (r) {
-          return r.key.indexOf(q) !== -1 ||
-                 String(r.student_id || '').indexOf(q) !== -1;
-        });
-      }
-      if (!items.length) {
-        list.innerHTML = '<p class="name-empty">' + esc(t('picker_notfound')) + '</p>';
-        return;
-      }
-      list.innerHTML = items.slice(0, 60).map(function (r) {
-        return '<button class="name-item" type="button" data-pick="' + esc(r.id) + '">' +
-          '<span>' + esc(r.name) + '</span>' +
-          '<span class="ni-no">' + esc(r.student_id || '') + '</span></button>';
-      }).join('') +
-      (items.length > 60
-        ? '<p class="name-empty">' + esc(t('picker_more', fa(items.length - 60))) + '</p>'
-        : '');
-    });
-  }
-
-  function pickStudent(id) {
-    loadStudents().then(function (rows) {
-      var hit = rows.filter(function (r) { return r.id === id; })[0];
-      if (hit) showResolved({ id: hit.id, name: hit.name, student_no: hit.student_id }, '');
-    });
+    var box = $('name-manual');
+    if (box) {
+      var txt = $('name-manual-text');
+      if (txt) txt.textContent = t(hintKey || 'manual_hint');
+      show(box);
+    }
+    // فیلد نوشتن را برجسته و فعال کن
+    var input = $('in-name');
+    if (input) {
+      var wrap = $('name-write-wrap');
+      if (wrap) wrap.classList.add('attention');
+      try { input.focus(); } catch (e) { /* نادیده */ }
+      try { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* نادیده */ }
+    }
   }
 
   function clearResolved() {
-    state.matched = null;
-    hide($('name-resolved'));
-    showPicker(t('picker_pick_hint'));
+    promptManual('manual_wrong');
   }
 
   function clearVoice() {
@@ -1103,7 +1087,7 @@
     hide($('voice-box'));
     hide($('btn-voice-clear'));
     hide($('name-resolved'));
-    hide($('name-picker'));
+    hide($('name-manual'));
     $('voice-audio').src = '';
     $('voice-text').textContent = '';
     $('voice-title').textContent = t('voice_recording');
@@ -1131,7 +1115,9 @@
     hide($('card-done'));
     hide($('identity-result'));
     hide($('name-resolved'));
-    hide($('name-picker'));
+    hide($('name-manual'));
+    var wrap = $('name-write-wrap');
+    if (wrap) wrap.classList.remove('attention');
     updateSubmitBar();
     var u = tgUser();
     var input = $('in-name');
@@ -1162,12 +1148,12 @@
       return;
     }
 
-    // ۲) نام باید مشخص باشد: تطبیق خودکار، انتخاب از فهرست، یا نوشتن
+    // ۲) نام باید مشخص باشد: از تطبیق خودکار ویس، یا نوشتهٔ خودِ دانشجو
     var chosen = state.matched;
     var name = chosen ? chosen.name : typed;
     if (!name || name.length < 3) {
-      showPicker(t('picker_pick_hint'));
-      toast(t('toast_pick_name'));
+      promptManual('manual_short');
+      toast(t('toast_write_name'));
       return;
     }
     if (no && no.replace(/[^0-9A-Za-z]/g, '').length < 4) {
@@ -1797,15 +1783,10 @@
     on($('btn-voice-stop'), 'click', stopRecording);
     on($('btn-voice-clear'), 'click', function () { clearVoice(); startRecording(); });
     on($('btn-name-change'), 'click', clearResolved);
-    on($('name-list'), 'click', function (e) {
-      var btn = e.target.closest ? e.target.closest('[data-pick]') : null;
-      if (btn) pickStudent(btn.getAttribute('data-pick'));
-    });
-    var searchTimer = null;
-    on($('name-search'), 'input', function (e) {
-      var v = e.target.value;
-      clearTimeout(searchTimer);
-      searchTimer = setTimeout(function () { renderNameList(v); }, 220);
+    // نامِ دستی: اگر دانشجو خودش تایپ کرد، تطبیق خودکار را کنار بگذار
+    on($('in-name'), 'input', function () {
+      state.matched = null;
+      hide($('name-resolved'));
     });
 
     on($('who-chip'), 'click', function (e) {
