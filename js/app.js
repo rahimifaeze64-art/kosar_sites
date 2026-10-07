@@ -141,6 +141,17 @@ function appController() {
             // Alpine x-show نیاز به یک tick دارد
             this.$nextTick(() => doInit());
           }
+          // تعدیلات — دریافتی از ربات تلگرام (نویسنده/دکتر، کارمند، مدیر)
+          if (newPage === 'tadilat') {
+              this.$nextTick(() => {
+                  setTimeout(() => {
+                      const root = document.getElementById('tadilat-root');
+                      if (root && typeof TadilatModule !== 'undefined') {
+                          TadilatModule.init(this.currentUser);
+                      }
+                  }, 100);
+              });
+          }
           // یادداشت شخصی — همه نقش‌ها
           if (newPage === 'personalNotes') {
               this.$nextTick(() => {

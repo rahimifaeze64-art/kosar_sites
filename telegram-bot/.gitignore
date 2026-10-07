@@ -1,0 +1,7 @@
+config.json
+bot_state.json
+bot_state.selftest.json
+bot.log
+bot.log.1
+__pycache__/
+*.pyc

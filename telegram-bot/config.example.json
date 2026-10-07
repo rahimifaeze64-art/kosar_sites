@@ -1,0 +1,38 @@
+{
+  "_راهنما": [
+    "این فایل را به config.json کپی کنید و مقادیر را پر کنید.",
+    "برای ساخت خودکار:  python bot.py --init-config",
+    "پس از تنظیم:  python bot.py --check  و سپس  python bot.py"
+  ],
+
+  "telegram_bot_token": "توکنی که @BotFather می‌دهد — مثل 123456789:AAE...",
+
+  "_miniapp_url_راهنما": [
+    "آدرس HTTPS صفحهٔ مینی‌اپ. تلگرام آدرس غیرامن (http) را قبول نمی‌کند.",
+    "بعد از deploy پروژه روی سایت، این آدرس باید در دسترس باشد."
+  ],
+  "miniapp_url": "https://alkawthar.info/tadilat-app.html",
+
+  "supabase_url": "https://tyzrexkneoexmcegaxlc.supabase.co",
+  "supabase_anon_key": "کلید anon پروژه — همان مقدار SUPABASE_ANON_KEY در js/supabase-config.js",
+
+  "storage_bucket": "student-documents",
+  "menu_button_text": "ارسال تعدیلات",
+
+  "_admin_chat_ids_راهنما": [
+    "آیدی عددی چت مدیرانی که هنگام ارسال تعدیلات جدید پیام بگیرند.",
+    "مثال: [123456789] — خالی بودنش اشکالی ندارد."
+  ],
+  "admin_chat_ids": [],
+
+  "_notify_on_new_راهنما": [
+    "اگر true باشد، ربات هر چند ثانیه دیتابیس را بررسی می‌کند",
+    "و برای هر تعدیلات تازه به admin_chat_ids پیام می‌دهد.",
+    "پیش‌فرض false است؛ صفحهٔ «تعدیلات» در سایت با Realtime خودش تازه می‌شود."
+  ],
+  "notify_on_new": false,
+  "notify_poll_seconds": 60,
+
+  "poll_timeout": 50,
+  "request_timeout": 60
+}

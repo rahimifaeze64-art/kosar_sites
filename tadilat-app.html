@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6FF">
+<title>ارسال تعدیلات</title>
+
+<link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
+<link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
+<link href="css/tadilat-app.css" rel="stylesheet">
+
+<!-- ⚠️ نسخهٔ کش — هنگام هر تغییر این مقدارها را با هم جلو ببرید -->
+<script>window.TADILAT_APP_V = '5.0.0';</script>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="js/supabase-config.js?v=5.0.0"></script>
+</head>
+<body>
+
+<div id="app" class="app">
+
+  <!-- ══════════════ سرصفحه ══════════════ -->
+  <header class="profile">
+    <div class="avatar-ring">
+      <div class="avatar" id="hero-avatar">؟</div>
+    </div>
+    <div class="profile-info">
+      <h1 id="hero-title">سلام! 👋</h1>
+      <div class="profile-sub" id="hero-pill">تعدیلاتت رو بفرست</div>
+    </div>
+    <button class="icon-btn" id="hero-help" type="button" aria-label="راهنما">
+      <i class="fas fa-circle-question"></i>
+    </button>
+  </header>
+
+  <div id="browser-warning" class="banner banner-warn hidden">
+    <span>💡 بیرون از تلگرام باز شده. کار می‌کند، ولی از دکمهٔ منوی ربات بازش کنی بهتر است.</span>
+  </div>
+  <div id="global-error" class="banner banner-error hidden"></div>
+
+  <!-- ══════════════════════════════════════════════════════
+       نمای ۱ — ارسال
+       ══════════════════════════════════════════════════════ -->
+  <main id="view-send">
+
+    <!-- باکس ۱ — اسم -->
+    <section id="card-name" class="card">
+      <div class="card-top" style="display:flex;align-items:flex-start;gap:14px;margin-bottom:18px">
+        <span class="icon-badge g-lav">🙋‍♂️</span>
+        <div class="card-titles" style="flex:1;min-width:0">
+          <h2 style="margin:0;font-size:18px;font-weight:900">اسمت چیه؟</h2>
+          <p class="muted" style="margin-top:2px;font-size:13px">بنویس یا بگو — تا تعدیلاتت به پروفایلت وصل بشه</p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="in-name">نام و نام خانوادگی</label>
+        <div class="input-row">
+          <input id="in-name" type="text" autocomplete="name" placeholder="مثال: علی رضایی">
+          <button id="btn-mic" class="mic-btn" type="button" title="اسمت را بگو">
+            <i class="fas fa-microphone"></i>
+          </button>
+        </div>
+        <div id="mic-hint" class="mic-hint">🎤 دکمه را بزن و اسمت را بگو</div>
+      </div>
+
+      <div id="voice-box" class="voice-box hidden">
+        <div class="voice-head">
+          <span class="dot-live"></span>
+          <b id="voice-title">در حال ضبط…</b>
+          <span id="voice-timer" class="voice-timer">۰:۰۰</span>
+        </div>
+        <div class="voice-wave" id="voice-wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <p id="voice-text" class="voice-text"></p>
+        <div class="voice-actions">
+          <button id="btn-voice-stop" class="pill pill-danger" type="button">
+            <i class="fas fa-stop"></i><span>تمام</span>
+          </button>
+          <button id="btn-voice-clear" class="pill pill-soft hidden" type="button">
+            <i class="fas fa-trash"></i><span>حذف ویس</span>
+          </button>
+        </div>
+        <audio id="voice-audio" class="voice-audio hidden" controls></audio>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="in-no">
+          شمارهٔ دانشجویی <span class="hint">— برای اتصال دقیق‌تر</span>
+        </label>
+        <input id="in-no" type="text" inputmode="numeric" placeholder="مثال: 40254021132">
+      </div>
+
+      <div id="identity-result" class="match-box hidden"></div>
+
+      <button id="btn-identity" class="btn btn-primary">
+        <span>ثبت مشخصات</span><i class="fas fa-arrow-left"></i>
+      </button>
+    </section>
+
+    <!-- باکس ۲ — تعدیلات -->
+    <section id="card-files" class="card hidden">
+      <div class="card-top" style="display:flex;align-items:flex-start;gap:14px;margin-bottom:18px">
+        <span class="icon-badge g-sky">📎</span>
+        <div class="card-titles" style="flex:1;min-width:0">
+          <h2 style="margin:0;font-size:18px;font-weight:900">تعدیلاتت چیه؟</h2>
+          <p class="muted" style="margin-top:2px;font-size:13px">عکس، PDF، Word یا هر فرمت صوتی — چندتایی هم می‌شه</p>
+        </div>
+      </div>
+
+      <div id="who-chip" class="who-chip"></div>
+
+      <div id="dropzone" class="dropzone">
+        <div class="dz-icon">📥</div>
+        <p class="dz-title">فایل‌ها را اینجا بریز</p>
+        <p class="dz-sub">یا از دکمه‌های پایین انتخاب کن</p>
+      </div>
+
+      <div class="picker">
+        <button class="pick-btn" id="btn-pick-camera" type="button"><i class="fas fa-camera"></i><span>دوربین</span></button>
+        <button class="pick-btn" id="btn-pick-gallery" type="button"><i class="fas fa-image"></i><span>گالری</span></button>
+        <button class="pick-btn" id="btn-pick-doc" type="button"><i class="fas fa-file-pdf"></i><span>PDF / سند</span></button>
+        <button class="pick-btn" id="btn-pick-audio" type="button"><i class="fas fa-headphones"></i><span>فایل صوتی</span></button>
+        <button class="pick-btn" id="btn-pick-any" type="button"><i class="fas fa-folder-open"></i><span>همهٔ فایل‌ها</span></button>
+      </div>
+
+      <input id="file-camera" type="file" accept="image/*" capture="environment" multiple hidden>
+      <input id="file-gallery" type="file" accept="image/*" multiple hidden>
+      <input id="file-doc" type="file" multiple hidden
+             accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,.zip,.rar,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+      <input id="file-audio" type="file" multiple hidden
+             accept="audio/*,.mp3,.ogg,.oga,.opus,.wav,.m4a,.aac,.amr,.flac,.wma,.3gp,application/ogg">
+      <input id="file-any" type="file" multiple hidden>
+
+      <div id="queue" class="queue"></div>
+
+      <div class="whatsapp-tip">
+        <span class="wa-icon">🟢</span>
+        <div>
+          <b>از واتساپ هم می‌شه!</b>
+          <p>فایل را در واتساپ بزن <b>Share → Telegram</b> و برای همین ربات بفرست؛ خودش به همین درخواستت وصل می‌شود.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- باکس ۳ — توضیحات -->
+    <section id="card-note" class="card hidden">
+      <div class="card-top" style="display:flex;align-items:flex-start;gap:14px;margin-bottom:18px">
+        <span class="icon-badge g-peach">💬</span>
+        <div class="card-titles" style="flex:1;min-width:0">
+          <h2 style="margin:0;font-size:18px;font-weight:900">توضیح بده</h2>
+          <p class="muted" style="margin-top:2px;font-size:13px">هر نکته‌ای که فکر می‌کنی لازم است</p>
+        </div>
+      </div>
+      <textarea id="in-note" rows="3"
+                placeholder="مثال: تعدیلات فصل دوم بعد از مناقشه — لطفاً تا آخر هفته"></textarea>
+      <div id="upload-status" class="upload-status hidden" style="margin-top:14px"></div>
+    </section>
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════
+       نمای ۲ — وضعیت
+       ══════════════════════════════════════════════════════ -->
+  <main id="view-status" class="hidden">
+
+    <section id="card-done" class="card card-done hidden">
+      <div class="done-confetti">🎉</div>
+      <h2>تعدیلاتت رسید!</h2>
+      <p class="muted center">تیم نویسنده‌ها بررسی می‌کند و وضعیت را همین‌جا می‌بینی.</p>
+      <div class="receipt">
+        <div class="receipt-row"><span>نام</span><b id="done-name">—</b></div>
+        <div class="receipt-row"><span>تعداد فایل</span><b id="done-count">—</b></div>
+        <div class="receipt-row"><span>کد پیگیری</span><code id="done-code">—</code></div>
+      </div>
+      <button id="btn-another" class="btn btn-primary">
+        <i class="fas fa-plus"></i><span>ارسال تعدیلات جدید</span>
+      </button>
+    </section>
+
+    <section id="card-status" class="hidden" style="display:flex;flex-direction:column;gap:20px">
+
+      <!-- کارت پیشرفت -->
+      <div class="card progress-card">
+        <div class="progress-head">
+          <span>پیشرفت تعدیلات</span>
+          <span class="pv" id="progress-value">۰ از ۵ مرحله</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+      </div>
+
+      <!-- آمار -->
+      <div class="section-title">وضعیت من</div>
+      <div class="stats">
+        <div class="card stat-card">
+          <span class="tile-3d g-peach">📁</span>
+          <div class="stat-text">
+            <div class="stat-value" id="stat-files">۰</div>
+            <div class="stat-label">تعداد فایل‌ها</div>
+          </div>
+        </div>
+        <div class="card stat-card">
+          <span class="tile-3d g-lav">⏱</span>
+          <div class="stat-text">
+            <div class="stat-value-sm" id="stat-due">تعیین نشده</div>
+            <div class="stat-label">زمان تحویل</div>
+          </div>
+        </div>
+        <div class="card stat-card">
+          <span class="tile-3d g-sky">🎯</span>
+          <div class="stat-text">
+            <div class="stat-value-sm" id="stat-status">—</div>
+            <div class="stat-label">وضعیت فعلی</div>
+          </div>
+        </div>
+        <div class="card stat-card">
+          <span class="tile-3d g-mint">🎁</span>
+          <div class="stat-text">
+            <div class="stat-value" id="stat-ready">۰</div>
+            <div class="stat-label">آمادهٔ دانلود</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- فیلترهای قرصی — مراحل -->
+      <div class="pill-filters" id="stage-pills"></div>
+
+      <!-- مسیر و فایل‌ها -->
+      <div class="card">
+        <div class="card-top" style="display:flex;align-items:flex-start;gap:14px;margin-bottom:6px">
+          <span class="icon-badge g-lav">📊</span>
+          <div class="card-titles" style="flex:1;min-width:0">
+            <h2 style="margin:0;font-size:18px;font-weight:900">مسیر تعدیلاتت</h2>
+            <p class="muted" style="margin-top:2px;font-size:13px" id="status-sub">هر مرحله که رد شود، تیک می‌خورد</p>
+          </div>
+        </div>
+
+        <div id="tracker" class="tracker"></div>
+
+        <div id="due-box" class="due-box hidden">
+          <span class="due-emoji">⏰</span>
+          <div>
+            <span class="due-label">زمان تحویل اعلام‌شده</span>
+            <b id="due-value">—</b>
+          </div>
+        </div>
+
+        <div id="deliverables" class="deliverables hidden">
+          <div class="deliverables-title">🎁 فایل‌های آماده‌شده</div>
+          <div id="deliverables-list" class="deliverables-list"></div>
+        </div>
+
+        <div id="history-mini" class="history-mini"></div>
+      </div>
+    </section>
+
+    <section id="card-empty" class="card empty-card">
+      <div class="empty-emoji">🗂</div>
+      <h2>هنوز تعدیلاتی نداری</h2>
+      <p class="muted center">اولین تعدیلاتت را از تب «ارسال» بفرست.</p>
+      <button class="btn btn-primary" id="btn-go-send">
+        <i class="fas fa-paper-plane"></i><span>رفتن به ارسال</span>
+      </button>
+    </section>
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════
+       نمای ۳ — راهنما
+       ══════════════════════════════════════════════════════ -->
+  <main id="view-help" class="hidden" style="display:flex;flex-direction:column;gap:20px">
+    <div class="section-title">چطور کار می‌کند؟</div>
+
+    <section class="card">
+      <ol class="howto">
+        <li><b>اسمت را بگو</b><span>نوشتاری یا با 🎤 — تا بدونیم تعدیلات مال کیه</span></li>
+        <li><b>فایل‌ها را بفرست</b><span>عکس، PDF، Word یا فایل صوتی — چندتایی</span></li>
+        <li><b>وضعیت را دنبال کن</b><span>دریافت شد ← شروع شد ← در حال انجام ← آماده تحویل</span></li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <div class="card-top" style="display:flex;align-items:flex-start;gap:14px;margin-bottom:14px">
+        <span class="icon-badge g-mint">🟢</span>
+        <div class="card-titles" style="flex:1;min-width:0">
+          <h2 style="margin:0;font-size:18px;font-weight:900">فایل از واتساپ داری؟</h2>
+          <p class="muted" style="margin-top:2px;font-size:13px">یک راه سریع</p>
+        </div>
+      </div>
+      <p class="para">در واتساپ روی فایل بزن <b>Share → Telegram</b> و برای همین ربات بفرست.
+        فایل خودش به آخرین درخواستت وصل می‌شود.</p>
+    </section>
+
+    <section class="card">
+      <div class="card-top" style="display:flex;align-items:flex-start;gap:14px;margin-bottom:14px">
+        <span class="icon-badge g-peach">🎧</span>
+        <div class="card-titles" style="flex:1;min-width:0">
+          <h2 style="margin:0;font-size:18px;font-weight:900">نکته‌های کوچک</h2>
+          <p class="muted" style="margin-top:2px;font-size:13px">تا کارت سریع‌تر جلو برود</p>
+        </div>
+      </div>
+      <ul class="tips">
+        <li>📄 فایل‌های PDF و Word را کامل و بدون قفل بفرست</li>
+        <li>🖼 عکس‌ها را واضح و از بالا بگیر</li>
+        <li>🎤 اگر توضیحِ ویس داری، همان‌جا بگو</li>
+        <li>⏱ زمان تحویل را در تب «وضعیت» می‌بینی</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="foot">سیستم مدیریت تحصیلی دانشجویان بین‌المللی</footer>
+</div>
+
+<!-- نوار ارسال — بالای نوار پایین -->
+<div id="submit-bar" class="submit-bar hidden">
+  <button id="btn-submit" class="btn btn-primary btn-lg">
+    <i class="fas fa-paper-plane"></i><span>ارسال تعدیلات</span>
+  </button>
+</div>
+
+<!-- ══════════════ نوار پایین ══════════════ -->
+<nav id="tabbar" class="tabbar">
+  <button class="tab tab-active" id="tab-send" type="button" data-tab="send">
+    <i class="fas fa-cloud-arrow-up"></i><span>ارسال</span>
+  </button>
+  <button class="tab" id="tab-status" type="button" data-tab="status">
+    <i class="fas fa-chart-simple"></i><span>وضعیت</span>
+  </button>
+  <button class="tab" id="tab-help" type="button" data-tab="help">
+    <i class="fas fa-circle-question"></i><span>راهنما</span>
+  </button>
+</nav>
+
+<div id="blocker" class="blocker hidden">
+  <div class="blocker-inner">
+    <div class="loader-ring"></div>
+    <p id="blocker-text">در حال ارسال…</p>
+  </div>
+</div>
+
+<script src="js/tadilat-app.js?v=5.0.0"></script>
+</body>
+</html>

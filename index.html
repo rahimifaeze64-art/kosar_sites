@@ -148,6 +148,7 @@
                 'js/company-door.js',
                 'js/whatsapp-manager.js',
                 'js/registrations.js',
+                'js/tadilat.js',
                 'js/app.js',
                 'js/supabase-init.js',
                 'js/theme-auto-apply.js',
@@ -342,6 +343,26 @@
                         class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                     <i class="fas fa-clipboard-check text-lg"></i>
                     <span class="font-medium">وظایف من</span>
+                </button>
+            </template>
+
+            <!-- تعدیلات (دریافتی از ربات تلگرام) - فقط عامل / نویسنده -->
+            <template x-if="currentUser.role === 'agent'">
+                <button @click="currentPage = 'tadilat'"
+                        :class="currentPage === 'tadilat' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
+                        class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
+                    <i class="fas fa-file-pen text-lg"></i>
+                    <span class="font-medium">تعدیلات</span>
+                </button>
+            </template>
+
+            <!-- تعدیلات تلگرام - کارمند و مدیر -->
+            <template x-if="currentUser.role === 'employee' || currentUser.role === 'manager'">
+                <button @click="currentPage = 'tadilat'"
+                        :class="currentPage === 'tadilat' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
+                        class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
+                    <i class="fas fa-file-pen text-lg"></i>
+                    <span class="font-medium">تعدیلات تلگرام</span>
                 </button>
             </template>
 
@@ -630,6 +651,16 @@
             
             <!-- Agent Accounting Page (Agent Only) -->
             <div x-show="currentPage === 'agentAccounting' && currentUser.role === 'agent'" x-html="getAgentAccountingContent()"></div>
+
+            <!-- Tadilat Page — تعدیلات دریافتی از ربات تلگرام -->
+            <div x-show="currentPage === 'tadilat' && (currentUser.role === 'agent' || currentUser.role === 'employee' || currentUser.role === 'manager')">
+                <div id="tadilat-root" class="min-h-[60vh]">
+                    <div class="flex flex-col items-center justify-center py-20">
+                        <i class="fas fa-spinner fa-spin text-3xl text-lime-400"></i>
+                        <p class="mt-4 text-gray-300">در حال بارگذاری تعدیلات…</p>
+                    </div>
+                </div>
+            </div>
             
             <!-- Chat with Manager Page (employee Only) -->
             <div x-show="currentPage === 'chatWithManager' && currentUser.role === 'employee'" x-html="getChatWithManagerContent()"></div>
