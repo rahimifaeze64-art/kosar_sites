@@ -23,6 +23,318 @@
   var MAX_FILE_BYTES = 50 * 1024 * 1024;
   var LS_IDENTITY = 'tadilat_app_identity_v2';
   var SS_STUDENTS = 'tadilat_app_students_v2';
+  var LS_LANG = 'tadilat_app_lang_v1';
+
+  // ══════════════════════════════════════════════════════════
+  // چندزبانه: فارسی + عربی  (هر دو راست‌به‌چپ)
+  // ══════════════════════════════════════════════════════════
+  var I18N = {
+    fa: {
+      // سرصفحه
+      hero_hello: 'سلام! 👋', hero_pill: 'تعدیلاتت رو بفرست',
+      aria_help: 'راهنما', aria_lang: 'انتخاب زبان', aria_mic: 'اسمت را بگو',
+      browser_warn: '💡 بیرون از تلگرام باز شده. کار می‌کند، ولی از دکمهٔ منوی ربات بازش کنی بهتر است.',
+      // باکس اسم
+      name_title: 'اسمت چیه؟', name_sub: 'اسمت را <b>بگو</b> تا خودمان پیدایت کنیم',
+      mic_hint: '🎤 بزن و اسمت را بگو <b>(الزامی)</b>',
+      voice_recording: 'در حال ضبط…', btn_stop: 'تمام', btn_rerecord: 'ضبط دوباره',
+      btn_not_my_name: 'اسم من این نیست',
+      picker_hint: 'از فهرست انتخاب کن یا خودت بنویس',
+      ph_search: '🔍 جستجوی نام یا شمارهٔ دانشجویی…',
+      label_write: 'یا خودت بنویس <span class="hint">(اختیاری)</span>',
+      ph_name: 'نام و نام خانوادگی',
+      label_no: 'شمارهٔ دانشجویی <span class="hint">(اختیاری — برای دقت بیشتر)</span>',
+      ph_no: 'مثال: 40254021132', btn_continue: 'ادامه',
+      // باکس فایل
+      files_title: 'تعدیلاتت چیه؟',
+      files_sub: 'عکس، PDF، Word یا هر فرمت صوتی — چندتایی هم می‌شه',
+      dz_title: 'فایل‌ها را اینجا بریز', dz_sub: 'یا از دکمه‌های پایین انتخاب کن',
+      pick_camera: 'دوربین', pick_gallery: 'گالری', pick_doc: 'PDF / سند',
+      pick_audio: 'فایل صوتی', pick_any: 'همهٔ فایل‌ها',
+      wa_title: 'از واتساپ هم می‌شه!',
+      wa_body: 'فایل را در واتساپ بزن <b>Share → Telegram</b> و برای همین ربات بفرست؛ خودش به همین درخواستت وصل می‌شود.',
+      // توضیحات
+      note_title: 'توضیح بده', note_sub: 'هر نکته‌ای که فکر می‌کنی لازم است',
+      ph_note: 'مثال: تعدیلات فصل دوم بعد از مناقشه — لطفاً تا آخر هفته',
+      // پایان
+      done_title: 'تعدیلاتت رسید!',
+      done_sub: 'تیم نویسنده‌ها بررسی می‌کند و وضعیت را همین‌جا می‌بینی.',
+      lbl_name: 'نام', lbl_files_count: 'تعداد فایل', lbl_code: 'کد پیگیری',
+      btn_another: 'ارسال تعدیلات جدید',
+      // وضعیت
+      progress_title: 'پیشرفت تعدیلات', my_status: 'وضعیت من',
+      stat_files: 'تعداد فایل‌ها', not_set: 'تعیین نشده', stat_due: 'زمان تحویل',
+      stat_status: 'وضعیت فعلی', stat_ready: 'آمادهٔ دانلود',
+      track_title: 'مسیر تعدیلاتت', track_sub: 'هر مرحله که رد شود، تیک می‌خورد',
+      due_label: 'زمان تحویل اعلام‌شده', deliv_title: '🎁 فایل‌های آماده‌شده',
+      empty_title: 'هنوز تعدیلاتی نداری',
+      empty_sub: 'اولین تعدیلاتت را از تب «ارسال» بفرست.', btn_go_send: 'رفتن به ارسال',
+      // راهنما
+      how_title: 'چطور کار می‌کند؟',
+      how1_t: 'اسمت را بگو', how1_s: 'با 🎤 اسمت را بگو تا بدونیم تعدیلات مال کیه',
+      how2_t: 'فایل‌ها را بفرست', how2_s: 'عکس، PDF، Word یا فایل صوتی — چندتایی',
+      how3_t: 'وضعیت را دنبال کن', how3_s: 'دریافت شد ← شروع شد ← در حال انجام ← آماده تحویل',
+      wa_card_title: 'فایل از واتساپ داری؟', wa_card_sub: 'یک راه سریع',
+      wa_card_body: 'در واتساپ روی فایل بزن <b>Share → Telegram</b> و برای همین ربات بفرست. فایل خودش به آخرین درخواستت وصل می‌شود.',
+      tips_title: 'نکته‌های کوچک', tips_sub: 'تا کارت سریع‌تر جلو برود',
+      tip1: '📄 فایل‌های PDF و Word را کامل و بدون قفل بفرست',
+      tip2: '🖼 عکس‌ها را واضح و از بالا بگیر',
+      tip3: '🎤 اگر توضیحِ ویس داری، همان‌جا بگو',
+      tip4: '⏱ زمان تحویل را در تب «وضعیت» می‌بینی',
+      footer: 'سیستم مدیریت تحصیلی دانشجویان بین‌المللی',
+      // نوار پایین
+      btn_submit: 'ارسال تعدیلات', tab_send: 'ارسال', tab_status: 'وضعیت',
+      tab_help: 'راهنما', blocker: 'در حال ارسال…',
+      // مراحل و وضعیت‌ها
+      st_new: 'دریافت شد', st_started: 'شروع شد', st_in_progress: 'در حال انجام',
+      st_ready: 'آماده تحویل', st_completed: 'تحویل شد',
+      st_draft: 'ناتمام', st_rejected: 'رد شد',
+      // ── پویا ──
+      voice_listening: '🎧 گوش می‌دهم…',
+      voice_unsupported: '⚠️ این دستگاه ضبط صدا را پشتیبانی نمی‌کند؛ نامت را تایپ کن.',
+      voice_stopped: 'ضبط تمام شد',
+      voice_no_stt: '🎤 ویس ضبط شد (این مرورگر تشخیص گفتار ندارد) — اسمت را از فهرست انتخاب کن.',
+      voice_saved: '🎤 ویس اسمت ضبط شد و همراه درخواست ذخیره می‌شود.',
+      voice_heard_fail: '🎤 ویس ضبط شد. تشخیص خودکار روی این دستگاه کار نکرد — نامت را از فهرست انتخاب کن.',
+      picker_notfound: 'دانشجویی با این نام پیدا نشد — می‌توانی خودت بنویسی',
+      picker_choose: 'اسمت را از فهرست انتخاب کن',
+      picker_no_stt: 'این مرورگر تشخیص خودکار ندارد؛ اسمت را از فهرست انتخاب کن',
+      picker_unsure: 'مطمئن نشدم؛ اسمت را از فهرست انتخاب کن',
+      picker_pick_hint: 'اسمت را از فهرست انتخاب کن یا خودت بنویس',
+      resolved_heard: '🗣 شنیدم: «{0}»',
+      resolved_you: '✅ اسم تو: <b>{0}</b>',
+      resolved_you_no: '✅ اسم تو: <b>{0}</b> <span class="hint">({1})</span>',
+      match_ok: '✅ <b>{0}</b> — پروفایلت پیدا شد؛ تعدیلات به خودت وصل می‌شود.',
+      match_ok_writer: '✍️ نویسندهٔ شما: <b>{0}</b>',
+      match_warn: '🤔 پروفایلت را پیدا نکردم. اشکالی ندارد — کارشناس‌ها وصلش می‌کنند.',
+      match_warn_hint: 'برای اتصال دقیق‌تر، شمارهٔ دانشجویی را بنویس و دوباره ثبت کن.',
+      welcome: 'خوش آمدی، {0}! 🌟',
+      hello_named: 'سلام {0}! 👋',
+      who_linked: '• متصل به پروفایل',
+      who_unlinked: '• در انتظار اتصال کارشناس',
+      who_edit: 'ویرایش',
+      toast_voice_first: '🎤 اول روی دکمهٔ میکروفن بزن و اسمت را بگو.',
+      toast_pick_name: 'اسمت را انتخاب کن یا بنویس 🙂',
+      toast_bad_no: 'شمارهٔ دانشجویی معتبر نیست.',
+      toast_identity_fail: 'بررسی مشخصات ناموفق بود: {0}',
+      toast_min_file: '🙂 حداقل یک فایل تعدیلات انتخاب کن.',
+      toast_files_rejected: '🚫 {0} فایل رد شد (خالی یا بزرگ‌تر از {1} مگابایت).',
+      toast_many_failed: '⚠️ {0} فایل ارسال نشد؛ می‌توانی دوباره بفرستی.',
+      toast_send_failed: 'ارسال نشد: {0}',
+      toast_preparing_link: '⏳ دارم لینک دانلود را آماده می‌کنم…',
+      toast_no_link: 'لینک دانلود ساخته نشد.',
+      toast_first_identity: 'اول اسمت را ثبت کن 🙂',
+      toast_no_config: 'تنظیمات Supabase پیدا نشد (js/supabase-config.js بارگذاری نشد).',
+      progress_of: '{0} از {1} مرحله',
+      code_label: 'کد پیگیری {0} · ',
+      waiting_writer: '⏳ در انتظار تعیین نویسنده',
+      writer_label: '✍️ نویسنده: {0}',
+      deliv_download: 'دانلود',
+      picker_more: 'و {0} مورد دیگر — دقیق‌تر جستجو کن',
+      voice_mic_denied: '⚠️ دسترسی به میکروفن نشد. اگر می‌توانی، اجازهٔ میکروفن را بده یا نامت را از فهرست انتخاب کن.',
+      pill_no: 'شمارهٔ {0}',
+      pill_linked: 'متصل به پروفایل',
+      time_at: 'ساعت',
+      blocker_preparing: 'دارم آماده می‌کنم…',
+      blocker_uploading: 'ارسال فایل {0} از {1}…',
+      err_network: 'خطای شبکه در آپلود',
+      err_no_request: 'درخواست ساخته نشد',
+      file_default: 'تعدیلات',
+      uploader_student: 'دانشجو',
+      toast_migration: 'جدول‌های تعدیلات در دیتابیس ساخته نشده‌اند. فایل supabase/tadilat_telegram_migration.sql را اجرا کن.',
+      history_title: '📤 ارسال‌های قبلی',
+      unit_byte: 'بایت', unit_kb: 'کیلوبایت', unit_mb: 'مگابایت',
+      k_image: 'عکس', k_pdf: 'PDF', k_word: 'Word', k_sheet: 'Excel',
+      k_audio: 'صدا', k_video: 'ویدیو', k_zip: 'فشرده', k_other: 'فایل',
+    },
+    ar: {
+      hero_hello: 'مرحباً! 👋', hero_pill: 'أرسل تعديلاتك',
+      aria_help: 'مساعدة', aria_lang: 'اختيار اللغة', aria_mic: 'قل اسمك',
+      browser_warn: '💡 تم فتحه خارج تلگرام. يعمل، لكن الأفضل فتحه من زر قائمة البوت.',
+      name_title: 'ما اسمك؟', name_sub: 'قل <b>اسمك</b> لنبحث عنك',
+      mic_hint: '🎤 اضغط وقل اسمك <b>(إلزامي)</b>',
+      voice_recording: 'جارٍ التسجيل…', btn_stop: 'تم', btn_rerecord: 'إعادة التسجيل',
+      btn_not_my_name: 'ليس اسمي',
+      picker_hint: 'اختر من القائمة أو اكتبه بنفسك',
+      ph_search: '🔍 ابحث بالاسم أو برقم الطالب…',
+      label_write: 'أو اكتبه بنفسك <span class="hint">(اختياري)</span>',
+      ph_name: 'الاسم الكامل',
+      label_no: 'رقم الطالب <span class="hint">(اختياري — لدقة أكبر)</span>',
+      ph_no: 'مثال: 40254021132', btn_continue: 'متابعة',
+      files_title: 'ما هي تعديلاتك؟',
+      files_sub: 'صور، PDF، Word أو أي صيغة صوتية — ويمكن أكثر من ملف',
+      dz_title: 'أفلت الملفات هنا', dz_sub: 'أو اختر من الأزرار أدناه',
+      pick_camera: 'الكاميرا', pick_gallery: 'المعرض', pick_doc: 'PDF / مستند',
+      pick_audio: 'ملف صوتي', pick_any: 'كل الملفات',
+      wa_title: 'يمكنك من واتساب أيضاً!',
+      wa_body: 'اضغط على الملف في واتساب ثم <b>Share → Telegram</b> وأرسله إلى هذا البوت؛ سيُربط تلقائياً بطلبك.',
+      note_title: 'اكتب توضيحاً', note_sub: 'أي ملاحظة تراها ضرورية',
+      ph_note: 'مثال: تعديلات الفصل الثاني بعد المناقشة — من فضلك حتى نهاية الأسبوع',
+      done_title: 'وصلت تعديلاتك!',
+      done_sub: 'سيراجعها فريق الكتّاب وسترى الحالة هنا.',
+      lbl_name: 'الاسم', lbl_files_count: 'عدد الملفات', lbl_code: 'رمز المتابعة',
+      btn_another: 'إرسال تعديلات جديدة',
+      progress_title: 'تقدّم التعديلات', my_status: 'حالتي',
+      stat_files: 'عدد الملفات', not_set: 'غير محدد', stat_due: 'موعد التسليم',
+      stat_status: 'الحالة الحالية', stat_ready: 'جاهز للتنزيل',
+      track_title: 'مسار تعديلاتك', track_sub: 'كل مرحلة تُنجَز تُعلَّم بعلامة ✓',
+      due_label: 'موعد التسليم المعلن', deliv_title: '🎁 الملفات الجاهزة',
+      empty_title: 'لا توجد تعديلات بعد',
+      empty_sub: 'أرسل تعديلاتك الأولى من تبويب «إرسال».', btn_go_send: 'الذهاب إلى الإرسال',
+      how_title: 'كيف يعمل؟',
+      how1_t: 'قل اسمك', how1_s: 'قل اسمك بصوتك 🎤 لنعرف صاحب التعديلات',
+      how2_t: 'أرسل الملفات', how2_s: 'صور، PDF، Word أو ملف صوتي — ويمكن أكثر من ملف',
+      how3_t: 'تابع الحالة', how3_s: 'تم الاستلام ← بدأ العمل ← قيد التنفيذ ← جاهز للتسليم',
+      wa_card_title: 'لديك ملف من واتساب؟', wa_card_sub: 'طريقة سريعة',
+      wa_card_body: 'اضغط على الملف في واتساب ثم <b>Share → Telegram</b> وأرسله إلى هذا البوت. سيُربط تلقائياً بآخر طلب لك.',
+      tips_title: 'نصائح صغيرة', tips_sub: 'لتسريع عملك',
+      tip1: '📄 أرسل ملفات PDF و Word كاملة وغير محمية',
+      tip2: '🖼 صوّر الأوراق بوضوح ومن الأعلى',
+      tip3: '🎤 إذا كان لديك توضيح صوتي، سجّله هنا',
+      tip4: '⏱ ترى موعد التسليم في تبويب «الحالة»',
+      footer: 'نظام إدارة دراسة الطلبة الدوليين',
+      btn_submit: 'إرسال التعديلات', tab_send: 'إرسال', tab_status: 'الحالة',
+      tab_help: 'مساعدة', blocker: 'جارٍ الإرسال…',
+      st_new: 'تم الاستلام', st_started: 'بدأ العمل', st_in_progress: 'قيد التنفيذ',
+      st_ready: 'جاهز للتسليم', st_completed: 'تم التسليم',
+      st_draft: 'غير مكتمل', st_rejected: 'مرفوض',
+      voice_listening: '🎧 أستمع…',
+      voice_unsupported: '⚠️ هذا الجهاز لا يدعم التسجيل؛ اكتب اسمك.',
+      voice_stopped: 'انتهى التسجيل',
+      voice_no_stt: '🎤 سُجّل الصوت (هذا المتصفح لا يتعرّف على الكلام) — اختر اسمك من القائمة.',
+      voice_saved: '🎤 تم تسجيل صوتك وسيُرفَق بالطلب.',
+      voice_heard_fail: '🎤 سُجّل الصوت. التعرّف التلقائي لا يعمل على هذا الجهاز — اختر اسمك من القائمة.',
+      picker_notfound: 'لا يوجد طالب بهذا الاسم — يمكنك كتابته بنفسك',
+      picker_choose: 'اختر اسمك من القائمة',
+      picker_no_stt: 'هذا المتصفح لا يدعم التعرّف التلقائي؛ اختر اسمك من القائمة',
+      picker_unsure: 'لست متأكداً؛ اختر اسمك من القائمة',
+      picker_pick_hint: 'اختر اسمك من القائمة أو اكتبه بنفسك',
+      resolved_heard: '🗣 سمعت: «{0}»',
+      resolved_you: '✅ اسمك: <b>{0}</b>',
+      resolved_you_no: '✅ اسمك: <b>{0}</b> <span class="hint">({1})</span>',
+      match_ok: '✅ <b>{0}</b> — تم العثور على ملفك؛ ستُربط التعديلات بك.',
+      match_ok_writer: '✍️ كاتبك: <b>{0}</b>',
+      match_warn: '🤔 لم أجد ملفك. لا مشكلة — سيربطه المختصون.',
+      match_warn_hint: 'لربط أدق، اكتب رقم الطالب وأعد التسجيل.',
+      welcome: 'أهلاً {0}! 🌟',
+      hello_named: 'مرحباً {0}! 👋',
+      who_linked: '• مرتبط بالملف الشخصي',
+      who_unlinked: '• بانتظار ربط المختص',
+      who_edit: 'تعديل',
+      toast_voice_first: '🎤 أولاً اضغط زر الميكروفون وقل اسمك.',
+      toast_pick_name: 'اختر اسمك أو اكتبه 🙂',
+      toast_bad_no: 'رقم الطالب غير صالح.',
+      toast_identity_fail: 'تعذّر التحقق من بياناتك: {0}',
+      toast_min_file: '🙂 اختر ملف تعديلات واحداً على الأقل.',
+      toast_files_rejected: '🚫 رُفض {0} ملف (فارغ أو أكبر من {1} ميغابايت).',
+      toast_many_failed: '⚠️ لم يُرسَل {0} ملف؛ يمكنك إعادة المحاولة.',
+      toast_send_failed: 'لم يُرسَل: {0}',
+      toast_preparing_link: '⏳ أُجهّز رابط التنزيل…',
+      toast_no_link: 'لم يُنشأ رابط التنزيل.',
+      toast_first_identity: 'أولاً سجّل اسمك 🙂',
+      toast_no_config: 'لم يتم العثور على إعدادات Supabase (js/supabase-config.js لم يُحمّل).',
+      progress_of: '{0} من {1} مرحلة',
+      code_label: 'رمز المتابعة {0} · ',
+      waiting_writer: '⏳ بانتظار تعيين كاتب',
+      writer_label: '✍️ الكاتب: {0}',
+      deliv_download: 'تنزيل',
+      picker_more: 'و {0} أخرى — ابحث بدقة أكبر',
+      voice_mic_denied: '⚠️ لم يتم الوصول إلى الميكروفون. اسمح بالوصول إن أمكن أو اختر اسمك من القائمة.',
+      pill_no: 'الرقم {0}',
+      pill_linked: 'مرتبط بالملف الشخصي',
+      time_at: 'الساعة',
+      blocker_preparing: 'أُجهّز…',
+      blocker_uploading: 'إرسال الملف {0} من {1}…',
+      err_network: 'خطأ في الشبكة أثناء الرفع',
+      err_no_request: 'لم يُنشأ الطلب',
+      file_default: 'تعديلات',
+      uploader_student: 'طالب',
+      toast_migration: 'جداول التعديلات غير موجودة في قاعدة البيانات. نفّذ الملف supabase/tadilat_telegram_migration.sql.',
+      history_title: '📤 إرسالاتك السابقة',
+      unit_byte: 'بايت', unit_kb: 'كيلوبايت', unit_mb: 'ميغابايت',
+      k_image: 'صورة', k_pdf: 'PDF', k_word: 'Word', k_sheet: 'Excel',
+      k_audio: 'صوت', k_video: 'فيديو', k_zip: 'مضغوط', k_other: 'ملف',
+    },
+  };
+
+  var DIGITS = { fa: '۰۱۲۳۴۵۶۷۸۹', ar: '٠١٢٣٤٥٦٧٨٩' };
+  var currentLang = 'fa';
+
+  function detectLang() {
+    try {
+      var saved = localStorage.getItem(LS_LANG);
+      if (saved && I18N[saved]) return saved;
+    } catch (e) { /* نادیده */ }
+    try {
+      var tg = window.Telegram && window.Telegram.WebApp;
+      var u = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+      var code = String((u && u.language_code) || '');
+      if (/^ar/i.test(code)) return 'ar';
+      if (/^(fa|pe|per)/i.test(code)) return 'fa';
+    } catch (e) { /* نادیده */ }
+    try {
+      var nav = String(navigator.language || navigator.userLanguage || '');
+      if (/^ar/i.test(nav)) return 'ar';
+    } catch (e) { /* نادیده */ }
+    return 'fa';
+  }
+
+  /** ترجمهٔ یک کلید؛ {0} و {1} جای‌گذاری می‌شوند */
+  function t(key, a, b) {
+    var pack = I18N[currentLang] || I18N.fa;
+    var s = pack[key];
+    if (s == null) s = I18N.fa[key];
+    if (s == null) return key;
+    if (a !== undefined) s = s.replace('{0}', a);
+    if (b !== undefined) s = s.replace('{1}', b);
+    return s;
+  }
+  function tp(key, vars) {
+    var s = t(key);
+    (vars || []).forEach(function (v, i) { s = s.replace('{' + i + '}', v); });
+    return s;
+  }
+
+  /** همهٔ متن‌های ثابت HTML را با زبان جاری پر می‌کند */
+  function applyI18n() {
+    var d = document.documentElement;
+    d.setAttribute('lang', currentLang);
+    d.setAttribute('dir', 'rtl');
+
+    var i, nodes;
+    nodes = document.querySelectorAll('[data-i18n]');
+    for (i = 0; i < nodes.length; i++) nodes[i].textContent = t(nodes[i].getAttribute('data-i18n'));
+
+    nodes = document.querySelectorAll('[data-i18n-html]');
+    for (i = 0; i < nodes.length; i++) nodes[i].innerHTML = t(nodes[i].getAttribute('data-i18n-html'));
+
+    nodes = document.querySelectorAll('[data-i18n-ph]');
+    for (i = 0; i < nodes.length; i++) {
+      nodes[i].setAttribute('placeholder', t(nodes[i].getAttribute('data-i18n-ph')));
+    }
+    nodes = document.querySelectorAll('[data-i18n-aria]');
+    for (i = 0; i < nodes.length; i++) {
+      nodes[i].setAttribute('aria-label', t(nodes[i].getAttribute('data-i18n-aria')));
+    }
+    nodes = document.querySelectorAll('.lang-opt');
+    for (i = 0; i < nodes.length; i++) {
+      nodes[i].classList.toggle('on', nodes[i].getAttribute('data-lang') === currentLang);
+    }
+  }
+
+  function setLang(lang) {
+    if (!I18N[lang] || lang === currentLang) { applyI18n(); return; }
+    currentLang = lang;
+    try { localStorage.setItem(LS_LANG, lang); } catch (e) { /* نادیده */ }
+    applyI18n();
+    // متن‌های پویا دوباره ساخته شوند
+    try { renderHeroPill(); } catch (e) {}
+    try { renderQueue(); } catch (e) {}
+    try { renderWhoChip(); } catch (e) {}
+    try { if (state.lastReq) renderStatus(state.lastReq, state.lastFiles || []); } catch (e) {}
+    try { haptic.tap(); } catch (e) {}
+  }
+
 
   // ══════════════════════════════════════════════════════════
   // ابزارهای عمومی
@@ -38,13 +350,14 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
   function fa(v) {
-    return String(v == null ? '' : v).replace(/[0-9]/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'[d]; });
+    var map = DIGITS[currentLang] || DIGITS.fa;
+    return String(v == null ? '' : v).replace(/[0-9]/g, function (d) { return map[d]; });
   }
   function bytes(n) {
     n = Number(n) || 0;
-    if (n < 1024) return fa(n) + ' بایت';
-    if (n < 1048576) return fa((n / 1024).toFixed(1)) + ' کیلوبایت';
-    return fa((n / 1048576).toFixed(1)) + ' مگابایت';
+    if (n < 1024) return fa(n) + ' ' + t('unit_byte');
+    if (n < 1048576) return fa((n / 1024).toFixed(1)) + ' ' + t('unit_kb');
+    return fa((n / 1048576).toFixed(1)) + ' ' + t('unit_mb');
   }
   function uuid() {
     try {
@@ -120,7 +433,22 @@
     var jd = 1 + ((days < 186) ? (days % 31) : ((days - 186) % 30));
     return { jy: jy, jm: jm, jd: jd, hh: d.getHours(), mi: d.getMinutes() };
   }
+
+  /** تاریخ میلادی برای دانشجویان عرب‌زبان */
+  function gregorianDate(iso) {
+    try {
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return '—';
+      return d.toLocaleDateString('ar-EG-u-nu-arab', {
+        year: 'numeric', month: 'long', day: 'numeric',
+      });
+    } catch (e) {
+      try { return new Date(iso).toLocaleDateString('ar-EG'); } catch (e2) { return '—'; }
+    }
+  }
   function jalaliDate(iso) {
+    // دانشجوی عرب‌زبان تاریخ میلادی می‌بیند
+    if (currentLang === 'ar') return gregorianDate(iso);
     var p = jalaliParts(iso);
     if (!p) return '—';
     return fa(p.jd) + ' ' + MONTHS[p.jm - 1] + ' ' + fa(p.jy);
@@ -128,7 +456,10 @@
   function jalaliDateTime(iso) {
     var p = jalaliParts(iso);
     if (!p) return '—';
-    return jalaliDate(iso) + ' — ساعت ' + fa(('0' + p.hh).slice(-2) + ':' + ('0' + p.mi).slice(-2));
+    var hm = fa(('0' + p.hh).slice(-2) + ':' + ('0' + p.mi).slice(-2));
+    // برای دانشجوی عرب‌زبان تاریخ میلادی طبیعی‌تر است
+    if (currentLang === 'ar') return gregorianDate(iso) + ' — ' + hm;
+    return jalaliDate(iso) + ' — ' + t('time_at') + ' ' + hm;
   }
 
   // ══════════════════════════════════════════════════════════
@@ -219,7 +550,7 @@
           reject(new Error(msg));
         }
       };
-      xhr.onerror = function () { reject(new Error('خطای شبکه در آپلود')); };
+      xhr.onerror = function () { reject(new Error(t('err_network'))); };
       xhr.send(blob);
     });
   }
@@ -477,7 +808,7 @@
   function blocker(text) {
     var b = $('blocker');
     if (text === false) { hide(b); return; }
-    $('blocker-text').textContent = text || 'در حال ارسال…';
+    $('blocker-text').textContent = text || t('blocker');
     show(b);
   }
 
@@ -506,9 +837,9 @@
     hide($('btn-voice-clear'));
     show($('btn-voice-stop'));
     hide($('voice-audio'));
-    $('voice-title').textContent = 'در حال ضبط…';
+    $('voice-title').textContent = t('voice_recording');
     $('voice-timer').textContent = mmss(0);
-    $('voice-text').textContent = speakSupported() ? '🎧 گوش می‌دهم…' : '';
+    $('voice-text').textContent = speakSupported() ? t('voice_listening') : '';
     $('voice-text').className = 'voice-text';
 
     // ── ۱. ضبط صدا (همیشه؛ خروجی برای پیوست شدن به درخواست) ──
@@ -537,11 +868,11 @@
         .catch(function (e) {
           console.warn('mic error', e);
           $('voice-text').textContent =
-            '⚠️ دسترسی به میکروفن نشد. اگر می‌توانی، اجازهٔ میکروفن را بده یا نامت را تایپ کن.';
+            t('voice_mic_denied');
           $('voice-text').className = 'voice-text bad';
         });
     } else {
-      $('voice-text').textContent = '⚠️ این دستگاه ضبط صدا را پشتیبانی نمی‌کند؛ نامت را تایپ کن.';
+      $('voice-text').textContent = t('voice_unsupported');
       $('voice-text').className = 'voice-text bad';
     }
 
@@ -561,7 +892,7 @@
             state.voiceHeard = text;
             state.voiceNameSource = 'voice_stt';
             $('in-name').value = text;
-            $('voice-text').textContent = '🗣 ' + text;
+            $('voice-text').textContent = t('voice_heard', text);
             $('voice-text').className = 'voice-text ok';
             // همین حالا با نزدیک‌ترین نام در profiles تطبیق بده
             matchHeardName(text);
@@ -570,10 +901,9 @@
         speech.onerror = function (ev) {
           console.warn('speech error', ev.error);
           if (!state.voiceText) {
-            $('voice-text').textContent =
-              '🎤 ویس ضبط شد. تشخیص خودکار روی این دستگاه کار نکرد — نامت را از فهرست انتخاب کن.';
+            $('voice-text').textContent = t('voice_heard_fail');
             $('voice-text').className = 'voice-text bad';
-            showPicker('تشخیص خودکار ممکن نشد؛ اسمت را از فهرست انتخاب کن');
+            showPicker(t('picker_no_stt'));
           }
         };
         speech.onend = function () { speech = null; };
@@ -583,8 +913,7 @@
         speech = null;
       }
     } else {
-      $('voice-text').textContent =
-        '🎤 ویس ضبط شد (این مرورگر تشخیص گفتار ندارد) — اسمت را از فهرست انتخاب کن.';
+      $('voice-text').textContent = t('voice_no_stt');
       $('voice-text').className = 'voice-text';
     }
 
@@ -601,7 +930,7 @@
     clearInterval(recTimer);
     $('btn-mic').classList.remove('recording');
     $('btn-mic').innerHTML = '<i class="fas fa-microphone"></i>';
-    $('voice-title').textContent = 'ضبط تمام شد';
+    $('voice-title').textContent = t('voice_stopped');
     $('voice-box').classList.add('idle');
 
     if (speech) { try { speech.stop(); } catch (e) {} speech = null; }
@@ -632,12 +961,12 @@
     state.voiceDone = !!state.voiceBlob || !!state.voiceText;
     $('btn-voice-stop').classList.add('hidden');
     if (!state.voiceText && state.voiceBlob) {
-      $('voice-text').textContent = '🎤 ویس اسمت ضبط شد و همراه درخواست ذخیره می‌شود.';
+      $('voice-text').textContent = t('voice_saved');
       $('voice-text').className = 'voice-text';
     }
     // اگر تشخیص گفتار در دسترس نبود، فهرست انتخاب را باز کن
     if (!state.voiceHeard && !SpeechRec && state.voiceBlob) {
-      showPicker('این مرورگر تشخیص خودکار ندارد؛ اسمت را از فهرست انتخاب کن');
+      showPicker(t('picker_no_stt'));
     }
   }
 
@@ -653,9 +982,10 @@
     var box = $('name-resolved');
     box.className = 'match-box match-ok';
     $('name-resolved-text').innerHTML =
-      (heard ? '🗣 شنیدم: «' + esc(heard) + '»<br>' : '') +
-      '✅ اسم تو: <b>' + esc(student.name) + '</b>' +
-      (student.student_no ? ' <span class="hint">(' + esc(student.student_no) + ')</span>' : '');
+      (heard ? esc(t('resolved_heard', heard)) + '<br>' : '') +
+      (student.student_no
+        ? t('resolved_you_no', esc(student.name), esc(student.student_no))
+        : t('resolved_you', esc(student.name)));
     show(box);
     hide($('name-picker'));
     $('in-name').value = student.name;
@@ -667,7 +997,7 @@
   function matchHeardName(heard) {
     return loadStudents().then(function (rows) {
       var key = normKey(heard);
-      if (!key || key.length < 3) { showPicker('اسمت را از فهرست انتخاب کن'); return null; }
+      if (!key || key.length < 3) { showPicker(t('picker_choose')); return null; }
       var exact = rows.filter(function (r) { return r.key === key; });
       if (exact.length === 1) {
         showResolved({ id: exact[0].id, name: exact[0].name, student_no: exact[0].student_id }, heard);
@@ -692,7 +1022,7 @@
         return best.row;
       }
       // مطمئن نبود → فهرست پیشنهادی را نشان بده
-      showPicker('مطمئن نشدم؛ اسمت را از فهرست انتخاب کن', heard);
+      showPicker(t('picker_unsure'), heard);
       return null;
     });
   }
@@ -735,7 +1065,7 @@
         });
       }
       if (!items.length) {
-        list.innerHTML = '<p class="name-empty">دانشجویی با این نام پیدا نشد — می‌توانی خودت بنویسی</p>';
+        list.innerHTML = '<p class="name-empty">' + esc(t('picker_notfound')) + '</p>';
         return;
       }
       list.innerHTML = items.slice(0, 60).map(function (r) {
@@ -744,7 +1074,7 @@
           '<span class="ni-no">' + esc(r.student_id || '') + '</span></button>';
       }).join('') +
       (items.length > 60
-        ? '<p class="name-empty">و ' + fa(items.length - 60) + ' مورد دیگر — دقیق‌تر جستجو کن</p>'
+        ? '<p class="name-empty">' + esc(t('picker_more', fa(items.length - 60))) + '</p>'
         : '');
     });
   }
@@ -759,7 +1089,7 @@
   function clearResolved() {
     state.matched = null;
     hide($('name-resolved'));
-    showPicker('اسمت را از فهرست انتخاب کن یا خودت بنویس');
+    showPicker(t('picker_pick_hint'));
   }
 
   function clearVoice() {
@@ -776,7 +1106,7 @@
     hide($('name-picker'));
     $('voice-audio').src = '';
     $('voice-text').textContent = '';
-    $('voice-title').textContent = 'در حال ضبط…';
+    $('voice-title').textContent = t('voice_recording');
   }
 
   // ══════════════════════════════════════════════════════════
@@ -813,12 +1143,12 @@
     var linked = !!id.student_id;
     $('who-chip').innerHTML =
       '<span>👤</span><b>' + esc(id.name || '—') + '</b>' +
-      (linked ? '<span style="color:#13774f">• متصل به پروفایل</span>'
-              : '<span style="color:#8a5600">• در انتظار اتصال کارشناس</span>') +
+      (linked ? '<span style="color:#13774f">' + esc(t('who_linked')) + '</span>'
+              : '<span style="color:#8a5600">' + esc(t('who_unlinked')) + '</span>') +
       (state.writer
         ? '<span>✍️ ' + esc(state.writer.agent_name) + '</span>'
         : '') +
-      '<button class="link-btn" data-edit-id="1" type="button">ویرایش</button>';
+      '<button class="link-btn" data-edit-id="1" type="button">' + esc(t('who_edit')) + '</button>';
   }
 
   function doIdentity() {
@@ -827,7 +1157,7 @@
 
     // ۱) گفتن اسم الزامی است
     if (!state.voiceDone) {
-      toast('🎤 اول روی دکمهٔ میکروفن بزن و اسمت را بگو.');
+      toast(t('toast_voice_first'));
       try { $('btn-mic').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
       return;
     }
@@ -836,12 +1166,12 @@
     var chosen = state.matched;
     var name = chosen ? chosen.name : typed;
     if (!name || name.length < 3) {
-      showPicker('اسمت را از فهرست انتخاب کن یا خودت بنویس');
-      toast('اسمت را انتخاب کن یا بنویس 🙂');
+      showPicker(t('picker_pick_hint'));
+      toast(t('toast_pick_name'));
       return;
     }
     if (no && no.replace(/[^0-9A-Za-z]/g, '').length < 4) {
-      toast('شمارهٔ دانشجویی معتبر نیست.');
+      toast(t('toast_bad_no'));
       $('in-no').focus();
       return;
     }
@@ -869,15 +1199,15 @@
         var box = $('identity-result');
         if (res.student_id) {
           box.className = 'match-box match-ok';
-          box.innerHTML = '✅ <b>' + esc(res.name) + '</b> — پروفایلت پیدا شد؛ تعدیلات به خودت وصل می‌شود.';
+          box.innerHTML = t('match_ok', esc(res.name));
         } else {
           box.className = 'match-box match-warn';
-          box.innerHTML = '🤔 پروفایلت را پیدا نکردم. اشکالی ندارد — کارشناس‌ها وصلش می‌کنند.' +
-            '<br><small>برای اتصال دقیق‌تر، شمارهٔ دانشجویی را بنویس و دوباره ثبت کن.</small>';
+          box.innerHTML = esc(t('match_warn')) +
+            '<br><small>' + esc(t('match_warn_hint')) + '</small>';
         }
         show(box);
         haptic.ok();
-        $('hero-title').textContent = 'خوش آمدی، ' + (name.split(' ')[0] || '') + '! 🌟';
+        $('hero-title').textContent = t('welcome', name.split(' ')[0] || '');
         renderHeroPill();
         // مسیریابی: نویسندهٔ مربوط به این دانشجو
         if (state.identity.student_id) {
@@ -885,9 +1215,9 @@
             state.writer = w;
             renderWhoChip();
             if (w) {
-              box.innerHTML += '<br>✍️ نویسندهٔ شما: <b>' + esc(w.agent_name) + '</b>';
+              box.innerHTML += '<br>' + t('match_ok_writer', esc(w.agent_name));
             } else {
-              box.innerHTML += '<br>📥 کارشناسان آن را به نویسندهٔ مربوطه می‌سپارند.';
+              box.innerHTML += '<br>' + esc(t('match_warn'));
             }
           });
         }
@@ -895,7 +1225,7 @@
       })
       .catch(function (e) {
         haptic.err();
-        toast('بررسی مشخصات ناموفق بود: ' + (e.message || e));
+        toast(t('toast_identity_fail', e.message || e));
       })
       .then(function () { state.busy = false; btn.disabled = false; });
   }
@@ -923,9 +1253,9 @@
     // کوتاه و خوانا نگه داشته می‌شود تا در سرصفحه بریده نشود
     var bits = [];
     if (u && u.username) bits.push('@' + u.username);
-    if (state.identity && state.identity.student_id) bits.push('متصل به پروفایل');
-    else if (state.identity && state.identity.student_no) bits.push('شمارهٔ ' + fa(state.identity.student_no));
-    pill.textContent = bits.length ? bits.join(' · ') : 'تعدیلاتت رو بفرست';
+    if (state.identity && state.identity.student_id) bits.push(t('pill_linked'));
+    else if (state.identity && state.identity.student_no) bits.push(t('pill_no', fa(state.identity.student_no)));
+    pill.textContent = bits.length ? bits.join(' · ') : t('hero_pill');
   }
 
   function editIdentity() {
@@ -954,7 +1284,7 @@
     return 'other';
   }
   function kindLabel(kind) {
-    return ({ image: 'عکس', pdf: 'PDF', word: 'Word', sheet: 'Excel', audio: 'صدا', video: 'ویدیو', zip: 'فشرده', other: 'فایل' })[kind] || 'فایل';
+    return t('k_' + (kind || 'other')) || t('k_other');
   }
   function dbKind(kind) {
     if (kind === 'image') return 'photo';
@@ -974,7 +1304,7 @@
       });
       added++;
     });
-    if (rejected) toast('🚫 ' + fa(rejected) + ' فایل رد شد (خالی یا بزرگ‌تر از ' + fa(MAX_FILE_BYTES / 1048576) + ' مگابایت).');
+    if (rejected) toast(t('toast_files_rejected', fa(rejected), fa(MAX_FILE_BYTES / 1048576)));
     if (added) haptic.tap();
     renderQueue();
     updateClosingGuard();
@@ -1005,7 +1335,7 @@
         ? '<div class="q-bar"><i style="width:' + (it.progress || 0) + '%"></i></div>' : '';
       return '<div class="q-item">' +
         '<div class="q-thumb">' + thumb + '</div>' +
-        '<div class="q-info"><div class="q-name">' + esc(it.file.name || 'فایل') + '</div>' +
+        '<div class="q-info"><div class="q-name">' + esc(it.file.name || t('k_other')) + '</div>' +
         '<div class="q-meta">' + kindLabel(kind) + ' • ' + bytes(it.file.size) + '</div>' + bar + '</div>' +
         action + '</div>';
     }).join('');
@@ -1032,13 +1362,13 @@
     if (state.busy) return;
     if (!state.identity) { showNameCard(); return; }
     if (!state.queue.length && !state.voiceBlob) {
-      toast('🙂 حداقل یک فایل تعدیلات انتخاب کن.');
+      toast(t('toast_min_file'));
       return;
     }
 
     state.busy = true;
     $('btn-submit').disabled = true;
-    blocker('دارم آماده می‌کنم…');
+    blocker(t('blocker_preparing'));
 
     var u = tgUser();
     var tgId = u ? u.id : null;
@@ -1095,7 +1425,7 @@
       .then(function (rows) {
         requestId = rows && rows[0] && rows[0].id;
         requestCode = rows && rows[0] && rows[0].code;
-        if (!requestId) throw new Error('درخواست ساخته نشد');
+        if (!requestId) throw new Error(t('err_no_request'));
         return uploadAll(requestId, tgId);
       })
       .then(function (sum) {
@@ -1109,7 +1439,7 @@
         //    • و ثبت فایل در بخش «فایل ها» با دستهٔ «تعدیل شده»
         if (state.identity.student_id && sum.primaryPath) {
           var sid = state.identity.student_id;
-          var fileName = sum.primaryName || 'تعدیلات';
+          var fileName = sum.primaryName || t('file_default');
           var fileType = (fileName.split('.').pop() || '').toLowerCase();
           return Promise.all([
             sbRest('POST', 'student_documents?on_conflict=student_id',
@@ -1126,7 +1456,7 @@
                 file_type: fileType || null,
                 file_size_text: sum.primarySize ? bytes(sum.primarySize) : null,
                 uploaded_by: 'mini_app',
-                uploaded_by_name: state.identity.name || 'دانشجو'
+                uploaded_by_name: state.identity.name || t('uploader_student')
               }],
               'resolution=merge-duplicates,return=minimal')
               .catch(function (e) { console.warn('student_files (تعدیل شده) failed', e); return null; })
@@ -1144,7 +1474,7 @@
         showDone(requestId, requestCode, sum);
         updateSubmitBar();
         setTab('status');
-        if (sum.failed) toast('⚠️ ' + fa(sum.failed) + ' فایل ارسال نشد؛ می‌توانی دوباره بفرستی.');
+        if (sum.failed) toast(t('toast_many_failed', fa(sum.failed)));
       })
       .catch(function (e) {
         blocker(false);
@@ -1152,9 +1482,9 @@
         console.error(e);
         var msg = (e && e.message) ? e.message : String(e);
         if (/does not exist|schema cache|PGRST205/i.test(msg)) {
-          msg = 'جدول‌های تعدیلات در دیتابیس ساخته نشده‌اند. فایل supabase/tadilat_telegram_migration.sql را اجرا کن.';
+          msg = t('toast_migration');
         }
-        toast('ارسال نشد: ' + msg);
+        toast(t('toast_send_failed', msg));
       })
       .then(function () {
         state.busy = false;
@@ -1192,7 +1522,7 @@
 
       var path = storagePath(tgId, requestId, item.file.name);
       var kindDb = dbKind(kindOf(item.file));
-      blocker('ارسال فایل ' + fa(i + 1) + ' از ' + fa(pending.length) + '…');
+      blocker(t('blocker_uploading', fa(i + 1), fa(pending.length)));
 
       return sbUpload(path, item.file, item.file.type || 'application/octet-stream',
         function (p) { item.progress = p; renderQueue(); })
@@ -1250,21 +1580,26 @@
   // ══════════════════════════════════════════════════════════
   // باکس ۴ — وضعیت
   // ══════════════════════════════════════════════════════════
-  var STAGES = [
-    { key: 'new',         title: 'دریافت شد',    emoji: '📥', field: 'submitted_at' },
-    { key: 'started',     title: 'شروع شد',      emoji: '🚀', field: 'started_at' },
-    { key: 'in_progress', title: 'در حال انجام', emoji: '✍️', field: null },
-    { key: 'ready',       title: 'آماده تحویل',  emoji: '🎁', field: 'ready_at' },
-    { key: 'completed',   title: 'تحویل شد',     emoji: '✅', field: 'completed_at' }
+  var STAGE_DEFS = [
+    { key: 'new',         tkey: 'st_new',         emoji: '📥', field: 'submitted_at' },
+    { key: 'started',     tkey: 'st_started',     emoji: '🚀', field: 'started_at' },
+    { key: 'in_progress', tkey: 'st_in_progress', emoji: '✍️', field: null },
+    { key: 'ready',       tkey: 'st_ready',       emoji: '🎁', field: 'ready_at' },
+    { key: 'completed',   tkey: 'st_completed',   emoji: '✅', field: 'completed_at' }
   ];
-  var STATUS_FA = {
-    draft: 'ناتمام', new: 'دریافت شد', started: 'شروع شد',
-    in_progress: 'در حال انجام', ready: 'آماده تحویل',
-    completed: 'تحویل شد', rejected: 'رد شد'
-  };
+  // عنوان‌ها با زبان جاری ساخته می‌شوند (هنگام تغییر زبان به‌روز می‌شوند)
+  function stages() {
+    return STAGE_DEFS.map(function (s) {
+      return { key: s.key, title: t(s.tkey), emoji: s.emoji, field: s.field };
+    });
+  }
+  function statusLabel(status) {
+    return t('st_' + status) || status || '—';
+  }
 
   function statusIndex(status) {
-    for (var i = 0; i < STAGES.length; i++) if (STAGES[i].key === status) return i;
+    var list = stages();
+    for (var i = 0; i < list.length; i++) if (list[i].key === status) return i;
     return -1;
   }
 
@@ -1311,36 +1646,39 @@
 
   function renderStatus(req, files) {
     show($('card-status'));
+    state.lastReq = req;
+    state.lastFiles = files || [];
+    var list = stages();
     var idx = statusIndex(req.status);
     var rejected = req.status === 'rejected';
     var deliverables = files.filter(function (f) { return f.kind === 'deliverable'; });
 
     // نویسندهٔ درخواست — در سرتیتر کارت وضعیت
     if ($('status-sub')) {
-      $('status-sub').textContent = (req.code ? 'کد پیگیری ' + fa(req.code) + ' · ' : '') +
+      $('status-sub').textContent = (req.code ? t('code_label', fa(req.code)) : '') +
         (req.assigned_agent_name
-          ? ('✍️ نویسنده: ' + req.assigned_agent_name)
-          : '⏳ در انتظار تعیین نویسنده');
+          ? t('writer_label', req.assigned_agent_name)
+          : t('waiting_writer'));
     }
 
     // ── کاشی‌های آماری ──
     $('stat-files').textContent = fa(req.files_count || files.length || 0);
-    $('stat-status').textContent = STATUS_FA[req.status] || req.status || '—';
-    $('stat-due').textContent = req.due_at ? jalaliDate(req.due_at) : 'تعیین نشده';
+    $('stat-status').textContent = statusLabel(req.status);
+    $('stat-due').textContent = req.due_at ? jalaliDate(req.due_at) : t('not_set');
     $('stat-ready').textContent = fa(deliverables.length);
 
     // ── نوار پیشرفت (مثل نوار XP در طرح مرجع) ──
     var done = rejected ? 1 : Math.max(1, idx + 1);
     if ($('progress-fill')) {
-      $('progress-fill').style.width = Math.round((done / STAGES.length) * 100) + '%';
+      $('progress-fill').style.width = Math.round((done / list.length) * 100) + '%';
     }
     if ($('progress-value')) {
-      $('progress-value').textContent = fa(done) + ' از ' + fa(STAGES.length) + ' مرحله';
+      $('progress-value').textContent = t('progress_of', fa(done), fa(list.length));
     }
 
     // ── فیلترهای قرصی مراحل (مراحل طي‌شده فعال‌اند) ──
     if ($('stage-pills')) {
-      $('stage-pills').innerHTML = STAGES.map(function (s, i) {
+      $('stage-pills').innerHTML = list.map(function (s, i) {
         var on = rejected ? (i === 0) : (i <= idx);
         return '<button class="pill' + (on ? ' on' : '') + '" type="button">' +
           '<span>' + s.emoji + ' ' + esc(s.title) + '</span></button>';
@@ -1350,7 +1688,7 @@
     // ── نمودار مراحل ──
     // مرحلهٔ وضعیت فعلی «انجام‌شده» و برجسته است؛ بقیه در انتظار.
     var html = '';
-    STAGES.forEach(function (stage, i) {
+    list.forEach(function (stage, i) {
       var cls = 'step';
       if (!rejected) {
         if (i <= idx) cls += ' done';
@@ -1369,7 +1707,7 @@
     });
     if (rejected) {
       html += '<div class="step"><div class="step-dot" style="background:#ffe4e6;color:#e11d48">✕</div>' +
-        '<div class="step-body"><div class="step-title" style="color:#9f1239">رد شد</div>' +
+        '<div class="step-body"><div class="step-title" style="color:#9f1239">' + esc(t('st_rejected')) + '</div>' +
         (req.agent_note ? '<div class="step-time">' + esc(req.agent_note) + '</div>' : '') +
         '</div></div>';
     }
@@ -1386,7 +1724,7 @@
     // ── فایل‌های آمادهٔ دانلود (کارت‌های محتوایی سبک مرجع) ──
     if (deliverables.length) {
       $('deliverables-list').innerHTML = deliverables.map(function (f) {
-        var name = f.file_name || 'فایل';
+        var name = f.file_name || t('k_other');
         var kind = /\.pdf$/i.test(name) ? 'pdf'
           : /\.(docx?|rtf)$/i.test(name) ? 'word'
           : /\.(xlsx?|csv)$/i.test(name) ? 'sheet'
@@ -1404,7 +1742,7 @@
           '<div class="dl-info"><div class="dl-name">' + esc(name) + '</div>' +
           '<div class="dl-size">' + kindLabel(kind) + ' · ' + bytes(f.file_size) + '</div></div>' +
           '<button class="dl-btn" data-download="' + esc(f.storage_path || '') +
-          '" data-name="' + esc(name) + '" type="button">دانلود</button></div>';
+          '" data-name="' + esc(name) + '" type="button">' + esc(t('deliv_download')) + '</button></div>';
       }).join('');
       show($('deliverables'));
     } else {
@@ -1415,20 +1753,20 @@
   function renderMiniHistory(rows) {
     if (!rows || rows.length < 2) { $('history-mini').innerHTML = ''; return; }
     $('history-mini').innerHTML =
-      '<h3 class="deliverables-title" style="margin-top:14px">🕘 ارسال‌های قبلی</h3>' +
+      '<h3 class="deliverables-title" style="margin-top:14px">' + esc(t('history_title')) + '</h3>' +
       rows.slice(1, 6).map(function (r) {
         var st = r.status || 'new';
         return '<div class="hm-item"><span class="hm-date">' + esc(jalaliDate(r.created_at)) +
-          ' — ' + fa(r.files_count || 0) + ' فایل</span>' +
-          '<span class="hm-badge st-' + esc(st) + '">' + esc(STATUS_FA[st] || st) + '</span></div>';
+          ' — ' + fa(r.files_count || 0) + ' ' + esc(t('lbl_files_count')) + '</span>' +
+          '<span class="hm-badge st-' + esc(st) + '">' + esc(statusLabel(st)) + '</span></div>';
       }).join('');
   }
 
   function download(path, name) {
     if (!path) return;
-    toast('⏳ دارم لینک دانلود را آماده می‌کنم…', 'ok');
+    toast(t('toast_preparing_link'), 'ok');
     sbSignedUrl(path, 3600).then(function (url) {
-      if (!url) { toast('لینک دانلود ساخته نشد.'); return; }
+      if (!url) { toast(t('toast_no_link')); return; }
       var a = document.createElement('a');
       a.href = url;
       a.download = name || '';
@@ -1486,6 +1824,16 @@
       var btn = e.target.closest ? e.target.closest('[data-remove]') : null;
       if (btn) removeFile(btn.getAttribute('data-remove'));
     });
+
+    // ── انتخاب زبان ──
+    var langBox = $('lang-switch');
+    if (langBox) {
+      langBox.addEventListener('click', function (e) {
+        var b = e.target.closest ? e.target.closest('.lang-opt') : null;
+        if (b) setLang(b.getAttribute('data-lang'));
+      });
+    }
+
     on($('deliverables-list'), 'click', function (e) {
       var btn = e.target.closest ? e.target.closest('[data-download]') : null;
       if (btn) download(btn.getAttribute('data-download'), btn.getAttribute('data-name'));
@@ -1507,7 +1855,7 @@
       on(dz, ev, function (e) { e.preventDefault(); dz.classList.remove('drag'); });
     });
     on(dz, 'drop', function (e) {
-      if (!state.identity) { toast('اول اسمت را ثبت کن 🙂'); return; }
+      if (!state.identity) { toast(t('toast_first_identity')); return; }
       if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
         addFiles(e.dataTransfer.files);
       }
@@ -1518,29 +1866,29 @@
   function boot() {
     console.log('📦 tadilat-app.js v' + APP_V + ' بارگذاری شد');
 
-    if (TG) {
-      try {
-        TG.ready(); TG.expand();
-        if (TG.setHeaderColor) { try { TG.setHeaderColor('secondary_bg_color'); } catch (e) {} }
-        if (TG.disableVerticalSwipes) { try { TG.disableVerticalSwipes(); } catch (e) {} }
-      } catch (e) { console.warn('Telegram init', e); }
-    } else {
-      show($('browser-warning'));
-    }
+    // ── زبان: از ذخیرهٔ قبلی، یا زبان تلگرام، یا مرورگر ──
+    currentLang = detectLang();
+    applyI18n();
+
+    // ── تلگرام: اسکریپتش async است، پس ممکن است دیرتر برسد.
+    //    اپ هیچ‌وقت منتظر آن نمی‌ماند (روی موبایل حیاتی است).
+    initTelegram();
 
     if (!sbReady()) {
-      toast('تنظیمات Supabase پیدا نشد (js/supabase-config.js بارگذاری نشد).');
+      ready();
+      toast(t('toast_no_config'));
       return;
     }
 
     bind();
+    applyI18n();
 
     var saved = loadIdentity();
     if (saved && saved.name) {
       state.identity = saved;
       $('in-name').value = saved.name;
       $('in-no').value = saved.student_no || '';
-      $('hero-title').textContent = 'خوش آمدی، ' + (saved.name.split(' ')[0] || '') + '! 🌟';
+      $('hero-title').textContent = t('welcome', saved.name.split(' ')[0] || '');
       renderHeroPill();
       revealForm();
       // نویسندهٔ مربوطه را از نو پیدا کن (ممکن است سفارش تازه‌ای ثبت شده باشد)
@@ -1552,12 +1900,92 @@
       }
     } else {
       var u = tgUser();
-      if (u) $('hero-title').textContent = 'سلام ' + (u.first_name || '') + '! 👋';
+      if (u) $('hero-title').textContent = t('hello_named', u.first_name || '');
       renderHeroPill();
       showNameCard();
     }
     renderHeroPill();
-    setTab('send');
+    setTab(startTab());
+    ready();
+  }
+
+  /** تب آغازین — از لینک‌های میان‌بر manifest (?tab=status) هم پشتیبانی می‌کند */
+  function startTab() {
+    try {
+      var m = /[?&]tab=([a-z]+)/i.exec(location.search || '');
+      if (m && ['send', 'status', 'help'].indexOf(m[1].toLowerCase()) !== -1) {
+        return m[1].toLowerCase();
+      }
+    } catch (e) { /* نادیده */ }
+    return 'send';
+  }
+
+  /** اپ آماده است → صفحهٔ بارگذاری برداشته شود */
+  function ready() {
+    window.__appReady = true;
+    try {
+      var bs = document.getElementById('boot-screen');
+      if (bs) {
+        bs.classList.add('gone');
+        setTimeout(function () { try { bs.remove(); } catch (e) {} }, 500);
+      }
+    } catch (e) { /* نادیده */ }
+    registerSW();
+  }
+
+  /** Service Worker فقط برای «نصب‌شدنی» بودن — هیچ کشی نمی‌کند */
+  function registerSW() {
+    try {
+      if (!('serviceWorker' in navigator)) return;
+      navigator.serviceWorker.register('sw-tadilat.js', { scope: './' })
+        .catch(function (e) { console.warn('SW ثبت نشد (بی‌اهمیت):', e && e.message); });
+    } catch (e) { /* نادیده */ }
+  }
+
+  /**
+   * تلگرام را در پس‌زمینه پیدا می‌کند.
+   * اگر telegram.org فیلتر/کند باشد، اسکریپت اصلاً نمی‌رسد — اپ باید
+   * بدون آن هم کار کند (فقط بنر «بیرون از تلگرام» نمایش داده می‌شود).
+   */
+  function initTelegram() {
+    var tries = 0;
+    function activate(webApp) {
+      TG = webApp;
+      try {
+        TG.ready();
+        TG.expand();
+        if (TG.setHeaderColor) { try { TG.setHeaderColor('secondary_bg_color'); } catch (e) {} }
+        if (TG.disableVerticalSwipes) { try { TG.disableVerticalSwipes(); } catch (e) {} }
+      } catch (e) { console.warn('Telegram init', e); }
+      // اگر نام را از تلگرام گرفتیم، سرصفحه را تازه کن
+      try {
+        if (!state.identity) {
+          var u = tgUser();
+          if (u) {
+            $('hero-title').textContent = t('hello_named', u.first_name || '');
+            var inp = $('in-name');
+            if (inp && !inp.value) {
+              inp.value = [u.first_name, u.last_name].filter(Boolean).join(' ');
+            }
+          }
+          renderHeroPill();
+        }
+      } catch (e) { /* نادیده */ }
+    }
+
+    if (TG) { activate(TG); return; }
+    var timer = setInterval(function () {
+      var w = window.Telegram && window.Telegram.WebApp;
+      if (w) {
+        clearInterval(timer);
+        activate(w);
+        return;
+      }
+      if (window.__TG_SCRIPT_FAILED || ++tries > 40) {   // ~۴ ثانیه
+        clearInterval(timer);
+        show($('browser-warning'));
+      }
+    }, 100);
   }
 
   if (document.readyState === 'loading') {

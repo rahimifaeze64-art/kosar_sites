@@ -1,4 +1,4 @@
-﻿// Main Application Controller with API Integration
+// Main Application Controller with API Integration
 function appController() {
   return {
     // State
@@ -146,9 +146,21 @@ function appController() {
               this.$nextTick(() => {
                   setTimeout(() => {
                       const root = document.getElementById('tadilat-root');
-                      if (root && typeof TadilatModule !== 'undefined') {
-                          TadilatModule.init(this.currentUser);
+                      if (!root) return;
+                      if (typeof TadilatModule === 'undefined') {
+                          // ماژول بارگذاری نشده — به‌جای اسپینر بی‌پایان، خطای واضح
+                          root.innerHTML =
+                              '<div class="bg-rose-500/10 border border-rose-500/40 rounded-2xl p-6 text-center">' +
+                              '<i class="fas fa-plug-circle-xmark text-3xl text-rose-400"></i>' +
+                              '<p class="mt-3 text-rose-200 font-medium">ماژول تعدیلات بارگذاری نشد</p>' +
+                              '<p class="mt-2 text-sm text-rose-300/80">فایل <code>js/tadilat.js</code> باید در ' +
+                              'لیست <code>_APP_SCRIPTS</code> داخل <code>index.html</code> باشد.</p>' +
+                              '<button onclick="location.reload(true)" class="mt-4 bg-white/10 hover:bg-white/20 text-white px-5 py-2 rounded-xl">' +
+                              '<i class="fas fa-rotate ml-2"></i> بارگذاری دوباره</button></div>';
+                          console.error('[tadilat] TadilatModule تعریف نشده است — js/tadilat.js بارگذاری نشده.');
+                          return;
                       }
+                      TadilatModule.init(this.currentUser);
                   }, 100);
               });
           }

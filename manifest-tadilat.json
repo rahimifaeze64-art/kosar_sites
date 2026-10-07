@@ -1,0 +1,50 @@
+{
+  "name": "ارسال تعدیلات — إرسال التعديلات",
+  "short_name": "تعدیلات",
+  "description": "ارسال تعدیلات دانشجویی همراه فایل و ویس به نویسنده‌ها",
+  "start_url": "tadilat-app.html",
+  "scope": "./",
+  "id": "tadilat-app",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "dir": "rtl",
+  "lang": "fa",
+  "background_color": "#F5F6FF",
+  "theme_color": "#F5F6FF",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "assets/icons/tadilat-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/tadilat-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/tadilat-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "ارسال تعدیلات جدید",
+      "short_name": "ارسال",
+      "url": "tadilat-app.html?tab=send",
+      "icons": [{ "src": "assets/icons/tadilat-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "وضعیت تعدیلات",
+      "short_name": "وضعیت",
+      "url": "tadilat-app.html?tab=status",
+      "icons": [{ "src": "assets/icons/tadilat-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

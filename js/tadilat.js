@@ -20,6 +20,7 @@ const TadilatModule = {
 
     _loadedOnce: false,
     _loading: false,
+    _loadingSince: 0,
     _bound: false,
     _requests: [],
     _filesByRequest: {},
@@ -71,6 +72,34 @@ const TadilatModule = {
     },
 
     _root() { return document.getElementById('tadilat-root'); },
+
+    /**
+     * کوئری Supabase با مهلت زمانی و تلاش مجدد.
+     * روی اتصال بین‌المللی ناپایدار، یک درخواست می‌تواند تا ابد معلق بماند
+     * و صفحه را در حالت «در حال بارگذاری» قفل کند. این تابع اجازه نمی‌دهد.
+     * @param {Function} factory تابعی که هر بار یک کوئری تازه می‌سازد
+     */
+    async _t(factory, ms, attempts, label) {
+        const tries = attempts || 3;
+        const limit = ms || 12000;
+        let lastErr = null;
+        for (let i = 0; i < tries; i++) {
+            try {
+                return await Promise.race([
+                    Promise.resolve().then(factory),
+                    new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('TIMEOUT')), limit)),
+                ]);
+            } catch (e) {
+                lastErr = e;
+                if (i < tries - 1) await new Promise(r => setTimeout(r, 500 * (i + 1)));
+            }
+        }
+        const err = new Error(
+            'مهلت پاسخ‌گویی گذشت (' + (label || 'query') + ') — اتصال اینترنت را بررسی کنید.');
+        err.cause = lastErr;
+        throw err;
+    },
 
     _me() {
         if (this.currentUser && this.currentUser.id) return this.currentUser;
@@ -202,101 +231,147 @@ const TadilatModule = {
 
     // ── داده ─────────────────────────────────────────────────
     async load(keepView) {
-        if (this._loading) return;
+        const now = Date.now();
+        // اگر بارگذاری قبلی هنوز در جریان است، دوباره شروع نکن —
+        // ولی اگر بیش از ۳۰ ثانیه طول کشیده، رهایش کن و از نو بگیر.
+        if (this._loading && now - this._loadingSince < 30000) return;
         this._loading = true;
+        this._loadingSince = now;
         this._error = null;
+
         const sb = this._sb();
         if (!sb) {
             this._loading = false;
             this._error = 'اتصال به Supabase برقرار نیست.';
-            this._renderError();
-            return;
+            return this._renderError();
         }
+
         try {
-            let query = sb.from('tadilat_requests')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(500);
-            if (!this._isManager()) query = query.neq('status', 'draft');
-            const { data, error } = await query;
-            if (error) throw error;
-            this._requests = Array.isArray(data) ? data : [];
+            const res = await this._t(() => {
+                let q = sb.from('tadilat_requests').select('*')
+                    .order('created_at', { ascending: false }).limit(500);
+                if (!this._isManager()) q = q.neq('status', 'draft');
+                return q;
+            }, 15000, 3, 'tadilat_requests');
+
+            if (res && res.error) throw res.error;
+            this._requests = (res && Array.isArray(res.data)) ? res.data : [];
 
             const me = this._me();
             this._mine = this._requests.filter(r => me && r.assigned_agent_id === me.id);
             this._pool = this._requests.filter(r => !r.assigned_agent_id && r.status !== 'draft');
             this._assigned = this._requests.filter(r => !!r.assigned_agent_id);
-
-            if (this._requests.length) {
-                const ids = this._requests.map(r => r.id);
-                const { data: files, error: fErr } = await sb
-                    .from('tadilat_files').select('*').in('request_id', ids)
-                    .order('created_at', { ascending: true });
-                if (fErr) throw fErr;
-                const grouped = {};
-                (files || []).forEach(f => {
-                    (grouped[f.request_id] = grouped[f.request_id] || []).push(f);
-                });
-                this._filesByRequest = grouped;
-            } else {
-                this._filesByRequest = {};
-            }
-
-            await this._loadOrders();
-            await this._loadAgents();
         } catch (e) {
+            this._loading = false;
             this._error = (e && (e.message || e.details)) || String(e);
             if (/does not exist|schema cache|PGRST205/i.test(this._error)) {
                 this._error = 'جدول‌های تعدیلات ساخته نشده‌اند. فایل '
                     + 'supabase/tadilat_telegram_migration.sql را در Supabase اجرا کنید.';
             }
             console.error('TadilatModule.load:', e);
-        } finally {
-            this._loading = false;
+            return this._renderError();
         }
+        this._loading = false;
+
+        // ✅ نمایش فوری جدول — بدون انتظار برای فایل‌ها / نویسنده‌ها / سفارش‌ها
         this.render();
+
+        // بقیه در پس‌زمینه؛ هیچ‌کدام صفحه را قفل نمی‌کنند
+        this._loadFiles();
+        this._loadOrders().then(() => { if (this._orders && this._orders.length) this.render(); })
+            .catch(() => {});
+        this._loadAgents().then(() => { if (this._agents && this._agents.length) this.render(); })
+            .catch(() => {});
+    },
+
+    /** فایل‌های همهٔ درخواست‌ها را در پس‌زمینه می‌گیرد */
+    async _loadFiles() {
+        const sb = this._sb();
+        if (!sb || !this._requests.length) { this._filesByRequest = {}; return; }
+        const ids = this._requests.map(r => r.id);
+        try {
+            const res = await this._t(() => sb.from('tadilat_files').select('*')
+                .in('request_id', ids).order('created_at', { ascending: true }),
+                15000, 3, 'tadilat_files');
+            if (res && res.error) throw res.error;
+            const grouped = {};
+            ((res && res.data) || []).forEach(f => {
+                (grouped[f.request_id] = grouped[f.request_id] || []).push(f);
+            });
+            this._filesByRequest = grouped;
+            this.render();
+        } catch (e) {
+            console.warn('TadilatModule._loadFiles:', e);
+        }
     },
 
     async _loadStudents() {
         if (this._students) return this._students;
         const sb = this._sb();
         if (!sb) return [];
-        try {
-            const { data } = await sb.from('profiles')
-                .select('id,name,student_id').eq('role', 'student')
-                .order('name').limit(3000);
-            this._students = Array.isArray(data) ? data : [];
-        } catch (e) { this._students = []; }
-        return this._students;
+        if (this._studentsLoading) return this._studentsLoading;
+        this._studentsLoading = this._t(() => sb.from('profiles')
+            .select('id,name,student_id').eq('role', 'student')
+            .order('name').limit(3000), 12000, 2, 'profiles')
+            .then(res => {
+                if (res && res.error) throw res.error;
+                this._students = (res && res.data) || [];
+                return this._students;
+            })
+            .catch(e => {
+                console.warn('TadilatModule._loadStudents:', e);
+                return this._students || [];   // شکست کش نمی‌شود
+            });
+        // پرچم پس از پایان پاک می‌شود تا شکست، دائمی نشود
+        this._studentsLoading.then(() => { this._studentsLoading = null; });
+        return this._studentsLoading;
     },
 
     async _loadAgents() {
         if (this._agents) return this._agents;
         const sb = this._sb();
         if (!sb) return [];
-        try {
-            const { data } = await sb.from('profiles')
-                .select('id,name').eq('role', 'agent').order('name');
-            this._agents = Array.isArray(data) ? data : [];
-        } catch (e) { this._agents = []; }
-        return this._agents;
+        if (this._agentsLoading) return this._agentsLoading;
+        this._agentsLoading = this._t(() => sb.from('profiles')
+            .select('id,name').eq('role', 'agent').order('name'), 12000, 2, 'agents')
+            .then(res => {
+                if (res && res.error) throw res.error;
+                this._agents = (res && res.data) || [];
+                return this._agents;
+            })
+            .catch(e => {
+                console.warn('TadilatModule._loadAgents:', e);
+                return this._agents || [];
+            });
+        this._agentsLoading.then(() => { this._agentsLoading = null; });
+        return this._agentsLoading;
     },
 
     async _loadOrders() {
         if (this._orders) return this._orders;
         const sb = this._sb();
         if (!sb) return [];
-        try {
-            const { data } = await sb.from('orders')
-                .select('id,student_id,student_name,assigned_agent_id,created_at')
-                .order('created_at', { ascending: false }).limit(1000);
-            this._orders = (data || []).filter(o => o.assigned_agent_id).map(o => ({
-                id: o.id, student_id: o.student_id || null,
-                key: this._normKey(o.student_name),
-                agent_id: o.assigned_agent_id, created_at: o.created_at || '',
-            }));
-        } catch (e) { this._orders = []; }
-        return this._orders;
+        if (this._ordersLoading) return this._ordersLoading;
+        this._ordersLoading = this._t(() => sb.from('orders')
+            .select('id,student_id,student_name,assigned_agent_id,created_at')
+            .order('created_at', { ascending: false }).limit(1000), 15000, 2, 'orders')
+            .then(res => {
+                if (res && res.error) throw res.error;
+                this._orders = ((res && res.data) || [])
+                    .filter(o => o.assigned_agent_id)
+                    .map(o => ({
+                        id: o.id, student_id: o.student_id || null,
+                        key: this._normKey(o.student_name),
+                        agent_id: o.assigned_agent_id, created_at: o.created_at || '',
+                    }));
+                return this._orders;
+            })
+            .catch(e => {
+                console.warn('TadilatModule._loadOrders:', e);
+                return this._orders || [];
+            });
+        this._ordersLoading.then(() => { this._ordersLoading = null; });
+        return this._ordersLoading;
     },
 
     /** نویسندهٔ پیشنهادی برای درخواست بدون نویسنده */
@@ -329,11 +404,13 @@ const TadilatModule = {
         const sb = this._sb();
         if (!sb) return null;
         try {
-            const { data, error } = await sb.storage.from(this.BUCKET)
-                .createSignedUrl(path, 3600 * 6);
-            if (error || !data || !data.signedUrl) return null;
-            this._signedCache[path] = { url: data.signedUrl, exp: Date.now() + 6 * 3600 * 1000 };
-            return data.signedUrl;
+            const res = await this._t(() => sb.storage.from(this.BUCKET)
+                .createSignedUrl(path, 3600 * 6), 12000, 2, 'signedUrl');
+            if (!res || res.error || !res.data || !res.data.signedUrl) return null;
+            this._signedCache[path] = {
+                url: res.data.signedUrl, exp: Date.now() + 6 * 3600 * 1000,
+            };
+            return res.data.signedUrl;
         } catch (e) { return null; }
     },
 
@@ -1039,8 +1116,9 @@ const TadilatModule = {
         const sb = this._sb();
         if (!sb) { UTILS.showNotification('اتصال برقرار نیست', 'error'); return false; }
         try {
-            const { error } = await sb.from('tadilat_requests').update(patch).eq('id', id);
-            if (error) throw error;
+            const res = await this._t(() => sb.from('tadilat_requests')
+                .update(patch).eq('id', id), 12000, 2, 'update');
+            if (res && res.error) throw res.error;
             if (okMessage) UTILS.showNotification(okMessage, 'success');
             return true;
         } catch (e) {
