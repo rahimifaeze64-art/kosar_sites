@@ -1,0 +1,131 @@
+# ============================================================
+# .github/workflows/telegram-bot.yml
+#
+# اجرای دائمی ربات تعدیلات روی GitHub Actions — بدون کامپیوتر شما.
+#
+# 🎯 چرا اینجا بدون پروکسی کار می‌کند؟
+#    سرورهای GitHub در آمریکا هستند، پس api.telegram.org فیلتر نیست.
+#
+# 💰 هزینه: مخزن شما «عمومی» است → دقائق Actions بی‌نهایت و رایگان.
+#
+# ⏱ چطور «همیشه روشن» می‌شود؟
+#    هر اجرا ~۵ ساعت و ۴۰ دقیقه گوش می‌دهد، بعد خودش تمیز خارج
+#    می‌شود و cron بعدی (هر ۶ ساعت) اجرای تازه را شروع می‌کند.
+#    با cancel-in-progress هیچ‌وقت دو نسخه هم‌زمان نمی‌شوند (خطای 409).
+#
+# 💾 وضعیت گفتگو (offset + مرحلهٔ هر دانشجو) با actions/cache
+#    بین اجراها حفظ می‌شود.
+#
+# ══════════════════════════════════════════════════════════════
+# 📌 راه‌اندازی (یک‌بار) — Settings → Secrets and variables → Actions
+#
+#    New repository secret:
+#      TELEGRAM_BOT_TOKEN     توکن ربات از BotFather
+#      SUPABASE_URL           https://tyzrexkneoexmcegaxlc.supabase.co
+#      SUPABASE_ANON_KEY      کلید anon پروژه
+#
+#    (اختیاری)
+#      MINIAPP_URL            https://alkawthar.info/tadilat-app.html
+#      STORAGE_BUCKET         student-documents
+#      ADMIN_CHAT_IDS         123456,789012
+# ============================================================
+
+name: Telegram Bot (Tadilat)
+
+on:
+  # با هر تغییر در کد ربات، نسخهٔ تازه فوراً بالا می‌آید
+  push:
+    branches: [main]
+    paths:
+      - 'telegram-bot/**'
+      - '.github/workflows/telegram-bot.yml'
+  # هر ۶ ساعت یک اجرای تازه (زنجیره‌ای، بدون وقفه)
+  schedule:
+    - cron: '0 */6 * * *'
+  # اجرای دستی از تب Actions
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: 'مدت اجرا به دقیقه'
+        required: false
+        default: '340'
+
+# اجرای تازه، اجرای قبلی را قطع می‌کند تا:
+#   • کد تازه فوراً فعال شود
+#   • هیچ‌وقت دو نسخه هم‌زمان نباشند (خطای 409 Conflict)
+concurrency:
+  group: telegram-bot
+  cancel-in-progress: true
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    # سقف گیت‌هاب ۶ ساعت است؛ کمی کمتر تا تمیز خارج شود
+    timeout-minutes: 355
+
+    steps:
+      - name: دریافت کد
+        uses: actions/checkout@v4
+
+      - name: نصب پایتون
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # ── وضعیت گفتگو بین اجراها حفظ می‌شود ──
+      - name: بازگرداندن وضعیت ربات
+        uses: actions/cache@v4
+        with:
+          path: telegram-bot/bot_state.json
+          key: bot-state-${{ github.run_id }}
+          restore-keys: |
+            bot-state-
+
+      - name: بررسی تنظیمات
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          missing=""
+          [ -z "$TELEGRAM_BOT_TOKEN" ] && missing="$missing TELEGRAM_BOT_TOKEN"
+          [ -z "$SUPABASE_URL" ]       && missing="$missing SUPABASE_URL"
+          [ -z "$SUPABASE_ANON_KEY" ]  && missing="$missing SUPABASE_ANON_KEY"
+          if [ -n "$missing" ]; then
+            echo "❌ این Secrets تنظیم نشده‌اند:$missing"
+            echo ""
+            echo "   Settings → Secrets and variables → Actions → New repository secret"
+            exit 1
+          fi
+          echo "✅ همهٔ Secrets موجودند"
+
+      - name: اجرای ربات
+        working-directory: telegram-bot
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          MINIAPP_URL: ${{ secrets.MINIAPP_URL }}
+          STORAGE_BUCKET: ${{ secrets.STORAGE_BUCKET }}
+          ADMIN_CHAT_IDS: ${{ secrets.ADMIN_CHAT_IDS }}
+          BOT_MINUTES: ${{ github.event.inputs.minutes || '340' }}
+        run: |
+          SECONDS_TO_RUN=$(( BOT_MINUTES * 60 ))
+          echo "⏱ اجرا برای $BOT_MINUTES دقیقه"
+          echo "🕐 شروع: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          # بدون پروکسی — سرورهای گیت‌هاب فیلتر نیستند
+          if ! python bot.py --max-seconds "$SECONDS_TO_RUN"; then
+            echo "⚠️ ربات با خطا خارج شد"
+            tail -40 bot.log 2>/dev/null || true
+            exit 1
+          fi
+          echo "🕐 پایان: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+      - name: ذخیرهٔ لاگ برای عیب‌یابی
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bot-log-${{ github.run_number }}
+          path: telegram-bot/bot.log
+          if-no-files-found: ignore
+          retention-days: 7

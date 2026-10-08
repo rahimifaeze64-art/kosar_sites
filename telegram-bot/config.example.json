@@ -18,6 +18,8 @@
 
   "storage_bucket": "student-documents",
   "menu_button_text": "تعدیلات",
+  "_comment_menu": "false = دکمهٔ مینیاپ در منو نباشد؛ لینک فقط در بیو می‌ماند",
+  "menu_button_webapp": false,
   "_comment_proxy": "اگر تلگرام فیلتر است: socks5://127.0.0.1:10808 — خالی بگذارید تا خودکار پیدا شود",
   "proxy": "",
   "_comment_webhook": "برای حالت Supabase: یک رشتهٔ تصادفی — همان در Secrets سوپابیس",

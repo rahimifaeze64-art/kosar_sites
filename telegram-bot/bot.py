@@ -86,6 +86,9 @@ DEFAULTS = {
     "notify_on_new": False,
     "notify_poll_seconds": 60,
     "menu_button_text": "تعدیلات",
+    # دکمهٔ مینیاپ در منوی چت؟ پیش‌فرض خیر — لینک فقط در «بیو» می‌ماند
+    # (برای برگرداندن دکمه: true و بعد python bot.py --set-menu)
+    "menu_button_webapp": False,
     "poll_timeout": 50,
     "request_timeout": 60,
 }
@@ -237,6 +240,22 @@ class Telegram:
 
     def webhook_info(self):
         return self.call("getWebhookInfo")
+
+    # ── بیو و دکمهٔ منو ──
+    def set_description(self, text):
+        """توضیحی که پیش از /start در چت نشان داده می‌شود."""
+        return self.call("setMyDescription",
+                         {"description": text, "parse_mode": "HTML"})
+
+    def set_short_description(self, text):
+        """بیوی کوتاه در پروفایل ربات."""
+        return self.call("setMyShortDescription",
+                         {"short_description": text, "parse_mode": "HTML"})
+
+    def reset_menu_button(self):
+        """دکمهٔ منو را به حالت پیش‌فرض برمی‌گرداند (دکمهٔ مینیاپ حذف می‌شود)."""
+        return self.call("setChatMenuButton",
+                         {"menu_button": {"type": "default"}})
 
     def send_chat_action(self, chat_id, action="typing"):
         """نشان می‌دهد ربات مشغول است. اگر نشد، کار متوقف نمی‌شود."""
@@ -510,6 +529,21 @@ class TadilatBot:
 
     # ── ثبت دکمهٔ منو ───────────────────────────────────────
     def register_menu(self):
+        """دکمهٔ منوی چت.
+
+        طبق تنظیم `menu_button_webapp`:
+          • false (پیش‌فرض) → دکمه برداشته می‌شود و لینک مینیاپ
+            فقط در «بیو» ربات می‌ماند (setting با --set-bio)
+          • true → دکمهٔ مینیاپ در منوی چت هم می‌آید
+        """
+        if not self.cfg.get("menu_button_webapp"):
+            try:
+                self.tg.reset_menu_button()
+                log("دکمهٔ منو پیش‌فرض است (لینک مینیاپ در بیو ربات)")
+            except TelegramError as exc:
+                log("بازگرداندن دکمهٔ منو ناموفق: %s" % exc, "WARN")
+            return False
+
         if not self.url:
             log("miniapp_url تنظیم نشده — دکمهٔ منو ثبت نمی‌شود", "WARN")
             return False
@@ -1300,6 +1334,9 @@ def main():
     parser.add_argument("--init-config", action="store_true",
                         help="ساخت config.json از روی config.example.json")
     parser.add_argument("--config", default=CONFIG_FILE, help="مسیر فایل تنظیمات")
+    parser.add_argument("--set-bio", action="store_true",
+                        help="ثبت بیو ربات + انتقال لینک مینیاپ به بیو "
+                             "و حذف دکمهٔ منو")
     parser.add_argument("--webhook", default=None,
                         help="ثبت Webhook روی Supabase Edge Function. "
                              "برای حذف: --webhook off")
@@ -1341,6 +1378,38 @@ def main():
         netproxy.install(cfg.get("proxy"), logger=log)
     except Exception as exc:  # noqa: BLE001
         log("راه‌اندازی پروکسی نشد (بی‌اهمیت): %s" % exc, "WARN")
+
+    # ── بیو ربات + انتقال مینیاپ به بیو ──
+    if args.set_bio:
+        tg = Telegram(cfg["telegram_bot_token"])
+        url = cfg.get("miniapp_url") or "https://alkawthar.info/tadilat-app.html"
+        desc = (
+            "📤 <b>ارسال تعدیلات — شرکة الکوثر</b>\n\n"
+            "اینجا اسمت را می‌نویسی، تأیید می‌کنی که خودت هستی و بعد "
+            "فایل‌های تعدیلاتت را می‌فرستی — از فایل‌های گوشی یا "
+            "از واتساپ (Share → Telegram).\n\n"
+            "📋 با دکمه‌های پایین چت، وضعیت، تاریخ تحویل و فایل‌هایت "
+            "را می‌بینی.\n\n"
+            "🔗 <b>نسخهٔ مینیاپ:</b>\n%s\n\n"
+            "برای شروع /start را بزنید." % url
+        )
+        short = "ارسال تعدیلات به شرکة الکوثر — اسمت را بنویس و فایل‌ها را بفرست."
+        try:
+            tg.set_description(desc[:512])
+            print("✅ توضیح ربات (بیو) ثبت شد")
+        except TelegramError as exc:
+            print("❌ ثبت توضیح ناموفق: %s" % exc)
+        try:
+            tg.set_short_description(short[:120])
+            print("✅ بیوی کوتاه ثبت شد")
+        except TelegramError as exc:
+            print("⚠️ بیوی کوتاه ثبت نشد: %s" % exc)
+        try:
+            tg.reset_menu_button()
+            print("✅ دکمهٔ منو به حالت پیش‌فرض برگشت (دکمهٔ مینیاپ برداشته شد)")
+        except TelegramError as exc:
+            print("❌ حذف دکمهٔ منو ناموفق: %s" % exc)
+        return 0
 
     # ── حالت Webhook (Supabase Edge Function) ──
     if args.webhook_info:
