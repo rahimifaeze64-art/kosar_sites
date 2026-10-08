@@ -8,7 +8,7 @@
   "telegram_bot_token": "توکنی که @BotFather می‌دهد — مثل 123456789:AAE...",
 
   "_miniapp_url_راهنما": [
-    "آدرس HTTPS صفحهٔ مینی‌اپ. تلگرام آدرس غیرامن (http) را قبول نمی‌کند.",
+    "آدرس HTTPS صفحهٔ تلگرام. تلگرام آدرس غیرامن (http) را قبول نمی‌کند.",
     "بعد از deploy پروژه روی سایت، این آدرس باید در دسترس باشد."
   ],
   "miniapp_url": "https://alkawthar.info/tadilat-app.html",

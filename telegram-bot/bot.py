@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-bot.py — پوستهٔ سبک ربات تلگرام برای «مینی‌اپ ارسال تعدیلات»
+bot.py — پوستهٔ سبک ربات تلگرام برای «تلگرام ارسال تعدیلات»
 
 این ربات دیگر گفتگو ندارد. کارش فقط این است:
-    • دکمهٔ منوی چت را به مینی‌اپ وصل کند
-    • با /start دکمهٔ «باز کردن مینی‌اپ» بفرستد
+    • دکمهٔ منوی چت را به تلگرام وصل کند
+    • با /start دکمهٔ «باز کردن تلگرام» بفرستد
     • /status وضعیت آخرین ارسال‌ها را نشان دهد
     • (اختیاری) با notify_on_new = true به مدیرها خبر دهد
 
-تمام منطق ارسال فایل در مینی‌اپ است:
+تمام منطق ارسال فایل در تلگرام است:
     tadilat-app.html  +  js/tadilat-app.js  +  css/tadilat-app.css
 و فایل‌ها مستقیم از مرورگر دانشجو به Supabase Storage می‌روند
 (سقف ۵۰ مگابایت — به‌جای سقف ۲۰ مگابایتی دانلود Bot API).
 
 اجرا:
     python bot.py                # اجرای ربات
-    python bot.py --check        # بررسی سلامت توکن، دیتابیس، جدول‌ها و آدرس مینی‌اپ
+    python bot.py --check        # بررسی سلامت توکن، دیتابیس، جدول‌ها و آدرس تلگرام
     python bot.py --set-menu     # فقط ثبت دکمهٔ منو (بدون اجرای حلقه)
     python bot.py --init-config  # ساخت config.json از روی نمونه
 
@@ -208,7 +208,7 @@ class Telegram:
         return self.call("setMyCommands", {"commands": commands})
 
     def set_menu_button(self, text, url):
-        """دکمهٔ منوی چت‌های خصوصی را به مینی‌اپ وصل می‌کند."""
+        """دکمهٔ منوی چت‌های خصوصی را به تلگرام وصل می‌کند."""
         return self.call("setChatMenuButton", {
             "menu_button": {
                 "type": "web_app",
@@ -259,7 +259,7 @@ def txt_welcome(url):
     return (
         "سلام 👋\n"
         "برای ارسال <b>تعدیلات</b>، دکمهٔ زیر را بزنید.\n\n"
-        "داخل مینی‌اپ:\n"
+        "داخل تلگرام:\n"
         "۱) نام و شمارهٔ دانشجویی خود را وارد می‌کنید\n"
         "۲) فایل‌ها را انتخاب می‌کنید (عکس، PDF، Word یا ویس — چندتایی)\n"
         "۳) ارسال را می‌زنید\n\n"
@@ -274,7 +274,7 @@ def txt_welcome(url):
 
 TXT_HELP = (
     "<b>راهنمای ربات</b>\n\n"
-    "/start — باز کردن مینی‌اپ ارسال تعدیلات\n"
+    "/start — باز کردن تلگرام ارسال تعدیلات\n"
     "/status — وضعیت ارسال‌های قبلی\n"
     "/help — همین راهنما\n\n"
     "می‌توانید فایل‌ها را همین‌جا هم بفرستید (مثلاً فوروارد از واتساپ)؛\n"
@@ -387,7 +387,7 @@ class TadilatBot:
             log("miniapp_url تنظیم نشده — دکمهٔ منو ثبت نمی‌شود", "WARN")
             return False
         if not self.url.lower().startswith("https://"):
-            log("آدرس مینی‌اپ باید HTTPS باشد (تلگرام آدرس غیرامن را رد می‌کند): %s"
+            log("آدرس تلگرام باید HTTPS باشد (تلگرام آدرس غیرامن را رد می‌کند): %s"
                 % self.url, "ERROR")
             return False
         try:
@@ -448,7 +448,7 @@ class TadilatBot:
 
         req = self._latest_request(chat_id)
         if not req:
-            # هنوز در مینی‌اپ ثبت‌نام نکرده → با نام پروفایل تلگرامش تلاش کن
+            # هنوز در تلگرام ثبت‌نام نکرده → با نام پروفایل تلگرامش تلاش کن
             frm = message.get("from") or {}
             guess = " ".join(x for x in [frm.get("first_name"), frm.get("last_name")] if x)
             detection = self.router.detect(guess) if guess else {"student_id": None}
@@ -456,7 +456,7 @@ class TadilatBot:
                 self._send_app(
                     chat_id,
                     "📥 فایل رسید، ولی نمی‌دانم مال کدام دانشجو است.\n"
-                    "یک‌بار دکمهٔ زیر را بزن و در مینی‌اپ <b>نام و شمارهٔ دانشجویی</b> "
+                    "یک‌بار دکمهٔ زیر را بزن و در تلگرام <b>نام و شمارهٔ دانشجویی</b> "
                     "خودت را ثبت کن؛ بعد از آن هر فایلی بفرستی خودکار وصل می‌شود.")
                 return
             req = self._create_request(chat_id, message, detection)
@@ -481,7 +481,7 @@ class TadilatBot:
                     chat_id,
                     "⚠️ حجم این فایل %s مگابایت است؛ تلگرام اجازهٔ دانلود بیش از "
                     "%s مگابایت را به ربات نمی‌دهد.\n"
-                    "لطفاً همین فایل را در <b>مینی‌اپ</b> بفرست (سقف ۵۰ مگابایت)."
+                    "لطفاً همین فایل را در <b>تلگرام</b> بفرست (سقف ۵۰ مگابایت)."
                     % (round(size / 1048576, 1), self.cfg.get("max_file_mb")))
                 return
             data = self.tg.download_file(file_path)
@@ -595,7 +595,7 @@ class TadilatBot:
             self.handle_media(message)
             return
 
-        # هر پیام دیگری هم دکمهٔ مینی‌اپ را نشان می‌دهد
+        # هر پیام دیگری هم دکمهٔ تلگرام را نشان می‌دهد
         self._send_app(chat_id, txt_welcome(self.url))
 
     def handle_callback(self, query):
@@ -650,7 +650,7 @@ class TadilatBot:
         fresh = [r for r in rows if r.get("id") and r["id"] not in seen]
         # قدیمی‌ترین تازه‌ها اول
         for row in reversed(fresh):
-            label = "مینی‌اپ" if row.get("source") != "telegram_bot" else "ربات"
+            label = "تلگرام" if row.get("source") != "telegram_bot" else "ربات"
             self._notify_admins(
                 "🔔 <b>تعدیلات جدید</b> (%s)\n👤 %s\n📁 %d فایل\n🔖 <code>%s</code>"
                 % (label,
@@ -678,7 +678,7 @@ class TadilatBot:
         self.register_menu()
         try:
             self.tg.set_my_commands([
-                {"command": "start", "description": "باز کردن مینی‌اپ ارسال تعدیلات"},
+                {"command": "start", "description": "باز کردن تلگرام ارسال تعدیلات"},
                 {"command": "status", "description": "وضعیت ارسال‌های قبلی"},
                 {"command": "help", "description": "راهنما"},
             ])
@@ -753,12 +753,12 @@ class TadilatBot:
                     if mb and mb.get("type") == "web_app":
                         cur = (mb.get("web_app") or {}).get("url")
                         if cur == self.url:
-                            print("✓ دکمهٔ منو روی مینی‌اپ ثبت شده → %s" % cur)
+                            print("✓ دکمهٔ منو روی تلگرام ثبت شده → %s" % cur)
                         else:
                             print("⚠ دکمهٔ منو روی آدرس دیگری است → %s" % cur)
                             print("  برای اصلاح: python bot.py --set-menu")
                     else:
-                        print("⚠ دکمهٔ منو هنوز روی مینی‌اپ نیست "
+                        print("⚠ دکمهٔ منو هنوز روی تلگرام نیست "
                               "(با --set-menu ثبت می‌شود)")
                         print("  نکته: خود تلگرام این مقدار را تا حدود یک دقیقه کش می‌کند؛"
                               " اگر تازه ثبت کرده‌اید، چند لحظه بعد دوباره بررسی کنید.")
@@ -773,7 +773,7 @@ class TadilatBot:
                     ok = False
 
         if not self.url:
-            print("✗ miniapp_url تنظیم نشده — بدون آن مینی‌اپ باز نمی‌شود")
+            print("✗ miniapp_url تنظیم نشده — بدون آن تلگرام باز نمی‌شود")
             ok = False
         elif not self.url.lower().startswith("https://"):
             print("✗ miniapp_url باید HTTPS باشد (تلگرام آدرس غیرامن را رد می‌کند): %s"
@@ -786,12 +786,12 @@ class TadilatBot:
                 with urllib.request.urlopen(req, timeout=30) as resp:
                     body = resp.read(4000).decode("utf-8", "replace")
                 if "tadilat-app" in body or 'id="app"' in body:
-                    print("✓ آدرس مینی‌اپ در دسترس است (%s)" % self.url)
+                    print("✓ آدرس تلگرام در دسترس است (%s)" % self.url)
                 else:
-                    print("⚠ آدرس مینی‌اپ پاسخ داد ولی صفحهٔ مورد انتظار نیست (%s)" % self.url)
+                    print("⚠ آدرس تلگرام پاسخ داد ولی صفحهٔ مورد انتظار نیست (%s)" % self.url)
                     ok = False
             except Exception as exc:  # noqa: BLE001
-                print("✗ آدرس مینی‌اپ در دسترس نیست: %s → %s" % (self.url, exc))
+                print("✗ آدرس تلگرام در دسترس نیست: %s → %s" % (self.url, exc))
                 ok = False
 
         try:

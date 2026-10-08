@@ -36,7 +36,7 @@ WHERE t.id = n.id;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_tadilat_requests_code
     ON public.tadilat_requests (code);
 
--- هر رکورد تازه، کد خودش را می‌گیرد (برای همهٔ مسیرها: مینی‌اپ، ربات، ثبت دستی)
+-- هر رکورد تازه، کد خودش را می‌گیرد (برای همهٔ مسیرها: تلگرام، ربات، ثبت دستی)
 CREATE OR REPLACE FUNCTION public.tadilat_set_code()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE

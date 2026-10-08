@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS public.tadilat_requests (
     id                  TEXT        PRIMARY KEY DEFAULT gen_random_uuid()::text,
 
     -- ── منبع ارسال ──────────────────────────────────────────
-    -- mini_app = مینی‌اپ تلگرام | telegram_bot = گفتگوی ربات
+    -- mini_app = تلگرام تلگرام | telegram_bot = گفتگوی ربات
     source              TEXT        NOT NULL DEFAULT 'mini_app'
                         CHECK (source IN ('mini_app','telegram_bot')),
 
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS public.tadilat_requests (
 );
 
 COMMENT ON TABLE public.tadilat_requests IS
-    'درخواست‌های تعدیلات ارسالی دانشجویان از مینی‌اپ/ربات تلگرام';
+    'درخواست‌های تعدیلات ارسالی دانشجویان از تلگرام/ربات تلگرام';
 COMMENT ON COLUMN public.tadilat_requests.student_id IS
     'اتصال به profiles.id — در این دیتابیس TEXT است';
 COMMENT ON COLUMN public.tadilat_requests.status IS

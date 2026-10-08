@@ -1,5 +1,5 @@
 /* ============================================================
-   js/tadilat-app.js — منطق مینی‌اپ «ارسال تعدیلات» (نسخهٔ ۲)
+   js/tadilat-app.js — منطق تلگرام «ارسال تعدیلات» (نسخهٔ ۲)
 
    چهار باکس:
      ۱) اسم — نوشتاری یا صوتی (🎤)
@@ -60,6 +60,9 @@
       label_write: 'یا اسمت را خودت بنویس',
       manual_hint: 'اسمت را کامل بنویس تا پیدایت کنیم.',
       manual_voice_or_type: 'اسمت را بگو یا خودت بنویس.',
+      stt_busy: '🔎 در حال تشخیص نام…',
+      stt_busy_hint: 'چند لحظه صبر کن',
+      stt_not_setup: 'سرویس تشخیص گفتار روی سرور تنظیم نشده — اسمت را خودت بنویس.',
       manual_wrong: 'باشد، اسمت را خودت بنویس.',
       manual_no_stt: 'این مرورگر تشخیص گفتار ندارد؛ اسمت را بنویس (یا شمارهٔ دانشجویی را وارد کن).',
       manual_short: 'اسمت را کامل‌تر بگو یا بنویس.',
@@ -203,6 +206,9 @@
       label_write: 'أو اكتب اسمك بنفسك',
       manual_hint: 'اكتب اسمك كاملاً لنبحث عنك.',
       manual_voice_or_type: 'قل اسمك أو اكتبه بنفسك.',
+      stt_busy: '🔎 جارٍ التعرّف على الاسم…',
+      stt_busy_hint: 'انتظر لحظة',
+      stt_not_setup: 'خدمة التعرّف على الكلام غير مُهيّأة على الخادم — اكتب اسمك بنفسك.',
       manual_wrong: 'حسناً، اكتب اسمك بنفسك.',
       manual_no_stt: 'هذا المتصفح لا يتعرّف على الكلام؛ اكتب اسمك (أو رقم الطالب).',
       manual_short: 'قل اسمك كاملاً أو اكتبه.',
@@ -954,7 +960,80 @@
   var sttServerOnly = false;
 
   var MAX_REC_TRIES = 3;        // فقط ۳ بار می‌شود اسم را صوتی گفت
-  var REC_MAX_SECONDS = 12;     // سقف هر ضبط
+  var REC_MAX_SECONDS = 8;      // سقف هر ضبط (تشخیص سرور جبران می‌کند)
+
+  // ══════════════════════════════════════════════════════════
+  // تشخیص گفتار سمت سرور (Whisper)
+  //
+  // چرا؟ Web Speech API داخل وب‌ویو اندروید تلگرام به سرویس گفتار
+  // گوگل دسترسی ندارد و عملاً کار نمی‌کند. پس صدا را به یک Edge
+  // Function می‌فرستیم که با کلید محرمانه به Whisper وصل است.
+  // ══════════════════════════════════════════════════════════
+  var STT_ENDPOINT_CACHE = null;
+
+  function sttEndpoint() {
+    if (STT_ENDPOINT_CACHE !== null) return STT_ENDPOINT_CACHE;
+    try {
+      var base = String(sbUrl() || '').replace(/\/+$/, '');
+      STT_ENDPOINT_CACHE = base ? (base + '/functions/v1/tadilat-stt') : '';
+    } catch (e) { STT_ENDPOINT_CACHE = ''; }
+    return STT_ENDPOINT_CACHE;
+  }
+
+  function blobToBase64(blob) {
+    return new Promise(function (resolve, reject) {
+      try {
+        var fr = new FileReader();
+        fr.onload = function () {
+          var s = String(fr.result || '');
+          var i = s.indexOf(',');
+          resolve(i >= 0 ? s.slice(i + 1) : '');
+        };
+        fr.onerror = function () { reject(new Error('read failed')); };
+        fr.readAsDataURL(blob);
+      } catch (e) { reject(e); }
+    });
+  }
+
+  /** صدا را به سرور می‌فرستد و متن برمی‌گرداند ('' اگر نشد) */
+  function serverTranscribe(blob, mime) {
+    var url = sttEndpoint();
+    if (!url || !blob) return Promise.resolve('');
+    return blobToBase64(blob).then(function (b64) {
+      return fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': sbKey() || '',
+          'Authorization': 'Bearer ' + (sbKey() || ''),
+        },
+        body: JSON.stringify({ audio: b64, mime: mime || 'audio/webm', lang: 'ar' }),
+      });
+    }).then(function (r) {
+      if (!r.ok) {
+        return r.text().then(function (tx) {
+          throw new Error('STT ' + r.status + ': ' + String(tx).slice(0, 160));
+        });
+      }
+      return r.json();
+    }).then(function (d) {
+      return (d && d.text) ? normName(d.text) : '';
+    });
+  }
+
+  /** وضعیت «در حال تشخیص» روی کارت ویس */
+  function sttBusy(on) {
+    var title = $('voice-title');
+    if (!title) return;
+    if (!on) return;
+    show($('voice-box'));
+    $('voice-box').classList.add('idle');
+    title.textContent = t('stt_busy');
+    if ($('voice-text')) {
+      $('voice-text').textContent = t('stt_busy_hint');
+      $('voice-text').className = 'voice-text';
+    }
+  }
   var LIVE_MATCH_WAIT = 350;    // کمی صبر تا کلمه کامل شود
 
   /**
@@ -1277,11 +1356,50 @@
 
     // متن شنیده شد ولی مطمئن نبودیم → یک تطبیق نهایی
     if (state.voiceHeard) {
-      matchHeardName(state.voiceHeard, true);
+      matchHeardName(state.voiceHeard, true).then(function (hit) {
+        if (hit) return;
+        askServerSTT();          // تشخیص محلی جواب نداد → سرور
+      });
       return;
     }
-    // چیزی شنیده نشد
-    promptManual(SpeechRec ? afterFailKey() : 'manual_no_stt');
+    // تشخیص محلی چیزی نشنید → مستقیم سرور
+    askServerSTT();
+  }
+
+  /**
+   * صدا را به سرویس آنلاین (Whisper) می‌فرستد.
+   * این همان چیزی است که وقتی Web Speech در اندروید کار نمی‌کند نجات می‌دهد.
+   */
+  function askServerSTT() {
+    if (state.matched || state.autoMatched) return;
+    if (!state.voiceBlob) {
+      promptManual(SpeechRec ? afterFailKey() : 'manual_no_stt');
+      return;
+    }
+    sttBusy(true);
+    serverTranscribe(state.voiceBlob, state.voiceBlob.type).then(function (text) {
+      if (!text) {
+        sttBusy(false);
+        promptManual(afterFailKey());
+        return;
+      }
+      state.voiceHeard = text;
+      state.voiceText = text;
+      state.voiceNameSource = 'voice_server';
+      if ($('voice-text')) {
+        $('voice-text').textContent = t('voice_heard', text);
+        $('voice-text').className = 'voice-text ok';
+      }
+      return matchHeardName(text, true);   // خودش در صورت شکست راهنمایی می‌کند
+    }).catch(function (e) {
+      console.warn('serverTranscribe:', e);
+      sttBusy(false);
+      // اگر تابع سرور نبود، همان ورود دستی
+      promptManual(afterFailKey());
+      if (String(e && e.message).indexOf('404') !== -1) {
+        toast(t('stt_not_setup'));
+      }
+    });
   }
 
   // ══════════════════════════════════════════════════════════

@@ -164,7 +164,7 @@ const TadilatModule = {
     _sourceLabel(src) {
         if (src === 'telegram_bot') return 'ربات (فوروارد)';
         if (src === 'manual') return 'ثبت دستی';
-        return 'مینی‌اپ';
+        return 'تلگرام';
     },
 
     _bytes(n) {
@@ -530,10 +530,6 @@ const TadilatModule = {
                             : 'bg-white/5 text-gray-300 border-white/15 hover:bg-white/10'}">
                     <i class="fas fa-layer-group ml-1"></i>همه <span class="opacity-70">${this._fa(this._requests.length)}</span>
                 </button>
-                <span class="text-xs text-gray-400 mr-auto">
-                    <i class="fas fa-circle-info ml-1"></i>
-                    تعدیلات بدون نویسنده در «استخر عمومی» است — بازش کن و به نویسنده بسپار
-                </span>
             </div>` : '';
 
         root.innerHTML = `
@@ -590,7 +586,7 @@ const TadilatModule = {
                     </select>
                     <select id="td-source" data-td-input="source" class="bg-gray-50 text-gray-800 border border-gray-300 rounded-lg px-4 py-2 text-sm">
                         ${this._opt('', 'همه منابع', f.source === '')}
-                        ${this._opt('mini_app', 'مینی‌اپ', f.source === 'mini_app')}
+                        ${this._opt('mini_app', 'تلگرام', f.source === 'mini_app')}
                         ${this._opt('telegram_bot', 'ربات (فوروارد)', f.source === 'telegram_bot')}
                         ${this._opt('manual', 'ثبت دستی', f.source === 'manual')}
                     </select>
