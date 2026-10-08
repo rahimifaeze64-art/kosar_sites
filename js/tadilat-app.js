@@ -117,13 +117,17 @@
       st_draft: 'ناتمام', st_rejected: 'رد شد',
       // ── پویا ──
       voice_listening: '🎧 به عربی گوش می‌دهم…',
+      voice_capturing: '🎤 صدایت را می‌شنوم…',
+      kbd_mic: 'میکروفن کیبورد گوشی',
+      kbd_mic_hint: 'روی کادر بالا بزن، بعد دکمهٔ 🎙 کیبورد گوشی را بزن و اسمت را بگو — دقتش بالاست.',
+      kbd_mic_toast: 'حالا دکمهٔ 🎙 کیبورد را بزن و اسمت را بگو',
       mic_lang_note: '(تشخیص گفتار روی عربی)',
       voice_heard: '🗣 {0}',
       voice_unsupported: '⚠️ این دستگاه ضبط صدا را پشتیبانی نمی‌کند؛ نامت را تایپ کن.',
       voice_stopped: 'ضبط تمام شد',
       voice_no_stt: '🎤 ویس ضبط شد (این مرورگر تشخیص گفتار ندارد) — اسمت را از فهرست انتخاب کن.',
       voice_saved: '🎤 ویس اسمت ضبط شد و همراه درخواست ذخیره می‌شود.',
-      voice_heard_fail: '🎤 ویس ضبط شد. تشخیص خودکار روی این دستگاه کار نکرد — نامت را از فهرست انتخاب کن.',
+      voice_heard_fail: '🎤 نامت را کامل بگو یا خودت بنویس.',
       picker_notfound: 'دانشجویی با این نام پیدا نشد — می‌توانی خودت بنویسی',
       picker_choose: 'اسمت را از فهرست انتخاب کن',
       picker_no_stt: 'این مرورگر تشخیص خودکار ندارد؛ اسمت را از فهرست انتخاب کن',
@@ -255,13 +259,17 @@
       st_ready: 'جاهز للتسليم', st_completed: 'تم التسليم',
       st_draft: 'غير مكتمل', st_rejected: 'مرفوض',
       voice_listening: '🎧 أستمع بالعربية…',
+      voice_capturing: '🎤 أسمع صوتك…',
+      kbd_mic: 'ميكروفون لوحة المفاتيح',
+      kbd_mic_hint: 'اضغط على الحقل أعلاه، ثم اضغط زر 🎙 في لوحة المفاتيح وقل اسمك — دقّته عالية.',
+      kbd_mic_toast: 'الآن اضغط زر 🎙 في لوحة المفاتيح وقل اسمك',
       mic_lang_note: '(التعرّف على الكلام بالعربية)',
       voice_heard: '🗣 {0}',
       voice_unsupported: '⚠️ هذا الجهاز لا يدعم التسجيل؛ اكتب اسمك.',
       voice_stopped: 'انتهى التسجيل',
       voice_no_stt: '🎤 سُجّل الصوت (هذا المتصفح لا يتعرّف على الكلام) — اختر اسمك من القائمة.',
       voice_saved: '🎤 تم تسجيل صوتك وسيُرفَق بالطلب.',
-      voice_heard_fail: '🎤 سُجّل الصوت. التعرّف التلقائي لا يعمل على هذا الجهاز — اختر اسمك من القائمة.',
+      voice_heard_fail: '🎤 قل اسمك كاملاً أو اكتبه بنفسك.',
       picker_notfound: 'لا يوجد طالب بهذا الاسم — يمكنك كتابته بنفسك',
       picker_choose: 'اختر اسمك من القائمة',
       picker_no_stt: 'هذا المتصفح لا يدعم التعرّف التلقائي؛ اختر اسمك من القائمة',
@@ -962,6 +970,60 @@
   var MAX_REC_TRIES = 3;        // فقط ۳ بار می‌شود اسم را صوتی گفت
   var REC_MAX_SECONDS = 8;      // سقف هر ضبط (تشخیص سرور جبران می‌کند)
 
+  // ── تشخیص سکوت (VAD) ──
+  // ضبط وقتی خودش تمام می‌شود که دانشجو حرفش را زده و ~۱.۲ ثانیه ساکت بماند.
+  // این‌طور به تشخیص گفتار وابسته نیستیم: در وب‌ویو اندروید که تشخیص
+  // کار نمی‌کند، ضبط باز هم به‌موقع تمام می‌شود.
+  var vadCtx = null, vadAnalyser = null, vadTimer = null, vadBuf = null;
+  var vadSpoke = false, vadSilentMs = 0;
+  var VAD_SILENCE_MS = 1200;
+  var VAD_PEAK = 12;
+
+  function stopVAD() {
+    if (vadTimer) { clearInterval(vadTimer); vadTimer = null; }
+    try { if (vadCtx && vadCtx.close) vadCtx.close(); } catch (e) { /* نادیده */ }
+    vadCtx = null; vadAnalyser = null; vadBuf = null;
+  }
+
+  function startVAD(stream) {
+    stopVAD();
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC || !stream) return;
+      vadCtx = new AC();
+      var src = vadCtx.createMediaStreamSource(stream);
+      vadAnalyser = vadCtx.createAnalyser();
+      vadAnalyser.fftSize = 512;
+      src.connect(vadAnalyser);
+      vadBuf = new Uint8Array(vadAnalyser.fftSize);
+      vadSpoke = false;
+      vadSilentMs = 0;
+      vadTimer = setInterval(function () {
+        if (!state.recording || !vadAnalyser) return;
+        try { vadAnalyser.getByteTimeDomainData(vadBuf); } catch (e) { return; }
+        var peak = 0;
+        for (var i = 0; i < vadBuf.length; i++) {
+          var v = Math.abs(vadBuf[i] - 128);
+          if (v > peak) peak = v;
+        }
+        if (peak > VAD_PEAK) {
+          if (!vadSpoke && !state.voiceText && $('voice-text')) {
+            $('voice-text').textContent = t('voice_capturing');
+            $('voice-text').className = 'voice-text';
+          }
+          vadSpoke = true;
+          vadSilentMs = 0;
+        } else if (vadSpoke) {
+          vadSilentMs += 120;
+          if (vadSilentMs >= VAD_SILENCE_MS) stopRecording();
+        }
+      }, 120);
+    } catch (e) {
+      console.warn('VAD نشد (بی‌اهمیت):', e && e.message);
+      stopVAD();
+    }
+  }
+
   // ══════════════════════════════════════════════════════════
   // تشخیص گفتار سمت سرور (Whisper)
   //
@@ -1156,6 +1218,9 @@
           mediaRecorder.onstop = finishRecording;
           mediaRecorder.start();
 
+          // ضبط با تشخیص سکوت خودش تمام می‌شود (مستقل از تشخیص گفتار)
+          startVAD(stream);
+
           // ── ۲. تشخیص گفتار — بعد از آماده شدن میکروفن ──
           if (SpeechRec && state.recording) {
             try {
@@ -1279,19 +1344,33 @@
     scheduleLiveMatch(alts.length ? alts : [primary], isFinal);
   }
 
+  /**
+   * خطاهای تشخیص گفتار.
+   *
+   * ⚠️ این‌جا قبلاً هر خطا (حتی «no-speech» گذرا که در وب‌ویو اندروید
+   * بلافاصله می‌آید) پیام «تشخیص خودکار کار نکرد» را چاپ می‌کرد.
+   * حالا فقط ثبت می‌شود؛ اگر خطا جدی بود، منتظر تشخیص سرور می‌مانیم
+   * و رابط کاربری پیام ترسناک نشان نمی‌دهد.
+   */
   function onSpeechError(ev) {
     sttLastError = (ev && ev.error) || 'unknown';
-    console.warn('speech error', sttLastError);
+    console.warn('speech error:', sttLastError);
     // اگر مرورگر این لهجه را نداشت، لهجهٔ بعدی را امتحان کن
     if (sttLastError === 'language-not-supported' && sttLangIdx < STT_LANGS.length - 1) {
       sttLangIdx++;
       console.warn('تغییر زبان تشخیص گفتار به', speechLang());
       if (state.recording) { try { startSpeech(); return; } catch (e) { /* ادامه */ } }
     }
+    // خطای جدی → دیگر تلاش نکن؛ ضبط را نگه دار تا به سرور بفرستیم
+    if (sttLastError === 'not-allowed' || sttLastError === 'service-not-allowed' ||
+        sttLastError === 'audio-capture' || sttLastError === 'network') {
+      sttRestarts = 99;
+    }
     if (state.autoMatched) return;
+    // هیچ پیام منفی‌ای نشان نده — سرور جبران می‌کند
     if (!state.voiceText && $('voice-text')) {
-      $('voice-text').textContent = t('voice_heard_fail');
-      $('voice-text').className = 'voice-text bad';
+      $('voice-text').textContent = t('voice_listening');
+      $('voice-text').className = 'voice-text';
     }
   }
 
@@ -1312,6 +1391,7 @@
     state.recording = false;
     clearInterval(recTimer);
     clearTimeout(liveMatchTimer);
+    stopVAD();
     $('btn-mic').classList.remove('recording');
     $('voice-title').textContent = t('voice_stopped');
     $('voice-box').classList.add('idle');
@@ -2308,6 +2388,14 @@
       startRecording();
     });
     on($('btn-name-yes'), 'click', confirmName);
+    // میکروفن کیبورد گوشی: فوکوس روی فیلد تا کیبورد (با دکمهٔ میکروفن گوگل) باز شود
+    on($('btn-kbd-mic'), 'click', function () {
+      var inp = $('in-name');
+      if (!inp) return;
+      try { inp.focus(); } catch (e) { /* نادیده */ }
+      try { inp.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* نادیده */ }
+      toast(t('kbd_mic_toast'));
+    });
     on($('btn-name-change'), 'click', clearResolved);
     // نامِ دستی: اگر دانشجو خودش تایپ کرد، تطبیق خودکار را کنار بگذار
     on($('in-name'), 'input', function () {

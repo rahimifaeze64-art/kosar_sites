@@ -41,7 +41,7 @@
 <link href="css/tadilat-app.css" rel="stylesheet">
 
 <!-- ⚠️ نسخهٔ کش — هنگام هر تغییر این مقدارها را با هم جلو ببرید -->
-<script>window.TADILAT_APP_V = '5.7.0';</script>
+<script>window.TADILAT_APP_V = '5.8.0';</script>
 
 <!-- ══════════════════════════════════════════════════════════════
      ⚠️ مهم برای موبایل:
@@ -64,7 +64,7 @@
 })();
 </script>
 
-<script src="js/supabase-config.js?v=5.7.0"></script>
+<script src="js/supabase-config.js?v=5.8.0"></script>
 </head>
 <body>
 
@@ -202,6 +202,12 @@
       <div class="field" id="name-write-wrap" style="margin-top:14px">
         <label class="field-label" for="in-name" data-i18n-html="label_write">یا اسمت را خودت بنویس</label>
         <input id="in-name" type="text" autocomplete="name" data-i18n-ph="ph_name" placeholder="نام و نام خانوادگی">
+        <!-- تشخیص گفتار گوگل از راه میکروفن کیبورد گوشی (Gboard) -->
+        <button id="btn-kbd-mic" class="kbd-mic" type="button">
+          <i class="fas fa-microphone-lines"></i>
+          <span data-i18n="kbd_mic">میکروفن کیبورد گوشی</span>
+        </button>
+        <p class="kbd-mic-hint" data-i18n="kbd_mic_hint">روی کادر بالا بزن، بعد دکمهٔ 🎙 کیبورد گوشی را بزن و اسمت را بگو — دقتش بالاست.</p>
       </div>
 
       <div class="field" id="field-no">
@@ -448,6 +454,6 @@
   </div>
 </div>
 
-<script src="js/tadilat-app.js?v=5.7.0"></script>
+<script src="js/tadilat-app.js?v=5.8.0"></script>
 </body>
 </html>
