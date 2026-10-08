@@ -13,7 +13,7 @@
      و مستقیم از شبکه می‌آید.
    ============================================================ */
 
-var CACHE = 'tadilat-shell-v1';
+var CACHE = 'tadilat-shell-v2';   // با هر تغییر مهم جلو ببرید
 
 /* دارایی‌های ثابت تلگرام — الگوی مسیر */
 var APP_PATHS = [
@@ -34,7 +34,7 @@ var PRECACHE = [
   './assets/icons/tadilat-192.png',
   './assets/icons/tadilat-180.png',
   './assets/fonts/vazirmatn/vazirmatn.css',
-  './assets/libs/fontawesome/css/all.min.css'
+  './assets/libs/fontawesome/css/mini.min.css'
 ];
 
 function isAppAsset(url) {

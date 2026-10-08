@@ -33,15 +33,15 @@
 </style>
 
 <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
-<!-- FontAwesome غیرمسدودکننده: ۸۷ کیلوبایت از مسیر حیاتی بیرون می‌رود.
-     آیکون‌ها یک لحظه بعد ظاهر می‌شوند ولی صفحه فوری بالا می‌آید. -->
-<link rel="preload" href="assets/libs/fontawesome/css/all.min.css" as="style"
-      onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet"></noscript>
+<!-- نسخهٔ سبک FontAwesome — فقط ۱۹ آیکونِ استفاده‌شده (۴.۸KB در برابر ۸۷KB) -->
+<link href="assets/libs/fontawesome/css/mini.min.css" rel="stylesheet">
 <link href="css/tadilat-app.css" rel="stylesheet">
 
+<!-- اتصال به Supabase را از قبل گرم کن (صرفه‌جویی در DNS + TLS) -->
+<link rel="preconnect" href="https://tyzrexkneoexmcegaxlc.supabase.co" crossorigin>
+
 <!-- ⚠️ نسخهٔ کش — هنگام هر تغییر این مقدارها را با هم جلو ببرید -->
-<script>window.TADILAT_APP_V = '6.1.0';</script>
+<script>window.TADILAT_APP_V = '6.2.0';</script>
 
 <!-- ══════════════════════════════════════════════════════════════
      ⚠️ مهم برای موبایل:
@@ -64,7 +64,7 @@
 })();
 </script>
 
-<script src="js/supabase-config.js?v=6.1.0"></script>
+<script src="js/supabase-config.js?v=6.2.0"></script>
 </head>
 <body>
 
@@ -473,7 +473,7 @@
     <i class="fas fa-cloud-arrow-up"></i><span data-i18n="tab_send">ارسال</span>
   </button>
   <button class="tab" id="tab-status" type="button" data-tab="status">
-    <i class="fas fa-chart-simple"></i><span data-i18n="tab_status">وضعیت</span>
+    <i class="fas fa-chart-line"></i><span data-i18n="tab_status">وضعیت</span>
   </button>
   <button class="tab" id="tab-chat" type="button" data-tab="chat">
     <i class="fas fa-comments"></i><span data-i18n="tab_chat">چت</span>
@@ -487,6 +487,6 @@
   </div>
 </div>
 
-<script src="js/tadilat-app.js?v=6.1.0"></script>
+<script src="js/tadilat-app.js?v=6.2.0"></script>
 </body>
 </html>

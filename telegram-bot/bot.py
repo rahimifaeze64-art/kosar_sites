@@ -85,7 +85,7 @@ DEFAULTS = {
     "admin_chat_ids": [],
     "notify_on_new": False,
     "notify_poll_seconds": 60,
-    "menu_button_text": "ارسال تعدیلات",
+    "menu_button_text": "تعدیلات",
     "poll_timeout": 50,
     "request_timeout": 60,
 }
@@ -351,7 +351,7 @@ class TadilatBot:
     def __init__(self, cfg, tg=None, sb=None, state=None):
         self.cfg = cfg
         self.url = (cfg.get("miniapp_url") or "").strip()
-        self.menu_text = cfg.get("menu_button_text") or "ارسال تعدیلات"
+        self.menu_text = cfg.get("menu_button_text") or "تعدیلات"
         self.tg = tg or Telegram(cfg["telegram_bot_token"],
                                  timeout=int(cfg.get("request_timeout") or 60))
         self.sb = sb or Supabase(

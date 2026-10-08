@@ -17,7 +17,7 @@
   "supabase_anon_key": "کلید anon پروژه — همان مقدار SUPABASE_ANON_KEY در js/supabase-config.js",
 
   "storage_bucket": "student-documents",
-  "menu_button_text": "ارسال تعدیلات",
+  "menu_button_text": "تعدیلات",
 
   "_admin_chat_ids_راهنما": [
     "آیدی عددی چت مدیرانی که هنگام ارسال تعدیلات جدید پیام بگیرند.",
