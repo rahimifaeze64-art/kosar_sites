@@ -130,7 +130,6 @@
       rec_again: 'ضبط دوباره',
       rec_denied: 'دسترسی به میکروفن نشد — بدون ویس هم می‌توانی ادامه بدهی.',
       rec_no_support: 'این دستگاه ضبط صدا ندارد — بدون ویس ادامه بده.',
-      live_found: '✅ پیدایت کردم: <b>{0}</b>',
       confirm_title: 'آیا تو این شخص هستی؟',
       confirm_hint: 'اگر پروفایلت همین است «بله» را بزن، وگرنه «نه».',
       btn_yes_me: 'بله، من هستم',
@@ -294,7 +293,6 @@
       rec_again: 'إعادة التسجيل',
       rec_denied: 'لم يتم الوصول إلى الميكروفون — يمكنك المتابعة بدون صوت.',
       rec_no_support: 'هذا الجهاز لا يدعم التسجيل — تابع بدون صوت.',
-      live_found: '✅ وجدتك: <b>{0}</b>',
       confirm_title: 'هل أنت هذا الشخص؟',
       confirm_hint: 'إن كان ملفك هو هذا فاضغط «نعم»، وإلا «لا».',
       btn_yes_me: 'نعم، أنا هو',
@@ -1196,18 +1194,8 @@
   function setCandidate(c, definitive) {
     state.candidate = c;
     state.candidateDefinitive = !!definitive;
-    renderLiveMatch();
+    // (نمایش زندهٔ «پیدایت کردم» حذف شد — نتیجه در کارت تأیید دیده می‌شود)
     maybeAskConfirm();
-  }
-
-  /** نشانگر کوچک زیر فیلد: «✓ پیدایت کردم: …» */
-  function renderLiveMatch() {
-    var box = $('identity-result');
-    if (!box) return;
-    if (!state.candidate) { hide(box); return; }
-    box.className = 'match-box match-ok';
-    box.innerHTML = t('live_found', esc(state.candidate.name));
-    show(box);
   }
 
   // ══════════════════════════════════════════════════════════

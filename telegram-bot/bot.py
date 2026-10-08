@@ -914,6 +914,15 @@ def main():
         print("❌ supabase_anon_key در config.json تنظیم نشده است.")
         return 2
 
+    # ── پروکسی برای تلگرام ──
+    # در ایران api.telegram.org به IP فیلترینگ رزولو می‌شود، پس ربات باید
+    # از پروکسی محلی (v2rayN/xray) رد شود. اگر خالی باشد، خودکار پیدا می‌شود.
+    try:
+        import netproxy
+        netproxy.install(cfg.get("proxy"), logger=log)
+    except Exception as exc:  # noqa: BLE001
+        log("راه‌اندازی پروکسی نشد (بی‌اهمیت): %s" % exc, "WARN")
+
     if args.check:
         return 0 if TadilatBot(cfg).check() else 1
 
