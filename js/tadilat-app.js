@@ -38,6 +38,23 @@
       mic_hint: '🎤 بزن و اسمت را بگو <b>(الزامی)</b>',
       voice_recording: 'در حال ضبط…', btn_stop: 'تمام', btn_rerecord: 'ضبط دوباره',
       btn_not_my_name: 'اسم من این نیست',
+      btn_yes_correct: 'بله، درسته', btn_no_write: 'نه، خودم می‌نویسم',
+      tries_left: '{0} تلاش صوتی باقی مانده', tries_none: 'تلاش صوتی تمام شد — اسمت را بنویس',
+      resolved_ask: 'اسمت <b>{0}</b> هست، درسته؟',
+      resolved_confirmed: '✅ ثبت شد: <b>{0}</b>',
+      manual_retry: 'متوجه نشدم. یک‌بار دیگر بزن و اسمت را بگو — یا خودت بنویس.',
+      manual_no_tries: 'تعداد تلاش‌های صوتی تمام شد. اسمت را خودت بنویس.',
+      toast_confirmed: '✅ اسمت ثبت شد',
+      toast_no_tries: 'اسمت را خودت بنویس 🙂',
+      // چت
+      tab_chat: 'چت',
+      chat_title: 'چت با کارشناسان',
+      chat_sub: 'سؤالت را بپرس؛ کارشناس مربوطه پاسخ می‌دهد',
+      chat_soon: 'این بخش به‌زودی فعال می‌شود — پیام‌هایت همین‌جا ذخیره می‌ماند تا ارسال شوند.',
+      chat_empty: 'هنوز پیامی نداری — اولین پیامت را بنویس.',
+      chat_ph: 'پیامت را بنویس…',
+      chat_send: 'ارسال',
+      chat_auto_reply: 'پیامت ثبت شد ✅ به‌محض فعال شدن چت، کارشناس مربوطه پاسخ می‌دهد.',
       picker_hint: 'از فهرست انتخاب کن یا خودت بنویس',
       ph_search: '🔍 جستجوی نام یا شمارهٔ دانشجویی…',
       label_write: 'یا اسمت را خودت بنویس <span class="hint">(اگر بالا درست نبود)</span>',
@@ -96,6 +113,7 @@
       st_draft: 'ناتمام', st_rejected: 'رد شد',
       // ── پویا ──
       voice_listening: '🎧 گوش می‌دهم…',
+      voice_heard: '🗣 {0}',
       voice_unsupported: '⚠️ این دستگاه ضبط صدا را پشتیبانی نمی‌کند؛ نامت را تایپ کن.',
       voice_stopped: 'ضبط تمام شد',
       voice_no_stt: '🎤 ویس ضبط شد (این مرورگر تشخیص گفتار ندارد) — اسمت را از فهرست انتخاب کن.',
@@ -161,6 +179,23 @@
       mic_hint: '🎤 اضغط وقل اسمك <b>(إلزامي)</b>',
       voice_recording: 'جارٍ التسجيل…', btn_stop: 'تم', btn_rerecord: 'إعادة التسجيل',
       btn_not_my_name: 'ليس اسمي',
+      btn_yes_correct: 'نعم، صحيح', btn_no_write: 'لا، سأكتبه بنفسي',
+      tries_left: 'بقيت {0} محاولات صوتية', tries_none: 'انتهت المحاولات الصوتية — اكتب اسمك',
+      resolved_ask: 'اسمك <b>{0}</b>، صحيح؟',
+      resolved_confirmed: '✅ تم التسجيل: <b>{0}</b>',
+      manual_retry: 'لم أفهم. اضغط مرة أخرى وقل اسمك — أو اكتبه بنفسك.',
+      manual_no_tries: 'انتهت المحاولات الصوتية. اكتب اسمك بنفسك.',
+      toast_confirmed: '✅ تم تسجيل اسمك',
+      toast_no_tries: 'اكتب اسمك بنفسك 🙂',
+      // چت
+      tab_chat: 'الدردشة',
+      chat_title: 'الدردشة مع المختصين',
+      chat_sub: 'اطرح سؤالك؛ سيجيبك المختص المعني',
+      chat_soon: 'سيُفعَّل هذا القسم قريباً — تُحفظ رسائلك هنا حتى تُرسَل.',
+      chat_empty: 'لا توجد رسائل بعد — اكتب رسالتك الأولى.',
+      chat_ph: 'اكتب رسالتك…',
+      chat_send: 'إرسال',
+      chat_auto_reply: 'تم تسجيل رسالتك ✅ بمجرد تفعيل الدردشة سيجيبك المختص المعني.',
       picker_hint: 'اختر من القائمة أو اكتبه بنفسك',
       ph_search: '🔍 ابحث بالاسم أو برقم الطالب…',
       label_write: 'أو اكتب اسمك بنفسك <span class="hint">(إن لم يكن صحيحاً)</span>',
@@ -211,6 +246,7 @@
       st_ready: 'جاهز للتسليم', st_completed: 'تم التسليم',
       st_draft: 'غير مكتمل', st_rejected: 'مرفوض',
       voice_listening: '🎧 أستمع…',
+      voice_heard: '🗣 {0}',
       voice_unsupported: '⚠️ هذا الجهاز لا يدعم التسجيل؛ اكتب اسمك.',
       voice_stopped: 'انتهى التسجيل',
       voice_no_stt: '🎤 سُجّل الصوت (هذا المتصفح لا يتعرّف على الكلام) — اختر اسمك من القائمة.',
@@ -850,13 +886,16 @@
     writer: null,         // {agent_id, agent_name, order_id} — نویسندهٔ مربوطه
     matched: null,        // {id, name, student_no} — دانشجوی تشخیص/انتخاب‌شده
     voiceHeard: '',       // متنی که از ویس فهمیدیم
-    voiceDone: false      // آیا ویس اسم ضبط شده است
+    voiceDone: false,     // آیا ویس اسم ضبط شده است
+    recTries: 0,          // چند بار ضبط صوتی انجام شده (سقف ۳)
+    autoMatched: false,   // نام خودکار پیدا شد → ضبط خودش قطع شد
+    nameConfirmed: false  // دانشجو تأیید کرد «بله درسته»
   };
 
-  // ── تب‌ها: ارسال / وضعیت / راهنما ─────────────────────────
+  // ── تب‌ها: ارسال / وضعیت / چت ─────────────────────────────
   function setTab(name) {
     state.tab = name;
-    ['send', 'status', 'help'].forEach(function (t) {
+    ['send', 'status', 'chat'].forEach(function (t) {
       var view = $('view-' + t);
       if (view) { if (t === name) show(view); else hide(view); }
       var tab = $('tab-' + t);
@@ -864,6 +903,7 @@
     });
     updateSubmitBar();
     if (name === 'status') loadStatus();
+    if (name === 'chat') renderChat();
     // در برخی webviewها scrollTo نیست — نباید کل تب را خراب کند
     try {
       if (typeof window.scrollTo === 'function') {
@@ -902,29 +942,64 @@
   // ══════════════════════════════════════════════════════════
   var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition || null;
   var mediaRecorder = null, mediaStream = null, chunks = [], recTimer = null, recSeconds = 0, speech = null;
+  var liveMatchTimer = null;
+
+  var MAX_REC_TRIES = 3;        // فقط ۳ بار می‌شود اسم را صوتی گفت
+  var REC_MAX_SECONDS = 12;     // سقف هر ضبط
+  var LIVE_MATCH_WAIT = 350;    // کمی صبر تا کلمه کامل شود
 
   function speakSupported() { return !!SpeechRec; }
+  function recTriesLeft() { return Math.max(0, MAX_REC_TRIES - (state.recTries || 0)); }
+
+  /** شمارندهٔ «چند تلاش باقی مانده» زیر میکروفن */
+  function renderTries() {
+    var el = $('mic-hero-tries');
+    if (!el) return;
+    if (!state.recTries) { el.textContent = ''; el.className = 'mic-hero-tries'; return; }
+    var left = recTriesLeft();
+    el.textContent = left > 0 ? t('tries_left', fa(left)) : t('tries_none');
+    el.className = 'mic-hero-tries' + (left > 0 ? '' : ' bad');
+    var mic = $('btn-mic');
+    if (mic) mic.disabled = (left <= 0) && !state.recording;
+  }
+
+  /** پیام مناسب پس از یک تلاش ناموفق */
+  function afterFailKey() {
+    return recTriesLeft() > 0 ? 'manual_retry' : 'manual_no_tries';
+  }
 
   function startRecording() {
     if (state.recording) return;
+    if (recTriesLeft() <= 0) {
+      promptManual('manual_no_tries');
+      toast(t('toast_no_tries'));
+      return;
+    }
+    state.recTries = (state.recTries || 0) + 1;
+    renderTries();
+
     state.recording = true;
+    state.autoMatched = false;
+    state.nameConfirmed = false;
+    state.matched = null;
     chunks = [];
     recSeconds = 0;
     state.voiceText = '';
+    state.voiceHeard = '';
     state.voiceNameSource = null;
+
+    hide($('name-resolved'));
+    hide($('name-manual'));
 
     var micBtn = $('btn-mic');
     micBtn.classList.add('recording');
-    micBtn.innerHTML = '<i class="fas fa-stop"></i>';
 
     show($('voice-box'));
     $('voice-box').classList.remove('idle');
-    hide($('btn-voice-clear'));
-    show($('btn-voice-stop'));
     hide($('voice-audio'));
-    $('voice-title').textContent = t('voice_recording');
+    $('voice-title').textContent = speakSupported() ? t('voice_listening') : t('voice_recording');
     $('voice-timer').textContent = mmss(0);
-    $('voice-text').textContent = speakSupported() ? t('voice_listening') : '';
+    $('voice-text').textContent = speakSupported() ? '…' : t('voice_no_stt');
     $('voice-text').className = 'voice-text';
 
     // ── ۱. ضبط صدا (همیشه؛ خروجی برای پیوست شدن به درخواست) ──
@@ -952,16 +1027,19 @@
         })
         .catch(function (e) {
           console.warn('mic error', e);
-          $('voice-text').textContent =
-            t('voice_mic_denied');
+          $('voice-text').textContent = t('voice_mic_denied');
           $('voice-text').className = 'voice-text bad';
+          state.recording = false;
+          micBtn.classList.remove('recording');
+          promptManual('manual_no_stt');
         });
     } else {
       $('voice-text').textContent = t('voice_unsupported');
       $('voice-text').className = 'voice-text bad';
     }
 
-    // ── ۲. تشخیص گفتار (اختیاری؛ فقط برای پر کردن خودکار کادر نام) ──
+    // ── ۲. تشخیص گفتار + تطبیق هم‌زمان (زنده) ──
+    //    به‌محض اینکه نام با اطمینان پیدا شد، ضبط خودکار قطع می‌شود.
     if (SpeechRec) {
       try {
         speech = new SpeechRec();
@@ -969,56 +1047,94 @@
         speech.continuous = true;
         speech.interimResults = true;
         speech.onresult = function (ev) {
-          var text = '';
-          for (var i = 0; i < ev.results.length; i++) text += ev.results[i][0].transcript;
-          text = normName(text);
-          if (text) {
-            state.voiceText = text;
-            state.voiceHeard = text;
-            state.voiceNameSource = 'voice_stt';
-            $('in-name').value = text;
-            $('voice-text').textContent = t('voice_heard', text);
-            $('voice-text').className = 'voice-text ok';
-            // همین حالا با نزدیک‌ترین نام در profiles تطبیق بده
-            matchHeardName(text);
+          var text = '', isFinal = false;
+          for (var i = 0; i < ev.results.length; i++) {
+            text += ev.results[i][0].transcript;
+            if (ev.results[i].isFinal) isFinal = true;
           }
+          text = normName(text);
+          if (!text) return;
+          state.voiceText = text;
+          state.voiceHeard = text;
+          state.voiceNameSource = 'voice_stt';
+          $('voice-text').textContent = t('voice_heard', text);
+          $('voice-text').className = 'voice-text ok';
+          scheduleLiveMatch(text, isFinal);
         };
         speech.onerror = function (ev) {
           console.warn('speech error', ev.error);
+          if (state.autoMatched || !state.recording) return;
           if (!state.voiceText) {
             $('voice-text').textContent = t('voice_heard_fail');
             $('voice-text').className = 'voice-text bad';
-            promptManual('manual_no_stt');
           }
         };
-        speech.onend = function () { speech = null; };
+        speech.onend = function () {
+          speech = null;
+          // اگر ضبط تمام شد و چیزی تطبیق نشد، مسیر دستی
+          if (!state.autoMatched && !state.recording && !state.matched) {
+            promptManual(afterFailKey());
+          }
+        };
         speech.start();
       } catch (e) {
         console.warn('speech start failed', e);
         speech = null;
       }
-    } else {
-      $('voice-text').textContent = t('voice_no_stt');
-      $('voice-text').className = 'voice-text';
     }
 
     recTimer = setInterval(function () {
       recSeconds++;
       $('voice-timer').textContent = mmss(recSeconds);
-      if (recSeconds >= 30) stopRecording();
+      if (recSeconds >= REC_MAX_SECONDS) {
+        stopRecording();
+        setTimeout(function () {
+          if (!state.autoMatched && !state.matched) promptManual(afterFailKey());
+        }, 450);
+      }
     }, 1000);
+  }
+
+  /**
+   * تطبیق زنده — کمی عقب می‌افتد تا روی کلمهٔ نصفه تصمیم نگیریم.
+   *
+   * نکتهٔ مهم: نتیجهٔ «موقت» (interim) سخت‌گیرانه‌تر قبول می‌شود، وگرنه
+   * ممکن بود با شنیدن دو کلمهٔ اول، ضبط زودتر از موعد قطع شود و نام
+   * اشتباهی ثبت شود. نتیجهٔ «نهایی» (isFinal) با آستانهٔ معمول قبول می‌شود.
+   */
+  function scheduleLiveMatch(text, isFinal) {
+    if (state.autoMatched) return;
+    // دست‌کم دو کلمه یا ۶ حرف لازم است
+    if (nameTokens(text).length < 2 && normKey(text).length < 6) return;
+    clearTimeout(liveMatchTimer);
+    liveMatchTimer = setTimeout(function () {
+      if (!state.recording || state.autoMatched || state.matched) return;
+      pickBestStudent(text).then(function (res) {
+        if (!state.recording || state.autoMatched || state.matched) return;
+        if (!isConfident(res)) return;
+        // نتیجهٔ موقت باید خیلی مطمئن باشد تا ضبط را قطع کند
+        if (!isFinal && (res.score < 0.88 || (res.score - res.second) < 0.10)) return;
+        // ✅ نام با اطمینان پیدا شد → ضبط خودکار قطع شود
+        state.autoMatched = true;
+        hide($('name-manual'));
+        stopRecording();
+        showResolved({
+          id: res.row.id, name: res.row.name, student_no: res.row.student_id,
+        }, text);
+      });
+    }, LIVE_MATCH_WAIT);
   }
 
   function stopRecording() {
     if (!state.recording) return;
     state.recording = false;
     clearInterval(recTimer);
+    clearTimeout(liveMatchTimer);
     $('btn-mic').classList.remove('recording');
-    $('btn-mic').innerHTML = '<i class="fas fa-microphone"></i>';
     $('voice-title').textContent = t('voice_stopped');
     $('voice-box').classList.add('idle');
 
-    if (speech) { try { speech.stop(); } catch (e) {} speech = null; }
+    if (speech) { try { speech.stop(); } catch (e) {} }
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
       try { mediaRecorder.stop(); } catch (e) { finishRecording(); }
     } else {
@@ -1038,21 +1154,31 @@
       var audio = $('voice-audio');
       audio.src = state.voiceUrl;
       show(audio);
-      show($('btn-voice-clear'));
+    } else if (!state.voiceBlob && !state.autoMatched) {
+      // چیزی ضبط نشد
+      promptManual('manual_no_stt');
+      return;
     }
     if (!state.voiceText && !state.voiceNameSource) {
       state.voiceNameSource = state.voiceBlob ? 'voice' : null;
     }
     state.voiceDone = !!state.voiceBlob || !!state.voiceText;
-    $('btn-voice-stop').classList.add('hidden');
-    if (!state.voiceText && state.voiceBlob) {
+    if (!state.voiceText) {
       $('voice-text').textContent = t('voice_saved');
       $('voice-text').className = 'voice-text';
     }
-    // اگر تشخیص گفتار در دسترس نبود، فهرست انتخاب را باز کن
-    if (!state.voiceHeard && !SpeechRec && state.voiceBlob) {
-      promptManual('manual_no_stt');
+    renderTries();
+
+    // ✅ نام خودکار پیدا شد → همین‌جا تمام (سؤال تأیید نمایش داده شده)
+    if (state.autoMatched || state.matched) return;
+
+    // متن شنیده شد ولی مطمئن نبودیم → یک تطبیق نهایی
+    if (state.voiceHeard) {
+      matchHeardName(state.voiceHeard, true);
+      return;
     }
+    // چیزی شنیده نشد
+    promptManual(SpeechRec ? afterFailKey() : 'manual_no_stt');
   }
 
   // ══════════════════════════════════════════════════════════
@@ -1064,20 +1190,38 @@
       name: student.name,
       student_no: student.student_no || null
     };
+    state.nameConfirmed = false;
     var box = $('name-resolved');
     box.className = 'match-box match-ok';
+    // سؤال صریح: «اسمت X هست، درسته؟»
     $('name-resolved-text').innerHTML =
       (heard ? esc(t('resolved_heard', heard)) + '<br>' : '') +
-      (student.student_no
-        ? t('resolved_you_no', esc(student.name), esc(student.student_no))
-        : t('resolved_you', esc(student.name)));
+      t('resolved_ask', esc(student.name) +
+        (student.student_no ? ' <span class="hint">(' + esc(student.student_no) + ')</span>' : ''));
     show(box);
+    show($('btn-name-change'));
     hide($('name-manual'));
     var wrap = $('name-write-wrap');
     if (wrap) wrap.classList.remove('attention');
+    var noWrap = $('field-no');
+    if (noWrap) noWrap.classList.remove('attention');
     $('in-name').value = student.name;
     $('in-no').value = student.student_no || $('in-no').value;
     haptic.ok();
+  }
+
+  /** دانشجو تأیید کرد «بله، درسته» */
+  function confirmName() {
+    if (!state.matched) return;
+    state.nameConfirmed = true;
+    hide($('name-manual'));
+    hide($('btn-name-change'));
+    var box = $('name-resolved');
+    if (box) box.className = 'match-box match-ok confirmed';
+    $('name-resolved-text').innerHTML = t('resolved_confirmed', esc(state.matched.name));
+    haptic.ok();
+    toast(t('toast_confirmed'));
+    try { $('btn-identity').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
   }
 
   /**
@@ -1085,7 +1229,7 @@
    * از همان الگوریتم کلمه‌به‌کلمهٔ ۳ کلمهٔ اول استفاده می‌کند.
    * اگر مطمئن نبود، هیچ‌چیز حدس نمی‌زند و از دانشجو می‌خواهد خودش بنویسد.
    */
-  function matchHeardName(heard) {
+  function matchHeardName(heard, afterRecording) {
     return pickBestStudent(heard).then(function (res) {
       if (isConfident(res)) {
         showResolved({
@@ -1094,8 +1238,11 @@
         return res.row;
       }
       if (res.reason === 'ambiguous') promptManual('manual_ambiguous');
-      else if (res.reason === 'short') promptManual('manual_short');
-      else promptManual('manual_unsure');
+      else if (res.reason === 'short') {
+        promptManual(afterRecording ? afterFailKey() : 'manual_short');
+      } else {
+        promptManual(afterRecording ? afterFailKey() : 'manual_unsure');
+      }
       return null;
     });
   }
@@ -1162,13 +1309,14 @@
     state.voiceNameSource = null;
     state.voiceHeard = '';
     state.voiceDone = false;
+    state.autoMatched = false;
     hide($('voice-box'));
-    hide($('btn-voice-clear'));
     hide($('name-resolved'));
     hide($('name-manual'));
     $('voice-audio').src = '';
     $('voice-text').textContent = '';
-    $('voice-title').textContent = t('voice_recording');
+    $('voice-title').textContent = t('voice_listening');
+    renderTries();
   }
 
   // ══════════════════════════════════════════════════════════
@@ -1196,6 +1344,12 @@
     hide($('name-manual'));
     var wrap = $('name-write-wrap');
     if (wrap) wrap.classList.remove('attention');
+    var noWrap = $('field-no');
+    if (noWrap) noWrap.classList.remove('attention');
+    state.nameConfirmed = false;
+    state.autoMatched = false;
+    state.matched = null;
+    renderTries();
     updateSubmitBar();
     var u = tgUser();
     var input = $('in-name');
@@ -1259,6 +1413,10 @@
           matched_name: res.name || null
         };
         saveIdentity(state.identity);
+
+        // نام ثبت شد → شمارندهٔ تلاش صوتی برای دفعهٔ بعد از نو
+        state.recTries = 0;
+        renderTries();
 
         var box = $('identity-result');
         if (res.student_id) {
@@ -1814,6 +1972,81 @@
     }
   }
 
+  // ══════════════════════════════════════════════════════════
+  // چت با کارشناسان — فعلاً فقط فرانت‌اند
+  //
+  // پیام‌ها در localStorage همان دستگاه ذخیره می‌شوند تا وقتی
+  // بک‌اند چت (اتصال به کارمندان) آماده شد، همین‌جا ارسال شوند.
+  // ⚠️ هیچ پیامی واقعاً فرستاده نمی‌شود — این عمدی است.
+  // ══════════════════════════════════════════════════════════
+  var LS_CHAT = 'tadilat_app_chat_v1';
+
+  function chatKey() {
+    var id = state.identity || {};
+    return (id.student_id || id.student_no || id.name || 'anon');
+  }
+
+  function loadChat() {
+    try {
+      var raw = localStorage.getItem(LS_CHAT);
+      if (!raw) return [];
+      var all = JSON.parse(raw);
+      return all[chatKey()] || [];
+    } catch (e) { return []; }
+  }
+
+  function saveChat(list) {
+    try {
+      var raw = localStorage.getItem(LS_CHAT);
+      var all = raw ? JSON.parse(raw) : {};
+      all[chatKey()] = list.slice(-80);   // حداکثر ۸۰ پیام
+      localStorage.setItem(LS_CHAT, JSON.stringify(all));
+    } catch (e) { /* حافظه پر */ }
+  }
+
+  function chatTime(ts) {
+    try {
+      var p = jalaliParts(new Date(ts).toISOString());
+      if (currentLang !== 'ar' && p) return fa(p.jd) + ' ' + MONTHS[p.jm - 1];
+      return new Date(ts).toLocaleDateString('ar-EG');
+    } catch (e) { return ''; }
+  }
+
+  function renderChat() {
+    var list = $('chat-list');
+    if (!list) return;
+    var msgs = loadChat();
+    var empty = $('chat-empty');
+    if (!msgs.length) {
+      list.innerHTML = '';
+      if (empty) show(empty);
+      return;
+    }
+    if (empty) hide(empty);
+    list.innerHTML = msgs.map(function (m) {
+      var mine = m.from === 'me';
+      return '<div class="chat-row ' + (mine ? 'me' : 'them') + '">' +
+        '<div class="chat-bubble">' + esc(m.text) + '</div>' +
+        '<div class="chat-time">' + esc(chatTime(m.at)) + '</div></div>';
+    }).join('');
+    // آخرین پیام دیده شود
+    try { list.scrollTop = list.scrollHeight; } catch (e) { /* نادیده */ }
+  }
+
+  function sendChat() {
+    var input = $('chat-input');
+    if (!input) return;
+    var text = String(input.value || '').trim();
+    if (!text) return;
+    var msgs = loadChat();
+    msgs.push({ from: 'me', text: text, at: Date.now() });
+    msgs.push({ from: 'them', text: t('chat_auto_reply'), at: Date.now() + 1 });
+    saveChat(msgs);
+    input.value = '';
+    renderChat();
+    haptic.tap();
+  }
+
   function renderMiniHistory(rows) {
     if (!rows || rows.length < 2) { $('history-mini').innerHTML = ''; return; }
     $('history-mini').innerHTML =
@@ -1851,20 +2084,26 @@
     on($('btn-submit'), 'click', submit);
     on($('btn-another'), 'click', startAnother);
     on($('btn-go-send'), 'click', function () { setTab('send'); });
-    on($('hero-help'), 'click', function () { setTab('help'); });
-    ['send', 'status', 'help'].forEach(function (t) {
+    ['send', 'status', 'chat'].forEach(function (t) {
       on($('tab-' + t), 'click', function () { setTab(t); });
     });
     on($('btn-mic'), 'click', function () {
-      if (state.recording) stopRecording(); else startRecording();
+      if (state.recording) return;          // ضبط خودکار قطع می‌شود؛ دکمهٔ «تمام» نداریم
+      startRecording();
     });
-    on($('btn-voice-stop'), 'click', stopRecording);
-    on($('btn-voice-clear'), 'click', function () { clearVoice(); startRecording(); });
+    on($('btn-name-yes'), 'click', confirmName);
     on($('btn-name-change'), 'click', clearResolved);
     // نامِ دستی: اگر دانشجو خودش تایپ کرد، تطبیق خودکار را کنار بگذار
     on($('in-name'), 'input', function () {
       state.matched = null;
+      state.nameConfirmed = false;
       hide($('name-resolved'));
+    });
+
+    // ── تب چت ──
+    on($('chat-send'), 'click', sendChat);
+    on($('chat-input'), 'keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); sendChat(); }
     });
 
     on($('who-chip'), 'click', function (e) {

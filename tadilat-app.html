@@ -37,7 +37,7 @@
 <link href="css/tadilat-app.css" rel="stylesheet">
 
 <!-- ⚠️ نسخهٔ کش — هنگام هر تغییر این مقدارها را با هم جلو ببرید -->
-<script>window.TADILAT_APP_V = '5.2.0';</script>
+<script>window.TADILAT_APP_V = '5.3.0';</script>
 
 <!-- ══════════════════════════════════════════════════════════════
      ⚠️ مهم برای موبایل:
@@ -60,7 +60,7 @@
 })();
 </script>
 
-<script src="js/supabase-config.js?v=5.2.0"></script>
+<script src="js/supabase-config.js?v=5.3.0"></script>
 </head>
 <body>
 
@@ -127,9 +127,6 @@
       <h1 id="hero-title" data-i18n="hero_hello">سلام! 👋</h1>
       <div class="profile-sub" id="hero-pill" data-i18n="hero_pill">تعدیلاتت رو بفرست</div>
     </div>
-    <button class="icon-btn" id="hero-help" type="button" data-i18n-aria="aria_help" aria-label="راهنما">
-      <i class="fas fa-circle-question"></i>
-    </button>
   </header>
 
   <!-- ══════════════ انتخاب زبان ══════════════ -->
@@ -160,39 +157,37 @@
         </div>
       </div>
 
-      <!-- دکمهٔ اصلی: گفتن اسم -->
+      <!-- دکمهٔ اصلی: گفتن اسم — ضبط خودکار تمام می‌شود، دکمهٔ «تمام» ندارد -->
       <div class="mic-hero">
         <button id="btn-mic" class="mic-hero-btn" type="button" data-i18n-aria="aria_mic" aria-label="اسمت را بگو">
           <i class="fas fa-microphone"></i>
         </button>
-        <p id="mic-hero-hint" class="mic-hero-hint" data-i18n-html="mic_hint">🎤 بزن و اسمت را بگو <b>(الزامی)</b></p>
+        <p id="mic-hero-hint" class="mic-hero-hint" data-i18n-html="mic_hint">🎤 بزن و اسمت را بگو</p>
+        <p id="mic-hero-tries" class="mic-hero-tries"></p>
       </div>
 
       <div id="voice-box" class="voice-box hidden">
         <div class="voice-head">
           <span class="dot-live"></span>
-          <b id="voice-title" data-i18n="voice_recording">در حال ضبط…</b>
+          <b id="voice-title" data-i18n="voice_listening">در حال شنیدن…</b>
           <span id="voice-timer" class="voice-timer">۰:۰۰</span>
         </div>
         <div class="voice-wave" id="voice-wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
         <p id="voice-text" class="voice-text"></p>
-        <div class="voice-actions">
-          <button id="btn-voice-stop" class="pill pill-danger" type="button">
-            <i class="fas fa-stop"></i><span data-i18n="btn_stop">تمام</span>
-          </button>
-          <button id="btn-voice-clear" class="pill pill-soft hidden" type="button">
-            <i class="fas fa-rotate-left"></i><span data-i18n="btn_rerecord">ضبط دوباره</span>
-          </button>
-        </div>
         <audio id="voice-audio" class="voice-audio hidden" controls></audio>
       </div>
 
-      <!-- نتیجهٔ تشخیص خودکار / انتخاب -->
+      <!-- تأیید نامِ تشخیص‌داده‌شده -->
       <div id="name-resolved" class="match-box match-ok hidden">
         <div id="name-resolved-text"></div>
-        <button id="btn-name-change" class="pill pill-soft" type="button" style="height:36px;margin-top:8px">
-          <i class="fas fa-pen"></i><span data-i18n="btn_not_my_name">اسم من این نیست</span>
-        </button>
+        <div class="confirm-actions">
+          <button id="btn-name-yes" class="pill pill-ok" type="button">
+            <i class="fas fa-check"></i><span data-i18n="btn_yes_correct">بله، درسته</span>
+          </button>
+          <button id="btn-name-change" class="pill pill-soft" type="button">
+            <i class="fas fa-pen"></i><span data-i18n="btn_no_write">نه، خودم می‌نویسم</span>
+          </button>
+        </div>
       </div>
 
       <!-- راهنمای ورود دستی —
@@ -388,45 +383,37 @@
   </main>
 
   <!-- ══════════════════════════════════════════════════════
-       نمای ۳ — راهنما
+       نمای ۳ — چت با کارشناسان
+       فعلاً فقط فرانت‌اند؛ ارسال واقعی به کارمندان بعداً وصل می‌شود.
        ══════════════════════════════════════════════════════ -->
-  <main id="view-help" class="hidden" style="display:flex;flex-direction:column;gap:20px">
-    <div class="section-title" data-i18n="how_title">چطور کار می‌کند؟</div>
-
-    <section class="card">
-      <ol class="howto">
-        <li><b data-i18n="how1_t">اسمت را بگو</b><span data-i18n="how1_s">با 🎤 اسمت را بگو تا بدونیم تعدیلات مال کیه</span></li>
-        <li><b data-i18n="how2_t">فایل‌ها را بفرست</b><span data-i18n="how2_s">عکس، PDF، Word یا فایل صوتی — چندتایی</span></li>
-        <li><b data-i18n="how3_t">وضعیت را دنبال کن</b><span data-i18n="how3_s">دریافت شد ← شروع شد ← در حال انجام ← آماده تحویل</span></li>
-      </ol>
-    </section>
-
-    <section class="card">
-      <div class="card-top" style="display:flex;align-items:flex-start;gap:14px;margin-bottom:14px">
-        <span class="icon-badge g-mint">🟢</span>
-        <div class="card-titles" style="flex:1;min-width:0">
-          <h2 style="margin:0;font-size:18px;font-weight:900" data-i18n="wa_card_title">فایل از واتساپ داری؟</h2>
-          <p class="muted" style="margin-top:2px;font-size:13px" data-i18n="wa_card_sub">یک راه سریع</p>
+  <main id="view-chat" class="hidden">
+    <section class="chat-wrap">
+      <div class="chat-head">
+        <span class="icon-badge g-mint">💬</span>
+        <div class="chat-head-text">
+          <h2 data-i18n="chat_title">چت با کارشناسان</h2>
+          <p class="muted" id="chat-sub" data-i18n="chat_sub">سؤالت را بپرس؛ کارشناس مربوطه پاسخ می‌دهد</p>
         </div>
       </div>
-      <p class="para" data-i18n-html="wa_card_body">در واتساپ روی فایل بزن <b>Share → Telegram</b> و برای همین ربات بفرست.
-        فایل خودش به آخرین درخواستت وصل می‌شود.</p>
-    </section>
 
-    <section class="card">
-      <div class="card-top" style="display:flex;align-items:flex-start;gap:14px;margin-bottom:14px">
-        <span class="icon-badge g-peach">🎧</span>
-        <div class="card-titles" style="flex:1;min-width:0">
-          <h2 style="margin:0;font-size:18px;font-weight:900" data-i18n="tips_title">نکته‌های کوچک</h2>
-          <p class="muted" style="margin-top:2px;font-size:13px" data-i18n="tips_sub">تا کارت سریع‌تر جلو برود</p>
-        </div>
+      <div id="chat-soon" class="chat-soon">
+        <i class="fas fa-circle-info"></i>
+        <span data-i18n="chat_soon">این بخش به‌زودی فعال می‌شود — پیام‌هایت همین‌جا ذخیره می‌ماند تا ارسال شوند.</span>
       </div>
-      <ul class="tips">
-        <li data-i18n="tip1">📄 فایل‌های PDF و Word را کامل و بدون قفل بفرست</li>
-        <li data-i18n="tip2">🖼 عکس‌ها را واضح و از بالا بگیر</li>
-        <li data-i18n="tip3">🎤 اگر توضیحِ ویس داری، همان‌جا بگو</li>
-        <li data-i18n="tip4">⏱ زمان تحویل را در تب «وضعیت» می‌بینی</li>
-      </ul>
+
+      <div id="chat-list" class="chat-list"></div>
+
+      <div id="chat-empty" class="chat-empty">
+        <div class="chat-empty-emoji">💬</div>
+        <p data-i18n="chat_empty">هنوز پیامی نداری — اولین پیامت را بنویس.</p>
+      </div>
+
+      <div class="chat-compose">
+        <input id="chat-input" type="text" data-i18n-ph="chat_ph" placeholder="پیامت را بنویس…">
+        <button id="chat-send" class="chat-send" type="button" data-i18n-aria="chat_send" aria-label="ارسال">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
     </section>
   </main>
 
@@ -448,8 +435,8 @@
   <button class="tab" id="tab-status" type="button" data-tab="status">
     <i class="fas fa-chart-simple"></i><span data-i18n="tab_status">وضعیت</span>
   </button>
-  <button class="tab" id="tab-help" type="button" data-tab="help">
-    <i class="fas fa-circle-question"></i><span data-i18n="tab_help">راهنما</span>
+  <button class="tab" id="tab-chat" type="button" data-tab="chat">
+    <i class="fas fa-comments"></i><span data-i18n="tab_chat">چت</span>
   </button>
 </nav>
 
@@ -460,6 +447,6 @@
   </div>
 </div>
 
-<script src="js/tadilat-app.js?v=5.2.0"></script>
+<script src="js/tadilat-app.js?v=5.3.0"></script>
 </body>
 </html>
