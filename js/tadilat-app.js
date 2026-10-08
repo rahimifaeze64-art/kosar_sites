@@ -30,7 +30,7 @@
   var I18N = {
     fa: {
       // سرصفحه
-      hero_hello: 'سلام! 👋', hero_pill: 'تعدیلاتت رو بفرست',
+      hero_hello: 'سلام! 👋', hero_pill: 'تعدیلاتت رو بفرست — شرکة الکوثر',
       aria_help: 'راهنما', aria_lang: 'انتخاب زبان', aria_mic: 'اسمت را بگو',
       browser_warn: '💡 بیرون از تلگرام باز شده. کار می‌کند، ولی از دکمهٔ منوی ربات بازش کنی بهتر است.',
       // باکس اسم
@@ -57,8 +57,9 @@
       chat_auto_reply: 'پیامت ثبت شد ✅ به‌محض فعال شدن چت، کارشناس مربوطه پاسخ می‌دهد.',
       picker_hint: 'از فهرست انتخاب کن یا خودت بنویس',
       ph_search: '🔍 جستجوی نام یا شمارهٔ دانشجویی…',
-      label_write: 'یا اسمت را خودت بنویس <span class="hint">(اگر بالا درست نبود)</span>',
+      label_write: 'یا اسمت را خودت بنویس',
       manual_hint: 'اسمت را کامل بنویس تا پیدایت کنیم.',
+      manual_voice_or_type: 'اسمت را بگو یا خودت بنویس.',
       manual_wrong: 'باشد، اسمت را خودت بنویس.',
       manual_no_stt: 'این مرورگر تشخیص گفتار ندارد؛ اسمت را بنویس (یا شمارهٔ دانشجویی را وارد کن).',
       manual_short: 'اسمت را کامل‌تر بگو یا بنویس.',
@@ -137,7 +138,7 @@
       who_linked: '• متصل به پروفایل',
       who_unlinked: '• در انتظار اتصال کارشناس',
       who_edit: 'ویرایش',
-      toast_voice_first: '🎤 اول روی دکمهٔ میکروفن بزن و اسمت را بگو.',
+      toast_voice_first: '🎤 اسمت را بگو یا خودت بنویس.',
       toast_pick_name: 'اسمت را کامل بنویس 🙂',
       toast_write_name: 'اسمت را کامل بنویس 🙂',
       toast_bad_no: 'شمارهٔ دانشجویی معتبر نیست.',
@@ -173,7 +174,7 @@
       k_audio: 'صدا', k_video: 'ویدیو', k_zip: 'فشرده', k_other: 'فایل',
     },
     ar: {
-      hero_hello: 'مرحباً! 👋', hero_pill: 'أرسل تعديلاتك',
+      hero_hello: 'مرحباً! 👋', hero_pill: 'أرسل تعديلاتك — شركة الكوثر',
       aria_help: 'مساعدة', aria_lang: 'اختيار اللغة', aria_mic: 'قل اسمك',
       browser_warn: '💡 تم فتحه خارج تلگرام. يعمل، لكن الأفضل فتحه من زر قائمة البوت.',
       name_title: 'ما اسمك؟', name_sub: 'قل <b>اسمك</b> لنبحث عنك',
@@ -199,8 +200,9 @@
       chat_auto_reply: 'تم تسجيل رسالتك ✅ بمجرد تفعيل الدردشة سيجيبك المختص المعني.',
       picker_hint: 'اختر من القائمة أو اكتبه بنفسك',
       ph_search: '🔍 ابحث بالاسم أو برقم الطالب…',
-      label_write: 'أو اكتب اسمك بنفسك <span class="hint">(إن لم يكن صحيحاً)</span>',
+      label_write: 'أو اكتب اسمك بنفسك',
       manual_hint: 'اكتب اسمك كاملاً لنبحث عنك.',
+      manual_voice_or_type: 'قل اسمك أو اكتبه بنفسك.',
       manual_wrong: 'حسناً، اكتب اسمك بنفسك.',
       manual_no_stt: 'هذا المتصفح لا يتعرّف على الكلام؛ اكتب اسمك (أو رقم الطالب).',
       manual_short: 'قل اسمك كاملاً أو اكتبه.',
@@ -271,7 +273,7 @@
       who_linked: '• مرتبط بالملف الشخصي',
       who_unlinked: '• بانتظار ربط المختص',
       who_edit: 'تعديل',
-      toast_voice_first: '🎤 أولاً اضغط زر الميكروفون وقل اسمك.',
+      toast_voice_first: '🎤 قل اسمك أو اكتبه بنفسك.',
       toast_pick_name: 'اكتب اسمك كاملاً 🙂',
       toast_write_name: 'اكتب اسمك كاملاً 🙂',
       toast_bad_no: 'رقم الطالب غير صالح.',
@@ -1041,10 +1043,21 @@
     $('voice-text').textContent = speakSupported() ? '…' : t('voice_no_stt');
     $('voice-text').className = 'voice-text';
 
-    // ── ۱. ضبط صدا (همیشه؛ خروجی برای پیوست شدن به درخواست) ──
+    // ── ۱. ضبط صدا ──
+    //    ⚠️ مهم: تشخیص گفتار باید *بعد از* گرفتن دسترسی میکروفن شروع شود.
+    //    قبلاً هم‌زمان با getUserMedia اجرا می‌شد و چون اجازه هنوز داده
+    //    نشده بود، بار اول خطا می‌داد و فقط از تلاش دوم کار می‌کرد.
+    sttRestarts = 0;
+    sttLastError = null;
+    sttServerOnly = !SpeechRec;
+
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices.getUserMedia({ audio: true })
         .then(function (stream) {
+          if (!state.recording) {                 // کاربر منصرف شد
+            try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+            return;
+          }
           mediaStream = stream;
           var types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus',
                        'audio/mp4', ''];
@@ -1063,6 +1076,17 @@
           mediaRecorder.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
           mediaRecorder.onstop = finishRecording;
           mediaRecorder.start();
+
+          // ── ۲. تشخیص گفتار — بعد از آماده شدن میکروفن ──
+          if (SpeechRec && state.recording) {
+            try {
+              startSpeech();
+            } catch (e) {
+              console.warn('speech start failed', e);
+              speech = null;
+              sttLastError = 'start-failed';
+            }
+          }
         })
         .catch(function (e) {
           console.warn('mic error', e);
@@ -1075,21 +1099,6 @@
     } else {
       $('voice-text').textContent = t('voice_unsupported');
       $('voice-text').className = 'voice-text bad';
-    }
-
-    // ── ۲. تشخیص گفتار + تطبیق هم‌زمان (زنده) ──
-    //    به‌محض اینکه نام با اطمینان پیدا شد، ضبط خودکار قطع می‌شود.
-    sttRestarts = 0;
-    sttLastError = null;
-    sttServerOnly = !SpeechRec;
-    if (SpeechRec) {
-      try {
-        startSpeech();
-      } catch (e) {
-        console.warn('speech start failed', e);
-        speech = null;
-        sttLastError = 'start-failed';
-      }
     }
 
     recTimer = setInterval(function () {
@@ -1467,18 +1476,13 @@
     var typed = normName($('in-name').value);
     var no = toEnDigits($('in-no').value).trim();
 
-    // ۱) گفتن اسم الزامی است
-    if (!state.voiceDone) {
-      toast(t('toast_voice_first'));
-      try { $('btn-mic').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
-      return;
-    }
-
-    // ۲) نام باید مشخص باشد: از تطبیق خودکار ویس، یا نوشتهٔ خودِ دانشجو
+    // نام باید مشخص باشد: از تطبیق خودکار ویس، یا نوشتهٔ خودِ دانشجو.
+    // ⚠️ نوشتن دستی همیشه کافی است — قبلاً بی‌دلیل اجبار می‌کرد
+    //    که اول میکروفن زده شود و دانشجو گیر می‌افتاد.
     var chosen = state.matched;
     var name = chosen ? chosen.name : typed;
     if (!name || name.length < 3) {
-      promptManual('manual_short');
+      promptManual(state.voiceDone ? 'manual_short' : 'manual_voice_or_type');
       toast(t('toast_write_name'));
       return;
     }
@@ -2379,7 +2383,7 @@
       }
       if (window.__TG_SCRIPT_FAILED || ++tries > 40) {   // ~۴ ثانیه
         clearInterval(timer);
-        show($('browser-warning'));
+        /* بنر «بیرون از تلگرام» حذف شد */
       }
     }, 100);
   }
