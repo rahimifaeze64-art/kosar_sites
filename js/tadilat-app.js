@@ -112,7 +112,8 @@
       st_ready: 'آماده تحویل', st_completed: 'تحویل شد',
       st_draft: 'ناتمام', st_rejected: 'رد شد',
       // ── پویا ──
-      voice_listening: '🎧 گوش می‌دهم…',
+      voice_listening: '🎧 به فارسی گوش می‌دهم…',
+      mic_lang_note: '(تشخیص گفتار روی فارسی)',
       voice_heard: '🗣 {0}',
       voice_unsupported: '⚠️ این دستگاه ضبط صدا را پشتیبانی نمی‌کند؛ نامت را تایپ کن.',
       voice_stopped: 'ضبط تمام شد',
@@ -245,7 +246,8 @@
       st_new: 'تم الاستلام', st_started: 'بدأ العمل', st_in_progress: 'قيد التنفيذ',
       st_ready: 'جاهز للتسليم', st_completed: 'تم التسليم',
       st_draft: 'غير مكتمل', st_rejected: 'مرفوض',
-      voice_listening: '🎧 أستمع…',
+      voice_listening: '🎧 أستمع بالعربية…',
+      mic_lang_note: '(التعرّف على الكلام بالعربية)',
       voice_heard: '🗣 {0}',
       voice_unsupported: '⚠️ هذا الجهاز لا يدعم التسجيل؛ اكتب اسمك.',
       voice_stopped: 'انتهى التسجيل',
@@ -943,16 +945,48 @@
   var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition || null;
   var mediaRecorder = null, mediaStream = null, chunks = [], recTimer = null, recSeconds = 0, speech = null;
   var liveMatchTimer = null;
+  var sttRestarts = 0;
+  var sttLastError = null;
+  var sttServerOnly = false;
 
   var MAX_REC_TRIES = 3;        // فقط ۳ بار می‌شود اسم را صوتی گفت
   var REC_MAX_SECONDS = 12;     // سقف هر ضبط
   var LIVE_MATCH_WAIT = 350;    // کمی صبر تا کلمه کامل شود
 
+  /**
+   * زبان تشخیص گفتار.
+   *
+   * ⚠️ اینجا قبلاً «fa-IR» هاردکد بود و چون بیشتر دانشجوها عرب‌زبان‌اند
+   * (الطالی، المجبلي، الجوراني…) مدل فارسی نمی‌توانست نام را بفهمد.
+   * حالا زبان تشخیص، از زبان خودِ اپ پیروی می‌کند.
+   */
+  function speechLang() {
+    return currentLang === 'ar' ? 'ar-SA' : 'fa-IR';
+  }
+
   function speakSupported() { return !!SpeechRec; }
   function recTriesLeft() { return Math.max(0, MAX_REC_TRIES - (state.recTries || 0)); }
 
+  /** ساخت و راه‌اندازی تشخیص گفتار (جدا شده تا بتوان دوباره وصلش کرد) */
+  function startSpeech() {
+    if (!SpeechRec) return;
+    if (speech) { try { speech.abort(); } catch (e) { /* نادیده */ } speech = null; }
+    speech = new SpeechRec();
+    speech.lang = speechLang();
+    speech.continuous = true;
+    speech.interimResults = true;
+    speech.maxAlternatives = 5;
+    speech.onresult = onSpeechResult;
+    speech.onerror = onSpeechError;
+    speech.onend = onSpeechEnd;
+    speech.start();
+  }
+
   /** شمارندهٔ «چند تلاش باقی مانده» زیر میکروفن */
   function renderTries() {
+    // زبان تشخیص گفتار را نشان بده تا دانشجو در صورت نیاز عوض کند
+    var hint = $('mic-hero-hint');
+    if (hint) hint.innerHTML = t('mic_hint') + ' <span class="hint">' + t('mic_lang_note') + '</span>';
     var el = $('mic-hero-tries');
     if (!el) return;
     if (!state.recTries) { el.textContent = ''; el.className = 'mic-hero-tries'; return; }
@@ -1040,46 +1074,16 @@
 
     // ── ۲. تشخیص گفتار + تطبیق هم‌زمان (زنده) ──
     //    به‌محض اینکه نام با اطمینان پیدا شد، ضبط خودکار قطع می‌شود.
+    sttRestarts = 0;
+    sttLastError = null;
+    sttServerOnly = !SpeechRec;
     if (SpeechRec) {
       try {
-        speech = new SpeechRec();
-        speech.lang = 'fa-IR';
-        speech.continuous = true;
-        speech.interimResults = true;
-        speech.onresult = function (ev) {
-          var text = '', isFinal = false;
-          for (var i = 0; i < ev.results.length; i++) {
-            text += ev.results[i][0].transcript;
-            if (ev.results[i].isFinal) isFinal = true;
-          }
-          text = normName(text);
-          if (!text) return;
-          state.voiceText = text;
-          state.voiceHeard = text;
-          state.voiceNameSource = 'voice_stt';
-          $('voice-text').textContent = t('voice_heard', text);
-          $('voice-text').className = 'voice-text ok';
-          scheduleLiveMatch(text, isFinal);
-        };
-        speech.onerror = function (ev) {
-          console.warn('speech error', ev.error);
-          if (state.autoMatched || !state.recording) return;
-          if (!state.voiceText) {
-            $('voice-text').textContent = t('voice_heard_fail');
-            $('voice-text').className = 'voice-text bad';
-          }
-        };
-        speech.onend = function () {
-          speech = null;
-          // اگر ضبط تمام شد و چیزی تطبیق نشد، مسیر دستی
-          if (!state.autoMatched && !state.recording && !state.matched) {
-            promptManual(afterFailKey());
-          }
-        };
-        speech.start();
+        startSpeech();
       } catch (e) {
         console.warn('speech start failed', e);
         speech = null;
+        sttLastError = 'start-failed';
       }
     }
 
@@ -1102,15 +1106,21 @@
    * ممکن بود با شنیدن دو کلمهٔ اول، ضبط زودتر از موعد قطع شود و نام
    * اشتباهی ثبت شود. نتیجهٔ «نهایی» (isFinal) با آستانهٔ معمول قبول می‌شود.
    */
-  function scheduleLiveMatch(text, isFinal) {
+  function scheduleLiveMatch(texts, isFinal) {
     if (state.autoMatched) return;
-    // دست‌کم دو کلمه یا ۶ حرف لازم است
-    if (nameTokens(text).length < 2 && normKey(text).length < 6) return;
+    var list = (texts || []).filter(function (x) { return !!x; });
+    if (!list.length) return;
+    // دست‌کم یکی از حدس‌ها باید دو کلمه یا ۶ حرف داشته باشد
+    var ready = list.some(function (x) {
+      return nameTokens(x).length >= 2 || normKey(x).length >= 6;
+    });
+    if (!ready) return;
     clearTimeout(liveMatchTimer);
     liveMatchTimer = setTimeout(function () {
       if (!state.recording || state.autoMatched || state.matched) return;
-      pickBestStudent(text).then(function (res) {
+      pickBestAmong(list).then(function (win) {
         if (!state.recording || state.autoMatched || state.matched) return;
+        var res = win.res;
         if (!isConfident(res)) return;
         // نتیجهٔ موقت باید خیلی مطمئن باشد تا ضبط را قطع کند
         if (!isFinal && (res.score < 0.88 || (res.score - res.second) < 0.10)) return;
@@ -1120,9 +1130,82 @@
         stopRecording();
         showResolved({
           id: res.row.id, name: res.row.name, student_no: res.row.student_id,
-        }, text);
+        }, win.text);
       });
     }, LIVE_MATCH_WAIT);
+  }
+
+  /**
+   * بهترین تطبیق را در میان چند حدسِ تشخیص گفتار پیدا می‌کند.
+   * با maxAlternatives=5، معمولاً یکی از حدس‌ها درست است.
+   */
+  function pickBestAmong(texts) {
+    var best = null;
+    var chain = Promise.resolve();
+    (texts || []).forEach(function (txt) {
+      chain = chain.then(function () {
+        return pickBestStudent(txt).then(function (res) {
+          if (!res || !res.row) return;
+          if (!best || res.score > best.res.score) best = { res: res, text: txt };
+        });
+      });
+    });
+    return chain.then(function () {
+      return best || {
+        res: { row: null, score: 0, second: 0, reason: 'weak' },
+        text: (texts && texts[0]) || '',
+      };
+    });
+  }
+
+  // ── رویدادهای تشخیص گفتار ─────────────────────────────────
+  function onSpeechResult(ev) {
+    var alts = [], primary = '', isFinal = false, a, i;
+    for (i = 0; i < ev.results.length; i++) {
+      if (ev.results[i].isFinal) isFinal = true;
+      for (a = 0; a < ev.results[i].length && a < 5; a++) {
+        var tr = normName(ev.results[i][a].transcript);
+        if (tr) {
+          alts.push(tr);
+          if (a === 0) primary += tr + ' ';
+        }
+      }
+    }
+    primary = normName(primary);
+    if (!primary && !alts.length) return;
+    // بلندترین متن شنیده‌شده را نگه می‌داریم
+    if (!state.voiceHeard || primary.length >= state.voiceHeard.length) {
+      state.voiceHeard = primary || alts[0];
+    }
+    state.voiceText = state.voiceHeard;
+    state.voiceNameSource = 'voice_stt';
+    if ($('voice-text')) {
+      $('voice-text').textContent = t('voice_heard', state.voiceHeard);
+      $('voice-text').className = 'voice-text ok';
+    }
+    scheduleLiveMatch(alts.length ? alts : [primary], isFinal);
+  }
+
+  function onSpeechError(ev) {
+    sttLastError = (ev && ev.error) || 'unknown';
+    console.warn('speech error', sttLastError);
+    if (state.autoMatched) return;
+    if (!state.voiceText && $('voice-text')) {
+      $('voice-text').textContent = t('voice_heard_fail');
+      $('voice-text').className = 'voice-text bad';
+    }
+  }
+
+  function onSpeechEnd() {
+    speech = null;
+    if (state.autoMatched || state.matched) return;
+    // در وب‌ویو اندروید تشخیص خودکار زودتر از موعد قطع می‌شود
+    if (state.recording && recSeconds < REC_MAX_SECONDS && sttRestarts < 4) {
+      sttRestarts++;
+      try { startSpeech(); return; } catch (e) { /* ادامه */ }
+    }
+    if (!state.recording && !$('name-manual').classList.contains('hidden')) return;
+    if (!state.recording) promptManual(afterFailKey());
   }
 
   function stopRecording() {
@@ -2231,7 +2314,7 @@
     registerSW();
   }
 
-  /** Service Worker فقط برای «نصب‌شدنی» بودن — هیچ کشی نمی‌کند */
+  /** Service Worker: کش دارایی‌ها تا لود بعدی فوری باشد */
   function registerSW() {
     try {
       if (!('serviceWorker' in navigator)) return;
@@ -2239,6 +2322,10 @@
         .catch(function (e) { console.warn('SW ثبت نشد (بی‌اهمیت):', e && e.message); });
     } catch (e) { /* نادیده */ }
   }
+
+  // ⚠️ همین ابتدا ثبت می‌شود (نه در ready) تا حتی اگر boot خطا داد،
+  //    کش از کار نیفتد و دیدار بعدی سریع باشد.
+  registerSW();
 
   /**
    * تلگرام را در پس‌زمینه پیدا می‌کند.
