@@ -112,8 +112,8 @@
       st_ready: 'آماده تحویل', st_completed: 'تحویل شد',
       st_draft: 'ناتمام', st_rejected: 'رد شد',
       // ── پویا ──
-      voice_listening: '🎧 به فارسی گوش می‌دهم…',
-      mic_lang_note: '(تشخیص گفتار روی فارسی)',
+      voice_listening: '🎧 به عربی گوش می‌دهم…',
+      mic_lang_note: '(تشخیص گفتار روی عربی)',
       voice_heard: '🗣 {0}',
       voice_unsupported: '⚠️ این دستگاه ضبط صدا را پشتیبانی نمی‌کند؛ نامت را تایپ کن.',
       voice_stopped: 'ضبط تمام شد',
@@ -326,8 +326,10 @@
     try {
       var nav = String(navigator.language || navigator.userLanguage || '');
       if (/^ar/i.test(nav)) return 'ar';
+      if (/^(fa|pe|per)/i.test(nav)) return 'fa';
     } catch (e) { /* نادیده */ }
-    return 'fa';
+    // همهٔ دانشجوها عرب‌زبان‌اند → پیش‌فرض عربی
+    return 'ar';
   }
 
   /** ترجمهٔ یک کلید؛ {0} و {1} جای‌گذاری می‌شوند */
@@ -954,15 +956,18 @@
   var LIVE_MATCH_WAIT = 350;    // کمی صبر تا کلمه کامل شود
 
   /**
-   * زبان تشخیص گفتار.
+   * زبان تشخیص گفتار — فقط عربی.
    *
-   * ⚠️ اینجا قبلاً «fa-IR» هاردکد بود و چون بیشتر دانشجوها عرب‌زبان‌اند
-   * (الطالی، المجبلي، الجوراني…) مدل فارسی نمی‌توانست نام را بفهمد.
-   * حالا زبان تشخیص، از زبان خودِ اپ پیروی می‌کند.
+   * ⚠️ اینجا قبلاً «fa-IR» هاردکد بود و چون همهٔ دانشجوها عرب‌زبان‌اند
+   * (الطالی، المجبلي، الجورانی…) مدل فارسی هیچ‌وقت نام را نمی‌فهمید.
+   *
+   * Google برای عربی، «ar-IQ» (لهجهٔ عراقی) را پشتیبانی نمی‌کند؛ پس
+   * ar-SA (عربی استاندارد) مبناست و اگر مرورگری پشتیبانی نکرد، خودکار
+   * به گزینه‌های بعدی می‌رود.
    */
-  function speechLang() {
-    return currentLang === 'ar' ? 'ar-SA' : 'fa-IR';
-  }
+  var STT_LANGS = ['ar-SA', 'ar-EG', 'ar'];
+  var sttLangIdx = 0;
+  function speechLang() { return STT_LANGS[sttLangIdx] || 'ar-SA'; }
 
   function speakSupported() { return !!SpeechRec; }
   function recTriesLeft() { return Math.max(0, MAX_REC_TRIES - (state.recTries || 0)); }
@@ -1189,6 +1194,12 @@
   function onSpeechError(ev) {
     sttLastError = (ev && ev.error) || 'unknown';
     console.warn('speech error', sttLastError);
+    // اگر مرورگر این لهجه را نداشت، لهجهٔ بعدی را امتحان کن
+    if (sttLastError === 'language-not-supported' && sttLangIdx < STT_LANGS.length - 1) {
+      sttLangIdx++;
+      console.warn('تغییر زبان تشخیص گفتار به', speechLang());
+      if (state.recording) { try { startSpeech(); return; } catch (e) { /* ادامه */ } }
+    }
     if (state.autoMatched) return;
     if (!state.voiceText && $('voice-text')) {
       $('voice-text').textContent = t('voice_heard_fail');
