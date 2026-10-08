@@ -101,7 +101,12 @@ Deno.serve(async (req: Request) => {
 
     const res = await fetch(url, {
       method: 'POST',
-      headers: { Authorization: 'Bearer ' + key },
+      headers: {
+        Authorization: 'Bearer ' + key,
+        // ⚠️ حیاتی: Cloudflare پشت Groq درخواست‌های بدون User-Agent را با
+        // «403 error code: 1010» بلاک می‌کند. با این هدر، همیشه رد می‌شود.
+        'User-Agent': 'Mozilla/5.0 (compatible; KosarTadilat/1.0)',
+      },
       body: form,
     });
 
@@ -123,9 +128,38 @@ Deno.serve(async (req: Request) => {
       text = raw;
     }
 
-    return json({ text: String(text).trim(), provider });
+    return json({ text: cleanText(text), provider });
   } catch (e) {
     console.error('tadilat-stt fatal', e);
     return json({ error: String(e) }, 500);
   }
 });
+
+/**
+ * پاک‌سازی خروجی Whisper.
+ *
+ * Whisper روی صدای نامفهوم یا سکوت، «توهم» می‌سازد — مثلاً
+ * «اشتركوا في القناة» یا «شكراً للمشاهدة». این‌ها هیچ‌وقت اسم نیستند
+ * و اگر رد نشوند، تطبیق را خراب می‌کنند. پس خالی برگردانده می‌شوند
+ * تا مینی‌اپ برود سراغ ورود دستی.
+ */
+const HALLUCINATIONS = [
+  'اشتركوا في القناة', 'اشتركوا', 'شكرا للمشاهدة', 'شكراً للمشاهدة',
+  'ترجمة نانسي قنقر', 'الموسيقى', 'موسيقى', 'صامت', 'لا يوجد كلام',
+  'subscribe', 'thanks for watching', 'thank you', 'subtitles by',
+  'amara.org', 'www.', '.com', 'http',
+];
+
+function cleanText(raw: string): string {
+  const t = String(raw || '').replace(/[\r\n]+/g, ' ').trim();
+  if (!t) return '';
+  const low = t.toLowerCase();
+  // فقط حرف/عدد عربی-فارسی و فاصله بماند
+  const letters = t.replace(/[^\u0600-\u06FF\u0750-\u077F\s]/g, '').trim();
+  if (letters.length < 3) return '';
+  for (const h of HALLUCINATIONS) {
+    if (low === h.toLowerCase()) return '';
+    if (low.includes(h.toLowerCase()) && t.length < 40) return '';
+  }
+  return letters;
+}
