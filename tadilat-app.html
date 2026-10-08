@@ -41,7 +41,7 @@
 <link href="css/tadilat-app.css" rel="stylesheet">
 
 <!-- ⚠️ نسخهٔ کش — هنگام هر تغییر این مقدارها را با هم جلو ببرید -->
-<script>window.TADILAT_APP_V = '5.8.0';</script>
+<script>window.TADILAT_APP_V = '6.0.0';</script>
 
 <!-- ══════════════════════════════════════════════════════════════
      ⚠️ مهم برای موبایل:
@@ -64,7 +64,7 @@
 })();
 </script>
 
-<script src="js/supabase-config.js?v=5.8.0"></script>
+<script src="js/supabase-config.js?v=6.0.0"></script>
 </head>
 <body>
 
@@ -148,77 +148,118 @@
        ══════════════════════════════════════════════════════ -->
   <main id="view-send">
 
-    <!-- باکس ۱ — اسم -->
+    <!-- باکس ۱ — شناسایی: ۱) نام  ۲) خواندن ویس  ۳) شمارهٔ دانشجویی -->
     <section id="card-name" class="card">
-      <div class="card-top" style="display:flex;align-items:flex-start;gap:14px;margin-bottom:14px">
+      <div class="card-top" style="display:flex;align-items:flex-start;gap:14px;margin-bottom:18px">
         <span class="icon-badge g-lav">🙋‍♂️</span>
         <div class="card-titles" style="flex:1;min-width:0">
-          <h2 style="margin:0;font-size:18px;font-weight:900" data-i18n="name_title">اسمت چیه؟</h2>
-          <p class="muted" style="margin-top:2px;font-size:13px" data-i18n-html="name_sub">اسمت را <b>بگو</b> تا خودمان پیدایت کنیم</p>
+          <h2 style="margin:0;font-size:18px;font-weight:900" data-i18n="name_title">معرّفی کن خودت را</h2>
+          <p class="muted" style="margin-top:2px;font-size:13px" data-i18n="name_sub">سه قدم کوتاه تا وصل شدن به پروفایلت</p>
         </div>
       </div>
 
-      <!-- دکمهٔ اصلی: گفتن اسم — ضبط خودکار تمام می‌شود، دکمهٔ «تمام» ندارد -->
-      <div class="mic-hero">
-        <button id="btn-mic" class="mic-hero-btn" type="button" data-i18n-aria="aria_mic" aria-label="اسمت را بگو">
-          <i class="fas fa-microphone"></i>
-        </button>
-        <p id="mic-hero-hint" class="mic-hero-hint" data-i18n-html="mic_hint">🎤 بزن و اسمت را بگو</p>
-        <p id="mic-hero-tries" class="mic-hero-tries"></p>
-      </div>
-
-      <div id="voice-box" class="voice-box hidden">
-        <div class="voice-head">
-          <span class="dot-live"></span>
-          <b id="voice-title" data-i18n="voice_listening">در حال شنیدن…</b>
-          <span id="voice-timer" class="voice-timer">۰:۰۰</span>
-        </div>
-        <div class="voice-wave" id="voice-wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-        <p id="voice-text" class="voice-text"></p>
-        <audio id="voice-audio" class="voice-audio hidden" controls></audio>
-      </div>
-
-      <!-- تأیید نامِ تشخیص‌داده‌شده -->
-      <div id="name-resolved" class="match-box match-ok hidden">
-        <div id="name-resolved-text"></div>
-        <div class="confirm-actions">
-          <button id="btn-name-yes" class="pill pill-ok" type="button">
-            <i class="fas fa-check"></i><span data-i18n="btn_yes_correct">بله، درسته</span>
+      <!-- ── قدم ۱: نوشتن نام ── -->
+      <div class="step-block">
+        <span class="step-badge">۱</span>
+        <div class="step-body-wrap">
+          <label class="field-label" for="in-name" data-i18n="step1_label">اسمت را بنویس</label>
+          <input id="in-name" type="text" autocomplete="name"
+                 data-i18n-ph="ph_name" placeholder="نام و نام خانوادگی">
+          <!-- تشخیص گفتار گوگل از راه میکروفن کیبورد گوشی (Gboard) -->
+          <button id="btn-kbd-mic" class="kbd-mic" type="button">
+            <i class="fas fa-microphone-lines"></i>
+            <span data-i18n="kbd_mic">میکروفن کیبورد گوشی</span>
           </button>
-          <button id="btn-name-change" class="pill pill-soft" type="button">
-            <i class="fas fa-pen"></i><span data-i18n="btn_no_write">نه، خودم می‌نویسم</span>
-          </button>
+          <p class="kbd-mic-hint" data-i18n="kbd_mic_hint">روی کادر بالا بزن، بعد دکمهٔ 🎙 کیبورد گوشی را بزن و اسمت را بگو — دقتش بالاست.</p>
         </div>
       </div>
 
-      <!-- راهنمای ورود دستی —
-           ⚠️ هرگز فهرستی از دانشجوها نمایش داده نمی‌شود؛ دانشجو فقط
-           نام خودش را می‌بیند و در صورت اشتباه، خودش تایپ می‌کند. -->
-      <div id="name-manual" class="manual-box hidden">
-        <i class="fas fa-keyboard"></i>
-        <span id="name-manual-text"></span>
+      <!-- ── قدم ۲: خواندن نام (۶ ثانیه) ── -->
+      <div class="step-block">
+        <span class="step-badge">۲</span>
+        <div class="step-body-wrap">
+          <label class="field-label" data-i18n="step2_label">حالا اسمت را برایمان بخوان</label>
+          <p class="step-hint" data-i18n="step2_hint">رفیق، لطفاً روی دکمه بزن و اسمت را بگو — ۶ ثانیه ضبط می‌شود.</p>
+
+          <button id="btn-rec" class="rec-btn" type="button">
+            <i class="fas fa-microphone"></i>
+            <span data-i18n="btn_rec">ضبط ۶ ثانیه‌ای</span>
+          </button>
+
+          <div id="rec-live" class="rec-live hidden">
+            <div class="rec-head">
+              <span class="dot-live"></span>
+              <b data-i18n="rec_now">حالا اسمت را بگو…</b>
+              <span id="rec-count" class="rec-count">۶</span>
+            </div>
+            <div class="rec-track"><div id="rec-fill" class="rec-fill"></div></div>
+          </div>
+
+          <div id="rec-done" class="rec-done hidden">
+            <i class="fas fa-circle-check"></i>
+            <span data-i18n="rec_done">ویس ضبط شد ✓</span>
+            <audio id="rec-audio" controls></audio>
+            <button id="btn-rec-again" class="pill pill-soft" type="button">
+              <i class="fas fa-rotate-left"></i><span data-i18n="rec_again">ضبط دوباره</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div class="field" id="name-write-wrap" style="margin-top:14px">
-        <label class="field-label" for="in-name" data-i18n-html="label_write">یا اسمت را خودت بنویس</label>
-        <input id="in-name" type="text" autocomplete="name" data-i18n-ph="ph_name" placeholder="نام و نام خانوادگی">
-        <!-- تشخیص گفتار گوگل از راه میکروفن کیبورد گوشی (Gboard) -->
-        <button id="btn-kbd-mic" class="kbd-mic" type="button">
-          <i class="fas fa-microphone-lines"></i>
-          <span data-i18n="kbd_mic">میکروفن کیبورد گوشی</span>
-        </button>
-        <p class="kbd-mic-hint" data-i18n="kbd_mic_hint">روی کادر بالا بزن، بعد دکمهٔ 🎙 کیبورد گوشی را بزن و اسمت را بگو — دقتش بالاست.</p>
-      </div>
-
-      <div class="field" id="field-no">
-        <label class="field-label" for="in-no" data-i18n-html="label_no">شمارهٔ دانشجویی <span class="hint">(اختیاری — برای دقت بیشتر)</span></label>
-        <input id="in-no" type="text" inputmode="numeric" data-i18n-ph="ph_no" placeholder="مثال: 40254021132">
+      <!-- ── قدم ۳: شمارهٔ دانشجویی ── -->
+      <div class="step-block">
+        <span class="step-badge">۳</span>
+        <div class="step-body-wrap">
+          <label class="field-label" for="in-no" data-i18n="step3_label">شمارهٔ دانشجویی برای دقت بیشتر</label>
+          <input id="in-no" type="text" inputmode="numeric"
+                 data-i18n-ph="ph_no" placeholder="مثال: 40254021132">
+          <p class="step-hint" data-i18n="step3_hint">روی کارت دانشجویی‌ات نوشته شده. اگر نداری، خالی بگذار.</p>
+        </div>
       </div>
 
       <div id="identity-result" class="match-box hidden"></div>
 
       <button id="btn-identity" class="btn btn-primary">
         <span data-i18n="btn_continue">ادامه</span><i class="fas fa-arrow-left arrow-flip"></i>
+      </button>
+    </section>
+
+    <!-- باکس ۱٫۵ — تأیید هویت: «آیا تو X هستی؟» -->
+    <section id="card-confirm" class="card hidden">
+      <div class="confirm-hero">🤔</div>
+      <h2 class="confirm-title" data-i18n="confirm_title">آیا تو این شخص هستی؟</h2>
+      <div id="confirm-name" class="confirm-name">—</div>
+      <p class="muted center" data-i18n="confirm_hint">
+        اگر پروفایلت همین است «بله» را بزن، وگرنه «نه».
+      </p>
+      <div class="confirm-actions center-actions">
+        <button id="btn-confirm-yes" class="pill pill-ok" type="button">
+          <i class="fas fa-check"></i><span data-i18n="btn_yes_me">بله، من هستم</span>
+        </button>
+        <button id="btn-confirm-no" class="pill pill-soft" type="button">
+          <i class="fas fa-xmark"></i><span data-i18n="btn_no_me">نه، من نیستم</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- باکس ۱٫۶ — دانشجوی جدید یا قدیمی -->
+    <section id="card-notyou" class="card hidden">
+      <div class="confirm-hero">🆕</div>
+      <h2 class="confirm-title" data-i18n="notyou_title">پس تو کی هستی؟</h2>
+      <p class="muted center" data-i18n="notyou_hint">یکی از این دو را انتخاب کن:</p>
+      <button id="btn-new-student" class="choice-btn" type="button">
+        <i class="fas fa-user-plus"></i>
+        <span>
+          <b data-i18n="notyou_new_t">دانشجوی جدیدم</b>
+          <small data-i18n="notyou_new_s">تازه آمده‌ام و پروفایل ندارم — ادامه می‌دهم</small>
+        </span>
+      </button>
+      <button id="btn-existing-student" class="choice-btn choice-primary" type="button">
+        <i class="fas fa-rotate-left"></i>
+        <span>
+          <b data-i18n="notyou_old_t">دانشجوی شمایم</b>
+          <small data-i18n="notyou_old_s">یک‌بار دیگر اسمم را دقیق می‌نویسم و می‌خوانم</small>
+        </span>
       </button>
     </section>
 
@@ -454,6 +495,6 @@
   </div>
 </div>
 
-<script src="js/tadilat-app.js?v=5.8.0"></script>
+<script src="js/tadilat-app.js?v=6.0.0"></script>
 </body>
 </html>

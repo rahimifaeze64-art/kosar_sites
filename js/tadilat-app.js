@@ -121,6 +121,31 @@
       kbd_mic: 'میکروفن کیبورد گوشی',
       kbd_mic_hint: 'روی کادر بالا بزن، بعد دکمهٔ 🎙 کیبورد گوشی را بزن و اسمت را بگو — دقتش بالاست.',
       kbd_mic_toast: 'حالا دکمهٔ 🎙 کیبورد را بزن و اسمت را بگو',
+      // ── جریان شناسایی تازه ──
+      step1_label: 'اسمت را بنویس',
+      step2_label: 'حالا اسمت را برایمان بخوان',
+      step2_hint: 'رفیق، لطفاً روی دکمه بزن و اسمت را بگو — ۶ ثانیه ضبط می‌شود.',
+      step3_label: 'شمارهٔ دانشجویی برای دقت بیشتر',
+      step3_hint: 'روی کارت دانشجویی‌ات نوشته شده. اگر نداری، خالی بگذار.',
+      btn_rec: 'ضبط ۶ ثانیه‌ای',
+      rec_now: 'حالا اسمت را بگو…',
+      rec_done: 'ویس ضبط شد ✓',
+      rec_again: 'ضبط دوباره',
+      rec_denied: 'دسترسی به میکروفن نشد — بدون ویس هم می‌توانی ادامه بدهی.',
+      rec_no_support: 'این دستگاه ضبط صدا ندارد — بدون ویس ادامه بده.',
+      live_found: '✅ پیدایت کردم: <b>{0}</b>',
+      confirm_title: 'آیا تو این شخص هستی؟',
+      confirm_hint: 'اگر پروفایلت همین است «بله» را بزن، وگرنه «نه».',
+      btn_yes_me: 'بله، من هستم',
+      btn_no_me: 'نه، من نیستم',
+      notyou_title: 'پس تو کی هستی؟',
+      notyou_hint: 'یکی از این دو را انتخاب کن:',
+      notyou_new_t: 'دانشجوی جدیدم',
+      notyou_new_s: 'تازه آمده‌ام و پروفایل ندارم — ادامه می‌دهم',
+      notyou_old_t: 'دانشجوی شماییم',
+      notyou_old_s: 'یک‌بار دیگر اسمم را دقیق می‌نویسم و می‌خوانم',
+      rewrite_hint: 'اسمت را دقیق‌تر بنویس (نام، نام پدر، نام جد) و بعد برایمان بخوان.',
+      rewrite_toast: 'اسمت را کامل‌تر بنویس و دوباره بخوان',
       mic_lang_note: '(تشخیص گفتار روی عربی)',
       voice_heard: '🗣 {0}',
       voice_unsupported: '⚠️ این دستگاه ضبط صدا را پشتیبانی نمی‌کند؛ نامت را تایپ کن.',
@@ -263,6 +288,31 @@
       kbd_mic: 'ميكروفون لوحة المفاتيح',
       kbd_mic_hint: 'اضغط على الحقل أعلاه، ثم اضغط زر 🎙 في لوحة المفاتيح وقل اسمك — دقّته عالية.',
       kbd_mic_toast: 'الآن اضغط زر 🎙 في لوحة المفاتيح وقل اسمك',
+      // ── جریان شناسایی تازه ──
+      step1_label: 'اكتب اسمك',
+      step2_label: 'الآن اقرأ اسمك لنا',
+      step2_hint: 'يا صديقي، اضغط الزر وقل اسمك — يُسجَّل ٦ ثوانٍ.',
+      step3_label: 'رقم الطالب لدقة أكبر',
+      step3_hint: 'مكتوب على بطاقة الطالب. إن لم تكن لديك، اتركه فارغاً.',
+      btn_rec: 'تسجيل ٦ ثوانٍ',
+      rec_now: 'الآن قل اسمك…',
+      rec_done: 'تم تسجيل الصوت ✓',
+      rec_again: 'إعادة التسجيل',
+      rec_denied: 'لم يتم الوصول إلى الميكروفون — يمكنك المتابعة بدون صوت.',
+      rec_no_support: 'هذا الجهاز لا يدعم التسجيل — تابع بدون صوت.',
+      live_found: '✅ وجدتك: <b>{0}</b>',
+      confirm_title: 'هل أنت هذا الشخص؟',
+      confirm_hint: 'إن كان ملفك هو هذا فاضغط «نعم»، وإلا «لا».',
+      btn_yes_me: 'نعم، أنا هو',
+      btn_no_me: 'لا، لست أنا',
+      notyou_title: 'إذن من أنت؟',
+      notyou_hint: 'اختر أحدهما:',
+      notyou_new_t: 'أنا طالب جديد',
+      notyou_new_s: 'جديد ولا أملك ملفاً — سأتابع',
+      notyou_old_t: 'أنا من طلابكم',
+      notyou_old_s: 'سأكتب اسمي بدقة مرة أخرى وأقرأه',
+      rewrite_hint: 'اكتب اسمك بدقة أكثر (الاسم، اسم الأب، اسم الجد) ثم اقرأه لنا.',
+      rewrite_toast: 'اكتب اسمك كاملاً وأعد القراءة',
       mic_lang_note: '(التعرّف على الكلام بالعربية)',
       voice_heard: '🗣 {0}',
       voice_unsupported: '⚠️ هذا الجهاز لا يدعم التسجيل؛ اكتب اسمك.',
@@ -903,13 +953,11 @@
     recording: false,
     tab: 'send',
     hasRequest: false,
-    writer: null,         // {agent_id, agent_name, order_id} — نویسندهٔ مربوطه
-    matched: null,        // {id, name, student_no} — دانشجوی تشخیص/انتخاب‌شده
-    voiceHeard: '',       // متنی که از ویس فهمیدیم
-    voiceDone: false,     // آیا ویس اسم ضبط شده است
-    recTries: 0,          // چند بار ضبط صوتی انجام شده (سقف ۳)
-    autoMatched: false,   // نام خودکار پیدا شد → ضبط خودش قطع شد
-    nameConfirmed: false  // دانشجو تأیید کرد «بله درسته»
+    writer: null,             // {agent_id, agent_name, order_id} — نویسندهٔ مربوطه
+    candidate: null,          // {id, name, student_no} — دانشجوی تطبیق‌داده‌شده (زنده)
+    candidateDefinitive: false, // از شمارهٔ دانشجویی آمده (قطعی)
+    pending: null,            // در انتظار تأیید «آیا تو X هستی؟»
+    voiceSkipped: false       // میکروفن نبود → بدون ویس ادامه بده
   };
 
   // ── تب‌ها: ارسال / وضعیت / چت ─────────────────────────────
@@ -960,595 +1008,29 @@
   // ══════════════════════════════════════════════════════════
   // باکس ۱ — نام (نوشتاری + صوتی)
   // ══════════════════════════════════════════════════════════
-  var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition || null;
-  var mediaRecorder = null, mediaStream = null, chunks = [], recTimer = null, recSeconds = 0, speech = null;
-  var liveMatchTimer = null;
-  var sttRestarts = 0;
-  var sttLastError = null;
-  var sttServerOnly = false;
-
-  var MAX_REC_TRIES = 3;        // فقط ۳ بار می‌شود اسم را صوتی گفت
-  var REC_MAX_SECONDS = 8;      // سقف هر ضبط (تشخیص سرور جبران می‌کند)
-
-  // ── تشخیص سکوت (VAD) ──
-  // ضبط وقتی خودش تمام می‌شود که دانشجو حرفش را زده و ~۱.۲ ثانیه ساکت بماند.
-  // این‌طور به تشخیص گفتار وابسته نیستیم: در وب‌ویو اندروید که تشخیص
-  // کار نمی‌کند، ضبط باز هم به‌موقع تمام می‌شود.
-  var vadCtx = null, vadAnalyser = null, vadTimer = null, vadBuf = null;
-  var vadSpoke = false, vadSilentMs = 0;
-  var VAD_SILENCE_MS = 1200;
-  var VAD_PEAK = 12;
-
-  function stopVAD() {
-    if (vadTimer) { clearInterval(vadTimer); vadTimer = null; }
-    try { if (vadCtx && vadCtx.close) vadCtx.close(); } catch (e) { /* نادیده */ }
-    vadCtx = null; vadAnalyser = null; vadBuf = null;
-  }
-
-  function startVAD(stream) {
-    stopVAD();
-    try {
-      var AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC || !stream) return;
-      vadCtx = new AC();
-      var src = vadCtx.createMediaStreamSource(stream);
-      vadAnalyser = vadCtx.createAnalyser();
-      vadAnalyser.fftSize = 512;
-      src.connect(vadAnalyser);
-      vadBuf = new Uint8Array(vadAnalyser.fftSize);
-      vadSpoke = false;
-      vadSilentMs = 0;
-      vadTimer = setInterval(function () {
-        if (!state.recording || !vadAnalyser) return;
-        try { vadAnalyser.getByteTimeDomainData(vadBuf); } catch (e) { return; }
-        var peak = 0;
-        for (var i = 0; i < vadBuf.length; i++) {
-          var v = Math.abs(vadBuf[i] - 128);
-          if (v > peak) peak = v;
-        }
-        if (peak > VAD_PEAK) {
-          if (!vadSpoke && !state.voiceText && $('voice-text')) {
-            $('voice-text').textContent = t('voice_capturing');
-            $('voice-text').className = 'voice-text';
-          }
-          vadSpoke = true;
-          vadSilentMs = 0;
-        } else if (vadSpoke) {
-          vadSilentMs += 120;
-          if (vadSilentMs >= VAD_SILENCE_MS) stopRecording();
-        }
-      }, 120);
-    } catch (e) {
-      console.warn('VAD نشد (بی‌اهمیت):', e && e.message);
-      stopVAD();
-    }
-  }
-
   // ══════════════════════════════════════════════════════════
-  // تشخیص گفتار سمت سرور (Whisper)
+  // باکس ۱ — شناسایی دانشجو
   //
-  // چرا؟ Web Speech API داخل وب‌ویو اندروید تلگرام به سرویس گفتار
-  // گوگل دسترسی ندارد و عملاً کار نمی‌کند. پس صدا را به یک Edge
-  // Function می‌فرستیم که با کلید محرمانه به Whisper وصل است.
+  // جریان:
+  //   ۱) نامش را می‌نویسد → تطبیق زنده با profiles (سه کلمهٔ اول)
+  //   ۲) نامش را می‌خواند → ضبط ۶ ثانیه‌ای (فقط برای گوش دادن نویسنده)
+  //   ۳) شمارهٔ دانشجویی (اختیاری، برای دقت بیشتر)
+  //   ۴) ۲ ثانیه بعد از آماده شدن نام+ویس → «آیا تو X هستی؟»
+  //        بله → ادامه
+  //        نه → «دانشجوی جدیدم» یا «دانشجوی شمایم → دوباره بنویس و بخوان»
+  //
+  // ⚠️ هیچ تشخیص گفتاری‌ای وجود ندارد. ضبط فقط برای این است که
+  //    نویسنده/کارشناس صدای دانشجو را بشنود و مطمئن شود.
   // ══════════════════════════════════════════════════════════
-  var STT_ENDPOINT_CACHE = null;
+  var REC_SECONDS = 6;          // مدت ضبط ویس نام
+  var CONFIRM_DELAY = 2000;     // ۲ ثانیه بعد از آماده شدن، سؤال تأیید
+  var MATCH_DEBOUNCE = 400;     // کمی صبر بعد از تایپ
 
-  function sttEndpoint() {
-    if (STT_ENDPOINT_CACHE !== null) return STT_ENDPOINT_CACHE;
-    try {
-      var base = String(sbUrl() || '').replace(/\/+$/, '');
-      STT_ENDPOINT_CACHE = base ? (base + '/functions/v1/tadilat-stt') : '';
-    } catch (e) { STT_ENDPOINT_CACHE = ''; }
-    return STT_ENDPOINT_CACHE;
-  }
+  var mediaRecorder = null, mediaStream = null, chunks = [];
+  var recTimer = null, recLeft = 0;
+  var confirmTimer = null, matchTimer = null, askingTimer = null;
 
-  function blobToBase64(blob) {
-    return new Promise(function (resolve, reject) {
-      try {
-        var fr = new FileReader();
-        fr.onload = function () {
-          var s = String(fr.result || '');
-          var i = s.indexOf(',');
-          resolve(i >= 0 ? s.slice(i + 1) : '');
-        };
-        fr.onerror = function () { reject(new Error('read failed')); };
-        fr.readAsDataURL(blob);
-      } catch (e) { reject(e); }
-    });
-  }
-
-  /** صدا را به سرور می‌فرستد و متن برمی‌گرداند ('' اگر نشد) */
-  function serverTranscribe(blob, mime) {
-    var url = sttEndpoint();
-    if (!url || !blob) return Promise.resolve('');
-    return blobToBase64(blob).then(function (b64) {
-      return fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': sbKey() || '',
-          'Authorization': 'Bearer ' + (sbKey() || ''),
-        },
-        body: JSON.stringify({ audio: b64, mime: mime || 'audio/webm', lang: 'ar' }),
-      });
-    }).then(function (r) {
-      if (!r.ok) {
-        return r.text().then(function (tx) {
-          throw new Error('STT ' + r.status + ': ' + String(tx).slice(0, 160));
-        });
-      }
-      return r.json();
-    }).then(function (d) {
-      return (d && d.text) ? normName(d.text) : '';
-    });
-  }
-
-  /** وضعیت «در حال تشخیص» روی کارت ویس */
-  function sttBusy(on) {
-    var title = $('voice-title');
-    if (!title) return;
-    if (!on) return;
-    show($('voice-box'));
-    $('voice-box').classList.add('idle');
-    title.textContent = t('stt_busy');
-    if ($('voice-text')) {
-      $('voice-text').textContent = t('stt_busy_hint');
-      $('voice-text').className = 'voice-text';
-    }
-  }
-  var LIVE_MATCH_WAIT = 350;    // کمی صبر تا کلمه کامل شود
-
-  /**
-   * زبان تشخیص گفتار — فقط عربی.
-   *
-   * ⚠️ اینجا قبلاً «fa-IR» هاردکد بود و چون همهٔ دانشجوها عرب‌زبان‌اند
-   * (الطالی، المجبلي، الجورانی…) مدل فارسی هیچ‌وقت نام را نمی‌فهمید.
-   *
-   * Google برای عربی، «ar-IQ» (لهجهٔ عراقی) را پشتیبانی نمی‌کند؛ پس
-   * ar-SA (عربی استاندارد) مبناست و اگر مرورگری پشتیبانی نکرد، خودکار
-   * به گزینه‌های بعدی می‌رود.
-   */
-  var STT_LANGS = ['ar-SA', 'ar-EG', 'ar'];
-  var sttLangIdx = 0;
-  function speechLang() { return STT_LANGS[sttLangIdx] || 'ar-SA'; }
-
-  function speakSupported() { return !!SpeechRec; }
-  function recTriesLeft() { return Math.max(0, MAX_REC_TRIES - (state.recTries || 0)); }
-
-  /** ساخت و راه‌اندازی تشخیص گفتار (جدا شده تا بتوان دوباره وصلش کرد) */
-  function startSpeech() {
-    if (!SpeechRec) return;
-    if (speech) { try { speech.abort(); } catch (e) { /* نادیده */ } speech = null; }
-    speech = new SpeechRec();
-    speech.lang = speechLang();
-    speech.continuous = true;
-    speech.interimResults = true;
-    speech.maxAlternatives = 5;
-    speech.onresult = onSpeechResult;
-    speech.onerror = onSpeechError;
-    speech.onend = onSpeechEnd;
-    speech.start();
-  }
-
-  /** شمارندهٔ «چند تلاش باقی مانده» زیر میکروفن */
-  function renderTries() {
-    // زبان تشخیص گفتار را نشان بده تا دانشجو در صورت نیاز عوض کند
-    var hint = $('mic-hero-hint');
-    if (hint) hint.innerHTML = t('mic_hint') + ' <span class="hint">' + t('mic_lang_note') + '</span>';
-    var el = $('mic-hero-tries');
-    if (!el) return;
-    if (!state.recTries) { el.textContent = ''; el.className = 'mic-hero-tries'; return; }
-    var left = recTriesLeft();
-    el.textContent = left > 0 ? t('tries_left', fa(left)) : t('tries_none');
-    el.className = 'mic-hero-tries' + (left > 0 ? '' : ' bad');
-    var mic = $('btn-mic');
-    if (mic) mic.disabled = (left <= 0) && !state.recording;
-  }
-
-  /** پیام مناسب پس از یک تلاش ناموفق */
-  function afterFailKey() {
-    return recTriesLeft() > 0 ? 'manual_retry' : 'manual_no_tries';
-  }
-
-  function startRecording() {
-    if (state.recording) return;
-    if (recTriesLeft() <= 0) {
-      promptManual('manual_no_tries');
-      toast(t('toast_no_tries'));
-      return;
-    }
-    state.recTries = (state.recTries || 0) + 1;
-    renderTries();
-
-    state.recording = true;
-    state.autoMatched = false;
-    state.nameConfirmed = false;
-    state.matched = null;
-    chunks = [];
-    recSeconds = 0;
-    state.voiceText = '';
-    state.voiceHeard = '';
-    state.voiceNameSource = null;
-
-    hide($('name-resolved'));
-    hide($('name-manual'));
-
-    var micBtn = $('btn-mic');
-    micBtn.classList.add('recording');
-
-    show($('voice-box'));
-    $('voice-box').classList.remove('idle');
-    hide($('voice-audio'));
-    $('voice-title').textContent = speakSupported() ? t('voice_listening') : t('voice_recording');
-    $('voice-timer').textContent = mmss(0);
-    $('voice-text').textContent = speakSupported() ? '…' : t('voice_no_stt');
-    $('voice-text').className = 'voice-text';
-
-    // ── ۱. ضبط صدا ──
-    //    ⚠️ مهم: تشخیص گفتار باید *بعد از* گرفتن دسترسی میکروفن شروع شود.
-    //    قبلاً هم‌زمان با getUserMedia اجرا می‌شد و چون اجازه هنوز داده
-    //    نشده بود، بار اول خطا می‌داد و فقط از تلاش دوم کار می‌کرد.
-    sttRestarts = 0;
-    sttLastError = null;
-    sttServerOnly = !SpeechRec;
-
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(function (stream) {
-          if (!state.recording) {                 // کاربر منصرف شد
-            try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
-            return;
-          }
-          mediaStream = stream;
-          var types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus',
-                       'audio/mp4', ''];
-          var mime = '';
-          for (var i = 0; i < types.length; i++) {
-            if (!types[i] || (window.MediaRecorder && MediaRecorder.isTypeSupported(types[i]))) {
-              mime = types[i]; break;
-            }
-          }
-          try {
-            mediaRecorder = mime ? new MediaRecorder(stream, { mimeType: mime })
-                                 : new MediaRecorder(stream);
-          } catch (e) {
-            mediaRecorder = new MediaRecorder(stream);
-          }
-          mediaRecorder.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
-          mediaRecorder.onstop = finishRecording;
-          mediaRecorder.start();
-
-          // ضبط با تشخیص سکوت خودش تمام می‌شود (مستقل از تشخیص گفتار)
-          startVAD(stream);
-
-          // ── ۲. تشخیص گفتار — بعد از آماده شدن میکروفن ──
-          if (SpeechRec && state.recording) {
-            try {
-              startSpeech();
-            } catch (e) {
-              console.warn('speech start failed', e);
-              speech = null;
-              sttLastError = 'start-failed';
-            }
-          }
-        })
-        .catch(function (e) {
-          console.warn('mic error', e);
-          $('voice-text').textContent = t('voice_mic_denied');
-          $('voice-text').className = 'voice-text bad';
-          state.recording = false;
-          micBtn.classList.remove('recording');
-          promptManual('manual_no_stt');
-        });
-    } else {
-      $('voice-text').textContent = t('voice_unsupported');
-      $('voice-text').className = 'voice-text bad';
-    }
-
-    recTimer = setInterval(function () {
-      recSeconds++;
-      $('voice-timer').textContent = mmss(recSeconds);
-      if (recSeconds >= REC_MAX_SECONDS) {
-        stopRecording();
-        setTimeout(function () {
-          if (!state.autoMatched && !state.matched) promptManual(afterFailKey());
-        }, 450);
-      }
-    }, 1000);
-  }
-
-  /**
-   * تطبیق زنده — کمی عقب می‌افتد تا روی کلمهٔ نصفه تصمیم نگیریم.
-   *
-   * نکتهٔ مهم: نتیجهٔ «موقت» (interim) سخت‌گیرانه‌تر قبول می‌شود، وگرنه
-   * ممکن بود با شنیدن دو کلمهٔ اول، ضبط زودتر از موعد قطع شود و نام
-   * اشتباهی ثبت شود. نتیجهٔ «نهایی» (isFinal) با آستانهٔ معمول قبول می‌شود.
-   */
-  function scheduleLiveMatch(texts, isFinal) {
-    if (state.autoMatched) return;
-    var list = (texts || []).filter(function (x) { return !!x; });
-    if (!list.length) return;
-    // دست‌کم یکی از حدس‌ها باید دو کلمه یا ۶ حرف داشته باشد
-    var ready = list.some(function (x) {
-      return nameTokens(x).length >= 2 || normKey(x).length >= 6;
-    });
-    if (!ready) return;
-    clearTimeout(liveMatchTimer);
-    liveMatchTimer = setTimeout(function () {
-      if (!state.recording || state.autoMatched || state.matched) return;
-      pickBestAmong(list).then(function (win) {
-        if (!state.recording || state.autoMatched || state.matched) return;
-        var res = win.res;
-        if (!isConfident(res)) return;
-        // نتیجهٔ موقت باید خیلی مطمئن باشد تا ضبط را قطع کند
-        if (!isFinal && (res.score < 0.88 || (res.score - res.second) < 0.10)) return;
-        // ✅ نام با اطمینان پیدا شد → ضبط خودکار قطع شود
-        state.autoMatched = true;
-        hide($('name-manual'));
-        stopRecording();
-        showResolved({
-          id: res.row.id, name: res.row.name, student_no: res.row.student_id,
-        }, win.text);
-      });
-    }, LIVE_MATCH_WAIT);
-  }
-
-  /**
-   * بهترین تطبیق را در میان چند حدسِ تشخیص گفتار پیدا می‌کند.
-   * با maxAlternatives=5، معمولاً یکی از حدس‌ها درست است.
-   */
-  function pickBestAmong(texts) {
-    var best = null;
-    var chain = Promise.resolve();
-    (texts || []).forEach(function (txt) {
-      chain = chain.then(function () {
-        return pickBestStudent(txt).then(function (res) {
-          if (!res || !res.row) return;
-          if (!best || res.score > best.res.score) best = { res: res, text: txt };
-        });
-      });
-    });
-    return chain.then(function () {
-      return best || {
-        res: { row: null, score: 0, second: 0, reason: 'weak' },
-        text: (texts && texts[0]) || '',
-      };
-    });
-  }
-
-  // ── رویدادهای تشخیص گفتار ─────────────────────────────────
-  function onSpeechResult(ev) {
-    var alts = [], primary = '', isFinal = false, a, i;
-    for (i = 0; i < ev.results.length; i++) {
-      if (ev.results[i].isFinal) isFinal = true;
-      for (a = 0; a < ev.results[i].length && a < 5; a++) {
-        var tr = normName(ev.results[i][a].transcript);
-        if (tr) {
-          alts.push(tr);
-          if (a === 0) primary += tr + ' ';
-        }
-      }
-    }
-    primary = normName(primary);
-    if (!primary && !alts.length) return;
-    // بلندترین متن شنیده‌شده را نگه می‌داریم
-    if (!state.voiceHeard || primary.length >= state.voiceHeard.length) {
-      state.voiceHeard = primary || alts[0];
-    }
-    state.voiceText = state.voiceHeard;
-    state.voiceNameSource = 'voice_stt';
-    if ($('voice-text')) {
-      $('voice-text').textContent = t('voice_heard', state.voiceHeard);
-      $('voice-text').className = 'voice-text ok';
-    }
-    scheduleLiveMatch(alts.length ? alts : [primary], isFinal);
-  }
-
-  /**
-   * خطاهای تشخیص گفتار.
-   *
-   * ⚠️ این‌جا قبلاً هر خطا (حتی «no-speech» گذرا که در وب‌ویو اندروید
-   * بلافاصله می‌آید) پیام «تشخیص خودکار کار نکرد» را چاپ می‌کرد.
-   * حالا فقط ثبت می‌شود؛ اگر خطا جدی بود، منتظر تشخیص سرور می‌مانیم
-   * و رابط کاربری پیام ترسناک نشان نمی‌دهد.
-   */
-  function onSpeechError(ev) {
-    sttLastError = (ev && ev.error) || 'unknown';
-    console.warn('speech error:', sttLastError);
-    // اگر مرورگر این لهجه را نداشت، لهجهٔ بعدی را امتحان کن
-    if (sttLastError === 'language-not-supported' && sttLangIdx < STT_LANGS.length - 1) {
-      sttLangIdx++;
-      console.warn('تغییر زبان تشخیص گفتار به', speechLang());
-      if (state.recording) { try { startSpeech(); return; } catch (e) { /* ادامه */ } }
-    }
-    // خطای جدی → دیگر تلاش نکن؛ ضبط را نگه دار تا به سرور بفرستیم
-    if (sttLastError === 'not-allowed' || sttLastError === 'service-not-allowed' ||
-        sttLastError === 'audio-capture' || sttLastError === 'network') {
-      sttRestarts = 99;
-    }
-    if (state.autoMatched) return;
-    // هیچ پیام منفی‌ای نشان نده — سرور جبران می‌کند
-    if (!state.voiceText && $('voice-text')) {
-      $('voice-text').textContent = t('voice_listening');
-      $('voice-text').className = 'voice-text';
-    }
-  }
-
-  function onSpeechEnd() {
-    speech = null;
-    if (state.autoMatched || state.matched) return;
-    // در وب‌ویو اندروید تشخیص خودکار زودتر از موعد قطع می‌شود
-    if (state.recording && recSeconds < REC_MAX_SECONDS && sttRestarts < 4) {
-      sttRestarts++;
-      try { startSpeech(); return; } catch (e) { /* ادامه */ }
-    }
-    if (!state.recording && !$('name-manual').classList.contains('hidden')) return;
-    if (!state.recording) promptManual(afterFailKey());
-  }
-
-  function stopRecording() {
-    if (!state.recording) return;
-    state.recording = false;
-    clearInterval(recTimer);
-    clearTimeout(liveMatchTimer);
-    stopVAD();
-    $('btn-mic').classList.remove('recording');
-    $('voice-title').textContent = t('voice_stopped');
-    $('voice-box').classList.add('idle');
-
-    if (speech) { try { speech.stop(); } catch (e) {} }
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-      try { mediaRecorder.stop(); } catch (e) { finishRecording(); }
-    } else {
-      finishRecording();
-    }
-  }
-
-  function finishRecording() {
-    if (mediaStream) {
-      try { mediaStream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
-      mediaStream = null;
-    }
-    if (chunks.length) {
-      state.voiceBlob = new Blob(chunks, { type: chunks[0].type || 'audio/webm' });
-      if (state.voiceUrl) URL.revokeObjectURL(state.voiceUrl);
-      state.voiceUrl = URL.createObjectURL(state.voiceBlob);
-      var audio = $('voice-audio');
-      audio.src = state.voiceUrl;
-      show(audio);
-    } else if (!state.voiceBlob && !state.autoMatched) {
-      // چیزی ضبط نشد
-      promptManual('manual_no_stt');
-      return;
-    }
-    if (!state.voiceText && !state.voiceNameSource) {
-      state.voiceNameSource = state.voiceBlob ? 'voice' : null;
-    }
-    state.voiceDone = !!state.voiceBlob || !!state.voiceText;
-    if (!state.voiceText) {
-      $('voice-text').textContent = t('voice_saved');
-      $('voice-text').className = 'voice-text';
-    }
-    renderTries();
-
-    // ✅ نام خودکار پیدا شد → همین‌جا تمام (سؤال تأیید نمایش داده شده)
-    if (state.autoMatched || state.matched) return;
-
-    // متن شنیده شد ولی مطمئن نبودیم → یک تطبیق نهایی
-    if (state.voiceHeard) {
-      matchHeardName(state.voiceHeard, true).then(function (hit) {
-        if (hit) return;
-        askServerSTT();          // تشخیص محلی جواب نداد → سرور
-      });
-      return;
-    }
-    // تشخیص محلی چیزی نشنید → مستقیم سرور
-    askServerSTT();
-  }
-
-  /**
-   * صدا را به سرویس آنلاین (Whisper) می‌فرستد.
-   * این همان چیزی است که وقتی Web Speech در اندروید کار نمی‌کند نجات می‌دهد.
-   */
-  function askServerSTT() {
-    if (state.matched || state.autoMatched) return;
-    if (!state.voiceBlob) {
-      promptManual(SpeechRec ? afterFailKey() : 'manual_no_stt');
-      return;
-    }
-    sttBusy(true);
-    serverTranscribe(state.voiceBlob, state.voiceBlob.type).then(function (text) {
-      if (!text) {
-        sttBusy(false);
-        promptManual(afterFailKey());
-        return;
-      }
-      state.voiceHeard = text;
-      state.voiceText = text;
-      state.voiceNameSource = 'voice_server';
-      if ($('voice-text')) {
-        $('voice-text').textContent = t('voice_heard', text);
-        $('voice-text').className = 'voice-text ok';
-      }
-      return matchHeardName(text, true);   // خودش در صورت شکست راهنمایی می‌کند
-    }).catch(function (e) {
-      console.warn('serverTranscribe:', e);
-      sttBusy(false);
-      // اگر تابع سرور نبود، همان ورود دستی
-      promptManual(afterFailKey());
-      if (String(e && e.message).indexOf('404') !== -1) {
-        toast(t('stt_not_setup'));
-      }
-    });
-  }
-
-  // ══════════════════════════════════════════════════════════
-  // تطبیق نام شنیده‌شده با نزدیک‌ترین دانشجو در profiles
-  // ══════════════════════════════════════════════════════════
-  function showResolved(student, heard) {
-    state.matched = {
-      id: student.id,
-      name: student.name,
-      student_no: student.student_no || null
-    };
-    state.nameConfirmed = false;
-    var box = $('name-resolved');
-    box.className = 'match-box match-ok';
-    // سؤال صریح: «اسمت X هست، درسته؟»
-    $('name-resolved-text').innerHTML =
-      (heard ? esc(t('resolved_heard', heard)) + '<br>' : '') +
-      t('resolved_ask', esc(student.name) +
-        (student.student_no ? ' <span class="hint">(' + esc(student.student_no) + ')</span>' : ''));
-    show(box);
-    show($('btn-name-change'));
-    hide($('name-manual'));
-    var wrap = $('name-write-wrap');
-    if (wrap) wrap.classList.remove('attention');
-    var noWrap = $('field-no');
-    if (noWrap) noWrap.classList.remove('attention');
-    $('in-name').value = student.name;
-    $('in-no').value = student.student_no || $('in-no').value;
-    haptic.ok();
-  }
-
-  /** دانشجو تأیید کرد «بله، درسته» */
-  function confirmName() {
-    if (!state.matched) return;
-    state.nameConfirmed = true;
-    hide($('name-manual'));
-    hide($('btn-name-change'));
-    var box = $('name-resolved');
-    if (box) box.className = 'match-box match-ok confirmed';
-    $('name-resolved-text').innerHTML = t('resolved_confirmed', esc(state.matched.name));
-    haptic.ok();
-    toast(t('toast_confirmed'));
-    try { $('btn-identity').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
-  }
-
-  /**
-   * نامِ شنیده‌شده از ویس را با نزدیک‌ترین دانشجو تطبیق می‌دهد.
-   * از همان الگوریتم کلمه‌به‌کلمهٔ ۳ کلمهٔ اول استفاده می‌کند.
-   * اگر مطمئن نبود، هیچ‌چیز حدس نمی‌زند و از دانشجو می‌خواهد خودش بنویسد.
-   */
-  function matchHeardName(heard, afterRecording) {
-    return pickBestStudent(heard).then(function (res) {
-      if (isConfident(res)) {
-        showResolved({
-          id: res.row.id, name: res.row.name, student_no: res.row.student_id,
-        }, heard);
-        return res.row;
-      }
-      if (res.reason === 'ambiguous') promptManual('manual_ambiguous');
-      else if (res.reason === 'short') {
-        promptManual(afterRecording ? afterFailKey() : 'manual_short');
-      } else {
-        promptManual(afterRecording ? afterFailKey() : 'manual_unsure');
-      }
-      return null;
-    });
-  }
-
-  /** طول بلندترین زیررشتهٔ مشترک */
+  /** طول بلندترین زیررشتهٔ مشترک (برای شباهت حرفی) */
   function lcs(a, b) {
     var m = a.length, n = b.length;
     if (!m || !n) return 0;
@@ -1562,66 +1044,287 @@
     return prev[n];
   }
 
-  // ── ورود دستی نام (هیچ فهرستی به دانشجو نشان داده نمی‌شود) ──
-  /**
-   * وقتی تطبیق خودکار مطمئن نبود یا دانشجو گفت «اسم من این نیست»،
-   * او را به نوشتن نام خودش راهنمایی می‌کنیم.
-   * ⚠️ عمداً هیچ فهرستی از دانشجوها نمایش داده نمی‌شود — حریم خصوصی.
-   */
-  function promptManual(hintKey) {
-    state.matched = null;
-    hide($('name-resolved'));
-
-    var key = hintKey || 'manual_hint';
-    var wantsNo = (key === 'manual_unsure' || key === 'manual_ambiguous');
-
-    var box = $('name-manual');
-    if (box) {
-      var txt = $('name-manual-text');
-      // innerHTML چون بعضی پیام‌ها روی «شمارهٔ دانشجویی» تأکید دارند
-      if (txt) txt.innerHTML = t(key);
-      show(box);
-    }
-
-    // فیلد نوشتن نام همیشه برجسته شود
-    var wrap = $('name-write-wrap');
-    if (wrap) wrap.classList.add('attention');
-    // و اگر پیام دربارهٔ شمارهٔ دانشجویی است، آن فیلد هم برجسته شود
-    var noWrap = $('field-no');
-    if (noWrap) noWrap.classList.toggle('attention', wantsNo);
-
-    var input = $(wantsNo ? 'in-no' : 'in-name');
-    var target = wantsNo ? noWrap : wrap;
-    if (input) {
-      try { input.focus(); } catch (e) { /* نادیده */ }
-    }
-    try { if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* نادیده */ }
+  // ══════════════════════════════════════════════════════════
+  // قدم ۲ — ضبط ۶ ثانیه‌ای ویس نام
+  // ══════════════════════════════════════════════════════════
+  function setRecFill(pct) {
+    var f = $('rec-fill');
+    if (f) f.style.width = Math.max(0, Math.min(100, pct)) + '%';
   }
 
-  function clearResolved() {
-    promptManual('manual_wrong');
+  function startRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast(t('rec_no_support'));
+      state.voiceSkipped = true;
+      maybeAskConfirm();
+      return;
+    }
+    clearVoice();
+    hide($('rec-done'));
+    show($('rec-live'));
+    $('btn-rec').disabled = true;
+    $('btn-rec').classList.add('recording');
+    setRecFill(0);
+    recLeft = REC_SECONDS;
+    if ($('rec-count')) $('rec-count').textContent = fa(recLeft);
+
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(function (stream) {
+        mediaStream = stream;
+        chunks = [];
+        var types = ['audio/webm;codecs=opus', 'audio/webm',
+                     'audio/ogg;codecs=opus', 'audio/mp4', ''];
+        var mime = '';
+        for (var i = 0; i < types.length; i++) {
+          if (!types[i] || (window.MediaRecorder && MediaRecorder.isTypeSupported(types[i]))) {
+            mime = types[i]; break;
+          }
+        }
+        try {
+          mediaRecorder = mime ? new MediaRecorder(stream, { mimeType: mime })
+                               : new MediaRecorder(stream);
+        } catch (e) {
+          mediaRecorder = new MediaRecorder(stream);
+        }
+        mediaRecorder.ondataavailable = function (e) {
+          if (e.data && e.data.size) chunks.push(e.data);
+        };
+        mediaRecorder.onstop = onRecDone;
+        mediaRecorder.start();
+
+        recTimer = setInterval(function () {
+          recLeft--;
+          if ($('rec-count')) $('rec-count').textContent = fa(Math.max(0, recLeft));
+          setRecFill((REC_SECONDS - recLeft) / REC_SECONDS * 100);
+          if (recLeft <= 0) stopRecording();
+        }, 1000);
+      })
+      .catch(function (e) {
+        console.warn('mic error', e);
+        clearInterval(recTimer); recTimer = null;
+        hide($('rec-live'));
+        $('btn-rec').disabled = false;
+        $('btn-rec').classList.remove('recording');
+        toast(t('rec_denied'));
+        // بدون میکروفن هم می‌تواند ادامه دهد
+        state.voiceSkipped = true;
+        maybeAskConfirm();
+      });
+  }
+
+  function stopRecording() {
+    clearInterval(recTimer);
+    recTimer = null;
+    var b = $('btn-rec');
+    if (b) { b.classList.remove('recording'); b.disabled = false; }
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      try { mediaRecorder.stop(); } catch (e) { onRecDone(); }
+    } else {
+      onRecDone();
+    }
+  }
+
+  function onRecDone() {
+    if (mediaStream) {
+      try { mediaStream.getTracks().forEach(function (tr) { tr.stop(); }); } catch (e) {}
+      mediaStream = null;
+    }
+    hide($('rec-live'));
+    var b = $('btn-rec');
+    if (b) { b.classList.remove('recording'); b.disabled = false; }
+
+    if (chunks.length) {
+      state.voiceBlob = new Blob(chunks, { type: chunks[0].type || 'audio/webm' });
+      if (state.voiceUrl) URL.revokeObjectURL(state.voiceUrl);
+      state.voiceUrl = URL.createObjectURL(state.voiceBlob);
+      var a = $('rec-audio');
+      if (a) a.src = state.voiceUrl;
+      show($('rec-done'));
+      haptic.ok();
+    }
+    maybeAskConfirm();
   }
 
   function clearVoice() {
     if (state.voiceUrl) URL.revokeObjectURL(state.voiceUrl);
     state.voiceBlob = null;
     state.voiceUrl = null;
-    state.voiceText = '';
-    state.voiceNameSource = null;
-    state.voiceHeard = '';
-    state.voiceDone = false;
-    state.autoMatched = false;
-    hide($('voice-box'));
-    hide($('name-resolved'));
-    hide($('name-manual'));
-    $('voice-audio').src = '';
-    $('voice-text').textContent = '';
-    $('voice-title').textContent = t('voice_listening');
-    renderTries();
+    state.voiceSkipped = false;
+    hide($('rec-done'));
+    hide($('rec-live'));
+    var a = $('rec-audio');
+    if (a) a.src = '';
+    setRecFill(0);
   }
 
   // ══════════════════════════════════════════════════════════
-  // هویت
+  // تطبیق زندهٔ نام با پروفایل دانشجوها
+  // الگوریتم: «سه کلمهٔ اول» (بیشتر دانشجوها چهار اسم دارند)
+  // ══════════════════════════════════════════════════════════
+  function scheduleLiveMatch() {
+    clearTimeout(matchTimer);
+    matchTimer = setTimeout(runLiveMatch, MATCH_DEBOUNCE);
+  }
+
+  function runLiveMatch() {
+    var typed = normName($('in-name') ? $('in-name').value : '');
+    var no = toEnDigits($('in-no') ? $('in-no').value : '').trim();
+
+    // ۱) شمارهٔ دانشجویی، قطعی‌ترین راه است
+    if (no && no.replace(/[^0-9A-Za-z]/g, '').length >= 4) {
+      matchStudent(no).then(function (res) {
+        if (res && res.student_id) {
+          setCandidate({ id: res.student_id, name: res.name, student_no: no }, true);
+        } else {
+          matchByTypedName(typed);
+        }
+      });
+      return;
+    }
+    matchByTypedName(typed);
+  }
+
+  function matchByTypedName(typed) {
+    if (!typed || normKey(typed).length < 3) { setCandidate(null); return; }
+    if (normKey(typed).length < 6) { setCandidate(null); return; }
+    pickBestStudent(typed).then(function (res) {
+      if (isConfident(res)) {
+        setCandidate({
+          id: res.row.id, name: res.row.name, student_no: res.row.student_id,
+        }, false);
+      } else {
+        setCandidate(null);
+      }
+    });
+  }
+
+  function setCandidate(c, definitive) {
+    state.candidate = c;
+    state.candidateDefinitive = !!definitive;
+    renderLiveMatch();
+    maybeAskConfirm();
+  }
+
+  /** نشانگر کوچک زیر فیلد: «✓ پیدایت کردم: …» */
+  function renderLiveMatch() {
+    var box = $('identity-result');
+    if (!box) return;
+    if (!state.candidate) { hide(box); return; }
+    box.className = 'match-box match-ok';
+    box.innerHTML = t('live_found', esc(state.candidate.name));
+    show(box);
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // سؤال تأیید: «آیا تو X هستی؟»
+  // وقتی نام + ویس آماده شد، ۲ ثانیه بعد پرسیده می‌شود.
+  // ══════════════════════════════════════════════════════════
+  function maybeAskConfirm() {
+    clearTimeout(confirmTimer);
+    if (!state.candidate) return;
+    if (state.identity) return;                       // قبلاً شناسایی شده
+    if (!state.voiceBlob && !state.voiceSkipped) return;
+    if ($('card-confirm') && !$('card-confirm').classList.contains('hidden')) return;
+
+    confirmTimer = setTimeout(function () {
+      if (!state.candidate || state.identity) return;
+      if (!state.voiceBlob && !state.voiceSkipped) return;
+      askConfirm(state.candidate);
+    }, CONFIRM_DELAY);
+  }
+
+  function askConfirm(cand) {
+    state.pending = cand;
+    var el = $('confirm-name');
+    if (el) el.textContent = cand.name;
+    hide($('card-name'));
+    hide($('card-notyou'));
+    show($('card-confirm'));
+    haptic.ok();
+  }
+
+  /** «بله، من هستم» */
+  function confirmYes() {
+    var c = state.pending || state.candidate;
+    if (!c) { backToName(); return; }
+    var no = toEnDigits($('in-no') ? $('in-no').value : '').trim();
+    state.identity = {
+      name: c.name,
+      student_no: c.student_no || no || null,
+      student_id: c.id || null,
+      matched_name: c.name,
+    };
+    saveIdentity(state.identity);
+    hide($('card-confirm'));
+    $('hero-title').textContent = t('welcome', c.name.split(' ')[0] || '');
+    renderHeroPill();
+    haptic.ok();
+    if (state.identity.student_id) {
+      resolveWriter(state.identity.student_id, c.name).then(function (w) {
+        state.writer = w;
+        renderWhoChip();
+      });
+    }
+    revealForm();
+  }
+
+  /** «نه، من نیستم» → دانشجوی جدید یا شماییم؟ */
+  function confirmNo() {
+    state.pending = null;
+    hide($('card-confirm'));
+    show($('card-notyou'));
+  }
+
+  /** «دانشجوی جدیدم» → با همان نام نوشته‌شده ادامه بده (پروفایلی وصل نمی‌شود) */
+  function notYouNew() {
+    var typed = normName($('in-name') ? $('in-name').value : '');
+    var no = toEnDigits($('in-no') ? $('in-no').value : '').trim();
+    state.identity = {
+      name: typed || '—',
+      student_no: no || null,
+      student_id: null,
+      matched_name: null,
+      is_new: true,
+    };
+    saveIdentity(state.identity);
+    hide($('card-notyou'));
+    hide($('card-confirm'));
+    $('hero-title').textContent = t('welcome', (typed || '').split(' ')[0] || '');
+    renderHeroPill();
+    haptic.tap();
+    revealForm();
+  }
+
+  /** «دانشجوی شماییم» → پاک کن و دوباره بنویس و بخوان */
+  function notYouExisting() {
+    hide($('card-notyou'));
+    hide($('card-confirm'));
+    state.candidate = null;
+    state.pending = null;
+    clearVoice();
+    setRecFill(0);
+    if ($('in-name')) $('in-name').value = '';
+    if ($('in-no')) $('in-no').value = '';
+    var box = $('identity-result');
+    if (box) {
+      box.className = 'match-box match-warn';
+      box.innerHTML = esc(t('rewrite_hint'));
+      show(box);
+    }
+    show($('card-name'));
+    toast(t('rewrite_toast'));
+    try { $('in-name').focus(); } catch (e) {}
+  }
+
+  function backToName() {
+    hide($('card-confirm'));
+    hide($('card-notyou'));
+    show($('card-name'));
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // هویت — ذخیره و بازیابی
   // ══════════════════════════════════════════════════════════
   function loadIdentity() {
     try {
@@ -1640,21 +1343,14 @@
     hide($('card-files'));
     hide($('card-note'));
     hide($('card-done'));
+    hide($('card-confirm'));
+    hide($('card-notyou'));
     hide($('identity-result'));
-    hide($('name-resolved'));
-    hide($('name-manual'));
-    var wrap = $('name-write-wrap');
-    if (wrap) wrap.classList.remove('attention');
-    var noWrap = $('field-no');
-    if (noWrap) noWrap.classList.remove('attention');
-    state.nameConfirmed = false;
-    state.autoMatched = false;
-    state.matched = null;
-    renderTries();
+    state.candidate = null;
+    state.pending = null;
+    state.voiceSkipped = false;
+    clearVoice();
     updateSubmitBar();
-    var u = tgUser();
-    var input = $('in-name');
-    if (!input.value && u) input.value = [u.first_name, u.last_name].filter(Boolean).join(' ');
   }
 
   function renderWhoChip() {
@@ -1664,92 +1360,42 @@
       '<span>👤</span><b>' + esc(id.name || '—') + '</b>' +
       (linked ? '<span style="color:#13774f">' + esc(t('who_linked')) + '</span>'
               : '<span style="color:#8a5600">' + esc(t('who_unlinked')) + '</span>') +
-      (state.writer
-        ? '<span>✍️ ' + esc(state.writer.agent_name) + '</span>'
-        : '') +
+      (state.writer ? '<span>✍️ ' + esc(state.writer.agent_name) + '</span>' : '') +
       '<button class="link-btn" data-edit-id="1" type="button">' + esc(t('who_edit')) + '</button>';
   }
 
+  /**
+   * دکمهٔ «ادامه».
+   * اگر تطبیقی داشتیم → سؤال تأیید؛ وگرنه با نام نوشته‌شده ادامه بده
+   * (کارشناسان بعداً به پروفایل وصلش می‌کنند).
+   */
   function doIdentity() {
-    var typed = normName($('in-name').value);
-    var no = toEnDigits($('in-no').value).trim();
-
-    // نام باید مشخص باشد: از تطبیق خودکار ویس، یا نوشتهٔ خودِ دانشجو.
-    // ⚠️ نوشتن دستی همیشه کافی است — قبلاً بی‌دلیل اجبار می‌کرد
-    //    که اول میکروفن زده شود و دانشجو گیر می‌افتاد.
-    var chosen = state.matched;
-    var name = chosen ? chosen.name : typed;
-    if (!name || name.length < 3) {
-      promptManual(state.voiceDone ? 'manual_short' : 'manual_voice_or_type');
+    var typed = normName($('in-name') ? $('in-name').value : '');
+    if (!typed || typed.length < 3) {
       toast(t('toast_write_name'));
+      try { $('in-name').focus(); } catch (e) {}
       return;
     }
-    if (no && no.replace(/[^0-9A-Za-z]/g, '').length < 4) {
-      toast(t('toast_bad_no'));
-      $('in-no').focus();
-      return;
-    }
+    // اگر تطبیق آماده است، همان سؤال تأیید را نشان بده
+    if (state.candidate) { askConfirm(state.candidate); return; }
 
-    state.busy = true;
-    var btn = $('btn-identity');
-    btn.disabled = true;
-
-    // اگر از فهرست انتخاب شده، همان را قطعی می‌گیریم؛ وگرنه دوباره تطبیق می‌زنیم
-    var lookup = chosen
-      ? Promise.resolve({ student_id: chosen.id, name: chosen.name,
-                          student_no: chosen.student_no })
-      : matchStudent(name + ' ' + no);
-
-    lookup
-      .then(function (res) {
-        state.identity = {
-          name: name,
-          student_no: res.student_no || no || null,
-          student_id: res.student_id || null,
-          matched_name: res.name || null
-        };
-        saveIdentity(state.identity);
-
-        // نام ثبت شد → شمارندهٔ تلاش صوتی برای دفعهٔ بعد از نو
-        state.recTries = 0;
-        renderTries();
-
-        var box = $('identity-result');
-        if (res.student_id) {
-          box.className = 'match-box match-ok';
-          box.innerHTML = t('match_ok', esc(res.name));
-        } else {
-          box.className = 'match-box match-warn';
-          box.innerHTML = esc(t('match_warn')) +
-            '<br><small>' + esc(t('match_warn_hint')) + '</small>';
-        }
-        show(box);
-        haptic.ok();
-        $('hero-title').textContent = t('welcome', name.split(' ')[0] || '');
-        renderHeroPill();
-        // مسیریابی: نویسندهٔ مربوط به این دانشجو
-        if (state.identity.student_id) {
-          resolveWriter(state.identity.student_id, name).then(function (w) {
-            state.writer = w;
-            renderWhoChip();
-            if (w) {
-              box.innerHTML += '<br>' + t('match_ok_writer', esc(w.agent_name));
-            } else {
-              box.innerHTML += '<br>' + esc(t('match_warn'));
-            }
-          });
-        }
-        setTimeout(revealForm, 800);
-      })
-      .catch(function (e) {
-        haptic.err();
-        toast(t('toast_identity_fail', e.message || e));
-      })
-      .then(function () { state.busy = false; btn.disabled = false; });
+    var no = toEnDigits($('in-no') ? $('in-no').value : '').trim();
+    state.identity = {
+      name: typed,
+      student_no: no || null,
+      student_id: null,
+      matched_name: null,
+    };
+    saveIdentity(state.identity);
+    $('hero-title').textContent = t('welcome', typed.split(' ')[0] || '');
+    renderHeroPill();
+    revealForm();
   }
 
   function revealForm() {
     hide($('card-name'));
+    hide($('card-confirm'));
+    hide($('card-notyou'));
     show($('card-files'));
     show($('card-note'));
     renderWhoChip();
@@ -1764,11 +1410,9 @@
     var avatar = $('hero-avatar');
     var name = (state.identity && state.identity.name) || '';
     if (avatar) {
-      // حرف اول نام روی دایرهٔ گرادیانی — مثل طرح مرجع
       avatar.textContent = name ? name.trim().charAt(0) : (u && u.first_name ? u.first_name.charAt(0) : '؟');
     }
     if (!pill) return;
-    // کوتاه و خوانا نگه داشته می‌شود تا در سرصفحه بریده نشود
     var bits = [];
     if (u && u.username) bits.push('@' + u.username);
     if (state.identity && state.identity.student_id) bits.push(t('pill_linked'));
@@ -1777,9 +1421,10 @@
   }
 
   function editIdentity() {
-    $('in-name').value = state.identity ? state.identity.name : '';
-    $('in-no').value = state.identity ? (state.identity.student_no || '') : '';
+    if ($('in-name')) $('in-name').value = state.identity ? state.identity.name : '';
+    if ($('in-no')) $('in-no').value = state.identity ? (state.identity.student_no || '') : '';
     state.identity = null;
+    state.writer = null;
     try { localStorage.removeItem(LS_IDENTITY); } catch (e) {}
     clearVoice();
     showNameCard();
@@ -2383,11 +2028,27 @@
     ['send', 'status', 'chat'].forEach(function (t) {
       on($('tab-' + t), 'click', function () { setTab(t); });
     });
-    on($('btn-mic'), 'click', function () {
-      if (state.recording) return;          // ضبط خودکار قطع می‌شود؛ دکمهٔ «تمام» نداریم
-      startRecording();
+    // ── قدم ۲: ضبط ۶ ثانیه‌ای ویس نام ──
+    //    ⚠️ این ضبط فقط «نشانهٔ صدا» است تا نویسنده بشنود.
+    //    هیچ تشخیص گفتاری‌ای انجام نمی‌شود.
+    on($('btn-rec'), 'click', startRecording);
+    on($('btn-rec-again'), 'click', startRecording);
+
+    // ── سه قدم شناسایی: تطبیق زنده با هر تغییر ──
+    on($('in-name'), 'input', function () {
+      state.candidate = null;
+      hide($('identity-result'));
+      scheduleLiveMatch();
     });
-    on($('btn-name-yes'), 'click', confirmName);
+    on($('in-no'), 'input', scheduleLiveMatch);
+
+    // ── سؤال تأیید: «آیا تو X هستی؟» ──
+    on($('btn-confirm-yes'), 'click', confirmYes);
+    on($('btn-confirm-no'), 'click', confirmNo);
+    // ── دانشجوی جدید یا قدیمی ──
+    on($('btn-new-student'), 'click', notYouNew);
+    on($('btn-existing-student'), 'click', notYouExisting);
+
     // میکروفن کیبورد گوشی: فوکوس روی فیلد تا کیبورد (با دکمهٔ میکروفن گوگل) باز شود
     on($('btn-kbd-mic'), 'click', function () {
       var inp = $('in-name');
@@ -2395,13 +2056,6 @@
       try { inp.focus(); } catch (e) { /* نادیده */ }
       try { inp.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* نادیده */ }
       toast(t('kbd_mic_toast'));
-    });
-    on($('btn-name-change'), 'click', clearResolved);
-    // نامِ دستی: اگر دانشجو خودش تایپ کرد، تطبیق خودکار را کنار بگذار
-    on($('in-name'), 'input', function () {
-      state.matched = null;
-      state.nameConfirmed = false;
-      hide($('name-resolved'));
     });
 
     // ── تب چت ──

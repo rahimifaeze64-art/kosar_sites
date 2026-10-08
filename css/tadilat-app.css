@@ -323,6 +323,125 @@ textarea { resize: vertical; min-height: 96px; font-weight: 600; line-height: 1.
   color: var(--muted);
 }
 
+/* ══════════════ جریان شناسایی — سه قدم ══════════════ */
+.step-block {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 0;
+  border-bottom: 1px dashed rgba(120, 130, 220, .22);
+}
+.step-block:last-of-type { border-bottom: none; }
+.step-badge {
+  flex: none;
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(145deg, #a99bff, #6c8cff);
+  color: #fff; font-size: 13.5px; font-weight: 900;
+  box-shadow: 0 6px 14px -6px rgba(108, 140, 255, .95);
+}
+.step-body-wrap { flex: 1; min-width: 0; }
+.step-body-wrap input {
+  width: 100%; padding: 14px 16px; border-radius: 18px;
+  border: 1px solid var(--line); background: #fbfbff; color: var(--ink);
+  font-family: inherit; font-size: 15.5px; font-weight: 700; outline: none;
+}
+.step-body-wrap input:focus {
+  border-color: var(--accent); background: #fff;
+  box-shadow: 0 0 0 4px rgba(69, 96, 240, .13);
+}
+.step-hint {
+  margin: 7px 2px 0; font-size: 12px; line-height: 1.9;
+  font-weight: 700; color: var(--muted);
+}
+
+/* ── دکمهٔ ضبط ۶ ثانیه‌ای ── */
+.rec-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; margin-top: 10px; padding: 15px 18px;
+  border: none; border-radius: 20px; cursor: pointer;
+  background: linear-gradient(145deg, #a99bff, #6c8cff);
+  color: #fff; font-family: inherit; font-size: 14.5px; font-weight: 800;
+  box-shadow: var(--sh-tile), 0 14px 26px -16px rgba(108, 140, 255, .95);
+  transition: transform .14s;
+}
+.rec-btn:active { transform: scale(.97); }
+.rec-btn.recording {
+  background: linear-gradient(145deg, #ff9aae, #ef445f);
+  animation: pulse 1.3s ease-in-out infinite;
+}
+.rec-btn:disabled { opacity: .55; cursor: default; }
+
+.rec-live {
+  margin-top: 12px; padding: 14px 16px; border-radius: 20px;
+  background: #fbfbff; box-shadow: inset 0 2px 5px rgba(96, 108, 196, .10);
+}
+.rec-head {
+  display: flex; align-items: center; gap: 9px;
+  font-size: 13.5px; font-weight: 800; color: var(--ink-2);
+}
+.rec-head .dot-live {
+  width: 10px; height: 10px; border-radius: 50%; flex: none;
+  background: #ef445f; animation: pulse 1.2s ease-in-out infinite;
+}
+.rec-head b { flex: 1; }
+.rec-count {
+  font-size: 20px; font-weight: 900; color: #ef445f; min-width: 28px; text-align: center;
+}
+.rec-track {
+  height: 8px; border-radius: 999px; margin-top: 10px; overflow: hidden;
+  background: #e7e9f8;
+}
+.rec-fill {
+  height: 100%; width: 0%; border-radius: 999px;
+  background: linear-gradient(90deg, #a99bff, #ef445f);
+  transition: width .95s linear;
+}
+
+.rec-done {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  margin-top: 12px; padding: 13px 16px; border-radius: 20px;
+  background: #e9fbf3; box-shadow: inset 0 0 0 1px #9fe6c6;
+  font-size: 13.5px; font-weight: 800; color: #13774f;
+}
+.rec-done i { font-size: 17px; }
+.rec-done audio { width: 100%; height: 36px; margin-top: 4px; }
+
+/* ── کارت تأیید هویت ── */
+.confirm-hero { text-align: center; font-size: 44px; margin-bottom: 6px; }
+.confirm-title {
+  margin: 0 0 12px; text-align: center;
+  font-size: 18px; font-weight: 900; color: var(--ink);
+}
+.confirm-name {
+  text-align: center; padding: 15px 18px; border-radius: 20px;
+  background: linear-gradient(145deg, #eef0ff, #f7f8ff);
+  box-shadow: inset 0 0 0 1px rgba(120, 130, 220, .18);
+  font-size: 18px; font-weight: 900; color: var(--accent);
+  margin-bottom: 12px; line-height: 1.7;
+}
+.center-actions { justify-content: center; }
+
+/* ── انتخاب: دانشجوی جدید یا قدیمی ── */
+.choice-btn {
+  display: flex; align-items: center; gap: 14px; width: 100%;
+  margin-top: 12px; padding: 16px 18px;
+  border: 1px solid var(--line); border-radius: 20px;
+  background: #fff; color: var(--ink); text-align: start;
+  font-family: inherit; cursor: pointer;
+  box-shadow: var(--sh-card);
+}
+.choice-btn i { font-size: 20px; color: var(--muted); flex: none; }
+.choice-btn span { display: flex; flex-direction: column; gap: 3px; }
+.choice-btn b { font-size: 14.5px; font-weight: 800; }
+.choice-btn small { font-size: 11.5px; font-weight: 700; color: var(--muted); line-height: 1.7; }
+.choice-btn:active { transform: scale(.985); }
+.choice-primary {
+  background: linear-gradient(145deg, #a99bff, #6c8cff);
+  color: #fff; border-color: transparent;
+}
+.choice-primary i, .choice-primary small { color: rgba(255, 255, 255, .9); }
+
 /* ── تأیید نام + شمارندهٔ تلاش ── */
 .confirm-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .pill-ok {
