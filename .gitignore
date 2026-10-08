@@ -48,3 +48,8 @@ tts_service/out.wav
 tts_service/voices/*.wav
 tts_service/voices/*.flac
 tts_service/voices/*.mp3
+# ── ربات تلگرام: وضعیت و لاگ هرگز commit نشوند ──
+telegram-bot/bot_state.json
+telegram-bot/bot_state.json.tmp
+telegram-bot/bot.log
+telegram-bot/config.json

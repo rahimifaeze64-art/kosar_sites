@@ -220,6 +220,24 @@ class Telegram:
     def get_menu_button(self):
         return self.call("getChatMenuButton")
 
+    # ── Webhook (حالت Supabase Edge Function) ──
+    def set_webhook(self, url, secret=None, drop_pending=True):
+        params = {
+            "url": url,
+            "allowed_updates": ["message", "callback_query"],
+            "drop_pending_updates": bool(drop_pending),
+            "max_connections": 40,
+        }
+        if secret:
+            params["secret_token"] = secret
+        return self.call("setWebhook", params)
+
+    def delete_webhook(self, drop_pending=False):
+        return self.call("deleteWebhook", {"drop_pending_updates": bool(drop_pending)})
+
+    def webhook_info(self):
+        return self.call("getWebhookInfo")
+
     def send_chat_action(self, chat_id, action="typing"):
         """نشان می‌دهد ربات مشغول است. اگر نشد، کار متوقف نمی‌شود."""
         try:
@@ -1073,7 +1091,16 @@ class TadilatBot:
                 log("بررسی اولیهٔ درخواست‌ها ناموفق:\n%s" % traceback.format_exc(), "WARN")
 
         offset = self.state.data.get("offset")
+        # ── مهلت اجرا (برای GitHub Actions که هر بار محدود اجرا می‌شود) ──
+        max_seconds = int(self.cfg.get("max_run_seconds") or 0)
+        started_at = time.time()
+        if max_seconds:
+            log("حالت زمان‌دار: %d ثانیه (%.1f ساعت) — بعد از آن تمیز خارج می‌شود"
+                % (max_seconds, max_seconds / 3600.0))
         while True:
+            if max_seconds and (time.time() - started_at) >= max_seconds:
+                log("مهلت اجرا تمام شد — خروج تمیز (offset=%s)" % offset)
+                return
             try:
                 updates = self.tg.get_updates(offset, int(self.cfg.get("poll_timeout") or 50))
                 for update in updates:
@@ -1273,6 +1300,14 @@ def main():
     parser.add_argument("--init-config", action="store_true",
                         help="ساخت config.json از روی config.example.json")
     parser.add_argument("--config", default=CONFIG_FILE, help="مسیر فایل تنظیمات")
+    parser.add_argument("--webhook", default=None,
+                        help="ثبت Webhook روی Supabase Edge Function. "
+                             "برای حذف: --webhook off")
+    parser.add_argument("--webhook-info", action="store_true",
+                        help="نمایش وضعیت Webhook فعلی")
+    parser.add_argument("--max-seconds", type=int, default=0,
+                        help="حداکثر مدت اجرا به ثانیه (برای GitHub Actions) — "
+                             "۰ یعنی بی‌نهایت")
     args = parser.parse_args()
 
     CONFIG_FILE = args.config
@@ -1307,6 +1342,49 @@ def main():
     except Exception as exc:  # noqa: BLE001
         log("راه‌اندازی پروکسی نشد (بی‌اهمیت): %s" % exc, "WARN")
 
+    # ── حالت Webhook (Supabase Edge Function) ──
+    if args.webhook_info:
+        tg = Telegram(cfg["telegram_bot_token"])
+        info = tg.webhook_info() or {}
+        url = info.get("url") or ""
+        print("\n=== وضعیت Webhook ===")
+        if url:
+            print("  ✅ فعال → %s" % url)
+            print("  در انتظار پردازش: %s" % (info.get("pending_update_count") or 0))
+            if info.get("last_error_message"):
+                print("  ⚠️ آخرین خطا: %s" % info["last_error_message"])
+        else:
+            print("  ℹ️ Webhook فعال نیست — ربات با getUpdates کار می‌کند")
+        return 0
+
+    if args.webhook is not None:
+        tg = Telegram(cfg["telegram_bot_token"])
+        target = str(args.webhook).strip()
+        if target.lower() in ("off", "none", "delete", "0"):
+            tg.delete_webhook(drop_pending=False)
+            print("✅ Webhook حذف شد — ربات روی این دستگاه با getUpdates کار می‌کند.")
+            return 0
+        if not target.startswith("https://"):
+            print("❌ آدرس Webhook باید https باشد. مثال:")
+            print("   --webhook https://<ref>.supabase.co/functions/v1/telegram-bot")
+            return 2
+        secret = (cfg.get("webhook_secret") or "").strip()
+        if not secret:
+            print("⚠️ webhook_secret در config خالی است — بدون احراز هویت ثبت می‌شود.")
+            print("   بهتر است یک رشتهٔ تصادفی بگذارید (همان در Secrets سوپابیس).")
+        try:
+            tg.set_webhook(target, secret or None)
+        except TelegramError as exc:
+            print("❌ ثبت Webhook ناموفق: %s" % exc)
+            return 1
+        print("✅ Webhook ثبت شد → %s" % target)
+        if secret:
+            print("   با کلید امنیتی %s…%s" % (secret[:4], secret[-4:]))
+        print("\nحالا ربات روی Supabase پاسخ می‌دهد. اگر می‌خواهید")
+        print("روی این کامپیوتر هم اجرا شود، اول Webhook را حذف کنید")
+        print("(چون تلگرام هم‌زمان اجازهٔ هر دو را نمی‌دهد).")
+        return 0
+
     if args.check:
         return 0 if TadilatBot(cfg).check() else 1
 
@@ -1330,6 +1408,8 @@ def main():
         return 2
 
     log("شروع پوستهٔ ربات تعدیلات…")
+    if args.max_seconds:
+        cfg["max_run_seconds"] = int(args.max_seconds)
     while True:
         try:
             TadilatBot(cfg).run()
