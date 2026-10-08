@@ -220,6 +220,32 @@ class Telegram:
     def get_menu_button(self):
         return self.call("getChatMenuButton")
 
+    def send_chat_action(self, chat_id, action="typing"):
+        """نشان می‌دهد ربات مشغول است. اگر نشد، کار متوقف نمی‌شود."""
+        try:
+            return self.call("sendChatAction",
+                             {"chat_id": chat_id, "action": action}, timeout=15)
+        except TelegramError as exc:
+            log("sendChatAction ناموفق: %s" % exc, "WARN")
+
+    def get_file(self, file_id):
+        """مسیر فایل روی سرور تلگرام را می‌گیرد."""
+        return self.call("getFile", {"file_id": file_id}, timeout=30)
+
+    def download_file(self, file_path):
+        """محتوای فایل را از تلگرام دانلود می‌کند (بایت)."""
+        url = "https://api.telegram.org/file/bot%s/%s" % (self.token, file_path)
+        last = None
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(url, timeout=180) as resp:
+                    return resp.read()
+            except Exception as exc:  # noqa: BLE001
+                last = exc
+                if attempt < 2:
+                    time.sleep(1.5 * (attempt + 1))
+        raise TelegramError("دانلود از تلگرام ناموفق: %s" % last)
+
 
 # ══════════════════════════════════════════════════════════════
 # وضعیت (offset و شناسه‌های اطلاع‌داده‌شده)
@@ -227,7 +253,7 @@ class Telegram:
 class State:
     def __init__(self, path):
         self.path = path
-        self.data = {"offset": None, "notified": []}
+        self.data = {"offset": None, "notified": [], "chats": {}}
         self.load()
 
     def load(self):
@@ -239,6 +265,7 @@ class State:
             if isinstance(loaded, dict):
                 self.data["offset"] = loaded.get("offset")
                 self.data["notified"] = loaded.get("notified") or []
+                self.data["chats"] = loaded.get("chats") or {}
         except Exception as exc:  # noqa: BLE001
             log("خواندن فایل وضعیت ناموفق (%r)" % (exc,), "WARN")
 
@@ -298,6 +325,88 @@ def menu_keyboard(url, text):
             {"text": "📤 " + text, "web_app": {"url": url}}
         ]]
     }
+
+
+# ── دکمه‌های ثابت منوی چت ──
+BTN_STATUS = "📋 وضعیت من"
+BTN_DUE = "⏰ تاریخ تحویل"
+BTN_FILES = "📁 فایل‌های من"
+BTN_NEW = "🆕 تعدیلات جدید"
+
+
+def main_keyboard():
+    """کیبورد ثابت پایین صفحه."""
+    return {
+        "keyboard": [
+            [{"text": BTN_STATUS}, {"text": BTN_DUE}],
+            [{"text": BTN_FILES}, {"text": BTN_NEW}],
+        ],
+        "resize_keyboard": True,
+        "is_persistent": True,
+    }
+
+
+def confirm_keyboard():
+    """بله / نه برای تأیید هویت."""
+    return {
+        "inline_keyboard": [[
+            {"text": "✅ بله، من هستم", "callback_data": "me:yes"},
+            {"text": "❌ نه، من نیستم", "callback_data": "me:no"},
+        ]]
+    }
+
+
+def skip_keyboard():
+    """رد کردن شمارهٔ دانشجویی."""
+    return {
+        "inline_keyboard": [[
+            {"text": "⏭ رد کردن", "callback_data": "num:skip"},
+        ]]
+    }
+
+
+TXT_INTRO = (
+    "سلام 👋 خوش آمدی به ربات <b>تعدیلات — شرکة الکوثر</b>\n\n"
+    "لطفاً <b>اسمت را بنویس</b> (نام، نام پدر، نام جد).\n"
+    "مثال: <i>محمد فاضل عباس الطالی</i>"
+)
+
+TXT_HELP_CHAT = (
+    "<b>راهنمای ربات</b>\n\n"
+    "۱) اسمت را می‌نویسی\n"
+    "۲) اگر لازم بود شمارهٔ دانشجویی را وارد می‌کنی\n"
+    "۳) تأیید می‌کنی که خودت هستی\n"
+    "۴) فایل‌های تعدیلات را می‌فرستی (از فایل‌ها، واتساپ یا هرجا)\n\n"
+    "<b>دکمه‌های پایین:</b>\n"
+    "📋 وضعیت من — وضعیت آخرین ارسال‌ها\n"
+    "⏰ تاریخ تحویل — زمان اعلام‌شده\n"
+    "📁 فایل‌های من — فایل‌های ارسالی\n"
+    "🆕 تعدیلات جدید — ارسال تازه\n\n"
+    "/reset — پاک کردن و شروع از اول"
+)
+
+STATUS_CHAT = {
+    "draft": "ناتمام",
+    "new": "دریافت شد ⏳",
+    "started": "شروع شد 🚀",
+    "in_progress": "در حال انجام ✍️",
+    "ready": "آماده تحویل 🎁",
+    "completed": "تحویل شد ✅",
+    "rejected": "رد شد ❌",
+}
+
+
+def fa_date(iso):
+    """تاریخ خوانا از ISO (ساده و بدون وابستگی)."""
+    if not iso:
+        return "—"
+    try:
+        txt = str(iso).replace("T", " ")[:16]
+        d, t = txt.split(" ")
+        y, m, dd = d.split("-")
+        return "%s/%s/%s — ساعت %s" % (dd, m, y, t)
+    except Exception:  # noqa: BLE001
+        return str(iso)[:16]
 
 
 KIND_FA = {
@@ -446,25 +555,43 @@ class TadilatBot:
         if chat_id is None or not media:
             return
 
+        frm = message.get("from") or {}
+        user_id = frm.get("id") or chat_id
+        ch = self._chat_state(user_id)
+
         req = self._latest_request(chat_id)
         if not req:
-            # هنوز در تلگرام ثبت‌نام نکرده → با نام پروفایل تلگرامش تلاش کن
-            frm = message.get("from") or {}
-            guess = " ".join(x for x in [frm.get("first_name"), frm.get("last_name")] if x)
-            detection = self.router.detect(guess) if guess else {"student_id": None}
+            # از اطلاعاتی که در گفتگو گرفته شده استفاده کن
+            detection = {
+                "student_id": ch.get("profile_id"),
+                "student_name": ch.get("name") or "—",
+                "student_no": ch.get("student_no"),
+            }
             if not detection.get("student_id"):
-                self._send_app(
-                    chat_id,
-                    "📥 فایل رسید، ولی نمی‌دانم مال کدام دانشجو است.\n"
-                    "یک‌بار دکمهٔ زیر را بزن و در تلگرام <b>نام و شمارهٔ دانشجویی</b> "
-                    "خودت را ثبت کن؛ بعد از آن هر فایلی بفرستی خودکار وصل می‌شود.")
-                return
+                # تلاش آخر: با نام پروفایل تلگرام
+                guess = " ".join(x for x in [frm.get("first_name"),
+                                             frm.get("last_name")] if x)
+                if guess:
+                    d2 = self.router.detect(guess) or {}
+                    if d2.get("student_id"):
+                        detection = d2
             req = self._create_request(chat_id, message, detection)
             if not req:
                 self._send_app(chat_id, "❌ ساخت درخواست ناموفق بود؛ دوباره تلاش کنید.")
                 return
-            log("درخواست تازه از فایل فورواردشده ساخته شد: %s (دانشجو %s)"
+            log("درخواست تازه از فایل ساخته شد: %s (دانشجو %s)"
                 % (req.get("id"), detection.get("student_id")))
+        elif ch.get("profile_id") and not req.get("student_id"):
+            # درخواست قبلی بدون پروفایل بود → حالا وصلش کن
+            try:
+                self.sb.update("tadilat_requests",
+                               "id=eq." + urllib.parse.quote(str(req["id"])),
+                               {"student_id": ch["profile_id"],
+                                "student_name": ch.get("name") or "—",
+                                "student_no": ch.get("student_no")})
+                req["student_id"] = ch["profile_id"]
+            except SupabaseError as exc:
+                log("وصل کردن پروفایل به درخواست ناموفق: %s" % exc, "WARN")
 
         request_id = req.get("id")
 
@@ -550,87 +677,336 @@ class TadilatBot:
                     log("مسیریابی درخواست ناموفق: %s" % exc, "WARN")
 
         label = KIND_FA.get(media["kind"], media["kind"])
-        self._send_app(
+        self._send(
             chat_id,
-            "📎 %s دریافت شد و به آخرین درخواستت وصل شد (جمعاً %s فایل).\n%s\n"
-            "کد پیگیری: <b>%s</b>"
+            "✅ <b>تعدیلات شما ارسال شد</b>\n\n"
+            "📎 %s دریافت شد (جمعاً %s فایل)\n"
+            "🔖 کد پیگیری: <b>%s</b>\n%s\n\n"
+            "از دکمه‌های پایین می‌توانی <b>وضعیت</b> و <b>تاریخ تحویل</b> "
+            "را ببینی."
             % (label, files_count,
-               ("✍️ نویسنده: <b>%s</b>" % html.escape(writer_name)) if writer_name
-               else "⏳ در انتظار تعیین نویسنده",
-               html.escape(str(req.get("code") or request_id))))
-        log("فایل فورواردشده به %s اضافه شد (%s)" % (request_id, kind_db))
+               html.escape(str(req.get("code") or request_id)),
+               ("✍️ نویسندهٔ تو: <b>%s</b>" % html.escape(writer_name)) if writer_name
+               else "⏳ در انتظار تعیین نویسنده"),
+            main_keyboard())
+        log("فایل به %s اضافه شد (%s)" % (request_id, kind_db))
 
-    # ── دستورها ─────────────────────────────────────────────
+    # ══════════════════════════════════════════════════════════
+    # گفتگوی چتی: نام → (شماره) → تأیید → ارسال فایل
+    # ══════════════════════════════════════════════════════════
+    def _chat_state(self, user_id):
+        """وضعیت گفتگوی هر کاربر."""
+        chats = self.state.data.setdefault("chats", {})
+        return chats.setdefault(str(user_id), {})
+
+    def _chat_set(self, user_id, **kw):
+        st = self._chat_state(user_id)
+        st.update(kw)
+        self.state.save()
+        return st
+
+    @staticmethod
+    def _is_ready(st):
+        """شناسایی تمام شده؟ (دانشجوی تازه پروفایل ندارد ولی آماده است)"""
+        return (st or {}).get("stage") == "ready"
+
+    def _chat_clear(self, user_id):
+        self.state.data.setdefault("chats", {})[str(user_id)] = {}
+        self.state.save()
+
+    def _send(self, chat_id, text, keyboard=None):
+        return self.tg.send_message(chat_id, text, reply_markup=keyboard)
+
+    # ── شروع ──
+    def _start_intro(self, chat_id, user_id):
+        self._chat_set(user_id, stage="name", name=None, student_no=None,
+                       candidate=None, profile_id=None)
+        self._send(chat_id, TXT_INTRO)
+
+    # ── قدم ۱: نام ──
+    def _on_name(self, chat_id, user_id, text):
+        if len(text) < 3:
+            self._send(chat_id, "اسمت را کامل‌تر بنویس 🙂")
+            return
+        self.tg.send_chat_action(chat_id, "typing")
+        det = {}
+        try:
+            det = self.router.detect(text) or {}
+        except Exception as exc:  # noqa: BLE001
+            log("تطبیق نام ناموفق: %r" % (exc,), "WARN")
+
+        if det.get("student_id"):
+            name = det.get("name") or text
+            self._chat_set(user_id, stage="confirm", name=text,
+                           candidate={"id": det.get("student_id"), "name": name,
+                                      "student_no": det.get("student_no")})
+            self._send(chat_id, "🔎 آیا تو <b>%s</b> هستی؟" % html.escape(name),
+                       confirm_keyboard())
+            return
+
+        # پیدا نشد → شمارهٔ دانشجویی (اختیاری)
+        self._chat_set(user_id, stage="number", name=text, candidate=None)
+        self._send(chat_id,
+                   "اسمت را در فهرست پیدا نکردم 🤔\n\n"
+                   "اگر <b>شمارهٔ دانشجویی</b> داری بنویس تا دقیق‌تر پیدایت کنم.\n"
+                   "اگر هم نداری، «رد کردن» را بزن.", skip_keyboard())
+
+    # ── قدم ۲: شمارهٔ دانشجویی ──
+    def _on_number(self, chat_id, user_id, text):
+        st = self._chat_state(user_id)
+        name = st.get("name") or ""
+        det = {}
+        try:
+            det = self.router.detect(("%s %s" % (name, text)).strip()) or {}
+        except Exception as exc:  # noqa: BLE001
+            log("تطبیق شماره ناموفق: %r" % (exc,), "WARN")
+
+        if det.get("student_id"):
+            nm = det.get("name") or name
+            self._chat_set(user_id, stage="confirm", student_no=text,
+                           candidate={"id": det.get("student_id"), "name": nm,
+                                      "student_no": det.get("student_no") or text})
+            self._send(chat_id, "🔎 آیا تو <b>%s</b> هستی؟" % html.escape(nm),
+                       confirm_keyboard())
+            return
+
+        # باز هم پیدا نشد → به‌عنوان دانشجوی تازه ادامه بده
+        self._link(user_id, {"id": None, "name": name, "student_no": text})
+        self._send(chat_id,
+                   "پروفایلی با این مشخصات پیدا نکردم، ولی مشکلی نیست — "
+                   "کارشناسان خودشان وصلش می‌کنند.\n\n"
+                   "📤 حالا هر تعدیلاتی داری بفرست "
+                   "(عکس، PDF، Word یا ویس — از فایل‌ها یا واتساپ).",
+                   main_keyboard())
+
+    # ── اتصال نهایی ──
+    def _link(self, user_id, cand):
+        self._chat_set(user_id, stage="ready",
+                       profile_id=cand.get("id"),
+                       name=cand.get("name") or "",
+                       student_no=cand.get("student_no"),
+                       candidate=None)
+
+    # ── ورودی‌های متنی ──
     def handle_message(self, message):
         chat = message.get("chat") or {}
         chat_id = chat.get("id")
         if chat_id is None:
             return
-
+        frm = message.get("from") or {}
+        user_id = frm.get("id") or chat_id
         text = (message.get("text") or "").strip()
+        st = self._chat_state(user_id)
 
-        if text.startswith("/"):
-            command = text.split()[0].split("@")[0].lower()
-            if command in ("/start", "/app", "/new"):
-                self._send_app(chat_id, txt_welcome(self.url))
-                return
-            if command == "/help":
-                self._send_app(chat_id, TXT_HELP)
-                return
-            if command == "/status":
-                self.status(chat_id)
-                return
-            self._send_app(chat_id, "دستور ناشناخته. /help را بزنید.")
-            return
-
-        if text in ("تعدیلات", "ارسال تعدیلات", "شروع"):
-            self._send_app(chat_id, txt_welcome(self.url))
-            return
-        if text in ("وضعیت", "پیگیری"):
-            self.status(chat_id)
-            return
-
-        # فایل فورواردشده (مثلاً از واتساپ) → به درخواست دانشجو وصل می‌شود
+        # فایل (شامل فوروارد از واتساپ)
         if extract_media(message):
+            if not self._is_ready(st):
+                # هنوز معرفی نشده → اول شناسایی
+                self._send(chat_id,
+                           "📥 قبل از فرستادن فایل، یک‌بار خودت را معرفی کن:\n\n"
+                           + TXT_INTRO)
+                self._chat_set(user_id, stage="name")
+                return
             self.handle_media(message)
             return
 
-        # هر پیام دیگری هم دکمهٔ تلگرام را نشان می‌دهد
-        self._send_app(chat_id, txt_welcome(self.url))
+        # دستورها
+        if text.startswith("/"):
+            cmd = text.split()[0].split("@")[0].lower()
+            if cmd in ("/start", "/app", "/new"):
+                if self._is_ready(st):
+                    self._chat_set(user_id, stage="ready")
+                    self._send(chat_id,
+                               "خوش آمدی دوباره 👋\n📤 هر فایلی بفرستی خودکار "
+                               "به تعدیلاتت وصل می‌شود.",
+                               main_keyboard())
+                else:
+                    self._start_intro(chat_id, user_id)
+                return
+            if cmd == "/help":
+                self._send(chat_id, TXT_HELP_CHAT, main_keyboard())
+                return
+            if cmd == "/status":
+                self.status(chat_id, user_id)
+                return
+            if cmd == "/reset":
+                self._chat_clear(user_id)
+                self._start_intro(chat_id, user_id)
+                return
+            self._send(chat_id, "دستور ناشناخته. /help را بزنید.")
+            return
 
+        # دکمه‌های منو
+        if text == BTN_STATUS:
+            self.status(chat_id, user_id)
+            return
+        if text == BTN_DUE:
+            self.due_info(chat_id, user_id)
+            return
+        if text == BTN_FILES:
+            self.files_info(chat_id, user_id)
+            return
+        if text == BTN_NEW:
+            self._chat_set(user_id, stage="ready")
+            self._send(chat_id,
+                       "📤 بفرست! هر فایلی — عکس، PDF، Word یا ویس.\n"
+                       "از واتساپ هم می‌شود: Share → Telegram.",
+                       main_keyboard())
+            return
+
+        # جریان شناسایی
+        if not self._is_ready(st):
+            stage = st.get("stage") or "name"
+            if stage in ("name", "ready"):
+                self._on_name(chat_id, user_id, text)
+                return
+            if stage == "number":
+                self._on_number(chat_id, user_id, text)
+                return
+            if stage == "confirm":
+                self._send(chat_id,
+                           "لطفاً از دکمه‌های بالا استفاده کن: ✅ بله یا ❌ نه")
+                return
+
+        # وصل شده و متن فرستاده
+        self._send(chat_id,
+                   "📎 هر فایلی بفرستی خودکار به تعدیلاتت وصل می‌شود.\n"
+                   "از دکمه‌های پایین وضعیتت را ببین.",
+                   main_keyboard())
+
+    # ── دکمه‌های شیشه‌ای ──
     def handle_callback(self, query):
         data = (query.get("data") or "")
         self.tg.answer_callback_query(query.get("id"))
+        chat = (query.get("message") or {}).get("chat") or {}
+        chat_id = chat.get("id")
+        frm = query.get("from") or {}
+        user_id = frm.get("id") or chat_id
+        if chat_id is None:
+            return
+
         if data == "status":
-            chat = (query.get("message") or {}).get("chat") or {}
-            if chat.get("id"):
-                self.status(chat["id"])
-
-    def status(self, chat_id):
-        try:
-            rows = self.sb.select(
-                "tadilat_requests",
-                "select=id,code,status,files_count,created_at,source"
-                "&telegram_user_id=eq.%d&order=created_at.desc&limit=5" % chat_id)
-        except SupabaseError as exc:
-            self._send_app(chat_id, "❌ خواندن وضعیت ناموفق بود: %s" % html.escape(str(exc)))
+            self.status(chat_id, user_id)
             return
 
+        if data == "me:yes":
+            cand = (self._chat_state(user_id).get("candidate") or {})
+            self._link(user_id, cand)
+            self._send(chat_id,
+                       "✅ ثبت شد، <b>%s</b> عزیز!\n\n"
+                       "📤 حالا هر تعدیلاتی داری بفرست — عکس، PDF، Word یا ویس.\n"
+                       "می‌توانی از <b>واتساپ</b> هم Share → Telegram کنی."
+                       % html.escape(cand.get("name") or ""),
+                       main_keyboard())
+            return
+
+        if data == "me:no":
+            self._chat_set(user_id, stage="name", candidate=None, profile_id=None)
+            self._send(chat_id,
+                       "باشه 🙂 اسمت را دقیق‌تر بنویس "
+                       "(نام، نام پدر، نام جد) تا درست پیدایت کنم.")
+            return
+
+        if data == "num:skip":
+            st = self._chat_state(user_id)
+            self._link(user_id, {"id": None, "name": st.get("name") or "",
+                                 "student_no": None})
+            self._send(chat_id,
+                       "بسیار خوب 👍 کارشناسان پروفایلت را وصل می‌کنند.\n\n"
+                       "📤 حالا تعدیلاتت را بفرست.", main_keyboard())
+            return
+
+    # ── نمایش وضعیت ──
+    def _my_requests(self, user_id, limit=5):
+        st = self._chat_state(user_id)
+        rows = []
+        if st.get("profile_id"):
+            try:
+                rows = self.sb.select(
+                    "tadilat_requests",
+                    "select=*&student_id=eq.%s&order=created_at.desc&limit=%d"
+                    % (urllib.parse.quote(str(st["profile_id"])), limit))
+            except SupabaseError:
+                rows = []
         if not rows:
-            self._send_app(chat_id, TXT_STATUS_EMPTY)
+            try:
+                rows = self.sb.select(
+                    "tadilat_requests",
+                    "select=*&telegram_user_id=eq.%s&order=created_at.desc&limit=%d"
+                    % (urllib.parse.quote(str(user_id)), limit))
+            except SupabaseError:
+                rows = []
+        return rows or []
+
+    def status(self, chat_id, user_id=None):
+        uid = user_id or chat_id
+        rows = self._my_requests(uid)
+        if not rows:
+            self._send(chat_id,
+                       "هنوز تعدیلاتی ارسال نکرده‌ای.\n"
+                       "هر فایلی بفرستی، همین‌جا وضعیتش را می‌بینی.",
+                       main_keyboard())
             return
 
-        lines = ["📋 <b>آخرین ارسال‌های شما</b>", ""]
-        for row in rows:
-            when = str(row.get("created_at") or "")[:16].replace("T", " ")
-            code = row.get("code") or row.get("id") or "—"
-            lines.append(
-                "• %s فایل — %s\n  <i>%s</i>\n  کد پیگیری: <b>%s</b>"
-                % (row.get("files_count") or 0,
-                   STATUS_FA.get(row.get("status"), row.get("status") or "—"),
-                   html.escape(when),
-                   html.escape(str(code))))
-        self._send_app(chat_id, "\n".join(lines))
+        out = ["📋 <b>وضعیت ارسال‌های تو</b>", ""]
+        for r in rows:
+            code = r.get("code") or "—"
+            stt = STATUS_CHAT.get(r.get("status"), r.get("status") or "—")
+            out.append("🔖 کد <b>%s</b>" % html.escape(str(code)))
+            out.append("   %s" % stt)
+            out.append("   📎 %s فایل · %s" % (r.get("files_count") or 0,
+                                              fa_date(r.get("created_at"))))
+            if r.get("assigned_agent_name"):
+                out.append("   ✍️ %s" % html.escape(r["assigned_agent_name"]))
+            if r.get("due_at"):
+                out.append("   ⏰ تحویل: %s" % fa_date(r.get("due_at")))
+            out.append("")
+        self._send(chat_id, "\n".join(out), main_keyboard())
+
+    def due_info(self, chat_id, user_id=None):
+        rows = self._my_requests(user_id or chat_id)
+        if not rows:
+            self._send(chat_id, "هنوز ارسالی نداری.", main_keyboard())
+            return
+        r = rows[0]
+        if r.get("due_at"):
+            self._send(chat_id,
+                       "⏰ زمان تحویل اعلام‌شده:\n<b>%s</b>\n\n"
+                       "🔖 کد پیگیری: <b>%s</b>"
+                       % (fa_date(r.get("due_at")),
+                          html.escape(str(r.get("code") or "—"))),
+                       main_keyboard())
+        else:
+            self._send(chat_id,
+                       "⏰ هنوز زمان تحویلی برای این تعدیلات تعیین نشده.\n"
+                       "به‌محض تعیین، همین‌جا می‌بینی.",
+                       main_keyboard())
+
+    def files_info(self, chat_id, user_id=None):
+        rows = self._my_requests(user_id or chat_id, limit=1)
+        if not rows:
+            self._send(chat_id, "هنوز فایلی نفرستاده‌ای.", main_keyboard())
+            return
+        rid = rows[0].get("id")
+        try:
+            files = self.sb.select(
+                "tadilat_files",
+                "select=kind,file_name,file_size&request_id=eq.%s&order=created_at.asc"
+                % urllib.parse.quote(str(rid)))
+        except SupabaseError:
+            files = []
+        if not files:
+            self._send(chat_id, "برای آخرین ارسال، فایلی ثبت نشده.", main_keyboard())
+            return
+        out = ["📁 <b>فایل‌های آخرین ارسال</b>",
+               "🔖 کد <b>%s</b>" % html.escape(str(rows[0].get("code") or "—")), ""]
+        for f in files:
+            out.append("• %s %s <i>(%s)</i>"
+                       % (KIND_FA.get(f.get("kind"), "📄"),
+                          html.escape(f.get("file_name") or "فایل"),
+                          round((f.get("file_size") or 0) / 1024)))
+        self._send(chat_id, "\n".join(out), main_keyboard())
+
 
     # ── اطلاع‌رسانی اختیاری به مدیرها ───────────────────────
     def check_new_submissions(self):
@@ -678,8 +1054,9 @@ class TadilatBot:
         self.register_menu()
         try:
             self.tg.set_my_commands([
-                {"command": "start", "description": "باز کردن تلگرام ارسال تعدیلات"},
-                {"command": "status", "description": "وضعیت ارسال‌های قبلی"},
+                {"command": "start", "description": "شروع / ارسال تعدیلات تازه"},
+            {"command": "reset", "description": "پاک کردن و شروع از اول"},
+                {"command": "status", "description": "وضعیت ارسال‌های من"},
                 {"command": "help", "description": "راهنما"},
             ])
         except TelegramError as exc:
@@ -748,8 +1125,15 @@ class TadilatBot:
                 me = self.tg.me()
                 print("✓ توکن تلگرام معتبر است: @%s" % me.get("username"))
                 try:
-                    btn = self.tg.get_menu_button() or {}
-                    mb = btn.get("menu_button") if isinstance(btn, dict) else None
+                    r = self.tg.get_menu_button() or {}
+                    # getChatMenuButton خودِ آبجکت دکمه را برمی‌گرداند
+                    # (نه داخل کلید menu_button) — هر دو شکل پشتیبانی می‌شود
+                    if isinstance(r, dict) and r.get("type"):
+                        mb = r
+                    elif isinstance(r, dict):
+                        mb = r.get("menu_button")
+                    else:
+                        mb = None
                     if mb and mb.get("type") == "web_app":
                         cur = (mb.get("web_app") or {}).get("url")
                         if cur == self.url:
