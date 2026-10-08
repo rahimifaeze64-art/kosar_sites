@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS public.tadilat_requests (
     id                  TEXT        PRIMARY KEY DEFAULT gen_random_uuid()::text,
 
     -- ── منبع ارسال ──────────────────────────────────────────
-    -- mini_app = تلگرام تلگرام | telegram_bot = گفتگوی ربات
+    -- mini_app = مینی‌اپ تلگرام | telegram_bot = گفتگوی ربات
     source              TEXT        NOT NULL DEFAULT 'mini_app'
                         CHECK (source IN ('mini_app','telegram_bot')),
 
