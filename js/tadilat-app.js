@@ -34,7 +34,7 @@
       aria_help: 'راهنما', aria_lang: 'انتخاب زبان', aria_mic: 'اسمت را بگو',
       browser_warn: '💡 بیرون از تلگرام باز شده. کار می‌کند، ولی از دکمهٔ منوی ربات بازش کنی بهتر است.',
       // باکس اسم
-      name_title: 'اسمت چیه؟', name_sub: 'اسمت را <b>بگو</b> تا خودمان پیدایت کنیم',
+      name_title: 'خودت را معرّفی کن', name_sub: 'سه قدم کوتاه تا وصل شدن به پروفایلت',
       mic_hint: '🎤 بزن و اسمت را بگو <b>(الزامی)</b>',
       voice_recording: 'در حال ضبط…', btn_stop: 'تمام', btn_rerecord: 'ضبط دوباره',
       btn_not_my_name: 'اسم من این نیست',
@@ -118,13 +118,10 @@
       // ── پویا ──
       voice_listening: '🎧 به عربی گوش می‌دهم…',
       voice_capturing: '🎤 صدایت را می‌شنوم…',
-      kbd_mic: 'میکروفن کیبورد گوشی',
-      kbd_mic_hint: 'روی کادر بالا بزن، بعد دکمهٔ 🎙 کیبورد گوشی را بزن و اسمت را بگو — دقتش بالاست.',
-      kbd_mic_toast: 'حالا دکمهٔ 🎙 کیبورد را بزن و اسمت را بگو',
       // ── جریان شناسایی تازه ──
       step1_label: 'اسمت را بنویس',
       step2_label: 'حالا اسمت را برایمان بخوان',
-      step2_hint: 'رفیق، لطفاً روی دکمه بزن و اسمت را بگو — ۶ ثانیه ضبط می‌شود.',
+      step2_hint: 'رفیق، لطفاً روی دکمه بزن و اسمت را بگو —    .',
       step3_label: 'شمارهٔ دانشجویی برای دقت بیشتر',
       step3_hint: 'روی کارت دانشجویی‌ات نوشته شده. اگر نداری، خالی بگذار.',
       btn_rec: 'ضبط ۶ ثانیه‌ای',
@@ -209,7 +206,7 @@
       hero_hello: 'مرحباً! 👋', hero_pill: 'أرسل تعديلاتك — شركة الكوثر',
       aria_help: 'مساعدة', aria_lang: 'اختيار اللغة', aria_mic: 'قل اسمك',
       browser_warn: '💡 تم فتحه خارج تلگرام. يعمل، لكن الأفضل فتحه من زر قائمة البوت.',
-      name_title: 'ما اسمك؟', name_sub: 'قل <b>اسمك</b> لنبحث عنك',
+      name_title: 'عرّفنا بنفسك', name_sub: 'ثلاث خطوات قصيرة للاتصال بملفك',
       mic_hint: '🎤 اضغط وقل اسمك <b>(إلزامي)</b>',
       voice_recording: 'جارٍ التسجيل…', btn_stop: 'تم', btn_rerecord: 'إعادة التسجيل',
       btn_not_my_name: 'ليس اسمي',
@@ -285,9 +282,6 @@
       st_draft: 'غير مكتمل', st_rejected: 'مرفوض',
       voice_listening: '🎧 أستمع بالعربية…',
       voice_capturing: '🎤 أسمع صوتك…',
-      kbd_mic: 'ميكروفون لوحة المفاتيح',
-      kbd_mic_hint: 'اضغط على الحقل أعلاه، ثم اضغط زر 🎙 في لوحة المفاتيح وقل اسمك — دقّته عالية.',
-      kbd_mic_toast: 'الآن اضغط زر 🎙 في لوحة المفاتيح وقل اسمك',
       // ── جریان شناسایی تازه ──
       step1_label: 'اكتب اسمك',
       step2_label: 'الآن اقرأ اسمك لنا',
@@ -1024,7 +1018,7 @@
   // ══════════════════════════════════════════════════════════
   var REC_SECONDS = 6;          // مدت ضبط ویس نام
   var CONFIRM_DELAY = 2000;     // ۲ ثانیه بعد از آماده شدن، سؤال تأیید
-  var MATCH_DEBOUNCE = 400;     // کمی صبر بعد از تایپ
+  var MATCH_DEBOUNCE = 200;     // جستجوی سریع بعد از تایپ
 
   var mediaRecorder = null, mediaStream = null, chunks = [];
   var recTimer = null, recLeft = 0;
@@ -1187,7 +1181,7 @@
 
   function matchByTypedName(typed) {
     if (!typed || normKey(typed).length < 3) { setCandidate(null); return; }
-    if (normKey(typed).length < 6) { setCandidate(null); return; }
+    if (normKey(typed).length < 5) { setCandidate(null); return; }
     pickBestStudent(typed).then(function (res) {
       if (isConfident(res)) {
         setCandidate({
@@ -1376,20 +1370,14 @@
       try { $('in-name').focus(); } catch (e) {}
       return;
     }
-    // اگر تطبیق آماده است، همان سؤال تأیید را نشان بده
+    // ۱) اگر در profiles پیدا شد → سؤال تأیید «آیا تو X هستی؟»
     if (state.candidate) { askConfirm(state.candidate); return; }
 
-    var no = toEnDigits($('in-no') ? $('in-no').value : '').trim();
-    state.identity = {
-      name: typed,
-      student_no: no || null,
-      student_id: null,
-      matched_name: null,
-    };
-    saveIdentity(state.identity);
-    $('hero-title').textContent = t('welcome', typed.split(' ')[0] || '');
-    renderHeroPill();
-    revealForm();
+    // ۲) پیدا نشد → قبل از ادامه معلوم کن دانشجوی جدید است یا قدیمی
+    state.pending = null;
+    hide($('card-name'));
+    hide($('card-confirm'));
+    show($('card-notyou'));
   }
 
   function revealForm() {
@@ -2049,14 +2037,6 @@
     on($('btn-new-student'), 'click', notYouNew);
     on($('btn-existing-student'), 'click', notYouExisting);
 
-    // میکروفن کیبورد گوشی: فوکوس روی فیلد تا کیبورد (با دکمهٔ میکروفن گوگل) باز شود
-    on($('btn-kbd-mic'), 'click', function () {
-      var inp = $('in-name');
-      if (!inp) return;
-      try { inp.focus(); } catch (e) { /* نادیده */ }
-      try { inp.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* نادیده */ }
-      toast(t('kbd_mic_toast'));
-    });
 
     // ── تب چت ──
     on($('chat-send'), 'click', sendChat);
