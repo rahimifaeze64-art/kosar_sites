@@ -35,7 +35,7 @@ on:
       voice:
         description: 'نام فایل نمونهٔ صدا در ai/voices/'
         required: false
-        default: 'my_voice.wav'
+        default: 'my_voice.ogg'
         type: string
       name:
         description: 'نام فایل خروجی (خالی = خودکار)'
@@ -131,7 +131,7 @@ jobs:
           INPUT_VOICE: ${{ github.event.inputs.voice }}
           HF_HOME: ${{ github.workspace }}/.ai-cache/hf
         run: |
-          VOICE="${INPUT_VOICE:-my_voice.wav}"
+          VOICE="${INPUT_VOICE:-my_voice.ogg}"
           echo "name=$VOICE" >> "$GITHUB_OUTPUT"
 
           if [ -f "ai/voices/$VOICE" ]; then
@@ -195,6 +195,26 @@ jobs:
           echo ""
           echo "chars=$(wc -m < ai/text_current.txt)" >> "$GITHUB_OUTPUT"
 
+      # ── تبدیل نمونهٔ صدا به wav و بریدن به ۵ ثانیه ──
+      #     سقف آموزش مدل ۵ ثانیه است؛ بلندتر = مدل ادامهٔ جملهٔ خودتان
+      #     را می‌گوید. ffmpeg روی ubuntu از قبل نصب است.
+      - name: آماده‌سازی نمونهٔ صدا (۵ ثانیه)
+        id: conv
+        if: steps.voice.outputs.ok == 'true'
+        run: |
+          IN="ai/voices/${{ steps.voice.outputs.name }}"
+          OUT="ai/voices/_prompt5s.wav"
+          echo "ورودی: $IN"
+          ls -lh "$IN"
+          ffmpeg -y -i "$IN" -t 5 -ac 1 -ar 24000 "$OUT" 2>&1 | tail -4
+          if [ ! -f "$OUT" ]; then
+            echo "❌ تبدیل نمونهٔ صدا ناموفق بود"
+            exit 1
+          fi
+          echo "✅ نمونهٔ ۵ ثانیه‌ای آماده شد:"
+          ls -lh "$OUT"
+          echo "wav=$OUT" >> "$GITHUB_OUTPUT"
+
       # ── تولید صدا ──
       - name: تولید صدا
         id: gen
@@ -205,21 +225,22 @@ jobs:
           OMP_NUM_THREADS: '4'
           TOKENIZERS_PARALLELISM: 'false'
         run: |
+          set -o pipefail
           python ai/scripts/generate.py \
             --text-file ai/text_current.txt \
-            --voice "ai/voices/${{ steps.voice.outputs.name }}" \
+            --voice "${{ steps.conv.outputs.wav }}" \
             --name "${{ github.event.inputs.name }}" \
-            --voice-sec 5.0
+            --voice-sec 0 2>&1 | tee ai/out/generate.log
           echo "--- خروجی ---"
           ls -lh ai/out/*.wav | tail -5
 
       # ── ذخیرهٔ صدا در مخزن تا سایت بتواند پخشش کند ──
       - name: ذخیرهٔ فایل صوتی در مخزن
-        if: steps.voice.outputs.ok == 'true' && (github.event_name != 'workflow_dispatch' || github.event.inputs.commit == 'true')
+        if: always() && steps.voice.outputs.ok == 'true'
         run: |
           git config user.name  "ai-tts-bot"
           git config user.email "ai-tts-bot@users.noreply.github.com"
-          git add ai/out/
+          git add -f ai/out/ ai/voices/_prompt5s.wav || git add -f ai/out/
           if git diff --staged --quiet; then
             echo "— تغییر تازه‌ای نیست"
           else

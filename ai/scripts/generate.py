@@ -67,15 +67,6 @@ def log(*a):
 # ══════════════════════════════════════════════════════════════
 # ۱) دانلود فایل‌های مدل (با کش)
 # ══════════════════════════════════════════════════════════════
-def fetch_config() -> str:
-    """model.yaml را از هاگینگ‌فیس می‌گیرد و مسیر محلی برمی‌گرداند."""
-    from huggingface_hub import hf_hub_download
-
-    path = hf_hub_download(repo_id=MODEL_REPO, filename="model.yaml")
-    log(f"✅ model.yaml → {path}")
-    return path
-
-
 def fetch_normalizer() -> Path:
     """normalize_fa.py را از هاگینگ‌فیس می‌گیرد."""
     from huggingface_hub import hf_hub_download
@@ -186,9 +177,13 @@ def synth(
 
     from pocket_tts import TTSModel
 
-    config_path = fetch_config()
-    log("⏳ بارگذاری مدل گفتار…")
-    model = TTSModel.load_model(config=config_path, temp=0.3, eos_threshold=-2.0)
+    # ⚠️ مهم: باید فرم hf:// بدهیم، نه مسیر فایل لوکال.
+    # model.yaml به model.safetensors و tokenizer_ph.model «نسبی» اشاره
+    # می‌کند؛ اگر فایل را جدا دانلود کنیم و مسیرش را بدهیم، آن‌ها پیدا
+    # نمی‌شوند و بارگذاری مدل شکست می‌خورد.
+    config_uri = os.environ.get("TTS_CONFIG") or f"hf://{MODEL_REPO}/model.yaml"
+    log(f"⏳ بارگذاری مدل گفتار… ({config_uri})")
+    model = TTSModel.load_model(config=config_uri, temp=0.3, eos_threshold=-2.0)
     log("✅ مدل گفتار آماده است")
 
     sample_rate = int(model.mimi.sample_rate)
