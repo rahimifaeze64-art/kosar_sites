@@ -102,6 +102,12 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
 
+      - name: نصب ffmpeg (برای تبدیل نمونهٔ صدا)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          ffmpeg -version | head -1
+
       - name: نصب وابستگی‌های بخش هوش مصنوعی
         run: |
           python -m pip install -r ai/requirements.txt
@@ -206,7 +212,24 @@ jobs:
           OUT="ai/voices/_prompt5s.wav"
           echo "ورودی: $IN"
           ls -lh "$IN"
-          ffmpeg -y -i "$IN" -t 5 -ac 1 -ar 24000 "$OUT" 2>&1 | tail -4
+          if command -v ffmpeg >/dev/null 2>&1; then
+            ffmpeg -y -i "$IN" -t 5 -ac 1 -ar 24000 "$OUT" 2>&1 | tail -4
+          fi
+          # اگر ffmpeg نبود یا نشد، با پایتون (soundfile/libsndfile) تبدیل کن
+          if [ ! -f "$OUT" ]; then
+            echo "ℹ️ ffmpeg جواب نداد — با soundfile تلاش می‌شود"
+            python - "$IN" "$OUT" <<'PY'
+          import sys
+          import soundfile as sf
+          import numpy as np
+          src, dst = sys.argv[1], sys.argv[2]
+          data, sr = sf.read(src, always_2d=True)
+          mono = data.mean(axis=1).astype(np.float32)
+          keep = int(5.0 * sr)
+          sf.write(dst, mono[:keep], sr)
+          print("✅ soundfile:", len(mono[:keep]) / sr, "ثانیه")
+          PY
+          fi
           if [ ! -f "$OUT" ]; then
             echo "❌ تبدیل نمونهٔ صدا ناموفق بود"
             exit 1
@@ -240,7 +263,8 @@ jobs:
         run: |
           git config user.name  "ai-tts-bot"
           git config user.email "ai-tts-bot@users.noreply.github.com"
-          git add -f ai/out/ ai/voices/_prompt5s.wav || git add -f ai/out/
+          git add -f ai/out/ || true
+          [ -f ai/voices/_prompt5s.wav ] && git add -f ai/voices/_prompt5s.wav || true
           if git diff --staged --quiet; then
             echo "— تغییر تازه‌ای نیست"
           else
