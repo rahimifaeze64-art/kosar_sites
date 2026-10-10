@@ -21,3 +21,7 @@ scipy>=1.11
 
 # خواندن فایل‌های صوتی ogg/mp3 بدون ffmpeg
 soundfile>=0.12
+
+# توکنایزر G2P به این نیاز دارد (خطای واقعی از لاگ ورکفلو):
+#   ImportError: requires the protobuf library but it was not found
+protobuf>=4.25
