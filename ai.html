@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>هوش مصنوعی — تولید صدا | شرکة الکوثر</title>
+<meta name="theme-color" content="#4560f0">
+<link rel="icon" href="assets/logoo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
+<style>
+:root{
+  --accent:#4560f0; --ink:#161a2e; --ink2:#2b3050; --muted:#767c9c;
+  --line:#e3e6f5; --bg:#f4f6fe; --card:#fff; --ok:#13774f; --warn:#8a5600;
+  --sh:0 10px 30px -14px rgba(40,52,130,.24);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:Vazirmatn,system-ui,-apple-system,'Segoe UI',sans-serif;
+  line-height:1.9; padding-bottom:60px;
+}
+.wrap{max-width:820px;margin:0 auto;padding:0 16px}
+
+/* ── سرصفحه ── */
+.hero{
+  background:linear-gradient(135deg,#5b6cf7,#7d4ff0 60%,#a84fe0);
+  color:#fff;padding:26px 0 30px;border-radius:0 0 30px 30px;
+  box-shadow:0 18px 40px -20px rgba(70,60,200,.7);margin-bottom:22px;
+}
+.hero h1{margin:0;font-size:22px;font-weight:900;display:flex;align-items:center;gap:10px}
+.hero p{margin:6px 0 0;font-size:13.5px;opacity:.92;font-weight:600}
+.hero .badge{
+  display:inline-block;margin-top:12px;padding:5px 13px;border-radius:999px;
+  background:rgba(255,255,255,.18);font-size:11.5px;font-weight:800;
+  backdrop-filter:blur(4px);
+}
+
+/* ── کارت‌ها ── */
+.card{
+  background:var(--card);border-radius:22px;padding:20px;
+  box-shadow:var(--sh);margin-bottom:16px;
+}
+.card h2{margin:0 0 4px;font-size:16.5px;font-weight:900;display:flex;align-items:center;gap:9px}
+.card .sub{margin:0 0 14px;font-size:12.5px;color:var(--muted);font-weight:700}
+.card .icon{
+  width:34px;height:34px;border-radius:11px;display:grid;place-items:center;
+  background:linear-gradient(145deg,#e9ecff,#d9deff);font-size:17px;flex:none;
+}
+
+/* ── متن و کادرها ── */
+textarea,input[type=text]{
+  width:100%;padding:14px 16px;border-radius:16px;border:1px solid var(--line);
+  background:#fbfbff;font-family:inherit;font-size:14.5px;font-weight:700;
+  color:var(--ink);outline:none;resize:vertical;
+}
+textarea:focus,input:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 4px rgba(69,96,240,.12)}
+
+/* ── دکمه‌ها ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  padding:13px 20px;border:none;border-radius:15px;cursor:pointer;
+  font-family:inherit;font-size:14px;font-weight:900;text-decoration:none;
+  transition:transform .14s;margin-top:12px;
+}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:linear-gradient(145deg,#6c8cff,#4f5ce8);color:#fff;box-shadow:0 12px 24px -14px rgba(80,90,230,.95)}
+.btn-soft{background:#eef0ff;color:var(--accent)}
+.btn-ghost{background:#f3f4fb;color:var(--ink2)}
+.btn[disabled]{opacity:.5;cursor:default}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+
+/* ── مراحل ── */
+.steps{counter-reset:s;list-style:none;padding:0;margin:0}
+.steps li{
+  counter-increment:s;position:relative;padding:11px 0 11px 44px;
+  border-bottom:1px dashed var(--line);font-size:13.5px;font-weight:700;color:var(--ink2);
+}
+.steps li:last-child{border-bottom:none}
+.steps li::before{
+  content:counter(s);position:absolute;right:0;top:11px;
+  width:28px;height:28px;border-radius:50%;display:grid;place-items:center;
+  background:linear-gradient(145deg,#a99bff,#6c8cff);color:#fff;
+  font-size:12.5px;font-weight:900;
+}
+.steps code{
+  background:#f1f2fb;padding:2px 7px;border-radius:7px;
+  font-size:12px;font-family:ui-monospace,Consolas,monospace;direction:ltr;
+  display:inline-block;
+}
+
+/* ── فهرست صداها ── */
+.clip{
+  border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:11px;
+  background:#fcfcff;transition:box-shadow .2s;
+}
+.clip:hover{box-shadow:0 8px 20px -12px rgba(60,70,160,.4)}
+.clip .top{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+.clip .name{
+  font-size:12.5px;font-weight:900;color:var(--accent);
+  font-family:ui-monospace,Consolas,monospace;direction:ltr;
+}
+.clip .meta{font-size:11px;color:var(--muted);font-weight:700;margin-inline-start:auto}
+.clip .txt{
+  font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:10px;
+  background:#f7f8ff;padding:9px 12px;border-radius:12px;line-height:1.8;
+}
+.clip audio{width:100%;height:38px}
+.pill{
+  display:inline-block;padding:3px 10px;border-radius:999px;font-size:10.5px;font-weight:900;
+  background:#eef0ff;color:var(--accent);
+}
+.pill.ok{background:#e9fbf3;color:var(--ok)}
+.pill.warn{background:#fff6e6;color:var(--warn)}
+
+/* ── حالت‌ها ── */
+.empty{
+  text-align:center;padding:34px 18px;color:var(--muted);
+  font-size:13.5px;font-weight:700;
+}
+.empty .big{font-size:42px;display:block;margin-bottom:8px;opacity:.55}
+.note{
+  border-radius:16px;padding:13px 16px;font-size:12.5px;font-weight:700;line-height:1.9;
+}
+.note.warn{background:#fff8e9;box-shadow:inset 0 0 0 1px #f0d9a8;color:#6b4700}
+.note.info{background:#eef4ff;box-shadow:inset 0 0 0 1px #cfdcff;color:#27407e}
+.note.ok{background:#eafaf2;box-shadow:inset 0 0 0 1px #a8e5c8;color:#0d6040}
+.spin{
+  display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.35);
+  border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite;
+}
+@keyframes sp{to{transform:rotate(360deg)}}
+a{color:var(--accent)}
+@media(max-width:520px){
+  .hero h1{font-size:19px}
+  .card{padding:16px;border-radius:18px}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>🤖 هوش مصنوعی — تولید صدا</h1>
+    <p>متن فارسی بنویس، با <b>صدای خودت</b> خوانده میشود.</p>
+    <span class="badge">مدل: pocket-tts فارسی v2 · ۱۰۹.۵M · اجرا روی CPU</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ── وضعیت ── -->
+  <section class="card">
+    <h2><span class="icon">📡</span> وضعیت سرویس</h2>
+    <p class="sub">همهچیز روی GitHub Actions اجرا میشود — روی سیستم شما چیزی نصب نمیشود.</p>
+    <div id="status-box">
+      <div class="note info">⏳ در حال بررسی…</div>
+    </div>
+  </section>
+
+  <!-- ── چطور استفاده کنم ── -->
+  <section class="card">
+    <h2><span class="icon">🎙</span> چطور صدا بسازم؟</h2>
+    <p class="sub">چهار قدم — یکبار نمونهٔ صدا، بعد هر بار فقط متن.</p>
+    <ol class="steps">
+      <li>
+        <b>نمونهٔ صدایت را بگذار</b> (فقط یکبار) — یک فایل <code>wav</code> یا <code>mp3</code>
+        حداکثر <b>۵ ثانیه</b> در پوشهٔ <code>ai/voices/</code>
+        <div class="row">
+          <a class="btn btn-soft" id="link-upload" target="_blank" rel="noopener">
+            📤 آپلود نمونهٔ صدا در گیتهاب
+          </a>
+        </div>
+      </li>
+      <li>
+        <b>متن را اینجا بنویس</b> و کپی کن
+        <textarea id="text-input" rows="4" placeholder="سلام، این یک آزمایش از بخش هوش مصنوعی است."></textarea>
+        <div class="row">
+          <button class="btn btn-primary" id="btn-copy">📋 کپی متن</button>
+          <button class="btn btn-ghost" id="btn-clear">پاک کردن</button>
+        </div>
+      </li>
+      <li>
+        <b>ورکفلو را اجرا کن</b> — در گیتهاب، متن را در کادر بچسبان و Run بزن
+        <div class="row">
+          <a class="btn btn-primary" id="link-run" target="_blank" rel="noopener">
+            ▶️ رفتن به Actions و اجرا
+          </a>
+        </div>
+      </li>
+      <li>
+        <b>صدا را اینجا بشنو</b> — حدود ۳ تا ۱۵ دقیقه بعد، فهرست پایین خودکار بهروز میشود
+        <div class="row">
+          <button class="btn btn-soft" id="btn-refresh">🔄 بازخوانی فهرست</button>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ── صداهای ساخته‌شده ── -->
+  <section class="card">
+    <h2><span class="icon">🔊</span> صداهای ساختهشده</h2>
+    <p class="sub" id="count-sub">—</p>
+    <div id="clips">
+      <div class="empty"><span class="big">🎧</span>در حال بارگذاری…</div>
+    </div>
+  </section>
+
+  <!-- ── محدودیت‌ها ── -->
+  <section class="card">
+    <h2><span class="icon">⚠️</span> نکتههای مهم</h2>
+    <div class="note warn" style="margin-bottom:10px">
+      <b>نمونهٔ صدا حداکثر ۵ ثانیه.</b> اگر بیشتر باشد، مدل بهجای خواندن متن شما
+      ادامهٔ جملهٔ خودتان را میگوید — با صدای درست ولی حرف بیربط.
+    </div>
+    <div class="note warn">
+      <b>لایسنس غیرتجاری (CC-BY-NC-4.0).</b> این مدل از دادهٔ آموزشی برآمده از
+      فیلیمو و یوتیوب ساخته شده و استفادهٔ تجاری از آن مجاز نیست.
+    </div>
+    <div class="note info" style="margin-top:10px">
+      <b>مدل خط فارسی نمیفهمد.</b> متن اول با <code>Homo-GE2PE</code> به فونِم
+      لاتین تبدیل میشود، بعد خوانده میشود. اگر متن خام مستقیم به مدل برود،
+      <b>بیصدا</b> بیرون میآید و هیچ خطایی هم نمیدهد — پس آن مرحله در ورکفلو
+      خودکار انجام میشود.
+    </div>
+    <div class="note info" style="margin-top:10px">
+      <b>در ایران.</b> اجرا روی سرورهای گیتهاب انجام میشود، پس فیلترینگ و
+      پروکسی و کامپیوتر روشن هیچکدام لازم نیست.
+    </div>
+  </section>
+
+  <p style="text-align:center;font-size:12px;color:var(--muted);font-weight:700;margin-top:22px">
+    بخش هوش مصنوعی — شرکة الکوثر ·
+    <a href="https://github.com/rahimifaeze64-art/kosar_sites/tree/main/ai" target="_blank" rel="noopener">کد روی گیتهاب</a>
+  </p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var REPO = 'rahimifaeze64-art/kosar_sites';
+  var BRANCH = 'main';
+  var RAW = 'https://raw.githubusercontent.com/' + REPO + '/' + BRANCH + '/';
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* ── لینک‌ها ── */
+  if ($('link-upload')) {
+    $('link-upload').href = 'https://github.com/' + REPO + '/upload/' + BRANCH + '/ai/voices';
+  }
+  if ($('link-run')) {
+    $('link-run').href = 'https://github.com/' + REPO + '/actions/workflows/ai-tts.yml';
+  }
+
+  /* ── کپی متن با یادآوری آخرین متن ── */
+  var LS = 'kosar_ai_text';
+  try {
+    var saved = localStorage.getItem(LS);
+    if (saved) $('text-input').value = saved;
+  } catch (e) { /* نادیده */ }
+
+  $('text-input').addEventListener('input', function () {
+    try { localStorage.setItem(LS, $('text-input').value); } catch (e) { /* نادیده */ }
+  });
+
+  $('btn-clear').addEventListener('click', function () {
+    $('text-input').value = '';
+    try { localStorage.removeItem(LS); } catch (e) { /* نادیده */ }
+    $('text-input').focus();
+  });
+
+  $('btn-copy').addEventListener('click', function () {
+    var txt = $('text-input').value.trim();
+    if (!txt) { alert('اول متن را بنویس 🙂'); return; }
+    var done = function () {
+      var b = $('btn-copy');
+      var old = b.textContent;
+      b.textContent = '✅ کپی شد — حالا در Actions بچسبان';
+      setTimeout(function () { b.textContent = old; }, 2600);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(done).catch(function () { fallback(); });
+    } else { fallback(); }
+    function fallback() {
+      var t = $('text-input');
+      t.select(); t.setSelectionRange(0, 99999);
+      try { document.execCommand('copy'); done(); } catch (e) { alert('کپی نشد — دستی انتخاب کن'); }
+    }
+  });
+
+  /* ── خواندن فهرست صداها ── */
+  function fa(n) {
+    return String(n == null ? '' : n).replace(/[0-9]/g, function (d) {
+      return '۰۱۲۳۴۵۶۷۸۹'[d];
+    });
+  }
+
+  function fmtSize(bytes) {
+    if (!bytes) return '';
+    if (bytes < 1024) return fa(bytes) + ' بایت';
+    if (bytes < 1048576) return fa((bytes / 1024).toFixed(0)) + ' کیلوبایت';
+    return fa((bytes / 1048576).toFixed(1)) + ' مگابایت';
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function render(clips) {
+    var box = $('clips');
+    if (!clips || !clips.length) {
+      box.innerHTML =
+        '<div class="empty"><span class="big">🎧</span>' +
+        'هنوز صدایی ساخته نشده.<br>متن را بنویس و ورکفلو را اجرا کن.</div>';
+      $('count-sub').textContent = 'هنوز خالی است';
+      return;
+    }
+    $('count-sub').textContent = fa(clips.length) + ' صدا ساخته شده';
+    box.innerHTML = clips.map(function (c, i) {
+      var src = RAW + c.file.replace(/^\/+/, '');
+      var name = String(c.file || '').split('/').pop();
+      return '' +
+        '<div class="clip">' +
+          '<div class="top">' +
+            '<span class="pill ok">#' + fa(i + 1) + '</span>' +
+            '<span class="name">' + esc(c.voice || name) + '</span>' +
+            '<span class="meta">' +
+              (c.dur ? fa(c.dur) + ' ثانیه · ' : '') +
+              esc(c.at || '') +
+            '</span>' +
+          '</div>' +
+          (c.text ? '<div class="txt">' + esc(c.text) + '</div>' : '') +
+          '<audio controls preload="none" src="' + esc(src) + '"></audio>' +
+        '</div>';
+    }).join('');
+  }
+
+  function load(manual) {
+    var url = RAW + 'ai/out/index.json?t=' + Date.now();
+    var box = $('clips');
+    if (manual) {
+      box.innerHTML = '<div class="empty"><span class="spin" style="border-color:#ccd;border-top-color:#4560f0"></span> در حال بازخوانی…</div>';
+    }
+    fetch(url, { cache: 'no-store' })
+      .then(function (r) {
+        if (r.status === 404) return { items: [] };
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (j) {
+        var items = (j && j.items) || [];
+        render(items);
+        $('status-box').innerHTML =
+          '<div class="note ok">✅ سرویس فعال است — ' + fa(items.length) +
+          ' صدا در فهرست. آخرین به‌روزرسانی: ' +
+          esc((j && j.updated) || '—') + '</div>';
+      })
+      .catch(function (e) {
+        render([]);
+        $('status-box').innerHTML =
+          '<div class="note warn">⚠️ فهرست خوانده نشد (' + esc(e.message) +
+          ').<br>اگر تازه راهش انداخته‌اید، هنوز ورکفلو اجرا نشده است.</div>';
+      });
+  }
+
+  $('btn-refresh').addEventListener('click', function () { load(true); });
+  load(false);
+})();
+</script>
+</body>
+</html>

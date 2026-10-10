@@ -1,4 +1,20 @@
-pocket-tts
-soundfile
-torch
-numpy
+# نسخهٔ فورک‌شدهٔ pocket-tts لازم است: پکیج منتشرشده روی PyPI سه کلید تنظیمات
+# مدل فارسی v2 را نمی‌شناسد و با ValidationError رد می‌کند.
+# از tar.gz استفاده می‌کنیم تا ایمیج به git نیاز نداشته باشد.
+pocket-tts @ https://github.com/mallahyari/pocket-tts/archive/refs/heads/main.tar.gz
+
+# فرانت‌اند آوانویسی فارسی (G2P) — مدل v2 متن فارسی خام را نمی‌فهمد و سکوت می‌دهد
+transformers>=4.40
+sentencepiece>=0.2.1
+safetensors>=0.4.0
+huggingface_hub>=0.13.0
+
+# وب
+fastapi>=0.100
+uvicorn>=0.13.0
+python-multipart>=0.0.21
+
+# صدا
+soundfile>=0.12.0
+numpy>=2
+scipy>=1.5.0

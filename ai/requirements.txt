@@ -1,0 +1,20 @@
+# وابستگی‌های بخش هوش مصنوعی — تولید گفتار فارسی
+#
+# نکته: PyTorch جداگانه نصب می‌شود (نسخهٔ CPU) چون از ایندکس خودش می‌آید:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#
+# و pocket-tts از فورک فارسی نصب می‌شود چون مدل v2 سه کلید در
+# model.yaml دارد که نسخهٔ رسمی هنوز نمی‌شناسد و خطا می‌دهد:
+#   ValidationError: capitalize_first_letter — Extra inputs are not permitted
+
+pocket-tts @ git+https://github.com/mallahyari/pocket-tts@main
+
+# تبدیل متن فارسی به فونِم (مدل v2 خط فارسی نمی‌فهمد)
+transformers>=4.40,<5
+sentencepiece>=0.1.99
+
+# صدا و ابزارها
+sphn>=0.1.0
+huggingface_hub>=0.23
+numpy>=1.24
+scipy>=1.11

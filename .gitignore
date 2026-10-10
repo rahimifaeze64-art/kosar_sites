@@ -53,3 +53,11 @@ telegram-bot/bot_state.json
 telegram-bot/bot_state.json.tmp
 telegram-bot/bot.log
 telegram-bot/config.json
+
+# ── بخش هوش مصنوعی: کش مدل‌ها (چند گیگ) هرگز commit نشود ──
+.ai-cache/
+ai/__pycache__/
+ai/scripts/__pycache__/
+ai/text_current.txt
+ai/voices/_test_prompt.wav
+*.pyc

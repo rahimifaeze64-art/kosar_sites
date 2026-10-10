@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تست تبدیل متن به گفتار — سایت</title>
+<style>
+  :root { --bg:#0f1115; --card:#171a21; --line:#272b35; --fg:#e8eaef; --dim:#9aa3b2;
+          --accent:#4f8cff; --ok:#39b57a; --err:#e2605c; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font-family:"Segoe UI",Tahoma,system-ui,sans-serif; line-height:1.8; }
+  .wrap { max-width:900px; margin:0 auto; padding:26px 18px 70px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  h2 { font-size:17px; margin:26px 0 10px; color:#c9d2e2; }
+  .sub { color:var(--dim); font-size:14px; margin-bottom:20px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px;
+          padding:16px; margin-bottom:14px; }
+  label { display:block; font-size:13px; color:var(--dim); margin-bottom:6px; }
+  input[type=text], textarea, select {
+    width:100%; background:#0e1116; color:var(--fg); border:1px solid var(--line);
+    border-radius:10px; padding:10px 12px; font:inherit; font-size:15px; }
+  textarea { min-height:110px; resize:vertical; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+  .row > div { flex:1 1 200px; }
+  button { background:var(--accent); color:#fff; border:0; border-radius:10px;
+           padding:10px 18px; font:inherit; cursor:pointer; }
+  button.ghost { background:#222834; color:var(--fg); }
+  button.rec { background:#3a2a2c; color:#ffb4b1; }
+  button.rec.on { background:var(--err); color:#fff; }
+  button:disabled { opacity:.5; cursor:default; }
+  .msg { border-radius:10px; padding:10px 12px; font-size:14px; margin-top:12px; display:none; }
+  .msg.show { display:block; }
+  .msg.err { background:#2c1a1a; color:#ffb4b1; border:1px solid #55302f; }
+  .msg.ok  { background:#152720; color:#a8e6c8; border:1px solid #274b3c; }
+  code { direction:ltr; display:inline-block; background:#0e1116; border:1px solid var(--line);
+         border-radius:6px; padding:1px 6px; font-size:13px; }
+  .tts-speak-btn { background:#243044; color:#cfe0ff; border:1px solid #33456b;
+                   border-radius:8px; padding:4px 10px; font-size:13px; margin-inline-start:8px;
+                   cursor:pointer; }
+  .tts-speak-btn[data-tts-state="playing"] { background:#3a2530; color:#ffc0c8;
+                   border-color:#5d3444; }
+  .status { font-size:13px; color:var(--dim); }
+  .dot { display:inline-block; width:9px; height:9px; border-radius:50%; background:#e0a33e;
+         margin-inline-end:6px; }
+  .dot.ok { background:var(--ok); }
+  audio { width:100%; margin-top:12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>تبدیل متن فارسی به گفتار — تست روی سایت</h1>
+  <div class="sub">
+    این صفحه فقط کلاینت است: مدل روی یک سرور جدا اجرا می‌شود (Hugging Face Space یا سرور خودتان)
+    و اینجا با <code>fetch</code> صدایش گرفته می‌شود.
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div style="flex:1 1 380px">
+        <label for="apiBase">آدرس سرویس TTS</label>
+        <input type="text" id="apiBase" placeholder="https://username-my-tts-space.hf.space">
+      </div>
+      <div style="flex:0 0 auto">
+        <button id="connect">اتصال</button>
+      </div>
+    </div>
+    <div class="status" id="status" style="margin-top:10px">
+      <span class="dot"></span>وصل نشده
+    </div>
+  </div>
+
+  <h2>۱) تست گفتار</h2>
+  <div class="card">
+    <div class="row">
+      <div>
+        <label for="voice">صدا</label>
+        <select id="voice"></select>
+      </div>
+      <div style="flex:0 0 auto"><button id="play">پخش</button></div>
+      <div style="flex:0 0 auto"><button id="stop" class="ghost">توقف</button></div>
+    </div>
+    <div style="margin-top:12px">
+      <label for="text">متن فارسی</label>
+      <textarea id="text">سلام، این یک آزمایش از تبدیل متن فارسی به گفتار روی سایت است.</textarea>
+    </div>
+    <div id="msg" class="msg"></div>
+    <audio id="player" controls style="display:none"></audio>
+  </div>
+
+  <h2>۲) ثبت صدای خودتان (کلون‌سازی)</h2>
+  <div class="card">
+    <div class="sub" style="margin-bottom:10px">
+      ۲ تا ۵ ثانیه صدای تمیز و تک‌نفره کافی است. نمونهٔ بلندتر از ۵ ثانیه باعث می‌شود مدل
+      جملهٔ خودِ نمونه را بگوید. روی Space عمومی، ثبت صدا نیاز به توکن مدیریت دارد.
+    </div>
+    <div class="row">
+      <div style="flex:0 0 auto"><button id="rec" class="rec">● شروع ضبط</button></div>
+      <div style="flex:0 0 auto">
+        <button id="pick" class="ghost">انتخاب فایل</button>
+        <input type="file" id="file" accept="audio/*" style="display:none">
+      </div>
+      <div>
+        <label for="name">نام صدا</label>
+        <input type="text" id="name" value="my_voice">
+      </div>
+      <div>
+        <label for="token">توکن مدیریت (اختیاری)</label>
+        <input type="text" id="token" placeholder="X-Admin-Token">
+      </div>
+      <div style="flex:0 0 auto"><button id="save" disabled>ذخیره صدا</button></div>
+    </div>
+    <audio id="preview" controls style="display:none;margin-top:12px"></audio>
+    <div class="status" id="rechint" style="margin-top:8px"></div>
+  </div>
+
+  <h2>۳) دکمهٔ خودکار روی متن‌های صفحه</h2>
+  <div class="card">
+    <div class="sub" style="margin-bottom:10px">
+      هر عنصری که <code>data-tts</code> داشته باشد، خودکار دکمهٔ «شنیدن» می‌گیرد.
+    </div>
+    <p data-tts>زبان فارسی یکی از قدیمی‌ترین زبان‌های زندهٔ جهان است و میلیون‌ها نفر به آن سخن می‌گویند.</p>
+    <p data-tts>این پاراگراف دوم است و با همان صدا خوانده می‌شود.</p>
+    <button class="ghost" data-tts="این متن از طریق ویژگی data-tts خوانده می‌شود.">نمونهٔ دکمه</button>
+  </div>
+
+  <h2>۴) نحوهٔ استفاده در سایت</h2>
+  <div class="card">
+    <div class="sub">۱) اسکریپت را در صفحه بگذارید:</div>
+    <pre style="direction:ltr;text-align:left;overflow:auto;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:13px">&lt;script src="js/tts-widget.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  FarsiTTS.init({
+    apiBase: "https://username-my-tts-space.hf.space",
+    voice: "my_voice",
+  });
+&lt;/script&gt;</pre>
+    <div class="sub" style="margin-top:12px">۲) روی هر متنی که می‌خواهید خوانده شود، <code>data-tts</code> بگذارید:</div>
+    <pre style="direction:rtl;text-align:right;overflow:auto;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:13px">&lt;p data-tts&gt;سلام، این متن خوانده می‌شود.&lt;/p&gt;</pre>
+    <div class="sub" style="margin-top:12px">۳) یا از JS مستقیم استفاده کنید:</div>
+    <pre style="direction:ltr;text-align:left;overflow:auto;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:13px">FarsiTTS.speak("سلام").then(r =&gt; console.log(r.seconds, "ثانیه"));</pre>
+  </div>
+</div>
+
+<script src="js/tts-widget.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const KEY = "farsiTtsApiBase";
+let recordedBlob = null, recorder = null, chunks = [], recording = false, cachedUrls = [];
+
+function show(kind, html) {
+  const el = $('msg');
+  el.className = 'msg show ' + kind;
+  el.innerHTML = html;
+}
+
+function apiBase() { return ($('apiBase').value || '').replace(/\/+$/, ''); }
+
+function readFileAsDataUrl() { /* noop */ }
+
+async function connect() {
+  const base = apiBase();
+  localStorage.setItem(KEY, base);
+  $('status').innerHTML = '<span class="dot"></span>در حال بررسی…';
+  try {
+    const res = await fetch(base + '/api/health');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const h = await res.json();
+    FarsiTTS.configure({ apiBase: base });
+    const sel = $('voice');
+    sel.innerHTML = '';
+    (h.voices || []).forEach(name => {
+      const o = document.createElement('option');
+      o.value = name; o.textContent = name;
+      sel.appendChild(o);
+    });
+    if (h.default_voice) {
+      const found = [...sel.options].some(o => o.value === h.default_voice);
+      if (found) sel.value = h.default_voice;
+    }
+    FarsiTTS.configure({ voice: sel.value });
+    $('status').innerHTML = '<span class="dot ok"></span>وصل شد — ' +
+      (h.status === 'ok' ? 'مدل آماده است' : 'مدل در حال بارگذاری…') +
+      ' · صداها: ' + ((h.voices || []).join('، ') || 'هیچ');
+  } catch (e) {
+    $('status').innerHTML = '<span class="dot"></span>اتصال نشد: ' + e.message +
+      ' — اگر Space تازه ساخته شده، چند دقیقه صبر کنید تا بیلد تمام شود.';
+  }
+}
+
+async function play() {
+  const text = $('text').value.trim();
+  if (!text) { show('err', 'متن را وارد کنید.'); return; }
+  FarsiTTS.configure({ apiBase: apiBase(), voice: $('voice').value });
+  $('play').disabled = true;
+  $('player').style.display = 'none';
+  try {
+    const res = await fetch(apiBase() + '/api/tts', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, voice: $('voice').value, format: 'wav' })
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail || ('HTTP ' + res.status));
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    cachedUrls.push(url);
+    $('player').src = url;
+    $('player').style.display = 'block';
+    $('player').play().catch(() => {});
+    show('ok', 'ساخته شد — ' + res.headers.get('X-Audio-Seconds') + ' ثانیه، ' +
+               res.headers.get('X-Chunks') + ' قطعه.');
+  } catch (e) {
+    show('err', 'خطا: ' + e.message);
+  } finally {
+    $('play').disabled = false;
+  }
+}
+
+/* --- recording --------------------------------------------------------- */
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true }
+    });
+    chunks = [];
+    recorder = new MediaRecorder(stream);
+    recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+    recorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      await useRecorded(new Blob(chunks, { type: recorder.mimeType }));
+    };
+    recorder.start();
+    recording = true;
+    $('rec').textContent = '■ توقف ضبط';
+    $('rec').classList.add('on');
+    $('rechint').textContent = 'در حال ضبط… ۲ تا ۵ ثانیه کافی است.';
+  } catch (e) {
+    show('err', 'دسترسی به میکروفون نشد: ' + e.message);
+  }
+}
+
+function stopRecording() {
+  if (recorder && recording) recorder.stop();
+  recording = false;
+  $('rec').textContent = '● شروع ضبط';
+  $('rec').classList.remove('on');
+}
+
+async function useRecorded(blob) {
+  // مرورگر webm/opus می‌دهد؛ به WAV تبدیلش می‌کنیم تا سرور بدون ffmpeg بخواند
+  const buf = await blob.arrayBuffer();
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const decoded = await ctx.decodeAudioData(buf);
+  await ctx.close();
+  let samples;
+  if (decoded.numberOfChannels > 1) {
+    samples = new Float32Array(decoded.length);
+    for (let c = 0; c < decoded.numberOfChannels; c++) {
+      const d = decoded.getChannelData(c);
+      for (let i = 0; i < decoded.length; i++) samples[i] += d[i] / decoded.numberOfChannels;
+    }
+  } else {
+    samples = decoded.getChannelData(0);
+  }
+  recordedBlob = encodeWav(samples, decoded.sampleRate);
+  const url = URL.createObjectURL(recordedBlob);
+  cachedUrls.push(url);
+  $('preview').src = url;
+  $('preview').style.display = 'block';
+  $('rechint').textContent = 'آماده — نام صدا را وارد کنید و «ذخیره صدا» را بزنید.';
+  $('save').disabled = false;
+}
+
+function encodeWav(samples, rate) {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+  const str = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+  str(0, 'RIFF'); view.setUint32(4, 36 + samples.length * 2, true); str(8, 'WAVE');
+  str(12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true); view.setUint32(24, rate, true);
+  view.setUint32(28, rate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+  str(36, 'data'); view.setUint32(40, samples.length * 2, true);
+  let off = 44;
+  for (let i = 0; i < samples.length; i++, off += 2) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  }
+  return new Blob([view], { type: 'audio/wav' });
+}
+
+async function saveVoice() {
+  const name = ($('name').value || '').trim();
+  if (!name) { show('err', 'یک نام برای صدا وارد کنید.'); return; }
+  if (!recordedBlob) { show('err', 'اول صدا را ضبط کنید یا فایلی انتخاب کنید.'); return; }
+  const form = new FormData();
+  form.append('file', recordedBlob, 'voice.wav');
+  form.append('seconds', '5');
+  form.append('trim', 'true');
+  const headers = {};
+  const token = ($('token').value || '').trim();
+  if (token) headers['X-Admin-Token'] = token;
+  try {
+    const res = await fetch(apiBase() + '/api/voices/' + encodeURIComponent(name),
+                            { method: 'POST', body: form, headers });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail || ('HTTP ' + res.status));
+    }
+    show('ok', 'صدای «' + name + '» ذخیره شد. حالا در فهرست صداها انتخابش کنید.');
+    await connect();
+    $('voice').value = name;
+  } catch (e) {
+    show('err', 'خطا: ' + e.message);
+  }
+}
+
+$('connect').onclick = connect;
+$('play').onclick = play;
+$('stop').onclick = () => { FarsiTTS.stop(); $('player').pause(); };
+$('rec').onclick = () => recording ? stopRecording() : startRecording();
+$('save').onclick = saveVoice;
+$('pick').onclick = () => $('file').click();
+$('file').onchange = async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  recordedBlob = f;
+  const url = URL.createObjectURL(f);
+  cachedUrls.push(url);
+  $('preview').src = url;
+  $('preview').style.display = 'block';
+  $('rechint').textContent = 'فایل انتخاب شد: ' + f.name;
+  $('save').disabled = false;
+};
+$('voice').onchange = () => FarsiTTS.configure({ voice: $('voice').value });
+window.addEventListener('beforeunload', () => cachedUrls.forEach(URL.revokeObjectURL));
+
+(async function () {
+  const saved = localStorage.getItem(KEY);
+  if (saved) { $('apiBase').value = saved; await connect(); }
+  else {
+    $('status').innerHTML = '<span class="dot"></span>آدرس سرویس را وارد کنید و «اتصال» را بزنید.';
+  }
+})();
+</script>
+</body>
+</html>

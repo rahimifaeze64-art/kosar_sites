@@ -1,0 +1,52 @@
+name: Deploy TTS service to Hugging Face Space
+
+# چرا این ورک‌فلو؟
+#   GitHub Pages فقط فایل ایستا سرو می‌کند و نمی‌تواند مدل ۴۲۰ مگابایتی PyTorch را
+#   اجرا کند. پس سرویس TTS روی یک Hugging Face Space (رایگان، HTTPS، CORS باز)
+#   بالا می‌آید و این ورک‌فلو هر تغییر پوشهٔ tts_service/ را آنجا منتشر می‌کند.
+#
+# پیش‌نیاز (یک‌بار):
+#   ۱. یک توکن Hugging Face با دسترسی write بسازید: https://huggingface.co/settings/tokens
+#   ۲. در مخزن گیت‌هاب → Settings → Secrets and variables → Actions:
+#        Secret : HF_TOKEN       = hf_xxxxxxxx
+#        Variable: HF_SPACE_ID   = username/space-name
+#   ۳. (اختیاری ولی مهم) در Space → Settings → Variables:
+#        TTS_ADMIN_TOKEN = یک رمز دلخواه، تا فقط شما بتوانید صدا ثبت/حذف کنید
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tts_service/**'
+      - '.github/workflows/deploy-tts-space.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: tts-space-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install huggingface_hub
+        run: pip install --quiet "huggingface_hub>=0.26"
+
+      - name: Upload tts_service/ to the Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE_ID: ${{ vars.HF_SPACE_ID }}
+        run: |
+          if [ -z "$HF_TOKEN" ] || [ -z "$HF_SPACE_ID" ]; then
+            echo "::error::HF_TOKEN (secret) و HF_SPACE_ID (variable) باید تنظیم شده باشند."
+            exit 1
+          fi
+          python tts_service/deploy_to_space.py

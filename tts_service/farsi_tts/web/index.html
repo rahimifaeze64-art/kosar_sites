@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>پاکت‌تی‌تی‌اس فارسی — تبدیل متن به گفتار</title>
+<style>
+  :root { --bg:#0f1115; --card:#171a21; --line:#272b35; --fg:#e8eaef; --dim:#9aa3b2;
+          --accent:#4f8cff; --ok:#39b57a; --warn:#e0a33e; --err:#e2605c; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font-family:"Segoe UI",Tahoma,system-ui,sans-serif; line-height:1.7; }
+  .wrap { max-width:960px; margin:0 auto; padding:28px 18px 60px; }
+  h1 { font-size:24px; margin:0 0 6px; }
+  .sub { color:var(--dim); font-size:14px; margin-bottom:22px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px;
+          padding:18px; margin-bottom:16px; }
+  label { display:block; font-size:13px; color:var(--dim); margin-bottom:6px; }
+  textarea, input[type=text], select {
+    width:100%; background:#0e1116; color:var(--fg); border:1px solid var(--line);
+    border-radius:10px; padding:11px 12px; font:inherit; font-size:15px; }
+  textarea { min-height:120px; resize:vertical; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+  .row > div { flex:1 1 190px; }
+  button { background:var(--accent); color:#fff; border:0; border-radius:10px;
+           padding:11px 18px; font:inherit; font-size:15px; cursor:pointer; }
+  button.ghost { background:#222834; color:var(--fg); }
+  button.rec { background:#3a2a2c; color:#ffb4b1; }
+  button.rec.on { background:var(--err); color:#fff; }
+  button:disabled { opacity:.5; cursor:default; }
+  audio { width:100%; margin-top:14px; }
+  .stats { font-size:13px; color:var(--dim); margin-top:10px; }
+  code.ph { display:block; direction:ltr; text-align:left; background:#0e1116;
+            border:1px solid var(--line); border-radius:10px; padding:10px;
+            font-size:12.5px; white-space:pre-wrap; word-break:break-word;
+            max-height:180px; overflow:auto; margin-top:8px; }
+  .msg { border-radius:10px; padding:10px 12px; font-size:14px; margin-top:12px; display:none; }
+  .msg.show { display:block; }
+  .msg.err { background:#2c1a1a; color:#ffb4b1; border:1px solid #55302f; }
+  .msg.ok  { background:#152720; color:#a8e6c8; border:1px solid #274b3c; }
+  .hint { font-size:13px; color:var(--dim); }
+  .pulse { display:inline-block; width:9px; height:9px; border-radius:50%;
+           background:var(--warn); margin-inline-end:6px; }
+  .pulse.ok { background:var(--ok); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>تبدیل متن فارسی به گفتار — با صدای خودتان</h1>
+  <div class="sub">
+    مدل <span dir="ltr">pocket-tts-farsi-v2</span> (۱۰۹ میلیون پارامتر) روی پردازنده مرکزی.
+    <span id="status"><span class="pulse"></span>در حال بارگذاری مدل…</span>
+  </div>
+
+  <div class="card">
+    <label for="text">متن فارسی</label>
+    <textarea id="text">سلام، حال شما چطور است؟ این یک نمونه از تبدیل متن فارسی به گفتار با صدای خودم است.</textarea>
+    <div class="row" style="margin-top:14px">
+      <div>
+        <label for="voice">صدا</label>
+        <select id="voice"></select>
+      </div>
+      <div style="flex:0 0 auto">
+        <button id="gen">تولید گفتار</button>
+      </div>
+      <div style="flex:0 0 auto">
+        <button id="ph" class="ghost">نمایش آواها</button>
+      </div>
+    </div>
+    <div id="msg" class="msg"></div>
+    <audio id="player" controls style="display:none"></audio>
+    <div class="stats" id="stats"></div>
+    <code class="ph" id="phonemes" style="display:none"></code>
+  </div>
+
+  <div class="card">
+    <label>ثبت صدای خودتان (۲ تا ۵ ثانیه، یک‌نفره و بی‌نویز)</label>
+    <div class="hint" style="margin-bottom:10px">
+      با دکمه ضبط، چند جمله با صدای معمولی خودتان بگویید. بعد از توقف، یک نام برای این صدا
+      وارد کنید و «ذخیره صدا» را بزنید. یا یک فایل آماده (wav/mp3) بارگذاری کنید.
+    </div>
+    <div class="row">
+      <div style="flex:0 0 auto">
+        <button id="rec" class="rec">● شروع ضبط</button>
+      </div>
+      <div style="flex:0 0 auto">
+        <input type="file" id="file" accept="audio/*" style="display:none">
+        <button id="pick" class="ghost">انتخاب فایل صوتی</button>
+      </div>
+      <div>
+        <label for="name">نام صدا</label>
+        <input type="text" id="name" value="my_voice">
+      </div>
+      <div style="flex:0 0 auto">
+        <button id="save" class="ghost" disabled>ذخیره صدا</button>
+      </div>
+      <div style="flex:0 0 auto">
+        <button id="del" class="ghost">حذف صدای انتخابی</button>
+      </div>
+    </div>
+    <audio id="preview" controls style="display:none;margin-top:12px"></audio>
+    <div class="stats" id="rechint"></div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let recordedBlob = null, mediaRecorder = null, chunks = [], recording = false;
+let previewURL = null;
+
+function show(kind, html) {
+  const el = $('msg');
+  el.className = 'msg show ' + kind;
+  el.innerHTML = html;
+}
+function hide() { $('msg').className = 'msg'; }
+
+async function api(path, options) {
+  const res = await fetch(path, options);
+  if (!res.ok) {
+    let detail = res.statusText;
+    try { const j = await res.json(); detail = j.detail || JSON.stringify(j); } catch (e) {}
+    throw new Error(detail);
+  }
+  return res;
+}
+
+async function refreshStatus() {
+  try {
+    const h = await (await api('/api/health')).json();
+    const s = $('status');
+    if (h.status === 'ok') {
+      s.innerHTML = '<span class="pulse ok"></span>آماده — صداهای موجود: ' +
+                    (h.voices.length ? h.voices.join('، ') : 'هیچ');
+    } else if (h.status === 'loading') {
+      s.innerHTML = '<span class="pulse"></span>در حال بارگذاری مدل… (بار اول چند دقیقه)';
+      setTimeout(refreshStatus, 3000);
+    } else {
+      s.innerHTML = '<span class="pulse"></span>' + (h.error ? 'خطا: ' + h.error : 'بی‌کار');
+    }
+    return h;
+  } catch (e) {
+    $('status').innerHTML = '<span class="pulse"></span>سرور پاسخ نمی‌دهد';
+  }
+}
+
+async function refreshVoices(select) {
+  const data = await (await api('/api/voices')).json();
+  const box = $('voice');
+  const current = box.value;
+  box.innerHTML = '';
+  for (const v of data.voices) {
+    const o = document.createElement('option');
+    o.value = v.name;
+    o.textContent = v.name + (v.builtin ? ' (نمونه)' : '');
+    box.appendChild(o);
+  }
+  const want = select || current || data.default;
+  if ([...box.options].some(o => o.value === want)) box.value = want;
+  return data;
+}
+
+async function generate() {
+  const text = $('text').value.trim();
+  if (!text) { show('err', 'متن را وارد کنید.'); return; }
+  hide();
+  $('gen').disabled = true;
+  $('stats').textContent = 'در حال تولید…';
+  const t0 = Date.now();
+  try {
+    const res = await api('/api/tts', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ text, voice: $('voice').value, format: 'wav' })
+    });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const player = $('player');
+    player.src = url;
+    player.style.display = 'block';
+    player.play().catch(() => {});
+    $('stats').textContent =
+      `طول صدا: ${res.headers.get('X-Audio-Seconds')} ثانیه · ` +
+      `${res.headers.get('X-Chunks')} قطعه · زمان تولید: ${((Date.now() - t0) / 1000).toFixed(1)} ثانیه`;
+    $('phonemes').style.display = 'none';
+  } catch (e) {
+    show('err', 'خطا: ' + e.message);
+    $('stats').textContent = '';
+  } finally {
+    $('gen').disabled = false;
+  }
+}
+
+async function showPhonemes() {
+  const text = $('text').value.trim();
+  if (!text) { show('err', 'متن را وارد کنید.'); return; }
+  hide();
+  try {
+    const j = await (await api('/api/phonemes', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ text })
+    })).json();
+    $('phonemes').textContent = j.phonemes + '\n\n' +
+      j.chunks.map((c, i) => `#${i + 1} [${c.tokens} توکن / ${c.boundary}] ${c.phonemes}`).join('\n');
+    $('phonemes').style.display = 'block';
+  } catch (e) { show('err', 'خطا: ' + e.message); }
+}
+
+// --- recording -----------------------------------------------------------
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true }
+    });
+    chunks = [];
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+    mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      recordedBlob = new Blob(chunks, { type: mediaRecorder.mimeType });
+      await previewRecorded();
+    };
+    mediaRecorder.start();
+    recording = true;
+    $('rec').textContent = '■ توقف ضبط';
+    $('rec').classList.add('on');
+    $('rechint').textContent = 'در حال ضبط… ۲ تا ۵ ثانیه کافی است.';
+  } catch (e) {
+    show('err', 'دسترسی به میکروفون نشد: ' + e.message);
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && recording) mediaRecorder.stop();
+  recording = false;
+  $('rec').textContent = '● شروع ضبط';
+  $('rec').classList.remove('on');
+}
+
+// Turn whatever the browser recorded into a plain 16-bit WAV the server reads.
+async function blobToWav(blob) {
+  const buf = await blob.arrayBuffer();
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const decoded = await ctx.decodeAudioData(buf);
+  await ctx.close();
+  const ch = decoded.numberOfChannels > 1
+    ? mixToMono(decoded) : decoded.getChannelData(0);
+  return encodeWav(ch, decoded.sampleRate);
+}
+
+function mixToMono(decoded) {
+  const n = decoded.length, out = new Float32Array(n);
+  for (let c = 0; c < decoded.numberOfChannels; c++) {
+    const data = decoded.getChannelData(c);
+    for (let i = 0; i < n; i++) out[i] += data[i] / decoded.numberOfChannels;
+  }
+  return out;
+}
+
+function encodeWav(samples, rate) {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+  const str = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+  str(0, 'RIFF'); view.setUint32(4, 36 + samples.length * 2, true); str(8, 'WAVE');
+  str(12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true); view.setUint32(24, rate, true);
+  view.setUint32(28, rate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+  str(36, 'data'); view.setUint32(40, samples.length * 2, true);
+  let off = 44;
+  for (let i = 0; i < samples.length; i++, off += 2) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  }
+  return new Blob([view], { type: 'audio/wav' });
+}
+
+async function previewRecorded() {
+  if (previewURL) URL.revokeObjectURL(previewURL);
+  previewURL = URL.createObjectURL(recordedBlob);
+  $('preview').src = previewURL;
+  $('preview').style.display = 'block';
+  const wav = await blobToWav(recordedBlob);
+  recordedBlob = wav;
+  $('rechint').textContent = `ضبط شد (${(wav.size / 1024).toFixed(0)} کیلوبایت). ` +
+                             `نام صدا را وارد کنید و «ذخیره صدا» را بزنید.`;
+  $('save').disabled = false;
+}
+
+async function saveVoice() {
+  const name = ($('name').value || '').trim();
+  if (!name) { show('err', 'یک نام برای صدا وارد کنید (حروف انگلیسی، عدد، _).'); return; }
+  if (!recordedBlob) { show('err', 'اول صدا را ضبط کنید یا فایلی انتخاب کنید.'); return; }
+  hide();
+  $('save').disabled = true;
+  try {
+    const form = new FormData();
+    form.append('file', recordedBlob, 'voice.wav');
+    form.append('seconds', '5');
+    form.append('trim', 'true');
+    await api('/api/voices/' + encodeURIComponent(name), { method: 'POST', body: form });
+    await refreshVoices(name);
+    show('ok', `صدا با نام «${name}» ذخیره شد. حالا از فهرست صداها انتخابش کنید.`);
+  } catch (e) {
+    show('err', 'خطا: ' + e.message);
+  } finally {
+    $('save').disabled = !recordedBlob;
+  }
+}
+
+async function deleteVoice() {
+  const name = $('voice').value;
+  if (!name) return;
+  if (!confirm(`صدای «${name}» حذف شود؟`)) return;
+  try {
+    await api('/api/voices/' + encodeURIComponent(name), { method: 'DELETE' });
+    await refreshVoices();
+    show('ok', `صدای «${name}» حذف شد.`);
+  } catch (e) { show('err', 'خطا: ' + e.message); }
+}
+
+$('gen').onclick = generate;
+$('ph').onclick = showPhonemes;
+$('rec').onclick = () => recording ? stopRecording() : startRecording();
+$('save').onclick = saveVoice;
+$('del').onclick = deleteVoice;
+$('pick').onclick = () => $('file').click();
+$('file').onchange = async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  recordedBlob = f;
+  if (previewURL) URL.revokeObjectURL(previewURL);
+  previewURL = URL.createObjectURL(f);
+  $('preview').src = previewURL;
+  $('preview').style.display = 'block';
+  $('rechint').textContent = 'فایل انتخاب شد: ' + f.name;
+  $('save').disabled = false;
+};
+
+(async function init() {
+  await refreshVoices();
+  refreshStatus();
+})();
+</script>
+</body>
+</html>

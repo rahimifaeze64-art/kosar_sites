@@ -1,0 +1,258 @@
+# ============================================================
+# .github/workflows/ai-tts.yml
+#
+# بخش «هوش مصنوعی» — تولید گفتار فارسی با صدای کلون‌شده
+#
+# ⚡ همه‌چیز اینجا اجرا می‌شود؛ روی سیستم شما هیچ‌چیز دانلود نمی‌شود.
+#
+# مدل: mehdi-hf/pocket-tts-farsi-v2
+#   • ۱۰۹.۵ میلیون پارامتر، فقط CPU
+#   • کلون صدا از نمونهٔ ۵ ثانیه‌ای
+#   • ~۶ برابر سریع‌تر از زمان واقعی
+#   • ⚠️ لایسنس CC-BY-NC-4.0 → فقط غیرتجاری
+#
+# 📌 چطور استفاده کنم؟
+#   ۱) نمونهٔ صدایتان را (۵ ثانیه) در ai/voices/my_voice.wav بگذارید
+#      (از طریق سایت گیت‌هاب: Add file → Upload files)
+#   ۲) تب Actions → «AI — تولید صدا» → Run workflow
+#   ۳) متن فارسی را در کادر بنویسید → Run
+#   ۴) صدا در ai/out/ ذخیره می‌شود و در صفحهٔ «هوش مصنوعی» پخش می‌شود
+#
+# 💾 بار اول ~۱۵ دقیقه طول می‌کشد (دانلود مدل‌ها).
+#    بارهای بعد با cache فقط ~۳ دقیقه.
+# ============================================================
+
+name: AI — تولید صدا
+
+on:
+  # اجرای دستی با وارد کردن متن
+  workflow_dispatch:
+    inputs:
+      text:
+        description: 'متن فارسی برای خواندن'
+        required: true
+        type: string
+      voice:
+        description: 'نام فایل نمونهٔ صدا در ai/voices/'
+        required: false
+        default: 'my_voice.wav'
+        type: string
+      name:
+        description: 'نام فایل خروجی (خالی = خودکار)'
+        required: false
+        type: string
+      commit:
+        description: 'فایل صوتی در مخزن ذخیره شود؟ (برای پخش در سایت)'
+        required: false
+        default: true
+        type: boolean
+
+  # با تغییر کد بخش هوش مصنوعی، یک آزمایش خودکار اجرا می‌شود
+  push:
+    branches: [main]
+    paths:
+      - 'ai/**'
+      - '.github/workflows/ai-tts.yml'
+
+# برای commit کردن فایل صوتی در مخزن لازم است
+permissions:
+  contents: write
+
+concurrency:
+  group: ai-tts
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: دریافت کد
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: نصب پایتون
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'   # پایدارترین نسخه برای PyTorch
+
+      # ── کش: کلید اصلی سرعت ──
+      # بار اول مدل‌ها دانلود می‌شوند (~۱.۵ گیگ)، بعد از آن فوری.
+      - name: کش مدل‌های هاگینگ‌فیس
+        uses: actions/cache@v4
+        with:
+          path: .ai-cache/hf
+          key: hf-models-${{ runner.os }}-${{ hashFiles('.github/workflows/ai-tts.yml') }}
+          restore-keys: |
+            hf-models-${{ runner.os }}-
+
+      - name: کش pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('ai/requirements.txt') }}
+          restore-keys: |
+            pip-${{ runner.os }}-
+
+      # ── نصب وابستگی‌ها ──
+      - name: نصب PyTorch (نسخهٔ CPU — سبک‌تر)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: نصب وابستگی‌های بخش هوش مصنوعی
+        run: |
+          python -m pip install -r ai/requirements.txt
+          python -c "import torch, transformers, pocket_tts, sphn; print('torch', torch.__version__); print('همهٔ وابستگی‌ها نصب شدند')"
+
+      # ── دانلود مدل‌ها (کش می‌شوند) ──
+      - name: دانلود مدل‌ها
+        env:
+          HF_HOME: ${{ github.workspace }}/.ai-cache/hf
+        run: |
+          python - <<'PY'
+          import os
+          from huggingface_hub import snapshot_download
+          for repo in ("mehdi-hf/pocket-tts-farsi-v2",
+                       "mehdi-hf/Homo-GE2PE-Persian-HF"):
+              p = snapshot_download(repo_id=repo, allow_patterns=[
+                  "*.yaml", "*.py", "*.json", "*.txt", "*.model",
+                  "*.safetensors", "*.bin",
+              ])
+              print("✅", repo, "→", p)
+          PY
+
+      # ── بررسی نمونهٔ صدا ──
+      - name: بررسی نمونهٔ صدا
+        id: voice
+        env:
+          INPUT_VOICE: ${{ github.event.inputs.voice }}
+          HF_HOME: ${{ github.workspace }}/.ai-cache/hf
+        run: |
+          VOICE="${INPUT_VOICE:-my_voice.wav}"
+          echo "name=$VOICE" >> "$GITHUB_OUTPUT"
+
+          if [ -f "ai/voices/$VOICE" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+            echo "✅ نمونهٔ صدا: ai/voices/$VOICE"
+            ls -lh "ai/voices/$VOICE"
+            exit 0
+          fi
+
+          # اجرای دستی بدون نمونهٔ صدا → خطای روشن
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "❌ نمونهٔ صدا پیدا نشد: ai/voices/$VOICE"
+            echo ""
+            echo "فایل‌های موجود در ai/voices/:"
+            ls -la ai/voices/ || true
+            echo ""
+            echo "📌 نمونهٔ صدا را اضافه کنید (حداکثر ۵ ثانیه):"
+            echo "   https://github.com/${{ github.repository }}/upload/main/ai/voices"
+            exit 1
+          fi
+
+          # اجرای خودکار با push و نبود نمونهٔ صدا →
+          # از نمونهٔ آزمایشی خودِ مدل استفاده کن تا کل مسیر آزمایش شود
+          echo "ℹ️ نمونهٔ صدا نبود — از نمونهٔ آزمایشی خود مدل استفاده می‌شود"
+          python - <<'PY'
+          import os, shutil
+          from huggingface_hub import hf_hub_download
+          src = hf_hub_download(
+              repo_id="mehdi-hf/pocket-tts-farsi-v2",
+              filename="samples/prompt_hello.wav",
+          )
+          os.makedirs("ai/voices", exist_ok=True)
+          dst = "ai/voices/_test_prompt.wav"
+          shutil.copy(src, dst)
+          print("✅ نمونهٔ آزمایشی گرفته شد:", dst, os.path.getsize(dst), "بایت")
+          PY
+          echo "name=_test_prompt.wav" >> "$GITHUB_OUTPUT"
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+          echo "⚠️ توجه: این صدا صدای شما نیست — فقط برای آزمایش مسیر."
+
+      # ── آماده کردن متن ──
+      - name: آماده کردن متن
+        id: text
+        if: steps.voice.outputs.ok == 'true'
+        env:
+          INPUT_TEXT: ${{ github.event.inputs.text }}
+        run: |
+          mkdir -p ai/out
+          if [ -n "$INPUT_TEXT" ]; then
+            printf '%s' "$INPUT_TEXT" > ai/text_current.txt
+          elif [ -f ai/text.txt ]; then
+            cp ai/text.txt ai/text_current.txt
+          else
+            # اجرای خودکار با push → یک متن آزمایشی
+            printf '%s' "سلام، این یک آزمایش از بخش هوش مصنوعی است. صدا با کلون کردن نمونهٔ شما ساخته شده است." > ai/text_current.txt
+            echo "ℹ️ متنی وارد نشده بود — متن آزمایشی استفاده شد"
+          fi
+          echo "--- متن ---"
+          cat ai/text_current.txt
+          echo ""
+          echo "chars=$(wc -m < ai/text_current.txt)" >> "$GITHUB_OUTPUT"
+
+      # ── تولید صدا ──
+      - name: تولید صدا
+        id: gen
+        if: steps.voice.outputs.ok == 'true'
+        env:
+          HF_HOME: ${{ github.workspace }}/.ai-cache/hf
+          AI_CACHE: ${{ github.workspace }}/.ai-cache
+          OMP_NUM_THREADS: '4'
+          TOKENIZERS_PARALLELISM: 'false'
+        run: |
+          python ai/scripts/generate.py \
+            --text-file ai/text_current.txt \
+            --voice "ai/voices/${{ steps.voice.outputs.name }}" \
+            --name "${{ github.event.inputs.name }}" \
+            --voice-sec 5.0
+          echo "--- خروجی ---"
+          ls -lh ai/out/*.wav | tail -5
+
+      # ── ذخیرهٔ صدا در مخزن تا سایت بتواند پخشش کند ──
+      - name: ذخیرهٔ فایل صوتی در مخزن
+        if: steps.voice.outputs.ok == 'true' && (github.event_name != 'workflow_dispatch' || github.event.inputs.commit == 'true')
+        run: |
+          git config user.name  "ai-tts-bot"
+          git config user.email "ai-tts-bot@users.noreply.github.com"
+          git add ai/out/
+          if git diff --staged --quiet; then
+            echo "— تغییر تازه‌ای نیست"
+          else
+            git commit -m "🤖 صدای تازه: $(date -u +'%Y-%m-%d %H:%M UTC')"
+            # اگر همزمان چیز دیگری push شده، اول rebase کن
+            git pull --rebase --autostash origin main || true
+            git push
+            echo "✅ در مخزن ذخیره شد"
+          fi
+
+      # ── همیشه: فایل صوتی به‌عنوان artifact ──
+      - name: بارگذاری صدا (artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-voice-${{ github.run_number }}
+          path: |
+            ai/out/*.wav
+            ai/out/index.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: خلاصه
+        if: always()
+        run: |
+          {
+            echo "## 🎙 بخش هوش مصنوعی — تولید صدا"
+            echo ""
+            echo "| مورد | مقدار |"
+            echo "|---|---|"
+            echo "| متن | $(head -c 120 ai/text_current.txt 2>/dev/null || echo '—') |"
+            echo "| نمونهٔ صدا | \`${{ steps.voice.outputs.name }}\` |"
+            echo "| فایل‌های خروجی | $(ls ai/out/*.wav 2>/dev/null | wc -l) |"
+            echo ""
+            echo "صداهای تولیدشده در \`ai/out/\` ذخیره شدند و در صفحهٔ **هوش مصنوعی** پخش می‌شوند."
+          } >> "$GITHUB_STEP_SUMMARY"
