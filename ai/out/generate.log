@@ -1,10 +1,11 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
 ✅ normalize_fa.py → /home/runner/work/kosar_sites/kosar_sites/.ai-cache/hf/hub/models--mehdi-hf--pocket-tts-farsi-v2/snapshots/e87097ed98edb8bd9c9bcabe9b575a51a466d0e4/normalize_fa.py
 ✅ normalize_fa بارگذاری شد
-The cache for model files in Transformers v4.22.0 has been updated. Migrating your old cache. This is a one-time only operation. You can interrupt this and resume the migration later on by calling `transformers.utils.move_cache()`.
-0it [00:00, ?it/s]0it [00:00, ?it/s]
 ⏳ بارگذاری G2P: mehdi-hf/Homo-GE2PE-Persian-HF
-Fetching 10 files:   0%|          | 0/10 [00:00<?, ?it/s]Fetching 10 files:  80%|████████  | 8/10 [00:00<00:00, 46.61it/s]Fetching 10 files: 100%|██████████| 10/10 [00:00<00:00, 50.06it/s]
+Fetching 10 files:   0%|          | 0/10 [00:00<?, ?it/s]Fetching 10 files: 100%|██████████| 10/10 [00:00<00:00, 2065.45it/s]
 🔧 extra_special_tokens: لیست (0) → دیکشنری اصلاح شد
+Loading weights:   0%|          | 0/52 [00:00<?, ?it/s]Loading weights: 100%|██████████| 52/52 [00:00<00:00, 34575.75it/s]
+[transformers] The tied weights mapping and config for this model specifies to tie shared.weight to lm_head.weight, but both are present in the checkpoints with different values, so we will NOT tie them. You should update the config with `tie_word_embeddings=False` to silence this warning.
 ✅ G2P آماده است
 ⏳ بارگذاری مدل گفتار… (hf://mehdi-hf/pocket-tts-farsi-v2/model.yaml)
 ✅ مدل گفتار آماده است
@@ -13,7 +14,6 @@ The cache for model files in Transformers v4.22.0 has been updated. Migrating yo
 ✅ نمونهٔ صدا آماده: 119040 نمونه = 4.96 ثانیه
 📝 1 تکه:
    [1] سلام، این یک آزمایش از بخش هوش مصنوعی است. صدا با کلون کردن نمونهٔ شما ساخته شده است.
-🔊 [1/1] 1 فونِم: iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
-WARNING:pocket_tts.models.text_chunking:Chunk has 80 tokens (max 50), generation may skip words: 'iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii...'
-✅ نوشته شد: /home/runner/work/kosar_sites/kosar_sites/ai/out/clip_20261011_124834.wav  (13.2 ثانیه، 13s طول کشید)
-✅ index.json به‌روز شد (1 مورد)
+🔊 [1/1] 18 فونِم: salAm ?in yek ?AzmAyeS ?az baxSe huSe masnu?i ?ast sedA bA kelon kardan nemuneye SomA sAxte Sode ?ast
+✅ نوشته شد: /home/runner/work/kosar_sites/kosar_sites/ai/out/clip_20261011_125705.wav  (5.7 ثانیه، 8s طول کشید)
+✅ index.json به‌روز شد (2 مورد)
