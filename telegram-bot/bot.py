@@ -394,10 +394,20 @@ def confirm_keyboard():
 
 
 def skip_keyboard():
-    """رد کردن شمارهٔ دانشجویی."""
+    """رد کردن شمارهٔ پاسپورت (اختیاری)."""
     return {
         "inline_keyboard": [[
-            {"text": "⏭ رد کردن", "callback_data": "num:skip"},
+            {"text": "⏭ رد کردن پاسپورت", "callback_data": "num:skip"},
+        ]]
+    }
+
+
+def done_keyboard():
+    """آیا تمام شد؟ — دو دکمه."""
+    return {
+        "inline_keyboard": [[
+            {"text": "✅ تمام شد", "callback_data": "done:yes"},
+            {"text": "➕ بازم می‌فرستم", "callback_data": "done:no"},
         ]]
     }
 
@@ -411,9 +421,10 @@ TXT_INTRO = (
 TXT_HELP_CHAT = (
     "<b>راهنمای ربات</b>\n\n"
     "۱) اسمت را می‌نویسی\n"
-    "۲) اگر لازم بود شمارهٔ دانشجویی را وارد می‌کنی\n"
+    "۲) شمارهٔ پاسپورتت را می‌دهی (اختیاری — می‌توانی رد کنی)\n"
     "۳) تأیید می‌کنی که خودت هستی\n"
-    "۴) فایل‌های تعدیلات را می‌فرستی (از فایل‌ها، واتساپ یا هرجا)\n\n"
+    "۴) تعدیلاتت را می‌فرستی — ویس، متن، صوت، فایل یا هرچیز\n"
+    "۵) وقتی تمام شد، «✅ تمام شد» را می‌زنی\n\n"
     "<b>دکمه‌های پایین:</b>\n"
     "📋 وضعیت من — وضعیت آخرین ارسال‌ها\n"
     "⏰ تاریخ تحویل — زمان اعلام‌شده\n"
@@ -731,16 +742,12 @@ class TadilatBot:
         label = KIND_FA.get(media["kind"], media["kind"])
         self._send(
             chat_id,
-            "✅ <b>تعدیلات شما ارسال شد</b>\n\n"
-            "📎 %s دریافت شد (جمعاً %s فایل)\n"
-            "🔖 کد پیگیری: <b>%s</b>\n%s\n\n"
-            "از دکمه‌های پایین می‌توانی <b>وضعیت</b> و <b>تاریخ تحویل</b> "
-            "را ببینی."
+            "✅ <b>%s دریافت شد</b> (جمعاً %s مورد)\n"
+            "🔖 کد پیگیری: <b>%s</b>"
             % (label, files_count,
-               html.escape(str(req.get("code") or request_id)),
-               ("✍️ نویسندهٔ تو: <b>%s</b>" % html.escape(writer_name)) if writer_name
-               else "⏳ در انتظار تعیین نویسنده"),
-            main_keyboard())
+               html.escape(str(req.get("code") or request_id))))
+        # ❓ سؤال «آیا تمام شد؟» با دو دکمه — تا وقتی «تمام شد» نزده ادامه دارد
+        self._ask_done(chat_id)
         log("فایل به %s اضافه شد (%s)" % (request_id, kind_db))
 
     # ══════════════════════════════════════════════════════════
@@ -769,9 +776,14 @@ class TadilatBot:
     def _send(self, chat_id, text, keyboard=None):
         return self.tg.send_message(chat_id, text, reply_markup=keyboard)
 
+    # ══════════════════════════════════════════════════════════
+    # جریان: نام → پاسپورت (اختیاری) → جستجو → «آیا تو X هستی؟»
+    #         → فرستادن تعدیلات (حلقه) → «آیا تمام شد؟» → ۴ دکمه
+    # ══════════════════════════════════════════════════════════
+
     # ── شروع ──
     def _start_intro(self, chat_id, user_id):
-        self._chat_set(user_id, stage="name", name=None, student_no=None,
+        self._chat_set(user_id, stage="name", name=None, passport_no=None,
                        candidate=None, profile_id=None)
         self._send(chat_id, TXT_INTRO)
 
@@ -780,56 +792,60 @@ class TadilatBot:
         if len(text) < 3:
             self._send(chat_id, "اسمت را کامل‌تر بنویس 🙂")
             return
+        self._chat_set(user_id, stage="passport", name=text, candidate=None)
+        self._send(chat_id,
+                   "ممنون 👍\n\n"
+                   "حالا <b>شمارهٔ پاسپورتت</b> را بنویس (اختیاری).\n"
+                   "اگر نداری یا نمی‌خواهی بدهی، «رد کردن» را بزن.",
+                   skip_keyboard())
+
+    # ── قدم ۲: شمارهٔ پاسپورت (اختیاری) ──
+    def _on_passport(self, chat_id, user_id, text):
+        st = self._chat_state(user_id)
+        self._chat_set(user_id, passport_no=text)
+        self._try_match(chat_id, user_id, st.get("name") or "", text)
+
+    def _on_number(self, chat_id, user_id, text):
+        """سازگاری با نام قدیمی همین متد."""
+        self._on_passport(chat_id, user_id, text)
+
+    def _try_match(self, chat_id, user_id, name, passport_no=None):
+        """نام (و شمارهٔ پاسپورت) را در پروفایل‌های موجود جستجو می‌کند."""
         self.tg.send_chat_action(chat_id, "typing")
+        query = ("%s %s" % (name, passport_no or "")).strip()
         det = {}
         try:
-            det = self.router.detect(text) or {}
+            det = self.router.detect(query) or {}
         except Exception as exc:  # noqa: BLE001
             log("تطبیق نام ناموفق: %r" % (exc,), "WARN")
 
         if det.get("student_id"):
-            name = det.get("name") or text
-            self._chat_set(user_id, stage="confirm", name=text,
-                           candidate={"id": det.get("student_id"), "name": name,
-                                      "student_no": det.get("student_no")})
-            self._send(chat_id, "🔎 آیا تو <b>%s</b> هستی؟" % html.escape(name),
-                       confirm_keyboard())
-            return
-
-        # پیدا نشد → شمارهٔ دانشجویی (اختیاری)
-        self._chat_set(user_id, stage="number", name=text, candidate=None)
-        self._send(chat_id,
-                   "اسمت را در فهرست پیدا نکردم 🤔\n\n"
-                   "اگر <b>شمارهٔ دانشجویی</b> داری بنویس تا دقیق‌تر پیدایت کنم.\n"
-                   "اگر هم نداری، «رد کردن» را بزن.", skip_keyboard())
-
-    # ── قدم ۲: شمارهٔ دانشجویی ──
-    def _on_number(self, chat_id, user_id, text):
-        st = self._chat_state(user_id)
-        name = st.get("name") or ""
-        det = {}
-        try:
-            det = self.router.detect(("%s %s" % (name, text)).strip()) or {}
-        except Exception as exc:  # noqa: BLE001
-            log("تطبیق شماره ناموفق: %r" % (exc,), "WARN")
-
-        if det.get("student_id"):
             nm = det.get("name") or name
-            self._chat_set(user_id, stage="confirm", student_no=text,
+            self._chat_set(user_id, stage="confirm",
                            candidate={"id": det.get("student_id"), "name": nm,
-                                      "student_no": det.get("student_no") or text})
+                                      "student_no": det.get("student_no") or passport_no})
             self._send(chat_id, "🔎 آیا تو <b>%s</b> هستی؟" % html.escape(nm),
                        confirm_keyboard())
             return
 
-        # باز هم پیدا نشد → به‌عنوان دانشجوی تازه ادامه بده
-        self._link(user_id, {"id": None, "name": name, "student_no": text})
+        # پیدا نشد → بخواه کامل بنویسد
+        self._chat_set(user_id, stage="name", candidate=None)
         self._send(chat_id,
-                   "پروفایلی با این مشخصات پیدا نکردم، ولی مشکلی نیست — "
-                   "کارشناسان خودشان وصلش می‌کنند.\n\n"
-                   "📤 حالا هر تعدیلاتی داری بفرست "
-                   "(عکس، PDF، Word یا ویس — از فایل‌ها یا واتساپ).",
-                   main_keyboard())
+                   "پیدایت نکردم 🤔\n\n"
+                   "لطفاً <b>اسمت را کامل</b> بنویس (نام، نام پدر، نام جد، فامیل)\n"
+                   "و بعد <b>شمارهٔ پاسپورتت</b> را هم بده.")
+
+    # ── شروع گرفتن تعدیلات ──
+    def _begin_collecting(self, chat_id, user_id, name):
+        self._chat_set(user_id, stage="collecting")
+        self._send(chat_id,
+                   "✅ ثبت شد، <b>%s</b> عزیز!\n\n"
+                   "📤 حالا تعدیلاتت را بفرست — <b>ویس، متن، صوت، فایل یا هرچیز</b>.\n"
+                   "چندتا هم می‌توانی بفرستی؛ بعد از هر کدام می‌پرسم تمام شد یا نه."
+                   % html.escape(name or ""))
+
+    def _ask_done(self, chat_id):
+        self._send(chat_id, "❓ آیا تمام شد؟", done_keyboard())
 
     # ── اتصال نهایی ──
     def _link(self, user_id, cand):
@@ -852,6 +868,10 @@ class TadilatBot:
 
         # فایل (شامل فوروارد از واتساپ)
         if extract_media(message):
+            # در حال گرفتن تعدیلات یا آماده → فایل پذیرفته می‌شود
+            if (st.get("stage") == "collecting") or self._is_ready(st):
+                self.handle_media(message)
+                return
             if not self._is_ready(st):
                 # هنوز معرفی نشده → اول شناسایی
                 self._send(chat_id,
@@ -899,32 +919,80 @@ class TadilatBot:
             self.files_info(chat_id, user_id)
             return
         if text == BTN_NEW:
-            self._chat_set(user_id, stage="ready")
-            self._send(chat_id,
-                       "📤 بفرست! هر فایلی — عکس، PDF، Word یا ویس.\n"
-                       "از واتساپ هم می‌شود: Share → Telegram.",
-                       main_keyboard())
+            self._begin_collecting(chat_id, user_id,
+                                   self._chat_state(user_id).get("name") or "")
             return
 
-        # جریان شناسایی
+        stage = st.get("stage") or "name"
+
+        # ── در حال گرفتن تعدیلات: متن هم محتوا حساب می‌شود ──
+        if stage == "collecting":
+            self._save_text_note(chat_id, user_id, text)
+            return
+
+        # ── جریان شناسایی ──
         if not self._is_ready(st):
-            stage = st.get("stage") or "name"
-            if stage in ("name", "ready"):
-                self._on_name(chat_id, user_id, text)
+            if stage == "passport":
+                self._on_passport(chat_id, user_id, text)
                 return
-            if stage == "number":
+            if stage in ("number",):
                 self._on_number(chat_id, user_id, text)
                 return
             if stage == "confirm":
                 self._send(chat_id,
                            "لطفاً از دکمه‌های بالا استفاده کن: ✅ بله یا ❌ نه")
                 return
+            # name (یا شروع تازه)
+            self._on_name(chat_id, user_id, text)
+            return
 
-        # وصل شده و متن فرستاده
+        # ── وصل شده و متن فرستاده ──
         self._send(chat_id,
                    "📎 هر فایلی بفرستی خودکار به تعدیلاتت وصل می‌شود.\n"
-                   "از دکمه‌های پایین وضعیتت را ببین.",
+                   "برای ارسال تازه «🆕 تعدیلات جدید» را بزن.",
                    main_keyboard())
+
+    # ── ذخیرهٔ متن به‌عنوان محتوای تعدیلات ──
+    def _save_text_note(self, chat_id, user_id, text):
+        """متنِ فرستاده‌شده در مرحلهٔ گرفتن تعدیلات را ثبت می‌کند."""
+        if not text.strip():
+            return
+        st = self._chat_state(user_id)
+        req = self._latest_request(chat_id)
+        if not req:
+            det = {"student_id": st.get("profile_id"),
+                   "student_name": st.get("name") or "—",
+                   "student_no": st.get("student_no")}
+            req = self._create_request(chat_id,
+                                       {"from": {"id": user_id}, "chat": {"id": chat_id}},
+                                       det)
+        if not req:
+            self._send(chat_id, "⚠️ ثبت متن ناموفق بود. دوباره بفرست.")
+            return
+        rid = req.get("id")
+        try:
+            self.sb.insert("tadilat_files", [{
+                "request_id": rid,
+                "kind": "text",
+                "file_name": (text[:60] + ("…" if len(text) > 60 else "")),
+                "storage_path": "text://%s" % uuid.uuid4().hex[:10],
+                "mime_type": "text/plain",
+                "file_size": len(text.encode("utf-8")),
+                "caption": text[:2000],
+            }])
+        except SupabaseError as exc:
+            log("ثبت متن ناموفق: %s" % exc, "ERROR")
+            self._send(chat_id, "⚠️ ثبت متن ناموفق بود. دوباره بفرست.")
+            return
+        count = int(req.get("files_count") or 0) + 1
+        try:
+            self.sb.update("tadilat_requests",
+                           "id=eq." + urllib.parse.quote(str(rid)),
+                           {"files_count": count})
+        except SupabaseError:
+            pass
+        self._send(chat_id, "📝 متن ثبت شد (جمعاً %s مورد)" % count)
+        self._ask_done(chat_id)
 
     # ── دکمه‌های شیشه‌ای ──
     def handle_callback(self, query):
@@ -943,29 +1011,38 @@ class TadilatBot:
 
         if data == "me:yes":
             cand = (self._chat_state(user_id).get("candidate") or {})
-            self._link(user_id, cand)
-            self._send(chat_id,
-                       "✅ ثبت شد، <b>%s</b> عزیز!\n\n"
-                       "📤 حالا هر تعدیلاتی داری بفرست — عکس، PDF، Word یا ویس.\n"
-                       "می‌توانی از <b>واتساپ</b> هم Share → Telegram کنی."
-                       % html.escape(cand.get("name") or ""),
-                       main_keyboard())
+            # ⚠️ هنوز _link نمی‌کنیم — اول باید تعدیلاتش را بفرستد
+            self._chat_set(user_id, pending_profile=cand)
+            self._begin_collecting(chat_id, user_id, cand.get("name") or "")
             return
 
         if data == "me:no":
             self._chat_set(user_id, stage="name", candidate=None, profile_id=None)
             self._send(chat_id,
-                       "باشه 🙂 اسمت را دقیق‌تر بنویس "
-                       "(نام، نام پدر، نام جد) تا درست پیدایت کنم.")
+                       "باشه 🙂\n\n"
+                       "لطفاً <b>اسمت را کامل</b> بنویس (نام، نام پدر، نام جد، فامیل)\n"
+                       "و بعد <b>شمارهٔ پاسپورتت</b> را بده تا درست پیدایت کنم.")
             return
 
         if data == "num:skip":
             st = self._chat_state(user_id)
-            self._link(user_id, {"id": None, "name": st.get("name") or "",
-                                 "student_no": None})
+            self._try_match(chat_id, user_id, st.get("name") or "", None)
+            return
+
+        if data == "done:yes":
+            st = self._chat_state(user_id)
+            cand = st.get("pending_profile") or {}
+            self._link(user_id, cand)
             self._send(chat_id,
-                       "بسیار خوب 👍 کارشناسان پروفایلت را وصل می‌کنند.\n\n"
-                       "📤 حالا تعدیلاتت را بفرست.", main_keyboard())
+                       "🎉 <b>عالی!</b> تعدیلاتت ثبت شد.\n\n"
+                       "از دکمه‌های پایین می‌توانی وضعیت، تاریخ تحویل و "
+                       "فایل‌هایت را ببینی.",
+                       main_keyboard())
+            return
+
+        if data == "done:no":
+            self._chat_set(user_id, stage="collecting")
+            self._send(chat_id, "📤 بفرست — منتظرم. هر فایلی: ویس، عکس، PDF، متن…")
             return
 
     # ── نمایش وضعیت ──
