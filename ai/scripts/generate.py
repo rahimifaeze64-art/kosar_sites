@@ -89,11 +89,61 @@ class Phonemizer:
         self.torch = torch
         self.normalize = normalize_for_model
         log(f"⏳ بارگذاری G2P: {G2P_REPO}")
-        self.tok = AutoTokenizer.from_pretrained(G2P_REPO)
+        g2p_dir = self._local_dir()
+        self.tok = AutoTokenizer.from_pretrained(g2p_dir)
         self.g2p = T5ForConditionalGeneration.from_pretrained(
             G2P_REPO
         ).eval()
         log("✅ G2P آماده است")
+
+    @staticmethod
+    def _local_dir() -> str:
+        """مدل G2P را محلی می‌گیرد و فایل توکنایزر را در صورت نیاز اصلاح می‌کند.
+
+        ⚠️ دلیل این کار:
+        مدل Homo-GE2PE مقدار extra_special_tokens را در tokenizer_config.json
+        به شکل «لیست» ذخیره کرده، ولی transformers جدید آن را «دیکشنری»
+        می‌خواهد و بدون این اصلاح با این خطا می‌افتد:
+            AttributeError: 'list' object has no attribute 'keys'
+        این محافظ مستقل از نسخهٔ transformers کار می‌کند.
+        """
+        import json
+        import shutil
+        import tempfile
+
+        from huggingface_hub import snapshot_download
+
+        src = snapshot_download(repo_id=G2P_REPO)
+        cfg_path = Path(src) / "tokenizer_config.json"
+        if not cfg_path.exists():
+            log("ℹ️ tokenizer_config.json نبود — بدون اصلاح ادامه می‌دهیم")
+            return src
+
+        try:
+            cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+        except Exception as exc:  # noqa: BLE001
+            log(f"⚠️ خواندن tokenizer_config.json نشد ({exc})")
+            return src
+
+        est = cfg.get("extra_special_tokens")
+        if not isinstance(est, list):
+            return src  # از قبل دیکشنری است — مشکلی نیست
+
+        # لیست → دیکشنری، و در یک کپی محلی بنویس (کش دست‌نخورده بماند)
+        cfg["extra_special_tokens"] = {
+            x: x for x in est if isinstance(x, str)
+        }
+        dst = Path(tempfile.mkdtemp(prefix="g2p_"))
+        for item in Path(src).iterdir():
+            if item.is_file():
+                shutil.copy2(item, dst / item.name)
+            else:
+                shutil.copytree(item, dst / item.name, dirs_exist_ok=True)
+        (dst / "tokenizer_config.json").write_text(
+            json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        log(f"🔧 extra_special_tokens: لیست ({len(est)}) → دیکشنری اصلاح شد")
+        return str(dst)
 
     def __call__(self, text: str) -> str:
         torch = self.torch

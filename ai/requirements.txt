@@ -10,7 +10,11 @@
 pocket-tts @ git+https://github.com/mallahyari/pocket-tts@main
 
 # تبدیل متن فارسی به فونِم (مدل v2 خط فارسی نمی‌فهمد)
-transformers>=4.40,<5
+# نسخهٔ <4.46: مدل Homo-GE2PE مقدار extra_special_tokens را «لیست»
+# ذخیره کرده و نسخه‌های جدیدتر «دیکشنری» می‌خواهند →
+#   AttributeError: 'list' object has no attribute 'keys'
+# کد هم محافظ دارد، ولی پین کردن مطمئن‌تر است.
+transformers>=4.40,<4.46
 sentencepiece>=0.1.99
 
 # صدا و ابزارها
