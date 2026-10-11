@@ -61,3 +61,7 @@ ai/scripts/__pycache__/
 ai/text_current.txt
 ai/voices/_test_prompt.wav
 *.pyc
+
+# نمونه‌های تبدیل‌شدهٔ صدا (هر بار از نو ساخته می‌شوند)
+ai/voices/_5s/
+ai/voices/_prompt5s.wav

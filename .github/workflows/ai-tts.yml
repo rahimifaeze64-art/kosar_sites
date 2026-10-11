@@ -232,39 +232,47 @@ jobs:
       # ── تبدیل نمونهٔ صدا به wav و بریدن به ۵ ثانیه ──
       #     سقف آموزش مدل ۵ ثانیه است؛ بلندتر = مدل ادامهٔ جملهٔ خودتان
       #     را می‌گوید. ffmpeg روی ubuntu از قبل نصب است.
-      - name: آماده‌سازی نمونهٔ صدا (۵ ثانیه)
+      - name: آماده‌سازی نمونه‌های صدا
         id: conv
         if: steps.voice.outputs.ok == 'true'
         run: |
-          IN="ai/voices/${{ steps.voice.outputs.name }}"
-          OUT="ai/voices/_prompt5s.wav"
-          echo "ورودی: $IN"
-          ls -lh "$IN"
-          if command -v ffmpeg >/dev/null 2>&1; then
-            ffmpeg -y -i "$IN" -t 5 -ac 1 -ar 24000 "$OUT" 2>&1 | tail -4
-          fi
-          # اگر ffmpeg نبود یا نشد، با پایتون (soundfile/libsndfile) تبدیل کن
-          if [ ! -f "$OUT" ]; then
-            echo "ℹ️ ffmpeg جواب نداد — با soundfile تلاش می‌شود"
-            python - "$IN" "$OUT" <<'PY'
+          # ⚠️ مدل روی نمونهٔ ۵ ثانیه سقف خورده، پس هر نمونه را به
+          #    حداکثر ۵ ثانیه می‌بریم. خودِ generate.py هم «بهترین
+          #    پنجرهٔ ۵ ثانیه» را انتخاب می‌کند.
+          mkdir -p ai/voices/_5s
+          n=0
+          for IN in ai/voices/*.ogg ai/voices/*.wav ai/voices/*.mp3 ai/voices/*.m4a; do
+            [ -f "$IN" ] || continue
+            base=$(basename "$IN")
+            case "$base" in _*) continue;; esac      # فایل‌های داخلی را رد کن
+            OUT="ai/voices/_5s/${base%.*}.wav"
+            if command -v ffmpeg >/dev/null 2>&1; then
+              ffmpeg -y -i "$IN" -t 5 -ac 1 -ar 24000 "$OUT" >/dev/null 2>&1 || true
+            fi
+            if [ ! -f "$OUT" ]; then
+              python - "$IN" "$OUT" <<'PY' || true
           import sys
           import soundfile as sf
           import numpy as np
           src, dst = sys.argv[1], sys.argv[2]
           data, sr = sf.read(src, always_2d=True)
           mono = data.mean(axis=1).astype(np.float32)
-          keep = int(5.0 * sr)
-          sf.write(dst, mono[:keep], sr)
-          print("✅ soundfile:", len(mono[:keep]) / sr, "ثانیه")
+          sf.write(dst, mono[: int(5.0 * sr)], sr)
           PY
-          fi
-          if [ ! -f "$OUT" ]; then
-            echo "❌ تبدیل نمونهٔ صدا ناموفق بود"
+            fi
+            if [ -f "$OUT" ]; then
+              n=$((n+1))
+              echo "✅ $(basename "$OUT") ← $base"
+            else
+              echo "⚠️ تبدیل نشد: $base"
+            fi
+          done
+          if [ "$n" -eq 0 ]; then
+            echo "❌ هیچ نمونهٔ صدایی تبدیل نشد"
             exit 1
           fi
-          echo "✅ نمونهٔ ۵ ثانیه‌ای آماده شد:"
-          ls -lh "$OUT"
-          echo "wav=$OUT" >> "$GITHUB_OUTPUT"
+          echo "🎙 $n نمونهٔ ۵ ثانیه‌ای آماده است"
+          ls -lh ai/voices/_5s/
 
       # ── تولید صدا ──
       - name: تولید صدا
@@ -277,11 +285,19 @@ jobs:
           TOKENIZERS_PARALLELISM: 'false'
         run: |
           set -o pipefail
+          # --voice را برای هر نمونه جدا می‌دهیم؛ generate.py با همه
+          # تولید می‌کند و بهترین خروجی را برمی‌دارد.
+          ARGS=""
+          for W in ai/voices/_5s/*.wav; do
+            [ -f "$W" ] || continue
+            ARGS="$ARGS --voice $W"
+          done
+          echo "نمونه‌های استفاده‌شده:$ARGS"
           python ai/scripts/generate.py \
             --text-file ai/text_current.txt \
-            --voice "${{ steps.conv.outputs.wav }}" \
+            $ARGS \
             --name "${{ github.event.inputs.name }}" \
-            --voice-sec 0 2>&1 | tee ai/out/generate.log
+            --voice-sec 5 2>&1 | tee ai/out/generate.log
           echo "--- خروجی ---"
           ls -lh ai/out/*.wav | tail -5
 

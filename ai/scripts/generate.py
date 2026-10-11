@@ -206,6 +206,56 @@ def pack_chunks(pieces: list[str], max_words: int = 22) -> list[str]:
 # ══════════════════════════════════════════════════════════════
 # ۴) تولید صدا
 # ══════════════════════════════════════════════════════════════
+def best_window(mono, sr, seconds=5.0, stride=1):
+    """بهترین پنجرهٔ «ثانیه» ثانیه‌ای را از یک نمونهٔ بلندتر انتخاب می‌کند.
+
+    ⚠️ چرا لازم است:
+    مدل روی نمونهٔ ۵ ثانیه سقف خورده. اگر فقط ۵ ثانیهٔ اول فایل را
+    برداریم، ممکن است سکوت یا نفس اولِ ضبط را بگیریم. اینجا پنجره‌ای
+    انتخاب می‌شود که **بیشترین صدای پیوسته** را دارد.
+
+    خروجی: (نمونهٔ بریده, اطلاعات پنجره)
+    """
+    import numpy as np
+
+    n_samples = int(seconds * sr)
+    if len(mono) <= n_samples:
+        piece = mono
+        detail = {"start": 0.0, "len": round(len(mono) / sr, 2), "score": 0.0}
+    else:
+        hop = max(1, int(0.1 * sr))          # پویش با گام ۱۰۰ میلی‌ثانیه
+        win = n_samples
+        # انرژی میانگین مربعات در هر نیم‌ثانیه
+        half = max(1, sr // 2)
+        n_half = len(mono) // half
+        energy = np.array([
+            float(np.sqrt(np.mean(mono[i * half:(i + 1) * half] ** 2)))
+            for i in range(n_half)
+        ]) if n_half else np.array([0.0])
+        # بیشینهٔ انرژی در یک پنجرهٔ ۵ ثانیه‌ای (۱۰ نیم‌ثانیه)
+        span = max(1, int(round(seconds * 2)))
+        best_i, best_score = 0, -1.0
+        for i in range(0, max(1, n_half - span + 1)):
+            block = energy[i:i + span]
+            # میانگین وزنی: میانگین انرژی منهای جریمهٔ سکوت
+            mean_e = float(block.mean()) if block.size else 0.0
+            silent = float((block < 0.02 * (energy.max() or 1)).mean()) if block.size else 1.0
+            score = mean_e * (1.0 - 0.5 * silent)
+            if score > best_score:
+                best_score, best_i = score, i
+        start = min(best_i * half, max(0, len(mono) - win))
+        # گام‌بندی روی مضرب hop تا پنجره پایدار بماند
+        start = (start // hop) * hop
+        piece = mono[start:start + win]
+        detail = {"start": round(start / sr, 2), "len": round(len(piece) / sr, 2),
+                  "score": round(best_score, 5)}
+
+    if stride > 1:
+        usable = (len(piece) // stride) * stride
+        piece = piece[:usable]
+    return piece.astype("float32"), detail
+
+
 def synth(
     text: str,
     voice: Path,
@@ -245,44 +295,49 @@ def synth(
     #   ۲) طول نمونه باید مضربِ stride رمزگذار Mimi باشد، وگرنه:
     #        AssertionError: Steps must be multiple of stride
     #      ۵ ثانیه × ۲۴۰۰۰ = ۱۲۰۰۰۰ و ۱۲۰۰۰۰ ÷ ۱۹۲۰ = ۶۲.۵ ✗
-    if not voice.exists():
-        raise SystemExit(f"❌ فایل صدا پیدا نشد: {voice}")
+    # ── آماده‌سازی نمونه‌های صدا ──
+    #   ⚠️ مدل روی نمونهٔ ۵ ثانیه سقف خورده (max_voice_prompt_sec=5.0).
+    #      نمونهٔ بلندتر = مدل ادامهٔ جملهٔ خودتان را می‌گوید.
+    #      پس از هر نمونهٔ بلند، «بهترین پنجرهٔ ۵ ثانیه» را برمی‌داریم.
+    #   ✅ چند نمونه مفید است: از هرکدام بهترین پنجره انتخاب می‌شود و
+    #      با همه تولید می‌کنیم و بهترین خروجی را نگه می‌داریم.
+    voice_list = [voice] if isinstance(voice, (str, Path)) else list(voice)
+    voice_list = [Path(v) for v in voice_list]
+    for v in voice_list:
+        if not v.exists():
+            raise SystemExit(f"❌ فایل صدا پیدا نشد: {v}")
 
     stride = int(round(sample_rate / float(getattr(model.mimi, "frame_rate", 12.5) or 12.5)))
-    log(f"🔧 sample_rate={sample_rate} | stride={stride}")
-    prompt = str(voice)
-    try:
-        import tempfile
+    log(f"🔧 sample_rate={sample_rate} | stride={stride} | {len(voice_list)} نمونهٔ صدا")
 
-        import numpy as np
-        import soundfile as sf
+    import tempfile
 
-        data, sr = sf.read(str(voice), always_2d=True)
-        mono = data.mean(axis=1).astype(np.float32)
-        if sr != sample_rate:
-            # نمونه‌برداری مجدد سادهٔ خطی (کافی برای نمونهٔ صدا)
-            idx = np.linspace(0, len(mono) - 1, int(len(mono) * sample_rate / sr))
-            mono = np.interp(idx, np.arange(len(mono)), mono).astype(np.float32)
-            log(f"🔁 نرخ نمونه {sr} → {sample_rate}")
-            sr = sample_rate
+    import numpy as np
+    import soundfile as sf
 
-        keep = int(voice_sec * sr) if voice_sec and voice_sec > 0 else len(mono)
-        mono = mono[:keep]
+    prompts = []
+    for idx, v in enumerate(voice_list, 1):
+        try:
+            data, sr = sf.read(str(v), always_2d=True)
+            mono = data.mean(axis=1).astype(np.float32)
+            if sr != sample_rate:
+                i2 = np.linspace(0, len(mono) - 1, int(len(mono) * sample_rate / sr))
+                mono = np.interp(i2, np.arange(len(mono)), mono).astype(np.float32)
+                sr = sample_rate
+            dur_in = len(mono) / sr
+            piece, det = best_window(mono, sr, voice_sec if voice_sec and voice_sec > 0 else 5.0, stride)
+            tmp = Path(tempfile.mkdtemp()) / f"voice_prompt_{idx}.wav"
+            sf.write(str(tmp), piece, sr)
+            prompts.append(str(tmp))
+            log(f"✅ نمونهٔ {idx}: {v.name} | ورودی {dur_in:.1f}s → "
+                f"{len(piece) / sr:.2f}s از ثانیهٔ {det['start']} "
+                f"(مضرب {stride})")
+        except Exception as exc:  # noqa: BLE001
+            log(f"⚠️ نمونهٔ {idx} آماده نشد ({exc}) — رد شد")
 
-        # بریدن به مضرب stride — این همان خطای AssertionError را رفع می‌کند
-        if stride > 1:
-            usable = (len(mono) // stride) * stride
-            if usable != len(mono):
-                log(f"✂️ طول نمونه {len(mono)} → {usable} نمونه "
-                    f"(مضرب {stride})")
-                mono = mono[:usable]
-
-        trimmed = Path(tempfile.mkdtemp()) / "voice_prompt.wav"
-        sf.write(str(trimmed), mono, sr)
-        prompt = str(trimmed)
-        log(f"✅ نمونهٔ صدا آماده: {len(mono)} نمونه = {len(mono) / sr:.2f} ثانیه")
-    except Exception as exc:  # noqa: BLE001
-        log(f"⚠️ آماده‌سازی نمونهٔ صدا نشد ({exc}) — فایل خام استفاده می‌شود")
+    if not prompts:
+        raise SystemExit("❌ هیچ نمونهٔ صدای سالمی آماده نشد")
+    prompt = prompts[0]
 
     # ── تکه‌تکه ──
     sentences = split_sentences(text)
@@ -291,26 +346,51 @@ def synth(
     for i, c in enumerate(chunks, 1):
         log(f"   [{i}] {c}")
 
-    state = model.get_state_for_audio_prompt(prompt)
-    gap = np.zeros(int(pause_sec * sample_rate), dtype=np.float32)
-
-    pieces = []
+    # ── فونِم‌سازی همهٔ تکه‌ها ──
+    phon_chunks = []
     for i, chunk in enumerate(chunks, 1):
-        phonemes = phonemizer(chunk)
-        if not phonemes.strip():
+        ph = phonemizer(chunk)
+        if not ph.strip():
             log(f"⚠️ تکهٔ {i} فونِم خالی داد — رد شد")
             continue
-        log(f"🔊 [{i}/{len(chunks)}] {len(phonemes.split())} فونِم: {phonemes}")
-        audio = model.generate_audio(state, phonemes, frames_after_eos=0)
-        arr = np.asarray(audio, dtype=np.float32).reshape(-1)
-        pieces.append(arr)
-        if i < len(chunks):
-            pieces.append(gap)
+        log(f"🔊 [{i}/{len(chunks)}] {len(ph.split())} فونِم: {ph}")
+        phon_chunks.append(ph)
+    if not phon_chunks:
+        raise SystemExit("❌ هیچ فونِمی ساخته نشد — متن را بررسی کنید")
 
-    if not pieces:
-        raise SystemExit("❌ هیچ صدایی تولید نشد — متن را بررسی کنید")
+    gap = np.zeros(int(pause_sec * sample_rate), dtype=np.float32)
 
-    final = np.concatenate(pieces)
+    # ── با هر نمونهٔ صدا تولید کن و بهترین را بردار ──
+    #    ✅ این همان «تقویت با چند نمونه» است: هر نمونه یک حالت صوتی
+    #       متفاوت می‌دهد؛ بهترین را از نظر پرسوزی و طول معقول برمی‌داریم.
+    expected_sec = max(1.5, len(text.split()) / 2.5)
+    best = None
+    for pi, pr in enumerate(prompts, 1):
+        try:
+            state = model.get_state_for_audio_prompt(pr)
+            pieces = []
+            for i, ph in enumerate(phon_chunks, 1):
+                audio = model.generate_audio(state, ph, frames_after_eos=0)
+                arr = np.asarray(audio, dtype=np.float32).reshape(-1)
+                pieces.append(arr)
+                if i < len(phon_chunks):
+                    pieces.append(gap)
+            cand = np.concatenate(pieces)
+            dur = len(cand) / sample_rate
+            rms = float(np.sqrt((cand ** 2).mean())) if cand.size else 0.0
+            dev = abs(dur - expected_sec) / expected_sec
+            log(f"🎙 نمونهٔ {pi}: {dur:.1f}s | RMS {rms:.4f} | "
+                f"انتظار ~{expected_sec:.1f}s | انحراف {dev:.2f}")
+            score = (1.0 if rms > 0.001 else 0.0, -dev)
+            if best is None or score > best[0]:
+                best = (score, cand, pi)
+        except Exception as exc:  # noqa: BLE001
+            log(f"⚠️ نمونهٔ {pi} تولید نکرد ({exc})")
+
+    if best is None:
+        raise SystemExit("❌ هیچ صدایی تولید نشد")
+    final = best[1]
+    log(f"🏆 بهترین نمونه: شمارهٔ {best[2]}")
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     try:
@@ -356,7 +436,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="تولید گفتار فارسی با صدای کلون‌شده")
     ap.add_argument("--text", help="متن فارسی")
     ap.add_argument("--text-file", help="فایل متنی")
-    ap.add_argument("--voice", default="ai/voices/my_voice.wav", help="نمونهٔ صدا (۵ ثانیه)")
+    ap.add_argument("--voice", action="append",
+                    help="نمونهٔ صدا (می‌تواند چند بار بیاید). "
+                         "پیش‌فرض: همهٔ فایل‌های ai/voices/*.ogg|wav")
     ap.add_argument("--out", help="فایل خروجی wav")
     ap.add_argument("--name", help="نام فایل خروجی (بدون پسوند)")
     ap.add_argument("--voice-sec", type=float, default=5.0)
@@ -374,16 +456,30 @@ def main() -> int:
         log("❌ متنی داده نشد. --text یا --text-file یا TTS_TEXT")
         return 2
 
-    voice = Path(args.voice)
-    if not voice.is_absolute():
-        voice = ROOT / voice
+    # ── نمونه‌های صدا ──
+    #    اگر نداده باشد، همهٔ فایل‌های صوتی ai/voices را برمی‌دارد
+    #    (به‌جز نمونهٔ آزمایشی مدل).
+    if args.voice:
+        voices = [Path(v) if Path(v).is_absolute() else ROOT / v for v in args.voice]
+    else:
+        vdir = ROOT / "ai" / "voices"
+        voices = sorted(
+            p for p in vdir.glob("*")
+            if p.suffix.lower() in (".ogg", ".wav", ".mp3", ".m4a")
+            and not p.name.startswith("_")
+        )
+    voices = [v for v in voices if v.exists()]
+    if not voices:
+        log("❌ هیچ نمونهٔ صدایی پیدا نشد در ai/voices/")
+        return 2
+    log(f"🎙 {len(voices)} نمونهٔ صدا: " + " , ".join(v.name for v in voices))
 
     stem = args.name or time.strftime("clip_%Y%m%d_%H%M%S", time.gmtime())
     out_path = Path(args.out) if args.out else OUT_DIR / f"{stem}.wav"
     if not out_path.is_absolute():
         out_path = ROOT / out_path
 
-    info = synth(text, voice, out_path, args.voice_sec, args.pause_sec)
+    info = synth(text, voices, out_path, args.voice_sec, args.pause_sec)
 
     if not args.no_index:
         rel = out_path.relative_to(ROOT).as_posix()
