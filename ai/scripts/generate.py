@@ -238,25 +238,51 @@ def synth(
 
     sample_rate = int(model.mimi.sample_rate)
 
-    # ── نمونهٔ صدا: حداکثر ۵ ثانیه (آموزش روی ۵ ثانیه سقف خورده) ──
+    # ── نمونهٔ صدا: حداکثر ۵ ثانیه + طول مضرب stride ──
+    #   ⚠️ دو قید مهم:
+    #   ۱) آموزش روی نمونهٔ ۵ ثانیه سقف خورده؛ بلندتر = مدل ادامهٔ
+    #      جملهٔ خودتان را می‌گوید به‌جای متن شما.
+    #   ۲) طول نمونه باید مضربِ stride رمزگذار Mimi باشد، وگرنه:
+    #        AssertionError: Steps must be multiple of stride
+    #      ۵ ثانیه × ۲۴۰۰۰ = ۱۲۰۰۰۰ و ۱۲۰۰۰۰ ÷ ۱۹۲۰ = ۶۲.۵ ✗
     if not voice.exists():
         raise SystemExit(f"❌ فایل صدا پیدا نشد: {voice}")
+
+    stride = int(round(sample_rate / float(getattr(model.mimi, "frame_rate", 12.5) or 12.5)))
+    log(f"🔧 sample_rate={sample_rate} | stride={stride}")
     prompt = str(voice)
     try:
-        import sphn
+        import tempfile
 
-        wav, sr = sphn.read(str(voice))
-        keep = int(voice_sec * sr)
-        if wav.shape[-1] > keep:
-            import tempfile
+        import numpy as np
+        import soundfile as sf
 
-            trimmed = Path(tempfile.mkdtemp()) / "voice_prompt.wav"
-            mono = wav.mean(axis=0) if wav.ndim > 1 else wav
-            sphn.write_wav(str(trimmed), mono[:keep], int(sr))
-            prompt = str(trimmed)
-            log(f"✂️ نمونهٔ صدا {wav.shape[-1] / sr:.1f}s → {voice_sec:.1f}s")
+        data, sr = sf.read(str(voice), always_2d=True)
+        mono = data.mean(axis=1).astype(np.float32)
+        if sr != sample_rate:
+            # نمونه‌برداری مجدد سادهٔ خطی (کافی برای نمونهٔ صدا)
+            idx = np.linspace(0, len(mono) - 1, int(len(mono) * sample_rate / sr))
+            mono = np.interp(idx, np.arange(len(mono)), mono).astype(np.float32)
+            log(f"🔁 نرخ نمونه {sr} → {sample_rate}")
+            sr = sample_rate
+
+        keep = int(voice_sec * sr) if voice_sec and voice_sec > 0 else len(mono)
+        mono = mono[:keep]
+
+        # بریدن به مضرب stride — این همان خطای AssertionError را رفع می‌کند
+        if stride > 1:
+            usable = (len(mono) // stride) * stride
+            if usable != len(mono):
+                log(f"✂️ طول نمونه {len(mono)} → {usable} نمونه "
+                    f"(مضرب {stride})")
+                mono = mono[:usable]
+
+        trimmed = Path(tempfile.mkdtemp()) / "voice_prompt.wav"
+        sf.write(str(trimmed), mono, sr)
+        prompt = str(trimmed)
+        log(f"✅ نمونهٔ صدا آماده: {len(mono)} نمونه = {len(mono) / sr:.2f} ثانیه")
     except Exception as exc:  # noqa: BLE001
-        log(f"⚠️ کوتاه کردن نمونهٔ صدا نشد ({exc}) — همان فایل کامل استفاده می‌شود")
+        log(f"⚠️ آماده‌سازی نمونهٔ صدا نشد ({exc}) — فایل خام استفاده می‌شود")
 
     # ── تکه‌تکه ──
     sentences = split_sentences(text)

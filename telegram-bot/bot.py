@@ -971,10 +971,14 @@ class TadilatBot:
             return
         rid = req.get("id")
         try:
+            # ⚠️ ستون kind فقط این مقادیر را می‌پذیرد:
+            #    document | photo | audio | video
+            # «text» قید CHECK را نقض می‌کند و ثبت شکست می‌خورد.
+            # پس متن را با kind=document و نشانهٔ «📝» ذخیره می‌کنیم.
             self.sb.insert("tadilat_files", [{
                 "request_id": rid,
-                "kind": "text",
-                "file_name": (text[:60] + ("…" if len(text) > 60 else "")),
+                "kind": "document",
+                "file_name": "📝 " + (text[:60] + ("…" if len(text) > 60 else "")),
                 "storage_path": "text://%s" % uuid.uuid4().hex[:10],
                 "mime_type": "text/plain",
                 "file_size": len(text.encode("utf-8")),
