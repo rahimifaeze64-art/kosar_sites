@@ -10,11 +10,12 @@
 pocket-tts @ git+https://github.com/mallahyari/pocket-tts@main
 
 # تبدیل متن فارسی به فونِم (مدل v2 خط فارسی نمی‌فهمد)
-# نسخهٔ <4.46: مدل Homo-GE2PE مقدار extra_special_tokens را «لیست»
-# ذخیره کرده و نسخه‌های جدیدتر «دیکشنری» می‌خواهند →
-#   AttributeError: 'list' object has no attribute 'keys'
-# کد هم محافظ دارد، ولی پین کردن مطمئن‌تر است.
-transformers>=4.40,<4.46
+# ⚠️ نسخهٔ جدید لازم است — پین کردن به <4.46 توکنایزر ByT5 را
+# خراب می‌کند و G2P خروجی بی‌معنی می‌دهد (iiiiiii… به‌جای فونِم).
+#   آزمایش‌شده: با <4.46 مدل بار شد ولی فونِم بی‌معنی بود.
+# مشکل extra_special_tokens (لیست در برابر دیکشنری) در خودِ
+# generate.py با یک محافظ حل شده — نه با پایین آوردن نسخه.
+transformers>=4.40
 sentencepiece>=0.1.99
 
 # صدا و ابزارها
