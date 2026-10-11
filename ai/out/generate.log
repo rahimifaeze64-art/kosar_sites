@@ -3,52 +3,17 @@
 The cache for model files in Transformers v4.22.0 has been updated. Migrating your old cache. This is a one-time only operation. You can interrupt this and resume the migration later on by calling `transformers.utils.move_cache()`.
 0it [00:00, ?it/s]0it [00:00, ?it/s]
 ⏳ بارگذاری G2P: mehdi-hf/Homo-GE2PE-Persian-HF
-Fetching 10 files:   0%|          | 0/10 [00:00<?, ?it/s]Fetching 10 files:  80%|████████  | 8/10 [00:00<00:00, 50.78it/s]Fetching 10 files: 100%|██████████| 10/10 [00:00<00:00, 58.87it/s]
+Fetching 10 files:   0%|          | 0/10 [00:00<?, ?it/s]Fetching 10 files:  80%|████████  | 8/10 [00:00<00:00, 46.61it/s]Fetching 10 files: 100%|██████████| 10/10 [00:00<00:00, 50.06it/s]
 🔧 extra_special_tokens: لیست (0) → دیکشنری اصلاح شد
 ✅ G2P آماده است
 ⏳ بارگذاری مدل گفتار… (hf://mehdi-hf/pocket-tts-farsi-v2/model.yaml)
 ✅ مدل گفتار آماده است
-✂️ نمونهٔ صدا 5.0s → 0.0s
+🔧 sample_rate=24000 | stride=1920
+✂️ طول نمونه 120000 → 119040 نمونه (مضرب 1920)
+✅ نمونهٔ صدا آماده: 119040 نمونه = 4.96 ثانیه
 📝 1 تکه:
    [1] سلام، این یک آزمایش از بخش هوش مصنوعی است. صدا با کلون کردن نمونهٔ شما ساخته شده است.
-Traceback (most recent call last):
-  File "/home/runner/work/kosar_sites/kosar_sites/ai/scripts/generate.py", line 382, in <module>
-    raise SystemExit(main())
-                     ^^^^^^
-  File "/home/runner/work/kosar_sites/kosar_sites/ai/scripts/generate.py", line 360, in main
-    info = synth(text, voice, out_path, args.voice_sec, args.pause_sec)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/runner/work/kosar_sites/kosar_sites/ai/scripts/generate.py", line 268, in synth
-    state = model.get_state_for_audio_prompt(prompt)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-    return func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/pocket_tts/models/tts_model.py", line 975, in get_state_for_audio_prompt
-    prompt = self._encode_audio(audio_conditioning.unsqueeze(0).to(self.device))
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/pocket_tts/models/tts_model.py", line 445, in _encode_audio
-    encoded = self.mimi.encode_to_latent(audio)
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/pocket_tts/models/mimi.py", line 121, in encode_to_latent
-    emb = self.encoder(x, model_state=None)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/pocket_tts/modules/seanet.py", line 115, in forward
-    x = layer(x, model_state)
-        ^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/pocket_tts/modules/conv.py", line 98, in forward
-    assert T > 0 and T % S == 0, "Steps must be multiple of stride"
-           ^^^^^^^^^^^^^^^^^^^^
-AssertionError: Steps must be multiple of stride
+🔊 [1/1] 1 فونِم: iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+WARNING:pocket_tts.models.text_chunking:Chunk has 80 tokens (max 50), generation may skip words: 'iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii...'
+✅ نوشته شد: /home/runner/work/kosar_sites/kosar_sites/ai/out/clip_20261011_124834.wav  (13.2 ثانیه، 13s طول کشید)
+✅ index.json به‌روز شد (1 مورد)
