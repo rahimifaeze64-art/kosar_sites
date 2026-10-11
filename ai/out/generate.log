@@ -1,35 +1,54 @@
 ✅ normalize_fa.py → /home/runner/work/kosar_sites/kosar_sites/.ai-cache/hf/hub/models--mehdi-hf--pocket-tts-farsi-v2/snapshots/e87097ed98edb8bd9c9bcabe9b575a51a466d0e4/normalize_fa.py
 ✅ normalize_fa بارگذاری شد
+The cache for model files in Transformers v4.22.0 has been updated. Migrating your old cache. This is a one-time only operation. You can interrupt this and resume the migration later on by calling `transformers.utils.move_cache()`.
+0it [00:00, ?it/s]0it [00:00, ?it/s]
 ⏳ بارگذاری G2P: mehdi-hf/Homo-GE2PE-Persian-HF
+Fetching 10 files:   0%|          | 0/10 [00:00<?, ?it/s]Fetching 10 files:  80%|████████  | 8/10 [00:00<00:00, 50.78it/s]Fetching 10 files: 100%|██████████| 10/10 [00:00<00:00, 58.87it/s]
+🔧 extra_special_tokens: لیست (0) → دیکشنری اصلاح شد
+✅ G2P آماده است
+⏳ بارگذاری مدل گفتار… (hf://mehdi-hf/pocket-tts-farsi-v2/model.yaml)
+✅ مدل گفتار آماده است
+✂️ نمونهٔ صدا 5.0s → 0.0s
+📝 1 تکه:
+   [1] سلام، این یک آزمایش از بخش هوش مصنوعی است. صدا با کلون کردن نمونهٔ شما ساخته شده است.
 Traceback (most recent call last):
-  File "/home/runner/work/kosar_sites/kosar_sites/ai/scripts/generate.py", line 332, in <module>
+  File "/home/runner/work/kosar_sites/kosar_sites/ai/scripts/generate.py", line 382, in <module>
     raise SystemExit(main())
                      ^^^^^^
-  File "/home/runner/work/kosar_sites/kosar_sites/ai/scripts/generate.py", line 310, in main
+  File "/home/runner/work/kosar_sites/kosar_sites/ai/scripts/generate.py", line 360, in main
     info = synth(text, voice, out_path, args.voice_sec, args.pause_sec)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/runner/work/kosar_sites/kosar_sites/ai/scripts/generate.py", line 176, in synth
-    phonemizer = Phonemizer(normalize_for_model)
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/runner/work/kosar_sites/kosar_sites/ai/scripts/generate.py", line 92, in __init__
-    self.tok = AutoTokenizer.from_pretrained(G2P_REPO)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/transformers/models/auto/tokenization_auto.py", line 1156, in from_pretrained
-    return tokenizer_class.from_pretrained(pretrained_model_name_or_path, *inputs, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/transformers/tokenization_utils_base.py", line 2113, in from_pretrained
-    return cls._from_pretrained(
+  File "/home/runner/work/kosar_sites/kosar_sites/ai/scripts/generate.py", line 268, in synth
+    state = model.get_state_for_audio_prompt(prompt)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/transformers/tokenization_utils_base.py", line 2359, in _from_pretrained
-    tokenizer = cls(*init_inputs, **init_kwargs)
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/transformers/models/byt5/tokenization_byt5.py", line 92, in __init__
-    super().__init__(
-  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/transformers/tokenization_utils.py", line 434, in __init__
-    super().__init__(**kwargs)
-  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/transformers/tokenization_utils_base.py", line 1472, in __init__
-    self._set_model_specific_special_tokens(special_tokens=self.extra_special_tokens)
-  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/transformers/tokenization_utils_base.py", line 1210, in _set_model_specific_special_tokens
-    self.SPECIAL_TOKENS_ATTRIBUTES = self.SPECIAL_TOKENS_ATTRIBUTES + list(special_tokens.keys())
-                                                                           ^^^^^^^^^^^^^^^^^^^
-AttributeError: 'list' object has no attribute 'keys'
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/pocket_tts/models/tts_model.py", line 975, in get_state_for_audio_prompt
+    prompt = self._encode_audio(audio_conditioning.unsqueeze(0).to(self.device))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/pocket_tts/models/tts_model.py", line 445, in _encode_audio
+    encoded = self.mimi.encode_to_latent(audio)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/pocket_tts/models/mimi.py", line 121, in encode_to_latent
+    emb = self.encoder(x, model_state=None)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/pocket_tts/modules/seanet.py", line 115, in forward
+    x = layer(x, model_state)
+        ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/pocket_tts/modules/conv.py", line 98, in forward
+    assert T > 0 and T % S == 0, "Steps must be multiple of stride"
+           ^^^^^^^^^^^^^^^^^^^^
+AssertionError: Steps must be multiple of stride
