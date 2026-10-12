@@ -1,19 +1,38 @@
+🎙 4 نمونهٔ صدا: my_voice.wav , sample_SAMPLE_11S.wav , sample_SAMPLE_13S.wav , sample_SAMPLE_8S.wav
 Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
 ✅ normalize_fa.py → /home/runner/work/kosar_sites/kosar_sites/.ai-cache/hf/hub/models--mehdi-hf--pocket-tts-farsi-v2/snapshots/e87097ed98edb8bd9c9bcabe9b575a51a466d0e4/normalize_fa.py
 ✅ normalize_fa بارگذاری شد
 ⏳ بارگذاری G2P: mehdi-hf/Homo-GE2PE-Persian-HF
-Fetching 10 files:   0%|          | 0/10 [00:00<?, ?it/s]Fetching 10 files: 100%|██████████| 10/10 [00:00<00:00, 2065.45it/s]
+Fetching 10 files:   0%|          | 0/10 [00:00<?, ?it/s]Fetching 10 files: 100%|██████████| 10/10 [00:00<00:00, 2157.34it/s]
 🔧 extra_special_tokens: لیست (0) → دیکشنری اصلاح شد
-Loading weights:   0%|          | 0/52 [00:00<?, ?it/s]Loading weights: 100%|██████████| 52/52 [00:00<00:00, 34575.75it/s]
+Loading weights:   0%|          | 0/52 [00:00<?, ?it/s]Loading weights: 100%|██████████| 52/52 [00:00<00:00, 34196.27it/s]
 [transformers] The tied weights mapping and config for this model specifies to tie shared.weight to lm_head.weight, but both are present in the checkpoints with different values, so we will NOT tie them. You should update the config with `tie_word_embeddings=False` to silence this warning.
 ✅ G2P آماده است
 ⏳ بارگذاری مدل گفتار… (hf://mehdi-hf/pocket-tts-farsi-v2/model.yaml)
 ✅ مدل گفتار آماده است
-🔧 sample_rate=24000 | stride=1920
-✂️ طول نمونه 120000 → 119040 نمونه (مضرب 1920)
-✅ نمونهٔ صدا آماده: 119040 نمونه = 4.96 ثانیه
+🔧 sample_rate=24000 | stride=1920 | 4 نمونهٔ صدا
+✅ نمونهٔ 1: my_voice.wav | ورودی 5.0s → 4.96s از ثانیهٔ 0.0 (مضرب 1920)
+✅ نمونهٔ 2: sample_SAMPLE_11S.wav | ورودی 5.0s → 4.96s از ثانیهٔ 0.0 (مضرب 1920)
+✅ نمونهٔ 3: sample_SAMPLE_13S.wav | ورودی 5.0s → 4.96s از ثانیهٔ 0.0 (مضرب 1920)
+✅ نمونهٔ 4: sample_SAMPLE_8S.wav | ورودی 5.0s → 4.96s از ثانیهٔ 0.0 (مضرب 1920)
 📝 1 تکه:
    [1] سلام، این یک آزمایش از بخش هوش مصنوعی است. صدا با کلون کردن نمونهٔ شما ساخته شده است.
 🔊 [1/1] 18 فونِم: salAm ?in yek ?AzmAyeS ?az baxSe huSe masnu?i ?ast sedA bA kelon kardan nemuneye SomA sAxte Sode ?ast
-✅ نوشته شد: /home/runner/work/kosar_sites/kosar_sites/ai/out/clip_20261011_125705.wav  (5.7 ثانیه، 8s طول کشید)
-✅ index.json به‌روز شد (2 مورد)
+🎙 نمونهٔ 1: 5.9s | RMS 0.1789 | انتظار ~7.2s | انحراف 0.18
+🎙 نمونهٔ 2: 6.6s | RMS 0.0955 | انتظار ~7.2s | انحراف 0.08
+🎙 نمونهٔ 3: 5.8s | RMS 0.1409 | انتظار ~7.2s | انحراف 0.19
+🎙 نمونهٔ 4: 6.2s | RMS 0.1114 | انتظار ~7.2s | انحراف 0.14
+🏆 بهترین نمونه: شمارهٔ 2
+✅ نوشته شد: /home/runner/work/kosar_sites/kosar_sites/ai/out/clip_20261012_154807.wav  (6.6 ثانیه، 15s طول کشید)
+Traceback (most recent call last):
+  File "/home/runner/work/kosar_sites/kosar_sites/ai/scripts/generate.py", line 504, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/home/runner/work/kosar_sites/kosar_sites/ai/scripts/generate.py", line 489, in main
+    "voice": Path(args.voice).name,
+             ^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/pathlib.py", line 1162, in __init__
+    super().__init__(*args)
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/pathlib.py", line 373, in __init__
+    raise TypeError(
+TypeError: argument should be a str or an os.PathLike object where __fspath__ returns a str, not 'list'
