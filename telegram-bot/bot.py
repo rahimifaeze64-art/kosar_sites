@@ -27,6 +27,7 @@ import argparse
 import html
 import json
 import os
+import re
 import sys
 import time
 import traceback
@@ -371,6 +372,18 @@ BTN_FILES = "📁 فایل‌های من"
 BTN_NEW = "🆕 تعدیلات جدید"
 
 
+def to_en_digits(value):
+    """ارقام فارسی/عربی را به لاتین تبدیل می‌کند."""
+    if value is None:
+        return ""
+    text = str(value)
+    for i, fa in enumerate("۰۱۲۳۴۵۶۷۸۹"):
+        text = text.replace(fa, str(i))
+    for i, ar in enumerate("٠١٢٣٤٥٦٧٨٩"):
+        text = text.replace(ar, str(i))
+    return text
+
+
 def main_keyboard():
     """کیبورد ثابت پایین صفحه."""
     return {
@@ -414,8 +427,10 @@ def done_keyboard():
 
 TXT_INTRO = (
     "سلام 👋 خوش آمدی به ربات <b>تعدیلات — شرکة الکوثر</b>\n\n"
-    "لطفاً <b>اسمت را بنویس</b> (نام، نام پدر، نام جد).\n"
-    "مثال: <i>محمد فاضل عباس الطالی</i>"
+    "لطفاً <b>شمارهٔ پاسپورتت</b> را بنویس.\n"
+    "مثال: <code>A21239198</code>\n\n"
+    "اگر پاسپورت نداری، <b>شمارهٔ دانشجویی</b> ۱۱ رقمی‌ات را بفرست.\n"
+    "مثال: <code>40255021012</code>\n"
 )
 
 TXT_HELP_CHAT = (
@@ -783,21 +798,74 @@ class TadilatBot:
 
     # ── شروع ──
     def _start_intro(self, chat_id, user_id):
-        self._chat_set(user_id, stage="name", name=None, passport_no=None,
+        self._chat_set(user_id, stage="idnum", name=None, passport_no=None,
                        candidate=None, profile_id=None)
         self._send(chat_id, TXT_INTRO)
+
+    # ── قدم ۱: شمارهٔ پاسپورت / دانشجویی ──
+    def _find_by_number(self, raw):
+        """با شمارهٔ پاسپورت یا شمارهٔ دانشجویی، پروفایل را پیدا می‌کند.
+
+        ⚠️ فقط ۷ نفر از ۳۵۱ نفر passport_number دارند، ولی ۲۵۱ نفر
+        student_id ۱۱ رقمی دارند. پس هر دو ستون جستجو می‌شوند.
+        """
+        compact = re.sub(r"[\s\-_\u200b-\u200f]+", "",
+                         to_en_digits(raw or "")).upper()
+        if len(compact) < 5:
+            return None
+        cols = "select=id,name,student_id,passport_number"
+        for col in ("passport_number", "student_id"):
+            try:
+                rows = self.sb.select(
+                    "profiles",
+                    "%s&%s=eq.%s&limit=3"
+                    % (cols, col, urllib.parse.quote(compact)))
+                if rows:
+                    r = rows[0]
+                    log("پیدا شد با %s: %s" % (col, r.get("name")))
+                    return {"id": r.get("id"), "name": r.get("name"),
+                            "student_no": r.get("student_id") or r.get("passport_number")}
+            except SupabaseError as exc:
+                log("جستجوی %s ناموفق: %s" % (col, exc), "WARN")
+        # جستجوی جزئی
+        try:
+            rows = self.sb.select(
+                "profiles",
+                "%s&student_id=like.%%%s%%&limit=5"
+                % (cols, urllib.parse.quote(compact)))
+            if len(rows) == 1:
+                r = rows[0]
+                return {"id": r.get("id"), "name": r.get("name"),
+                        "student_no": r.get("student_id")}
+        except SupabaseError:
+            pass
+        return None
+
+    def _on_idnum(self, chat_id, user_id, text):
+        self.tg.send_chat_action(chat_id, "typing")
+        found = self._find_by_number(text)
+        if found:
+            self._chat_set(user_id, stage="confirm",
+                           passport_no=text.strip(), candidate=found)
+            self._send(chat_id,
+                       "🔎 آیا تو <b>%s</b> هستی؟"
+                       % html.escape(found.get("name") or ""),
+                       confirm_keyboard())
+            return
+        self._chat_set(user_id, stage="name", passport_no=text.strip())
+        self._send(chat_id,
+                   "با این شماره پروفایلی پیدا نکردم 🤔\n\n"
+                   "لطفاً <b>اسمت را کامل بنویس</b> (نام، نام پدر، نام جد، فامیل) "
+                   "تا با اسم پیدایت کنم.")
 
     # ── قدم ۱: نام ──
     def _on_name(self, chat_id, user_id, text):
         if len(text) < 3:
             self._send(chat_id, "اسمت را کامل‌تر بنویس 🙂")
             return
-        self._chat_set(user_id, stage="passport", name=text, candidate=None)
-        self._send(chat_id,
-                   "ممنون 👍\n\n"
-                   "حالا <b>شمارهٔ پاسپورتت</b> را بنویس (اختیاری).\n"
-                   "اگر نداری یا نمی‌خواهی بدهی، «رد کردن» را بزن.",
-                   skip_keyboard())
+        st = self._chat_state(user_id)
+        self._chat_set(user_id, name=text)
+        self._try_match(chat_id, user_id, text, st.get("passport_no"))
 
     # ── قدم ۲: شمارهٔ پاسپورت (اختیاری) ──
     def _on_passport(self, chat_id, user_id, text):
@@ -932,8 +1000,8 @@ class TadilatBot:
 
         # ── جریان شناسایی ──
         if not self._is_ready(st):
-            if stage == "passport":
-                self._on_passport(chat_id, user_id, text)
+            if stage in ("idnum", "number", "passport"):
+                self._on_idnum(chat_id, user_id, text)
                 return
             if stage in ("number",):
                 self._on_number(chat_id, user_id, text)
