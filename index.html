@@ -366,6 +366,13 @@
                 </button>
             </template>
 
+            <!-- تنضید — صفحه‌آرایی خودکار پایان‌نامه (صفحهٔ مستقل) -->
+            <a href="tanzid.html"
+               class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200 text-black-100 hover:bg-white hover:bg-opacity-10">
+                <i class="fas fa-ruler-combined text-lg"></i>
+                <span class="font-medium">تنضید</span>
+            </a>
+
             <!-- حسابداری من - فقط عامل -->
             <template x-if="currentUser.role === 'agent'">
                 <button @click="currentPage = 'agentAccounting'"
