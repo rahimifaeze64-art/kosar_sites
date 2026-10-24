@@ -1405,12 +1405,192 @@
   }
 
   /* ══════════════════════════════════════════════════════════
+     خروجی/ورودی پاورقی و منابع برای مراحل هوش مصنوعی
+     ══════════════════════════════════════════════════════════ */
+  function footnoteTextOf(node) {
+    var out = '';
+    var ts = node.getElementsByTagNameNS(W, 't');
+    for (var i = 0; i < ts.length; i++) {
+      if (!isVisibleTextNode(ts[i], node)) continue;
+      out += ts[i].textContent;
+    }
+    return out.replace(/\r/g, '\n').trim();
+  }
+  function exportFootnotes(dx) {
+    if (!dx.footnotes) return [];
+    var list = [];
+    wAll(dx.footnotes, 'footnote').forEach(function (fn) {
+      var id = parseInt(wAttr(fn, 'id'), 10);
+      if (!(id > 0)) return;
+      list.push({ id: id, page: null, footnote_text: footnoteTextOf(fn) });
+    });
+    list.sort(function (a, b) { return a.id - b.id; });
+    return list;
+  }
+  function firstStrongIsLatin(text) {
+    for (var i = 0; i < text.length; i++) {
+      var ch = text.charAt(i);
+      if (/[A-Za-z\u00C0-\u024F]/.test(ch)) return true;
+      if (/[\u0600-\u06FF]/.test(ch)) return false;
+    }
+    return false;
+  }
+  function setFootnoteText(dx, id, text) {
+    var fn = null;
+    wAll(dx.footnotes, 'footnote').forEach(function (n) {
+      if (parseInt(wAttr(n, 'id'), 10) === id) fn = n;
+    });
+    if (!fn) return false;
+    var latin = firstStrongIsLatin(text);
+    var doc = dx.footnotes;
+    // فقط یک پاراگراف نگه می‌داریم و آن را از نو می‌سازیم
+    var paras = wAll(fn, 'p');
+    paras.forEach(function (p, idx) { if (idx > 0 && p.parentNode) p.parentNode.removeChild(p); });
+    while (fn.firstChild) fn.removeChild(fn.firstChild);
+    var p = W_(doc, 'p');
+    var pr = W_(doc, 'pPr');
+    var ps = W_(doc, 'pStyle');
+    wSet(ps, 'val', 'FootnoteText');
+    pr.appendChild(ps);
+    if (!latin) { pr.appendChild(W_(doc, 'bidi')); }
+    var jc = W_(doc, 'jc');
+    wSet(jc, 'val', latin ? 'left' : 'right');
+    pr.appendChild(jc);
+    p.appendChild(pr);
+    var refRun = W_(doc, 'r');
+    var refRPr = W_(doc, 'rPr');
+    var rStyle = W_(doc, 'rStyle');
+    wSet(rStyle, 'val', 'FootnoteReference');
+    refRPr.appendChild(rStyle);
+    refRun.appendChild(refRPr);
+    refRun.appendChild(W_(doc, 'footnoteRef'));
+    p.appendChild(refRun);
+    var txtRun = W_(doc, 'r');
+    var rp = W_(doc, 'rPr');
+    var sz = W_(doc, 'sz'); wSet(sz, 'val', '20'); rp.appendChild(sz);
+    var szCs = W_(doc, 'szCs'); wSet(szCs, 'val', '20'); rp.appendChild(szCs);
+    txtRun.appendChild(rp);
+    var t = W_(doc, 't');
+    t.setAttribute('xml:space', 'preserve');
+    t.textContent = text;
+    txtRun.appendChild(t);
+    p.appendChild(txtRun);
+    fn.appendChild(p);
+    return true;
+  }
+  function importFootnotes(dx, finalList) {
+    var n = 0;
+    finalList.forEach(function (item) {
+      if (item.id == null || !item.footnote_text) return;
+      if (setFootnoteText(dx, item.id, item.footnote_text)) n++;
+    });
+    return n;
+  }
+
+  function headingParagraphIndex(paras, type, from) {
+    for (var i = (from || 0); i < paras.length; i++) {
+      if (detectHeading(paras[i]) === type) return i;
+    }
+    return -1;
+  }
+  function exportReferences(dx) {
+    var paras = bodyParagraphs(dx.doc);
+    var refI = headingParagraphIndex(paras, 'Masader va Maraje', 0);
+    if (refI === -1) return { ok: false, text: '' };
+    var absI = headingParagraphIndex(paras, 'Abstract', refI + 1);
+    var end = absI === -1 ? paras.length : absI;
+    var lines = [];
+    for (var i = refI + 1; i < end; i++) {
+      var t = paraText(paras[i]).trim();
+      if (t) lines.push(t);
+    }
+    return { ok: true, text: lines.join('\n'), lines: lines.length };
+  }
+  function makeReferenceParagraph(doc, line) {
+    var p = W_(doc, 'p');
+    var pr = W_(doc, 'pPr');
+    pr.appendChild(W_(doc, 'bidi'));
+    var jc = W_(doc, 'jc');
+    wSet(jc, 'val', 'right');
+    pr.appendChild(jc);
+    p.appendChild(pr);
+    var re = /\*\*(.+?)\*\*/g;
+    var last = 0, m;
+    var segs = [];
+    while ((m = re.exec(line)) !== null) {
+      if (m.index > last) segs.push({ text: line.slice(last, m.index), bold: false });
+      segs.push({ text: m[1], bold: true });
+      last = re.lastIndex;
+    }
+    if (last < line.length) segs.push({ text: line.slice(last), bold: false });
+    if (!segs.length) segs.push({ text: line, bold: false });
+    segs.forEach(function (seg) {
+      if (!seg.text) return;
+      var r = W_(doc, 'r');
+      var rp = W_(doc, 'rPr');
+      var f = W_(doc, 'rFonts');
+      wSet(f, 'ascii', 'Traditional Arabic');
+      wSet(f, 'hAnsi', 'Traditional Arabic');
+      wSet(f, 'cs', 'Traditional Arabic');
+      rp.appendChild(f);
+      if (seg.bold) {
+        rp.appendChild(W_(doc, 'b'));
+        rp.appendChild(W_(doc, 'bCs'));
+      }
+      var sz = W_(doc, 'sz'); wSet(sz, 'val', '30'); rp.appendChild(sz);
+      var szCs = W_(doc, 'szCs'); wSet(szCs, 'val', '30'); rp.appendChild(szCs);
+      r.appendChild(rp);
+      var t = W_(doc, 't');
+      t.setAttribute('xml:space', 'preserve');
+      t.textContent = seg.text;
+      r.appendChild(t);
+      p.appendChild(r);
+    });
+    return p;
+  }
+  function paragraphHasSectPr(p) {
+    var pr = wOne(p, 'pPr');
+    return !!(pr && wOne(pr, 'sectPr'));
+  }
+  function importReferences(dx, lines) {
+    if (!lines || !lines.length) return 0;
+    var doc = dx.doc;
+    var paras = bodyParagraphs(doc);
+    var refI = headingParagraphIndex(paras, 'Masader va Maraje', 0);
+    if (refI === -1) return 0;
+    var absI = headingParagraphIndex(paras, 'Abstract', refI + 1);
+    if (absI === -1) return 0;
+    // پاراگرافی که سکشن‌بریک منابع/چکیده را نگه می‌دارد حفظ می‌شود
+    var spacer = null;
+    for (var i = absI - 1; i > refI; i--) {
+      if (paragraphHasSectPr(paras[i])) { spacer = paras[i]; break; }
+    }
+    var insertBefore = spacer || paras[absI];
+    for (var j = refI + 1; j < absI; j++) {
+      var p = paras[j];
+      if (p === spacer) continue;
+      if (p.parentNode) p.parentNode.removeChild(p);
+    }
+    // اگر پاراگراف حامل سکشن‌بریک نگه داشته شد، متن قبلی‌اش پاک شود تا
+    // خط قدیمی منابع دوباره در خروجی نماند (فقط pPr و sectPr می‌ماند).
+    if (spacer) {
+      var keepPr = wOne(spacer, 'pPr');
+      while (spacer.firstChild) spacer.removeChild(spacer.firstChild);
+      if (keepPr) spacer.appendChild(keepPr);
+    }
+    lines.forEach(function (line) {
+      insertBefore.parentNode.insertBefore(makeReferenceParagraph(doc, line), insertBefore);
+    });
+    return lines.length;
+  }
+
+  /* ══════════════════════════════════════════════════════════
      اجرای خط لوله
      ══════════════════════════════════════════════════════════ */
   var report = null;
   function reportWarn(msg) { if (report) report.warnings.push(msg); }
 
-  function run(files, opts, onProgress) {
+  async function run(files, opts, onProgress) {
     opts = opts || {};
     LANG = opts.language === 'fa' ? 'fa' : 'ar';
     quiet = !!opts.quiet;
@@ -1418,156 +1598,280 @@
     var progress = typeof onProgress === 'function' ? onProgress : function () {};
     function done(i, detail) { progress(i, 'done', detail || ''); }
     function running(i, detail) { progress(i, 'running', detail || ''); }
+    function aiLog(i) { return function (msg) { progress(i, 'running', msg); }; }
 
-    return new Promise(function (resolve) {
-      var dx;
+    var dx;
+    try {
+      running(0, 'باز کردن فایل و خواندن XML…');
+      dx = new Docx(files);
+      report.sections = allSectPr(dx.doc).length;
+      done(0, 'فایل باز شد (' + report.sections + ' سکشن اولیه)');
+    } catch (e) {
+      report.ok = false;
+      report.warnings.push(e && e.message ? e.message : String(e));
+      progress(0, 'error', report.warnings[0]);
+      return report;
+    }
+
+    var ai = global.TanzidAI;
+    var fnItems = [];
+    var refExport = { ok: false, text: '' };
+    var fnAiResult = null;
+    var refAiResult = null;
+
+    /* ── ۱) استخراج پاورقی‌ها ── */
+    if (opts.footnotes !== false) {
+      running(1, 'استخراج پاورقی‌های سند…');
       try {
-        running(0, 'باز کردن فایل و خواندن XML…');
-        dx = new Docx(files);
+        fnItems = exportFootnotes(dx);
+        report.counts.footnotesFound = fnItems.length;
+        if (!fnItems.length) {
+          done(1, 'پاورقی‌ای پیدا نشد — مراحل AI پاورقی رد می‌شود.');
+        } else {
+          report.steps.push('استخراج پاورقی: ' + fnItems.length + ' پاورقی.');
+          done(1, fnItems.length + ' پاورقی');
+        }
+      } catch (e) {
+        report.warnings.push('استخراج پاورقی ناموفق: ' + (e && e.message ? e.message : e));
+        progress(1, 'error', report.warnings[report.warnings.length - 1]);
+      }
+    } else {
+      progress(1, 'skip', 'غیرفعال');
+    }
+
+    /* ── ۲) استخراج منابع ── */
+    if (opts.references !== false) {
+      running(2, 'استخراج بخش المصادر والمراجع…');
+      try {
+        refExport = exportReferences(dx);
+        report.counts.referenceLines = (refExport.lines || 0);
+        if (!refExport.ok) {
+          done(2, 'عنوان «المصادر والمراجع» پیدا نشد — مرحله رد شد.');
+        } else {
+          report.steps.push('استخراج منابع: ' + (refExport.lines || 0) + ' خط.');
+          done(2, (refExport.lines || 0) + ' خط');
+        }
+      } catch (e) {
+        report.warnings.push('استخراج منابع ناموفق: ' + (e && e.message ? e.message : e));
+        progress(2, 'error', report.warnings[report.warnings.length - 1]);
+      }
+    } else {
+      progress(2, 'skip', 'غیرفعال');
+    }
+
+    /* ── ۳) صفحه‌آرایی اصلی ── */
+    running(3, 'شروع صفحه‌آرایی اصلی…');
+    try {
+      applyPageSetup(dx);
+      report.steps.push('قالب صفحه روی ' + allSectPr(dx.doc).length + ' سکشن اعمال شد (A4، حاشیهٔ ۳٫۵/۳/۳/۳).');
+
+      if (opts.section !== false || opts.header !== false) {
+        resetStructure(dx);
+        report.steps.push('ساختار سکشن/هدر قبلی پاک‌سازی شد.');
+      }
+
+      var paras = indexParagraphs(dx.doc);
+      var tocTitle = null;
+      for (var i = 0; i < paras.length; i++) {
+        var raw = paraText(paras[i]).trim();
+        if (raw && isExactTitle(raw, TOC_TITLE_VARIANTS)) { tocTitle = paras[i]; break; }
+      }
+      if (tocTitle && !hasPageBreakBefore(tocTitle)) {
+        setPageBreakBefore(tocTitle);
+        report.steps.push('شکست صفحه قبل از تیتر فهرست مطالب تضمین شد.');
+      }
+
+      var scan = scanHeadings(paras);
+      report.headings = scan.headings;
+      report.counts.headings = scan.headings.length;
+      report.steps.push('اسکن سند: ' + scan.all.length + ' عنوان شناسایی شد؛ ' +
+        scan.targets.length + ' عنوان سطح‌ساز و ' + scan.tocOnly.length + ' عنوان فقط‌فهرست.');
+
+      if (opts.section !== false) {
+        var nb = insertSectionBreaks(dx, scan);
+        report.counts.pageBreaks = nb;
         report.sections = allSectPr(dx.doc).length;
-        done(0, 'فایل باز شد (' + report.sections + ' سکشن اولیه)');
-      } catch (e) {
-        report.ok = false;
-        report.warnings.push(e && e.message ? e.message : String(e));
-        progress(0, 'error', report.warnings[0]);
-        resolve(report);
-        return;
+        report.steps.push('سکشن‌گذاری: ' + nb + ' شکست سکشن (Odd Page) — ' +
+          report.sections + ' سکشن.');
       }
 
-      [1, 2, 4, 5, 6, 7].forEach(function (i) {
-        progress(i, 'skip', 'مرحلهٔ هوش مصنوعی — نیازمند سرور؛ رد شد.');
-      });
-
-      /* ── مرحلهٔ ۳: صفحه‌آرایی اصلی ── */
-      running(3, 'شروع صفحه‌آرایی اصلی…');
-      try {
-        applyPageSetup(dx);
-        report.steps.push('قالب صفحه روی ' + allSectPr(dx.doc).length + ' سکشن اعمال شد (A4، حاشیهٔ ۳٫۵/۳/۳/۳).');
-
-        if (opts.section !== false || opts.header !== false) {
-          resetStructure(dx);
-          report.steps.push('ساختار سکشن/هدر قبلی پاک‌سازی شد.');
-        }
-
-        var paras = indexParagraphs(dx.doc);
-        var tocTitle = null;
-        for (var i = 0; i < paras.length; i++) {
-          var raw = paraText(paras[i]).trim();
-          if (raw && isExactTitle(raw, TOC_TITLE_VARIANTS)) { tocTitle = paras[i]; break; }
-        }
-        if (tocTitle && !hasPageBreakBefore(tocTitle)) {
-          setPageBreakBefore(tocTitle);
-          report.steps.push('شکست صفحه قبل از تیتر فهرست مطالب تضمین شد.');
-        }
-
-        var scan = scanHeadings(paras);
-        report.headings = scan.headings;
-        report.counts.headings = scan.headings.length;
-        report.steps.push('اسکن سند: ' + scan.all.length + ' عنوان شناسایی شد؛ ' +
-          scan.targets.length + ' عنوان سطح‌ساز و ' + scan.tocOnly.length + ' عنوان فقط‌فهرست.');
-
-        if (opts.section !== false) {
-          var nb = insertSectionBreaks(dx, scan);
-          report.counts.pageBreaks = nb;
-          report.sections = allSectPr(dx.doc).length;
-          report.steps.push('سکشن‌گذاری: ' + nb + ' شکست سکشن (Odd Page) — ' +
-            report.sections + ' سکشن.');
-        }
-
-        if (opts.header !== false && opts.section !== false) {
-          var thesisTitle = getThesisTitle(indexParagraphs(dx.doc)) || '';
-          var hr = writeHeaders(dx, scan, thesisTitle);
-          report.counts.headers = hr.headers;
-          report.steps.push('هدرگذاری: ' + hr.headers + ' سرصفحه (عنوان فصل + شمارهٔ صفحه).');
-        } else if (opts.header !== false && opts.section === false) {
-          report.warnings.push('هدرگذاری بدون سکشن‌گذاری ممکن نیست — رد شد.');
-        }
-
-        if (opts.chapterBreak !== false) {
-          var cb = insertChapterBreaks(dx, scan);
-          report.counts.chapterBreaks = cb;
-          report.sections = allSectPr(dx.doc).length;
-          report.steps.push('سکشن‌بریک شروع متن ' + cb + ' فصل + ۵ پاراگراف خالی.');
-        }
-
-        if (opts.heading !== false) {
-          var fh = formatHeadings(dx, scan);
-          report.counts.styled = fh.assigned;
-          report.steps.push('هدینگ‌گذاری: ' + fh.assigned + ' عنوان استایل/سطح گرفت، ' +
-            fh.reset + ' پاراگراف به متن اصلی برگشت.');
-        }
-
-        if (opts.polish !== false) {
-          var np = polishDocument(dx);
-          report.counts.polished = np;
-          if (np) report.steps.push('ویرایش نگارشی: ' + np + ' پاراگراف (و/ی عربی).');
-        }
-
-        applyPageSetup(dx);
-        done(3, 'صفحه‌آرایی اصلی تمام شد.');
-      } catch (e) {
-        report.ok = false;
-        report.warnings.push('خطا در صفحه‌آرایی: ' + (e && e.message ? e.message : e));
-        progress(3, 'error', report.warnings[report.warnings.length - 1]);
-        resolve(report);
-        return;
+      if (opts.header !== false && opts.section !== false) {
+        var thesisTitle = getThesisTitle(indexParagraphs(dx.doc)) || '';
+        var hr = writeHeaders(dx, scan, thesisTitle);
+        report.counts.headers = hr.headers;
+        report.steps.push('هدرگذاری: ' + hr.headers + ' سرصفحه (عنوان فصل + شمارهٔ صفحه).');
+      } else if (opts.header !== false && opts.section === false) {
+        report.warnings.push('هدرگذاری بدون سکشن‌گذاری ممکن نیست — رد شد.');
       }
 
-      /* ── مرحلهٔ ۸: انتقال متن انگلیسی به پاورقی ── */
-      if (opts.englishFootnotes !== false) {
-        running(8, 'جست‌وجوی متن انگلیسی در مقدمه تا الخاتمه…');
-        try {
-          var en = moveEnglishToFootnotes(dx);
-          report.counts.englishFootnotes = en.moved;
-          if (!en.ok) {
-            progress(8, 'done', 'مقدمه/منابع پیدا نشد — مرحله رد شد.');
-          } else {
-            report.steps.push('انتقال متن انگلیسی: ' + en.moved + ' پاورقی ساخته شد.');
-            done(8, en.moved + ' پاورقی');
-          }
-        } catch (e) {
-          report.warnings.push('انتقال متن انگلیسی ناموفق: ' + (e && e.message ? e.message : e));
-          progress(8, 'error', report.warnings[report.warnings.length - 1]);
-        }
+      if (opts.chapterBreak !== false) {
+        var cb = insertChapterBreaks(dx, scan);
+        report.counts.chapterBreaks = cb;
+        report.sections = allSectPr(dx.doc).length;
+        report.steps.push('سکشن‌بریک شروع متن ' + cb + ' فصل + ۵ پاراگراف خالی.');
+      }
+
+      if (opts.heading !== false) {
+        var fh = formatHeadings(dx, scan);
+        report.counts.styled = fh.assigned;
+        report.steps.push('هدینگ‌گذاری: ' + fh.assigned + ' عنوان استایل/سطح گرفت، ' +
+          fh.reset + ' پاراگراف به متن اصلی برگشت.');
+      }
+
+      if (opts.polish !== false) {
+        var np = polishDocument(dx);
+        report.counts.polished = np;
+        if (np) report.steps.push('ویرایش نگارشی: ' + np + ' پاراگراف (و/ی عربی).');
+      }
+
+      applyPageSetup(dx);
+      done(3, 'صفحه‌آرایی اصلی تمام شد.');
+    } catch (e) {
+      report.ok = false;
+      report.warnings.push('خطا در صفحه‌آرایی: ' + (e && e.message ? e.message : e));
+      progress(3, 'error', report.warnings[report.warnings.length - 1]);
+      return report;
+    }
+
+    /* ── ۴) ویرایش پاورقی‌ها با هوش مصنوعی ── */
+    if (opts.footnotes !== false) {
+      if (!fnItems.length) {
+        progress(4, 'skip', 'پاورقی‌ای برای ارسال نبود.');
+      } else if (!ai || !ai.isConfigured()) {
+        report.warnings.push('کلید/ماژول هوش مصنوعی در دسترس نیست — پاورقی‌ها ویرایش نشدند.');
+        progress(4, 'error', 'ماژول AI بارگذاری نشده است.');
       } else {
-        progress(8, 'skip', 'غیرفعال');
-      }
-
-      /* ── مرحلهٔ ۹: فهرست مطالب ── */
-      if (opts.toc !== false) {
-        running(9, 'ساخت فهرست مطالب خودکار…');
+        running(4, 'ارسال ' + fnItems.length + ' پاورقی به هوش مصنوعی…');
         try {
-          var toc = insertToc(dx, report.counts.headings || 0);
-          if (toc.ok) {
-            report.counts.tocEntries = toc.entries;
-            report.steps.push('فهرست مطالب ساخته شد (فیلد خودکار؛ در Word به‌روزرسانی شود).');
-            done(9, 'فهرست مطالب اضافه شد.');
-          } else {
-            report.warnings.push('تیتر «فهرس المحتويات» پیدا نشد — فهرست ساخته نشد.');
-            progress(9, 'done', 'تیتر فهرست پیدا نشد — رد شد.');
+          fnAiResult = await ai.processFootnotes(fnItems, LANG, aiLog(4));
+          report.counts.aiFootnotes = fnAiResult.final.length;
+          if (fnAiResult.review && fnAiResult.review.length) {
+            report.counts.aiReview = fnAiResult.review.length;
           }
+          report.steps.push('ویرایش پاورقی با AI: ' + fnAiResult.final.length +
+            ' پاورقی قالب‌بندی شد' +
+            (fnAiResult.review && fnAiResult.review.length
+              ? ' (' + fnAiResult.review.length + ' نیازمند بازبینی)' : '') + '.');
+          done(4, fnAiResult.final.length + ' پاورقی ویرایش شد.');
         } catch (e) {
-          report.warnings.push('ساخت فهرست ناموفق: ' + (e && e.message ? e.message : e));
-          progress(9, 'error', report.warnings[report.warnings.length - 1]);
+          report.warnings.push('ویرایش پاورقی با AI ناموفق: ' + (e && e.message ? e.message : e));
+          progress(4, 'error', report.warnings[report.warnings.length - 1]);
         }
-      } else {
-        progress(9, 'skip', 'غیرفعال');
       }
+    } else {
+      progress(4, 'skip', 'غیرفعال');
+    }
 
-      /* ── مرحلهٔ ۱۰: ذخیره ── */
-      running(10, 'نوشتن خروجی…');
-      try {
-        applyPageSetup(dx);
-        dx.save();
-        report.steps.push('فایل خروجی آماده شد.');
-        done(10);
-      } catch (e) {
-        report.ok = false;
-        report.warnings.push('ذخیرهٔ خروجی ناموفق: ' + (e && e.message ? e.message : e));
-        progress(10, 'error', report.warnings[report.warnings.length - 1]);
+    /* ── ۵) ویرایش منابع با هوش مصنوعی ── */
+    if (opts.references !== false) {
+      if (!refExport.ok || !refExport.text) {
+        progress(5, 'skip', 'منبعی برای ارسال نبود.');
+      } else if (!ai || !ai.isConfigured()) {
+        report.warnings.push('کلید/ماژول هوش مصنوعی در دسترس نیست — منابع ویرایش نشدند.');
+        progress(5, 'error', 'ماژول AI بارگذاری نشده است.');
+      } else {
+        running(5, 'ارسال منابع به هوش مصنوعی…');
+        try {
+          refAiResult = await ai.processReferences(refExport.text, aiLog(5));
+          report.counts.aiReferences = refAiResult.total;
+          report.steps.push('ویرایش منابع با AI: ' + refAiResult.total +
+            ' منبع در ' + Math.max(0, refAiResult.lines.length - 1) + ' خط دسته‌بندی شد.');
+          done(5, refAiResult.total + ' منبع ویرایش شد.');
+        } catch (e) {
+          report.warnings.push('ویرایش منابع با AI ناموفق: ' + (e && e.message ? e.message : e));
+          progress(5, 'error', report.warnings[report.warnings.length - 1]);
+        }
       }
-      resolve(report);
-    });
+    } else {
+      progress(5, 'skip', 'غیرفعال');
+    }
+
+    /* ── ۶) جایگذاری پاورقی‌های ویرایش‌شده ── */
+    if (fnAiResult && fnAiResult.final && fnAiResult.final.length) {
+      running(6, 'جایگذاری متن پاورقی‌ها…');
+      try {
+        var fnUpdated = importFootnotes(dx, fnAiResult.final);
+        report.counts.footnotesImported = fnUpdated;
+        report.steps.push('جایگذاری پاورقی: ' + fnUpdated + ' پاورقی به‌روز شد.');
+        done(6, fnUpdated + ' پاورقی');
+      } catch (e) {
+        report.warnings.push('جایگذاری پاورقی ناموفق: ' + (e && e.message ? e.message : e));
+        progress(6, 'error', report.warnings[report.warnings.length - 1]);
+      }
+    } else {
+      progress(6, 'skip', 'پاورقی ویرایش‌شده‌ای نبود.');
+    }
+
+    /* ── ۷) جایگذاری منابع ویرایش‌شده ── */
+    if (refAiResult && refAiResult.lines && refAiResult.lines.length) {
+      running(7, 'جایگذاری فهرست منابع…');
+      try {
+        var refCount = importReferences(dx, refAiResult.lines);
+        report.counts.referencesImported = refCount;
+        report.steps.push('جایگذاری منابع: ' + refCount + ' خط نوشته شد.');
+        done(7, refCount + ' خط');
+      } catch (e) {
+        report.warnings.push('جایگذاری منابع ناموفق: ' + (e && e.message ? e.message : e));
+        progress(7, 'error', report.warnings[report.warnings.length - 1]);
+      }
+    } else {
+      progress(7, 'skip', 'منبع ویرایش‌شده‌ای نبود.');
+    }
+
+    /* ── ۸) انتقال متن انگلیسی به پاورقی ── */
+    if (opts.englishFootnotes !== false) {
+      running(8, 'جست‌وجوی متن انگلیسی در مقدمه تا الخاتمه…');
+      try {
+        var en = moveEnglishToFootnotes(dx);
+        report.counts.englishFootnotes = en.moved;
+        if (!en.ok) {
+          progress(8, 'done', 'مقدمه/منابع پیدا نشد — مرحله رد شد.');
+        } else {
+          report.steps.push('انتقال متن انگلیسی: ' + en.moved + ' پاورقی ساخته شد.');
+          done(8, en.moved + ' پاورقی');
+        }
+      } catch (e) {
+        report.warnings.push('انتقال متن انگلیسی ناموفق: ' + (e && e.message ? e.message : e));
+        progress(8, 'error', report.warnings[report.warnings.length - 1]);
+      }
+    } else {
+      progress(8, 'skip', 'غیرفعال');
+    }
+
+    /* ── ۹) فهرست مطالب ── */
+    if (opts.toc !== false) {
+      running(9, 'ساخت فهرست مطالب خودکار…');
+      try {
+        var toc = insertToc(dx, report.counts.headings || 0);
+        if (toc.ok) {
+          report.counts.tocEntries = toc.entries;
+          report.steps.push('فهرست مطالب ساخته شد (فیلد خودکار؛ در Word به‌روزرسانی شود).');
+          done(9, 'فهرست مطالب اضافه شد.');
+        } else {
+          report.warnings.push('تیتر «فهرس المحتويات» پیدا نشد — فهرست ساخته نشد.');
+          progress(9, 'done', 'تیتر فهرست پیدا نشد — رد شد.');
+        }
+      } catch (e) {
+        report.warnings.push('ساخت فهرست ناموفق: ' + (e && e.message ? e.message : e));
+        progress(9, 'error', report.warnings[report.warnings.length - 1]);
+      }
+    } else {
+      progress(9, 'skip', 'غیرفعال');
+    }
+
+    /* ── ۱۰) ذخیره ── */
+    running(10, 'نوشتن خروجی…');
+    try {
+      applyPageSetup(dx);
+      dx.save();
+      report.steps.push('فایل خروجی آماده شد.');
+      done(10);
+    } catch (e) {
+      report.ok = false;
+      report.warnings.push('ذخیرهٔ خروجی ناموفق: ' + (e && e.message ? e.message : e));
+      progress(10, 'error', report.warnings[report.warnings.length - 1]);
+    }
+    return report;
   }
 
   global.TanzidEngine = {

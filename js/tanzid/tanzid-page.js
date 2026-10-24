@@ -45,8 +45,8 @@
       chapterBreak: true,
       englishFootnotes: true,
       toc: true,
-      footnotes: false,
-      references: false
+      footnotes: true,
+      references: true
     }
   };
 
@@ -88,7 +88,11 @@
     var ts = global._APP_TS || Date.now();
     depsPromise = Promise.all([
       global.TanzidZip ? Promise.resolve() : loadScript('js/tanzid/zip.js?v=' + ts),
-      global.TanzidEngine ? Promise.resolve() : loadScript('js/tanzid/engine.js?v=' + ts)
+      global.TanzidEngine ? Promise.resolve() : loadScript('js/tanzid/engine.js?v=' + ts),
+      global.TANZID_AI_PROMPTS ? Promise.resolve() : loadScript('js/tanzid/ai-prompts.js?v=' + ts)
+        .catch(function () { global.TANZID_AI_PROMPTS = null; }),
+      global.TanzidAI ? Promise.resolve() : loadScript('js/tanzid/ai.js?v=' + ts)
+        .catch(function () { global.TanzidAI = null; })
     ]).then(function () {
       if (!global.TanzidZip || !global.TanzidEngine) {
         throw new Error('موتور تنضید بارگذاری نشد.');
@@ -106,8 +110,8 @@
       ['fa-heading', 'هدینگ و فهرست'],
       ['fa-file-word', 'هدر و شمارهٔ صفحه'],
       ['fa-align-right', 'راست‌به‌چپ'],
-      ['fa-language', 'پاورقی انگلیسی'],
-      ['fa-lock', 'بدون ارسال فایل']
+      ['fa-wand-magic-sparkles', 'پاورقی و منابع با AI'],
+      ['fa-language', 'پاورقی انگلیسی']
     ].map(function (c) {
       return '<span class="tz-chip"><i class="fas ' + c[0] + '"></i>' + c[1] + '</span>';
     }).join('');
@@ -125,8 +129,8 @@
     }).join('');
 
     var aiRows =
-      rowSwitch('footnotes', 'ویرایش پاورقی‌ها با هوش مصنوعی', 'نیازمند سرور و کلید API — غیرفعال', false, true) +
-      rowSwitch('references', 'ویرایش منابع و مصادر با هوش مصنوعی', 'نیازمند سرور و کلید API — غیرفعال', false, true);
+      rowSwitch('footnotes', 'ویرایش پاورقی‌ها با هوش مصنوعی', 'استخراج ساختاریافته + قالب‌بندی قطعی (AvalAI / DeepSeek)', true) +
+      rowSwitch('references', 'ویرایش منابع و مصادر با هوش مصنوعی', 'دسته‌بندی و قالب دانشگاهی خودکار (AvalAI / DeepSeek)', true);
 
     return '' +
     '<div class="tz-wrap" dir="rtl">' +
@@ -137,7 +141,7 @@
         '<div style="min-width:0">' +
           '<h3>منطق تنضید ۱.۵، داخل مرورگر</h3>' +
           '<p>فایل Word پایان‌نامه را انتخاب کن؛ قواعد صفحه‌آرایی تنضید بدون نیاز به Word روی همان فایل اعمال می‌شود. ' +
-             'فایل شما از مرورگر بیرون نمی‌رود.</p>' +
+             'فایل روی سرور آپلود نمی‌شود؛ فقط متن پاورقی/منابع برای ویرایش به سرویس هوش مصنوعی می‌رود.</p>' +
           '<div class="tz-chips">' + chips + '</div>' +
         '</div>' +
       '</div>' +
@@ -235,8 +239,12 @@
             switchRows +
             '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--tz-line)">' +
               '<span class="tz-label" style="color:#8c9393">' +
-                '<i class="fas fa-wand-magic-sparkles" style="margin-left:4px"></i> مراحل هوش مصنوعی (نیازمند سرور)</span>' +
+                '<i class="fas fa-wand-magic-sparkles" style="margin-left:4px"></i> ویرایش با هوش مصنوعی</span>' +
               aiRows +
+              '<div class="tz-note tz-note-info" style="margin-top:8px">' +
+                '<i class="fas fa-circle-info"></i><div>کلید API در همین صفحه تعبیه شده است؛ ' +
+                'فقط <b>متن پاورقی‌ها و منابع</b> برای استخراج ساختاریافته به <b>api.avalai.ir</b> ' +
+                'فرستاده می‌شود — خود فایل Word آپلود نمی‌شود. برای این دو مرحله اینترنت لازم است.</div></div>' +
             '</div>' +
           '</section>' +
 
@@ -248,11 +256,11 @@
             '<ul class="tz-help-list">' +
               '<li>فهرست مطالب به‌صورت <b>فیلد خودکار Word</b> ساخته می‌شود؛ هنگام باز کردن فایل در Word، ' +
                 'به‌روزرسانی را تأیید کن تا شمارهٔ صفحه‌ها بنشیند.</li>' +
-              '<li>ویرایش پاورقی و منابع با هوش مصنوعی در این نسخه <b>غیرفعال</b> است؛ ' +
-                'بقیهٔ ۷ مرحلهٔ صفحه‌آرایی کامل اجرا می‌شود.</li>' +
+              '<li>پاورقی‌ها و منابع با <b>هوش مصنوعی</b> ویرایش می‌شوند؛ قالب‌بندی نهایی (المصدر السابق، ' +
+                'چیدمان دانشگاهی، دسته‌بندی منابع) به‌صورت قطعی و بدون دخالت AI انجام می‌شود.</li>' +
               '<li>فایل ورودی باید <b>.docx</b> باشد و ساختار آن از قبل آسیب ندیده باشد. ' +
                 'پیشنهاد می‌شود ابتدا از فایل نسخهٔ پشتیبان بگیر.</li>' +
-              '<li>عملیات کاملاً محلی است: نه Word لازم است، نه اینترنت و نه سرور.</li>' +
+              '<li>صفحه‌آرایی کاملاً محلی است؛ فقط مراحل پاورقی/منابع به اینترنت نیاز دارند.</li>' +
             '</ul>' +
           '</section>' +
         '</div>' +
@@ -284,7 +292,7 @@
     if (!box) return;
     box.innerHTML = STEPS.map(function (s, i) {
       var icon = s.ai ? 'fa-robot' : (i === STEPS.length - 1 ? 'fa-floppy-disk' : 'fa-circle');
-      return '<div class="tz-step' + (s.ai ? ' tz-skip' : '') + '" id="tz-step-' + i + '" ' +
+      return '<div class="tz-step" id="tz-step-' + i + '" ' +
         'title="' + esc(s.title) + '">' +
         '<i class="fas ' + icon + '"></i><span>' + esc(s.title) + '</span></div>';
     }).join('');
@@ -517,8 +525,8 @@
       chapterBreak: !!state.flags.chapterBreak,
       englishFootnotes: !!state.flags.englishFootnotes,
       toc: !!state.flags.toc,
-      footnotes: false,
-      references: false
+      footnotes: !!state.flags.footnotes,
+      references: !!state.flags.references
     };
 
     var doneCount = 0;
