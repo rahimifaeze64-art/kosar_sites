@@ -149,6 +149,7 @@
                 'js/whatsapp-manager.js',
                 'js/registrations.js',
                 'js/tadilat.js',
+                'js/tanzid/tanzid-page.js',
                 'js/app.js',
                 'js/supabase-init.js',
                 'js/theme-auto-apply.js',
@@ -173,6 +174,7 @@
     <link href="assets/css/styles.css" rel="stylesheet">
     <link href="css/thesis-workflow.css" rel="stylesheet">
     <link href="css/accounting.css" rel="stylesheet">
+    <link href="css/tanzid.css" rel="stylesheet">
     <link href="css/theme-olive.css" rel="stylesheet">
     <link href="css/theme-dark.css" rel="stylesheet">
 </head>
@@ -366,12 +368,13 @@
                 </button>
             </template>
 
-            <!-- تنضید — صفحه‌آرایی خودکار پایان‌نامه (صفحهٔ مستقل) -->
-            <a href="tanzid.html"
-               class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200 text-black-100 hover:bg-white hover:bg-opacity-10">
+            <!-- تنضید — صفحه‌آرایی خودکار پایان‌نامه (صفحهٔ داخلی) -->
+            <button @click="currentPage = 'tanzid'; sidebarOpen = false"
+                    :class="currentPage === 'tanzid' ? 'bg-white bg-opacity-20 text-white shadow-lg' : 'text-black-100 hover:bg-white hover:bg-opacity-10'"
+                    class="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200">
                 <i class="fas fa-ruler-combined text-lg"></i>
                 <span class="font-medium">تنضید</span>
-            </a>
+            </button>
 
             <!-- حسابداری من - فقط عامل -->
             <template x-if="currentUser.role === 'agent'">
@@ -668,6 +671,9 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Tanzid Page — صفحه‌آرایی خودکار پایان‌نامه (تنضید ۱.۵) -->
+            <div x-show="currentPage === 'tanzid'" id="tanzid-root" class="min-h-[60vh]"></div>
             
             <!-- Chat with Manager Page (employee Only) -->
             <div x-show="currentPage === 'chatWithManager' && currentUser.role === 'employee'" x-html="getChatWithManagerContent()"></div>

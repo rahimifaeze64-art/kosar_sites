@@ -1,0 +1,483 @@
+/* ══════════════════════════════════════════════════════════════
+   css/tanzid.css — صفحهٔ «تنضید» داخل پوستهٔ سایت (تم سبز زیتونی)
+   تمام استایل‌ها داخل #tanzid-root / .tz-wrap محدود شده‌اند تا با
+   theme-olive و بقیهٔ صفحات سایت تضاد نداشته باشند.
+   ══════════════════════════════════════════════════════════════ */
+
+#tanzid-root {
+    --tz:        var(--olive-primary, #8FBF3F);
+    --tz-hover:  var(--olive-primary-hover, #9AC24B);
+    --tz-soft:   var(--olive-selected-bg, #EAF4D3);
+    --tz-dark:   #5f8420;
+    --tz-ink:    #2f3437;
+    --tz-muted:  #8c9393;
+    --tz-line:   #e3e7df;
+    --tz-bg:     #fafbf8;
+    --tz-ok:     #2f8a5b;
+    --tz-warn:   #a1721c;
+    --tz-err:    #c0392b;
+    color: var(--tz-ink);
+    direction: rtl;
+}
+
+#tanzid-root *,
+#tanzid-root *::before,
+#tanzid-root *::after { box-sizing: border-box; }
+
+#tanzid-root .tz-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    font-family: Vazirmatn, Tahoma, system-ui, sans-serif;
+    color: var(--tz-ink);
+}
+
+/* ── سربرگ صفحه ────────────────────────────────────────────── */
+#tanzid-root .tz-hero {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    background: #fff;
+    border: 1px solid var(--tz-line);
+    border-right: 4px solid var(--tz);
+    border-radius: 12px;
+    padding: 18px 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .05);
+}
+#tanzid-root .tz-hero-ic {
+    width: 46px;
+    height: 46px;
+    flex: none;
+    border-radius: 12px;
+    background: var(--tz-soft);
+    color: var(--tz-dark);
+    display: grid;
+    place-items: center;
+    font-size: 20px;
+}
+#tanzid-root .tz-hero h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--tz-ink) !important;
+}
+#tanzid-root .tz-hero p {
+    margin: 5px 0 0;
+    font-size: 12.8px;
+    line-height: 1.9;
+    color: #666e6a !important;
+}
+#tanzid-root .tz-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+#tanzid-root .tz-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--tz-dark) !important;
+    background: var(--tz-soft);
+    border: 1px solid #dcebc2;
+    border-radius: 999px;
+    padding: 3px 9px;
+}
+#tanzid-root .tz-chip i { font-size: 10px; color: var(--tz-dark); }
+
+/* ── شبکهٔ صفحه ─────────────────────────────────────────────── */
+#tanzid-root .tz-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 16px;
+    align-items: start;
+}
+#tanzid-root .tz-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+@media (max-width: 1100px) {
+    #tanzid-root .tz-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ── کارت ──────────────────────────────────────────────────── */
+#tanzid-root .tz-card {
+    background: #fff;
+    border: 1px solid var(--tz-line);
+    border-radius: 12px;
+    padding: 18px 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .05);
+}
+#tanzid-root .tz-card-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+#tanzid-root .tz-no {
+    width: 34px;
+    height: 34px;
+    flex: none;
+    border-radius: 10px;
+    background: var(--tz-soft);
+    color: var(--tz-dark);
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: 14px;
+}
+#tanzid-root .tz-card-head h4 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--tz-ink) !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+#tanzid-root .tz-card-head .tz-sub {
+    margin: 3px 0 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--tz-muted) !important;
+    line-height: 1.8;
+}
+
+/* ── انتخاب فایل ───────────────────────────────────────────── */
+#tanzid-root .tz-drop {
+    border: 2px dashed #cfd8c0;
+    border-radius: 12px;
+    background: var(--tz-bg);
+    padding: 26px 18px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+}
+#tanzid-root .tz-drop:hover,
+#tanzid-root .tz-drop.tz-over {
+    border-color: var(--tz);
+    background: #f5faec;
+}
+#tanzid-root .tz-drop .tz-drop-ic {
+    font-size: 30px;
+    color: var(--tz);
+    margin-bottom: 8px;
+    display: block;
+}
+#tanzid-root .tz-drop b { display: block; font-size: 13.5px; font-weight: 800; color: var(--tz-ink); }
+#tanzid-root .tz-drop small { display: block; margin-top: 4px; font-size: 11.5px; color: var(--tz-muted); }
+
+#tanzid-root .tz-file {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid var(--tz-line);
+    background: var(--tz-bg);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-top: 12px;
+}
+#tanzid-root .tz-file-ic {
+    width: 38px;
+    height: 38px;
+    flex: none;
+    border-radius: 9px;
+    display: grid;
+    place-items: center;
+    background: #eef5e2;
+    color: var(--tz-dark);
+    font-size: 16px;
+}
+#tanzid-root .tz-file-name { font-size: 13px; font-weight: 800; color: var(--tz-ink); word-break: break-all; }
+#tanzid-root .tz-file-meta { font-size: 11px; font-weight: 600; color: var(--tz-muted); margin-top: 2px; }
+#tanzid-root .tz-file-x {
+    margin-right: auto;
+    border: 1px solid var(--tz-line);
+    background: #fff;
+    color: #8a8f8a;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+#tanzid-root .tz-file-x:hover { color: var(--tz-err); border-color: #efc9c4; }
+
+/* ── دکمه‌ها ───────────────────────────────────────────────── */
+#tanzid-root .tz-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: none;
+    border-radius: 8px;
+    padding: 11px 20px;
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background .15s, box-shadow .15s, opacity .15s;
+    line-height: 1;
+}
+#tanzid-root .tz-btn:disabled { opacity: .55; cursor: not-allowed; }
+#tanzid-root .tz-btn-primary { background: var(--tz); color: #fff !important; box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
+#tanzid-root .tz-btn-primary:not(:disabled):hover { background: var(--tz-hover); }
+#tanzid-root .tz-btn-outline {
+    background: #fff;
+    color: var(--tz-dark) !important;
+    border: 1px solid #d7e2c6;
+}
+#tanzid-root .tz-btn-outline:not(:disabled):hover { background: var(--tz-soft); }
+#tanzid-root .tz-btn-lg { padding: 13px 26px; font-size: 14px; }
+
+/* ── سگمنت زبان ────────────────────────────────────────────── */
+#tanzid-root .tz-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--tz-ink);
+    margin-bottom: 7px;
+}
+#tanzid-root .tz-seg {
+    display: inline-flex;
+    gap: 4px;
+    background: #f2f4ee;
+    border: 1px solid var(--tz-line);
+    border-radius: 9px;
+    padding: 4px;
+    margin-bottom: 14px;
+}
+#tanzid-root .tz-seg button {
+    border: none;
+    background: transparent;
+    color: #6d746d;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 800;
+    padding: 7px 18px;
+    border-radius: 7px;
+    cursor: pointer;
+}
+#tanzid-root .tz-seg button.tz-on {
+    background: #fff;
+    color: var(--tz-dark);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .1);
+}
+
+/* ── سوییچ‌ها ──────────────────────────────────────────────── */
+#tanzid-root .tz-switch-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 2px;
+    border-bottom: 1px dashed #edf0e8;
+    cursor: pointer;
+}
+#tanzid-root .tz-switch-row:last-child { border-bottom: none; }
+#tanzid-root .tz-switch-row.tz-disabled { cursor: not-allowed; opacity: .62; }
+#tanzid-root .tz-switch-text { flex: 1; min-width: 0; }
+#tanzid-root .tz-switch-text b { display: block; font-size: 12.6px; font-weight: 700; color: var(--tz-ink); }
+#tanzid-root .tz-switch-text small { display: block; font-size: 10.8px; color: var(--tz-muted); margin-top: 2px; }
+#tanzid-root .tz-switch {
+    position: relative;
+    width: 38px;
+    height: 21px;
+    flex: none;
+}
+#tanzid-root .tz-switch input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+#tanzid-root .tz-switch span {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: #d9ded3;
+    transition: background .15s;
+    pointer-events: none;
+}
+#tanzid-root .tz-switch span::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .2);
+    transition: transform .15s;
+}
+#tanzid-root .tz-switch input:checked + span { background: var(--tz); }
+#tanzid-root .tz-switch input:checked + span::after { transform: translateX(-17px); }
+#tanzid-root .tz-switch input:disabled + span { background: #e6e8e2; }
+
+/* ── نوار پیشرفت ───────────────────────────────────────────── */
+#tanzid-root .tz-bar {
+    height: 8px;
+    border-radius: 999px;
+    background: #eceee8;
+    overflow: hidden;
+    margin: 4px 0 14px;
+}
+#tanzid-root .tz-bar i {
+    display: block;
+    height: 100%;
+    width: 0;
+    border-radius: 999px;
+    background: var(--tz);
+    transition: width .3s;
+}
+
+/* ── کارت‌های مرحله ────────────────────────────────────────── */
+#tanzid-root .tz-steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+    gap: 7px;
+}
+#tanzid-root .tz-step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--tz-line);
+    border-radius: 9px;
+    padding: 8px 9px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #6f766f;
+    background: #fbfcf9;
+    min-height: 42px;
+}
+#tanzid-root .tz-step i {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 9px;
+    background: #eceee8;
+    color: #9aa19a;
+}
+#tanzid-root .tz-step.tz-running { border-color: #cfe2b0; background: #f6fbec; color: var(--tz-dark); }
+#tanzid-root .tz-step.tz-running i { background: var(--tz); color: #fff; }
+#tanzid-root .tz-step.tz-running i::before { content: "\f110"; animation: tz-spin .9s linear infinite; }
+#tanzid-root .tz-step.tz-done { border-color: #cfe6d9; background: #f4fbf7; color: #256b47; }
+#tanzid-root .tz-step.tz-done i { background: #d9f0e3; color: var(--tz-ok); }
+#tanzid-root .tz-step.tz-error { border-color: #efc9c4; background: #fdf5f4; color: #a3352a; }
+#tanzid-root .tz-step.tz-error i { background: #f8dedb; color: var(--tz-err); }
+#tanzid-root .tz-step.tz-skip { opacity: .62; border-style: dashed; }
+@keyframes tz-spin { to { transform: rotate(360deg); } }
+
+/* ── پیام‌ها ───────────────────────────────────────────────── */
+#tanzid-root .tz-note {
+    display: flex;
+    gap: 10px;
+    border-radius: 10px;
+    padding: 11px 13px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.9;
+    margin-top: 10px;
+}
+#tanzid-root .tz-note i { margin-top: 2px; }
+#tanzid-root .tz-note-info { background: #f2f7ea; border: 1px solid #dae8c4; color: #4d6224; }
+#tanzid-root .tz-note-ok { background: #eff9f3; border: 1px solid #c9e8d6; color: #20603f; }
+#tanzid-root .tz-note-warn { background: #fdf8ec; border: 1px solid #f0dfb4; color: #7d5a12; }
+#tanzid-root .tz-note-err { background: #fdf3f2; border: 1px solid #f0ccc7; color: #9c3125; }
+
+/* ── گزارش ────────────────────────────────────────────────── */
+#tanzid-root .tz-report-list { list-style: none; margin: 0; padding: 0; }
+#tanzid-root .tz-report-list li {
+    position: relative;
+    padding: 6px 22px 6px 0;
+    font-size: 12.3px;
+    font-weight: 600;
+    color: #4f564f;
+    border-bottom: 1px dashed #eef0ea;
+}
+#tanzid-root .tz-report-list li:last-child { border-bottom: none; }
+#tanzid-root .tz-report-list li::before {
+    content: "\f00c";
+    font-family: "Font Awesome 6 Free", "Font Awesome 5 Free", FontAwesome;
+    font-weight: 900;
+    position: absolute;
+    right: 0;
+    top: 7px;
+    font-size: 9px;
+    color: var(--tz);
+}
+#tanzid-root .tz-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+#tanzid-root .tz-stat {
+    background: var(--tz-bg);
+    border: 1px solid var(--tz-line);
+    border-radius: 9px;
+    padding: 7px 12px;
+    font-size: 11.3px;
+    font-weight: 700;
+    color: #68705a;
+}
+#tanzid-root .tz-stat b { color: var(--tz-dark); font-size: 13px; margin-right: 3px; }
+
+#tanzid-root .tz-table-wrap { overflow-x: auto; margin-top: 10px; }
+#tanzid-root table.tz-table { width: 100%; border-collapse: collapse; font-size: 11.8px; }
+#tanzid-root table.tz-table th,
+#tanzid-root table.tz-table td {
+    text-align: right;
+    padding: 6px 8px;
+    border-bottom: 1px solid #eef0ea;
+    font-weight: 600;
+    color: #4f564f;
+}
+#tanzid-root table.tz-table th { background: #f7f9f3; color: #7c8475; font-size: 11px; font-weight: 800; }
+#tanzid-root .tz-tag {
+    display: inline-block;
+    background: var(--tz-soft);
+    color: var(--tz-dark);
+    border-radius: 999px;
+    padding: 1px 8px;
+    font-size: 10px;
+    font-weight: 800;
+    direction: ltr;
+}
+
+#tanzid-root .tz-log {
+    margin: 10px 0 0;
+    background: #f7f9f3;
+    border: 1px solid var(--tz-line);
+    border-radius: 9px;
+    padding: 10px 12px;
+    max-height: 180px;
+    overflow: auto;
+    font-size: 11px;
+    line-height: 1.9;
+    color: #5d655b;
+    white-space: pre-wrap;
+    word-break: break-word;
+    direction: rtl;
+    font-family: inherit;
+}
+#tanzid-root .tz-log .tz-log-time { color: #a2a89f; margin-left: 6px; }
+
+/* ── راهنما ────────────────────────────────────────────────── */
+#tanzid-root .tz-help-list { margin: 0; padding: 0 16px 0 0; }
+#tanzid-root .tz-help-list li {
+    font-size: 11.8px;
+    font-weight: 600;
+    color: #5d655b;
+    line-height: 1.95;
+    margin-bottom: 3px;
+}
+#tanzid-root .tz-help-list li b { color: var(--tz-ink); }
+#tanzid-root .tz-kbd {
+    display: inline-block;
+    background: #f3f5ef;
+    border: 1px solid #e0e4da;
+    border-radius: 5px;
+    padding: 0 5px;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #5f665d;
+}
+#tanzid-root .tz-hidden { display: none !important; }

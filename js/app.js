@@ -164,6 +164,26 @@ function appController() {
                   }, 100);
               });
           }
+          // تنضید — صفحه‌آرایی خودکار پایان‌نامه
+          if (newPage === 'tanzid') {
+              this.$nextTick(() => {
+                  setTimeout(() => {
+                      const root = document.getElementById('tanzid-root');
+                      if (!root) return;
+                      if (typeof TanzidPage === 'undefined') {
+                          root.innerHTML =
+                              '<div class="bg-rose-500/10 border border-rose-500/40 rounded-2xl p-6 text-center">' +
+                              '<i class="fas fa-plug-circle-xmark text-3xl text-rose-400"></i>' +
+                              '<p class="mt-3 text-rose-200 font-medium">ماژول تنضید بارگذاری نشد</p>' +
+                              '<p class="mt-2 text-sm text-rose-300/80">فایل <code>js/tanzid/tanzid-page.js</code> ' +
+                              'باید در لیست <code>_APP_SCRIPTS</code> داخل <code>index.html</code> باشد.</p></div>';
+                          console.error('[tanzid] TanzidPage تعریف نشده است.');
+                          return;
+                      }
+                      TanzidPage.mount(root);
+                  }, 60);
+              });
+          }
           // یادداشت شخصی — همه نقش‌ها
           if (newPage === 'personalNotes') {
               this.$nextTick(() => {
@@ -592,6 +612,7 @@ function appController() {
         users: "مدیریت کاربران",
         students: "مدیریت دانشجویان",
         companyDoor: "در شرکت",
+        tanzid: "تنضید — صفحه‌آرایی پایان‌نامه",
         agentTasks:
           this.currentUser && this.currentUser.role === "agent"
             ? "وظایف من"
