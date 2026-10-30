@@ -23,6 +23,8 @@
          بعد از یک‌بار ورود مجدد، دیگر نیازی به وارد کردن
          یوزر/پس نیست تا نسخهٔ بعدی.
          ═══════════════════════════════════════════════════════════ -->
+    <!-- محافظ حافظه (QuotaExceededError) — باید قبل از گارد بارگذاری شود -->
+    <script src="js/storage-health.js"></script>
     <script>
         window.SESSION_VERSION = '2026-10-31-supabase-selfhosted';
         (function() {
@@ -44,10 +46,14 @@
                     localStorage.removeItem('edu_system_current_user');
                     localStorage.removeItem('sessionVersion');
                 } catch(e) {}
+                try { if (window.StorageHealth) StorageHealth.clearSessionVersion(); } catch(e) {}
                 clearSupabaseSession();
             }
             try {
-                if (localStorage.getItem('sessionVersion') !== window.SESSION_VERSION) {
+                var _ver = (window.StorageHealth && StorageHealth.getSessionVersion)
+                    ? StorageHealth.getSessionVersion()
+                    : localStorage.getItem('sessionVersion');
+                if (_ver !== window.SESSION_VERSION) {
                     // نسخهٔ نشست قدیمی است → خروج اجباری یک‌باره
                     forceLogout();
                     window.location.replace('landing.html');

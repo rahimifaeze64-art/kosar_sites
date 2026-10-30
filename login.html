@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -8,6 +8,8 @@
     <script>
         window.SESSION_VERSION = '2026-10-31-supabase-selfhosted';
     </script>
+    <!-- محافظ حافظه (QuotaExceededError) — باید قبل از اسکریپت‌های دیگر باشد -->
+    <script src="js/storage-health.js"></script>
     <script src="assets/libs/tailwindcss.js"></script>
     <link href="assets/libs/fontawesome/css/all.min.css" rel="stylesheet">
     <link href="assets/fonts/vazirmatn/vazirmatn.css" rel="stylesheet">
@@ -29,8 +31,9 @@
     function getHardcodedUserById(id) { return HARDCODED_USERS.find(x => x.id===id) || null; }
     console.log('✅ HARDCODED_USERS inline loaded —', HARDCODED_USERS.length, 'users');
     </script>
-    <!-- فایل خارجی هم بارگذاری می‌شه (fallback) -->
-    <script src="js/users-data.js"></script>
+    <!-- ⚠️ js/users-data.js دیگر بارگذاری نمی‌شود: همان HARDCODED_USERS را
+         دوباره تعریف می‌کرد و خطای "Identifier 'HARDCODED_USERS' has already
+         been declared" می‌داد. نسخهٔ inline بالا مرجع است. -->
     <style>
         body { font-family: Vazirmatn, sans-serif; }
         .gradient-bg { background: #fef08a; }
@@ -233,9 +236,26 @@ async function handleLogin(event) {
             specialization: user.specialization || '',
             active:     true
         };
-        localStorage.setItem('currentUser', JSON.stringify(sessionUser));
-        localStorage.setItem('edu_system_current_user', JSON.stringify(sessionUser));
-        localStorage.setItem('sessionVersion', window.SESSION_VERSION || '');
+        // ── ذخیره با محافظت در برابر پر شدن حافظه (QuotaExceededError) ──
+        // اگر localStorage پر باشد، StorageHealth ابتدا کش‌های دورریز
+        // (نشست‌های قدیمی سوپابیس و پیوست‌های base64) را پاک می‌کند.
+        var _sh = window.StorageHealth;
+        var _userJson = JSON.stringify(sessionUser);
+        var _saved = _sh ? _sh.safeSet('currentUser', _userJson) : (function () {
+            try { localStorage.setItem('currentUser', _userJson); return true; } catch (e) { return false; }
+        })();
+        if (_sh) {
+            _sh.safeSet('edu_system_current_user', _userJson);
+            _sh.setSessionVersion(window.SESSION_VERSION || '');
+        } else {
+            try { localStorage.setItem('edu_system_current_user', _userJson); } catch (e) {}
+            try { localStorage.setItem('sessionVersion', window.SESSION_VERSION || ''); } catch (e) {}
+        }
+        if (!_saved) {
+            setLoading(false);
+            showError('حافظهٔ مرورگر پر است. لطفاً داده‌های سایت را پاک کنید (یا از حالت ناشناس استفاده کنید) و دوباره وارد شوید.');
+            return;
+        }
         console.log('✅ ورود موفق:', sessionUser.username, '|', sessionUser.role);
 
         // ── همگام‌سازی empAccAllowedIds از Supabase هنگام لاگین ─
@@ -278,12 +298,17 @@ async function handleLogin(event) {
 // فقط وقتی نسخهٔ نشست فعلی است؛ در غیر این صورت خروج اجباری.
 (function checkSession() {
     let savedVer = null;
-    try { savedVer = localStorage.getItem('sessionVersion'); } catch(e) {}
+    try {
+        savedVer = (window.StorageHealth && StorageHealth.getSessionVersion)
+            ? StorageHealth.getSessionVersion()
+            : localStorage.getItem('sessionVersion');
+    } catch(e) {}
     if (savedVer !== window.SESSION_VERSION) {
         try {
             localStorage.removeItem('currentUser');
             localStorage.removeItem('edu_system_current_user');
-            localStorage.removeItem('sessionVersion');
+            if (window.StorageHealth) StorageHealth.clearSessionVersion();
+            else localStorage.removeItem('sessionVersion');
         } catch(e) {}
         return;
     }

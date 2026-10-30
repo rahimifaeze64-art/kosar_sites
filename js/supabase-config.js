@@ -40,10 +40,14 @@ window.SESSION_VERSION = '2026-10-31-supabase-selfhosted';
                 localStorage.removeItem('edu_system_current_user');
                 localStorage.removeItem('sessionVersion');
             } catch(e) {}
+            try { if (window.StorageHealth) StorageHealth.clearSessionVersion(); } catch(e) {}
             clearSupabaseSession();
         }
 
-        if (localStorage.getItem('sessionVersion') !== window.SESSION_VERSION) {
+        var ver = window.StorageHealth && window.StorageHealth.getSessionVersion
+            ? window.StorageHealth.getSessionVersion()
+            : localStorage.getItem('sessionVersion');
+        if (ver !== window.SESSION_VERSION) {
             forceLogout();
             window.location.replace('landing.html');
         }
