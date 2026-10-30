@@ -594,15 +594,24 @@
   // Supabase — REST + Storage
   // ══════════════════════════════════════════════════════════
   function sbUrl() {
-    return (typeof SUPABASE_URL !== 'undefined' && SUPABASE_URL)
-      ? SUPABASE_URL.replace(/\/+$/, '') : '';
+    var u = (window.SB_ENV && window.SB_ENV.url) ||
+            (typeof SUPABASE_URL !== 'undefined' && SUPABASE_URL) || '';
+    return u ? u.replace(/\/+$/, '') : '';
   }
   function sbKey() {
-    return (typeof SUPABASE_ANON_KEY !== 'undefined' && SUPABASE_ANON_KEY) || '';
+    // کلید عمومی (publishable) — فقط برای هدر apikey
+    return (window.SB_ENV && window.SB_ENV.publishableKey) ||
+           (typeof SUPABASE_PUBLISHABLE_KEY !== 'undefined' && SUPABASE_PUBLISHABLE_KEY) || '';
+  }
+  function sbAuthToken() {
+    // access token واقعی نشست؛ در نبود آن anon JWT (هرگز publishable به‌عنوان Bearer)
+    return (typeof getSupabaseAccessToken === 'function' && getSupabaseAccessToken()) ||
+           (window.SB_ENV && window.SB_ENV.anonKey) ||
+           (typeof SUPABASE_ANON_KEY !== 'undefined' && SUPABASE_ANON_KEY) || '';
   }
   function sbReady() { return !!(sbUrl() && sbKey()); }
   function sbHeaders(extra) {
-    var h = { apikey: sbKey(), Authorization: 'Bearer ' + sbKey() };
+    var h = { apikey: sbKey(), Authorization: 'Bearer ' + sbAuthToken() };
     if (extra) for (var k in extra) h[k] = extra[k];
     return h;
   }

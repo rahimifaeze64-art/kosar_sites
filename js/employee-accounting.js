@@ -3475,8 +3475,8 @@ ${body}
             fetch(SUPABASE_URL + '/rest/v1/work_late_requests?on_conflict=id', {
                 method: 'POST',
                 headers: {
-                    'apikey': SUPABASE_ANON_KEY,
-                    'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+                    'apikey': (typeof SUPABASE_PUBLISHABLE_KEY !== 'undefined' ? SUPABASE_PUBLISHABLE_KEY : SUPABASE_ANON_KEY),
+                    'Authorization': 'Bearer ' + ((typeof getSupabaseAccessToken === 'function' && getSupabaseAccessToken()) || SUPABASE_ANON_KEY),
                     'Content-Type': 'application/json',
                     'Prefer': 'resolution=merge-duplicates,return=minimal'
                 },

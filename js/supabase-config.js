@@ -55,18 +55,38 @@ window.SESSION_VERSION = '2026-10-31-supabase-selfhosted';
 })();
 
 // ════════════════════════════════════════════════════════════════════
-// ⚙️  تنظیمات اتصال — این دو مقدار را با مقادیر واقعی پروژه‌ات جایگزین کن
-//    Settings > API در داشبورد Supabase:
-//      Project URL  → SUPABASE_URL
-//      publishable  → SUPABASE_PUBLISHABLE_KEY (برای SDK)
-//      anon JWT     → SUPABASE_ANON_KEY (برای هدرهای Authorization: Bearer)
+// ⚙️  تنظیمات اتصال — از js/supabase-env.js (منبع واحد) خوانده می‌شود
+//    اگر supabase-env.js بارگذاری نشده باشد، مقادیر پیش‌فرض زیر استفاده
+//    می‌شوند (هر دو باید یکسان بمانند).
 // ════════════════════════════════════════════════════════════════════
-// Supabase self-hosted (Kong gateway)
-// ⚠️ اگر سایت روی HTTPS سرو می‌شود، این URL هم باید HTTPS باشد
-//    (مرورگر درخواست http از صفحهٔ https را بلاک می‌کند: mixed content)
-const SUPABASE_URL             = 'http://62.60.194.98:8000';
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_tnnaReMVB5S47UOmxy3_Cp_AuJ9aanV';
-const SUPABASE_ANON_KEY        = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkzMzg0NzY1LCJleHAiOjE5NTEwNjQ3NjV9.L9pywhM220qbWzAWN8lNEdqCXc_4InN_lWeW19Zly5w';
+// Supabase self-hosted (Kong gateway) — HTTPS.
+// Realtime به‌صورت خودکار از همین دامنه wss:// می‌سازد.
+const SUPABASE_URL             = (window.SB_ENV && window.SB_ENV.url)            || 'https://supa.alkawthar.info';
+const SUPABASE_PUBLISHABLE_KEY = (window.SB_ENV && window.SB_ENV.publishableKey) || 'sb_publishable_tnnaReMVB5S47UOmxy3_Cp_AuJ9aanV';
+const SUPABASE_ANON_KEY        = (window.SB_ENV && window.SB_ENV.anonKey)        || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkzMzg0NzY1LCJleHAiOjE5NTEwNjQ3NjV9.L9pywhM220qbWzAWN8lNEdqCXc_4InN_lWeW19Zly5w';
+
+// ── توکن دسترسی کاربر (کش‌شده) ───────────────────────────────
+// برای درخواست‌های REST دستی: به‌جای فرستادن کلید عمومی در هدر Bearer،
+// از access token واقعی نشست استفاده می‌کنیم. اگر کاربر لاگین نباشد،
+// به anon JWT برمی‌گردیم (همان رفتار قبلی).
+let __supabaseAccessToken = null;
+
+function getSupabaseAccessToken() {
+    return __supabaseAccessToken || null;
+}
+
+// هدرهای استاندارد Supabase برای fetch دستی
+function getSupabaseRestHeaders(extra) {
+    const token = getSupabaseAccessToken() || SUPABASE_ANON_KEY;
+    const headers = {
+        'apikey': SUPABASE_PUBLISHABLE_KEY,
+        'Authorization': 'Bearer ' + token
+    };
+    if (extra) {
+        Object.keys(extra).forEach(function (k) { headers[k] = extra[k]; });
+    }
+    return headers;
+}
 
 // ── singleton client ─────────────────────────────────────────
 let supabaseClient = null;
@@ -92,7 +112,19 @@ function getSupabaseClient() {
         }
     });
 
-    console.log('✅ Supabase client ساخته شد');
+    // کش access token برای درخواست‌های REST دستی (بدون ساخت client دوم)
+    try {
+        supabaseClient.auth.onAuthStateChange(function (_event, session) {
+            __supabaseAccessToken = (session && session.access_token) ? session.access_token : null;
+        });
+        supabaseClient.auth.getSession().then(function (res) {
+            __supabaseAccessToken = (res && res.data && res.data.session && res.data.session.access_token) || null;
+        }).catch(function () { /* نشستی وجود ندارد */ });
+    } catch (e) {
+        console.warn('⚠️ ثبت listener توکن Supabase ناموفق:', e.message);
+    }
+
+    console.log('✅ Supabase client ساخته شد →', SUPABASE_URL);
     return supabaseClient;
 }
 

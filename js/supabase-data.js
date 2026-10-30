@@ -753,15 +753,15 @@ const SupabaseDataModule = {
             const allRows = [];
             keys.forEach(k => allRows.push(...unsent[k]));
             // supabase-js fetch options را مستقیم پشتیبانی نمی‌کند — از REST مستقیم با keepalive استفاده می‌کنیم
-            const url = `${client.rest.url.replace(/\/$/, '')}/rest/v1/student_progress`;
+            const url = `${(client.supabaseUrl || SUPABASE_URL).replace(/\/$/, '')}/rest/v1/student_progress`;
             // onConflict=columns → Prefer: resolution=merge-duplicates
             fetch(`${url}?on_conflict=student_id,path_type,step_index`, {
                 method: 'POST',
                 keepalive: true,          // ← کلید ماجرا: بعد از بستن صفحه هم کامل می‌شود
                 headers: {
                     'Content-Type': 'application/json',
-                    'apikey': client.supabaseKey,
-                    'Authorization': `Bearer ${client.supabaseKey}`,
+                    'apikey': (typeof SUPABASE_PUBLISHABLE_KEY !== 'undefined' && SUPABASE_PUBLISHABLE_KEY) || client.supabaseKey,
+                    'Authorization': `Bearer ${(typeof getSupabaseAccessToken === 'function' && getSupabaseAccessToken()) || (typeof SUPABASE_ANON_KEY !== 'undefined' ? SUPABASE_ANON_KEY : client.supabaseKey)}`,
                     'Prefer': 'resolution=merge-duplicates,return=minimal'
                 },
                 body: JSON.stringify(allRows)

@@ -14,6 +14,8 @@
             });
         }
     </script>
+    <!-- ═══ تنظیمات واحد Supabase (باید قبل از گارد و inline scriptها باشد) ═══ -->
+    <script src="js/supabase-env.js"></script>
     <title>سیستم مدیریت تحصیلی دانشجویان بین‌المللی</title>
 
     <!-- ═══════════════════════════════════════════════════════════
@@ -1061,10 +1063,24 @@
     </script>
     <!-- ═══ تخصیص کارمند به حسابداری کارمندان ═══ -->
     <script>
-        // ── پارامترهای Supabase (مستقل از supabase-config.js) ──
-        var _SB_URL = 'http://62.60.194.98:8000';
-        var _SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkzMzg0NzY1LCJleHAiOjE5NTEwNjQ3NjV9.L9pywhM220qbWzAWN8lNEdqCXc_4InN_lWeW19Zly5w';
-        var _sbHeaders = { 'apikey': _SB_KEY, 'Authorization': 'Bearer ' + _SB_KEY, 'Content-Type': 'application/json' };
+        // ── پارامترهای Supabase — از منبع واحد js/supabase-env.js ──
+        var _SB_URL = (window.SB_ENV && window.SB_ENV.url) || 'https://supa.alkawthar.info';
+        var _SB_PUBLISHABLE = (window.SB_ENV && window.SB_ENV.publishableKey) || '';
+        var _SB_ANON = (window.SB_ENV && window.SB_ENV.anonKey) || '';
+
+        // هدرهای REST: apikey=publishable، Authorization=access token کاربر
+        // (اگر لاگین نباشد → anon JWT؛ هرگز publishable در Bearer قرار نمی‌گیرد)
+        function _sbHeaders(extra) {
+            var token = (typeof getSupabaseAccessToken === 'function' && getSupabaseAccessToken()) ||
+                        (window.__SB_ACCESS_TOKEN) || _SB_ANON;
+            var h = {
+                'apikey': _SB_PUBLISHABLE,
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            };
+            if (extra) { Object.keys(extra).forEach(function (k) { h[k] = extra[k]; }); }
+            return h;
+        }
 
         // ── storage: work_hours config row (id='__emp_acc_config__') ──
         // چون جدول app_settings نداره، از work_hours.description استفاده می‌کنیم
@@ -1078,7 +1094,7 @@
             try {
                 var res = await fetch(
                     _SB_URL + '/rest/v1/work_hours?id=eq.' + _EMP_ACC_ROW + '&select=description',
-                    { headers: _sbHeaders }
+                    { headers: _sbHeaders() }
                 );
                 if (res.ok) {
                     var rows = await res.json();
@@ -1104,7 +1120,7 @@
                     _SB_URL + '/rest/v1/work_hours?id=eq.' + _EMP_ACC_ROW,
                     {
                         method: 'PATCH',
-                        headers: Object.assign({}, _sbHeaders, { 'Prefer': 'return=representation' }),
+                        headers: _sbHeaders({ 'Prefer': 'return=representation' }),
                         body: JSON.stringify({ description: descVal, updated_at: new Date().toISOString() })
                     }
                 );
@@ -1120,7 +1136,7 @@
                     _SB_URL + '/rest/v1/work_hours?on_conflict=id',
                     {
                         method: 'POST',
-                        headers: Object.assign({}, _sbHeaders, { 'Prefer': 'resolution=merge-duplicates,return=representation' }),
+                        headers: _sbHeaders({ 'Prefer': 'resolution=merge-duplicates,return=representation' }),
                         body: JSON.stringify({
                             id: _EMP_ACC_ROW, employee_id: '__system__', employee_name: 'SYSTEM_CONFIG',
                             type: 'work', date: '2000-01-01', description: descVal, status: 'approved'

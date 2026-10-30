@@ -13,7 +13,7 @@
   ],
   "miniapp_url": "https://alkawthar.info/tadilat-app.html",
 
-  "supabase_url": "http://62.60.194.98:8000",
+  "supabase_url": "https://supa.alkawthar.info",
   "supabase_anon_key": "کلید anon پروژه — همان مقدار SUPABASE_ANON_KEY در js/supabase-config.js",
 
   "storage_bucket": "student-documents",

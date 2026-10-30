@@ -8,6 +8,8 @@
     <script>
         window.SESSION_VERSION = '2026-10-31-supabase-selfhosted';
     </script>
+    <!-- تنظیمات واحد Supabase -->
+    <script src="js/supabase-env.js"></script>
     <!-- محافظ حافظه (QuotaExceededError) — باید قبل از اسکریپت‌های دیگر باشد -->
     <script src="js/storage-health.js"></script>
     <script src="assets/libs/tailwindcss.js"></script>
@@ -184,9 +186,14 @@ function setLoading(on) {
 // که لیست دسترسی از سرور گرفته شده، نه فقط از localStorage محلی
 async function _syncEmpAccOnLogin(user) {
     try {
-        const SB_URL = 'http://62.60.194.98:8000';
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkzMzg0NzY1LCJleHAiOjE5NTEwNjQ3NjV9.L9pywhM220qbWzAWN8lNEdqCXc_4InN_lWeW19Zly5w';
-        const hdrs = { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` };
+        const SB_URL = (window.SB_ENV && window.SB_ENV.url) || 'https://supa.alkawthar.info';
+        const SB_PUBLISHABLE = (window.SB_ENV && window.SB_ENV.publishableKey) || '';
+        const SB_ANON = (window.SB_ENV && window.SB_ENV.anonKey) || '';
+        // apikey=publishable، Authorization=access token (اگر بعد از لاگین موجود بود) یا anon
+        const hdrs = {
+            'apikey': SB_PUBLISHABLE,
+            'Authorization': 'Bearer ' + ((window.getSupabaseAccessToken && window.getSupabaseAccessToken()) || SB_ANON)
+        };
 
         // خواندن از work_hours config row
         const res = await fetch(

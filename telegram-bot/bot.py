@@ -80,7 +80,7 @@ def log(message, level="INFO"):
 DEFAULTS = {
     "telegram_bot_token": "",
     "miniapp_url": "https://alkawthar.info/tadilat-app.html",
-    "supabase_url": "http://62.60.194.98:8000",
+    "supabase_url": "https://supa.alkawthar.info",
     "supabase_anon_key": "",
     "storage_bucket": "student-documents",
     "admin_chat_ids": [],

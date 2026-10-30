@@ -500,7 +500,7 @@ const RegistrationsModule = {
             return;
         }
         // اگر فقط path باشد، public URL بساز (پروژه اصلی)
-        const SUPABASE_URL = 'http://62.60.194.98:8000';
+        const SUPABASE_URL = (window.SB_ENV && window.SB_ENV.url) || 'https://supa.alkawthar.info';
         const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/student-documents/${url}`;
         window.open(publicUrl, '_blank');
     },
