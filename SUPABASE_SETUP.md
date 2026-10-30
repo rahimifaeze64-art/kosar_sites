@@ -13,7 +13,7 @@
 فایل `js/supabase-config.js` را باز کنید و دو خط اول را ویرایش کنید:
 
 ```js
-const SUPABASE_URL      = 'https://xyzabc.supabase.co';       // ← مقدار واقعی
+const SUPABASE_URL      = 'http://62.60.194.98:8000';   // ← self-hosted
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6...'; // ← مقدار واقعی
 ```
 

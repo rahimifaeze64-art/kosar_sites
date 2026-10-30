@@ -5,9 +5,9 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
 // URL و KEY باید از همان پروژه Supabase باشند
-// ref در KEY: tyzrexkneoexmcegaxlc → URL باید همین باشد
-const SUPABASE_URL      = 'https://tyzrexkneoexmcegaxlc.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5enJleGtuZW9leG1jZWdheGxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MTcwMjMsImV4cCI6MjEwNTM5MzAyM30.xw_dY8jT13Kt0G1JCg3HaiL5l_0fgVE-9POkxn8jLOU';
+// self-hosted: http://62.60.194.98:8000 — از publishable key استفاده می‌شود
+const SUPABASE_URL      = 'http://62.60.194.98:8000';
+const SUPABASE_ANON_KEY = 'sb_publishable_tnnaReMVB5S47UOmxy3_Cp_AuJ9aanV';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 

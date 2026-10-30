@@ -21,7 +21,7 @@
 #
 #    New repository secret:
 #      TELEGRAM_BOT_TOKEN     توکن ربات از BotFather
-#      SUPABASE_URL           https://tyzrexkneoexmcegaxlc.supabase.co
+#      SUPABASE_URL           http://62.60.194.98:8000
 #      SUPABASE_ANON_KEY      کلید anon پروژه
 #
 #    (اختیاری)

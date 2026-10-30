@@ -12,7 +12,7 @@
 // برای بیرون کردن اجباری همه در هر دپلوی: فقط SESSION_VERSION را عوض کن
 // (همین مقدار باید در index.html و login.html هم یکسان باشد).
 // ════════════════════════════════════════════════════════════════════
-window.SESSION_VERSION = '2026-10-01-force-relogin-2';
+window.SESSION_VERSION = '2026-10-31-supabase-selfhosted';
 (function() {
     try {
         var p = (window.location.pathname || '').toLowerCase();
@@ -54,10 +54,15 @@ window.SESSION_VERSION = '2026-10-01-force-relogin-2';
 // ⚙️  تنظیمات اتصال — این دو مقدار را با مقادیر واقعی پروژه‌ات جایگزین کن
 //    Settings > API در داشبورد Supabase:
 //      Project URL  → SUPABASE_URL
-//      anon/public  → SUPABASE_ANON_KEY
+//      publishable  → SUPABASE_PUBLISHABLE_KEY (برای SDK)
+//      anon JWT     → SUPABASE_ANON_KEY (برای هدرهای Authorization: Bearer)
 // ════════════════════════════════════════════════════════════════════
-const SUPABASE_URL      = 'https://tyzrexkneoexmcegaxlc.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5enJleGtuZW9leG1jZWdheGxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MTcwMjMsImV4cCI6MjEwNTM5MzAyM30.xw_dY8jT13Kt0G1JCg3HaiL5l_0fgVE-9POkxn8jLOU';
+// Supabase self-hosted (Kong gateway)
+// ⚠️ اگر سایت روی HTTPS سرو می‌شود، این URL هم باید HTTPS باشد
+//    (مرورگر درخواست http از صفحهٔ https را بلاک می‌کند: mixed content)
+const SUPABASE_URL             = 'http://62.60.194.98:8000';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_tnnaReMVB5S47UOmxy3_Cp_AuJ9aanV';
+const SUPABASE_ANON_KEY        = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkzMzg0NzY1LCJleHAiOjE5NTEwNjQ3NjV9.L9pywhM220qbWzAWN8lNEdqCXc_4InN_lWeW19Zly5w';
 
 // ── singleton client ─────────────────────────────────────────
 let supabaseClient = null;
@@ -75,7 +80,7 @@ function getSupabaseClient() {
         return null;
     }
 
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
         auth: {
             persistSession: true,           // نشست را در localStorage نگه می‌دارد
             autoRefreshToken: true,         // توکن را به‌صورت خودکار تجدید می‌کند

@@ -9,7 +9,7 @@
 # امنیت از راه TELEGRAM_WEBHOOK_SECRET تأمین می‌شود.
 # ============================================================
 
-project_id = "tyzrexkneoexmcegaxlc"
+project_id = "kosar"
 
 [functions.telegram-bot]
 verify_jwt = false
