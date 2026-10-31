@@ -572,27 +572,29 @@ const WorkHoursUI = (function() {
                                     <span>امروز</span>
                                     <span id="workDate-pdisp-text" class="text-xs text-gray-300 font-normal"></span>
                                 </button>
-                                <button type="button"
-                                        id="workDate-cal-btn"
-                                        onclick="WorkHoursUI.openDatePicker('workDate')"
-                                        title="انتخاب دقیق روز از تقویم شمسی"
-                                        class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-2 py-3 text-white text-xs font-medium transition-all flex flex-col items-center gap-1">
-                                    <i class="fas fa-calendar-alt text-emerald-400"></i>
-                                    <span>انتخاب روز</span>
-                                    <span id="workDate-cal-text" class="text-xs text-gray-300 font-normal"></span>
-                                </button>
+                                <div class="relative flex-1">
+                                    <button type="button"
+                                            id="workDate-cal-btn"
+                                            onclick="WorkHoursUI.openDatePicker('workDate')"
+                                            title="انتخاب دقیق روز از تقویم شمسی"
+                                            class="w-full h-full bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-2 py-3 text-white text-xs font-medium transition-all flex flex-col items-center gap-1">
+                                        <i class="fas fa-calendar-alt text-emerald-400"></i>
+                                        <span>انتخاب روز</span>
+                                        <span id="workDate-cal-text" class="text-xs text-gray-300 font-normal"></span>
+                                    </button>
+                                    <!-- ورودی شفاف تقویم روی دکمه — کتابخانه موقعیت را از همین input می‌گیرد -->
+                                    <input type="text"
+                                           id="workDate-jdp"
+                                           data-jdp
+                                           data-jdp-target-value-input="#workDate"
+                                           data-jdp-target-value-type="jalali"
+                                           readonly
+                                           tabindex="-1"
+                                           autocomplete="off"
+                                           aria-hidden="true"
+                                           class="absolute inset-0 w-full h-full opacity-0 pointer-events-none border-0 p-0 m-0 bg-transparent text-transparent">
+                                </div>
                             </div>
-                            <!-- ورودی مخفی تقویم شمسی — برای انتخاب دقیق روز (دکمهٔ «انتخاب روز») -->
-                            <input type="text"
-                                   id="workDate-jdp"
-                                   data-jdp
-                                   data-jdp-target-value-input="#workDate"
-                                   data-jdp-target-value-type="jalali"
-                                   readonly
-                                   tabindex="-1"
-                                   autocomplete="off"
-                                   aria-hidden="true"
-                                   style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0;padding:0;margin:0;">
                         </div>
                         
                         <div>
@@ -1057,27 +1059,29 @@ const WorkHoursUI = (function() {
                                     <span>امروز</span>
                                     <span id="workDate-pdisp-text" class="text-xs text-gray-300 font-normal"></span>
                                 </button>
-                                <button type="button"
-                                        id="workDate-cal-btn"
-                                        onclick="WorkHoursUI.openDatePicker('workDate')"
-                                        title="انتخاب دقیق روز از تقویم شمسی"
-                                        class="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-2 py-3 text-white text-xs font-medium transition-all flex flex-col items-center gap-1">
-                                    <i class="fas fa-calendar-alt text-emerald-400"></i>
-                                    <span>انتخاب روز</span>
-                                    <span id="workDate-cal-text" class="text-xs text-gray-300 font-normal"></span>
-                                </button>
+                                <div class="relative flex-1">
+                                    <button type="button"
+                                            id="workDate-cal-btn"
+                                            onclick="WorkHoursUI.openDatePicker('workDate')"
+                                            title="انتخاب دقیق روز از تقویم شمسی"
+                                            class="w-full h-full bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-2 py-3 text-white text-xs font-medium transition-all flex flex-col items-center gap-1">
+                                        <i class="fas fa-calendar-alt text-emerald-400"></i>
+                                        <span>انتخاب روز</span>
+                                        <span id="workDate-cal-text" class="text-xs text-gray-300 font-normal"></span>
+                                    </button>
+                                    <!-- ورودی شفاف تقویم روی دکمه — کتابخانه موقعیت را از همین input می‌گیرد -->
+                                    <input type="text"
+                                           id="workDate-jdp"
+                                           data-jdp
+                                           data-jdp-target-value-input="#workDate"
+                                           data-jdp-target-value-type="jalali"
+                                           readonly
+                                           tabindex="-1"
+                                           autocomplete="off"
+                                           aria-hidden="true"
+                                           class="absolute inset-0 w-full h-full opacity-0 pointer-events-none border-0 p-0 m-0 bg-transparent text-transparent">
+                                </div>
                             </div>
-                            <!-- ورودی مخفی تقویم شمسی — برای انتخاب دقیق روز (دکمهٔ «انتخاب روز») -->
-                            <input type="text"
-                                   id="workDate-jdp"
-                                   data-jdp
-                                   data-jdp-target-value-input="#workDate"
-                                   data-jdp-target-value-type="jalali"
-                                   readonly
-                                   tabindex="-1"
-                                   autocomplete="off"
-                                   aria-hidden="true"
-                                   style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0;padding:0;margin:0;">
                         </div>
                         <div>
                             <label class="block text-black-400 text-sm mb-2">ساعت شروع</label>
@@ -2426,6 +2430,8 @@ const WorkHoursUI = (function() {
     function _reInitDatepicker() {
         // اتصال مستقیم دکمهٔ «انتخاب روز» به تقویم
         _bindDatepickerInputs();
+        // تقویم همیشه سفید باشد (تم آبی/تیره غیرفعال)
+        document.body.classList.remove('jdp-dark-mode');
         if (typeof jalaliDatepicker !== 'undefined' && typeof jalaliDatepicker.startWatch === 'function') {
             setTimeout(function() {
                 jalaliDatepicker.startWatch({
@@ -2585,22 +2591,61 @@ const WorkHoursUI = (function() {
             return;
         }
 
+        // اطمینان از اتصال listenerهای همگام‌سازی (در صورت رندر تازه)
+        _bindDatepickerInputs();
+
         // مقدار اولیه = تاریخ انتخاب‌شدهٔ فعلی (اگر دارد)
         var current = (hidden && hidden.value) || '';
         if (current) jdp.value = String(current).replace(/-/g, '/');
 
-        // input مخفی را دقیقاً روی دکمه بگذار تا تقویم زیر همان دکمه باز شود
-        // (کتابخانه موقعیت را از getBoundingClientRect می‌خواند و container هم fixed است)
-        if (btn) {
-            var r = btn.getBoundingClientRect();
-            jdp.style.position = 'fixed';
-            jdp.style.left     = r.left + 'px';
-            jdp.style.top      = r.top + 'px';
-            jdp.style.width    = Math.max(r.width || 1, 1) + 'px';
-            jdp.style.height   = Math.max(r.height || 1, 1) + 'px';
+        // تم سفید (پیش‌فرض کتابخانه) — کلاس تم آبی/تیره را حذف می‌کنیم
+        document.body.classList.remove('jdp-dark-mode');
+
+        // مطمئن شو کتابخانه init شده است
+        if (typeof jalaliDatepicker.startWatch === 'function') {
+            jalaliDatepicker.startWatch({
+                showTodayBtn: true,
+                showEmptyBtn: true,
+                showCloseBtn: true
+            });
         }
 
-        openDarkPicker(jdp);
+        // باز کردن تقویم؛ input داخل دکمه است، پس موقعیت طبیعی همان‌جاست
+        jalaliDatepicker.show(jdp);
+
+        // تصحیح موقعیت: لبهٔ چپ فیلد تاریخ، دقیقاً زیر ردیف دکمه‌ها
+        _positionPickerUnder(btn);
+        setTimeout(function () { _positionPickerUnder(btn); }, 80);
+    }
+
+    /**
+     * تقویم را زیر ردیف دکمه‌های تاریخ (نه گوشهٔ صفحه) قرار می‌دهد.
+     * روی موبایل کاری نمی‌کند تا حالت bottom-sheet خود کتابخانه حفظ شود.
+     */
+    function _positionPickerUnder(btn) {
+        if (!btn || (window.innerWidth || 0) <= 481) return;
+        var c = document.querySelector('jdp-container');
+        if (!c) return;
+
+        // ردیف دکمه‌های تاریخ = والدِ والدِ دکمه
+        var row = (btn.parentElement && btn.parentElement.parentElement) || btn;
+        var r  = row.getBoundingClientRect();
+        var cw = c.offsetWidth  || 320;
+        var ch = c.offsetHeight || 340;
+
+        // چپ‌چین با لبهٔ چپِ فیلد تاریخ (نه وسط‌چین که به گوشهٔ صفحه می‌چسبد)
+        var left = Math.min(Math.max(8, r.left), (window.innerWidth - cw - 8));
+        var top  = r.bottom + 6;
+        if (top + ch > window.innerHeight - 8) top = Math.max(8, r.top - ch - 6);
+
+        c.style.position   = 'fixed';
+        c.style.left       = left + 'px';
+        c.style.top        = top + 'px';
+        c.style.right      = 'auto';
+        c.style.bottom     = 'auto';
+        c.style.transform  = 'none';
+        c.style.visibility = 'visible';
+        c.style.display    = 'block';
     }
 
     /**
